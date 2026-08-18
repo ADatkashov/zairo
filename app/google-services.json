@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "927275306873",
+    "project_id": "adatkashov-zairo",
+    "storage_bucket": "adatkashov-zairo.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:927275306873:android:2a1a9e4a0d1a66152da9a8",
+        "android_client_info": {
+          "package_name": "com.zairo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAit7_ZW66PwpZwUkBo9mckCrlVDz5Va_I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
