@@ -44,8 +44,15 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Gradle build/cache output (only android/ is a Gradle project in this repo)
+/android/build/
+/android/app/build/
+/.gradle/
+/.gradle_home/
+
+# Local machine configuration (SDK paths) - never commit
+/local.properties
+/android/local.properties
+
 # Widget Preview related
 .widget_preview/
-
-# Project exclude paths
-/.gradle/
