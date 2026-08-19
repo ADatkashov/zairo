@@ -315,10 +315,135 @@ Spring Boot 4.1 сильно раздробил монолитный `spring-boo
   все пять сценариев подтверждены кодами ответа именно как задумано.
 - `./gradlew build` — BUILD SUCCESSFUL с первой попытки.
 
+**Шаг 3 закоммичен и запушен** (`1d9b23a`).
+
+### Шаг 4 — Search (сделано)
+- `search`-модуль не владеет своими таблицами — чистая read-композиция
+  поверх `providers`/`services`/`booking`. Обоснование в
+  `search/build.gradle.kts`: для чтения (не для проверки инвариантов, как
+  у `reviews → booking`) прямая Gradle-зависимость на другие модули —
+  стандартный паттерн для search/query bounded context в модульном
+  монолите.
+- `GET /api/v1/search/providers?vertical=&q=` — фильтр по vertical (точное
+  совпадение, как и было решено в ERD — vertical непрозрачен для Core) и
+  по тексту (substring, регистронезависимо, по имени провайдера ИЛИ
+  названию активного сервиса).
+- Детерминированный рейтинг (см. `package-info.java` модуля `search`,
+  написанный ещё на Phase 1: "rating, distance, price, availability"):
+  реализованы **availability** (есть ли открытый слот) и **price**
+  (минимальная цена активного сервиса) — сортировка: сначала есть
+  доступность, затем по возрастанию цены.
+  - **rating осознанно не реализован** в этом шаге: потребовал бы live
+    JOIN на каждый поисковый запрос через
+    services → bookings → reviews (3 модуля), это кандидат на
+    материализованную read-модель, когда появится реальный трафик, а не
+    поштучный join для MVP без данных. Отмечено прямо в
+    `SearchService`-джавадоке.
+  - **distance не реализован**: у `Provider` нет геоданных в ERD —
+    осознанно отложено вместе с картами (Factory Blueprint §19).
+- Добавлены недостающие query-методы в уже существующие репозитории
+  (`ProviderRepository.findByVertical`,
+  `ServiceOfferingRepository.findByProviderIdAndActiveTrue` /
+  `findByTitleContainingIgnoreCaseAndActiveTrue`,
+  `AvailabilitySlotRepository.existsByProviderIdAndStatus`) — расширение
+  существующих модулей, а не новая таблица.
+- **Находка про тестовую изоляцию**: `SearchApiTests` изначально падал —
+  оказалось, Spring переиспользует один и тот же `ApplicationContext` (и
+  соответственно один и тот же Testcontainers-Postgres с накопленными
+  данными) между тестовыми классами с идентичным набором аннотаций
+  (`ProviderApiTests`, `BookingApiTests`, `ReviewApiTests`, `SearchApiTests`
+  — все объявляют `@SpringBootTest(RANDOM_PORT) @AutoConfigureTestRestTemplate
+  @Import(TestcontainersConfiguration.class)`). Из-за этого данные из
+  предыдущих тестовых классов "утекали" в `SearchApiTests`. Исправлено:
+  тест генерирует случайный `vertical` на каждый прогон (никогда не
+  сталкивается с чужими данными) и использует `containsSubsequence`
+  вместо `containsExactly` там, где полный список принципиально может
+  содержать чужие записи. **На будущее**: любой новый e2e-тест с таким же
+  набором аннотаций будет делить БД с этими четырьмя — писать тесты с
+  учётом этого (уникальные данные или сравнения, устойчивые к чужим
+  записям), а не полагаться на "чистую" БД.
+- Тесты на реальном Postgres (Testcontainers): `SearchApiTests` — фильтр
+  по vertical, текстовый поиск, порядок сортировки.
+- Вручную проверено: `docker compose up postgres` + `bootRun` + curl —
+  фильтр по vertical, текстовый поиск и сортировка (доступность → цена)
+  подтверждены на реальных данных (включая накопленные с прошлых шагов).
+- `./gradlew build` — BUILD SUCCESSFUL (после исправления теста).
+
 ### Текущий статус
 Всё застейджено, **не закоммичено** — ждём подтверждения.
 
-## Следующий шаг — Phase 2, шаг 4 (не начат)
-Search: простой list/filter провайдеров (без Elasticsearch, обычный
-DB-запрос) — карты и полнотекстовый поиск сознательно отложены (см.
-Factory Blueprint §19).
+### Шаг 5-6 — Flutter data layer + UI: Discover-экран (сделано)
+- Новая фича `apps/user_app/lib/features/discovery/`:
+  - `data/models/` — `ProviderSearchResult`, `ServiceSummary`. **Без
+    кодогенерации** (freezed/json_serializable сознательно не
+    использованы для этого шага) — `freezed: ^4.0.0-dev.3` в pubspec.yaml
+    выглядит нестабильно (dev-prerelease), а DTO простые и стабильные,
+    ручной `fromJson` дешевле, чем разбираться с версией кодогена.
+    freezed/json_serializable остаются в зависимостях для более сложной
+    фичи в будущем, где кодоген действительно окупится.
+  - `data/discovery_api.dart` — `DiscoveryApi` поверх `DioClient` из
+    `core_network`, вызывает `GET /search/providers`. Класс не
+    `final`/`sealed` специально — тесты подменяют его подклассом,
+    переопределяющим `searchProviders`, вместо мокинга Dio.
+  - `presentation/providers/discovery_providers.dart` — Riverpod
+    `discoveryApiProvider` + `searchResultsProvider`
+    (`FutureProvider.autoDispose.family`).
+  - `presentation/screens/discovery_screen.dart` +
+    `presentation/widgets/provider_card.dart` — поиск по тексту,
+    список карточек (имя, vertical, "From \$price", чипы сервисов,
+    бейдж "Available" при открытом слоте), состояния loading/error/empty,
+    pull-to-refresh.
+  - Экран подключён на таб **Home** в `app_router.dart` (заменил собой
+    старый шаблонный `HomeScreen` — тот был мёртвым boilerplate-текстом
+    про "ZAIRO... automation", ничего не терял; файл/папка `features/home`
+    удалены).
+  - `environment.dart`: `baseUrl` изменён с плейсхолдера
+    `https://api.zairo.com/v1` (несуществующий домен, да ещё и без `/api`
+    в пути!) на `http://localhost:8080/api/v1` — реального деплоя пока
+    нет, так что локальный backend это честная текущая правда. Полноценный
+    dev/staging/prod-переключатель (flavors/--dart-define) — когда
+    появится настоящее окружение, под которое переключаться.
+- **Vertical-фильтр в UI пока не выведен** (бэкенд его поддерживает) — нет
+  ещё концепции выбора vertical в UX, придумывать её сейчас было бы
+  забеганием вперёд.
+- Тесты виджетов (`test/features/discovery/discovery_screen_test.dart`) —
+  happy path и пустой результат, через override `discoveryApiProvider`
+  фейковым подклассом (без реальной сети). Старый `test/widget_test.dart`
+  (общий smoke-тест) обновлён — теперь он реально доходит до
+  `DiscoveryScreen` через роутинг, поэтому ему тоже нужен override
+  `networkConfigProvider` + `discoveryApiProvider` (раньше smoke-тест
+  ничего не тестировал по сути, т.к. ни один виджет не обращался к сети).
+- `flutter analyze` — чисто, `flutter test` — 3/3 (было бы сломано без
+  фикса smoke-теста).
+- `flutter build apk --debug` — собирается.
+- **Живая проверка в браузере** (по правилу "для UI - открыть и
+  проверить, а не просто верить тестам"): `flutter run -d windows` не
+  сработал (нет Visual Studio C++ toolchain на машине), поэтому
+  использовал `flutter run -d chrome`. Веб-запрос упёрся в CORS — backend
+  не разрешал кросс-origin запросы с `localhost:5758` на `localhost:8080`.
+  Добавлен `backend/platform-api/.../WebConfig.java` — permissive CORS
+  только для `http://localhost:*`, только чтобы дать локальной веб-версии
+  достучаться до локального backend; нужно ужесточить/убрать перед первым
+  реальным деплоем. После фикса — реальные данные с backend отрисовались
+  в UI, подтверждено скриншотом (отправлен пользователю).
+- **Находка**: `MainWindowHandle` у нескольких Chrome-инстансов,
+  запущенных `flutter run -d chrome` с разными `--user-data-dir`,
+  выглядит одинаково через `Get-Process | Where MainWindowTitle`
+  (неоднозначно, если открыто больше одного `flutter run -d chrome`) —
+  пришлось сопоставлять PID через `wmic process ... get CommandLine` по
+  `--remote-debugging-port`, чтобы найти окно нужного запуска. На будущее:
+  указывать разные `--web-port` и не запускать параллельно несколько
+  `flutter run -d chrome`, если нужен скриншот конкретного инстанса.
+
+### Текущий статус
+Всё застейджено (backend `WebConfig.java` + Flutter feature), **не
+закоммичено** — ждём подтверждения.
+
+## Следующий шаг — Phase 2 полностью завершён
+Backend (шаги 1-4) и Flutter browse-UI (шаги 5-6) готовы и проверены.
+Booking-флоу в UI (выбор слота, создание брони) сознательно не сделан
+в этом шаге — требует концепции "текущий пользователь", которой пока нет
+(модуль `auth` всё ещё пустой каркас с Phase 1). Это первая точка, где
+реально понадобится Phase 3 (auth) или временное решение для identity —
+решение не принято, ждёт обсуждения с пользователем перед стартом
+следующей фазы.

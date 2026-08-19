@@ -7,4 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface ServiceOfferingRepository extends JpaRepository<ServiceOffering, UUID> {
 
     List<ServiceOffering> findByProviderId(UUID providerId);
+
+    List<ServiceOffering> findByProviderIdAndActiveTrue(UUID providerId);
+
+    List<ServiceOffering> findByTitleContainingIgnoreCaseAndActiveTrue(String title);
 }

@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface AvailabilitySlotRepository extends JpaRepository<AvailabilitySlot, UUID> {
 
     List<AvailabilitySlot> findByProviderId(UUID providerId);
+
+    boolean existsByProviderIdAndStatus(UUID providerId, AvailabilityStatus status);
 }
