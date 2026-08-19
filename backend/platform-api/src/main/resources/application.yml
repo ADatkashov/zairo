@@ -1,6 +1,14 @@
 spring:
   application:
     name: app-factory-platform-api
+  datasource:
+    url: jdbc:postgresql://localhost:5432/app_factory
+    username: app_factory
+    password: app_factory
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
 
 server:
   port: 8080

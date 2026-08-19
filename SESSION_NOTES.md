@@ -169,11 +169,79 @@ Gradle-плагинов без явной SSL-трассировки — с вы
 
 **Phase 1 полностью закрыт** (шаги 1, 2, 3 — все сделаны и задокументированы).
 
-## Текущий статус
-Всё застейджено (`git add -A`), **не закоммичено** — ждём подтверждения пользователя
-на коммит, как обычно.
+**Phase 1 закоммичено и запушено** (`dce253b`) — история переносов сохранена.
 
-## Следующий шаг — Phase 2 (не начат)
-Marketplace core: providers/services/search/maps/availability/booking/
-reviews/favorites — согласно roadmap из Factory Blueprint. Ждём подтверждения
-пользователя на старт, как и для каждого предыдущего шага.
+## Phase 2 — Marketplace core (начато 2026-08-19)
+
+План разбит на шаги, подтверждён пользователем ("да начинай"): (1) users/
+providers/services — сущности + миграции + CRUD на реальном Postgres,
+(2) availability + booking, (3) reviews, (4) search, (5-6) Flutter-слой
+поверх API.
+
+### Шаг 1 — users/providers/services (сделано)
+- Реальные JPA-сущности по `docs/erd/core-domain.md`: `User` (модуль
+  `users`), `Provider` (модуль `providers`), `ServiceOffering` (модуль
+  `services`, таблица `service` — класс назван не `Service`, чтобы не
+  путаться со spring-стереотипом `@Service`).
+- Flyway-миграции (`V1..V3`) лежат в `platform-api/src/main/resources/
+  db/migration/` — осознанно централизованы в assembly-модуле, а не
+  раскиданы по bounded-context модулям: один физический процесс/БД/
+  Flyway-history, дробить пока незачем (см. рационале ADR-0001).
+  Пересмотреть, если модуль когда-нибудь извлекается в отдельный сервис.
+- Простые REST CRUD-контроллеры (create/list/getById) для каждого модуля,
+  `POST /api/v1/providers/{id}/services` для дочерних сервисов.
+- Тесты — против **реального** Postgres через Testcontainers
+  (`@ServiceConnection`), не моки: `PlatformApiApplicationTests`
+  (context+Flyway+JPA поднимаются) и `ProviderApiTests` (полный e2e-флоу
+  users → providers → services по HTTP).
+- Дополнительно вручную проверено: `docker compose up postgres` +
+  `./gradlew :platform-api:bootRun` + curl по всей цепочке — реальные
+  данные видны через `GET`.
+
+### Неочевидные технические находки (Spring Boot 4.1 модуляризация)
+Spring Boot 4.1 сильно раздробил монолитный `spring-boot-autoconfigure` на
+множество мелких модулей — несколько привычных вещей переехали:
+- `TestRestTemplate`: было `org.springframework.boot.test.web.client` →
+  стало отдельный модуль `spring-boot-resttestclient`, пакет
+  `org.springframework.boot.resttestclient`. Требует явную
+  `@AutoConfigureTestRestTemplate` на тесте (раньше подключался неявно
+  через `webEnvironment = RANDOM_PORT`), плюс `spring-boot-restclient`
+  на classpath (иначе `ClassNotFoundException:
+  org.springframework.boot.restclient.RestTemplateBuilder` при разрешении
+  автоконфигурации).
+- `EntityScan`: было `org.springframework.boot.autoconfigure.domain` →
+  стало `org.springframework.boot.persistence.autoconfigure`.
+- Flyway-автоконфигурация вынесена в отдельный старлет
+  `spring-boot-starter-flyway` — просто `flyway-core` на classpath
+  подключает библиotеку, но **не** `FlywayMigrationInitializer`; без
+  старлета миграции молча не выполняются (Hibernate падает на
+  `Schema validation: missing table`, без единого упоминания Flyway в
+  логах — тратил время именно на это).
+- Testcontainers 2.x переименовал модули с префиксом `testcontainers-`
+  (`testcontainers-postgresql`, `testcontainers-junit-jupiter`) — старые
+  1.x-координаты (`postgresql`, `junit-jupiter`) не существуют в 2.x.
+- `io.spring.dependency-management` не разворачивает вложенный BOM-импорт
+  (spring-boot-dependencies → testcontainers-bom) транзитивно — версии
+  Testcontainers-артефактов пришлось пинить явно.
+- Без флага компилятора `-parameters` (добавлен глобально в
+  `backend/build.gradle.kts`) Spring MVC не резолвит `@PathVariable` по
+  имени параметра — `IllegalArgumentException: Name for argument of type
+  UUID not specified`. Актуально для каждого будущего контроллера.
+- Каждый bounded-context модуль (`users`/`providers`/`services`), не
+  подключающий сам плагин `org.springframework.boot`, не получает
+  managed-версии зависимостей автоматически — пришлось явно
+  импортировать `spring-boot-dependencies` BOM в `subprojects {}` в
+  корневом `backend/build.gradle.kts`.
+- `@SpringBootApplication(scanBasePackages = "com.zairo.factory")` сканит
+  компоненты, но Spring Data JPA по умолчанию ищет репозитории только в
+  пакете главного класса (`...platform`) — понадобились явные
+  `@EntityScan`/`@EnableJpaRepositories(basePackages = "com.zairo.factory")`
+  на `PlatformApiApplication`.
+
+### Текущий статус
+Всё застейджено, **не закоммичено** — ждём подтверждения.
+
+## Следующий шаг — Phase 2, шаг 2 (не начат)
+Availability + Booking: слоты доступности провайдера, создание бронирования
+с проверкой конфликтов, доменное событие "booking подтверждён"
+(`ApplicationEventPublisher`/`@TransactionalEventListener`, см. ADR-0002).

@@ -26,6 +26,24 @@ subprojects {
         }
     }
 
+    // Without -parameters, Spring MVC can't resolve @PathVariable names via
+    // reflection (only positional info), so every @PathVariable would need
+    // an explicit name argument. Compile with it everywhere instead.
+    tasks.withType<JavaCompile> {
+        options.compilerArgs.add("-parameters")
+    }
+
+    // Bounded-context modules (providers, services, ...) declare Spring Boot
+    // starter dependencies without version numbers but don't apply the
+    // org.springframework.boot plugin themselves (only platform-api does,
+    // since it's the one runnable app) — so the BOM has to be imported
+    // explicitly here for every subproject to get managed versions.
+    configure<io.spring.gradle.dependencymanagement.dsl.DependencyManagementExtension> {
+        imports {
+            mavenBom("org.springframework.boot:spring-boot-dependencies:4.1.0")
+        }
+    }
+
     tasks.withType<Test> {
         useJUnitPlatform()
     }
