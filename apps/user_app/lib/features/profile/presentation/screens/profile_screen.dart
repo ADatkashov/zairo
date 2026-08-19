@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../auth/presentation/screens/register_screen.dart';
+import '../../../booking/presentation/screens/my_bookings_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -18,7 +19,7 @@ class ProfileScreen extends ConsumerWidget {
         child: authState.when(
           data: (user) => user == null
               ? _LoggedOutView()
-              : _LoggedInView(displayName: user.displayName, email: user.email),
+              : _LoggedInView(userId: user.id, displayName: user.displayName, email: user.email),
           loading: () => const CircularProgressIndicator(),
           error: (error, stackTrace) => Padding(
             padding: const EdgeInsets.all(16),
@@ -57,10 +58,11 @@ class _LoggedOutView extends StatelessWidget {
 }
 
 class _LoggedInView extends ConsumerWidget {
+  final String userId;
   final String displayName;
   final String email;
 
-  const _LoggedInView({required this.displayName, required this.email});
+  const _LoggedInView({required this.userId, required this.displayName, required this.email});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -72,6 +74,13 @@ class _LoggedInView extends ConsumerWidget {
         Text(displayName, style: Theme.of(context).textTheme.headlineSmall),
         Text(email, style: Theme.of(context).textTheme.bodyMedium),
         const SizedBox(height: 20),
+        FilledButton.tonal(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => MyBookingsScreen(userId: userId)),
+          ),
+          child: const Text('My bookings'),
+        ),
+        const SizedBox(height: 8),
         OutlinedButton(
           onPressed: () => ref.read(authControllerProvider.notifier).logout(),
           child: const Text('Log out'),

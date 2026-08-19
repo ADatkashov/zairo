@@ -1,0 +1,19 @@
+import 'package:core_network/core_network.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../data/booking_api.dart';
+import '../../data/models/availability_slot.dart';
+import '../../data/models/booking.dart';
+
+final bookingApiProvider = Provider<BookingApi>((ref) {
+  return BookingApi(ref.watch(dioClientProvider));
+});
+
+final availabilitySlotsProvider = FutureProvider.autoDispose
+    .family<List<AvailabilitySlot>, String>((ref, providerId) {
+  return ref.watch(bookingApiProvider).listAvailabilitySlots(providerId);
+});
+
+final myBookingsProvider = FutureProvider.autoDispose.family<List<Booking>, String>((ref, userId) {
+  return ref.watch(bookingApiProvider).listMyBookings(userId);
+});

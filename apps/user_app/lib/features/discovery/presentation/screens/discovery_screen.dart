@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../booking/presentation/screens/provider_detail_screen.dart';
 import '../providers/discovery_providers.dart';
 import '../widgets/provider_card.dart';
 
@@ -63,8 +64,14 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                   child: ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: results.length,
-                    itemBuilder: (context, index) =>
-                        ProviderCard(result: results[index]),
+                    itemBuilder: (context, index) => ProviderCard(
+                      result: results[index],
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => ProviderDetailScreen(provider: results[index]),
+                        ),
+                      ),
+                    ),
                   ),
                 );
               },
