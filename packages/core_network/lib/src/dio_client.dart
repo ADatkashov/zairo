@@ -1,10 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'auth_token_holder.dart';
 import 'network_config.dart';
 
 final dioProvider = Provider<Dio>((ref) {
   final config = ref.watch(networkConfigProvider);
+  final authTokenHolder = ref.watch(authTokenHolderProvider);
 
   final dio = Dio(
     BaseOptions(
@@ -18,6 +20,17 @@ final dioProvider = Provider<Dio>((ref) {
     ),
   );
 
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) {
+        final token = authTokenHolder.accessToken;
+        if (token != null && !options.headers.containsKey('Authorization')) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
+        handler.next(options);
+      },
+    ),
+  );
   // Add interceptors here if needed (e.g., logging, auth)
   dio.interceptors.add(LogInterceptor(responseBody: true, requestBody: true));
 

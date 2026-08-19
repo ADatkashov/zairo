@@ -505,12 +505,67 @@ auth после Phase 2 нет — она и должна была быть ча
 ### Текущий статус
 Всё застейджено, **не закоммичено** — ждём подтверждения.
 
+**Auth-backend закоммичен и запушен** (`b4da44f`).
+
+## Auth во Flutter (сделано, 2026-08-19)
+
+- `packages/core_network` расширен: `AuthTokenHolder` (простой mutable
+  держатель access-токена) + `authTokenHolderProvider`. `dioProvider`
+  читает его в интерцепторе и подставляет `Authorization: Bearer` в
+  каждый запрос, если токен есть. core_network по-прежнему ничего не
+  знает про login/регистрацию — тот же паттерн "app переопределяет, Core
+  не в курсе", что уже применялся для `NetworkConfig`.
+- `apps/user_app/lib/features/auth/`:
+  - `data/` — `AuthApi` (register/login/refresh/me поверх `DioClient`,
+    `AuthException` с человекочитаемыми сообщениями для 401/409),
+    `TokenStorage` (обёртка над `SecureStorageService` из `core_storage`
+    — access/refresh токены в secure storage, не в обычном хранилище).
+  - `presentation/providers/auth_providers.dart` — `AuthController`
+    (`AsyncNotifier<UserSummary?>`, `null` = не залогинен). При старте
+    (`build()`) пробует сохранённый access-токен через `/me`; если не
+    вышло — пробует `refresh` сохранённым refresh-токеном (тихий
+    re-login); если и это не вышло — чистит storage, возвращает `null`.
+    **Осознанно не реализован** retry-с-refresh на каждый отдельный
+    401 посреди сессии — это добавило бы заметную сложность
+    (concurrency, избежание storm-refresh), не оправданную сейчас, когда
+    ещё нет ни одного реального защищённого пользовательского флоу
+    (booking), который мог бы столкнуться с истечением 30-минутного
+    access-токена посреди использования.
+  - `presentation/screens/` — `LoginScreen`, `RegisterScreen` (всегда
+    роль `CUSTOMER` — `PROVIDER_OWNER` регистрируется через будущий
+    Business Admin, не через этот app, см. Factory Blueprint §11).
+  - `ProfileScreen` переписан: раньше — статичная заглушка, теперь —
+    реальный logged-out/logged-in вид (`authControllerProvider.when`),
+    с кнопками Log in / Create an account / Log out.
+- Тесты: `test/features/auth/auth_controller_test.dart` — 5 тестов на
+  `AuthController` через `ProviderContainer` с фейковыми `AuthApi` и
+  in-memory `SecureStorageService` (по тому же паттерну подкласса, что
+  `DiscoveryApi`/`_FakeDiscoveryApi`): старт без сессии, успешный login
+  (токены сохранены, `AuthTokenHolder` обновлён), неудачный login
+  (ошибка, токены не сохранены), восстановление сессии по сохранённому
+  токену, logout (всё очищено). `flutter analyze` — чисто, `flutter
+  test` — 8/8 (5 auth + 2 discovery + 1 smoke).
+- **Живая проверка в браузере** (`flutter run -d chrome` + реальный
+  backend): полный цикл register → автоматический вход (имя/email видны,
+  кнопка Log out) → logout → снова экран входа — подтверждено
+  скриншотами, отправленными пользователю. По пути поймал и исправил
+  свою же ошибку автоматизации: `SendKeys` интерпретировал `+` в номере
+  телефона как модификатор Shift — исказило тестовый ввод, но это баг
+  скрипта тестирования, не приложения.
+- **Находка**: при первом запуске `flutter run -d chrome` в этой сессии
+  однажды столкнулись с `Failed to fetch dynamically imported module:
+  https://www.gstatic.com/flutter-canvaskit/.../canvaskit.js` — похоже на
+  разовый сетевой сбой при загрузке CanvasKit-рендерера с CDN (тот же
+  CDN до и после отрабатывал нормально в этой же сессии). Если повторится
+  — просто перезапустить `flutter run`, не искать более глубокую причину
+  сразу.
+
+### Текущий статус
+Всё застейджено, **не закоммичено** — ждём подтверждения.
+
 ## Следующий шаг
-Auth-backend готов, но ещё **не подключён во Flutter** (нет экрана
-логина/регистрации, нет хранения токенов через `core_storage`, нет
-Dio-интерцептора с Authorization-заголовком). Это следующий логичный шаг
-перед тем, как реализовывать booking-UI (выбор слота, создание брони) и
-favorites-UI — обоим нужен реальный "текущий пользователь" из auth.
-Maps (часть Phase 2 по roadmap, ещё не сделана) требует выбора внешнего
-провайдера карт (Google Maps/Mapbox/OSM) и API-ключей — это решение,
-которое стоит явно обсудить с пользователем, а не выбирать единолично.
+Auth полностью готов (backend + Flutter) — теперь есть реальный "текущий
+пользователь", можно строить booking-UI (выбор слота, создание брони) и
+favorites (backend ещё не сделан, часть Phase 2 по roadmap). Maps
+(тоже часть Phase 2) по-прежнему требует решения пользователя о внешнем
+провайдере карт/API-ключах.
