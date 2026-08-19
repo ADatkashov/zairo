@@ -1,17 +1,43 @@
-# zairo
+# app-factory
 
-A new Flutter project.
+Монорепозиторий платформы Factory — набора переиспользуемых Flutter +
+Spring Boot модулей для быстрой сборки сервисных marketplace-приложений.
+Первый vertical — Beauty.
 
-## Getting Started
+`Factory` — рабочее кодовое имя, не финальный бренд.
 
-This project is a starting point for a Flutter application.
+Полный план discovery/architecture: `docs/factory-blueprint.md` (или см.
+опубликованный артефакт из сессии planning).
 
-A few resources to get you started if this is your first Flutter project:
+## Структура
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+```
+apps/            конечные Flutter-приложения (тонкая сборка поверх packages/)
+packages/        Factory Core — переиспользуемые Flutter-пакеты
+verticals/       бизнес-логика конкретных отраслей (Beauty, Auto, ...)
+backend/         Spring Boot, modular monolith
+infrastructure/  docker-compose, CI
+docs/adr/        architecture decision records
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Flutter workspace
+
+Пакеты в `apps/` и `packages/` связаны обычными path-зависимостями в
+`pubspec.yaml` — работают через `flutter pub get` без дополнительных
+инструментов. [Melos](https://melos.invertase.dev) (`melos.yaml` в корне)
+используется как удобство для запуска команд сразу по всем пакетам:
+
+```
+dart pub global activate melos
+melos bootstrap
+melos run analyze
+melos run test
+```
+
+## Текущее состояние
+
+- `apps/user_app` — клиентское приложение (бывший `zairo`).
+- `packages/core_network` — generic HTTP-клиент (Dio) + сетевые ошибки.
+- `packages/core_storage` — secure key/value storage.
+- `verticals/`, `backend/`, `infrastructure/` — скелет, наполняются по
+  роадмапу (см. Phase 2+).

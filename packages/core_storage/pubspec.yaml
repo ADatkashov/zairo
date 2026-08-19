@@ -1,0 +1,22 @@
+name: core_storage
+description: Factory Core — secure key/value storage. No knowledge of any app or vertical.
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.6.1
+  flutter_secure_storage: ^11.0.0
+  core_network:
+    path: ../core_network
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
