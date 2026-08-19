@@ -238,10 +238,48 @@ Spring Boot 4.1 сильно раздробил монолитный `spring-boo
   `@EntityScan`/`@EnableJpaRepositories(basePackages = "com.zairo.factory")`
   на `PlatformApiApplication`.
 
+**Шаг 1 закоммичен и запушен** (`d4678af`).
+
+### Шаг 2 — Availability + Booking (сделано)
+- Модуль `booking` (владеет `AvailabilitySlot` + `Booking` по таблице
+  владения из ERD): сущности, репозитории, REST CRUD.
+- `AvailabilitySlot` использует `@Version` (JPA optimistic locking) на
+  переходе `OPEN → BOOKED` — конкурентные запросы на один и тот же слот не
+  могут оба выиграть; проигравший получает
+  `OptimisticLockingFailureException`, который `BookingService` превращает
+  в `409 Conflict` (`SlotNotAvailableException` + `@ResponseStatus`).
+- `BookingService.createBooking` — одна транзакция: проверяет `slot.status
+  == OPEN`, помечает слот `BOOKED`, создаёт `Booking` со статусом
+  `CONFIRMED`, публикует `BookingConfirmedEvent` через
+  `ApplicationEventPublisher` (см. ADR-0002).
+- `BookingConfirmedEventListener` — `@TransactionalEventListener(phase =
+  AFTER_COMMIT)`, пока просто логирует; это заглушка-доказательство, что
+  механизм событий работает end-to-end. Реальный слушатель (например,
+  отправка уведомления) появится, когда у `notifications`-модуля будет что
+  реально отправлять — не тянул эту связь заранее.
+- `userId`/`serviceId` в `Booking` — только UUID, без Java-зависимости
+  модуля `booking` на `users`/`services` (граница bounded context
+  соблюдена и на уровне кода, не только БД).
+- `totalPrice` для бронирования передаётся клиентом в запросе (клиент уже
+  получил цену через `GET /api/v1/services/{id}`), а не пересчитывается на
+  сервере через прямой вызов `services`-модуля — осознанное упрощение,
+  чтобы не создавать Java-зависимость `booking → services`. Пересмотреть,
+  когда появится реальная бизнес-логика ценообразования (скидки, промо).
+- Flyway `V4` (`availability_slot`, с колонкой `version`), `V5` (`booking`,
+  уникальный индекс на `availability_slot_id` — защита от двойного букинга
+  и на уровне БД, не только в приложении).
+- Тесты на реальном Postgres (Testcontainers): `BookingApiTests` — полный
+  флоу owner → provider → service → slot → booking, и явная проверка, что
+  второе бронирование того же слота возвращает `409`.
+- Вручную проверено: `docker compose up postgres` + `bootRun` + curl —
+  первое бронирование `201/CONFIRMED`, повторное на тот же слот `409`,
+  список броней пользователя показывает одну запись.
+- `./gradlew build` — BUILD SUCCESSFUL с первой попытки (все находки про
+  Spring Boot 4.1 модуляризацию из шага 1 уже были учтены).
+
 ### Текущий статус
 Всё застейджено, **не закоммичено** — ждём подтверждения.
 
-## Следующий шаг — Phase 2, шаг 2 (не начат)
-Availability + Booking: слоты доступности провайдера, создание бронирования
-с проверкой конфликтов, доменное событие "booking подтверждён"
-(`ApplicationEventPublisher`/`@TransactionalEventListener`, см. ADR-0002).
+## Следующий шаг — Phase 2, шаг 3 (не начат)
+Reviews: отзыв на завершённое бронирование (`REVIEW` из ERD, `rating`
+1..5, привязка к `booking_id`).
