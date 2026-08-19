@@ -38,6 +38,11 @@ public class BookingController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: " + id));
     }
 
+    @PostMapping("/api/v1/bookings/{id}/complete")
+    public BookingResponse complete(@PathVariable UUID id) {
+        return BookingResponse.from(bookingService.completeBooking(id));
+    }
+
     @GetMapping("/api/v1/users/{userId}/bookings")
     public List<BookingResponse> listByUser(@PathVariable UUID userId) {
         return bookingRepository.findByUserId(userId).stream().map(BookingResponse::from).toList();

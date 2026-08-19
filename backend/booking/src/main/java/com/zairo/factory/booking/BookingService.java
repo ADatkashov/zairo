@@ -56,4 +56,24 @@ public class BookingService {
         eventPublisher.publishEvent(new BookingConfirmedEvent(booking.getId(), userId, slot.getProviderId()));
         return booking;
     }
+
+    /**
+     * Marks a confirmed booking as completed — the gate reviews checks
+     * before accepting a review (see reviews module package-info: "no
+     * review without a verified visit").
+     */
+    @Transactional
+    public Booking completeBooking(UUID bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
+                        + bookingId));
+
+        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new InvalidBookingStateException("Booking is not in a completable state: " + bookingId
+                    + " (status=" + booking.getStatus() + ")");
+        }
+
+        booking.markCompleted();
+        return bookingRepository.save(booking);
+    }
 }

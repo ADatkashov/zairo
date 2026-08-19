@@ -82,4 +82,8 @@ public class Booking {
     public Instant getCreatedAt() {
         return createdAt;
     }
+
+    void markCompleted() {
+        this.status = BookingStatus.COMPLETED;
+    }
 }

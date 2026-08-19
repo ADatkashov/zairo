@@ -277,9 +277,48 @@ Spring Boot 4.1 сильно раздробил монолитный `spring-boo
 - `./gradlew build` — BUILD SUCCESSFUL с первой попытки (все находки про
   Spring Boot 4.1 модуляризацию из шага 1 уже были учтены).
 
+**Шаг 2 закоммичен и запушен** (`89b6b57`).
+
+### Шаг 3 — Reviews (сделано)
+- Обнаружил, что `package-info.java` модуля `reviews`, написанный ещё на
+  Phase 1, уже фиксировал намерение: «a review requires a completed
+  Booking — trust comes from verified visits, not free-form account
+  creation». Это заставило расширить шаг: понадобился реальный переход
+  бронирования в `COMPLETED`, которого раньше не было.
+- `BookingService.completeBooking` (модуль `booking`) — `CONFIRMED →
+  COMPLETED`, `409` через новый `InvalidBookingStateException`, если
+  бронирование не в статусе `CONFIRMED`. Endpoint
+  `POST /api/v1/bookings/{id}/complete`.
+- `Review` (модуль `reviews`, таблица `review`): `bookingId` (unique),
+  `rating` (1..5, проверяется и в приложении, и `CHECK`-constraint в БД),
+  `comment`, `createdAt`.
+- **Осознанное исключение из правила "только по ID"**: `reviews` имеет
+  прямую Gradle-зависимость на `booking` (`implementation(project(":booking"))`)
+  и читает `BookingRepository` напрямую, чтобы проверить
+  `booking.status == COMPLETED` перед созданием отзыва. В отличие от связи
+  `booking → users/services` (которой достаточно UUID для ассоциации),
+  здесь нужна проверка реального инварианта доверия ("visit действительно
+  состоялся") — это не просто ссылка на запись, а серверная валидация,
+  которую нельзя доверить клиенту. Направление одностороннее (`reviews →
+  booking`), циклов нет. Задокументировано прямо в `reviews/build.gradle.kts`.
+- `ReviewService.createReview`: `400`, если `rating` вне 1..5; `404`, если
+  бронирования не существует; `409`, если бронирование не `COMPLETED`;
+  `409`, если отзыв на это бронирование уже есть (один отзыв на
+  бронирование, как в ERD: `BOOKING ||--o| REVIEW`).
+- Flyway `V6` (`review`, `CHECK (rating between 1 and 5)`, `unique` на
+  `booking_id`).
+- Тесты на реальном Postgres (Testcontainers): `ReviewApiTests` — полный
+  флоу owner → provider → service → slot → booking → complete → review, с
+  явными проверками всех веток (отзыв до завершения → 409, невалидный
+  рейтинг → 400, дубль отзыва → 409).
+- Вручную проверено: `docker compose up postgres` + `bootRun` + curl —
+  все пять сценариев подтверждены кодами ответа именно как задумано.
+- `./gradlew build` — BUILD SUCCESSFUL с первой попытки.
+
 ### Текущий статус
 Всё застейджено, **не закоммичено** — ждём подтверждения.
 
-## Следующий шаг — Phase 2, шаг 3 (не начат)
-Reviews: отзыв на завершённое бронирование (`REVIEW` из ERD, `rating`
-1..5, привязка к `booking_id`).
+## Следующий шаг — Phase 2, шаг 4 (не начат)
+Search: простой list/filter провайдеров (без Elasticsearch, обычный
+DB-запрос) — карты и полнотекстовый поиск сознательно отложены (см.
+Factory Blueprint §19).
