@@ -10,32 +10,165 @@ import '../providers/salon_providers.dart';
 import '../widgets/add_service_dialog.dart';
 import '../widgets/add_slot_dialog.dart';
 
-class SalonDetailScreen extends StatelessWidget {
+class SalonDetailScreen extends ConsumerStatefulWidget {
   final AdminProvider provider;
 
   const SalonDetailScreen({super.key, required this.provider});
 
   @override
+  ConsumerState<SalonDetailScreen> createState() => _SalonDetailScreenState();
+}
+
+class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
+  late AdminProvider _provider = widget.provider;
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(provider.name)),
+      appBar: AppBar(
+        title: Text(_provider.name),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: 'Edit salon',
+            onPressed: () async {
+              final updated = await showDialog<AdminProvider>(
+                context: context,
+                builder: (_) => _EditSalonDialog(provider: _provider),
+              );
+              if (updated != null) {
+                setState(() => _provider = updated);
+                ref.invalidate(myProvidersProvider(_provider.ownerUserId));
+              }
+            },
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text('${provider.vertical} — ${provider.status}', style: Theme.of(context).textTheme.bodySmall),
+          Text('${_provider.vertical} — ${_provider.status}', style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 16),
-          _ServicesSection(providerId: provider.id),
+          _ServicesSection(providerId: _provider.id),
           const SizedBox(height: 24),
-          _AvailabilitySection(providerId: provider.id),
-          if (provider.vertical == 'beauty') ...[
+          _AvailabilitySection(providerId: _provider.id),
+          if (_provider.vertical == 'beauty') ...[
             const SizedBox(height: 24),
-            _MastersSection(providerId: provider.id),
+            _MastersSection(providerId: _provider.id),
           ],
           const SizedBox(height: 24),
-          _BookingsSection(providerId: provider.id),
+          _BookingsSection(providerId: _provider.id),
         ],
       ),
     );
+  }
+}
+
+/// Owner-editable fields only — vertical and status aren't here on purpose,
+/// see backend's Provider.update() for why.
+class _EditSalonDialog extends ConsumerStatefulWidget {
+  final AdminProvider provider;
+
+  const _EditSalonDialog({required this.provider});
+
+  @override
+  ConsumerState<_EditSalonDialog> createState() => _EditSalonDialogState();
+}
+
+class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
+  late final _nameController = TextEditingController(text: widget.provider.name);
+  late final _latController = TextEditingController(text: widget.provider.latitude?.toString() ?? '');
+  late final _lngController = TextEditingController(text: widget.provider.longitude?.toString() ?? '');
+  bool _isSubmitting = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _latController.dispose();
+    _lngController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit salon'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _nameController,
+            enabled: !_isSubmitting,
+            decoration: const InputDecoration(labelText: 'Salon name'),
+          ),
+          TextField(
+            controller: _latController,
+            enabled: !_isSubmitting,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+            decoration: const InputDecoration(labelText: 'Latitude (optional)'),
+          ),
+          TextField(
+            controller: _lngController,
+            enabled: !_isSubmitting,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+            decoration: const InputDecoration(labelText: 'Longitude (optional)'),
+          ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _isSubmitting ? null : _submit,
+          child: _isSubmitting
+              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Text('Save'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      setState(() => _error = 'Enter a salon name');
+      return;
+    }
+    final latText = _latController.text.trim();
+    final lngText = _lngController.text.trim();
+    final lat = latText.isEmpty ? null : double.tryParse(latText);
+    final lng = lngText.isEmpty ? null : double.tryParse(lngText);
+    if ((latText.isNotEmpty && lat == null) || (lngText.isNotEmpty && lng == null)) {
+      setState(() => _error = 'Latitude/longitude must be valid numbers');
+      return;
+    }
+    setState(() {
+      _isSubmitting = true;
+      _error = null;
+    });
+    try {
+      final updated = await ref.read(salonAdminApiProvider).updateProvider(
+            providerId: widget.provider.id,
+            name: name,
+            latitude: lat,
+            longitude: lng,
+          );
+      if (!mounted) return;
+      Navigator.of(context).pop(updated);
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to save salon: $e';
+        _isSubmitting = false;
+      });
+    }
   }
 }
 
@@ -46,7 +179,9 @@ class _ServicesSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final servicesAsync = ref.watch(providerServicesProvider(providerId));
+    final showInactive = ref.watch(showInactiveServicesProvider(providerId));
+    final servicesAsync = ref.watch(providerServicesProvider((providerId, showInactive)));
+    void refresh() => ref.invalidate(providerServicesProvider((providerId, showInactive)));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -54,52 +189,73 @@ class _ServicesSection extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text('Services', style: Theme.of(context).textTheme.titleMedium),
-            TextButton.icon(
-              icon: const Icon(Icons.add),
-              label: const Text('Add'),
-              onPressed: () async {
-                final added = await showDialog<bool>(
-                  context: context,
-                  builder: (_) => AddServiceDialog(providerId: providerId),
-                );
-                if (added == true) ref.invalidate(providerServicesProvider(providerId));
-              },
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextButton(
+                  onPressed: () =>
+                      ref.read(showInactiveServicesProvider(providerId).notifier).state = !showInactive,
+                  child: Text(showInactive ? 'Hide removed' : 'Show removed'),
+                ),
+                TextButton.icon(
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add'),
+                  onPressed: () async {
+                    final added = await showDialog<bool>(
+                      context: context,
+                      builder: (_) => AddServiceDialog(providerId: providerId),
+                    );
+                    if (added == true) refresh();
+                  },
+                ),
+              ],
             ),
           ],
         ),
         servicesAsync.when(
           data: (services) {
-            if (services.isEmpty) return const Text('No services yet.');
+            if (services.isEmpty) {
+              return Text(showInactive ? 'No services yet.' : 'No active services.');
+            }
             return Column(
               children: services
                   .map((s) => ListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: Text(s.title),
-                        subtitle: Text('${s.durationMinutes} min — \$${s.price.toStringAsFixed(2)}'),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit_outlined),
-                              tooltip: 'Edit',
-                              onPressed: () async {
-                                final saved = await showDialog<bool>(
-                                  context: context,
-                                  builder: (_) => AddServiceDialog(providerId: providerId, existing: s),
-                                );
-                                if (saved == true) ref.invalidate(providerServicesProvider(providerId));
-                              },
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline),
-                              tooltip: 'Remove',
-                              onPressed: () async {
-                                await ref.read(salonAdminApiProvider).deactivateService(s.id);
-                                ref.invalidate(providerServicesProvider(providerId));
-                              },
-                            ),
-                          ],
-                        ),
+                        title: Text(s.title, style: s.active ? null : const TextStyle(color: Colors.grey)),
+                        subtitle: Text('${s.durationMinutes} min — \$${s.price.toStringAsFixed(2)}'
+                            '${s.active ? '' : ' — removed'}'),
+                        trailing: s.active
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit_outlined),
+                                    tooltip: 'Edit',
+                                    onPressed: () async {
+                                      final saved = await showDialog<bool>(
+                                        context: context,
+                                        builder: (_) => AddServiceDialog(providerId: providerId, existing: s),
+                                      );
+                                      if (saved == true) refresh();
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline),
+                                    tooltip: 'Remove',
+                                    onPressed: () async {
+                                      await ref.read(salonAdminApiProvider).deactivateService(s.id);
+                                      refresh();
+                                    },
+                                  ),
+                                ],
+                              )
+                            : TextButton(
+                                onPressed: () async {
+                                  await ref.read(salonAdminApiProvider).reactivateService(s.id);
+                                  refresh();
+                                },
+                                child: const Text('Reactivate'),
+                              ),
                       ))
                   .toList(),
             );
@@ -183,7 +339,9 @@ class _MastersSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final mastersAsync = ref.watch(adminMastersProvider(providerId));
+    final showInactive = ref.watch(showInactiveMastersProvider(providerId));
+    final mastersAsync = ref.watch(adminMastersProvider((providerId, showInactive)));
+    void refresh() => ref.invalidate(adminMastersProvider((providerId, showInactive)));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -191,58 +349,81 @@ class _MastersSection extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text('Masters', style: Theme.of(context).textTheme.titleMedium),
-            TextButton.icon(
-              icon: const Icon(Icons.add),
-              label: const Text('Add'),
-              onPressed: () async {
-                final added = await showDialog<bool>(
-                  context: context,
-                  builder: (_) => AddMasterDialog(providerId: providerId),
-                );
-                if (added == true) ref.invalidate(adminMastersProvider(providerId));
-              },
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextButton(
+                  onPressed: () =>
+                      ref.read(showInactiveMastersProvider(providerId).notifier).state = !showInactive,
+                  child: Text(showInactive ? 'Hide removed' : 'Show removed'),
+                ),
+                TextButton.icon(
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add'),
+                  onPressed: () async {
+                    final added = await showDialog<bool>(
+                      context: context,
+                      builder: (_) => AddMasterDialog(providerId: providerId),
+                    );
+                    if (added == true) refresh();
+                  },
+                ),
+              ],
             ),
           ],
         ),
         mastersAsync.when(
           data: (masters) {
-            if (masters.isEmpty) return const Text('No masters yet.');
+            if (masters.isEmpty) {
+              return Text(showInactive ? 'No masters yet.' : 'No active masters.');
+            }
             return Column(
               children: masters
                   .map((m) => Card(
                         child: ListTile(
-                          title: Text(m.displayName),
-                          subtitle: m.bio != null ? Text(m.bio!) : null,
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.design_services_outlined),
-                                tooltip: 'Services this master offers',
-                                onPressed: () => showDialog(
-                                  context: context,
-                                  builder: (_) =>
-                                      ManageMasterServicesDialog(providerId: providerId, masterId: m.id),
+                          title: Text(m.displayName, style: m.active ? null : const TextStyle(color: Colors.grey)),
+                          subtitle: Text([
+                            if (m.bio != null) m.bio!,
+                            if (!m.active) 'removed',
+                          ].join(' — ')),
+                          trailing: m.active
+                              ? Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.design_services_outlined),
+                                      tooltip: 'Services this master offers',
+                                      onPressed: () => showDialog(
+                                        context: context,
+                                        builder: (_) =>
+                                            ManageMasterServicesDialog(providerId: providerId, masterId: m.id),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.add_a_photo_outlined),
+                                      tooltip: 'Add portfolio photo',
+                                      onPressed: () => showDialog<bool>(
+                                        context: context,
+                                        builder: (_) => AddPortfolioItemDialog(masterId: m.id),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.person_remove_outlined),
+                                      tooltip: 'Remove master',
+                                      onPressed: () async {
+                                        await ref.read(beautyAdminApiProvider).deactivateMaster(m.id);
+                                        refresh();
+                                      },
+                                    ),
+                                  ],
+                                )
+                              : TextButton(
+                                  onPressed: () async {
+                                    await ref.read(beautyAdminApiProvider).reactivateMaster(m.id);
+                                    refresh();
+                                  },
+                                  child: const Text('Reactivate'),
                                 ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.add_a_photo_outlined),
-                                tooltip: 'Add portfolio photo',
-                                onPressed: () => showDialog<bool>(
-                                  context: context,
-                                  builder: (_) => AddPortfolioItemDialog(masterId: m.id),
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.person_remove_outlined),
-                                tooltip: 'Remove master',
-                                onPressed: () async {
-                                  await ref.read(beautyAdminApiProvider).deactivateMaster(m.id);
-                                  ref.invalidate(adminMastersProvider(providerId));
-                                },
-                              ),
-                            ],
-                          ),
                         ),
                       ))
                   .toList(),

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -31,29 +32,29 @@ public class ServiceOfferingController {
         this.providerOwnership = providerOwnership;
     }
 
-    /**
-     * Deliberately NOT ownership-checked yet, unlike update/deactivate below
-     * — creation is still exercised as a plain test fixture across most of
-     * the *ApiTests suite (search/reviews/favorites/payments/...), none of
-     * which care about auth. Locking down "who can create a service under a
-     * provider" is a real gap worth closing, but retrofitting auth into
-     * every one of those unrelated test files is a much bigger, separate
-     * change from "the owner can't be impersonated when editing/deleting
-     * something that already exists" — the actual risk this pass closes.
-     */
+    /** Owner-only. */
     @PostMapping("/api/v1/providers/{providerId}/services")
     @ResponseStatus(HttpStatus.CREATED)
-    public ServiceResponse create(@PathVariable UUID providerId, @RequestBody CreateServiceRequest request) {
+    public ServiceResponse create(@PathVariable UUID providerId, @RequestBody CreateServiceRequest request,
+            HttpServletRequest httpRequest) {
+        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         ServiceOffering service = new ServiceOffering(UUID.randomUUID(), providerId, request.title(),
                 request.durationMinutes(), request.price(), request.currency(), true);
         return ServiceResponse.from(serviceOfferingRepository.save(service));
     }
 
-    /** Only active services — a deactivated one (see deactivate() below) drops out of both this listing and search. */
+    /**
+     * Active services by default — a deactivated one (see deactivate()
+     * below) drops out of both this listing and search. Business Admin
+     * passes includeInactive=true to also show deactivated services (with
+     * a reactivate action); nothing else needs to see them.
+     */
     @GetMapping("/api/v1/providers/{providerId}/services")
-    public List<ServiceResponse> listByProvider(@PathVariable UUID providerId) {
-        return serviceOfferingRepository.findByProviderIdAndActiveTrue(providerId).stream().map(ServiceResponse::from)
-                .toList();
+    public List<ServiceResponse> listByProvider(@PathVariable UUID providerId,
+            @RequestParam(defaultValue = "false") boolean includeInactive) {
+        List<ServiceOffering> services = includeInactive ? serviceOfferingRepository.findByProviderId(providerId)
+                : serviceOfferingRepository.findByProviderIdAndActiveTrue(providerId);
+        return services.stream().map(ServiceResponse::from).toList();
     }
 
     @GetMapping("/api/v1/services/{id}")
@@ -62,6 +63,7 @@ public class ServiceOfferingController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found: " + id));
     }
 
+    /** Owner-only. */
     @PutMapping("/api/v1/services/{id}")
     public ServiceResponse update(@PathVariable UUID id, @RequestBody UpdateServiceRequest request,
             HttpServletRequest httpRequest) {
@@ -72,7 +74,7 @@ public class ServiceOfferingController {
         return ServiceResponse.from(serviceOfferingRepository.save(service));
     }
 
-    /** Soft-delete (active=false) — existing bookings still reference this service by id, see ServiceOffering.deactivate(). Idempotent. */
+    /** Soft-delete (active=false) — existing bookings still reference this service by id, see ServiceOffering.deactivate(). Owner-only, idempotent. */
     @DeleteMapping("/api/v1/services/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deactivate(@PathVariable UUID id, HttpServletRequest httpRequest) {
@@ -81,5 +83,15 @@ public class ServiceOfferingController {
             service.deactivate();
             serviceOfferingRepository.save(service);
         });
+    }
+
+    /** Owner-only, idempotent — undoes deactivate(). */
+    @PostMapping("/api/v1/services/{id}/reactivate")
+    public ServiceResponse reactivate(@PathVariable UUID id, HttpServletRequest httpRequest) {
+        ServiceOffering service = serviceOfferingRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found: " + id));
+        providerOwnership.requireOwner(service.getProviderId(), CurrentUser.requireUserId(httpRequest));
+        service.reactivate();
+        return ServiceResponse.from(serviceOfferingRepository.save(service));
     }
 }

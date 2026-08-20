@@ -7,6 +7,8 @@ class AdminProvider {
   final String name;
   final String vertical;
   final String status;
+  final double? latitude;
+  final double? longitude;
 
   const AdminProvider({
     required this.id,
@@ -14,6 +16,8 @@ class AdminProvider {
     required this.name,
     required this.vertical,
     required this.status,
+    this.latitude,
+    this.longitude,
   });
 
   factory AdminProvider.fromJson(Map<String, dynamic> json) {
@@ -23,6 +27,8 @@ class AdminProvider {
       name: json['name'] as String,
       vertical: json['vertical'] as String,
       status: json['status'] as String,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
     );
   }
 }

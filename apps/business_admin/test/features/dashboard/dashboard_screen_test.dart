@@ -38,7 +38,7 @@ class _FakeSalonAdminApi extends SalonAdminApi {
   }
 
   @override
-  Future<List<AdminService>> listServices(String providerId) async => const [];
+  Future<List<AdminService>> listServices(String providerId, {bool includeInactive = false}) async => const [];
 
   @override
   Future<List<AdminSlot>> listSlots(String providerId) async => const [];
@@ -51,7 +51,7 @@ class _FakeBeautyAdminApi extends BeautyAdminApi {
   _FakeBeautyAdminApi() : super(DioClient(Dio()));
 
   @override
-  Future<List<AdminMaster>> listMasters(String providerId) async => const [];
+  Future<List<AdminMaster>> listMasters(String providerId, {bool includeInactive = false}) async => const [];
 }
 
 class _LoggedInOwnerController extends AuthController {

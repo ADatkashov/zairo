@@ -10,9 +10,15 @@ final beautyAdminApiProvider = Provider<BeautyAdminApi>((ref) {
   return BeautyAdminApi(ref.watch(dioClientProvider));
 });
 
-final adminMastersProvider = FutureProvider.autoDispose.family<List<AdminMaster>, String>((ref, providerId) {
-  return ref.watch(beautyAdminApiProvider).listMasters(providerId);
+/// Keyed by (providerId, includeInactive) — same structural-equality-key
+/// pattern as providerServicesProvider.
+final adminMastersProvider =
+    FutureProvider.autoDispose.family<List<AdminMaster>, (String providerId, bool includeInactive)>((ref, key) {
+  return ref.watch(beautyAdminApiProvider).listMasters(key.$1, includeInactive: key.$2);
 });
+
+/// "Show removed" toggle for the masters section, per salon.
+final showInactiveMastersProvider = StateProvider.autoDispose.family<bool, String>((ref, providerId) => false);
 
 final adminMasterPortfolioProvider =
     FutureProvider.autoDispose.family<List<AdminPortfolioItem>, String>((ref, masterId) {

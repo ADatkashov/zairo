@@ -13,8 +13,11 @@ class BeautyAdminApi {
 
   BeautyAdminApi(this._dioClient);
 
-  Future<List<AdminMaster>> listMasters(String providerId) async {
-    final response = await _dioClient.get('/beauty/providers/$providerId/masters');
+  Future<List<AdminMaster>> listMasters(String providerId, {bool includeInactive = false}) async {
+    final response = await _dioClient.get(
+      '/beauty/providers/$providerId/masters',
+      queryParameters: {'includeInactive': includeInactive},
+    );
     final data = response.data as List<dynamic>;
     return data.map((e) => AdminMaster.fromJson(e as Map<String, dynamic>)).toList();
   }
@@ -67,5 +70,11 @@ class BeautyAdminApi {
   /// stop appearing in provider listings (both here and in the customer app).
   Future<void> deactivateMaster(String masterId) {
     return _dioClient.delete('/beauty/masters/$masterId');
+  }
+
+  /// Owner-only, idempotent — undoes deactivateMaster().
+  Future<AdminMaster> reactivateMaster(String masterId) async {
+    final response = await _dioClient.post('/beauty/masters/$masterId/reactivate');
+    return AdminMaster.fromJson(response.data as Map<String, dynamic>);
   }
 }

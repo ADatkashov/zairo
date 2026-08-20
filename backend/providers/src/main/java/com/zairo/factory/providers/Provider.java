@@ -101,4 +101,17 @@ public class Provider {
     public Double getLongitude() {
         return longitude;
     }
+
+    /**
+     * Owner-editable fields only — {@code vertical} isn't here on purpose
+     * (changing it would orphan vertical-specific data like beauty
+     * masters), and neither is {@code status} (a moderation/lifecycle
+     * field, not something the owner self-toggles — no admin console
+     * exists yet to drive it either, so it stays PENDING/whatever it was).
+     */
+    void update(String name, Double latitude, Double longitude) {
+        this.name = name;
+        this.latitude = latitude;
+        this.longitude = longitude;
+    }
 }

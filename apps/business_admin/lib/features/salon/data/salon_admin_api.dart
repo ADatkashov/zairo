@@ -33,8 +33,26 @@ class SalonAdminApi {
     return AdminProvider.fromJson(response.data as Map<String, dynamic>);
   }
 
-  Future<List<AdminService>> listServices(String providerId) async {
-    final response = await _dioClient.get('/providers/$providerId/services');
+  /// Owner-only (see backend's ProviderController.update()). Name and
+  /// location only — vertical and status aren't owner-editable.
+  Future<AdminProvider> updateProvider({
+    required String providerId,
+    required String name,
+    double? latitude,
+    double? longitude,
+  }) async {
+    final response = await _dioClient.put(
+      '/providers/$providerId',
+      data: {'name': name, 'latitude': latitude, 'longitude': longitude},
+    );
+    return AdminProvider.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<List<AdminService>> listServices(String providerId, {bool includeInactive = false}) async {
+    final response = await _dioClient.get(
+      '/providers/$providerId/services',
+      queryParameters: {'includeInactive': includeInactive},
+    );
     final data = response.data as List<dynamic>;
     return data.map((e) => AdminService.fromJson(e as Map<String, dynamic>)).toList();
   }
@@ -82,6 +100,12 @@ class SalonAdminApi {
   /// ServiceOffering.deactivate()).
   Future<void> deactivateService(String serviceId) {
     return _dioClient.delete('/services/$serviceId');
+  }
+
+  /// Owner-only, idempotent — undoes deactivateService().
+  Future<AdminService> reactivateService(String serviceId) async {
+    final response = await _dioClient.post('/services/$serviceId/reactivate');
+    return AdminService.fromJson(response.data as Map<String, dynamic>);
   }
 
   Future<List<AdminSlot>> listSlots(String providerId) async {

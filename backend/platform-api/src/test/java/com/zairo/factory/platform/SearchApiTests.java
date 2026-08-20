@@ -3,10 +3,9 @@ package com.zairo.factory.platform;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequest;
+import com.zairo.factory.platform.TestAuth.Registered;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
-import com.zairo.factory.users.UserDtos.CreateUserRequest;
-import com.zairo.factory.users.UserRole;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -19,6 +18,8 @@ import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -49,18 +50,18 @@ class SearchApiTests {
         String runId = UUID.randomUUID().toString();
         String verticalBeauty = "beauty-" + runId;
         String verticalAuto = "auto-" + runId;
-        UUID ownerId = createUser("search-owner-" + runId + "@example.com", "Search Owner");
+        Registered owner = TestAuth.registerOwner(restTemplate, "search-owner-" + runId + "@example.com");
 
-        UUID providerA = createProvider(ownerId, "Hair Studio A " + runId, verticalBeauty);
-        createService(providerA, "Haircut", new BigDecimal("30.00"));
-        createOpenSlot(providerA);
+        UUID providerA = createProvider(owner, "Hair Studio A " + runId, verticalBeauty);
+        createService(owner, providerA, "Haircut", new BigDecimal("30.00"));
+        createOpenSlot(owner, providerA);
 
-        UUID providerB = createProvider(ownerId, "Beauty Bar B " + runId, verticalBeauty);
-        createService(providerB, "Massage", new BigDecimal("20.00"));
+        UUID providerB = createProvider(owner, "Beauty Bar B " + runId, verticalBeauty);
+        createService(owner, providerB, "Massage", new BigDecimal("20.00"));
         // no availability slot for B
 
-        UUID providerC = createProvider(ownerId, "Quick Lube C " + runId, verticalAuto);
-        createService(providerC, "Oil change", new BigDecimal("15.00"));
+        UUID providerC = createProvider(owner, "Quick Lube C " + runId, verticalAuto);
+        createService(owner, providerC, "Oil change", new BigDecimal("15.00"));
         // no availability slot for C
 
         List<Map> beautyResults = search(verticalBeauty, null);
@@ -81,21 +82,21 @@ class SearchApiTests {
     void ranksByDistanceWhenTheCallerSuppliesItsLocation() {
         String runId = UUID.randomUUID().toString();
         String vertical = "beauty-dist-" + runId;
-        UUID ownerId = createUser("dist-owner-" + runId + "@example.com", "Dist Owner");
+        Registered owner = TestAuth.registerOwner(restTemplate, "dist-owner-" + runId + "@example.com");
 
         // Almaty city center as the search origin.
         double originLat = 43.2389;
         double originLng = 76.8897;
 
         // Near: a few km away.
-        UUID providerNear = createProvider(ownerId, "Near Salon " + runId, vertical, 43.25, 76.90);
-        createService(providerNear, "Cut", new BigDecimal("20.00"));
-        createOpenSlot(providerNear);
+        UUID providerNear = createProvider(owner, "Near Salon " + runId, vertical, 43.25, 76.90);
+        createService(owner, providerNear, "Cut", new BigDecimal("20.00"));
+        createOpenSlot(owner, providerNear);
 
         // Far: a different city entirely (Astana), hundreds of km away.
-        UUID providerFar = createProvider(ownerId, "Far Salon " + runId, vertical, 51.1694, 71.4491);
-        createService(providerFar, "Cut", new BigDecimal("20.00"));
-        createOpenSlot(providerFar);
+        UUID providerFar = createProvider(owner, "Far Salon " + runId, vertical, 51.1694, 71.4491);
+        createService(owner, providerFar, "Cut", new BigDecimal("20.00"));
+        createOpenSlot(owner, providerFar);
 
         List<Map> results = search(vertical, null, originLat, originLng);
         assertThat(results).extracting(r -> r.get("id")).containsExactly(providerNear.toString(),
@@ -125,32 +126,35 @@ class SearchApiTests {
         return List.of(response.getBody());
     }
 
-    private UUID createProvider(UUID ownerId, String name, String vertical) {
-        var request = new CreateProviderRequest(ownerId, name, vertical);
-        Map<?, ?> body = restTemplate.postForEntity("/api/v1/providers", request, Map.class).getBody();
-        return UUID.fromString(body.get("id").toString());
+    private UUID createProvider(Registered owner, String name, String vertical) {
+        var request = new CreateProviderRequest(owner.userId(), name, vertical);
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
+                new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        return UUID.fromString(response.getBody().get("id").toString());
     }
 
-    private UUID createProvider(UUID ownerId, String name, String vertical, double latitude, double longitude) {
-        var request = new CreateProviderRequest(ownerId, name, vertical, latitude, longitude);
-        Map<?, ?> body = restTemplate.postForEntity("/api/v1/providers", request, Map.class).getBody();
-        return UUID.fromString(body.get("id").toString());
+    private UUID createProvider(Registered owner, String name, String vertical, double latitude, double longitude) {
+        var request = new CreateProviderRequest(owner.userId(), name, vertical, latitude, longitude);
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
+                new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        return UUID.fromString(response.getBody().get("id").toString());
     }
 
-    private void createService(UUID providerId, String title, BigDecimal price) {
+    private void createService(Registered owner, UUID providerId, String title, BigDecimal price) {
         var request = new CreateServiceRequest(title, 30, price, "USD");
-        restTemplate.postForEntity("/api/v1/providers/" + providerId + "/services", request, Map.class);
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers/" + providerId + "/services",
+                HttpMethod.POST, new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 
-    private void createOpenSlot(UUID providerId) {
+    private void createOpenSlot(Registered owner, UUID providerId) {
         Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
         var request = new CreateAvailabilitySlotRequest(start, start.plus(30, ChronoUnit.MINUTES));
-        restTemplate.postForEntity("/api/v1/providers/" + providerId + "/availability-slots", request, Map.class);
-    }
-
-    private UUID createUser(String email, String displayName) {
-        var request = new CreateUserRequest(email, "+1000000000", displayName, UserRole.PROVIDER_OWNER);
-        Map<?, ?> body = restTemplate.postForEntity("/api/v1/users", request, Map.class).getBody();
-        return UUID.fromString(body.get("id").toString());
+        ResponseEntity<Map> response = restTemplate.exchange(
+                "/api/v1/providers/" + providerId + "/availability-slots", HttpMethod.POST,
+                new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 }

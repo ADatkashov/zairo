@@ -17,7 +17,7 @@ class ManageMasterServicesDialog extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final servicesAsync = ref.watch(providerServicesProvider(providerId));
+    final servicesAsync = ref.watch(providerServicesProvider((providerId, false)));
     final linkedAsync = ref.watch(adminMasterServicesProvider(masterId));
 
     return AlertDialog(

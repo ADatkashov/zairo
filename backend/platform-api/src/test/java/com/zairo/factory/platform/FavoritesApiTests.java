@@ -2,6 +2,7 @@ package com.zairo.factory.platform;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.zairo.factory.platform.TestAuth.Registered;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
 import com.zairo.factory.users.UserDtos.CreateUserRequest;
@@ -15,6 +16,8 @@ import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -34,14 +37,16 @@ class FavoritesApiTests {
     void favoritesAProviderThenUnfavoritesIt() {
         String runId = UUID.randomUUID().toString();
         UUID customerId = createUser("fav-customer-" + runId + "@example.com", "Fav Customer");
-        UUID ownerId = createUser("fav-owner-" + runId + "@example.com", "Fav Owner");
+        Registered owner = TestAuth.registerOwner(restTemplate, "fav-owner-" + runId + "@example.com");
 
-        var providerRequest = new CreateProviderRequest(ownerId, "Favorite Test Salon " + runId, "beauty");
-        Map<?, ?> provider = restTemplate.postForEntity("/api/v1/providers", providerRequest, Map.class).getBody();
-        UUID providerId = UUID.fromString(provider.get("id").toString());
+        var providerRequest = new CreateProviderRequest(owner.userId(), "Favorite Test Salon " + runId, "beauty");
+        ResponseEntity<Map> providerResponse = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
+                new HttpEntity<>(providerRequest, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        UUID providerId = UUID.fromString(providerResponse.getBody().get("id").toString());
 
         var serviceRequest = new CreateServiceRequest("Fav Service", 30, new BigDecimal("15.00"), "USD");
-        restTemplate.postForEntity("/api/v1/providers/" + providerId + "/services", serviceRequest, Map.class);
+        restTemplate.exchange("/api/v1/providers/" + providerId + "/services", HttpMethod.POST,
+                new HttpEntity<>(serviceRequest, TestAuth.authHeaders(owner.accessToken())), Map.class);
 
         // Not favorited yet.
         ResponseEntity<Map> checkBefore = restTemplate.getForEntity(

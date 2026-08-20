@@ -91,4 +91,8 @@ public class ServiceOffering {
     void deactivate() {
         this.active = false;
     }
+
+    void reactivate() {
+        this.active = true;
+    }
 }

@@ -42,19 +42,15 @@ public class MasterDirectoryService {
      * attach a master to a provider that isn't actually in the beauty
      * vertical. This is the vertical module checking its own precondition,
      * not Core branching on vertical — Core (providers module) still never
-     * looks at this string itself.
-     *
-     * Deliberately NOT ownership-checked yet — same reasoning as
-     * ServiceOfferingController.create(): creation is still exercised as a
-     * plain fixture in BeautyApiTests without auth; the methods below that
-     * mutate an *existing* master (portfolio/link/unlink/deactivate) are
-     * the ones that actually risk one owner touching another's data.
+     * looks at this string itself. Owner-only.
      */
     @Transactional
-    public Master createMaster(UUID providerId, String displayName, String bio, String photoUrl) {
+    public Master createMaster(UUID providerId, String displayName, String bio, String photoUrl,
+            UUID requestingUserId) {
         Provider provider = providerRepository.findById(providerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Provider not found: "
                         + providerId));
+        providerOwnership.requireOwner(providerId, requestingUserId);
         if (!BEAUTY_VERTICAL.equals(provider.getVertical())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Provider is not in the beauty vertical: "
                     + providerId);
@@ -64,8 +60,14 @@ public class MasterDirectoryService {
         return masterRepository.save(master);
     }
 
-    public List<Master> listMastersByProvider(UUID providerId) {
-        return masterRepository.findByProviderIdAndActiveTrue(providerId);
+    /**
+     * Active masters by default — Business Admin passes includeInactive=true
+     * to also show deactivated masters (with a reactivate action); nothing
+     * else (booking, the customer app) needs to see them.
+     */
+    public List<Master> listMastersByProvider(UUID providerId, boolean includeInactive) {
+        return includeInactive ? masterRepository.findByProviderId(providerId)
+                : masterRepository.findByProviderIdAndActiveTrue(providerId);
     }
 
     public Master getMaster(UUID masterId) {
@@ -127,5 +129,14 @@ public class MasterDirectoryService {
             master.deactivate();
             masterRepository.save(master);
         });
+    }
+
+    /** Owner-only, idempotent — undoes deactivateMaster(). */
+    @Transactional
+    public Master reactivateMaster(UUID masterId, UUID requestingUserId) {
+        Master master = getMaster(masterId);
+        providerOwnership.requireOwner(master.getProviderId(), requestingUserId);
+        master.reactivate();
+        return masterRepository.save(master);
     }
 }

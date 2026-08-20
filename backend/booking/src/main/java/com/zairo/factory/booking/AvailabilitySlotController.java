@@ -29,10 +29,12 @@ public class AvailabilitySlotController {
         this.providerOwnership = providerOwnership;
     }
 
+    /** Owner-only. */
     @PostMapping("/api/v1/providers/{providerId}/availability-slots")
     @ResponseStatus(HttpStatus.CREATED)
     public AvailabilitySlotResponse create(@PathVariable UUID providerId,
-            @RequestBody CreateAvailabilitySlotRequest request) {
+            @RequestBody CreateAvailabilitySlotRequest request, HttpServletRequest httpRequest) {
+        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         AvailabilitySlot slot = new AvailabilitySlot(UUID.randomUUID(), providerId, request.startsAt(),
                 request.endsAt(), AvailabilityStatus.OPEN);
         return AvailabilitySlotResponse.from(availabilitySlotRepository.save(slot));

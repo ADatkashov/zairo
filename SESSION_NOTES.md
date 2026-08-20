@@ -1358,3 +1358,126 @@ create-эндпоинтах (задокументированный, осозн�
 Дальше на выбор: второй vertical (Auto, Phase 9), дальнейшая полировка
 Business Admin, или production hardening (secrets, CORS, реальный
 Stripe/maps провайдер перед деплоем) — решение за пользователем.
+
+**Выбор пользователя**: `"пока второй вертикал не нужен давай вариант 2"` —
+второй vertical отложен, дальнейшая полировка Business Admin.
+
+---
+
+## Закрытие всех оставшихся пробелов Business Admin (2026-08-20)
+
+Пользователь на вопрос "что из трёх оставшихся пунктов делать" ответил
+**`"ничего не оставить сразу сделай все необходимые"`** — сделаны все три
+пункта разом, в один проход: (1) авторизация на create-эндпоинтах,
+(2) реактивация деактивированных услуг/мастеров, (3) редактирование
+самого салона (Provider).
+
+### 1. Авторизация на create-эндпоинтах
+Ранее осознанно отложенная дыра (см. предыдущий раздел) закрыта. Теперь
+владение проверяется и на создании, не только на edit/delete:
+- `POST /api/v1/providers` — требует аутентификации **и** что
+  `request.ownerUserId() == текущий пользователь` (403 иначе) — нельзя
+  создать провайдера "от имени" другого. DTO не менялся (не стали делать
+  `ownerUserId` производным от токена), чтобы не плодить churn.
+- `POST /api/v1/providers/{id}/services`,
+  `POST /api/v1/providers/{id}/availability-slots`,
+  `POST /api/v1/beauty/providers/{id}/masters` — теперь все требуют
+  `providerOwnership.requireOwner(providerId, currentUserId)`.
+- `MasterDirectoryService.createMaster` — порядок проверок теперь
+  **404 (провайдер не найден) → 403 (не владелец) → 400 (не beauty
+  vertical)**. Это важно для теста `rejectsMasterCreationOnANonBeautyProvider`:
+  чтобы получить именно `400`, а не `403`, токен и провайдер должны
+  принадлежать одному и тому же зарегистрированному владельцу.
+
+### 2. Реактивация (симметрично существующему soft-delete)
+- `ServiceOffering.reactivate()` / `Master.reactivate()` — обратные
+  мутаторы к уже существовавшим `deactivate()`.
+- `POST /api/v1/services/{id}/reactivate`,
+  `POST /api/v1/beauty/masters/{masterId}/reactivate` — owner-only,
+  идемпотентны в смысле "второй вызов тоже 200", но (в отличие от
+  deactivate) кидают 404 на несуществующий id, а не тихо no-op.
+- Слоты (`AvailabilitySlot`) реактивации **не получили** — они не
+  soft-delete, а hard-delete (удаляются только OPEN), реактивировать
+  нечего, это осознанное решение, не забытое.
+- Новый query-параметр `includeInactive` (default `false`) на
+  `GET /api/v1/providers/{id}/services` и
+  `GET /api/v1/beauty/providers/{id}/masters` — иначе деактивированные
+  сущности вообще ниоткуда не видны и их нечем реактивировать через UI.
+
+### 3. Редактирование салона (Provider)
+- `UpdateProviderRequest(name, latitude, longitude)` — **без** `vertical`
+  (сменить vertical — осиротить vertical-specific данные типа мастеров
+  beauty) и **без** `status` (модерационное поле, у владельца нет права
+  сам себе его переключать, админ-консоли для этого пока не существует).
+- `PUT /api/v1/providers/{id}` — owner-only.
+- Модуль `providers` получил новую Gradle-зависимость на `auth`
+  (аналогично тому, как раньше её получили `services`/`booking`/
+  `vertical-beauty` — "нужен CurrentUser для проверки владения", тот же
+  паттерн, что и `reviews → booking`).
+
+### Тесты (backend)
+Все 9 файлов `*ApiTests` в `platform-api` теперь требуют реальной
+аутентификации почти на каждом мутирующем вызове — механическая, но
+объёмная переработка. Вместо дублирования helper-методов в каждом файле
+создан общий `TestAuth` (`registerOwner`, `authHeaders`, record
+`Registered`) — заменил три локальные копии одного и того же кода
+(`ProviderApiTests`, `BookingApiTests`, `BeautyApiTests`) и добавлен туда,
+где авторизации вообще не было (`SearchApiTests`, `ReviewApiTests`,
+`FavoritesApiTests`, `PaymentsApiTests`, `BusinessAdminApiTests`).
+Добавлены новые проверки: `ProviderApiTests.cannotCreateAProviderOrServiceForSomeoneElse`,
+`ProviderApiTests.updatesASalonsNameAndLocationButOnlyTheOwnerCan`,
+реактивация внутри `updatesThenDeactivatesAService` и
+`BeautyApiTests.deactivatingAMasterRemovesItFromTheProviderListingAndReactivationBringsItBack`.
+
+`./gradlew build` — BUILD SUCCESSFUL, все 18 backend-тестов проходят.
+
+Ручная проверка curl: без токена на create-provider — `401`; с чужим
+`ownerUserId` — `403`; deactivate → список пуст → `includeInactive=true`
+показывает → reactivate → снова в обычном списке; PUT `/providers/{id}`
+меняет имя/координаты и сохраняется.
+
+### Flutter (Business Admin)
+- `AdminProvider` — добавлены `latitude`/`longitude` (nullable).
+- `SalonAdminApi.updateProvider()`, `.reactivateService()`,
+  `listServices(includeInactive:)`.
+- `BeautyAdminApi.reactivateMaster()`, `listMasters(includeInactive:)`.
+- `providerServicesProvider` / `adminMastersProvider` — семейный ключ
+  сменился на Dart-record `(providerId, includeInactive)` (тот же
+  паттерн structural-equality-ключа, что и `isFavoritedProvider` в
+  `user_app`). Добавлены `showInactiveServicesProvider` /
+  `showInactiveMastersProvider` (`StateProvider.family<bool, String>`) —
+  тумблер "Show removed" на каждую секцию.
+- `SalonDetailScreen` стал `ConsumerStatefulWidget` (хранит локальный
+  `_provider`, чтобы AppBar-заголовок обновлялся сразу после
+  редактирования без повторного похода на dashboard); добавлена иконка
+  "Edit salon" в AppBar → диалог `_EditSalonDialog` (имя/широта/долгота).
+  После сохранения инвалидируется и текущий `_provider`, и
+  `myProvidersProvider` — список салонов на dashboard тоже обновляется.
+  Услуги/мастера в состоянии "removed" показывают серым текстом и кнопку
+  "Reactivate" вместо edit/delete.
+- Тесты: `dashboard_screen_test.dart` и `salon_detail_screen_test.dart`
+  обновлены под новые сигнатуры API (`{bool includeInactive = false}`)
+  и дополнены тестами на edit-salon и reactivate service/master.
+  Один нюанс: у `_ServicesSection` и AppBar теперь **два** `Icons.edit_outlined`
+  на экране — тест editing-a-service переключён с `find.byIcon` на
+  `find.byTooltip('Edit')`, чтобы не ловить оба.
+- `flutter analyze` — чисто. `flutter test` — 14/14 проходят.
+  `flutter build web` — собирается.
+
+### Живая проверка в браузере
+Полный цикл на реальном backend + Postgres + MinIO, залогинившись в
+Business Admin: создание услуги/мастера через UI (авторизация уже
+прозрачна благодаря существующему Dio-интерцептору — во Flutter-коде
+менять ничего не пришлось), deactivate → "Show removed" показывает
+серым с пометкой "removed" → "Reactivate" возвращает в обычный список —
+проверено и для услуги, и для мастера. Редактирование салона: диалог
+"Edit salon" открывается с предзаполненными полями, после сохранения
+AppBar-заголовок меняется мгновенно (без навигации назад), и на
+dashboard список салонов тоже отражает новое имя (подтверждает, что
+`myProvidersProvider` инвалидируется корректно). Скриншоты отправлены
+пользователю по ходу проверки.
+
+### Статус
+Всё реализовано, протестировано (backend + Flutter, юнит + живой
+браузер), но **не закоммичено** — ждём подтверждения пользователя на
+коммит и пуш.

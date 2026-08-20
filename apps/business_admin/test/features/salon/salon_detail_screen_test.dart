@@ -37,12 +37,40 @@ class _FakeSalonAdminApi extends SalonAdminApi {
   final List<AdminBooking> _bookings;
   Map<String, dynamic>? lastCreateServiceCall;
   Map<String, dynamic>? lastUpdateServiceCall;
+  Map<String, dynamic>? lastUpdateProviderCall;
   String? lastDeactivatedServiceId;
+  String? lastReactivatedServiceId;
   String? lastDeletedSlotId;
   String? lastCompletedBookingId;
 
   @override
-  Future<List<AdminService>> listServices(String providerId) async => _services;
+  Future<List<AdminService>> listServices(String providerId, {bool includeInactive = false}) async {
+    return includeInactive ? _services : _services.where((s) => s.active).toList();
+  }
+
+  @override
+  Future<AdminProvider> updateProvider({
+    required String providerId,
+    required String name,
+    double? latitude,
+    double? longitude,
+  }) async {
+    lastUpdateProviderCall = {
+      'providerId': providerId,
+      'name': name,
+      'latitude': latitude,
+      'longitude': longitude,
+    };
+    return AdminProvider(
+      id: providerId,
+      ownerUserId: _provider.ownerUserId,
+      name: name,
+      vertical: _provider.vertical,
+      status: _provider.status,
+      latitude: latitude,
+      longitude: longitude,
+    );
+  }
 
   @override
   Future<AdminService> createService({
@@ -104,7 +132,33 @@ class _FakeSalonAdminApi extends SalonAdminApi {
   @override
   Future<void> deactivateService(String serviceId) async {
     lastDeactivatedServiceId = serviceId;
-    _services.removeWhere((s) => s.id == serviceId);
+    final index = _services.indexWhere((s) => s.id == serviceId);
+    _services[index] = AdminService(
+      id: _services[index].id,
+      providerId: _services[index].providerId,
+      title: _services[index].title,
+      durationMinutes: _services[index].durationMinutes,
+      price: _services[index].price,
+      currency: _services[index].currency,
+      active: false,
+    );
+  }
+
+  @override
+  Future<AdminService> reactivateService(String serviceId) async {
+    lastReactivatedServiceId = serviceId;
+    final index = _services.indexWhere((s) => s.id == serviceId);
+    final reactivated = AdminService(
+      id: _services[index].id,
+      providerId: _services[index].providerId,
+      title: _services[index].title,
+      durationMinutes: _services[index].durationMinutes,
+      price: _services[index].price,
+      currency: _services[index].currency,
+      active: true,
+    );
+    _services[index] = reactivated;
+    return reactivated;
   }
 
   @override
@@ -144,14 +198,41 @@ class _FakeBeautyAdminApi extends BeautyAdminApi {
 
   final List<AdminMaster> _masters;
   String? lastDeactivatedMasterId;
+  String? lastReactivatedMasterId;
 
   @override
-  Future<List<AdminMaster>> listMasters(String providerId) async => _masters;
+  Future<List<AdminMaster>> listMasters(String providerId, {bool includeInactive = false}) async {
+    return includeInactive ? _masters : _masters.where((m) => m.active).toList();
+  }
 
   @override
   Future<void> deactivateMaster(String masterId) async {
     lastDeactivatedMasterId = masterId;
-    _masters.removeWhere((m) => m.id == masterId);
+    final index = _masters.indexWhere((m) => m.id == masterId);
+    _masters[index] = AdminMaster(
+      id: _masters[index].id,
+      providerId: _masters[index].providerId,
+      displayName: _masters[index].displayName,
+      bio: _masters[index].bio,
+      photoUrl: _masters[index].photoUrl,
+      active: false,
+    );
+  }
+
+  @override
+  Future<AdminMaster> reactivateMaster(String masterId) async {
+    lastReactivatedMasterId = masterId;
+    final index = _masters.indexWhere((m) => m.id == masterId);
+    final reactivated = AdminMaster(
+      id: _masters[index].id,
+      providerId: _masters[index].providerId,
+      displayName: _masters[index].displayName,
+      bio: _masters[index].bio,
+      photoUrl: _masters[index].photoUrl,
+      active: true,
+    );
+    _masters[index] = reactivated;
+    return reactivated;
   }
 }
 
@@ -170,7 +251,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('No services yet.'), findsOneWidget);
+    expect(find.text('No active services.'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(TextButton, 'Add').first);
     await tester.pumpAndSettle();
@@ -209,7 +290,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.edit_outlined));
+    // Tooltip 'Edit', not the icon, to disambiguate from the AppBar's
+    // 'Edit salon' action which uses the same Icons.edit_outlined.
+    await tester.tap(find.byTooltip('Edit'));
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(TextField, 'Title'), findsOneWidget);
@@ -261,7 +344,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.delete_outline));
     await tester.pumpAndSettle();
     expect(fakeApi.lastDeactivatedServiceId, 's1');
-    expect(find.text('No services yet.'), findsOneWidget);
+    expect(find.text('No active services.'), findsOneWidget);
 
     expect(find.byType(Chip), findsOneWidget);
     await tester.tap(find.descendant(of: find.byType(Chip), matching: find.byIcon(Icons.cancel)));
@@ -300,5 +383,107 @@ void main() {
 
     expect(fakeApi.lastCompletedBookingId, 'b1');
     expect(find.text('\$25.00 — COMPLETED'), findsOneWidget);
+  });
+
+  testWidgets('editing the salon calls updateProvider and updates the AppBar title', (tester) async {
+    final fakeApi = _FakeSalonAdminApi();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(fakeApi),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+        ],
+        child: const MaterialApp(home: SalonDetailScreen(provider: _provider)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Edit salon'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.widgetWithText(TextField, 'Salon name'), 'Renamed Salon');
+    await tester.enterText(find.widgetWithText(TextField, 'Latitude (optional)'), '43.25');
+    await tester.enterText(find.widgetWithText(TextField, 'Longitude (optional)'), '76.90');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+
+    expect(fakeApi.lastUpdateProviderCall, {
+      'providerId': 'p1',
+      'name': 'Renamed Salon',
+      'latitude': 43.25,
+      'longitude': 76.90,
+    });
+    expect(find.text('Renamed Salon'), findsOneWidget);
+  });
+
+  testWidgets('a deactivated service is hidden by default and reactivating it brings it back', (tester) async {
+    final fakeApi = _FakeSalonAdminApi(services: [
+      const AdminService(
+          id: 's1', providerId: 'p1', title: 'Haircut', durationMinutes: 30, price: 25, currency: 'USD',
+          active: false),
+    ]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(fakeApi),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+        ],
+        child: const MaterialApp(home: SalonDetailScreen(provider: _provider)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('No active services.'), findsOneWidget);
+    expect(find.text('Haircut'), findsNothing);
+
+    // .first: this beauty-vertical salon also renders a Masters section
+    // with its own "Show removed" toggle, further down the tree.
+    await tester.tap(find.widgetWithText(TextButton, 'Show removed').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Haircut'), findsOneWidget);
+    expect(find.text('Reactivate'), findsOneWidget);
+
+    await tester.tap(find.text('Reactivate'));
+    await tester.pumpAndSettle();
+
+    expect(fakeApi.lastReactivatedServiceId, 's1');
+    expect(find.text('Haircut'), findsOneWidget);
+    expect(find.text('Reactivate'), findsNothing);
+  });
+
+  testWidgets('a deactivated master is hidden by default and reactivating it brings it back', (tester) async {
+    final fakeApi = _FakeSalonAdminApi();
+    final fakeBeautyApi = _FakeBeautyAdminApi([
+      const AdminMaster(id: 'm1', providerId: 'p1', displayName: 'Jamie Stylist', active: false),
+    ]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(fakeApi),
+          beautyAdminApiProvider.overrideWithValue(fakeBeautyApi),
+        ],
+        child: const MaterialApp(home: SalonDetailScreen(provider: _provider)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('No active masters.'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(TextButton, 'Show removed').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Jamie Stylist'), findsOneWidget);
+    expect(find.text('Reactivate'), findsOneWidget);
+
+    await tester.tap(find.text('Reactivate'));
+    await tester.pumpAndSettle();
+
+    expect(fakeBeautyApi.lastReactivatedMasterId, 'm1');
+    expect(find.text('Jamie Stylist'), findsOneWidget);
+    expect(find.text('Reactivate'), findsNothing);
   });
 }

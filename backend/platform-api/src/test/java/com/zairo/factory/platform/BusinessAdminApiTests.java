@@ -3,6 +3,7 @@ package com.zairo.factory.platform;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequest;
+import com.zairo.factory.platform.TestAuth.Registered;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
 import com.zairo.factory.users.UserDtos.CreateUserRequest;
@@ -19,6 +20,8 @@ import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -34,14 +37,14 @@ class BusinessAdminApiTests {
     @Test
     void listsProvidersOwnedByAUser() {
         String runId = UUID.randomUUID().toString();
-        UUID ownerId = createUser("admin-owner-" + runId + "@example.com", UserRole.PROVIDER_OWNER);
-        UUID otherOwnerId = createUser("admin-other-" + runId + "@example.com", UserRole.PROVIDER_OWNER);
+        Registered owner = TestAuth.registerOwner(restTemplate, "admin-owner-" + runId + "@example.com");
+        Registered otherOwner = TestAuth.registerOwner(restTemplate, "admin-other-" + runId + "@example.com");
 
-        UUID providerA = createProvider(ownerId, "Owner Salon A " + runId);
-        UUID providerB = createProvider(ownerId, "Owner Salon B " + runId);
-        createProvider(otherOwnerId, "Someone Else's Salon " + runId);
+        UUID providerA = createProvider(owner, "Owner Salon A " + runId);
+        UUID providerB = createProvider(owner, "Owner Salon B " + runId);
+        createProvider(otherOwner, "Someone Else's Salon " + runId);
 
-        List<Map> owned = getList("/api/v1/users/" + ownerId + "/providers");
+        List<Map> owned = getList("/api/v1/users/" + owner.userId() + "/providers");
         assertThat(owned).extracting(p -> p.get("id")).containsExactlyInAnyOrder(providerA.toString(),
                 providerB.toString());
     }
@@ -49,15 +52,15 @@ class BusinessAdminApiTests {
     @Test
     void listsBookingsForAProvider() {
         String runId = UUID.randomUUID().toString();
-        UUID ownerId = createUser("admin-booking-owner-" + runId + "@example.com", UserRole.PROVIDER_OWNER);
+        Registered owner = TestAuth.registerOwner(restTemplate, "admin-booking-owner-" + runId + "@example.com");
         UUID customerId = createUser("admin-booking-customer-" + runId + "@example.com", UserRole.CUSTOMER);
-        UUID providerId = createProvider(ownerId, "Booking Admin Salon " + runId);
-        UUID serviceId = createService(providerId, "Cut", new BigDecimal("20.00"));
+        UUID providerId = createProvider(owner, "Booking Admin Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Cut", new BigDecimal("20.00"));
 
         // No bookings yet.
         assertThat(getList("/api/v1/providers/" + providerId + "/bookings")).isEmpty();
 
-        UUID slotId = createOpenSlot(providerId);
+        UUID slotId = createOpenSlot(owner, providerId);
         ResponseEntity<Map> booking = restTemplate.postForEntity("/api/v1/bookings", Map.of(
                 "userId", customerId,
                 "serviceId", serviceId,
@@ -76,25 +79,30 @@ class BusinessAdminApiTests {
         return List.of(response.getBody());
     }
 
-    private UUID createProvider(UUID ownerId, String name) {
-        var request = new CreateProviderRequest(ownerId, name, "beauty");
-        Map<?, ?> body = restTemplate.postForEntity("/api/v1/providers", request, Map.class).getBody();
-        return UUID.fromString(body.get("id").toString());
+    private UUID createProvider(Registered owner, String name) {
+        var request = new CreateProviderRequest(owner.userId(), name, "beauty");
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
+                new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        return UUID.fromString(response.getBody().get("id").toString());
     }
 
-    private UUID createService(UUID providerId, String title, BigDecimal price) {
+    private UUID createService(Registered owner, UUID providerId, String title, BigDecimal price) {
         var request = new CreateServiceRequest(title, 30, price, "USD");
-        Map<?, ?> body = restTemplate.postForEntity("/api/v1/providers/" + providerId + "/services", request,
-                Map.class).getBody();
-        return UUID.fromString(body.get("id").toString());
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers/" + providerId + "/services",
+                HttpMethod.POST, new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        return UUID.fromString(response.getBody().get("id").toString());
     }
 
-    private UUID createOpenSlot(UUID providerId) {
+    private UUID createOpenSlot(Registered owner, UUID providerId) {
         Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
         var request = new CreateAvailabilitySlotRequest(start, start.plus(30, ChronoUnit.MINUTES));
-        Map<?, ?> body = restTemplate.postForEntity("/api/v1/providers/" + providerId + "/availability-slots",
-                request, Map.class).getBody();
-        return UUID.fromString(body.get("id").toString());
+        ResponseEntity<Map> response = restTemplate.exchange(
+                "/api/v1/providers/" + providerId + "/availability-slots", HttpMethod.POST,
+                new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        return UUID.fromString(response.getBody().get("id").toString());
     }
 
     private UUID createUser(String email, UserRole role) {

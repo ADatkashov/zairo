@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequest;
 import com.zairo.factory.booking.BookingDtos.CreateBookingRequest;
+import com.zairo.factory.platform.TestAuth.Registered;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
 import com.zairo.factory.users.UserDtos.CreateUserRequest;
@@ -19,6 +20,8 @@ import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -40,23 +43,25 @@ class PaymentsApiTests {
     void paysForABookingThenRefundsIt() {
         String runId = UUID.randomUUID().toString();
         UUID customerId = createUser("pay-customer-" + runId + "@example.com", "Pay Customer");
-        UUID ownerId = createUser("pay-owner-" + runId + "@example.com", "Pay Owner");
+        Registered owner = TestAuth.registerOwner(restTemplate, "pay-owner-" + runId + "@example.com");
 
-        var providerRequest = new CreateProviderRequest(ownerId, "Payment Test Salon " + runId, "beauty");
-        Map<?, ?> provider = restTemplate.postForEntity("/api/v1/providers", providerRequest, Map.class).getBody();
-        UUID providerId = UUID.fromString(provider.get("id").toString());
+        var providerRequest = new CreateProviderRequest(owner.userId(), "Payment Test Salon " + runId, "beauty");
+        ResponseEntity<Map> providerResponse = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
+                new HttpEntity<>(providerRequest, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        UUID providerId = UUID.fromString(providerResponse.getBody().get("id").toString());
 
         var serviceRequest = new CreateServiceRequest("Pay Service", 30, new BigDecimal("35.00"), "USD");
-        Map<?, ?> service = restTemplate
-                .postForEntity("/api/v1/providers/" + providerId + "/services", serviceRequest, Map.class).getBody();
-        UUID serviceId = UUID.fromString(service.get("id").toString());
+        ResponseEntity<Map> serviceResponse = restTemplate.exchange("/api/v1/providers/" + providerId + "/services",
+                HttpMethod.POST, new HttpEntity<>(serviceRequest, TestAuth.authHeaders(owner.accessToken())),
+                Map.class);
+        UUID serviceId = UUID.fromString(serviceResponse.getBody().get("id").toString());
 
         Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
         var slotRequest = new CreateAvailabilitySlotRequest(start, start.plus(30, ChronoUnit.MINUTES));
-        Map<?, ?> slot = restTemplate
-                .postForEntity("/api/v1/providers/" + providerId + "/availability-slots", slotRequest, Map.class)
-                .getBody();
-        UUID slotId = UUID.fromString(slot.get("id").toString());
+        ResponseEntity<Map> slotResponse = restTemplate.exchange(
+                "/api/v1/providers/" + providerId + "/availability-slots", HttpMethod.POST,
+                new HttpEntity<>(slotRequest, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        UUID slotId = UUID.fromString(slotResponse.getBody().get("id").toString());
 
         var bookingRequest = new CreateBookingRequest(customerId, serviceId, slotId, new BigDecimal("35.00"));
         Map<?, ?> booking = restTemplate.postForEntity("/api/v1/bookings", bookingRequest, Map.class).getBody();

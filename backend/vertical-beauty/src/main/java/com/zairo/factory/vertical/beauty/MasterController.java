@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -27,17 +28,21 @@ public class MasterController {
         this.masterDirectoryService = masterDirectoryService;
     }
 
+    /** Owner-only. */
     @PostMapping("/api/v1/beauty/providers/{providerId}/masters")
     @ResponseStatus(HttpStatus.CREATED)
-    public MasterResponse create(@PathVariable UUID providerId, @RequestBody CreateMasterRequest request) {
+    public MasterResponse create(@PathVariable UUID providerId, @RequestBody CreateMasterRequest request,
+            HttpServletRequest httpRequest) {
         Master master = masterDirectoryService.createMaster(providerId, request.displayName(), request.bio(),
-                request.photoUrl());
+                request.photoUrl(), CurrentUser.requireUserId(httpRequest));
         return MasterResponse.from(master);
     }
 
     @GetMapping("/api/v1/beauty/providers/{providerId}/masters")
-    public List<MasterResponse> listByProvider(@PathVariable UUID providerId) {
-        return masterDirectoryService.listMastersByProvider(providerId).stream().map(MasterResponse::from).toList();
+    public List<MasterResponse> listByProvider(@PathVariable UUID providerId,
+            @RequestParam(defaultValue = "false") boolean includeInactive) {
+        return masterDirectoryService.listMastersByProvider(providerId, includeInactive).stream()
+                .map(MasterResponse::from).toList();
     }
 
     @GetMapping("/api/v1/beauty/masters/{masterId}")
@@ -50,6 +55,13 @@ public class MasterController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deactivate(@PathVariable UUID masterId, HttpServletRequest httpRequest) {
         masterDirectoryService.deactivateMaster(masterId, CurrentUser.requireUserId(httpRequest));
+    }
+
+    /** Owner-only, idempotent — undoes deactivate(). */
+    @PostMapping("/api/v1/beauty/masters/{masterId}/reactivate")
+    public MasterResponse reactivate(@PathVariable UUID masterId, HttpServletRequest httpRequest) {
+        return MasterResponse.from(
+                masterDirectoryService.reactivateMaster(masterId, CurrentUser.requireUserId(httpRequest)));
     }
 
     /** Owner-only. */
