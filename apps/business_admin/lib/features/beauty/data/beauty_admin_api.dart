@@ -1,0 +1,65 @@
+import 'package:core_network/core_network.dart';
+
+import 'models/admin_master.dart';
+import 'models/admin_master_service_summary.dart';
+import 'models/admin_portfolio_item.dart';
+
+/// Wraps the vertical-beauty module's admin-facing endpoints
+/// (backend/vertical-beauty/.../MasterController.java). Only meaningful for
+/// providers in the beauty vertical — the salon screen only calls this when
+/// AdminProvider.vertical == 'beauty'.
+class BeautyAdminApi {
+  final DioClient _dioClient;
+
+  BeautyAdminApi(this._dioClient);
+
+  Future<List<AdminMaster>> listMasters(String providerId) async {
+    final response = await _dioClient.get('/beauty/providers/$providerId/masters');
+    final data = response.data as List<dynamic>;
+    return data.map((e) => AdminMaster.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<AdminMaster> createMaster({
+    required String providerId,
+    required String displayName,
+    String? bio,
+  }) async {
+    final response = await _dioClient.post(
+      '/beauty/providers/$providerId/masters',
+      data: {'displayName': displayName, 'bio': bio, 'photoUrl': null},
+    );
+    return AdminMaster.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<List<AdminPortfolioItem>> listPortfolio(String masterId) async {
+    final response = await _dioClient.get('/beauty/masters/$masterId/portfolio');
+    final data = response.data as List<dynamic>;
+    return data.map((e) => AdminPortfolioItem.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<AdminPortfolioItem> addPortfolioItem({
+    required String masterId,
+    required String imageUrl,
+    String? caption,
+  }) async {
+    final response = await _dioClient.post(
+      '/beauty/masters/$masterId/portfolio',
+      data: {'imageUrl': imageUrl, 'caption': caption},
+    );
+    return AdminPortfolioItem.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<List<AdminMasterServiceSummary>> listMasterServices(String masterId) async {
+    final response = await _dioClient.get('/beauty/masters/$masterId/services');
+    final data = response.data as List<dynamic>;
+    return data.map((e) => AdminMasterServiceSummary.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<void> linkService({required String masterId, required String serviceId}) {
+    return _dioClient.post('/beauty/masters/$masterId/services/$serviceId');
+  }
+
+  Future<void> unlinkService({required String masterId, required String serviceId}) {
+    return _dioClient.delete('/beauty/masters/$masterId/services/$serviceId');
+  }
+}

@@ -996,13 +996,114 @@ Phase 2 полностью закрыта, включая maps на mock-про�
   Payment: SUCCEEDED. Скриншоты отправлены пользователю.
 
 ### Текущий статус
+**Phase 4 (Beauty vertical) закоммичена и запушена** (`13aa19a`).
+
+## Business Admin — новое приложение для владельцев салонов (сделано, 2026-08-20)
+
+Пользователь выбрал "admin ui будем делать" среди предложенных вариантов
+(второй vertical vs Business Admin). Как и было заложено ещё на шаге
+Auth во Flutter ("PROVIDER_OWNER регистрируется через будущий Business
+Admin, не через этот app" — Factory Blueprint §11), это отдельное
+Flutter-приложение в монорепо, не раздел внутри `user_app`.
+
+### Backend — два новых read-эндпоинта (остальное переиспользуется)
+- `GET /api/v1/users/{ownerUserId}/providers` (модуль `providers`,
+  `ProviderRepository.findByOwnerUserId`) — "какие салоны у этого
+  владельца".
+- `GET /api/v1/providers/{providerId}/bookings` (модуль `booking`) — у
+  `Booking` нет своего `providerId` (только `serviceId`/
+  `availabilitySlotId`, см. ERD), поэтому список строится через хоп
+  `AvailabilitySlotRepository.findByProviderId` → список `slotId` →
+  `BookingRepository.findByAvailabilitySlotIdIn` — не денормализованная
+  колонка, а композиция на чтение.
+- Всё остальное (создание провайдера/услуги/слота, CRUD мастеров/
+  портфолио/service-linking, `POST .../bookings/{id}/complete`) — те же
+  Core- и vertical-beauty-эндпоинты, что уже использует `user_app`, без
+  единой новой backend-строчки бизнес-логики.
+- Тест `BusinessAdminApiTests` на реальном Postgres — оба новых
+  эндпоинта: список салонов владельца (с "чужим" салоном другого
+  владельца, чтобы проверить фильтрацию), список броней провайдера
+  (пусто → создание брони → появляется в списке).
+
+### Flutter — новое приложение `apps/business_admin`
+- Отдельный `pubspec.yaml` (`name: business_admin`), переиспользует
+  `packages/core_network`/`packages/core_storage`, как и `user_app`.
+  Платформы ограничены `web,windows,android` (не нужен полный набор
+  `flutter create` для внутреннего инструмента).
+- **Без go_router/tab-shell** (в отличие от `user_app`) — экраны этого
+  приложения линейны (вход → dashboard → один салон за раз), роутер
+  добавил бы структуру, которая не нужна. `AuthGate` — корневой виджет,
+  переключающий Login/Dashboard по состоянию `authControllerProvider`
+  напрямую, без `Navigator.push`/`popUntil`.
+- `features/auth/` — дублирует паттерн `user_app` (`AuthApi`,
+  `TokenStorage`, `AuthController`, Login/RegisterScreen), но
+  **регистрирует роль `PROVIDER_OWNER`** вместо `CUSTOMER` (тот же
+  backend-эндпоинт `/auth/register`, разный литерал в каждом приложении
+  — сознательно НЕ выносил общий auth в отдельный пакет: два реальных
+  потребителя с идентичной логикой — обычно повод для пакета, но объём
+  небольшой (~250 строк), а вынос затронул бы уже протестированный код
+  `user_app`; можно пересмотреть, если/когда логика начнёт расходиться
+  или появится третий потребитель).
+- `features/salon/` — модели/`SalonAdminApi` поверх Core-эндпоинтов
+  (провайдер, услуги, слоты, брони). Модели названы с префиксом `Admin*`
+  (`AdminProvider`, не `Provider`) — иначе конфликт с Riverpod's
+  `Provider<T>`.
+- `features/beauty/` — `BeautyAdminApi` поверх vertical-beauty
+  эндпоинтов (мастера, портфолио, service-linking) — зеркалит
+  backend-границу Core/Vertical и на Flutter-стороне: `SalonDetailScreen`
+  показывает секцию Masters только когда `provider.vertical == 'beauty'`.
+- `DashboardScreen` — список салонов владельца; пустое состояние — форма
+  создания салона прямо на экране. **Vertical при создании зашит как
+  `'beauty'`** — единственный vertical с реальными admin-экранами
+  (мастера/портфолио) на сегодня; выбор vertical станет осмысленным,
+  когда появится второй.
+- `SalonDetailScreen` — одна прокручиваемая страница с четырьмя
+  секциями (Services/Availability/Masters/Bookings), каждая — свой
+  `ConsumerWidget`, вотчащий отдельный `FutureProvider.family`. Добавление
+  чего-либо — через `AlertDialog` (тот же паттерн `showDialog<bool>` +
+  `ref.invalidate` в вызывающей стороне, что и `_LeaveReviewDialog` в
+  `user_app`). Портфолио принимает URL картинки, а не загрузку файла —
+  в проекте ещё нет подключённого файлового хранилища (S3/MinIO) ни в
+  одном admin-флоу; тот же осознанный вырез MVP, что и везде в проекте.
+  "Mark complete" у брони со статусом `CONFIRMED` дёргает уже
+  существующий `POST /bookings/{id}/complete`.
+- Тесты: `auth_controller_test.dart` (4, зеркалит `user_app`, роль
+  `PROVIDER_OWNER`), `dashboard_screen_test.dart` (пустое состояние
+  создаёт салон; список салонов открывает деталку), `salon_detail_screen_test.dart`
+  (добавление услуги вызывает API и обновляет список; "Mark complete"
+  вызывает API), `widget_test.dart` (смок-тест до экрана логина).
+  9/9 тестов. **Находка**: смок-тест изначально подвесил `pumpAndSettle`
+  — в отличие от `user_app`, здесь `AuthGate` — корневой виджет,
+  который сразу трогает `authControllerProvider`, а тот читает реальный
+  `SecureStorageService` (платформенный канал зависает в тестовом
+  окружении без переопределения). Исправлено тем же паттерном, что уже
+  есть в `auth_controller_test.dart` — in-memory `SecureStorageService`
+  через `secureStorageServiceProvider.overrideWithValue`.
+  `flutter analyze` — чисто, `flutter build web` — собирается.
+- **Живая проверка в браузере**: зарегистрировался как
+  `PROVIDER_OWNER` → автоматический вход → создал салон "Glow UI Salon"
+  (beauty) → добавил услугу "Haircut" ($25, 30 мин) → добавил мастера
+  "Jamie Stylist" → открыл диалог "Services this master offers",
+  отметил чекбокс "Haircut" → **подтверждено через прямой curl-запрос к
+  backend**, что `beauty_master_service`-связь реально создалась → добавил
+  слот доступности через стандартные Flutter date/time picker'ы (Aug 21,
+  13:34) → слот появился в списке "OPEN" → logout корректно вернул на
+  экран входа. Скриншоты отправлены пользователю.
+
+### Текущий статус
 Всё застейджено, **не закоммичено** — ждём подтверждения.
 
 ## Следующий шаг — рекомендация архитектора
-**Phase 4 (Beauty vertical) закрыта.** Второй vertical (Auto, Phase 9 по
-roadmap) — хороший момент проверить KPI проекта ("насколько быстрее
-собирается второй vertical благодаря сделанному разделению Core/Vertical"),
-но ADR-0003 отмечает, что пересматривать multi-tenant/изоляцию рано, пока
-нет второго реального клиента. Дальше можно либо начать второй vertical,
-либо перейти к оставшимся пунктам Blueprint roadmap (Business Admin UI,
-production hardening) — решение за пользователем.
+**Business Admin MVP закрыт**: владелец может зарегистрироваться,
+создать салон, наполнить его услугами/доступностью/мастерами, привязать
+мастеров к услугам и завершать брони. Не сделано осознанно: загрузка
+файлов портфолио (только URL), выбор vertical при создании салона (зашит
+на 'beauty'), редактирование/удаление уже созданных сущностей (только
+добавление) — ни одно продуктовое требование под это ещё не
+сформулировано.
+
+Дальше на выбор: второй vertical (Auto, Phase 9 — проверка KPI "разделение
+Core/Vertical ускоряет второй vertical"), или дальнейшая полировка
+Business Admin (редактирование, реальные аплоады фото, роли/права), или
+production hardening (secrets, CORS, реальный Stripe/maps) — решение за
+пользователем.

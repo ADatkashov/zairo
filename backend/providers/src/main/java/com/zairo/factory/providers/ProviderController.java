@@ -42,4 +42,10 @@ public class ProviderController {
         return providerRepository.findById(id).map(ProviderResponse::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Provider not found: " + id));
     }
+
+    /** For the Business Admin app: "which salons does this owner manage." */
+    @GetMapping("/api/v1/users/{ownerUserId}/providers")
+    public List<ProviderResponse> listByOwner(@PathVariable UUID ownerUserId) {
+        return providerRepository.findByOwnerUserId(ownerUserId).stream().map(ProviderResponse::from).toList();
+    }
 }

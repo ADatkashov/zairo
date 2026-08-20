@@ -18,10 +18,13 @@ public class BookingController {
 
     private final BookingService bookingService;
     private final BookingRepository bookingRepository;
+    private final AvailabilitySlotRepository availabilitySlotRepository;
 
-    public BookingController(BookingService bookingService, BookingRepository bookingRepository) {
+    public BookingController(BookingService bookingService, BookingRepository bookingRepository,
+            AvailabilitySlotRepository availabilitySlotRepository) {
         this.bookingService = bookingService;
         this.bookingRepository = bookingRepository;
+        this.availabilitySlotRepository = availabilitySlotRepository;
     }
 
     @PostMapping("/api/v1/bookings")
@@ -46,5 +49,18 @@ public class BookingController {
     @GetMapping("/api/v1/users/{userId}/bookings")
     public List<BookingResponse> listByUser(@PathVariable UUID userId) {
         return bookingRepository.findByUserId(userId).stream().map(BookingResponse::from).toList();
+    }
+
+    /**
+     * For the Business Admin app: "which bookings has my salon received."
+     * Booking has no providerId of its own (see docs/erd/core-domain.md —
+     * it only references the slot/service by id), so this composes it via
+     * the slot -> booking hop rather than adding a denormalized column.
+     */
+    @GetMapping("/api/v1/providers/{providerId}/bookings")
+    public List<BookingResponse> listByProvider(@PathVariable UUID providerId) {
+        List<UUID> slotIds = availabilitySlotRepository.findByProviderId(providerId).stream()
+                .map(AvailabilitySlot::getId).toList();
+        return bookingRepository.findByAvailabilitySlotIdIn(slotIds).stream().map(BookingResponse::from).toList();
     }
 }

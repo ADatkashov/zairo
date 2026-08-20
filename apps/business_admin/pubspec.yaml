@@ -1,0 +1,30 @@
+name: business_admin
+description: "Business Admin — provider-owner tool for managing salons, services, availability, and bookings."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.6.1
+  dio: ^5.11.0
+  core_network:
+    path: ../../packages/core_network
+  core_storage:
+    path: ../../packages/core_storage
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  # Only used in tests to build a bare SecureStorageService(FlutterSecureStorage())
+  # for fake subclasses — the app itself only touches it through core_storage.
+  flutter_secure_storage: ^11.0.0
+
+flutter:
+  uses-material-design: true
