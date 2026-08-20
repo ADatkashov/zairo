@@ -1,4 +1,5 @@
 import 'package:core_network/core_network.dart';
+import 'package:core_ui/core_ui.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -50,7 +51,7 @@ void main() {
           beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
           authControllerProvider.overrideWith(() => _LoggedInController('ADMIN')),
         ],
-        child: const MaterialApp(home: AuthGate()),
+        child: MaterialApp(theme: factoryLightTheme(), home: const AuthGate()),
       ),
     );
     await tester.pumpAndSettle();
@@ -67,7 +68,7 @@ void main() {
           beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
           authControllerProvider.overrideWith(() => _LoggedInController('PROVIDER_OWNER')),
         ],
-        child: const MaterialApp(home: AuthGate()),
+        child: MaterialApp(theme: factoryLightTheme(), home: const AuthGate()),
       ),
     );
     await tester.pumpAndSettle();

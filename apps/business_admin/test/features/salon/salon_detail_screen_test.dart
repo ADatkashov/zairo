@@ -1,4 +1,5 @@
 import 'package:core_network/core_network.dart';
+import 'package:core_ui/core_ui.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -246,7 +247,7 @@ void main() {
           salonAdminApiProvider.overrideWithValue(fakeApi),
           beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
         ],
-        child: const MaterialApp(home: SalonDetailScreen(provider: _provider)),
+        child: MaterialApp(theme: factoryLightTheme(), home: const SalonDetailScreen(provider: _provider)),
       ),
     );
     await tester.pumpAndSettle();
@@ -285,7 +286,7 @@ void main() {
           salonAdminApiProvider.overrideWithValue(fakeApi),
           beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
         ],
-        child: const MaterialApp(home: SalonDetailScreen(provider: _provider)),
+        child: MaterialApp(theme: factoryLightTheme(), home: const SalonDetailScreen(provider: _provider)),
       ),
     );
     await tester.pumpAndSettle();
@@ -335,7 +336,7 @@ void main() {
           salonAdminApiProvider.overrideWithValue(fakeApi),
           beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
         ],
-        child: const MaterialApp(home: SalonDetailScreen(provider: _provider)),
+        child: MaterialApp(theme: factoryLightTheme(), home: const SalonDetailScreen(provider: _provider)),
       ),
     );
     await tester.pumpAndSettle();
@@ -371,7 +372,7 @@ void main() {
           salonAdminApiProvider.overrideWithValue(fakeApi),
           beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
         ],
-        child: const MaterialApp(home: SalonDetailScreen(provider: _provider)),
+        child: MaterialApp(theme: factoryLightTheme(), home: const SalonDetailScreen(provider: _provider)),
       ),
     );
     await tester.pumpAndSettle();
@@ -382,7 +383,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(fakeApi.lastCompletedBookingId, 'b1');
-    expect(find.text('\$25.00 — COMPLETED'), findsOneWidget);
+    expect(find.text('25 ₸'), findsOneWidget);
+    expect(find.text('Completed'), findsOneWidget);
   });
 
   testWidgets('editing the salon calls updateProvider and updates the AppBar title', (tester) async {
@@ -394,7 +396,7 @@ void main() {
           salonAdminApiProvider.overrideWithValue(fakeApi),
           beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
         ],
-        child: const MaterialApp(home: SalonDetailScreen(provider: _provider)),
+        child: MaterialApp(theme: factoryLightTheme(), home: const SalonDetailScreen(provider: _provider)),
       ),
     );
     await tester.pumpAndSettle();
@@ -430,7 +432,7 @@ void main() {
           salonAdminApiProvider.overrideWithValue(fakeApi),
           beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
         ],
-        child: const MaterialApp(home: SalonDetailScreen(provider: _provider)),
+        child: MaterialApp(theme: factoryLightTheme(), home: const SalonDetailScreen(provider: _provider)),
       ),
     );
     await tester.pumpAndSettle();
@@ -466,7 +468,7 @@ void main() {
           salonAdminApiProvider.overrideWithValue(fakeApi),
           beautyAdminApiProvider.overrideWithValue(fakeBeautyApi),
         ],
-        child: const MaterialApp(home: SalonDetailScreen(provider: _provider)),
+        child: MaterialApp(theme: factoryLightTheme(), home: const SalonDetailScreen(provider: _provider)),
       ),
     );
     await tester.pumpAndSettle();

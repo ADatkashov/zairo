@@ -1,11 +1,15 @@
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../beauty/data/models/admin_master.dart';
 import '../../../beauty/presentation/providers/beauty_admin_providers.dart';
 import '../../../beauty/presentation/widgets/add_master_dialog.dart';
 import '../../../beauty/presentation/widgets/add_portfolio_item_dialog.dart';
 import '../../../beauty/presentation/widgets/manage_master_services_dialog.dart';
+import '../../data/models/admin_booking.dart';
 import '../../data/models/admin_provider.dart';
+import '../../data/models/admin_service.dart';
 import '../providers/salon_providers.dart';
 import '../widgets/add_service_dialog.dart';
 import '../widgets/add_slot_dialog.dart';
@@ -24,7 +28,10 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+
     return Scaffold(
+      backgroundColor: colors.bg,
       appBar: AppBar(
         title: Text(_provider.name),
         actions: [
@@ -45,24 +52,41 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(FactorySpacing.space4),
         children: [
-          Text('${_provider.vertical} — ${_provider.status}', style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              FactoryBadge(label: _capitalize(_provider.vertical)),
+              FactoryBadge(label: _capitalize(_provider.status), variant: _providerStatusVariant(_provider.status)),
+            ],
+          ),
+          const SizedBox(height: FactorySpacing.space6),
           _ServicesSection(providerId: _provider.id),
-          const SizedBox(height: 24),
+          const SizedBox(height: FactorySpacing.space6),
           _AvailabilitySection(providerId: _provider.id),
           if (_provider.vertical == 'beauty') ...[
-            const SizedBox(height: 24),
+            const SizedBox(height: FactorySpacing.space6),
             _MastersSection(providerId: _provider.id),
           ],
-          const SizedBox(height: 24),
+          const SizedBox(height: FactorySpacing.space6),
           _BookingsSection(providerId: _provider.id),
         ],
       ),
     );
   }
 }
+
+FactoryBadgeVariant _providerStatusVariant(String status) => switch (status) {
+      'ACTIVE' => FactoryBadgeVariant.available,
+      'PENDING' => FactoryBadgeVariant.limited,
+      'SUSPENDED' => FactoryBadgeVariant.error,
+      _ => FactoryBadgeVariant.neutral,
+    };
+
+String _capitalize(String s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1).toLowerCase()}';
 
 /// Owner-editable fields only — vertical and status aren't here on purpose,
 /// see backend's Provider.update() for why.
@@ -172,6 +196,24 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
   }
 }
 
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title, required this.trailing});
+
+  final String title;
+  final Widget trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(title, style: Theme.of(context).textTheme.titleMedium),
+        trailing,
+      ],
+    );
+  }
+}
+
 class _ServicesSection extends ConsumerWidget {
   final String providerId;
 
@@ -179,83 +221,64 @@ class _ServicesSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.factoryColors;
     final showInactive = ref.watch(showInactiveServicesProvider(providerId));
     final servicesAsync = ref.watch(providerServicesProvider((providerId, showInactive)));
     void refresh() => ref.invalidate(providerServicesProvider((providerId, showInactive)));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Services', style: Theme.of(context).textTheme.titleMedium),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextButton(
-                  onPressed: () =>
-                      ref.read(showInactiveServicesProvider(providerId).notifier).state = !showInactive,
-                  child: Text(showInactive ? 'Hide removed' : 'Show removed'),
-                ),
-                TextButton.icon(
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add'),
-                  onPressed: () async {
-                    final added = await showDialog<bool>(
-                      context: context,
-                      builder: (_) => AddServiceDialog(providerId: providerId),
-                    );
-                    if (added == true) refresh();
-                  },
-                ),
-              ],
-            ),
-          ],
+        _SectionHeader(
+          title: 'Services',
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextButton(
+                onPressed: () =>
+                    ref.read(showInactiveServicesProvider(providerId).notifier).state = !showInactive,
+                child: Text(showInactive ? 'Hide removed' : 'Show removed'),
+              ),
+              TextButton.icon(
+                icon: const Icon(Icons.add),
+                label: const Text('Add'),
+                onPressed: () async {
+                  final added = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => AddServiceDialog(providerId: providerId),
+                  );
+                  if (added == true) refresh();
+                },
+              ),
+            ],
+          ),
         ),
         servicesAsync.when(
           data: (services) {
             if (services.isEmpty) {
-              return Text(showInactive ? 'No services yet.' : 'No active services.');
+              return Text(
+                showInactive ? 'No services yet.' : 'No active services.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+              );
             }
             return Column(
               children: services
-                  .map((s) => ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(s.title, style: s.active ? null : const TextStyle(color: Colors.grey)),
-                        subtitle: Text('${s.durationMinutes} min — \$${s.price.toStringAsFixed(2)}'
-                            '${s.active ? '' : ' — removed'}'),
-                        trailing: s.active
-                            ? Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit_outlined),
-                                    tooltip: 'Edit',
-                                    onPressed: () async {
-                                      final saved = await showDialog<bool>(
-                                        context: context,
-                                        builder: (_) => AddServiceDialog(providerId: providerId, existing: s),
-                                      );
-                                      if (saved == true) refresh();
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline),
-                                    tooltip: 'Remove',
-                                    onPressed: () async {
-                                      await ref.read(salonAdminApiProvider).deactivateService(s.id);
-                                      refresh();
-                                    },
-                                  ),
-                                ],
-                              )
-                            : TextButton(
-                                onPressed: () async {
-                                  await ref.read(salonAdminApiProvider).reactivateService(s.id);
-                                  refresh();
-                                },
-                                child: const Text('Reactivate'),
-                              ),
+                  .map((s) => _ServiceAdminRow(
+                        service: s,
+                        onEdit: () async {
+                          final saved = await showDialog<bool>(
+                            context: context,
+                            builder: (_) => AddServiceDialog(providerId: providerId, existing: s),
+                          );
+                          if (saved == true) refresh();
+                        },
+                        onRemove: () async {
+                          await ref.read(salonAdminApiProvider).deactivateService(s.id);
+                          refresh();
+                        },
+                        onReactivate: () async {
+                          await ref.read(salonAdminApiProvider).reactivateService(s.id);
+                          refresh();
+                        },
                       ))
                   .toList(),
             );
@@ -271,6 +294,71 @@ class _ServicesSection extends ConsumerWidget {
   }
 }
 
+class _ServiceAdminRow extends StatelessWidget {
+  const _ServiceAdminRow({
+    required this.service,
+    required this.onEdit,
+    required this.onRemove,
+    required this.onReactivate,
+  });
+
+  final AdminService service;
+  final VoidCallback onEdit;
+  final VoidCallback onRemove;
+  final VoidCallback onReactivate;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space2),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: colors.border))),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        service.title,
+                        style: textTheme.titleSmall?.copyWith(color: service.active ? colors.text : colors.textTertiary),
+                      ),
+                    ),
+                    if (!service.active) ...[
+                      const SizedBox(width: FactorySpacing.space2),
+                      const FactoryBadge(label: 'Removed'),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text('${service.durationMinutes} min', style: textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
+              ],
+            ),
+          ),
+          FactoryPriceText(amount: service.price, fontSize: 14, color: service.active ? null : colors.textTertiary),
+          const SizedBox(width: FactorySpacing.space2),
+          if (service.active)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(icon: const Icon(Icons.edit_outlined), tooltip: 'Edit', onPressed: onEdit),
+                IconButton(icon: const Icon(Icons.delete_outline), tooltip: 'Remove', onPressed: onRemove),
+              ],
+            )
+          else
+            TextButton(onPressed: onReactivate, child: const Text('Reactivate')),
+        ],
+      ),
+    );
+  }
+}
+
 class _AvailabilitySection extends ConsumerWidget {
   final String providerId;
 
@@ -278,30 +366,33 @@ class _AvailabilitySection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.factoryColors;
     final slotsAsync = ref.watch(providerSlotsProvider(providerId));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Availability', style: Theme.of(context).textTheme.titleMedium),
-            TextButton.icon(
-              icon: const Icon(Icons.add),
-              label: const Text('Add'),
-              onPressed: () async {
-                final added = await showDialog<bool>(
-                  context: context,
-                  builder: (_) => AddSlotDialog(providerId: providerId),
-                );
-                if (added == true) ref.invalidate(providerSlotsProvider(providerId));
-              },
-            ),
-          ],
+        _SectionHeader(
+          title: 'Availability',
+          trailing: TextButton.icon(
+            icon: const Icon(Icons.add),
+            label: const Text('Add'),
+            onPressed: () async {
+              final added = await showDialog<bool>(
+                context: context,
+                builder: (_) => AddSlotDialog(providerId: providerId),
+              );
+              if (added == true) ref.invalidate(providerSlotsProvider(providerId));
+            },
+          ),
         ),
         slotsAsync.when(
           data: (slots) {
-            if (slots.isEmpty) return const Text('No time slots yet.');
+            if (slots.isEmpty) {
+              return Text(
+                'No time slots yet.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+              );
+            }
             return Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -310,7 +401,11 @@ class _AvailabilitySection extends ConsumerWidget {
               // its chip but with no delete affordance.
               children: slots
                   .map((s) => Chip(
-                        label: Text('${_formatDateTime(s.startsAt.toLocal())} — ${s.status}'),
+                        label: Text(
+                          s.status == 'OPEN'
+                              ? _formatDateTime(s.startsAt.toLocal())
+                              : '${_formatDateTime(s.startsAt.toLocal())} · ${_capitalize(s.status)}',
+                        ),
                         onDeleted: s.status == 'OPEN'
                             ? () async {
                                 await ref.read(salonAdminApiProvider).deleteSlot(s.id);
@@ -339,91 +434,67 @@ class _MastersSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.factoryColors;
     final showInactive = ref.watch(showInactiveMastersProvider(providerId));
     final mastersAsync = ref.watch(adminMastersProvider((providerId, showInactive)));
     void refresh() => ref.invalidate(adminMastersProvider((providerId, showInactive)));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Masters', style: Theme.of(context).textTheme.titleMedium),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextButton(
-                  onPressed: () =>
-                      ref.read(showInactiveMastersProvider(providerId).notifier).state = !showInactive,
-                  child: Text(showInactive ? 'Hide removed' : 'Show removed'),
-                ),
-                TextButton.icon(
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add'),
-                  onPressed: () async {
-                    final added = await showDialog<bool>(
-                      context: context,
-                      builder: (_) => AddMasterDialog(providerId: providerId),
-                    );
-                    if (added == true) refresh();
-                  },
-                ),
-              ],
-            ),
-          ],
+        _SectionHeader(
+          title: 'Masters',
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextButton(
+                onPressed: () =>
+                    ref.read(showInactiveMastersProvider(providerId).notifier).state = !showInactive,
+                child: Text(showInactive ? 'Hide removed' : 'Show removed'),
+              ),
+              TextButton.icon(
+                icon: const Icon(Icons.add),
+                label: const Text('Add'),
+                onPressed: () async {
+                  final added = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => AddMasterDialog(providerId: providerId),
+                  );
+                  if (added == true) refresh();
+                },
+              ),
+            ],
+          ),
         ),
         mastersAsync.when(
           data: (masters) {
             if (masters.isEmpty) {
-              return Text(showInactive ? 'No masters yet.' : 'No active masters.');
+              return Text(
+                showInactive ? 'No masters yet.' : 'No active masters.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+              );
             }
             return Column(
               children: masters
-                  .map((m) => Card(
-                        child: ListTile(
-                          title: Text(m.displayName, style: m.active ? null : const TextStyle(color: Colors.grey)),
-                          subtitle: Text([
-                            if (m.bio != null) m.bio!,
-                            if (!m.active) 'removed',
-                          ].join(' — ')),
-                          trailing: m.active
-                              ? Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.design_services_outlined),
-                                      tooltip: 'Services this master offers',
-                                      onPressed: () => showDialog(
-                                        context: context,
-                                        builder: (_) =>
-                                            ManageMasterServicesDialog(providerId: providerId, masterId: m.id),
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.add_a_photo_outlined),
-                                      tooltip: 'Add portfolio photo',
-                                      onPressed: () => showDialog<bool>(
-                                        context: context,
-                                        builder: (_) => AddPortfolioItemDialog(masterId: m.id),
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.person_remove_outlined),
-                                      tooltip: 'Remove master',
-                                      onPressed: () async {
-                                        await ref.read(beautyAdminApiProvider).deactivateMaster(m.id);
-                                        refresh();
-                                      },
-                                    ),
-                                  ],
-                                )
-                              : TextButton(
-                                  onPressed: () async {
-                                    await ref.read(beautyAdminApiProvider).reactivateMaster(m.id);
-                                    refresh();
-                                  },
-                                  child: const Text('Reactivate'),
-                                ),
+                  .map((m) => Padding(
+                        padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
+                        child: _MasterAdminRow(
+                          master: m,
+                          onManageServices: () => showDialog(
+                            context: context,
+                            builder: (_) => ManageMasterServicesDialog(providerId: providerId, masterId: m.id),
+                          ),
+                          onAddPortfolioItem: () => showDialog<bool>(
+                            context: context,
+                            builder: (_) => AddPortfolioItemDialog(masterId: m.id),
+                          ),
+                          onRemove: () async {
+                            await ref.read(beautyAdminApiProvider).deactivateMaster(m.id);
+                            refresh();
+                          },
+                          onReactivate: () async {
+                            await ref.read(beautyAdminApiProvider).reactivateMaster(m.id);
+                            refresh();
+                          },
                         ),
                       ))
                   .toList(),
@@ -440,6 +511,100 @@ class _MastersSection extends ConsumerWidget {
   }
 }
 
+class _MasterAdminRow extends StatelessWidget {
+  const _MasterAdminRow({
+    required this.master,
+    required this.onManageServices,
+    required this.onAddPortfolioItem,
+    required this.onRemove,
+    required this.onReactivate,
+  });
+
+  final AdminMaster master;
+  final VoidCallback onManageServices;
+  final VoidCallback onAddPortfolioItem;
+  final VoidCallback onRemove;
+  final VoidCallback onReactivate;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.all(FactorySpacing.space3),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: FactoryRadius.mdRadius,
+        border: Border.all(color: colors.border),
+      ),
+      child: Row(
+        children: [
+          FactoryAvatar(
+            initials: _initialsFor(master.displayName),
+            image: master.photoUrl != null ? NetworkImage(master.photoUrl!) : null,
+          ),
+          const SizedBox(width: FactorySpacing.space3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        master.displayName,
+                        style: textTheme.titleSmall?.copyWith(color: master.active ? colors.text : colors.textTertiary),
+                      ),
+                    ),
+                    if (!master.active) ...[
+                      const SizedBox(width: FactorySpacing.space2),
+                      const FactoryBadge(label: 'Removed'),
+                    ],
+                  ],
+                ),
+                if (master.bio != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    master.bio!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (master.active)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.design_services_outlined),
+                  tooltip: 'Services this master offers',
+                  onPressed: onManageServices,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add_a_photo_outlined),
+                  tooltip: 'Add portfolio photo',
+                  onPressed: onAddPortfolioItem,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.person_remove_outlined),
+                  tooltip: 'Remove master',
+                  onPressed: onRemove,
+                ),
+              ],
+            )
+          else
+            TextButton(onPressed: onReactivate, child: const Text('Reactivate')),
+        ],
+      ),
+    );
+  }
+}
+
 class _BookingsSection extends ConsumerWidget {
   final String providerId;
 
@@ -447,29 +612,30 @@ class _BookingsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.factoryColors;
     final bookingsAsync = ref.watch(providerBookingsProvider(providerId));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Bookings', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 4),
+        const SizedBox(height: FactorySpacing.space2),
         bookingsAsync.when(
           data: (bookings) {
-            if (bookings.isEmpty) return const Text('No bookings yet.');
+            if (bookings.isEmpty) {
+              return Text(
+                'No bookings yet.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+              );
+            }
             return Column(
               children: bookings
-                  .map((b) => ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text('\$${b.totalPrice.toStringAsFixed(2)} — ${b.status}'),
-                        subtitle: Text(_formatDateTime(b.createdAt.toLocal())),
-                        trailing: b.status == 'CONFIRMED'
-                            ? TextButton(
-                                onPressed: () async {
-                                  await ref.read(salonAdminApiProvider).completeBooking(b.id);
-                                  ref.invalidate(providerBookingsProvider(providerId));
-                                },
-                                child: const Text('Mark complete'),
-                              )
+                  .map((b) => _BookingAdminRow(
+                        booking: b,
+                        onMarkComplete: b.status == 'CONFIRMED'
+                            ? () async {
+                                await ref.read(salonAdminApiProvider).completeBooking(b.id);
+                                ref.invalidate(providerBookingsProvider(providerId));
+                              }
                             : null,
                       ))
                   .toList(),
@@ -486,12 +652,73 @@ class _BookingsSection extends ConsumerWidget {
   }
 }
 
+class _BookingAdminRow extends StatelessWidget {
+  const _BookingAdminRow({required this.booking, required this.onMarkComplete});
+
+  final AdminBooking booking;
+  final VoidCallback? onMarkComplete;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space2),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: colors.border))),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    FactoryPriceText(amount: booking.totalPrice, fontSize: 14),
+                    FactoryBadge(label: _capitalize(booking.status), variant: _bookingStatusVariant(booking.status)),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _formatDateTime(booking.createdAt.toLocal()),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+                ),
+              ],
+            ),
+          ),
+          if (onMarkComplete != null) TextButton(onPressed: onMarkComplete, child: const Text('Mark complete')),
+        ],
+      ),
+    );
+  }
+}
+
+FactoryBadgeVariant _bookingStatusVariant(String status) => switch (status) {
+      'CONFIRMED' => FactoryBadgeVariant.available,
+      'COMPLETED' => FactoryBadgeVariant.verified,
+      'CANCELLED' => FactoryBadgeVariant.error,
+      _ => FactoryBadgeVariant.neutral,
+    };
+
+String _initialsFor(String name) {
+  final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+  if (parts.isEmpty) return '?';
+  if (parts.length == 1) {
+    return parts.first.substring(0, parts.first.length >= 2 ? 2 : 1).toUpperCase();
+  }
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+const _months = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
 String _formatDateTime(DateTime dt) {
-  const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-  ];
-  final month = months[dt.month - 1];
+  final month = _months[dt.month - 1];
   final hour = dt.hour.toString().padLeft(2, '0');
   final minute = dt.minute.toString().padLeft(2, '0');
   return '$month ${dt.day}, $hour:$minute';

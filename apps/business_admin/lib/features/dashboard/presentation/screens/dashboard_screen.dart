@@ -1,7 +1,9 @@
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../salon/data/models/admin_provider.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
 import '../../../salon/presentation/screens/salon_detail_screen.dart';
 
@@ -15,6 +17,7 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.factoryColors;
     final user = ref.watch(authControllerProvider).value;
     if (user == null) {
       // AuthGate only renders this screen once logged in; a null user here
@@ -25,6 +28,7 @@ class DashboardScreen extends ConsumerWidget {
     final providersAsync = ref.watch(myProvidersProvider(user.id));
 
     return Scaffold(
+      backgroundColor: colors.bg,
       appBar: AppBar(
         title: Text('Hi, ${user.displayName}'),
         actions: [
@@ -40,30 +44,38 @@ class DashboardScreen extends ConsumerWidget {
           if (providers.isEmpty) {
             return _CreateSalonForm(ownerUserId: user.id);
           }
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              ...providers.map((provider) => Card(
-                    child: ListTile(
-                      title: Text(provider.name),
-                      subtitle: Text('${provider.vertical} — ${provider.status}'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => SalonDetailScreen(provider: provider)),
-                      ),
-                    ),
-                  )),
-              const SizedBox(height: 16),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.add),
-                label: const Text('Add another salon'),
-                onPressed: () => _openCreateSalonDialog(context, ref, user.id),
-              ),
-            ],
+          return ListView.separated(
+            padding: const EdgeInsets.all(FactorySpacing.space4),
+            itemCount: providers.length + 1,
+            separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
+            itemBuilder: (context, index) {
+              if (index == providers.length) {
+                return OutlinedButton.icon(
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add another salon'),
+                  onPressed: () => _openCreateSalonDialog(context, ref, user.id),
+                );
+              }
+              final provider = providers[index];
+              return _SalonCard(
+                provider: provider,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => SalonDetailScreen(provider: provider)),
+                ),
+              );
+            },
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => Center(child: Text('Failed to load your salons: $error')),
+        error: (error, stackTrace) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(FactorySpacing.space4),
+            child: FactoryErrorState(
+              message: "Couldn't load your salons.",
+              onRetry: () => ref.invalidate(myProvidersProvider(user.id)),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -102,6 +114,57 @@ class DashboardScreen extends ConsumerWidget {
   }
 }
 
+class _SalonCard extends StatelessWidget {
+  const _SalonCard({required this.provider, required this.onTap});
+
+  final AdminProvider provider;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: InkWell(
+        borderRadius: FactoryRadius.lgRadius,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(FactorySpacing.space4),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(provider.name, style: textTheme.titleSmall),
+                    const SizedBox(height: 4),
+                    Text(_capitalize(provider.vertical), style: textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
+                  ],
+                ),
+              ),
+              FactoryBadge(label: _capitalize(provider.status), variant: _providerStatusVariant(provider.status)),
+              const SizedBox(width: FactorySpacing.space2),
+              Icon(Icons.chevron_right, color: colors.textTertiary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+FactoryBadgeVariant _providerStatusVariant(String status) => switch (status) {
+      'ACTIVE' => FactoryBadgeVariant.available,
+      'PENDING' => FactoryBadgeVariant.limited,
+      'SUSPENDED' => FactoryBadgeVariant.error,
+      _ => FactoryBadgeVariant.neutral,
+    };
+
+String _capitalize(String s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1).toLowerCase()}';
+
 class _CreateSalonForm extends ConsumerStatefulWidget {
   final String ownerUserId;
 
@@ -124,26 +187,34 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(FactorySpacing.space6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.storefront_outlined, size: 48),
-            const SizedBox(height: 16),
-            const Text('You have no salons yet', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(color: colors.surfaceAlt, shape: BoxShape.circle),
+              child: Icon(Icons.storefront_outlined, size: 22, color: colors.textTertiary),
+            ),
+            const SizedBox(height: FactorySpacing.space4),
+            Text('You have no salons yet', style: textTheme.titleSmall),
+            const SizedBox(height: FactorySpacing.space4),
             TextField(
               controller: _nameController,
               enabled: !_isSubmitting,
               decoration: const InputDecoration(labelText: 'Salon name'),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: FactorySpacing.space4),
             if (_error != null)
               Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
+                child: Text(_error!, style: TextStyle(color: colors.error)),
               ),
             FilledButton(
               onPressed: _isSubmitting ? null : _submit,

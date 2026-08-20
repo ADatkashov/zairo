@@ -1,4 +1,5 @@
 import 'package:core_network/core_network.dart';
+import 'package:core_ui/core_ui.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -71,7 +72,7 @@ void main() {
           salonAdminApiProvider.overrideWithValue(fakeApi),
           authControllerProvider.overrideWith(_LoggedInOwnerController.new),
         ],
-        child: const MaterialApp(home: DashboardScreen()),
+        child: MaterialApp(theme: factoryLightTheme(), home: const DashboardScreen()),
       ),
     );
     await tester.pumpAndSettle();
@@ -97,7 +98,7 @@ void main() {
           beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
           authControllerProvider.overrideWith(_LoggedInOwnerController.new),
         ],
-        child: const MaterialApp(home: DashboardScreen()),
+        child: MaterialApp(theme: factoryLightTheme(), home: const DashboardScreen()),
       ),
     );
     await tester.pumpAndSettle();
@@ -107,6 +108,7 @@ void main() {
     await tester.tap(find.text('Glow Salon'));
     await tester.pumpAndSettle();
 
-    expect(find.text('beauty — ACTIVE'), findsOneWidget);
+    expect(find.text('Beauty'), findsOneWidget);
+    expect(find.text('Active'), findsOneWidget);
   });
 }

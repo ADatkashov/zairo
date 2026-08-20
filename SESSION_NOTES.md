@@ -2033,15 +2033,105 @@ Chrome сам показал нативный попап "Сохранить п�
 
 ### Статус
 Реализовано и проверено (unit-тесты + живой браузер, обе темы, все
-статусы бронирования и оплаты), но **не закоммичено** — ждём
+статусы бронирования и оплаты), закоммичено и запушено (`7c0c4dc`).
+
+## SalonDetailScreen и DashboardScreen в Business Admin (2026-08-21)
+
+Пользователь: "Давай Business Admin — SalonDetailScreen и DashboardScreen".
+Business Admin уже был подключён к `core_ui` (тема применяется глобально
+через `AppTheme.light/.dark` → `factoryLightTheme()/factoryDarkTheme()`),
+но сами экраны ещё не использовали компоненты дизайн-системы — обычные
+`ListTile`/`Card`/голый текст. Диалоги (`AddServiceDialog`,
+`AddSlotDialog`, `AddMasterDialog` и т.д.) трогать не пришлось вообще —
+`AlertDialog`/`TextField`/`FilledButton`/`TextButton` уже полностью
+наследуют тему из `factory_theme.dart` (то же самое наблюдение, что уже
+не раз подтверждалось в этой сессии: раз глобальная тема на месте,
+новый код бесплатно её получает).
+
+### DashboardScreen
+Список салонов: `Card(ListTile(...))` → карточка `_SalonCard`
+(название + вертикаль текстом + `FactoryBadge` статуса + шеврон),
+`ListView.builder` → `ListView.separated` с прогалами
+`FactorySpacing.space3`. Статус провайдера (`ProviderStatus`:
+PENDING/ACTIVE/SUSPENDED) впервые получил цветовую кодировку:
+ACTIVE → зелёный `available`, PENDING → жёлтый `limited` ("не готово
+до конца"), SUSPENDED → красный `error`. Пустой список (нет салонов) —
+форма создания салона осталась своей (`_CreateSalonForm`, не
+`FactoryEmptyState`, т.к. у неё есть реальное поле ввода, а не просто
+кнопка-действие), но её иконка-кружок теперь оформлена в том же
+визуальном языке, что и `FactoryEmptyState` (52px круг, `surfaceAlt`).
+Ошибка загрузки → `FactoryErrorState` с retry.
+
+### SalonDetailScreen
+Самый большой экран проекта на данный момент — 4 секции (Services,
+Availability, Masters, Bookings), каждая со своими CRUD-действиями.
+Хедер: было `Text('beauty — ACTIVE')` одной строкой → два отдельных
+`FactoryBadge` (вертикаль нейтральным цветом + статус тем же
+цветокодированием, что и на Dashboard).
+- **Услуги**: `ListTile` → новый `_ServiceAdminRow` (цена через
+  `FactoryPriceText`, статус "removed" — `FactoryBadge` вместо серого
+  текста впристык к названию), edit/delete иконки как были.
+- **Слоты**: остались `Chip` — тема `chipTheme` уже полностью покрывает
+  их бесплатно (граница, фон, форма), править нечего; единственное
+  реальное улучшение — суффикс статуса в лейбле показывается только для
+  не-OPEN слотов ("Aug 21, 02:47 · Booked"), а не всегда ("... — OPEN"
+  для самого частого случая было лишним шумом).
+- **Мастера**: `Card(ListTile(...))` → `_MasterAdminRow`, тот же
+  визуальный паттерн, что и `_MasterOption` в `user_app`'s
+  `ProviderDetailScreen` (`FactoryAvatar` с инициалами, рамка+статус),
+  независимая копия (эти два приложения не шарят код, только `core_ui`).
+- **Бронирования**: `ListTile` с одной строкой `'\$25.00 — CONFIRMED'`
+  → `FactoryPriceText` + `FactoryBadge` статуса (та же цветовая схема,
+  что и в `user_app`'s `MyBookingsScreen`: CONFIRMED зелёный, COMPLETED
+  бирюзовый `verified`, CANCELLED красный).
+
+### Тесты
+`theme: factoryLightTheme()` добавлен в `auth_gate_test.dart` (там, где
+логинится PROVIDER_OWNER и рендерится DashboardScreen),
+`dashboard_screen_test.dart`, `salon_detail_screen_test.dart` — восьмой
+и девятый раз этот же гэпч встречается в проекте, уже совсем рутина.
+Обновлены ассерты, которые реально сломались от смены визуального
+представления: `'beauty — ACTIVE'` → отдельно `'Beauty'` и `'Active'`;
+`'\$25.00 — COMPLETED'` → отдельно `'25 ₸'` и `'Completed'`. Все
+остальные ассерты (тултипы 'Edit'/'Edit salon', тексты 'Add'/'Show
+removed'/'Reactivate'/'Mark complete', `find.byType(Chip)`,
+`find.byIcon(Icons.delete_outline)`) не потребовали изменений — они
+были завязаны на функциональные хуки, а не на конкретную вёрстку,
+редизайн их не задел. `business_admin`: 18/18 тестов (столько же,
+сколько было, поменялось только их содержимое), `flutter analyze`
+чисто, `flutter build web` собирается.
+
+### Живая проверка в браузере
+Засеял нового владельца через `/auth/register` + два салона через
+`POST /providers` (оба ушли в PENDING — сразу живая проверка жёлтого
+`limited`-бейджа, которого раньше никто не видел вживую). Один салон
+(Velvet Studio) заполнил полным набором данных: 2 услуги (1 активная,
+1 удалённая), 2 слота (оба забронированы — проверка суффикса "· Booked"
+в чипе), 2 мастера (1 активный с био, 1 удалённый), 2 бронирования
+(CONFIRMED и COMPLETED, через реального клиента и `/complete`).
+Залогинился в Business Admin как этот владелец (тёмная тема) — Dashboard
+показал обе карточки с жёлтыми "Pending" бейджами; открыл Velvet Studio
+— все 4 секции отрендерились корректно: услуги с ценой в тенге, слоты
+без иконки удаления (раз не OPEN), мастер с аватаром-инициалами и тремя
+иконками действий, бронирования с правильными цветными бейджами и
+кнопкой "Mark complete" только у CONFIRMED. Переключил "Show removed" у
+обеих секций (услуги и мастера) — скрытые записи появились серым текстом
+с бейджем "Removed" и кнопкой "Reactivate", как задумано. Ни одного
+overflow нигде. Столкнулся с уже знакомым попапом Chrome "Сохранить
+пароль?" — закрыт тем же способом (клик по крестику), что и в прошлый
+раз.
+
+### Статус
+Реализовано и проверено (unit-тесты + живой браузер, все 4 секции,
+все состояния активности/бронирования), но **не закоммичено** — ждём
 подтверждения.
 
 ## Следующий шаг — рекомендация архитектора
-`user_app` теперь полностью на дизайн-системе Factory (Home, Search,
-ProviderDetailScreen, Bookings, Favorites, Profile/Login были уже
-готовы). Дальше — `SalonDetailScreen`/`DashboardScreen` и остальные
-экраны в Business Admin, единственном месте, ещё не тронутом дизайн-
-системой (кроме экрана логина, который уже наследует тему). Отдельно
-всё ещё открыт вопрос про Bookings/Favorites как полноценные табы и про
-несовпадение имени `ProviderCard` vs `FactoryProviderCard` из v0.2
-артефакта.
+Оба приложения (`user_app` и `business_admin`) теперь полностью на
+дизайн-системе Factory. Единственный оставшийся нетронутый экран —
+`ModerationScreen` (ADMIN-режим Business Admin) — сознательно не тронут
+в этом шаге, пользователь просил конкретно SalonDetailScreen и
+DashboardScreen. Открытые вопросы, которые ещё предстоит решить:
+Bookings/Favorites как полноценные табы в `user_app`, несовпадение имени
+`ProviderCard` vs `FactoryProviderCard` из v0.2 артефакта, и стоит ли
+довести до дизайн-системы `ModerationScreen` заодно.
