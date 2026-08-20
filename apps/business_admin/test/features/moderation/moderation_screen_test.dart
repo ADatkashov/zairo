@@ -1,4 +1,5 @@
 import 'package:core_network/core_network.dart';
+import 'package:core_ui/core_ui.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -50,31 +51,31 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [salonAdminApiProvider.overrideWithValue(fakeApi)],
-        child: const MaterialApp(home: ModerationScreen()),
+        child: MaterialApp(theme: factoryLightTheme(), home: const ModerationScreen()),
       ),
     );
     await tester.pumpAndSettle();
 
     expect(find.text('Glow Salon'), findsOneWidget);
-    expect(find.text('beauty'), findsOneWidget);
+    expect(find.text('Beauty'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(FilledButton, 'Approve'));
     await tester.pumpAndSettle();
 
     expect(fakeApi.lastStatusCall, {'providerId': 'p1', 'status': 'ACTIVE'});
     // No longer PENDING, so it drops out of the moderation queue.
-    expect(find.text('No salons awaiting approval.'), findsOneWidget);
+    expect(find.text('No salons awaiting approval'), findsOneWidget);
   });
 
   testWidgets('shows the empty state when nothing is pending', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [salonAdminApiProvider.overrideWithValue(_FakeSalonAdminApi([]))],
-        child: const MaterialApp(home: ModerationScreen()),
+        child: MaterialApp(theme: factoryLightTheme(), home: const ModerationScreen()),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('No salons awaiting approval.'), findsOneWidget);
+    expect(find.text('No salons awaiting approval'), findsOneWidget);
   });
 }
