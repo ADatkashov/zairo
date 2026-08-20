@@ -5,6 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zairo/features/auth/data/models/user_summary.dart';
 import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
+import 'package:zairo/features/beauty/data/beauty_api.dart';
+import 'package:zairo/features/beauty/data/models/master.dart';
+import 'package:zairo/features/beauty/presentation/providers/beauty_providers.dart';
 import 'package:zairo/features/booking/data/booking_api.dart';
 import 'package:zairo/features/booking/data/models/availability_slot.dart';
 import 'package:zairo/features/booking/data/models/booking.dart';
@@ -69,6 +72,42 @@ class _FakePaymentsApi extends PaymentsApi {
   }
 }
 
+class _FakeBeautyApi extends BeautyApi {
+  _FakeBeautyApi([this._masters = const []]) : super(DioClient(Dio()));
+
+  final List<Master> _masters;
+  Map<String, dynamic>? lastBeautyBookingCall;
+
+  @override
+  Future<List<Master>> listMasters(String providerId) async => _masters;
+
+  @override
+  Future<Booking> createBeautyBooking({
+    required String userId,
+    required String masterId,
+    required String serviceId,
+    required String availabilitySlotId,
+    required double totalPrice,
+  }) async {
+    lastBeautyBookingCall = {
+      'userId': userId,
+      'masterId': masterId,
+      'serviceId': serviceId,
+      'availabilitySlotId': availabilitySlotId,
+      'totalPrice': totalPrice,
+    };
+    return Booking(
+      id: 'beauty-booking-1',
+      userId: userId,
+      serviceId: serviceId,
+      availabilitySlotId: availabilitySlotId,
+      status: 'CONFIRMED',
+      totalPrice: totalPrice,
+      createdAt: DateTime.now(),
+    );
+  }
+}
+
 class _LoggedInAuthController extends AuthController {
   @override
   Future<UserSummary?> build() async {
@@ -105,6 +144,7 @@ void main() {
         overrides: [
           bookingApiProvider.overrideWithValue(fakeApi),
           paymentsApiProvider.overrideWithValue(fakePaymentsApi),
+          beautyApiProvider.overrideWithValue(_FakeBeautyApi()),
           authControllerProvider.overrideWith(_LoggedInAuthController.new),
         ],
         child: MaterialApp(navigatorKey: navigatorKey, home: const Scaffold(body: SizedBox())),
@@ -137,6 +177,75 @@ void main() {
     expect(find.text('Booking confirmed and paid!'), findsOneWidget);
   });
 
+  testWidgets('a beauty provider with masters requires picking one and books through the beauty endpoint',
+      (tester) async {
+    final slot = AvailabilitySlot(
+      id: 'slot-1',
+      providerId: 'provider-3',
+      startsAt: DateTime(2026, 1, 1, 10, 0),
+      endsAt: DateTime(2026, 1, 1, 10, 30),
+      status: 'OPEN',
+    );
+    final fakeBookingApi = _FakeBookingApi([slot]);
+    final fakeBeautyApi = _FakeBeautyApi(const [
+      Master(id: 'master-1', providerId: 'provider-3', displayName: 'Jamie Stylist', active: true),
+    ]);
+    final fakePaymentsApi = _FakePaymentsApi();
+    const provider = ProviderSearchResult(
+      id: 'provider-3',
+      name: 'Master Salon',
+      vertical: 'beauty',
+      status: 'ACTIVE',
+      hasOpenAvailability: true,
+      minPrice: 30,
+      services: [
+        ServiceSummary(id: 'service-1', title: 'Haircut', durationMinutes: 30, price: 30, currency: 'USD'),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(fakeBookingApi),
+          paymentsApiProvider.overrideWithValue(fakePaymentsApi),
+          beautyApiProvider.overrideWithValue(fakeBeautyApi),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: const MaterialApp(home: ProviderDetailScreen(provider: provider)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Jamie Stylist'), findsOneWidget);
+
+    final bookButtonFinder = find.widgetWithText(FilledButton, 'Book');
+    await tester.tap(find.text('Haircut'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Jan 1, 10:00'));
+    await tester.pumpAndSettle();
+
+    // Service + slot picked, but no master yet -> still disabled.
+    expect(tester.widget<FilledButton>(bookButtonFinder).onPressed, isNull);
+
+    await tester.tap(find.text('Jamie Stylist'));
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<FilledButton>(bookButtonFinder).onPressed, isNotNull);
+
+    await tester.tap(bookButtonFinder);
+    await tester.pumpAndSettle();
+
+    expect(fakeBeautyApi.lastBeautyBookingCall, {
+      'userId': 'user-1',
+      'masterId': 'master-1',
+      'serviceId': 'service-1',
+      'availabilitySlotId': 'slot-1',
+      'totalPrice': 30.0,
+    });
+    expect(fakeBookingApi.lastBookingCall, isNull);
+    expect(fakePaymentsApi.lastChargedBookingId, 'beauty-booking-1');
+  });
+
   testWidgets('shows a message when there are no open slots', (tester) async {
     final fakeApi = _FakeBookingApi(const []);
     const provider = ProviderSearchResult(
@@ -153,6 +262,7 @@ void main() {
       ProviderScope(
         overrides: [
           bookingApiProvider.overrideWithValue(fakeApi),
+          beautyApiProvider.overrideWithValue(_FakeBeautyApi()),
           authControllerProvider.overrideWith(_LoggedInAuthController.new),
         ],
         child: const MaterialApp(home: ProviderDetailScreen(provider: provider)),

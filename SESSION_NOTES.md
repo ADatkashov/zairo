@@ -894,14 +894,115 @@ port/adapter, что уже применялась для payments (Phase 3): р
 ### Текущий статус
 Всё застейджено, **не закоммичено** — ждём подтверждения.
 
-## Следующий шаг — рекомендация архитектора
-**Phase 2 теперь полностью закрыт без единого отложенного пункта**
-(maps был последним). Реальный провайдер карт (Google Maps/Mapbox/OSM)
-и `geolocator` подключаются заменой `MockLocationService`/`MockMapScreen`
-за уже готовыми интерфейсами, когда у пользователя будет решение по
-провайдеру и биллингу.
+### Текущий статус
+Phase 2 полностью закрыта, включая maps на mock-провайдере.
 
-Дальше по roadmap (Blueprint §14): **Phase 4 — Beauty vertical**
-(salons, masters, portfolio, booking rules) — первая настоящая
-vertical-специфика поверх уже построенного generic-ядра, и хороший
-момент проверить принцип "Core не знает про vertical" на практике.
+## Phase 4 — Beauty vertical: masters, портфолио, правило бронирования (сделано, 2026-08-20)
+
+Первая настоящая vertical-специфика поверх уже построенного generic-ядра
+— практическая проверка принципа "Core не знает про vertical" из
+`docs/erd/core-domain.md`.
+
+### Backend — новый Gradle-модуль `vertical-beauty`
+- Новый модуль назван с префиксом `vertical-` (не просто `beauty`, как
+  остальные bounded-context модули) — явно маркирует его как модуль
+  третьего слоя (Core/Marketplace/Vertical из Factory Blueprint), а не
+  как ещё один bounded context. Пакет `com.zairo.factory.vertical.beauty`.
+- `Master` (`beauty_master`: providerId, displayName, bio, photoUrl,
+  active), `PortfolioItem` (`beauty_portfolio_item`: masterId, imageUrl,
+  caption), `MasterServiceLink` (`beauty_master_service`: связь
+  master↔service, unique-пара — назван не `MasterService`, чтобы не
+  конфликтовать с Spring-стереотипом `@Service`, та же причина, что у
+  `ServiceOffering`), `MasterBooking` (`beauty_master_booking`: bookingId
+  unique + masterId — какой мастер связан с какой Core-бронью).
+- **Единственное место, где этот модуль читает `Provider.vertical`**:
+  `MasterDirectoryService.createMaster` отказывает (400), если
+  провайдер не в vertical `"beauty"`. Это vertical-модуль проверяет своё
+  собственное предусловие, а не Core ветвится по vertical — сам модуль
+  `providers` по-прежнему нигде не смотрит на эту строку.
+- **Правило бронирования**: `BeautyBookingService.createBooking`
+  проверяет, что названный мастер реально привязан (`MasterServiceLink`)
+  к запрошенной услуге, иначе `409 MasterDoesNotOfferServiceException`
+  — и только потом вызывает **Core-сервис `BookingService.createBooking`
+  напрямую** (не просто его репозиторий, как делают reviews/payments) —
+  чтобы переиспользовать атомарный захват слота (`OPEN → BOOKED` с
+  `@Version`) вместо повторной реализации этой логики и риска рассинхрона
+  с Core / повторного race на двойное бронирование. Это новый прецедент
+  межмодульной зависимости (vertical → Core *service*, не только
+  *repository*), задокументированный в `vertical-beauty/build.gradle.kts`.
+- `linkService`/`unlinkService` идемпотентны (тот же паттерн, что у
+  favorites), с проверкой, что услуга принадлежит тому же провайдеру,
+  что и мастер (400 иначе).
+- Endpoints: `POST/GET /api/v1/beauty/providers/{id}/masters`,
+  `GET /api/v1/beauty/masters/{id}`, `POST/GET .../portfolio`,
+  `POST/DELETE/GET .../services/{serviceId}`,
+  `POST /api/v1/beauty/bookings`, `GET /api/v1/beauty/bookings/{id}`.
+  Отдельный URL-префикс `/api/v1/beauty/...` — Core-эндпоинты (`/bookings`
+  и т.д.) не знают о существовании vertical-namespace.
+- Flyway `V11`-`V14`. Тест `BeautyApiTests` на реальном Postgres: отказ
+  создания мастера на non-beauty провайдере (400), полный флоу
+  master→portfolio→booking rule (409 до линковки → link → 201 после) →
+  получение брони через beauty-эндпоинт → идемпотентность link/unlink.
+  Находка: тест изначально использовал `"beauty-" + runId` как vertical
+  (по аналогии с SearchApiTests) — но `MasterDirectoryService` сверяет
+  **точный** литерал `"beauty"`, не префикс; поправлено на буквальное
+  значение, коллизий с параллельными тестовыми классами не возникло (это
+  не самый широкий "list all" запрос, как у search).
+- Вручную проверено через `bootRun` + curl: создание мастера/портфолио,
+  409→link→201 для правила бронирования, 400 для non-beauty провайдера —
+  все сценарии подтверждены кодами ответа.
+
+### Flutter — новая фича `features/beauty/`
+- `BeautyApi` (`listMasters`, `listPortfolio`, `createBeautyBooking`).
+  `createBeautyBooking` вручную мапит JSON-ответ (`bookingId`+`masterId`,
+  форма отличается от обычного `Booking`) в тот же `Booking`-класс, что и
+  Core-бронирование — остальной flow (оплата, сообщение) не должен знать,
+  через какой эндпоинт бронь создана.
+- `MasterPortfolioScreen` — грид фотографий с подписями (`Image.network`
+  с `errorBuilder`-заглушкой на случай недоступной картинки).
+- `ProviderDetailScreen`: если `provider.vertical == 'beauty'`, подгружает
+  `mastersProvider` и, если список не пуст, показывает секцию "Masters"
+  (тот же `RadioGroup` паттерн, что у выбора услуги) с кнопкой
+  "View portfolio" у каждого мастера. Кнопка Book требует выбора мастера
+  **только если у провайдера вообще есть мастера** — деградация
+  "мастеров нет/запрос не удался → секция не показывается, бронирование
+  как раньше" сохраняет обратную совместимость с провайдерами других
+  vertical (и с существующими тестами) без веток по vertical в самом
+  экране бронирования (кроме одного `if` для решения, дёргать ли
+  `mastersProvider`).
+  - `_book()`: если мастер выбран — вызывает
+    `beautyApi.createBeautyBooking`, иначе — прежний
+    `bookingApi.createBooking`. Единственная ветка на весь метод.
+  - `BeautyException` (409 — либо мастер не выполняет услугу, либо слот
+    только что заняли; backend не различает эти два случая в теле
+    ответа, поэтому сообщение общее для обоих).
+- Тесты: обновлён `provider_detail_screen_test.dart` — добавлен
+  `_FakeBeautyApi` override в оба существующих теста (иначе они бы
+  дёргали реальную сеть и подвисали, т.к. экран теперь всегда пытается
+  читать `mastersProvider` для `vertical: 'beauty'`), плюс новый тест:
+  провайдер с мастерами требует выбора мастера для активации Book и
+  бронирует именно через beauty-эндпоинт. Новый
+  `master_portfolio_screen_test.dart` (пустое состояние + рендер
+  подписи). `flutter analyze` — чисто, `flutter test` — 30/30 (было
+  27, +3). `flutter build apk --debug` — собирается.
+- **Живая проверка в браузере**: создал через curl салон (vertical
+  beauty) с двумя мастерами (Jamie Stylist ↔ Haircut, Sam Nails ↔
+  Manicure), портфолио из двух фото для Jamie. На экране провайдера
+  секция "Masters" отрисовалась с обоими мастерами; открыл портфолио
+  Jamie — грид с двумя фото и подписями отрендерился. Зарегистрировался
+  как клиент в приложении, выбрал Jamie + Haircut + слот → кнопка Book
+  стала активной только после выбора мастера → нажал Book → "Booking
+  confirmed and paid!" → в "My bookings" запись $25.00, CONFIRMED,
+  Payment: SUCCEEDED. Скриншоты отправлены пользователю.
+
+### Текущий статус
+Всё застейджено, **не закоммичено** — ждём подтверждения.
+
+## Следующий шаг — рекомендация архитектора
+**Phase 4 (Beauty vertical) закрыта.** Второй vertical (Auto, Phase 9 по
+roadmap) — хороший момент проверить KPI проекта ("насколько быстрее
+собирается второй vertical благодаря сделанному разделению Core/Vertical"),
+но ADR-0003 отмечает, что пересматривать multi-tenant/изоляцию рано, пока
+нет второго реального клиента. Дальше можно либо начать второй vertical,
+либо перейти к оставшимся пунктам Blueprint roadmap (Business Admin UI,
+production hardening) — решение за пользователем.

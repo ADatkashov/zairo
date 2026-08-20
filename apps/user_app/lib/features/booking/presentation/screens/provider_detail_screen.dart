@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
+import '../../../beauty/data/beauty_exception.dart';
+import '../../../beauty/data/models/master.dart';
+import '../../../beauty/presentation/providers/beauty_providers.dart';
+import '../../../beauty/presentation/screens/master_portfolio_screen.dart';
 import '../../../discovery/data/models/provider_search_result.dart';
 import '../../../favorites/presentation/widgets/favorite_button.dart';
 import '../../../maps/presentation/screens/mock_map_screen.dart';
@@ -24,11 +28,18 @@ class ProviderDetailScreen extends ConsumerStatefulWidget {
 class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
   String? _selectedServiceId;
   String? _selectedSlotId;
+  String? _selectedMasterId;
   bool _isBooking = false;
 
   @override
   Widget build(BuildContext context) {
     final slotsAsync = ref.watch(availabilitySlotsProvider(widget.provider.id));
+    // Only the beauty vertical has masters; other verticals never touch
+    // this provider, so the section below simply doesn't render for them.
+    final mastersAsync = widget.provider.vertical == 'beauty'
+        ? ref.watch(mastersProvider(widget.provider.id))
+        : const AsyncValue.data(<Master>[]);
+    final masters = mastersAsync.value ?? const <Master>[];
 
     return Scaffold(
       appBar: AppBar(
@@ -56,6 +67,38 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                     ),
                   ),
                 ),
+              ),
+            ),
+          ],
+          if (masters.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text('Masters', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            RadioGroup<String>(
+              groupValue: _selectedMasterId,
+              onChanged: (value) => setState(() => _selectedMasterId = value),
+              child: Column(
+                children: masters
+                    .map(
+                      (master) => RadioListTile<String>(
+                        value: master.id,
+                        title: Text(master.displayName),
+                        subtitle: master.bio != null ? Text(master.bio!) : null,
+                        secondary: IconButton(
+                          icon: const Icon(Icons.photo_library_outlined),
+                          tooltip: 'View portfolio',
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => MasterPortfolioScreen(
+                                masterId: master.id,
+                                masterName: master.displayName,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
               ),
             ),
           ],
@@ -102,7 +145,10 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
           ),
           const SizedBox(height: 24),
           FilledButton(
-            onPressed: (_selectedServiceId != null && _selectedSlotId != null && !_isBooking)
+            onPressed: (_selectedServiceId != null &&
+                    _selectedSlotId != null &&
+                    (masters.isEmpty || _selectedMasterId != null) &&
+                    !_isBooking)
                 ? _book
                 : null,
             child: _isBooking
@@ -136,12 +182,25 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
 
     final service = widget.provider.services.firstWhere((s) => s.id == _selectedServiceId);
     try {
-      final booking = await ref.read(bookingApiProvider).createBooking(
-            userId: currentUser.id,
-            serviceId: service.id,
-            availabilitySlotId: _selectedSlotId!,
-            totalPrice: service.price,
-          );
+      // A master was selected only when this provider has a beauty master
+      // directory (see the Book button's enable condition above) — route
+      // through the beauty booking endpoint so the "master offers this
+      // service" rule is enforced server-side; otherwise use Core's plain
+      // booking flow, unchanged from before masters existed.
+      final booking = _selectedMasterId != null
+          ? await ref.read(beautyApiProvider).createBeautyBooking(
+                userId: currentUser.id,
+                masterId: _selectedMasterId!,
+                serviceId: service.id,
+                availabilitySlotId: _selectedSlotId!,
+                totalPrice: service.price,
+              )
+          : await ref.read(bookingApiProvider).createBooking(
+                userId: currentUser.id,
+                serviceId: service.id,
+                availabilitySlotId: _selectedSlotId!,
+                totalPrice: service.price,
+              );
 
       // Charged right after booking creation, in the same flow — see
       // SESSION_NOTES.md for why this isn't gated behind a webhook yet
@@ -161,6 +220,14 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
       Navigator.of(context).pop();
     } on BookingException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ref.invalidate(availabilitySlotsProvider(widget.provider.id));
+      setState(() {
+        _selectedSlotId = null;
+        _isBooking = false;
+      });
+    } on BeautyException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
       ref.invalidate(availabilitySlotsProvider(widget.provider.id));

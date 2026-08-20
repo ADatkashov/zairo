@@ -1,0 +1,65 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../providers/beauty_providers.dart';
+
+class MasterPortfolioScreen extends ConsumerWidget {
+  final String masterId;
+  final String masterName;
+
+  const MasterPortfolioScreen({super.key, required this.masterId, required this.masterName});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final portfolioAsync = ref.watch(masterPortfolioProvider(masterId));
+
+    return Scaffold(
+      appBar: AppBar(title: Text('$masterName — Portfolio')),
+      body: portfolioAsync.when(
+        data: (items) {
+          if (items.isEmpty) {
+            return const Center(child: Text('No portfolio photos yet.'));
+          }
+          return GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+            ),
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              final item = items[index];
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        item.imageUrl,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          child: const Icon(Icons.broken_image_outlined),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (item.caption != null) ...[
+                    const SizedBox(height: 4),
+                    Text(item.caption!, style: Theme.of(context).textTheme.bodySmall, maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                  ],
+                ],
+              );
+            },
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) => Center(child: Text('Failed to load portfolio: $error')),
+      ),
+    );
+  }
+}

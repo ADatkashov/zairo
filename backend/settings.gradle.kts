@@ -19,4 +19,5 @@ include(
     "notifications",
     "search",
     "favorites",
+    "vertical-beauty",
 )
