@@ -1,0 +1,44 @@
+{
+  "@@locale": "en",
+
+  "navHome": "Home",
+  "@navHome": {"description": "Bottom navigation label for the Home tab."},
+
+  "navSearch": "Search",
+  "@navSearch": {"description": "Bottom navigation label for the Search tab."},
+
+  "navSettings": "Settings",
+  "@navSettings": {"description": "Bottom navigation label for the Settings tab."},
+
+  "navProfile": "Profile",
+  "@navProfile": {"description": "Bottom navigation label for the Profile tab."},
+
+  "settingsTitle": "Settings",
+  "@settingsTitle": {"description": "Settings screen app bar title."},
+
+  "darkModeTitle": "Dark mode",
+  "@darkModeTitle": {"description": "Label for the dark-mode toggle."},
+
+  "darkModeSubtitle": "Current theme: {mode}",
+  "@darkModeSubtitle": {
+    "description": "Subtitle under the dark-mode toggle, showing the active theme.",
+    "placeholders": {
+      "mode": {"type": "String", "example": "System"}
+    }
+  },
+
+  "themeModeSystem": "System",
+  "@themeModeSystem": {"description": "Theme mode option: follow the device setting."},
+
+  "themeModeLight": "Light",
+  "@themeModeLight": {"description": "Theme mode option: always light."},
+
+  "themeModeDark": "Dark",
+  "@themeModeDark": {"description": "Theme mode option: always dark."},
+
+  "languageSectionTitle": "Language",
+  "@languageSectionTitle": {"description": "Settings section header for the language picker."},
+
+  "languageSystemDefault": "System default",
+  "@languageSystemDefault": {"description": "Language option that follows the device's language."}
+}

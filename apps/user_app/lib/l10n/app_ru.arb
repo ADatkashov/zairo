@@ -1,0 +1,20 @@
+{
+  "@@locale": "ru",
+
+  "navHome": "Главная",
+  "navSearch": "Поиск",
+  "navSettings": "Настройки",
+  "navProfile": "Профиль",
+
+  "settingsTitle": "Настройки",
+
+  "darkModeTitle": "Тёмная тема",
+  "darkModeSubtitle": "Текущая тема: {mode}",
+
+  "themeModeSystem": "Системная",
+  "themeModeLight": "Светлая",
+  "themeModeDark": "Тёмная",
+
+  "languageSectionTitle": "Язык",
+  "languageSystemDefault": "Как в системе"
+}

@@ -1,0 +1,20 @@
+{
+  "@@locale": "kk",
+
+  "navHome": "Басты бет",
+  "navSearch": "Іздеу",
+  "navSettings": "Баптаулар",
+  "navProfile": "Профиль",
+
+  "settingsTitle": "Баптаулар",
+
+  "darkModeTitle": "Қараңғы режим",
+  "darkModeSubtitle": "Ағымдағы тақырып: {mode}",
+
+  "themeModeSystem": "Жүйелік",
+  "themeModeLight": "Ашық",
+  "themeModeDark": "Қараңғы",
+
+  "languageSectionTitle": "Тіл",
+  "languageSystemDefault": "Жүйе тіліндей"
+}

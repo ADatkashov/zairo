@@ -25,6 +25,9 @@ dependencies:
     path: ../../packages/core_storage
   core_ui:
     path: ../../packages/core_ui
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.3
 
 dev_dependencies:
   flutter_test:
@@ -39,3 +42,4 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
