@@ -80,6 +80,22 @@ ThemeData _factoryTheme(FactoryColors colors) {
         shape: RoundedRectangleBorder(borderRadius: FactoryRadius.mdRadius),
       ),
     ),
+    // FilledButton defaults (Material3's own ColorScheme-driven style) don't
+    // pick up the mdRadius/padding customization ElevatedButton gets above —
+    // without this, the primary CTA button (e.g. Book) silently reverts to
+    // stock Material shape on an otherwise fully Factory-themed screen.
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        backgroundColor: colors.primary,
+        foregroundColor: colors.onPrimary,
+        disabledBackgroundColor: colors.primary.withValues(alpha: 0.4),
+        disabledForegroundColor: colors.onPrimary.withValues(alpha: 0.8),
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        textStyle: textTheme.labelLarge,
+        shape: RoundedRectangleBorder(borderRadius: FactoryRadius.mdRadius),
+      ),
+    ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: colors.text,

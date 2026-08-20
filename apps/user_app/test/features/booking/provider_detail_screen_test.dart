@@ -1,4 +1,5 @@
 import 'package:core_network/core_network.dart';
+import 'package:core_ui/core_ui.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -147,7 +148,11 @@ void main() {
           beautyApiProvider.overrideWithValue(_FakeBeautyApi()),
           authControllerProvider.overrideWith(_LoggedInAuthController.new),
         ],
-        child: MaterialApp(navigatorKey: navigatorKey, home: const Scaffold(body: SizedBox())),
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          navigatorKey: navigatorKey,
+          home: const Scaffold(body: SizedBox()),
+        ),
       ),
     );
     navigatorKey.currentState!
@@ -211,7 +216,7 @@ void main() {
           beautyApiProvider.overrideWithValue(fakeBeautyApi),
           authControllerProvider.overrideWith(_LoggedInAuthController.new),
         ],
-        child: const MaterialApp(home: ProviderDetailScreen(provider: provider)),
+        child: MaterialApp(theme: factoryLightTheme(), home: ProviderDetailScreen(provider: provider)),
       ),
     );
     await tester.pumpAndSettle();
@@ -265,11 +270,11 @@ void main() {
           beautyApiProvider.overrideWithValue(_FakeBeautyApi()),
           authControllerProvider.overrideWith(_LoggedInAuthController.new),
         ],
-        child: const MaterialApp(home: ProviderDetailScreen(provider: provider)),
+        child: MaterialApp(theme: factoryLightTheme(), home: ProviderDetailScreen(provider: provider)),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('No open time slots right now.'), findsOneWidget);
+    expect(find.text('No open times'), findsOneWidget);
   });
 }

@@ -39,7 +39,7 @@ class FactoryTimeSlot extends StatelessWidget {
         borderRadius: FactoryRadius.smRadius,
         child: Container(
           alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(vertical: 9),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
           decoration: BoxDecoration(
             color: bgColor,
             borderRadius: FactoryRadius.smRadius,

@@ -131,6 +131,20 @@ void main() {
     expect(find.text('15 000 ₸'), findsOneWidget);
   });
 
+  testWidgets('ServiceRow shows a check icon and reports selected state to semantics when selected',
+      (tester) async {
+    await tester.pumpWidget(_wrap(const ServiceRow(
+      title: 'Balayage colouring',
+      metaText: '90 min',
+      price: 15000,
+      selected: true,
+    )));
+
+    expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+    final semantics = tester.getSemantics(find.byType(ServiceRow));
+    expect(semantics.flagsCollection.isSelected.toBoolOrNull(), isTrue);
+  });
+
   testWidgets('FactoryEmptyState only shows the action when both label and callback are given', (tester) async {
     await tester.pumpWidget(_wrap(const FactoryEmptyState(
       icon: Icons.calendar_today_rounded,

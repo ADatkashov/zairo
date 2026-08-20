@@ -1,3 +1,4 @@
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,7 +14,6 @@ import '../../../maps/presentation/screens/mock_map_screen.dart';
 import '../../../payments/data/payment_exception.dart';
 import '../../../payments/presentation/providers/payments_providers.dart';
 import '../../data/booking_exception.dart';
-import '../../data/models/availability_slot.dart';
 import '../providers/booking_providers.dart';
 
 class ProviderDetailScreen extends ConsumerStatefulWidget {
@@ -33,6 +33,8 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
     final slotsAsync = ref.watch(availabilitySlotsProvider(widget.provider.id));
     // Only the beauty vertical has masters; other verticals never touch
     // this provider, so the section below simply doesn't render for them.
@@ -42,124 +44,141 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     final masters = mastersAsync.value ?? const <Master>[];
 
     return Scaffold(
+      backgroundColor: colors.bg,
       appBar: AppBar(
         title: Text(widget.provider.name),
         actions: [FavoriteButton(providerId: widget.provider.id)],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text(widget.provider.vertical, style: Theme.of(context).textTheme.bodySmall),
-          if (widget.provider.latitude != null && widget.provider.longitude != null) ...[
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.map_outlined),
-                label: const Text('View on map'),
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => MockMapScreen(
-                      providerName: widget.provider.name,
-                      latitude: widget.provider.latitude!,
-                      longitude: widget.provider.longitude!,
-                      distanceKm: widget.provider.distanceKm,
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(FactorySpacing.space4),
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                FactoryBadge(label: _capitalize(widget.provider.vertical)),
+                if (widget.provider.hasOpenAvailability)
+                  const FactoryBadge(label: 'Available today', variant: FactoryBadgeVariant.available),
+                if (widget.provider.distanceKm != null)
+                  Text(
+                    '${widget.provider.distanceKm!.toStringAsFixed(1)} km away',
+                    style: FactoryTypography.mono(size: 12, color: colors.textTertiary),
+                  ),
+              ],
+            ),
+            if (widget.provider.latitude != null && widget.provider.longitude != null) ...[
+              const SizedBox(height: FactorySpacing.space3),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.map_outlined, size: 18),
+                  label: const Text('View on map'),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => MockMapScreen(
+                        providerName: widget.provider.name,
+                        latitude: widget.provider.latitude!,
+                        longitude: widget.provider.longitude!,
+                        distanceKm: widget.provider.distanceKm,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
-          if (masters.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Text('Masters', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            RadioGroup<String>(
-              groupValue: _selectedMasterId,
-              onChanged: (value) => setState(() => _selectedMasterId = value),
-              child: Column(
-                children: masters
-                    .map(
-                      (master) => RadioListTile<String>(
-                        value: master.id,
-                        title: Text(master.displayName),
-                        subtitle: master.bio != null ? Text(master.bio!) : null,
-                        secondary: IconButton(
-                          icon: const Icon(Icons.photo_library_outlined),
-                          tooltip: 'View portfolio',
-                          onPressed: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => MasterPortfolioScreen(
-                                masterId: master.id,
-                                masterName: master.displayName,
-                              ),
-                            ),
-                          ),
+            ],
+            if (masters.isNotEmpty) ...[
+              const SizedBox(height: FactorySpacing.space6),
+              Text('Masters', style: textTheme.titleMedium),
+              const SizedBox(height: FactorySpacing.space3),
+              ...masters.map(
+                (master) => Padding(
+                  padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
+                  child: _MasterOption(
+                    master: master,
+                    selected: _selectedMasterId == master.id,
+                    onTap: () => setState(() => _selectedMasterId = master.id),
+                    onViewPortfolio: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => MasterPortfolioScreen(
+                          masterId: master.id,
+                          masterName: master.displayName,
                         ),
                       ),
-                    )
-                    .toList(),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: FactorySpacing.space6),
+            Text('Services', style: textTheme.titleMedium),
+            const SizedBox(height: FactorySpacing.space2),
+            ...widget.provider.services.map(
+              (service) => ServiceRow(
+                title: service.title,
+                metaText: '${service.durationMinutes} min',
+                price: service.price,
+                selected: _selectedServiceId == service.id,
+                onTap: () => setState(() => _selectedServiceId = service.id),
+              ),
+            ),
+            const SizedBox(height: FactorySpacing.space6),
+            Text('Available times', style: textTheme.titleMedium),
+            const SizedBox(height: FactorySpacing.space3),
+            slotsAsync.when(
+              data: (slots) {
+                final openSlots = slots.where((s) => s.isOpen).toList();
+                if (openSlots.isEmpty) {
+                  return const FactoryEmptyState(
+                    icon: Icons.event_busy_rounded,
+                    title: 'No open times',
+                    message: 'Check back later or try another provider.',
+                  );
+                }
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: openSlots
+                      .map(
+                        (slot) => FactoryTimeSlot(
+                          label: _formatSlot(slot.startsAt.toLocal()),
+                          state: _selectedSlotId == slot.id
+                              ? FactoryTimeSlotState.selected
+                              : FactoryTimeSlotState.available,
+                          onTap: () => setState(() => _selectedSlotId = slot.id),
+                        ),
+                      )
+                      .toList(),
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, stackTrace) => FactoryErrorState(
+                message: "Couldn't load availability.",
+                onRetry: () => ref.invalidate(availabilitySlotsProvider(widget.provider.id)),
+              ),
+            ),
+            const SizedBox(height: FactorySpacing.space6),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: (_selectedServiceId != null &&
+                        _selectedSlotId != null &&
+                        (masters.isEmpty || _selectedMasterId != null) &&
+                        !_isBooking)
+                    ? _book
+                    : null,
+                child: _isBooking
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Book'),
               ),
             ),
           ],
-          const SizedBox(height: 16),
-          Text('Services', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          RadioGroup<String>(
-            groupValue: _selectedServiceId,
-            onChanged: (value) => setState(() => _selectedServiceId = value),
-            child: Column(
-              children: widget.provider.services
-                  .map(
-                    (service) => RadioListTile<String>(
-                      value: service.id,
-                      title: Text(service.title),
-                      subtitle: Text(
-                          '${service.durationMinutes} min — \$${service.price.toStringAsFixed(2)}'),
-                    ),
-                  )
-                  .toList(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text('Available times', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          slotsAsync.when(
-            data: (slots) {
-              final openSlots = slots.where((s) => s.isOpen).toList();
-              if (openSlots.isEmpty) {
-                return const Text('No open time slots right now.');
-              }
-              return Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: openSlots.map((slot) => _SlotChip(
-                      slot: slot,
-                      selected: _selectedSlotId == slot.id,
-                      onSelected: () => setState(() => _selectedSlotId = slot.id),
-                    )).toList(),
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, stackTrace) => Text('Failed to load availability: $error'),
-          ),
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: (_selectedServiceId != null &&
-                    _selectedSlotId != null &&
-                    (masters.isEmpty || _selectedMasterId != null) &&
-                    !_isBooking)
-                ? _book
-                : null,
-            child: _isBooking
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Book'),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -243,31 +262,103 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
   }
 }
 
-class _SlotChip extends StatelessWidget {
-  final AvailabilitySlot slot;
-  final bool selected;
-  final VoidCallback onSelected;
+class _MasterOption extends StatelessWidget {
+  const _MasterOption({
+    required this.master,
+    required this.selected,
+    required this.onTap,
+    required this.onViewPortfolio,
+  });
 
-  const _SlotChip({required this.slot, required this.selected, required this.onSelected});
+  final Master master;
+  final bool selected;
+  final VoidCallback onTap;
+  final VoidCallback onViewPortfolio;
 
   @override
   Widget build(BuildContext context) {
-    return ChoiceChip(
-      label: Text(_formatSlot(slot.startsAt.toLocal())),
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Semantics(
+      button: true,
       selected: selected,
-      onSelected: (_) => onSelected(),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: FactoryRadius.mdRadius,
+        child: Container(
+          padding: const EdgeInsets.all(FactorySpacing.space3),
+          decoration: BoxDecoration(
+            color: selected ? colors.primaryTint : colors.surface,
+            borderRadius: FactoryRadius.mdRadius,
+            border: Border.all(color: selected ? colors.primary : colors.border, width: selected ? 1.5 : 1),
+          ),
+          child: Row(
+            children: [
+              FactoryAvatar(
+                initials: _initialsFor(master.displayName),
+                image: master.photoUrl != null ? NetworkImage(master.photoUrl!) : null,
+              ),
+              const SizedBox(width: FactorySpacing.space3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(master.displayName, style: textTheme.titleSmall),
+                    if (master.bio != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        master.bio!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (selected) ...[
+                Icon(Icons.check_circle_rounded, size: 20, color: colors.primary),
+                const SizedBox(width: FactorySpacing.space1),
+              ],
+              IconButton(
+                icon: const Icon(Icons.photo_library_outlined),
+                tooltip: 'View portfolio',
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  side: BorderSide.none,
+                  foregroundColor: colors.textSecondary,
+                ),
+                onPressed: onViewPortfolio,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
+}
 
-  static const _months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-  ];
+String _capitalize(String s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';
 
-  static String _formatSlot(DateTime dt) {
-    final month = _months[dt.month - 1];
-    final hour = dt.hour.toString().padLeft(2, '0');
-    final minute = dt.minute.toString().padLeft(2, '0');
-    return '$month ${dt.day}, $hour:$minute';
+String _initialsFor(String name) {
+  final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+  if (parts.isEmpty) return '?';
+  if (parts.length == 1) {
+    return parts.first.substring(0, parts.first.length >= 2 ? 2 : 1).toUpperCase();
   }
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+const _months = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+String _formatSlot(DateTime dt) {
+  final month = _months[dt.month - 1];
+  final hour = dt.hour.toString().padLeft(2, '0');
+  final minute = dt.minute.toString().padLeft(2, '0');
+  return '$month ${dt.day}, $hour:$minute';
 }
