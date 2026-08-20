@@ -1,3 +1,4 @@
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -17,14 +18,13 @@ class PaymentStatusChip extends ConsumerWidget {
     return paymentAsync.when(
       data: (payment) {
         if (payment == null) return const SizedBox.shrink();
-        return Chip(
-          label: Text('Payment: ${payment.status}'),
-          visualDensity: VisualDensity.compact,
-          backgroundColor: payment.status == 'SUCCEEDED'
-              ? Colors.green.withValues(alpha: 0.2)
-              : payment.status == 'FAILED'
-                  ? Colors.red.withValues(alpha: 0.2)
-                  : null,
+        return FactoryBadge(
+          label: 'Payment: ${_label(payment.status)}',
+          variant: switch (payment.status) {
+            'SUCCEEDED' => FactoryBadgeVariant.available,
+            'FAILED' => FactoryBadgeVariant.error,
+            _ => FactoryBadgeVariant.neutral,
+          },
         );
       },
       loading: () => const SizedBox.shrink(),
@@ -32,3 +32,5 @@ class PaymentStatusChip extends ConsumerWidget {
     );
   }
 }
+
+String _label(String status) => status.isEmpty ? status : '${status[0]}${status.substring(1).toLowerCase()}';

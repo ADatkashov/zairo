@@ -1,3 +1,4 @@
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -17,6 +18,7 @@ class ReviewSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final reviewAsync = ref.watch(reviewForBookingProvider(bookingId));
+    final colors = context.factoryColors;
 
     return reviewAsync.when(
       data: (review) {
@@ -31,7 +33,7 @@ class ReviewSection extends ConsumerWidget {
           );
         }
         return Padding(
-          padding: const EdgeInsets.only(top: 8),
+          padding: const EdgeInsets.only(top: FactorySpacing.space2),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -41,14 +43,17 @@ class ReviewSection extends ConsumerWidget {
                   (i) => Icon(
                     i < review.rating ? Icons.star : Icons.star_border,
                     size: 18,
-                    color: Colors.amber,
+                    color: colors.accent,
                   ),
                 ),
               ),
               if (review.comment != null && review.comment!.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
-                  child: Text(review.comment!),
+                  child: Text(
+                    review.comment!,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
+                  ),
                 ),
             ],
           ),
@@ -97,6 +102,7 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.factoryColors;
     return AlertDialog(
       title: const Text('Leave a review'),
       content: Column(
@@ -110,7 +116,7 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
                 onPressed: _isSubmitting ? null : () => setState(() => _rating = i + 1),
                 icon: Icon(
                   i < _rating ? Icons.star : Icons.star_border,
-                  color: Colors.amber,
+                  color: colors.accent,
                 ),
               ),
             ),

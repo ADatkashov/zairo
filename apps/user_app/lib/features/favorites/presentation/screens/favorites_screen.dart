@@ -1,3 +1,4 @@
+import 'package:core_ui/core_ui.dart' hide ProviderCard;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,18 +14,27 @@ class FavoritesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.factoryColors;
     final favoritesAsync = ref.watch(myFavoritesProvider(userId));
 
     return Scaffold(
+      backgroundColor: colors.bg,
       appBar: AppBar(title: const Text('My favorites')),
       body: favoritesAsync.when(
         data: (favorites) {
           if (favorites.isEmpty) {
-            return const Center(child: Text('No favorites yet.'));
+            return const Center(
+              child: FactoryEmptyState(
+                icon: Icons.favorite_border_rounded,
+                title: 'No favorites yet',
+                message: 'Salons and providers you favorite will show up here.',
+              ),
+            );
           }
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
+          return ListView.separated(
+            padding: const EdgeInsets.all(FactorySpacing.space4),
             itemCount: favorites.length,
+            separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
             itemBuilder: (context, index) {
               final favorite = favorites[index];
               // ProviderCard expects a ProviderSearchResult — same shape,
@@ -49,7 +59,15 @@ class FavoritesScreen extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => Center(child: Text('Failed to load favorites: $error')),
+        error: (error, stackTrace) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(FactorySpacing.space4),
+            child: FactoryErrorState(
+              message: "Couldn't load your favorites.",
+              onRetry: () => ref.invalidate(myFavoritesProvider(userId)),
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,24 +14,41 @@ class MyBookingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.factoryColors;
     final bookingsAsync = ref.watch(myBookingsProvider(userId));
 
     return Scaffold(
+      backgroundColor: colors.bg,
       appBar: AppBar(title: const Text('My bookings')),
       body: bookingsAsync.when(
         data: (bookings) {
           if (bookings.isEmpty) {
-            return const Center(child: Text('No bookings yet.'));
+            return const Center(
+              child: FactoryEmptyState(
+                icon: Icons.event_note_outlined,
+                title: 'No bookings yet',
+                message: 'Once you book a service, it will show up here.',
+              ),
+            );
           }
           final sorted = [...bookings]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
+          return ListView.separated(
+            padding: const EdgeInsets.all(FactorySpacing.space4),
             itemCount: sorted.length,
+            separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
             itemBuilder: (context, index) => _BookingCard(booking: sorted[index]),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => Center(child: Text('Failed to load bookings: $error')),
+        error: (error, stackTrace) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(FactorySpacing.space4),
+            child: FactoryErrorState(
+              message: "Couldn't load your bookings.",
+              onRetry: () => ref.invalidate(myBookingsProvider(userId)),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -43,30 +61,28 @@ class _BookingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(FactorySpacing.space4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('\$${booking.totalPrice.toStringAsFixed(2)}',
-                    style: Theme.of(context).textTheme.titleMedium),
-                Chip(
-                  label: Text(booking.status),
-                  visualDensity: VisualDensity.compact,
-                ),
+                FactoryPriceText(amount: booking.totalPrice, fontSize: 16, weight: FontWeight.w700),
+                FactoryBadge(label: _statusLabel(booking.status), variant: _statusVariant(booking.status)),
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: FactorySpacing.space1),
             Text(
-              'Booked on ${booking.createdAt.toLocal()}',
-              style: Theme.of(context).textTheme.bodySmall,
+              'Booked on ${_formatDate(booking.createdAt.toLocal())}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: FactorySpacing.space2),
             PaymentStatusChip(bookingId: booking.id),
             if (booking.status == 'COMPLETED') ReviewSection(bookingId: booking.id),
           ],
@@ -74,4 +90,25 @@ class _BookingCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _statusLabel(String status) => status.isEmpty ? status : '${status[0]}${status.substring(1).toLowerCase()}';
+
+FactoryBadgeVariant _statusVariant(String status) => switch (status) {
+      'CONFIRMED' => FactoryBadgeVariant.available,
+      'COMPLETED' => FactoryBadgeVariant.verified,
+      'CANCELLED' => FactoryBadgeVariant.error,
+      _ => FactoryBadgeVariant.neutral,
+    };
+
+const _months = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+String _formatDate(DateTime dt) {
+  final month = _months[dt.month - 1];
+  final hour = dt.hour.toString().padLeft(2, '0');
+  final minute = dt.minute.toString().padLeft(2, '0');
+  return '$month ${dt.day}, $hour:$minute';
 }

@@ -73,6 +73,11 @@ void main() {
     expect(find.text('Available today'), findsOneWidget);
   });
 
+  testWidgets('FactoryBadge renders the error variant', (tester) async {
+    await tester.pumpWidget(_wrap(const FactoryBadge(label: 'Cancelled', variant: FactoryBadgeVariant.error)));
+    expect(find.text('Cancelled'), findsOneWidget);
+  });
+
   testWidgets('ProviderCard shows title, rating, price and toggles favorite', (tester) async {
     var favoriteState = false;
     await tester.pumpWidget(_wrap(StatefulBuilder(

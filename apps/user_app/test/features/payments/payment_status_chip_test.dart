@@ -1,4 +1,5 @@
 import 'package:core_network/core_network.dart';
+import 'package:core_ui/core_ui.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,11 +44,14 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [paymentsApiProvider.overrideWithValue(_FakePaymentsApi(payment))],
-        child: const MaterialApp(home: Scaffold(body: PaymentStatusChip(bookingId: 'booking-1'))),
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          home: const Scaffold(body: PaymentStatusChip(bookingId: 'booking-1')),
+        ),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Payment: SUCCEEDED'), findsOneWidget);
+    expect(find.text('Payment: Succeeded'), findsOneWidget);
   });
 }

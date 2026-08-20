@@ -1,4 +1,5 @@
 import 'package:core_network/core_network.dart';
+import 'package:core_ui/core_ui.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -49,12 +50,12 @@ void main() {
           bookingApiProvider.overrideWithValue(_FakeBookingApi(const [])),
           paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
         ],
-        child: const MaterialApp(home: MyBookingsScreen(userId: 'user-1')),
+        child: MaterialApp(theme: factoryLightTheme(), home: const MyBookingsScreen(userId: 'user-1')),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('No bookings yet.'), findsOneWidget);
+    expect(find.text('No bookings yet'), findsOneWidget);
   });
 
   testWidgets('lists bookings with status and price', (tester) async {
@@ -74,13 +75,13 @@ void main() {
           bookingApiProvider.overrideWithValue(_FakeBookingApi([booking])),
           paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
         ],
-        child: const MaterialApp(home: MyBookingsScreen(userId: 'user-1')),
+        child: MaterialApp(theme: factoryLightTheme(), home: const MyBookingsScreen(userId: 'user-1')),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('\$42.50'), findsOneWidget);
-    expect(find.text('CONFIRMED'), findsOneWidget);
+    expect(find.text('43 ₸'), findsOneWidget);
+    expect(find.text('Confirmed'), findsOneWidget);
     // No review section for a booking that isn't completed yet.
     expect(find.text('Leave a review'), findsNothing);
   });
@@ -103,7 +104,7 @@ void main() {
           reviewsApiProvider.overrideWithValue(_FakeReviewsApi()),
           paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
         ],
-        child: const MaterialApp(home: MyBookingsScreen(userId: 'user-1')),
+        child: MaterialApp(theme: factoryLightTheme(), home: const MyBookingsScreen(userId: 'user-1')),
       ),
     );
     await tester.pumpAndSettle();

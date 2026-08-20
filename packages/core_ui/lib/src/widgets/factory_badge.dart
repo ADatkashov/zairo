@@ -8,8 +8,9 @@ import '../theme/factory_spacing.dart';
 /// wording. [verified] is the running trust signal the design system wants
 /// visible everywhere a review or booking is (see the artifact's "Verified
 /// booking" principle); [available]/[limited] read booking state at a
-/// glance; [neutral] is for anything else (a plain status label).
-enum FactoryBadgeVariant { verified, available, limited, neutral }
+/// glance; [error] flags a failed/cancelled state (a declined payment, a
+/// cancelled booking); [neutral] is for anything else (a plain status label).
+enum FactoryBadgeVariant { verified, available, limited, error, neutral }
 
 class FactoryBadge extends StatelessWidget {
   const FactoryBadge({super.key, required this.label, this.variant = FactoryBadgeVariant.neutral, this.icon});
@@ -25,6 +26,7 @@ class FactoryBadge extends StatelessWidget {
       FactoryBadgeVariant.verified => (colors.primaryTint, colors.primaryStrong),
       FactoryBadgeVariant.available => (Color.alphaBlend(colors.success.withValues(alpha: 0.14), colors.surface), colors.success),
       FactoryBadgeVariant.limited => (Color.alphaBlend(colors.warning.withValues(alpha: 0.16), colors.surface), colors.warning),
+      FactoryBadgeVariant.error => (Color.alphaBlend(colors.error.withValues(alpha: 0.14), colors.surface), colors.error),
       FactoryBadgeVariant.neutral => (colors.surfaceAlt, colors.textSecondary),
     };
 
