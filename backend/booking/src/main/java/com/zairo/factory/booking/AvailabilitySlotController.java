@@ -1,7 +1,10 @@
 package com.zairo.factory.booking;
 
+import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.booking.AvailabilitySlotDtos.AvailabilitySlotResponse;
 import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequest;
+import com.zairo.factory.providers.ProviderOwnership;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -18,9 +21,12 @@ import org.springframework.web.server.ResponseStatusException;
 public class AvailabilitySlotController {
 
     private final AvailabilitySlotRepository availabilitySlotRepository;
+    private final ProviderOwnership providerOwnership;
 
-    public AvailabilitySlotController(AvailabilitySlotRepository availabilitySlotRepository) {
+    public AvailabilitySlotController(AvailabilitySlotRepository availabilitySlotRepository,
+            ProviderOwnership providerOwnership) {
         this.availabilitySlotRepository = availabilitySlotRepository;
+        this.providerOwnership = providerOwnership;
     }
 
     @PostMapping("/api/v1/providers/{providerId}/availability-slots")
@@ -41,10 +47,11 @@ public class AvailabilitySlotController {
     /** Only an OPEN slot can be removed — a BOOKED one has a real booking against it, and cancelling that is a separate future concern. */
     @DeleteMapping("/api/v1/availability-slots/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID id) {
+    public void delete(@PathVariable UUID id, HttpServletRequest httpRequest) {
         AvailabilitySlot slot = availabilitySlotRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
                         + id));
+        providerOwnership.requireOwner(slot.getProviderId(), CurrentUser.requireUserId(httpRequest));
         if (slot.getStatus() != AvailabilityStatus.OPEN) {
             throw new SlotNotAvailableException("Only an open slot can be removed: " + id);
         }

@@ -18,4 +18,9 @@ dependencies {
     // reintroducing the double-booking race @Version was built to prevent.
     // One-directional (vertical-beauty -> booking), no cycle.
     implementation(project(":booking"))
+
+    // Ownership check on master mutations (create/portfolio/link/deactivate)
+    // needs auth's real identity (CurrentUser) — same reasoning as the new
+    // dependency added to services/booking for their own write endpoints.
+    implementation(project(":auth"))
 }

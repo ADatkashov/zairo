@@ -1,6 +1,7 @@
 package com.zairo.factory.vertical.beauty;
 
 import com.zairo.factory.providers.Provider;
+import com.zairo.factory.providers.ProviderOwnership;
 import com.zairo.factory.providers.ProviderRepository;
 import com.zairo.factory.services.ServiceOffering;
 import com.zairo.factory.services.ServiceOfferingRepository;
@@ -23,15 +24,17 @@ public class MasterDirectoryService {
     private final MasterServiceLinkRepository masterServiceLinkRepository;
     private final ProviderRepository providerRepository;
     private final ServiceOfferingRepository serviceOfferingRepository;
+    private final ProviderOwnership providerOwnership;
 
     public MasterDirectoryService(MasterRepository masterRepository, PortfolioItemRepository portfolioItemRepository,
             MasterServiceLinkRepository masterServiceLinkRepository, ProviderRepository providerRepository,
-            ServiceOfferingRepository serviceOfferingRepository) {
+            ServiceOfferingRepository serviceOfferingRepository, ProviderOwnership providerOwnership) {
         this.masterRepository = masterRepository;
         this.portfolioItemRepository = portfolioItemRepository;
         this.masterServiceLinkRepository = masterServiceLinkRepository;
         this.providerRepository = providerRepository;
         this.serviceOfferingRepository = serviceOfferingRepository;
+        this.providerOwnership = providerOwnership;
     }
 
     /**
@@ -40,6 +43,12 @@ public class MasterDirectoryService {
      * vertical. This is the vertical module checking its own precondition,
      * not Core branching on vertical — Core (providers module) still never
      * looks at this string itself.
+     *
+     * Deliberately NOT ownership-checked yet — same reasoning as
+     * ServiceOfferingController.create(): creation is still exercised as a
+     * plain fixture in BeautyApiTests without auth; the methods below that
+     * mutate an *existing* master (portfolio/link/unlink/deactivate) are
+     * the ones that actually risk one owner touching another's data.
      */
     @Transactional
     public Master createMaster(UUID providerId, String displayName, String bio, String photoUrl) {
@@ -65,8 +74,9 @@ public class MasterDirectoryService {
     }
 
     @Transactional
-    public PortfolioItem addPortfolioItem(UUID masterId, String imageUrl, String caption) {
-        getMaster(masterId);
+    public PortfolioItem addPortfolioItem(UUID masterId, String imageUrl, String caption, UUID requestingUserId) {
+        Master master = getMaster(masterId);
+        providerOwnership.requireOwner(master.getProviderId(), requestingUserId);
         PortfolioItem item = new PortfolioItem(UUID.randomUUID(), masterId, imageUrl, caption, Instant.now());
         return portfolioItemRepository.save(item);
     }
@@ -78,8 +88,9 @@ public class MasterDirectoryService {
 
     /** Idempotent — linking an already-linked service is a no-op, same as favorites' add. */
     @Transactional
-    public void linkService(UUID masterId, UUID serviceId) {
+    public void linkService(UUID masterId, UUID serviceId, UUID requestingUserId) {
         Master master = getMaster(masterId);
+        providerOwnership.requireOwner(master.getProviderId(), requestingUserId);
         ServiceOffering service = serviceOfferingRepository.findById(serviceId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found: "
                         + serviceId));
@@ -95,7 +106,9 @@ public class MasterDirectoryService {
 
     /** Idempotent — unlinking a service that isn't linked is a no-op. */
     @Transactional
-    public void unlinkService(UUID masterId, UUID serviceId) {
+    public void unlinkService(UUID masterId, UUID serviceId, UUID requestingUserId) {
+        Master master = getMaster(masterId);
+        providerOwnership.requireOwner(master.getProviderId(), requestingUserId);
         masterServiceLinkRepository.deleteByMasterIdAndServiceId(masterId, serviceId);
     }
 
@@ -108,8 +121,9 @@ public class MasterDirectoryService {
 
     /** Idempotent — deactivating an already-inactive (or missing) master is a no-op. */
     @Transactional
-    public void deactivateMaster(UUID masterId) {
+    public void deactivateMaster(UUID masterId, UUID requestingUserId) {
         masterRepository.findById(masterId).ifPresent(master -> {
+            providerOwnership.requireOwner(master.getProviderId(), requestingUserId);
             master.deactivate();
             masterRepository.save(master);
         });

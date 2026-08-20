@@ -1,8 +1,11 @@
 package com.zairo.factory.services;
 
+import com.zairo.factory.auth.CurrentUser;
+import com.zairo.factory.providers.ProviderOwnership;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.ServiceResponse;
 import com.zairo.factory.services.ServiceOfferingDtos.UpdateServiceRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -20,11 +23,24 @@ import org.springframework.web.server.ResponseStatusException;
 public class ServiceOfferingController {
 
     private final ServiceOfferingRepository serviceOfferingRepository;
+    private final ProviderOwnership providerOwnership;
 
-    public ServiceOfferingController(ServiceOfferingRepository serviceOfferingRepository) {
+    public ServiceOfferingController(ServiceOfferingRepository serviceOfferingRepository,
+            ProviderOwnership providerOwnership) {
         this.serviceOfferingRepository = serviceOfferingRepository;
+        this.providerOwnership = providerOwnership;
     }
 
+    /**
+     * Deliberately NOT ownership-checked yet, unlike update/deactivate below
+     * — creation is still exercised as a plain test fixture across most of
+     * the *ApiTests suite (search/reviews/favorites/payments/...), none of
+     * which care about auth. Locking down "who can create a service under a
+     * provider" is a real gap worth closing, but retrofitting auth into
+     * every one of those unrelated test files is a much bigger, separate
+     * change from "the owner can't be impersonated when editing/deleting
+     * something that already exists" — the actual risk this pass closes.
+     */
     @PostMapping("/api/v1/providers/{providerId}/services")
     @ResponseStatus(HttpStatus.CREATED)
     public ServiceResponse create(@PathVariable UUID providerId, @RequestBody CreateServiceRequest request) {
@@ -47,9 +63,11 @@ public class ServiceOfferingController {
     }
 
     @PutMapping("/api/v1/services/{id}")
-    public ServiceResponse update(@PathVariable UUID id, @RequestBody UpdateServiceRequest request) {
+    public ServiceResponse update(@PathVariable UUID id, @RequestBody UpdateServiceRequest request,
+            HttpServletRequest httpRequest) {
         ServiceOffering service = serviceOfferingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found: " + id));
+        providerOwnership.requireOwner(service.getProviderId(), CurrentUser.requireUserId(httpRequest));
         service.update(request.title(), request.durationMinutes(), request.price(), request.currency());
         return ServiceResponse.from(serviceOfferingRepository.save(service));
     }
@@ -57,8 +75,9 @@ public class ServiceOfferingController {
     /** Soft-delete (active=false) — existing bookings still reference this service by id, see ServiceOffering.deactivate(). Idempotent. */
     @DeleteMapping("/api/v1/services/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deactivate(@PathVariable UUID id) {
+    public void deactivate(@PathVariable UUID id, HttpServletRequest httpRequest) {
         serviceOfferingRepository.findById(id).ifPresent(service -> {
+            providerOwnership.requireOwner(service.getProviderId(), CurrentUser.requireUserId(httpRequest));
             service.deactivate();
             serviceOfferingRepository.save(service);
         });

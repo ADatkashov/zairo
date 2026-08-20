@@ -2,6 +2,7 @@ package com.zairo.factory.platform;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.zairo.factory.auth.AuthDtos.RegisterRequest;
 import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequest;
 import com.zairo.factory.booking.BookingDtos.CreateBookingRequest;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
@@ -19,6 +20,8 @@ import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -74,7 +77,8 @@ class BookingApiTests {
 
     @Test
     void deletesAnOpenSlotButRefusesToDeleteABookedOne() {
-        UUID ownerId = createUser("owner-slot-delete@example.com", "Slot Delete Owner");
+        Registered owner = registerOwner("owner-slot-delete@example.com");
+        UUID ownerId = owner.userId();
         UUID customerId = createUser("customer-slot-delete@example.com", "Slot Delete Customer");
 
         var providerRequest = new CreateProviderRequest(ownerId, "Slot Delete Salon", "beauty");
@@ -102,14 +106,31 @@ class BookingApiTests {
                 new CreateBookingRequest(customerId, serviceId, bookedSlotId, new BigDecimal("15.00")), Map.class);
 
         ResponseEntity<Void> deleteOpen = restTemplate.exchange("/api/v1/availability-slots/" + openSlotId,
-                HttpMethod.DELETE, null, Void.class);
+                HttpMethod.DELETE, new HttpEntity<>(null, authHeaders(owner.accessToken())), Void.class);
         assertThat(deleteOpen.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         assertThat(restTemplate.getForEntity("/api/v1/providers/" + providerId + "/availability-slots", Map[].class)
                 .getBody()).extracting(s -> s.get("id")).containsExactly(bookedSlotId.toString());
 
         ResponseEntity<Map> deleteBooked = restTemplate.exchange("/api/v1/availability-slots/" + bookedSlotId,
-                HttpMethod.DELETE, null, Map.class);
+                HttpMethod.DELETE, new HttpEntity<>(null, authHeaders(owner.accessToken())), Map.class);
         assertThat(deleteBooked.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    private record Registered(UUID userId, String accessToken) {
+    }
+
+    private Registered registerOwner(String email) {
+        var request = new RegisterRequest(email, "password123", "Registered Owner", "+1000000002",
+                UserRole.PROVIDER_OWNER);
+        Map<?, ?> body = restTemplate.postForEntity("/api/v1/auth/register", request, Map.class).getBody();
+        UUID userId = UUID.fromString(((Map<?, ?>) body.get("user")).get("id").toString());
+        return new Registered(userId, body.get("accessToken").toString());
+    }
+
+    private HttpHeaders authHeaders(String accessToken) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+        return headers;
     }
 
     private UUID createUser(String email, String displayName) {

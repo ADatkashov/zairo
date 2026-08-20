@@ -2,6 +2,7 @@ package com.zairo.factory.platform;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.zairo.factory.auth.AuthDtos.RegisterRequest;
 import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequest;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
@@ -22,6 +23,8 @@ import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,19 +53,21 @@ class BeautyApiTests {
     @Test
     void fullMasterDirectoryAndBookingFlow() {
         String runId = UUID.randomUUID().toString();
-        UUID ownerId = createUser("beauty-owner-" + runId + "@example.com");
+        Registered owner = registerOwner("beauty-owner-" + runId + "@example.com");
         UUID customerId = createUser("beauty-customer-" + runId + "@example.com");
         // Vertical must be the exact literal "beauty" -- MasterDirectoryService checks it
         // precisely (see createMaster's javadoc), not a prefix match.
-        UUID providerId = createProvider(ownerId, "Glow Salon " + runId, "beauty");
+        UUID providerId = createProvider(owner.userId(), "Glow Salon " + runId, "beauty");
         UUID serviceId = createService(providerId, "Balayage", new BigDecimal("120.00"));
 
         UUID masterId = createMaster(providerId, "Jamie Stylist");
         assertThat(masterId).isNotNull();
 
-        // Portfolio.
-        restTemplate.postForEntity("/api/v1/beauty/masters/" + masterId + "/portfolio",
-                new AddPortfolioItemRequest("https://example.com/photo1.jpg", "Balayage look"), Map.class);
+        // Portfolio — owner-only.
+        restTemplate.exchange("/api/v1/beauty/masters/" + masterId + "/portfolio", HttpMethod.POST,
+                new HttpEntity<>(new AddPortfolioItemRequest("https://example.com/photo1.jpg", "Balayage look"),
+                        authHeaders(owner.accessToken())),
+                Map.class);
         List<Map> portfolio = getList("/api/v1/beauty/masters/" + masterId + "/portfolio");
         assertThat(portfolio).hasSize(1);
         assertThat(portfolio.get(0).get("caption")).isEqualTo("Balayage look");
@@ -74,14 +79,14 @@ class BeautyApiTests {
                 Map.class);
         assertThat(rejected.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
 
-        // Link master <-> service, confirm it shows up.
-        restTemplate.postForEntity("/api/v1/beauty/masters/" + masterId + "/services/" + serviceId, null,
-                Void.class);
+        // Link master <-> service (owner-only), confirm it shows up.
+        restTemplate.exchange("/api/v1/beauty/masters/" + masterId + "/services/" + serviceId, HttpMethod.POST,
+                new HttpEntity<>(null, authHeaders(owner.accessToken())), Void.class);
         List<Map> services = getList("/api/v1/beauty/masters/" + masterId + "/services");
         assertThat(services).extracting(s -> s.get("serviceId")).containsExactly(serviceId.toString());
         // Idempotent: linking again doesn't duplicate.
-        restTemplate.postForEntity("/api/v1/beauty/masters/" + masterId + "/services/" + serviceId, null,
-                Void.class);
+        restTemplate.exchange("/api/v1/beauty/masters/" + masterId + "/services/" + serviceId, HttpMethod.POST,
+                new HttpEntity<>(null, authHeaders(owner.accessToken())), Void.class);
         assertThat(getList("/api/v1/beauty/masters/" + masterId + "/services")).hasSize(1);
 
         // Now the booking succeeds.
@@ -97,32 +102,57 @@ class BeautyApiTests {
         Map<?, ?> fetched = restTemplate.getForEntity("/api/v1/beauty/bookings/" + bookingId, Map.class).getBody();
         assertThat(fetched.get("masterId")).isEqualTo(masterId.toString());
 
-        // Unlink is idempotent too.
-        restTemplate.delete("/api/v1/beauty/masters/" + masterId + "/services/" + serviceId);
+        // Unlink (owner-only) is idempotent too.
+        restTemplate.exchange("/api/v1/beauty/masters/" + masterId + "/services/" + serviceId, HttpMethod.DELETE,
+                new HttpEntity<>(null, authHeaders(owner.accessToken())), Void.class);
         assertThat(getList("/api/v1/beauty/masters/" + masterId + "/services")).isEmpty();
-        restTemplate.delete("/api/v1/beauty/masters/" + masterId + "/services/" + serviceId);
+        restTemplate.exchange("/api/v1/beauty/masters/" + masterId + "/services/" + serviceId, HttpMethod.DELETE,
+                new HttpEntity<>(null, authHeaders(owner.accessToken())), Void.class);
     }
 
     @Test
     void deactivatingAMasterRemovesItFromTheProviderListing() {
         String runId = UUID.randomUUID().toString();
-        UUID ownerId = createUser("deactivate-owner-" + runId + "@example.com");
-        UUID providerId = createProvider(ownerId, "Deactivate Salon " + runId, "beauty");
+        Registered owner = registerOwner("deactivate-owner-" + runId + "@example.com");
+        UUID providerId = createProvider(owner.userId(), "Deactivate Salon " + runId, "beauty");
         UUID masterId = createMaster(providerId, "Temp Master");
 
         assertThat(getList("/api/v1/beauty/providers/" + providerId + "/masters")).extracting(m -> m.get("id"))
                 .containsExactly(masterId.toString());
 
+        // A different owner can't deactivate someone else's master — 403.
+        Registered otherOwner = registerOwner("deactivate-other-owner-" + runId + "@example.com");
+        ResponseEntity<Map> forbidden = restTemplate.exchange("/api/v1/beauty/masters/" + masterId,
+                HttpMethod.DELETE, new HttpEntity<>(null, authHeaders(otherOwner.accessToken())), Map.class);
+        assertThat(forbidden.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
         ResponseEntity<Void> deactivateResponse = restTemplate.exchange("/api/v1/beauty/masters/" + masterId,
-                HttpMethod.DELETE, null, Void.class);
+                HttpMethod.DELETE, new HttpEntity<>(null, authHeaders(owner.accessToken())), Void.class);
         assertThat(deactivateResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
 
         assertThat(getList("/api/v1/beauty/providers/" + providerId + "/masters")).isEmpty();
 
         // Deactivating again (or a non-existent id) is a no-op, not an error.
         ResponseEntity<Void> deactivateAgain = restTemplate.exchange("/api/v1/beauty/masters/" + masterId,
-                HttpMethod.DELETE, null, Void.class);
+                HttpMethod.DELETE, new HttpEntity<>(null, authHeaders(owner.accessToken())), Void.class);
         assertThat(deactivateAgain.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+    }
+
+    private record Registered(UUID userId, String accessToken) {
+    }
+
+    private Registered registerOwner(String email) {
+        var request = new RegisterRequest(email, "password123", "Registered Owner", "+1000000002",
+                UserRole.PROVIDER_OWNER);
+        Map<?, ?> body = restTemplate.postForEntity("/api/v1/auth/register", request, Map.class).getBody();
+        UUID userId = UUID.fromString(((Map<?, ?>) body.get("user")).get("id").toString());
+        return new Registered(userId, body.get("accessToken").toString());
+    }
+
+    private HttpHeaders authHeaders(String accessToken) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+        return headers;
     }
 
     private List<Map> getList(String path) {

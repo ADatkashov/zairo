@@ -1,10 +1,12 @@
 package com.zairo.factory.vertical.beauty;
 
+import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.vertical.beauty.MasterDtos.AddPortfolioItemRequest;
 import com.zairo.factory.vertical.beauty.MasterDtos.CreateMasterRequest;
 import com.zairo.factory.vertical.beauty.MasterDtos.MasterResponse;
 import com.zairo.factory.vertical.beauty.MasterDtos.MasterServiceResponse;
 import com.zairo.factory.vertical.beauty.MasterDtos.PortfolioItemResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -43,19 +45,20 @@ public class MasterController {
         return MasterResponse.from(masterDirectoryService.getMaster(masterId));
     }
 
-    /** Soft-delete — see Master.deactivate(). Idempotent. */
+    /** Soft-delete — see Master.deactivate(). Idempotent. Owner-only. */
     @DeleteMapping("/api/v1/beauty/masters/{masterId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deactivate(@PathVariable UUID masterId) {
-        masterDirectoryService.deactivateMaster(masterId);
+    public void deactivate(@PathVariable UUID masterId, HttpServletRequest httpRequest) {
+        masterDirectoryService.deactivateMaster(masterId, CurrentUser.requireUserId(httpRequest));
     }
 
+    /** Owner-only. */
     @PostMapping("/api/v1/beauty/masters/{masterId}/portfolio")
     @ResponseStatus(HttpStatus.CREATED)
     public PortfolioItemResponse addPortfolioItem(@PathVariable UUID masterId,
-            @RequestBody AddPortfolioItemRequest request) {
-        return PortfolioItemResponse.from(
-                masterDirectoryService.addPortfolioItem(masterId, request.imageUrl(), request.caption()));
+            @RequestBody AddPortfolioItemRequest request, HttpServletRequest httpRequest) {
+        return PortfolioItemResponse.from(masterDirectoryService.addPortfolioItem(masterId, request.imageUrl(),
+                request.caption(), CurrentUser.requireUserId(httpRequest)));
     }
 
     @GetMapping("/api/v1/beauty/masters/{masterId}/portfolio")
@@ -63,16 +66,20 @@ public class MasterController {
         return masterDirectoryService.listPortfolio(masterId).stream().map(PortfolioItemResponse::from).toList();
     }
 
+    /** Owner-only. */
     @PostMapping("/api/v1/beauty/masters/{masterId}/services/{serviceId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void linkService(@PathVariable UUID masterId, @PathVariable UUID serviceId) {
-        masterDirectoryService.linkService(masterId, serviceId);
+    public void linkService(@PathVariable UUID masterId, @PathVariable UUID serviceId,
+            HttpServletRequest httpRequest) {
+        masterDirectoryService.linkService(masterId, serviceId, CurrentUser.requireUserId(httpRequest));
     }
 
+    /** Owner-only. */
     @DeleteMapping("/api/v1/beauty/masters/{masterId}/services/{serviceId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void unlinkService(@PathVariable UUID masterId, @PathVariable UUID serviceId) {
-        masterDirectoryService.unlinkService(masterId, serviceId);
+    public void unlinkService(@PathVariable UUID masterId, @PathVariable UUID serviceId,
+            HttpServletRequest httpRequest) {
+        masterDirectoryService.unlinkService(masterId, serviceId, CurrentUser.requireUserId(httpRequest));
     }
 
     @GetMapping("/api/v1/beauty/masters/{masterId}/services")
