@@ -11,6 +11,9 @@ class ProviderSearchResult {
   final bool hasOpenAvailability;
   final double? minPrice;
   final List<ServiceSummary> services;
+  final double? distanceKm;
+  final double? latitude;
+  final double? longitude;
 
   const ProviderSearchResult({
     required this.id,
@@ -20,6 +23,9 @@ class ProviderSearchResult {
     required this.hasOpenAvailability,
     this.minPrice,
     required this.services,
+    this.distanceKm,
+    this.latitude,
+    this.longitude,
   });
 
   factory ProviderSearchResult.fromJson(Map<String, dynamic> json) {
@@ -35,6 +41,11 @@ class ProviderSearchResult {
       services: (json['services'] as List<dynamic>)
           .map((e) => ServiceSummary.fromJson(e as Map<String, dynamic>))
           .toList(),
+      distanceKm: json['distanceKm'] == null
+          ? null
+          : (json['distanceKm'] as num).toDouble(),
+      latitude: json['latitude'] == null ? null : (json['latitude'] as num).toDouble(),
+      longitude: json['longitude'] == null ? null : (json['longitude'] as num).toDouble(),
     );
   }
 }

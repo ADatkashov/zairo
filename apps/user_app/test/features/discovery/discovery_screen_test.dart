@@ -18,6 +18,8 @@ class _FakeDiscoveryApi extends DiscoveryApi {
   Future<List<ProviderSearchResult>> searchProviders({
     String? vertical,
     String? query,
+    double? lat,
+    double? lng,
   }) async {
     return _results;
   }
@@ -42,6 +44,9 @@ void main() {
             currency: 'USD',
           ),
         ],
+        distanceKm: 3.7,
+        latitude: 43.24,
+        longitude: 76.9,
       ),
     ]);
 
@@ -60,6 +65,7 @@ void main() {
     expect(find.text('Haircut'), findsOneWidget);
     expect(find.text('Available'), findsOneWidget);
     expect(find.text('From 30.00'), findsOneWidget);
+    expect(find.text('3.7 km away'), findsOneWidget);
   });
 
   testWidgets('shows an empty state when there are no results', (tester) async {

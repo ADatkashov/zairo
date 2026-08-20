@@ -5,6 +5,7 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../discovery/data/models/provider_search_result.dart';
 import '../../../favorites/presentation/widgets/favorite_button.dart';
+import '../../../maps/presentation/screens/mock_map_screen.dart';
 import '../../../payments/data/payment_exception.dart';
 import '../../../payments/presentation/providers/payments_providers.dart';
 import '../../data/booking_exception.dart';
@@ -38,6 +39,26 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           Text(widget.provider.vertical, style: Theme.of(context).textTheme.bodySmall),
+          if (widget.provider.latitude != null && widget.provider.longitude != null) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.map_outlined),
+                label: const Text('View on map'),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => MockMapScreen(
+                      providerName: widget.provider.name,
+                      latitude: widget.provider.latitude!,
+                      longitude: widget.provider.longitude!,
+                      distanceKm: widget.provider.distanceKm,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           Text('Services', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),

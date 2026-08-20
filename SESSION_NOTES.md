@@ -816,16 +816,92 @@ webhook-хореографию без реального webhook на друго
 ### Текущий статус
 Всё застейджено, **не закоммичено** — ждём подтверждения.
 
+**Phase 3 (payments на mock) закоммичена и запушена.**
+
+## Maps/геолокация на mock-провайдере (сделано, 2026-08-20)
+
+Пользователь выбрал: "давай maps тоже на моках" — та же архитектура
+port/adapter, что уже применялась для payments (Phase 3): реальные
+данные и математика (координаты, расстояние) не мокаются — мокается
+только то, что реально требует внешний аккаунт (рендеринг карты,
+геолокация устройства пользователя).
+
+### Backend
+- `Provider` (модуль `providers`) получил nullable `latitude`/`longitude`
+  — задаются напрямую вызывающей стороной, без шага геокодирования по
+  адресу (адреса у `Provider` нет вообще; геокодирование отложено вместе
+  со всем остальным, что требует реального провайдера карт). Старый
+  6-аргументный конструктор оставлен как есть, делегирует в новый
+  8-аргументный с `null, null` — ни один существующий вызов/тест не
+  сломан.
+- `CreateProviderRequest` расширен до `(ownerUserId, name, vertical,
+  latitude, longitude)` + добавлен compact-конструктор с 3 аргументами
+  (старая форма) — тот же приём, что уже использовался в Phase 1/2 для
+  обратной совместимости DTO без дублирования тест-кода.
+- Flyway `V10` — `latitude`/`longitude` (`double precision`, nullable) в
+  таблице `provider`.
+- `search`-модуль: новый `DistanceCalculator` (package-private,
+  Haversine, чистая математика, без внешних зависимостей) +
+  `SearchService.search(vertical, query, originLat, originLng)` —
+  сортировка теперь **availability desc → distance asc (null → в конец)
+  → price asc**, ранее реализованный rating остаётся неготовым (как и
+  раньше — материализованная read-модель, не для MVP). `distanceKm`
+  считается только когда есть и origin, и координаты провайдера;
+  координаты провайдера всегда возвращаются в результате поиска.
+  `GET /api/v1/search/providers` получил опциональные `lat`/`lng`.
+- Тест `SearchApiTests.ranksByDistanceWhenTheCallerSuppliesItsLocation` —
+  ближний провайдер ранжируется раньше дальнего при заданном origin.
+  Находка: `assertThat((Number) ...).isLessThan((Number) ...)` не
+  компилировался (AssertJ не резолвил числовой overload через `Object`-
+  каст) — исправлено через промежуточные `double`-переменные.
+- Вручную проверено через `bootRun` + curl: `distanceKm` считается верно
+  (~1.49 км рядом, ~972 км до Астаны) и корректно `null`, если origin не
+  передан.
+
+### Flutter — новая фича `features/maps/`
+- `GeoPoint` (value object) + `LocationService`/`MockLocationService`
+  (интерфейс в духе `PaymentProvider` — задокументировано, что реальная
+  реализация подключится через пакет `geolocator`, тем же
+  drop-in-заменой класса за интерфейсом). Мок всегда возвращает
+  фиксированную точку в Алматы.
+- `MockMapScreen` — заглушка вида карты (иконка, "Map view placeholder",
+  пояснительный текст про отложенный реальный SDK, координаты,
+  "X.X km from you", если дистанция известна).
+- `discovery_providers.dart`: `searchResultsProvider` перед запросом
+  пытается получить `currentLocationProvider` (через `MockLocationService`),
+  ошибку геолокации проглатывает (origin остаётся `null`, поиск всё равно
+  работает — деградация, а не отказ).
+- `ProviderCard` показывает "X.X km away", если `distanceKm` не `null`.
+- `ProviderDetailScreen` получил кнопку "View on map" (видна только если
+  у провайдера есть координаты), открывающую `MockMapScreen`.
+- Тесты: `location_service_test.dart`, `mock_map_screen_test.dart` (полный
+  рендер + пропуск дистанции, если не передана), плюс обновлены сигнатуры
+  fake-подклассов `DiscoveryApi` в `discovery_screen_test.dart` и
+  `widget_test.dart` (добавлены опциональные `lat`/`lng` — иначе
+  `invalid_override`). `flutter analyze` — чисто, `flutter test` — 27/27.
+  `flutter build apk --debug` — собирается.
+- **Живая проверка в браузере**: посеял через curl "Close By Salon"
+  (43.25, 76.90) и "Far Away Salon" (51.1694, 71.4491 — Астана) с
+  открытым API-подтверждением `distanceKm` (1.49 км и 972.25 км
+  соответственно). На экране Discover карточка "Close By Salon" реально
+  показывает "1.5 km away" в правильной позиции сортировки. Открыл
+  деталку провайдера → кнопка "View on map" видна → нажал → `MockMapScreen`
+  корректно отрисовала заглушку, координаты "43.2500, 76.9000" и
+  "1.5 km from you". Скриншоты отправлены пользователю. Окружение
+  (Chrome/Dart/Java-процессы, `docker compose`) остановлено после
+  проверки.
+
+### Текущий статус
+Всё застейджено, **не закоммичено** — ждём подтверждения.
+
 ## Следующий шаг — рекомендация архитектора
-**Phase 3 (Commerce) на mock-провайдере закрыта.** Реальный Stripe
-подключается заменой `MockPaymentProvider` на реализацию поверх
-`stripe-java`, когда у пользователя будет test-mode аккаунт — остальная
-архитектура (порт `PaymentProvider`, `PaymentsService`, endpoints) готова
-к этому уже сейчас.
+**Phase 2 теперь полностью закрыт без единого отложенного пункта**
+(maps был последним). Реальный провайдер карт (Google Maps/Mapbox/OSM)
+и `geolocator` подключаются заменой `MockLocationService`/`MockMapScreen`
+за уже готовыми интерфейсами, когда у пользователя будет решение по
+провайдеру и биллингу.
 
 Дальше по roadmap (Blueprint §14): **Phase 4 — Beauty vertical**
 (salons, masters, portfolio, booking rules) — первая настоящая
 vertical-специфика поверх уже построенного generic-ядра, и хороший
 момент проверить принцип "Core не знает про vertical" на практике.
-Alternatively: **maps**, если пользователь готов определиться с
-провайдером карт.

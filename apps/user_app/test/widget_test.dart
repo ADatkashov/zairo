@@ -15,6 +15,8 @@ class _EmptyDiscoveryApi extends DiscoveryApi {
   Future<List<ProviderSearchResult>> searchProviders({
     String? vertical,
     String? query,
+    double? lat,
+    double? lng,
   }) async {
     return [];
   }

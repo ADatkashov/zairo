@@ -77,13 +77,48 @@ class SearchApiTests {
                 providerC.toString(), providerB.toString());
     }
 
+    @Test
+    void ranksByDistanceWhenTheCallerSuppliesItsLocation() {
+        String runId = UUID.randomUUID().toString();
+        String vertical = "beauty-dist-" + runId;
+        UUID ownerId = createUser("dist-owner-" + runId + "@example.com", "Dist Owner");
+
+        // Almaty city center as the search origin.
+        double originLat = 43.2389;
+        double originLng = 76.8897;
+
+        // Near: a few km away.
+        UUID providerNear = createProvider(ownerId, "Near Salon " + runId, vertical, 43.25, 76.90);
+        createService(providerNear, "Cut", new BigDecimal("20.00"));
+        createOpenSlot(providerNear);
+
+        // Far: a different city entirely (Astana), hundreds of km away.
+        UUID providerFar = createProvider(ownerId, "Far Salon " + runId, vertical, 51.1694, 71.4491);
+        createService(providerFar, "Cut", new BigDecimal("20.00"));
+        createOpenSlot(providerFar);
+
+        List<Map> results = search(vertical, null, originLat, originLng);
+        assertThat(results).extracting(r -> r.get("id")).containsExactly(providerNear.toString(),
+                providerFar.toString());
+        double nearDistance = ((Number) results.get(0).get("distanceKm")).doubleValue();
+        double farDistance = ((Number) results.get(1).get("distanceKm")).doubleValue();
+        assertThat(nearDistance).isLessThan(farDistance);
+    }
+
     private List<Map> search(String vertical, String q) {
+        return search(vertical, q, null, null);
+    }
+
+    private List<Map> search(String vertical, String q, Double lat, Double lng) {
         StringBuilder url = new StringBuilder("/api/v1/search/providers?");
         if (vertical != null) {
             url.append("vertical=").append(vertical).append("&");
         }
         if (q != null) {
-            url.append("q=").append(q);
+            url.append("q=").append(q).append("&");
+        }
+        if (lat != null && lng != null) {
+            url.append("lat=").append(lat).append("&lng=").append(lng);
         }
         ResponseEntity<Map[]> response = restTemplate.getForEntity(url.toString(), Map[].class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -92,6 +127,12 @@ class SearchApiTests {
 
     private UUID createProvider(UUID ownerId, String name, String vertical) {
         var request = new CreateProviderRequest(ownerId, name, vertical);
+        Map<?, ?> body = restTemplate.postForEntity("/api/v1/providers", request, Map.class).getBody();
+        return UUID.fromString(body.get("id").toString());
+    }
+
+    private UUID createProvider(UUID ownerId, String name, String vertical, double latitude, double longitude) {
+        var request = new CreateProviderRequest(ownerId, name, vertical, latitude, longitude);
         Map<?, ?> body = restTemplate.postForEntity("/api/v1/providers", request, Map.class).getBody();
         return UUID.fromString(body.get("id").toString());
     }

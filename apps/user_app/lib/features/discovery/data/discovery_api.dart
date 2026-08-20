@@ -14,12 +14,16 @@ class DiscoveryApi {
   Future<List<ProviderSearchResult>> searchProviders({
     String? vertical,
     String? query,
+    double? lat,
+    double? lng,
   }) async {
     final response = await _dioClient.get(
       '/search/providers',
       queryParameters: {
         if (vertical != null && vertical.isNotEmpty) 'vertical': vertical,
         if (query != null && query.isNotEmpty) 'q': query,
+        if (lat != null && lng != null) 'lat': lat,
+        if (lat != null && lng != null) 'lng': lng,
       },
     );
 

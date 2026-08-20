@@ -36,6 +36,13 @@ class ProviderCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(result.vertical, style: theme.textTheme.bodySmall),
+              if (result.distanceKm != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  '${result.distanceKm!.toStringAsFixed(1)} km away',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
               if (result.minPrice != null) ...[
                 const SizedBox(height: 8),
                 Text(

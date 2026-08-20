@@ -27,7 +27,8 @@ public class ProviderController {
     @ResponseStatus(HttpStatus.CREATED)
     public ProviderResponse create(@RequestBody CreateProviderRequest request) {
         Provider provider = new Provider(UUID.randomUUID(), request.ownerUserId(), request.name(),
-                request.vertical(), ProviderStatus.PENDING, Instant.now());
+                request.vertical(), ProviderStatus.PENDING, Instant.now(), request.latitude(),
+                request.longitude());
         return ProviderResponse.from(providerRepository.save(provider));
     }
 

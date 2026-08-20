@@ -1,6 +1,8 @@
 import 'package:core_network/core_network.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../maps/data/geo_point.dart';
+import '../../../maps/presentation/providers/maps_providers.dart';
 import '../../data/discovery_api.dart';
 import '../../data/models/provider_search_result.dart';
 
@@ -26,7 +28,20 @@ class DiscoveryQuery {
 }
 
 final searchResultsProvider = FutureProvider.autoDispose
-    .family<List<ProviderSearchResult>, DiscoveryQuery>((ref, params) {
+    .family<List<ProviderSearchResult>, DiscoveryQuery>((ref, params) async {
   final api = ref.watch(discoveryApiProvider);
-  return api.searchProviders(vertical: params.vertical, query: params.query);
+  // Best-effort: if the (mocked) location lookup fails for any reason,
+  // search still works, just without distance ranking/display.
+  GeoPoint? location;
+  try {
+    location = await ref.watch(currentLocationProvider.future);
+  } catch (_) {
+    location = null;
+  }
+  return api.searchProviders(
+    vertical: params.vertical,
+    query: params.query,
+    lat: location?.latitude,
+    lng: location?.longitude,
+  );
 });

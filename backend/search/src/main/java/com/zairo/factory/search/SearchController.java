@@ -17,7 +17,8 @@ public class SearchController {
 
     @GetMapping("/api/v1/search/providers")
     public List<ProviderSearchResult> search(@RequestParam(required = false) String vertical,
-            @RequestParam(required = false) String q) {
-        return searchService.search(vertical, q);
+            @RequestParam(required = false) String q, @RequestParam(required = false) Double lat,
+            @RequestParam(required = false) Double lng) {
+        return searchService.search(vertical, q, lat, lng);
     }
 }

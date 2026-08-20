@@ -17,13 +17,19 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 /**
- * Deterministic MVP ranking: open availability first, then cheapest active
- * service price. Rating is deliberately NOT part of the ranking yet — it
- * would need a live join across services -> bookings -> reviews on every
- * search request; worth a materialized read model once search has real
- * traffic, not a per-request join for an MVP with no data yet. Distance is
- * out of scope until providers carry location data (see Factory Blueprint
- * §19 — maps/geo deferred).
+ * Deterministic MVP ranking: open availability first, then distance (when
+ * the caller supplies its own lat/lng and the provider has one), then
+ * cheapest active service price. Rating is deliberately NOT part of the
+ * ranking yet — it would need a live join across services -> bookings ->
+ * reviews on every search request; worth a materialized read model once
+ * search has real traffic, not a per-request join for an MVP with no data
+ * yet.
+ *
+ * Distance itself is just Haversine math (see DistanceCalculator) — no
+ * external geo service needed. What's still genuinely deferred is
+ * geocoding (turning a typed address into lat/lng) and real map
+ * rendering, both of which need an external provider account; see
+ * apps/user_app/lib/features/maps/ for the mocked client-side stand-in.
  */
 @Service
 public class SearchService {
@@ -39,7 +45,7 @@ public class SearchService {
         this.availabilitySlotRepository = availabilitySlotRepository;
     }
 
-    public List<ProviderSearchResult> search(String vertical, String query) {
+    public List<ProviderSearchResult> search(String vertical, String query, Double originLat, Double originLng) {
         List<Provider> providers = vertical == null || vertical.isBlank() ? providerRepository.findAll()
                 : providerRepository.findByVertical(vertical);
 
@@ -54,13 +60,14 @@ public class SearchService {
                     .toList();
         }
 
-        return providers.stream().map(this::toResult)
+        return providers.stream().map(p -> toResult(p, originLat, originLng))
                 .sorted(Comparator.comparing(ProviderSearchResult::hasOpenAvailability).reversed()
+                        .thenComparing(r -> r.distanceKm() == null ? Double.MAX_VALUE : r.distanceKm())
                         .thenComparing(r -> r.minPrice() == null ? BigDecimal.valueOf(Long.MAX_VALUE) : r.minPrice()))
                 .toList();
     }
 
-    private ProviderSearchResult toResult(Provider provider) {
+    private ProviderSearchResult toResult(Provider provider, Double originLat, Double originLng) {
         List<ServiceOffering> services = serviceOfferingRepository.findByProviderIdAndActiveTrue(provider.getId());
         boolean hasOpenAvailability = availabilitySlotRepository.existsByProviderIdAndStatus(provider.getId(),
                 AvailabilityStatus.OPEN);
@@ -70,7 +77,16 @@ public class SearchService {
                 .map(s -> new ServiceSummary(s.getId(), s.getTitle(), s.getDurationMinutes(), s.getPrice(),
                         s.getCurrency()))
                 .toList();
+
+        Double distanceKm = null;
+        if (originLat != null && originLng != null && provider.getLatitude() != null
+                && provider.getLongitude() != null) {
+            distanceKm = DistanceCalculator.distanceKm(originLat, originLng, provider.getLatitude(),
+                    provider.getLongitude());
+        }
+
         return new ProviderSearchResult(provider.getId(), provider.getName(), provider.getVertical(),
-                provider.getStatus(), hasOpenAvailability, minPrice, serviceSummaries);
+                provider.getStatus(), hasOpenAvailability, minPrice, serviceSummaries, distanceKm,
+                provider.getLatitude(), provider.getLongitude());
     }
 }
