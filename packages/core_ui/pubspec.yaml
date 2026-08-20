@@ -1,0 +1,19 @@
+name: core_ui
+description: Factory Core — the shared design system (color, typography, spacing, motion) every vertical's Flutter app themes itself with. No knowledge of any app or vertical.
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  google_fonts: ^6.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:

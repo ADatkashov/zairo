@@ -24,6 +24,8 @@ dependencies:
     path: ../../packages/core_network
   core_storage:
     path: ../../packages/core_storage
+  core_ui:
+    path: ../../packages/core_ui
 
 dev_dependencies:
   flutter_test:

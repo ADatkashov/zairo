@@ -1579,5 +1579,112 @@ Approve на одном, салон мгновенно исчез из очер�
 
 ### Статус
 Реализовано и полностью проверено (backend build+test, Flutter
-analyze+test+build, curl e2e, живой браузер), но **не закоммичено** —
-ждём подтверждения пользователя на коммит и пуш.
+analyze+test+build, curl e2e, живой браузер), закоммичено и запушено
+(`92a8949`).
+
+---
+
+## Factory Design System: артефакт, затем перевод токенов в Flutter (2026-08-21)
+
+### Дизайн-система (артефакт)
+Пользователь дал развёрнутый бриф на полную UX/UI дизайн-систему для
+Beauty-вертикали, переиспользуемую под будущие вертикали ("Factory Design
+System" — не Beauty-система). Собран и опубликован единый HTML-артефакт
+(`https://claude.ai/code/artifact/36cdb1f3-0dfe-43fc-a64c-e9d6435dbcef`):
+- **Палитра**: тёплый каменный нейтраль + primary "pine" (глубокий
+  зелёный, ассоциация с Тянь-Шанем — доверие, не привязан к "розовой
+  бьюти-эстетике", годится под Auto/Dental) + gold только для
+  рейтинга/premium-акцентов. Dark mode — отдельные токены, не инверсия
+  (primary в тёмной теме ярче — "mint", а не тот же pine).
+- **Типографика**: Unbounded (заголовки) + Golos Text (UI/тело — шрифт,
+  спроектированный под кириллицу+латиницу, что реально важно для
+  KZ/RU-рынка) + JetBrains Mono (цены/время/дистанции, табличные цифры).
+- Полная схема токенов (spacing/radius/elevation/motion/a11y), библиотека
+  компонентов (`ProviderCard`, `ServiceCard`, рейтинг, бейджи, time-slot
+  grid, payment tile и т.д. — названы по роли, не по "beauty"-терминам),
+  IA-карты, 13 экранов user-app в виде реальных мокапов телефона (включая
+  light/dark пару), 4 панели Business Admin, полная таблица-инвентарь на
+  все экраны из брифа с ответом на "5 вопросов" из брифа.
+Пользователь одобрил: **"да одобрено"**.
+
+### Перевод токенов в Flutter — новый пакет `packages/core_ui`
+Первый, фундаментальный шаг перевода (по плану "Handoff" из самого
+артефакта: "Token set → ThemeExtension/ColorScheme, light+dark" — раньше
+остального, потому что без него нельзя ничего стилизовать). Новый Flutter
+пакет `packages/core_ui` (третий в `packages/`, рядом с `core_network`/
+`core_storage`) содержит **только фундамент**, без библиотеки виджетов —
+компоненты (кнопки/карточки/чипы и т.д.) сознательно отложены на
+следующий шаг, чтобы не смешивать "может ли тема примениться" с "как
+выглядит конкретный виджет" в одном непроверенном проходе.
+- `FactoryColors` — `ThemeExtension<FactoryColors>` с ролями из
+  артефакта (bg/surface/surfaceAlt/border/text.../primary/accent/
+  success/warning/error/info), статические `FactoryColors.light` и
+  `.dark` с точными hex-значениями из дизайн-системы. Доступ через
+  `context.factoryColors.primary` — Flutter-овский `ColorScheme` не
+  умеет в роли типа `surfaceAlt`/`primaryTint`.
+- `FactoryTypography.textTheme(color)` — строит Material `TextTheme`
+  через `google_fonts` (`GoogleFonts.unbounded`/`.golosText`), плюс
+  отдельный `FactoryTypography.mono(...)` (`GoogleFonts.jetBrainsMono`,
+  `FontFeature.tabularFigures()`) — у Material `TextTheme` нет
+  моно-роли, а токен для цен/времени в артефакте был явно заявлен.
+- `FactorySpacing`/`FactoryRadius`/`FactoryMotion` — простые константы
+  1:1 из шкал артефакта (4pt spacing, radius 8/12/16/24, durations
+  120/200/320мс + emphasized-decelerate curve).
+- `factoryLightTheme()`/`factoryDarkTheme()` — собирают полноценную
+  `ThemeData`: старт от `ColorScheme.fromSeed(seedColor: colors.primary)`
+  (чтобы все внутренние Material3-роли типа `surfaceContainerHighest`,
+  которые в токен-наборе артефакта не описаны, получили осмысленное
+  значение), затем `.copyWith(...)` переопределяет ровно те роли, что
+  определены в артефакте. Плюс component themes: `AppBarTheme`,
+  `CardTheme` (radius lg, только hairline-бордер, elevation 0 — "avoid
+  excessive shadows" из брифа), кнопки, `InputDecorationTheme`,
+  `ChipTheme` (pill), `BottomSheetTheme`, `SnackBarTheme` и т.д.
+- Оба приложения (`user_app`, `business_admin`) получили зависимость на
+  `core_ui`; их `AppTheme.light`/`.dark` (раньше — буквально дефолтный
+  Material `ColorScheme.fromSeed(seedColor: 0xFF6200EE)`, тот самый
+  "сине-фиолетовый generic Flutter" вид, который бриф прямо просил
+  избегать) теперь — тонкие обёртки, делегирующие в
+  `factoryLightTheme()`/`factoryDarkTheme()`. `app.dart` в обоих
+  приложениях не тронут — контракт `AppTheme.light`/`.dark` сохранён.
+
+### Тесты и живая проверка
+- `core_ui`: `flutter analyze` — чисто, новый `factory_theme_test.dart`
+  (3 теста — палитра light отличается от дефолтного seed, dark — не
+  инверсия light (другой primary), `context.factoryColors` доступен).
+  **Нюанс**: `google_fonts` в тестах пытается качать шрифты по сети — в
+  голом `test()` это падает необработанным исключением; обёрнуто в
+  `testWidgets()`, чей биндинг терпит сетевой сбой и откатывается на
+  системный шрифт, не роняя тест. Если когда-нибудь понадобится офлайн
+  без сети вообще — `GoogleFonts.config.allowRuntimeFetching = false`
+  требует, чтобы шрифт лежал в ассетах приложения, иначе тоже падает —
+  не универсальное решение, поэтому не используется.
+- `user_app` и `business_admin`: `flutter analyze` — чисто в обоих,
+  `flutter test` — все проходят (18/18 admin, 30/30 user_app),
+  `flutter build web` — собирается в обоих.
+- **Живая проверка в браузере** — самое важное: `user_app` в dark
+  режиме показывает мятно-зелёный (не пурпурный) акцент на нижней
+  навигации, тёплый почти-чёрный фон (не инверсия белого). Business
+  Admin: экран логина — тот же мятный `factoryLightTheme` вместо
+  прежней сиреневой кнопки `ColorScheme.fromSeed(0xFF6200EE)`.
+  Скриншоты подтверждают: тема реально применилась в обоих приложениях,
+  не только компилируется. Столкнулся с известной автоматизационной
+  проблемой (см. также прошлые разделы этого файла): `SetForegroundWindow`
+  из свежего PowerShell-процесса тихо не срабатывал, пока фокусное окно
+  явно не свёрнуто (`ShowWindow(..., 6)`) — иначе скриншот ловил
+  предыдущее окно поверх нужного.
+
+### Статус
+`core_ui` (только фундамент — токены/тема, без компонентной библиотеки)
+реализован, оба приложения переключены на него, всё протестировано и
+проверено вживую, но **не закоммичено** — ждём подтверждения на коммит
+и пуш.
+
+## Следующий шаг — рекомендация архитектора
+Фундамент (токены/тема) готов. Дальше по плану "Handoff" из артефакта:
+(1) библиотека переиспользуемых виджетов в `core_ui` (`ProviderCard`,
+`ServiceCard`, рейтинг, бейджи, time-slot grid и т.д. — то, что в
+артефакте описано как HTML/CSS-мокапы, нужно собрать как настоящие
+Flutter-виджеты), затем (2) применение их к реальным экранам обоих
+приложений экран за экраном. Не всё сразу одним проходом — предложено
+идти по одному-двум экранам за раз с проверкой каждого, как и весь
+остальной проект.
