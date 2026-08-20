@@ -5,6 +5,8 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../discovery/data/models/provider_search_result.dart';
 import '../../../favorites/presentation/widgets/favorite_button.dart';
+import '../../../payments/data/payment_exception.dart';
+import '../../../payments/presentation/providers/payments_providers.dart';
 import '../../data/booking_exception.dart';
 import '../../data/models/availability_slot.dart';
 import '../providers/booking_providers.dart';
@@ -113,16 +115,29 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
 
     final service = widget.provider.services.firstWhere((s) => s.id == _selectedServiceId);
     try {
-      await ref.read(bookingApiProvider).createBooking(
+      final booking = await ref.read(bookingApiProvider).createBooking(
             userId: currentUser.id,
             serviceId: service.id,
             availabilitySlotId: _selectedSlotId!,
             totalPrice: service.price,
           );
+
+      // Charged right after booking creation, in the same flow — see
+      // SESSION_NOTES.md for why this isn't gated behind a webhook yet
+      // (no real payment provider/webhook exists; the mock resolves
+      // synchronously, so there's nothing async to wait on).
+      String message = 'Booking confirmed!';
+      try {
+        final payment = await ref.read(paymentsApiProvider).createPayment(booking.id);
+        message = payment.status == 'SUCCEEDED'
+            ? 'Booking confirmed and paid!'
+            : 'Booking confirmed, but payment ${payment.status.toLowerCase()}.';
+      } on PaymentException catch (e) {
+        message = 'Booking confirmed, but ${e.message}';
+      }
+
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Booking confirmed!')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
       Navigator.of(context).pop();
     } on BookingException catch (e) {
       if (!mounted) return;

@@ -21,6 +21,10 @@ app:
     secret: "Jc65IChbJdrOLj/C4rT+OCdPEdvzosIIpIG0xYM9dJ1Eflr/QDsOg+hLKOdX8k1B"
     access-token-ttl-minutes: 30
     refresh-token-ttl-days: 30
+  payments:
+    # Single-market MVP assumption (Factory Blueprint §6) — no per-service
+    # currency lookup yet.
+    currency: USD
 
 management:
   endpoints:

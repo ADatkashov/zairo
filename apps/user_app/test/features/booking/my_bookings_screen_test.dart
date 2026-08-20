@@ -8,6 +8,9 @@ import 'package:zairo/features/booking/data/models/availability_slot.dart';
 import 'package:zairo/features/booking/data/models/booking.dart';
 import 'package:zairo/features/booking/presentation/providers/booking_providers.dart';
 import 'package:zairo/features/booking/presentation/screens/my_bookings_screen.dart';
+import 'package:zairo/features/payments/data/models/payment.dart';
+import 'package:zairo/features/payments/data/payments_api.dart';
+import 'package:zairo/features/payments/presentation/providers/payments_providers.dart';
 import 'package:zairo/features/reviews/data/models/review.dart';
 import 'package:zairo/features/reviews/data/reviews_api.dart';
 import 'package:zairo/features/reviews/presentation/providers/reviews_providers.dart';
@@ -31,11 +34,21 @@ class _FakeReviewsApi extends ReviewsApi {
   Future<Review?> getReview(String bookingId) async => null;
 }
 
+class _FakePaymentsApi extends PaymentsApi {
+  _FakePaymentsApi() : super(DioClient(Dio()));
+
+  @override
+  Future<Payment?> getPayment(String bookingId) async => null;
+}
+
 void main() {
   testWidgets('shows an empty state with no bookings', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [bookingApiProvider.overrideWithValue(_FakeBookingApi(const []))],
+        overrides: [
+          bookingApiProvider.overrideWithValue(_FakeBookingApi(const [])),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+        ],
         child: const MaterialApp(home: MyBookingsScreen(userId: 'user-1')),
       ),
     );
@@ -57,7 +70,10 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [bookingApiProvider.overrideWithValue(_FakeBookingApi([booking]))],
+        overrides: [
+          bookingApiProvider.overrideWithValue(_FakeBookingApi([booking])),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+        ],
         child: const MaterialApp(home: MyBookingsScreen(userId: 'user-1')),
       ),
     );
@@ -85,6 +101,7 @@ void main() {
         overrides: [
           bookingApiProvider.overrideWithValue(_FakeBookingApi([booking])),
           reviewsApiProvider.overrideWithValue(_FakeReviewsApi()),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
         ],
         child: const MaterialApp(home: MyBookingsScreen(userId: 'user-1')),
       ),

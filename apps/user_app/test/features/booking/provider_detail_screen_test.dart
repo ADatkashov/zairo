@@ -12,6 +12,9 @@ import 'package:zairo/features/booking/presentation/providers/booking_providers.
 import 'package:zairo/features/booking/presentation/screens/provider_detail_screen.dart';
 import 'package:zairo/features/discovery/data/models/provider_search_result.dart';
 import 'package:zairo/features/discovery/data/models/service_summary.dart';
+import 'package:zairo/features/payments/data/models/payment.dart';
+import 'package:zairo/features/payments/data/payments_api.dart';
+import 'package:zairo/features/payments/presentation/providers/payments_providers.dart';
 
 class _FakeBookingApi extends BookingApi {
   _FakeBookingApi(this._slots) : super(DioClient(Dio()));
@@ -47,6 +50,25 @@ class _FakeBookingApi extends BookingApi {
   }
 }
 
+class _FakePaymentsApi extends PaymentsApi {
+  _FakePaymentsApi() : super(DioClient(Dio()));
+
+  String? lastChargedBookingId;
+
+  @override
+  Future<Payment> createPayment(String bookingId) async {
+    lastChargedBookingId = bookingId;
+    return Payment(
+      id: 'payment-1',
+      bookingId: bookingId,
+      amount: 30,
+      currency: 'USD',
+      status: 'SUCCEEDED',
+      createdAt: DateTime.now(),
+    );
+  }
+}
+
 class _LoggedInAuthController extends AuthController {
   @override
   Future<UserSummary?> build() async {
@@ -64,6 +86,7 @@ void main() {
       status: 'OPEN',
     );
     final fakeApi = _FakeBookingApi([slot]);
+    final fakePaymentsApi = _FakePaymentsApi();
     const provider = ProviderSearchResult(
       id: 'provider-1',
       name: 'Test Salon',
@@ -81,9 +104,10 @@ void main() {
       ProviderScope(
         overrides: [
           bookingApiProvider.overrideWithValue(fakeApi),
+          paymentsApiProvider.overrideWithValue(fakePaymentsApi),
           authControllerProvider.overrideWith(_LoggedInAuthController.new),
         ],
-        child: MaterialApp(navigatorKey: navigatorKey, home: const SizedBox()),
+        child: MaterialApp(navigatorKey: navigatorKey, home: const Scaffold(body: SizedBox())),
       ),
     );
     navigatorKey.currentState!
@@ -109,6 +133,8 @@ void main() {
       'availabilitySlotId': 'slot-1',
       'totalPrice': 30.0,
     });
+    expect(fakePaymentsApi.lastChargedBookingId, 'booking-1');
+    expect(find.text('Booking confirmed and paid!'), findsOneWidget);
   });
 
   testWidgets('shows a message when there are no open slots', (tester) async {

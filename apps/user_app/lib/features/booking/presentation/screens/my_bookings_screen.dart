@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../payments/presentation/widgets/payment_status_chip.dart';
 import '../../../reviews/presentation/widgets/review_section.dart';
 import '../../data/models/booking.dart';
 import '../providers/booking_providers.dart';
@@ -65,6 +66,8 @@ class _BookingCard extends StatelessWidget {
               'Booked on ${booking.createdAt.toLocal()}',
               style: Theme.of(context).textTheme.bodySmall,
             ),
+            const SizedBox(height: 4),
+            PaymentStatusChip(bookingId: booking.id),
             if (booking.status == 'COMPLETED') ReviewSection(bookingId: booking.id),
           ],
         ),
