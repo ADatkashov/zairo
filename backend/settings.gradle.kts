@@ -20,4 +20,5 @@ include(
     "search",
     "favorites",
     "vertical-beauty",
+    "storage",
 )
