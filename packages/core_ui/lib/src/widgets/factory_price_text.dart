@@ -44,18 +44,26 @@ class FactoryPriceText extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.factoryColors;
     final resolvedColor = color ?? colors.text;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.baseline,
-      textBaseline: TextBaseline.alphabetic,
-      children: [
-        if (prefix != null)
-          Text(prefix!, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
-        Text(
-          '${formatFactoryAmount(amount)} $currencySymbol',
-          style: FactoryTypography.mono(size: fontSize, weight: weight, color: resolvedColor),
-        ),
-      ],
+    // FittedBox+scaleDown: a price can be arbitrarily wide (large amounts,
+    // long currency codes) and this often sits in a tightly-constrained
+    // card footer — shrink slightly rather than hard-overflow if it ever
+    // doesn't fit, instead of assuming a width that happens to work today.
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: AlignmentDirectional.centerStart,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
+          if (prefix != null)
+            Text(prefix!, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
+          Text(
+            '${formatFactoryAmount(amount)} $currencySymbol',
+            style: FactoryTypography.mono(size: fontSize, weight: weight, color: resolvedColor),
+          ),
+        ],
+      ),
     );
   }
 }

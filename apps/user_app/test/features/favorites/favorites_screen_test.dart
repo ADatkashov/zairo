@@ -1,4 +1,5 @@
 import 'package:core_network/core_network.dart';
+import 'package:core_ui/core_ui.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,7 +24,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [favoritesApiProvider.overrideWithValue(_FakeFavoritesApi(const []))],
-        child: const MaterialApp(home: FavoritesScreen(userId: 'user-1')),
+        child: MaterialApp(theme: factoryLightTheme(), home: const FavoritesScreen(userId: 'user-1')),
       ),
     );
     await tester.pumpAndSettle();
@@ -48,12 +49,15 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [favoritesApiProvider.overrideWithValue(_FakeFavoritesApi([favorite]))],
-        child: const MaterialApp(home: FavoritesScreen(userId: 'user-1')),
+        child: MaterialApp(theme: factoryLightTheme(), home: const FavoritesScreen(userId: 'user-1')),
       ),
     );
     await tester.pumpAndSettle();
 
+    // Favorite Salon renders via the shared ProviderCard — title, price and
+    // availability only; per-service chips aren't part of that component
+    // (see core_ui's ProviderCard spec), so "Haircut" itself isn't asserted.
     expect(find.text('Favorite Salon'), findsOneWidget);
-    expect(find.text('Haircut'), findsOneWidget);
+    expect(find.text('Available today'), findsOneWidget);
   });
 }

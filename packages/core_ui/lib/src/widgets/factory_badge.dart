@@ -31,18 +31,26 @@ class FactoryBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space2, vertical: 3),
       decoration: BoxDecoration(color: bg, borderRadius: FactoryRadius.smRadius),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 11, color: fg),
-            const SizedBox(width: 4),
+      // Shrinks rather than hard-overflows in a tight card footer — a
+      // badge's label length isn't bounded (status text varies), so this
+      // can't assume it always has enough room.
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 11, color: fg),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(color: fg, fontWeight: FontWeight.w700),
+            ),
           ],
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(color: fg, fontWeight: FontWeight.w700),
-          ),
-        ],
+        ),
       ),
     );
   }

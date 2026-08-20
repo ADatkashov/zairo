@@ -129,8 +129,15 @@ class ProviderCard extends StatelessWidget {
           ),
           if (priceFrom != null || availabilityLabel != null) ...[
             const SizedBox(height: 6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // Wrap, not Row: a narrow vertical card (e.g. a horizontally
+            // scrolling discovery rail) can't always fit a price and a
+            // longer availability label on one line — this reflows to a
+            // second line instead of overflowing, and still reads as one
+            // row whenever there's room (the common horizontal-layout case).
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 if (priceFrom != null)
                   FactoryPriceText(amount: priceFrom!, currencySymbol: currencySymbol, prefix: 'from '),

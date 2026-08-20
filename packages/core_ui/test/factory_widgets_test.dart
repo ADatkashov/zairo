@@ -106,6 +106,23 @@ void main() {
     expect(tapped, isTrue);
   });
 
+  testWidgets('ProviderCard does not overflow a narrow vertical card with a long availability label',
+      (tester) async {
+    // Regression test: a horizontally-scrolling discovery rail sizes cards
+    // around 160-170px wide — price + a longer badge used to overflow the
+    // footer row (see provider_card.dart's Wrap, not Row).
+    await tester.pumpWidget(_wrap(const ProviderCard(
+      title: 'Aigerim Beauty Studio',
+      priceFrom: 8000,
+      availabilityLabel: 'Available today',
+      layout: ProviderCardLayout.vertical,
+      width: 168,
+    )));
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Available today'), findsOneWidget);
+  });
+
   testWidgets('ServiceRow shows the grouped price', (tester) async {
     await tester.pumpWidget(_wrap(const ServiceRow(title: 'Balayage colouring', metaText: '90 min', price: 15000)));
 
