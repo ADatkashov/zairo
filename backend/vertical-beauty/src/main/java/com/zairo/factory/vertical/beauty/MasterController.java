@@ -43,6 +43,13 @@ public class MasterController {
         return MasterResponse.from(masterDirectoryService.getMaster(masterId));
     }
 
+    /** Soft-delete — see Master.deactivate(). Idempotent. */
+    @DeleteMapping("/api/v1/beauty/masters/{masterId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deactivate(@PathVariable UUID masterId) {
+        masterDirectoryService.deactivateMaster(masterId);
+    }
+
     @PostMapping("/api/v1/beauty/masters/{masterId}/portfolio")
     @ResponseStatus(HttpStatus.CREATED)
     public PortfolioItemResponse addPortfolioItem(@PathVariable UUID masterId,

@@ -62,4 +62,10 @@ class BeautyAdminApi {
   Future<void> unlinkService({required String masterId, required String serviceId}) {
     return _dioClient.delete('/beauty/masters/$masterId/services/$serviceId');
   }
+
+  /// Soft-delete — see backend's Master.deactivate(). Deactivated masters
+  /// stop appearing in provider listings (both here and in the customer app).
+  Future<void> deactivateMaster(String masterId) {
+    return _dioClient.delete('/beauty/masters/$masterId');
+  }
 }

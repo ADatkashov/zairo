@@ -79,4 +79,16 @@ public class ServiceOffering {
     public boolean isActive() {
         return active;
     }
+
+    void update(String title, int durationMinutes, BigDecimal price, String currency) {
+        this.title = title;
+        this.durationMinutes = durationMinutes;
+        this.price = price;
+        this.currency = currency;
+    }
+
+    /** Soft-delete: existing bookings still reference this service by id, so the row must stay. */
+    void deactivate() {
+        this.active = false;
+    }
 }

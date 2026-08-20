@@ -11,6 +11,9 @@ public final class ServiceOfferingDtos {
     public record CreateServiceRequest(String title, int durationMinutes, BigDecimal price, String currency) {
     }
 
+    public record UpdateServiceRequest(String title, int durationMinutes, BigDecimal price, String currency) {
+    }
+
     public record ServiceResponse(UUID id, UUID providerId, String title, int durationMinutes, BigDecimal price,
             String currency, boolean active) {
         static ServiceResponse from(ServiceOffering service) {

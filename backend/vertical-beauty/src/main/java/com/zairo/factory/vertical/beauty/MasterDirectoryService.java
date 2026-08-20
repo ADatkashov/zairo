@@ -56,7 +56,7 @@ public class MasterDirectoryService {
     }
 
     public List<Master> listMastersByProvider(UUID providerId) {
-        return masterRepository.findByProviderId(providerId);
+        return masterRepository.findByProviderIdAndActiveTrue(providerId);
     }
 
     public Master getMaster(UUID masterId) {
@@ -104,5 +104,14 @@ public class MasterDirectoryService {
         List<UUID> serviceIds = masterServiceLinkRepository.findByMasterId(masterId).stream()
                 .map(MasterServiceLink::getServiceId).toList();
         return serviceOfferingRepository.findAllById(serviceIds);
+    }
+
+    /** Idempotent — deactivating an already-inactive (or missing) master is a no-op. */
+    @Transactional
+    public void deactivateMaster(UUID masterId) {
+        masterRepository.findById(masterId).ifPresent(master -> {
+            master.deactivate();
+            masterRepository.save(master);
+        });
     }
 }

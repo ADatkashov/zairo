@@ -25,14 +25,20 @@ const _provider = AdminProvider(
 class _FakeSalonAdminApi extends SalonAdminApi {
   _FakeSalonAdminApi({
     List<AdminService>? services,
+    List<AdminSlot>? slots,
     List<AdminBooking>? bookings,
   })  : _services = services ?? [],
+        _slots = slots ?? [],
         _bookings = bookings ?? [],
         super(DioClient(Dio()));
 
   final List<AdminService> _services;
+  final List<AdminSlot> _slots;
   final List<AdminBooking> _bookings;
   Map<String, dynamic>? lastCreateServiceCall;
+  Map<String, dynamic>? lastUpdateServiceCall;
+  String? lastDeactivatedServiceId;
+  String? lastDeletedSlotId;
   String? lastCompletedBookingId;
 
   @override
@@ -67,7 +73,48 @@ class _FakeSalonAdminApi extends SalonAdminApi {
   }
 
   @override
-  Future<List<AdminSlot>> listSlots(String providerId) async => const [];
+  Future<AdminService> updateService({
+    required String serviceId,
+    required String title,
+    required int durationMinutes,
+    required double price,
+    required String currency,
+  }) async {
+    lastUpdateServiceCall = {
+      'serviceId': serviceId,
+      'title': title,
+      'durationMinutes': durationMinutes,
+      'price': price,
+      'currency': currency,
+    };
+    final index = _services.indexWhere((s) => s.id == serviceId);
+    final updated = AdminService(
+      id: serviceId,
+      providerId: _services[index].providerId,
+      title: title,
+      durationMinutes: durationMinutes,
+      price: price,
+      currency: currency,
+      active: true,
+    );
+    _services[index] = updated;
+    return updated;
+  }
+
+  @override
+  Future<void> deactivateService(String serviceId) async {
+    lastDeactivatedServiceId = serviceId;
+    _services.removeWhere((s) => s.id == serviceId);
+  }
+
+  @override
+  Future<List<AdminSlot>> listSlots(String providerId) async => _slots;
+
+  @override
+  Future<void> deleteSlot(String slotId) async {
+    lastDeletedSlotId = slotId;
+    _slots.removeWhere((s) => s.id == slotId);
+  }
 
   @override
   Future<List<AdminBooking>> listBookings(String providerId) async => _bookings;
@@ -91,12 +138,21 @@ class _FakeSalonAdminApi extends SalonAdminApi {
 }
 
 class _FakeBeautyAdminApi extends BeautyAdminApi {
-  _FakeBeautyAdminApi([this._masters = const []]) : super(DioClient(Dio()));
+  _FakeBeautyAdminApi([List<AdminMaster>? masters])
+      : _masters = masters ?? [],
+        super(DioClient(Dio()));
 
   final List<AdminMaster> _masters;
+  String? lastDeactivatedMasterId;
 
   @override
   Future<List<AdminMaster>> listMasters(String providerId) async => _masters;
+
+  @override
+  Future<void> deactivateMaster(String masterId) async {
+    lastDeactivatedMasterId = masterId;
+    _masters.removeWhere((m) => m.id == masterId);
+  }
 }
 
 void main() {
@@ -133,6 +189,85 @@ void main() {
       'currency': 'USD',
     });
     expect(find.text('Haircut'), findsOneWidget);
+  });
+
+  testWidgets('editing a service calls updateService with the new values', (tester) async {
+    final fakeApi = _FakeSalonAdminApi(services: [
+      const AdminService(
+          id: 's1', providerId: 'p1', title: 'Haircut', durationMinutes: 30, price: 25, currency: 'USD',
+          active: true),
+    ]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(fakeApi),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+        ],
+        child: const MaterialApp(home: SalonDetailScreen(provider: _provider)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.edit_outlined));
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(TextField, 'Title'), findsOneWidget);
+    await tester.enterText(find.widgetWithText(TextField, 'Title'), 'Haircut & Style');
+    await tester.enterText(find.widgetWithText(TextField, 'Price (USD)'), '35');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+
+    expect(fakeApi.lastUpdateServiceCall, {
+      'serviceId': 's1',
+      'title': 'Haircut & Style',
+      'durationMinutes': 30,
+      'price': 35.0,
+      'currency': 'USD',
+    });
+    expect(find.text('Haircut & Style'), findsOneWidget);
+  });
+
+  testWidgets('deleting a service and a slot calls the right APIs and removes them from the list',
+      (tester) async {
+    final fakeApi = _FakeSalonAdminApi(
+      services: [
+        const AdminService(
+            id: 's1', providerId: 'p1', title: 'Haircut', durationMinutes: 30, price: 25, currency: 'USD',
+            active: true),
+      ],
+      slots: [
+        AdminSlot(
+            id: 'slot1',
+            providerId: 'p1',
+            startsAt: DateTime(2026, 1, 1, 10, 0),
+            endsAt: DateTime(2026, 1, 1, 10, 30),
+            status: 'OPEN'),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(fakeApi),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+        ],
+        child: const MaterialApp(home: SalonDetailScreen(provider: _provider)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Haircut'), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.delete_outline));
+    await tester.pumpAndSettle();
+    expect(fakeApi.lastDeactivatedServiceId, 's1');
+    expect(find.text('No services yet.'), findsOneWidget);
+
+    expect(find.byType(Chip), findsOneWidget);
+    await tester.tap(find.descendant(of: find.byType(Chip), matching: find.byIcon(Icons.cancel)));
+    await tester.pumpAndSettle();
+    expect(fakeApi.lastDeletedSlotId, 'slot1');
+    expect(find.text('No time slots yet.'), findsOneWidget);
   });
 
   testWidgets('marking a confirmed booking complete calls the API', (tester) async {

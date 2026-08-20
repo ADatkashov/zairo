@@ -27,6 +27,13 @@ public class StorageConfig {
      * Dev convenience: the bucket doesn't exist on a fresh `docker compose
      * up` until something creates it. A real deployment would provision the
      * bucket as part of infra setup, not on every app boot.
+     *
+     * Deliberately non-fatal: MinIO isn't Testcontainerized (see
+     * StorageApiTests' javadoc), so every other *ApiTests class would fail
+     * to even start a Spring context if this threw when MinIO happens not
+     * to be running — a failure that has nothing to do with what those
+     * tests actually exercise. Storage calls fail on their own, clearly,
+     * if MinIO genuinely isn't reachable when someone tries to upload.
      */
     private void ensureBucketExists(MinioClient client, String bucket) {
         try {
@@ -36,7 +43,8 @@ public class StorageConfig {
                 log.info("Created storage bucket: {}", bucket);
             }
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to prepare storage bucket: " + bucket, e);
+            log.warn("Could not prepare storage bucket '{}' — is MinIO running? Uploads will fail until it is: {}",
+                    bucket, e.getMessage());
         }
     }
 }

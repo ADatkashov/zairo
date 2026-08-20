@@ -88,7 +88,21 @@ class DioClient {
     );
   }
 
-  // Add other methods as needed (put, etc.)
+  Future<Response> put(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+  }) async {
+    return await _dio.put(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+      cancelToken: cancelToken,
+    );
+  }
 }
 
 final dioClientProvider = Provider<DioClient>((ref) {

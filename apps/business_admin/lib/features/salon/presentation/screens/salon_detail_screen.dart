@@ -76,6 +76,30 @@ class _ServicesSection extends ConsumerWidget {
                         contentPadding: EdgeInsets.zero,
                         title: Text(s.title),
                         subtitle: Text('${s.durationMinutes} min — \$${s.price.toStringAsFixed(2)}'),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined),
+                              tooltip: 'Edit',
+                              onPressed: () async {
+                                final saved = await showDialog<bool>(
+                                  context: context,
+                                  builder: (_) => AddServiceDialog(providerId: providerId, existing: s),
+                                );
+                                if (saved == true) ref.invalidate(providerServicesProvider(providerId));
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline),
+                              tooltip: 'Remove',
+                              onPressed: () async {
+                                await ref.read(salonAdminApiProvider).deactivateService(s.id);
+                                ref.invalidate(providerServicesProvider(providerId));
+                              },
+                            ),
+                          ],
+                        ),
                       ))
                   .toList(),
             );
@@ -125,8 +149,19 @@ class _AvailabilitySection extends ConsumerWidget {
             return Wrap(
               spacing: 8,
               runSpacing: 8,
+              // Only an OPEN slot can be removed (see backend's
+              // AvailabilitySlotController.delete()) — a booked one keeps
+              // its chip but with no delete affordance.
               children: slots
-                  .map((s) => Chip(label: Text('${_formatDateTime(s.startsAt.toLocal())} — ${s.status}')))
+                  .map((s) => Chip(
+                        label: Text('${_formatDateTime(s.startsAt.toLocal())} — ${s.status}'),
+                        onDeleted: s.status == 'OPEN'
+                            ? () async {
+                                await ref.read(salonAdminApiProvider).deleteSlot(s.id);
+                                ref.invalidate(providerSlotsProvider(providerId));
+                              }
+                            : null,
+                      ))
                   .toList(),
             );
           },
@@ -197,6 +232,14 @@ class _MastersSection extends ConsumerWidget {
                                   context: context,
                                   builder: (_) => AddPortfolioItemDialog(masterId: m.id),
                                 ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.person_remove_outlined),
+                                tooltip: 'Remove master',
+                                onPressed: () async {
+                                  await ref.read(beautyAdminApiProvider).deactivateMaster(m.id);
+                                  ref.invalidate(adminMastersProvider(providerId));
+                                },
                               ),
                             ],
                           ),

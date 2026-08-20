@@ -22,6 +22,7 @@ import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -100,6 +101,28 @@ class BeautyApiTests {
         restTemplate.delete("/api/v1/beauty/masters/" + masterId + "/services/" + serviceId);
         assertThat(getList("/api/v1/beauty/masters/" + masterId + "/services")).isEmpty();
         restTemplate.delete("/api/v1/beauty/masters/" + masterId + "/services/" + serviceId);
+    }
+
+    @Test
+    void deactivatingAMasterRemovesItFromTheProviderListing() {
+        String runId = UUID.randomUUID().toString();
+        UUID ownerId = createUser("deactivate-owner-" + runId + "@example.com");
+        UUID providerId = createProvider(ownerId, "Deactivate Salon " + runId, "beauty");
+        UUID masterId = createMaster(providerId, "Temp Master");
+
+        assertThat(getList("/api/v1/beauty/providers/" + providerId + "/masters")).extracting(m -> m.get("id"))
+                .containsExactly(masterId.toString());
+
+        ResponseEntity<Void> deactivateResponse = restTemplate.exchange("/api/v1/beauty/masters/" + masterId,
+                HttpMethod.DELETE, null, Void.class);
+        assertThat(deactivateResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+        assertThat(getList("/api/v1/beauty/providers/" + providerId + "/masters")).isEmpty();
+
+        // Deactivating again (or a non-existent id) is a no-op, not an error.
+        ResponseEntity<Void> deactivateAgain = restTemplate.exchange("/api/v1/beauty/masters/" + masterId,
+                HttpMethod.DELETE, null, Void.class);
+        assertThat(deactivateAgain.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     }
 
     private List<Map> getList(String path) {

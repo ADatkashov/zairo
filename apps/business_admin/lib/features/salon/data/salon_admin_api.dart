@@ -58,6 +58,32 @@ class SalonAdminApi {
     return AdminService.fromJson(response.data as Map<String, dynamic>);
   }
 
+  Future<AdminService> updateService({
+    required String serviceId,
+    required String title,
+    required int durationMinutes,
+    required double price,
+    required String currency,
+  }) async {
+    final response = await _dioClient.put(
+      '/services/$serviceId',
+      data: {
+        'title': title,
+        'durationMinutes': durationMinutes,
+        'price': price,
+        'currency': currency,
+      },
+    );
+    return AdminService.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// Soft-delete — the service stays referenced by past bookings, just
+  /// stops showing up in the salon's active listings (see backend's
+  /// ServiceOffering.deactivate()).
+  Future<void> deactivateService(String serviceId) {
+    return _dioClient.delete('/services/$serviceId');
+  }
+
   Future<List<AdminSlot>> listSlots(String providerId) async {
     final response = await _dioClient.get('/providers/$providerId/availability-slots');
     final data = response.data as List<dynamic>;
@@ -77,6 +103,11 @@ class SalonAdminApi {
       },
     );
     return AdminSlot.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// Only an OPEN slot can be removed — see backend's AvailabilitySlotController.delete().
+  Future<void> deleteSlot(String slotId) {
+    return _dioClient.delete('/availability-slots/$slotId');
   }
 
   Future<List<AdminBooking>> listBookings(String providerId) async {

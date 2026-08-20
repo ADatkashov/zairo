@@ -1,26 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/models/admin_service.dart';
 import '../providers/salon_providers.dart';
 
-/// Returns true via Navigator.pop when a service was created — the caller
-/// invalidates providerServicesProvider in response, same pattern as
-/// apps/user_app's _LeaveReviewDialog.
+/// Add-or-edit: pass [existing] to edit that service in place instead of
+/// creating a new one. Returns true via Navigator.pop on success — the
+/// caller invalidates providerServicesProvider in response, same pattern
+/// as apps/user_app's _LeaveReviewDialog.
 class AddServiceDialog extends ConsumerStatefulWidget {
   final String providerId;
+  final AdminService? existing;
 
-  const AddServiceDialog({super.key, required this.providerId});
+  const AddServiceDialog({super.key, required this.providerId, this.existing});
 
   @override
   ConsumerState<AddServiceDialog> createState() => _AddServiceDialogState();
 }
 
 class _AddServiceDialogState extends ConsumerState<AddServiceDialog> {
-  final _titleController = TextEditingController();
-  final _durationController = TextEditingController(text: '30');
-  final _priceController = TextEditingController();
+  late final _titleController = TextEditingController(text: widget.existing?.title ?? '');
+  late final _durationController =
+      TextEditingController(text: (widget.existing?.durationMinutes ?? 30).toString());
+  late final _priceController = TextEditingController(text: widget.existing?.price.toString() ?? '');
   bool _isSubmitting = false;
   String? _error;
+
+  bool get _isEditing => widget.existing != null;
 
   @override
   void dispose() {
@@ -33,7 +39,7 @@ class _AddServiceDialogState extends ConsumerState<AddServiceDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add a service'),
+      title: Text(_isEditing ? 'Edit service' : 'Add a service'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -70,7 +76,7 @@ class _AddServiceDialogState extends ConsumerState<AddServiceDialog> {
           onPressed: _isSubmitting ? null : _submit,
           child: _isSubmitting
               ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('Add'),
+              : Text(_isEditing ? 'Save' : 'Add'),
         ),
       ],
     );
@@ -89,18 +95,29 @@ class _AddServiceDialogState extends ConsumerState<AddServiceDialog> {
       _error = null;
     });
     try {
-      await ref.read(salonAdminApiProvider).createService(
-            providerId: widget.providerId,
-            title: title,
-            durationMinutes: duration,
-            price: price,
-            currency: 'USD',
-          );
+      final api = ref.read(salonAdminApiProvider);
+      if (_isEditing) {
+        await api.updateService(
+          serviceId: widget.existing!.id,
+          title: title,
+          durationMinutes: duration,
+          price: price,
+          currency: widget.existing!.currency,
+        );
+      } else {
+        await api.createService(
+          providerId: widget.providerId,
+          title: title,
+          durationMinutes: duration,
+          price: price,
+          currency: 'USD',
+        );
+      }
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (e) {
       setState(() {
-        _error = 'Failed to add service: $e';
+        _error = 'Failed to ${_isEditing ? 'save' : 'add'} service: $e';
         _isSubmitting = false;
       });
     }

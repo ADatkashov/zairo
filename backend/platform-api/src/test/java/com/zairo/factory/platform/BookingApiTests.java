@@ -19,6 +19,7 @@ import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -69,6 +70,46 @@ class BookingApiTests {
         ResponseEntity<Map[]> userBookings = restTemplate.getForEntity("/api/v1/users/" + customerId + "/bookings",
                 Map[].class);
         assertThat(userBookings.getBody()).hasSize(1);
+    }
+
+    @Test
+    void deletesAnOpenSlotButRefusesToDeleteABookedOne() {
+        UUID ownerId = createUser("owner-slot-delete@example.com", "Slot Delete Owner");
+        UUID customerId = createUser("customer-slot-delete@example.com", "Slot Delete Customer");
+
+        var providerRequest = new CreateProviderRequest(ownerId, "Slot Delete Salon", "beauty");
+        Map<?, ?> provider = restTemplate.postForEntity("/api/v1/providers", providerRequest, Map.class).getBody();
+        UUID providerId = UUID.fromString(provider.get("id").toString());
+
+        var serviceRequest = new CreateServiceRequest("Trim", 30, new BigDecimal("15.00"), "USD");
+        Map<?, ?> service = restTemplate
+                .postForEntity("/api/v1/providers/" + providerId + "/services", serviceRequest, Map.class).getBody();
+        UUID serviceId = UUID.fromString(service.get("id").toString());
+
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        var openSlotRequest = new CreateAvailabilitySlotRequest(start, start.plus(30, ChronoUnit.MINUTES));
+        UUID openSlotId = UUID.fromString(restTemplate
+                .postForEntity("/api/v1/providers/" + providerId + "/availability-slots", openSlotRequest, Map.class)
+                .getBody().get("id").toString());
+
+        var bookedSlotRequest = new CreateAvailabilitySlotRequest(start.plus(1, ChronoUnit.HOURS),
+                start.plus(90, ChronoUnit.MINUTES));
+        UUID bookedSlotId = UUID.fromString(restTemplate
+                .postForEntity("/api/v1/providers/" + providerId + "/availability-slots", bookedSlotRequest,
+                        Map.class)
+                .getBody().get("id").toString());
+        restTemplate.postForEntity("/api/v1/bookings",
+                new CreateBookingRequest(customerId, serviceId, bookedSlotId, new BigDecimal("15.00")), Map.class);
+
+        ResponseEntity<Void> deleteOpen = restTemplate.exchange("/api/v1/availability-slots/" + openSlotId,
+                HttpMethod.DELETE, null, Void.class);
+        assertThat(deleteOpen.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(restTemplate.getForEntity("/api/v1/providers/" + providerId + "/availability-slots", Map[].class)
+                .getBody()).extracting(s -> s.get("id")).containsExactly(bookedSlotId.toString());
+
+        ResponseEntity<Map> deleteBooked = restTemplate.exchange("/api/v1/availability-slots/" + bookedSlotId,
+                HttpMethod.DELETE, null, Map.class);
+        assertThat(deleteBooked.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
     }
 
     private UUID createUser(String email, String displayName) {
