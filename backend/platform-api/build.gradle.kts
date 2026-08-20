@@ -26,6 +26,7 @@ dependencies {
     implementation(project(":reviews"))
     implementation(project(":notifications"))
     implementation(project(":search"))
+    implementation(project(":favorites"))
 
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")

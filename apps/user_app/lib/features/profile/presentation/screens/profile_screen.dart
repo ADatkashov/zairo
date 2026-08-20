@@ -5,6 +5,7 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../auth/presentation/screens/register_screen.dart';
 import '../../../booking/presentation/screens/my_bookings_screen.dart';
+import '../../../favorites/presentation/screens/favorites_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -79,6 +80,13 @@ class _LoggedInView extends ConsumerWidget {
             MaterialPageRoute(builder: (_) => MyBookingsScreen(userId: userId)),
           ),
           child: const Text('My bookings'),
+        ),
+        const SizedBox(height: 8),
+        FilledButton.tonal(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => FavoritesScreen(userId: userId)),
+          ),
+          child: const Text('My favorites'),
         ),
         const SizedBox(height: 8),
         OutlinedButton(

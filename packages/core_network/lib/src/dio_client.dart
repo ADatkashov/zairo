@@ -72,7 +72,23 @@ class DioClient {
     );
   }
 
-  // Add other methods as needed (put, delete, etc.)
+  Future<Response> delete(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+  }) async {
+    return await _dio.delete(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+      cancelToken: cancelToken,
+    );
+  }
+
+  // Add other methods as needed (put, etc.)
 }
 
 final dioClientProvider = Provider<DioClient>((ref) {

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../discovery/data/models/provider_search_result.dart';
+import '../../../favorites/presentation/widgets/favorite_button.dart';
 import '../../data/booking_exception.dart';
 import '../../data/models/availability_slot.dart';
 import '../providers/booking_providers.dart';
@@ -27,7 +28,10 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     final slotsAsync = ref.watch(availabilitySlotsProvider(widget.provider.id));
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.provider.name)),
+      appBar: AppBar(
+        title: Text(widget.provider.name),
+        actions: [FavoriteButton(providerId: widget.provider.id)],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

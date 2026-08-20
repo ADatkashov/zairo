@@ -18,4 +18,5 @@ include(
     "reviews",
     "notifications",
     "search",
+    "favorites",
 )
