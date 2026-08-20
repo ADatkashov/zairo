@@ -103,6 +103,22 @@ class DioClient {
       cancelToken: cancelToken,
     );
   }
+
+  Future<Response> patch(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+  }) async {
+    return await _dio.patch(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+      cancelToken: cancelToken,
+    );
+  }
 }
 
 final dioClientProvider = Provider<DioClient>((ref) {

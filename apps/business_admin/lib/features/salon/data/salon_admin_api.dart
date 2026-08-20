@@ -33,6 +33,24 @@ class SalonAdminApi {
     return AdminProvider.fromJson(response.data as Map<String, dynamic>);
   }
 
+  /// Admin-only listing, used by the moderation screen — e.g.
+  /// `status: 'PENDING'` for salons awaiting approval. Not the
+  /// customer-facing discovery path (that's search, which only ever
+  /// surfaces ACTIVE providers).
+  Future<List<AdminProvider>> listProvidersByStatus(String status) async {
+    final response = await _dioClient.get('/providers', queryParameters: {'status': status});
+    final data = response.data as List<dynamic>;
+    return data.map((e) => AdminProvider.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Admin-only — approve/suspend a provider (see backend's
+  /// ProviderController.updateStatus()). This is the only way a provider
+  /// ever leaves PENDING.
+  Future<AdminProvider> updateProviderStatus({required String providerId, required String status}) async {
+    final response = await _dioClient.patch('/providers/$providerId/status', data: {'status': status});
+    return AdminProvider.fromJson(response.data as Map<String, dynamic>);
+  }
+
   /// Owner-only (see backend's ProviderController.update()). Name and
   /// location only — vertical and status aren't owner-editable.
   Future<AdminProvider> updateProvider({

@@ -21,6 +21,9 @@ public final class ProviderDtos {
     public record UpdateProviderRequest(String name, Double latitude, Double longitude) {
     }
 
+    public record UpdateProviderStatusRequest(ProviderStatus status) {
+    }
+
     public record ProviderResponse(UUID id, UUID ownerUserId, String name, String vertical, ProviderStatus status,
             Instant createdAt, Double latitude, Double longitude) {
         static ProviderResponse from(Provider provider) {

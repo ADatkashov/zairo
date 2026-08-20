@@ -89,6 +89,18 @@ class AuthApiTests {
         assertThat(reuseOldRefreshToken.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
+    /** ADMIN must be granted directly in the database — see AuthService.register's doc comment. */
+    @Test
+    void rejectsSelfRegistrationAsAdmin() {
+        var registerRequest = new RegisterRequest("wannabe-admin-" + UUID.randomUUID() + "@example.com",
+                "password123", "Wannabe Admin", "+1000000001", UserRole.ADMIN);
+
+        ResponseEntity<Map> response = restTemplate.postForEntity("/api/v1/auth/register", registerRequest,
+                Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
     private HttpEntity<Void> authorized(String accessToken) {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);

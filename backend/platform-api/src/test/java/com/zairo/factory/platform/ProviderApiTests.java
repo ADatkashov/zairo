@@ -2,11 +2,15 @@ package com.zairo.factory.platform;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.zairo.factory.auth.CredentialRepository;
 import com.zairo.factory.platform.TestAuth.Registered;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.providers.ProviderDtos.UpdateProviderRequest;
+import com.zairo.factory.providers.ProviderDtos.UpdateProviderStatusRequest;
+import com.zairo.factory.providers.ProviderStatus;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.UpdateServiceRequest;
+import com.zairo.factory.users.UserRepository;
 import java.math.BigDecimal;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -32,6 +36,12 @@ class ProviderApiTests {
 
     @Autowired
     private TestRestTemplate restTemplate;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private CredentialRepository credentialRepository;
 
     @Test
     void createsOwnerThenProviderThenService() {
@@ -143,6 +153,56 @@ class ProviderApiTests {
                 HttpMethod.PUT, new HttpEntity<>(updateRequest, TestAuth.authHeaders(otherOwner.accessToken())),
                 java.util.Map.class);
         assertThat(forbidden.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void newProvidersStartPendingAndOnlyAnAdminCanModerateThem() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "moderation-owner-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Moderation Salon " + runId);
+
+        ResponseEntity<java.util.Map> created = restTemplate.getForEntity("/api/v1/providers/" + providerId,
+                java.util.Map.class);
+        assertThat(created.getBody().get("status")).isEqualTo("PENDING");
+
+        // Neither the owner nor an unauthenticated caller can moderate.
+        var approveRequest = new UpdateProviderStatusRequest(ProviderStatus.ACTIVE);
+        ResponseEntity<java.util.Map> ownerAttempt = restTemplate.exchange("/api/v1/providers/" + providerId
+                + "/status", HttpMethod.PATCH, new HttpEntity<>(approveRequest, TestAuth.authHeaders(
+                owner.accessToken())), java.util.Map.class);
+        assertThat(ownerAttempt.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        ResponseEntity<java.util.Map> anonymousAttempt = restTemplate.exchange("/api/v1/providers/" + providerId
+                + "/status", HttpMethod.PATCH, new HttpEntity<>(approveRequest), java.util.Map.class);
+        assertThat(anonymousAttempt.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        // Admin approves it.
+        Registered admin = TestAuth.registerAdmin(restTemplate, userRepository, credentialRepository,
+                "moderation-admin-" + runId + "@example.com");
+        ResponseEntity<java.util.Map> approved = restTemplate.exchange("/api/v1/providers/" + providerId
+                + "/status", HttpMethod.PATCH, new HttpEntity<>(approveRequest, TestAuth.authHeaders(
+                admin.accessToken())), java.util.Map.class);
+        assertThat(approved.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(approved.getBody().get("status")).isEqualTo("ACTIVE");
+
+        // Shows up in the PENDING filter before approval, not after.
+        assertThat(getProviderIdsByStatus(ProviderStatus.PENDING)).doesNotContain(providerId.toString());
+        assertThat(getProviderIdsByStatus(ProviderStatus.ACTIVE)).contains(providerId.toString());
+
+        // Admin can also suspend it again.
+        var suspendRequest = new UpdateProviderStatusRequest(ProviderStatus.SUSPENDED);
+        ResponseEntity<java.util.Map> suspended = restTemplate.exchange("/api/v1/providers/" + providerId
+                + "/status", HttpMethod.PATCH, new HttpEntity<>(suspendRequest, TestAuth.authHeaders(
+                admin.accessToken())), java.util.Map.class);
+        assertThat(suspended.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(suspended.getBody().get("status")).isEqualTo("SUSPENDED");
+    }
+
+    private java.util.List<String> getProviderIdsByStatus(ProviderStatus status) {
+        ResponseEntity<java.util.Map[]> response = restTemplate.getForEntity(
+                "/api/v1/providers?status=" + status, java.util.Map[].class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        return java.util.Arrays.stream(response.getBody()).map(p -> (String) p.get("id")).toList();
     }
 
     private java.util.List<java.util.Map> getServiceList(UUID providerId, boolean includeInactive) {

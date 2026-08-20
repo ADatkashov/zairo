@@ -9,4 +9,8 @@ public interface ProviderRepository extends JpaRepository<Provider, UUID> {
     List<Provider> findByVertical(String vertical);
 
     List<Provider> findByOwnerUserId(UUID ownerUserId);
+
+    List<Provider> findByStatus(ProviderStatus status);
+
+    List<Provider> findByVerticalAndStatus(String vertical, ProviderStatus status);
 }

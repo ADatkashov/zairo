@@ -50,6 +50,12 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:testcontainers-junit-jupiter:$testcontainersVersion")
     testImplementation("org.testcontainers:testcontainers-postgresql:$testcontainersVersion")
+    // TestAuth.registerAdmin hashes a password the same way AuthService does,
+    // to seed an ADMIN Credential directly (bypassing the register endpoint,
+    // which deliberately refuses the ADMIN role — see AuthService.register).
+    // auth's own dependency on this is `implementation`, so it doesn't leak
+    // here transitively; declared again explicitly for the test sourceset.
+    testImplementation("org.springframework.security:spring-security-crypto:7.1.0")
 }
 
 application {

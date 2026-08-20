@@ -1479,5 +1479,105 @@ dashboard список салонов тоже отражает новое им�
 
 ### Статус
 Всё реализовано, протестировано (backend + Flutter, юнит + живой
-браузер), но **не закоммичено** — ждём подтверждения пользователя на
-коммит и пуш.
+браузер), закоммичено и запушено (`8cdda6a`).
+
+---
+
+## ADMIN-роль доведена до дела: модерация салонов (2026-08-20)
+
+Пользователь попросил сравнить логику с более ранним прототипом
+`app_factory` (`C:\Users\Acer\Downloads\app_factory_2\app_factory` —
+другой, generic "фабрикой мобильных приложений" проект, не менялся, только
+прочитан для сравнения) и спросил, что оттуда взять полезного. Из
+предложенного архитектор порекомендовал начать с самого дешёвого и
+реально нужного: в проекте уже был объявлен `UserRole.ADMIN`, но нигде не
+использовался, а `ProviderStatus` (`PENDING/ACTIVE/SUSPENDED`) висел в
+модели данных мёртвым грузом — `search` возвращал провайдеров вне
+зависимости от статуса, и ничто никогда не переводило салон из `PENDING`.
+Пользователь подтвердил: **"да сделай это"**.
+
+### Закрыта дыра саморегистрации в ADMIN
+`AuthDtos.RegisterRequest.role` раньше принимал любое значение enum,
+включая `ADMIN`, — любой мог создать себе аккаунт администратора через
+`POST /auth/register`. Теперь `AuthService.register()` кидает
+`AdminRoleNotSelfAssignableException` (400) при `role == ADMIN`. Как и в
+референсном проекте ("выдаётся вручную через БД, см.
+`PermissionsService`"), ADMIN-аккаунт создаётся только прямой записью в
+`app_user`/`credential` — сознательно без UI/эндпоинта для этого, чтобы не
+плодить механизм самоэскалации в новом виде.
+
+### Модерация провайдеров
+- `CurrentUser` (модуль `auth`) — добавлены `requireRole(request)` и
+  `requireAdmin(request)` (403, если роль в JWT не `ADMIN`) — роль уже
+  лежала в токене (`JwtAuthFilter.ROLE_ATTRIBUTE`), просто не была никому
+  доступна за пределами `AuthController.me()`.
+- `Provider.updateStatus(ProviderStatus)` — новый мутатор, симметричный
+  `update()`/`updateStatus` не даёт менять `vertical` (уже было так и для
+  обычного `update`).
+- `PATCH /api/v1/providers/{id}/status` (admin-only) — единственный способ
+  перевести провайдера в/из `PENDING`. `GET /api/v1/providers` получил
+  опциональный `?status=` фильтр (для экрана модерации; без параметра —
+  как раньше, без ограничений, это НЕ customer-facing путь).
+- `SearchService.search()` теперь фильтрует **только `ACTIVE`**
+  провайдеров (`ProviderRepository.findByStatus`/`findByVerticalAndStatus`)
+  — это единственное реальное следствие фичи: неодобренный или
+  suspended-провайдер существует и доступен по прямому id, но невидим в
+  discovery.
+
+### Тесты (backend)
+Новый `TestAuth.registerAdmin(...)` — в отличие от `registerOwner`,
+**не** идёт через `/auth/register` (он теперь блокирует ADMIN), а пишет
+`User`+`Credential` напрямую через репозитории (тот же принцип "выдаётся
+вручную", просто в тестовом виде), затем логинится за настоящим токеном.
+Понадобилась новая `testImplementation("org.springframework.security:spring-security-crypto")`
+в `platform-api/build.gradle.kts` — у `auth` эта зависимость
+`implementation`, транзитивно в тестовый classpath `platform-api` не
+протекает. Новые тесты: `AuthApiTests.rejectsSelfRegistrationAsAdmin`,
+`ProviderApiTests.newProvidersStartPendingAndOnlyAnAdminCanModerateThem`
+(владелец и анонимный запрос получают 403/401, админ — 200, статус
+меняется, `?status=` фильтр отражает изменение),
+`SearchApiTests.pendingProvidersAreInvisibleToSearchUntilAnAdminApprovesThem`
++ оба существующих search-теста теперь одобряют каждого созданного
+провайдера через нового `approve()`-хелпера, иначе они бы сами сломались
+об новую фильтрацию. `./gradlew build` — BUILD SUCCESSFUL, все 21
+backend-тест (было 18) проходят.
+
+### Flutter (Business Admin)
+- `packages/core_network`'s `DioClient` получил `patch()` (был только
+  get/post/put/delete).
+- `SalonAdminApi.listProvidersByStatus()` / `.updateProviderStatus()`.
+- Новый `features/moderation/` (по аналогии с `features/dashboard/`):
+  `pendingProvidersProvider` (переиспользует `SalonAdminApi`, не
+  отдельный API-класс — это тот же ресурс Provider, просто
+  привилегированный вид) и `ModerationScreen` (список PENDING-салонов,
+  кнопки Approve/Suspend, инвалидация после действия).
+- `AuthGate` теперь ветвится по роли: `ADMIN` → `ModerationScreen` вместо
+  `DashboardScreen` (у ADMIN нет своих салонов). PROVIDER_OWNER/CUSTOMER —
+  без изменений.
+- Новые тесты: `moderation_screen_test.dart` (пустое состояние, approve
+  убирает салон из очереди), `auth_gate_test.dart` (ADMIN → модерация,
+  PROVIDER_OWNER → dashboard, ни один экран не показывается не той роли).
+  `flutter analyze` — чисто и в `business_admin`, и в `core_network`.
+  `flutter test` — все 18 проходят (было 14, +4 новых: 2 в
+  `moderation_screen_test.dart`, 2 в `auth_gate_test.dart`).
+  `flutter build web` — собирается.
+
+### Живая проверка
+Поскольку публичная регистрация ADMIN теперь заблокирована, тестовый
+ADMIN-аккаунт создан вручную через `docker exec ... psql` (bcrypt-хеш
+пароля сгенерирован тем же `BCryptPasswordEncoder`, что и на бэкенде, —
+через одноразовый `javac`/`java`-снаппет с зависимостями из Gradle-кеша,
+не через backend). Через curl — полный контракт: владелец создаёт салон
+(стартует `PENDING`) → владелец пытается сам себя одобрить → `403` →
+поиск не находит салон → админ одобряет (`PATCH .../status`) → `200`,
+`ACTIVE` → поиск теперь находит. Через живой браузер: залогинился в
+Business Admin под ADMIN, увидел экран "Salon moderation" со списком **из
+реальных накопленных за сессию PENDING-салонов** (наглядное
+подтверждение, что пробел был настоящим, а не гипотетическим) — нажал
+Approve на одном, салон мгновенно исчез из очереди без перезагрузки
+страницы. Скриншоты отправлены пользователю.
+
+### Статус
+Реализовано и полностью проверено (backend build+test, Flutter
+analyze+test+build, curl e2e, живой браузер), но **не закоммичено** —
+ждём подтверждения пользователя на коммит и пуш.

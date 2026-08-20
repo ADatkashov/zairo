@@ -114,4 +114,9 @@ public class Provider {
         this.latitude = latitude;
         this.longitude = longitude;
     }
+
+    /** Admin-only moderation action — see ProviderController's status endpoint. */
+    void updateStatus(ProviderStatus status) {
+        this.status = status;
+    }
 }

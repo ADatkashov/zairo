@@ -1,5 +1,6 @@
 package com.zairo.factory.auth;
 
+import com.zairo.factory.users.UserRole;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -25,5 +26,21 @@ public final class CurrentUser {
             return userId;
         }
         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid access token");
+    }
+
+    /** 401 if there's no valid access token on the request. The role name as stored on the JWT (e.g. "ADMIN"). */
+    public static String requireRole(HttpServletRequest request) {
+        Object value = request.getAttribute(JwtAuthFilter.ROLE_ATTRIBUTE);
+        if (value instanceof String role) {
+            return role;
+        }
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid access token");
+    }
+
+    /** 401 if there's no valid access token, 403 if the caller isn't ADMIN. */
+    public static void requireAdmin(HttpServletRequest request) {
+        if (!UserRole.ADMIN.name().equals(requireRole(request))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");
+        }
     }
 }

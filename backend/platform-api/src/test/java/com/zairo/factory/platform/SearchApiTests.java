@@ -2,10 +2,14 @@ package com.zairo.factory.platform;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.zairo.factory.auth.CredentialRepository;
 import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequest;
 import com.zairo.factory.platform.TestAuth.Registered;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
+import com.zairo.factory.providers.ProviderDtos.UpdateProviderStatusRequest;
+import com.zairo.factory.providers.ProviderStatus;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
+import com.zairo.factory.users.UserRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -45,6 +49,27 @@ class SearchApiTests {
     @Autowired
     private TestRestTemplate restTemplate;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private CredentialRepository credentialRepository;
+
+    @Test
+    void pendingProvidersAreInvisibleToSearchUntilAnAdminApprovesThem() {
+        String runId = UUID.randomUUID().toString();
+        String vertical = "beauty-mod-" + runId;
+        Registered owner = TestAuth.registerOwner(restTemplate, "mod-search-owner-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Unapproved Salon " + runId, vertical);
+        createService(owner, providerId, "Cut", new BigDecimal("10.00"));
+
+        assertThat(search(vertical, null)).isEmpty();
+
+        approve(providerId);
+
+        assertThat(search(vertical, null)).extracting(r -> r.get("id")).containsExactly(providerId.toString());
+    }
+
     @Test
     void filtersByVerticalAndQueryAndRanksByAvailabilityThenPrice() {
         String runId = UUID.randomUUID().toString();
@@ -55,14 +80,17 @@ class SearchApiTests {
         UUID providerA = createProvider(owner, "Hair Studio A " + runId, verticalBeauty);
         createService(owner, providerA, "Haircut", new BigDecimal("30.00"));
         createOpenSlot(owner, providerA);
+        approve(providerA);
 
         UUID providerB = createProvider(owner, "Beauty Bar B " + runId, verticalBeauty);
         createService(owner, providerB, "Massage", new BigDecimal("20.00"));
         // no availability slot for B
+        approve(providerB);
 
         UUID providerC = createProvider(owner, "Quick Lube C " + runId, verticalAuto);
         createService(owner, providerC, "Oil change", new BigDecimal("15.00"));
         // no availability slot for C
+        approve(providerC);
 
         List<Map> beautyResults = search(verticalBeauty, null);
         assertThat(beautyResults).extracting(r -> r.get("id"))
@@ -92,11 +120,13 @@ class SearchApiTests {
         UUID providerNear = createProvider(owner, "Near Salon " + runId, vertical, 43.25, 76.90);
         createService(owner, providerNear, "Cut", new BigDecimal("20.00"));
         createOpenSlot(owner, providerNear);
+        approve(providerNear);
 
         // Far: a different city entirely (Astana), hundreds of km away.
         UUID providerFar = createProvider(owner, "Far Salon " + runId, vertical, 51.1694, 71.4491);
         createService(owner, providerFar, "Cut", new BigDecimal("20.00"));
         createOpenSlot(owner, providerFar);
+        approve(providerFar);
 
         List<Map> results = search(vertical, null, originLat, originLng);
         assertThat(results).extracting(r -> r.get("id")).containsExactly(providerNear.toString(),
@@ -147,6 +177,16 @@ class SearchApiTests {
         ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers/" + providerId + "/services",
                 HttpMethod.POST, new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+    }
+
+    /** Search only ever surfaces ACTIVE providers — every provider a test wants findable must go through this. */
+    private void approve(UUID providerId) {
+        Registered admin = TestAuth.registerAdmin(restTemplate, userRepository, credentialRepository,
+                "search-admin-" + UUID.randomUUID() + "@example.com");
+        var request = new UpdateProviderStatusRequest(ProviderStatus.ACTIVE);
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers/" + providerId + "/status",
+                HttpMethod.PATCH, new HttpEntity<>(request, TestAuth.authHeaders(admin.accessToken())), Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     private void createOpenSlot(Registered owner, UUID providerId) {

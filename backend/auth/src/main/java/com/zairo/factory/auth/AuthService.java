@@ -5,6 +5,7 @@ import com.zairo.factory.auth.AuthDtos.TokenResponse;
 import com.zairo.factory.auth.AuthDtos.UserSummary;
 import com.zairo.factory.users.User;
 import com.zairo.factory.users.UserRepository;
+import com.zairo.factory.users.UserRole;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -30,6 +31,12 @@ public class AuthService {
 
     @Transactional
     public TokenResponse register(RegisterRequest request) {
+        // ADMIN is never self-assignable through the public API — an account
+        // that can moderate other owners' providers must be granted directly
+        // in the database, not claimed by anyone who can call this endpoint.
+        if (request.role() == UserRole.ADMIN) {
+            throw new AdminRoleNotSelfAssignableException("Cannot self-register with the ADMIN role");
+        }
         if (userRepository.findByEmail(request.email()).isPresent()) {
             throw new EmailAlreadyRegisteredException("Email already registered: " + request.email());
         }

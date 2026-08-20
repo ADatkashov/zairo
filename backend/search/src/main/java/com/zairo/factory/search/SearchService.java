@@ -4,6 +4,7 @@ import com.zairo.factory.booking.AvailabilityStatus;
 import com.zairo.factory.booking.AvailabilitySlotRepository;
 import com.zairo.factory.providers.Provider;
 import com.zairo.factory.providers.ProviderRepository;
+import com.zairo.factory.providers.ProviderStatus;
 import com.zairo.factory.search.SearchDtos.ProviderSearchResult;
 import com.zairo.factory.search.SearchDtos.ServiceSummary;
 import com.zairo.factory.services.ServiceOffering;
@@ -46,8 +47,14 @@ public class SearchService {
     }
 
     public List<ProviderSearchResult> search(String vertical, String query, Double originLat, Double originLng) {
-        List<Provider> providers = vertical == null || vertical.isBlank() ? providerRepository.findAll()
-                : providerRepository.findByVertical(vertical);
+        // Only ACTIVE providers are ever discoverable through search — a
+        // PENDING (not yet moderated) or SUSPENDED provider still exists and
+        // can be fetched directly by id, it's just invisible to browsing.
+        // See ProviderController.updateStatus for the only way in/out of
+        // ACTIVE.
+        List<Provider> providers = vertical == null || vertical.isBlank()
+                ? providerRepository.findByStatus(ProviderStatus.ACTIVE)
+                : providerRepository.findByVerticalAndStatus(vertical, ProviderStatus.ACTIVE);
 
         if (query != null && !query.isBlank()) {
             String needle = query.toLowerCase();
