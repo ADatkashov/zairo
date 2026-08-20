@@ -1,0 +1,201 @@
+import 'package:flutter/material.dart';
+
+import '../theme/factory_colors.dart';
+import '../theme/factory_radius.dart';
+import '../theme/factory_spacing.dart';
+import 'factory_badge.dart';
+import 'factory_price_text.dart';
+import 'factory_rating_label.dart';
+
+/// How a [ProviderCard] arranges itself: [vertical] (image on top — a
+/// horizontally-scrolling discovery row) or [horizontal] (image on the
+/// left — a search-results list).
+enum ProviderCardLayout { vertical, horizontal }
+
+/// The one card every vertical renders a provider through — a salon today,
+/// an auto workshop or dental clinic tomorrow. Named `ProviderCard`, not
+/// `SalonCard` or `BeautyProviderCard`: nothing about its API mentions
+/// beauty. It doesn't know how to load an image either — [image] is
+/// whatever widget the caller already uses for network images in that app,
+/// so this package stays free of an image-loading dependency.
+class ProviderCard extends StatelessWidget {
+  const ProviderCard({
+    super.key,
+    required this.title,
+    this.rating,
+    this.reviewCount,
+    this.metaText,
+    this.priceFrom,
+    this.currencySymbol = '₸',
+    this.availabilityLabel,
+    this.image,
+    this.isFavorite = false,
+    this.onFavoriteToggle,
+    this.onTap,
+    this.layout = ProviderCardLayout.vertical,
+    this.width,
+  });
+
+  final String title;
+  final double? rating;
+  final int? reviewCount;
+
+  /// A short secondary line — typically "1.2 km" or "1.2 km · Almaty".
+  final String? metaText;
+
+  final num? priceFrom;
+  final String currencySymbol;
+
+  /// "Today 18:00" or "Available today" — rendered as a badge, not text,
+  /// so it reads as state rather than a caption.
+  final String? availabilityLabel;
+
+  final Widget? image;
+  final bool isFavorite;
+  final ValueChanged<bool>? onFavoriteToggle;
+  final VoidCallback? onTap;
+  final ProviderCardLayout layout;
+
+  /// Only meaningful for [ProviderCardLayout.vertical], where the card
+  /// sits in a horizontally-scrolling row and needs a fixed width.
+  final double? width;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+
+    final imageArea = SizedBox(
+      width: layout == ProviderCardLayout.horizontal ? 84 : null,
+      height: layout == ProviderCardLayout.vertical ? 96 : null,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(
+            borderRadius: layout == ProviderCardLayout.horizontal
+                ? const BorderRadius.horizontal(left: Radius.circular(FactoryRadius.lg))
+                : const BorderRadius.vertical(top: Radius.circular(FactoryRadius.lg)),
+            child: image ??
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [colors.primaryTint, colors.surfaceAlt],
+                    ),
+                  ),
+                ),
+          ),
+          if (onFavoriteToggle != null)
+            Positioned(
+              top: 8,
+              right: 8,
+              child: _FavoriteButton(isFavorite: isFavorite, onToggle: onFavoriteToggle!),
+            ),
+        ],
+      ),
+    );
+
+    final body = Padding(
+      padding: const EdgeInsets.all(FactorySpacing.space3),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(color: colors.text),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              if (rating != null) FactoryRatingLabel(rating: rating!, reviewCount: reviewCount, iconSize: 11),
+              if (rating != null && metaText != null) ...[
+                const SizedBox(width: 5),
+                Text('·', style: TextStyle(color: colors.textTertiary)),
+                const SizedBox(width: 5),
+              ],
+              if (metaText != null)
+                Flexible(
+                  child: Text(
+                    metaText!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(color: colors.textTertiary, fontWeight: FontWeight.w400),
+                  ),
+                ),
+            ],
+          ),
+          if (priceFrom != null || availabilityLabel != null) ...[
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (priceFrom != null)
+                  FactoryPriceText(amount: priceFrom!, currencySymbol: currencySymbol, prefix: 'from '),
+                if (availabilityLabel != null)
+                  FactoryBadge(label: availabilityLabel!, variant: FactoryBadgeVariant.available),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+
+    final card = DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: FactoryRadius.lgRadius,
+        border: Border.all(color: colors.border),
+      ),
+      child: layout == ProviderCardLayout.horizontal
+          ? IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [imageArea, Expanded(child: body)],
+              ),
+            )
+          : Column(mainAxisSize: MainAxisSize.min, children: [imageArea, body]),
+    );
+
+    final tappable = ClipRRect(
+      borderRadius: FactoryRadius.lgRadius,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(onTap: onTap, child: card),
+      ),
+    );
+
+    return width != null ? SizedBox(width: width, child: tappable) : tappable;
+  }
+}
+
+class _FavoriteButton extends StatelessWidget {
+  const _FavoriteButton({required this.isFavorite, required this.onToggle});
+
+  final bool isFavorite;
+  final ValueChanged<bool> onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    return Semantics(
+      button: true,
+      label: isFavorite ? 'Remove from favorites' : 'Add to favorites',
+      child: GestureDetector(
+        onTap: () => onToggle(!isFavorite),
+        child: Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.92), shape: BoxShape.circle),
+          child: Icon(
+            isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+            size: 15,
+            color: isFavorite ? colors.error : colors.textSecondary,
+          ),
+        ),
+      ),
+    );
+  }
+}
