@@ -1,8 +1,10 @@
 package com.zairo.factory.auth;
 
+import com.zairo.factory.auth.AuthDtos.ForgotPasswordRequest;
 import com.zairo.factory.auth.AuthDtos.LoginRequest;
 import com.zairo.factory.auth.AuthDtos.RefreshRequest;
 import com.zairo.factory.auth.AuthDtos.RegisterRequest;
+import com.zairo.factory.auth.AuthDtos.ResetPasswordRequest;
 import com.zairo.factory.auth.AuthDtos.TokenResponse;
 import com.zairo.factory.auth.AuthDtos.UserSummary;
 import com.zairo.factory.users.User;
@@ -42,6 +44,17 @@ public class AuthController {
     @PostMapping("/api/v1/auth/refresh")
     public TokenResponse refresh(@RequestBody RefreshRequest request) {
         return authService.refresh(request.refreshToken());
+    }
+
+    /** Always 200, whether or not the email is registered — see AuthService.forgotPassword. */
+    @PostMapping("/api/v1/auth/forgot-password")
+    public void forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request.email());
+    }
+
+    @PostMapping("/api/v1/auth/reset-password")
+    public void resetPassword(@RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request.token(), request.newPassword());
     }
 
     @GetMapping("/api/v1/auth/me")

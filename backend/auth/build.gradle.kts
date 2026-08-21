@@ -26,4 +26,9 @@ dependencies {
     // justification as reviews -> booking: this isn't just an id
     // association, auth owns the "does this account exist" invariant.
     implementation(project(":users"))
+
+    // Password reset needs to actually send the reset code somewhere — a
+    // direct call (not an event), since there's no other module reacting
+    // to "a password reset was requested." See NotificationService.
+    implementation(project(":notifications"))
 }

@@ -8,6 +8,7 @@ import '../../../l10n/app_localizations.dart';
 enum AuthErrorKey {
   emailAlreadyRegistered,
   invalidCredentials,
+  invalidResetToken,
 }
 
 class AuthException implements Exception {
@@ -18,6 +19,7 @@ class AuthException implements Exception {
   String localizedMessage(AppLocalizations l10n) => switch (key) {
         AuthErrorKey.emailAlreadyRegistered => l10n.errorAuthEmailAlreadyRegistered,
         AuthErrorKey.invalidCredentials => l10n.errorAuthInvalidCredentials,
+        AuthErrorKey.invalidResetToken => l10n.errorAuthInvalidResetToken,
       };
 
   @override

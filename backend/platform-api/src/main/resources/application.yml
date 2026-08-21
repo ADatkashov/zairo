@@ -25,6 +25,10 @@ app:
     secret: "Jc65IChbJdrOLj/C4rT+OCdPEdvzosIIpIG0xYM9dJ1Eflr/QDsOg+hLKOdX8k1B"
     access-token-ttl-minutes: 30
     refresh-token-ttl-days: 30
+  auth:
+    # Short-lived on purpose — a reset code is meant to be used within
+    # minutes of requesting it, not carried around like a refresh token.
+    password-reset-token-ttl-minutes: 60
   platform:
     # Single-market MVP assumption (Factory Blueprint §6) — no per-service
     # currency lookup yet. Booking is the one place this is read (Payment

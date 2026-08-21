@@ -28,6 +28,7 @@
 
   "loginTitle": "Кіру",
   "loginNoAccount": "Аккаунтыңыз жоқ па? Тіркелу",
+  "loginForgotPassword": "Құпия сөзді ұмыттыңыз ба?",
 
   "registerTitle": "Аккаунт құру",
   "registerNameLabel": "Аты-жөні",
@@ -42,6 +43,17 @@
   "errorAuthEmailAlreadyRegistered": "Бұл email бұрын тіркелген.",
   "errorAuthInvalidCredentials": "Email немесе құпия сөз қате.",
   "errorAuthGeneric": "Бірдеңе дұрыс болмады: {error}",
+  "errorAuthInvalidResetToken": "Бұл код жарамсыз немесе мерзімі өтіп кеткен. Жаңасын сұраңыз.",
+
+  "forgotPasswordTitle": "Құпия сөзді қалпына келтіру",
+  "forgotPasswordInstructions": "Email енгізіңіз — біз құпия сөзді қалпына келтіру кодын жібереміз.",
+  "forgotPasswordSendCodeButton": "Кодты жіберу",
+  "forgotPasswordCodeSentMessage": "Егер бұл email тіркелген болса, оған код жіберілді. Кодты және жаңа құпия сөзді төменде енгізіңіз.",
+  "resetCodeLabel": "Қалпына келтіру коды",
+  "validationResetCodeRequired": "Қалпына келтіру кодын енгізіңіз",
+  "newPasswordLabel": "Жаңа құпия сөз",
+  "forgotPasswordResetButton": "Құпия сөзді қалпына келтіру",
+  "forgotPasswordSuccessMessage": "Құпия сөз өзгертілді. Жаңа құпия сөзбен кіріңіз.",
 
   "errorBookingSlotTaken": "Бұл уақытты жаңа ғана біреу брондап қойды. Басқа уақытты таңдаңыз.",
   "errorPaymentAlreadyPaid": "Бұл брондау үшін төлем бұрын жасалған.",

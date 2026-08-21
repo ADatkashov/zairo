@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../data/auth_exception.dart';
 import '../providers/auth_providers.dart';
+import 'forgot_password_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -87,6 +88,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           MaterialPageRoute(builder: (_) => const RegisterScreen()),
                         ),
                 child: Text(l10n.loginNoAccount),
+              ),
+              TextButton(
+                onPressed: isLoading
+                    ? null
+                    : () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+                        ),
+                child: Text(l10n.loginForgotPassword),
               ),
             ],
           ),

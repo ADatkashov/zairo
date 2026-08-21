@@ -3034,4 +3034,58 @@ slot→booking→payment→cancel — подтверждено кодами и �
 автоматически, повторная отмена — 409. Backend остановлен после проверки.
 
 ### Текущий статус
+Закоммичено и запушено (`7918d11`).
+
+## Production-ready MVP, Phase 1 — Item 2: Password Reset (2026-08-21)
+
+**Backend.** Заведён минимальный, но реальный модуль `notifications`
+(до этого — пустой каркас с Phase 1): `NotificationService` +
+`EmailNotificationProvider` (интерфейс) + `LoggingEmailNotificationProvider`
+— единственная реализация, логирует письмо вместо реальной отправки по
+SMTP (нет провайдера/credentials). Явно НЕ mock в духе
+`MockPaymentProvider` — письмо реально "доставляется" в лог, разработчик
+может прочитать код сброса прямо оттуда; замена на реальный провайдер
+(JavaMailSender/SendGrid/SES) — drop-in за тем же интерфейсом. Это ровно
+удовлетворяет требованию ТЗ "подготовить notification abstraction так,
+чтобы reset message могло использовать email provider", без забегания
+вперёд на Push/SMS (у них пока нет потребителя — появится в Item 3).
+
+`auth` модуль: `PasswordResetToken` (точная копия по духу `RefreshToken`
+— хранится только SHA-256 хэш, не сырой токен), `PasswordResetTokenService`
+(issue/consume, TTL 60 минут, конфигурируемый `app.auth.password-reset-token-ttl-minutes`,
+удаление при использовании = невозможность повторного использования).
+`AuthService.forgotPassword` **всегда** возвращается успешно вне
+зависимости от того, существует ли email — не даёт узнать,
+зарегистрирован ли адрес. `AuthService.resetPassword` — хеширует новый
+пароль тем же BCrypt-энкодером, что и везде, и **отзывает все
+существующие refresh-токены пользователя** (новый метод
+`RefreshTokenService.revokeAllForUser`) — если пароль сбросили, старые
+сессии на других устройствах не должны оставаться живыми. Новые
+эндпоинты: `POST /api/v1/auth/forgot-password`, `POST /api/v1/auth/reset-password`.
+Flyway `V18__create_password_reset_token_table.sql`.
+
+Flutter (`user_app`): новый `ForgotPasswordScreen` — два шага на одном
+экране (email → код+новый пароль), а не два отдельных роута — реальных
+диплинков/magic-link пока нет (нет задеплоенного URL), так что код
+вводится вручную, отдельная навигация между шагами не нужна. Ссылка
+"Forgot password?" на `LoginScreen`. `AuthApi.forgotPassword`/`resetPassword`,
+новый `AuthErrorKey.invalidResetToken`. ARB-ключи en/ru/kk.
+
+Тесты: backend — 3 новых теста в `AuthApiTests` (полный цикл: forgot→
+код из перехваченного письма→reset→старый пароль не работает→новый
+работает→старая сессия отозвана→код нельзя использовать повторно;
++ email не раскрывает существование аккаунта; + мусорный токен = 401).
+Письмо перехватывается тестовым `@TestConfiguration`-бином (`@Primary`
+переопределяет `EmailNotificationProvider`), а не парсингом лога —
+чище и надёжнее. `./gradlew build` BUILD SUCCESSFUL. Flutter — 4 новых
+виджет-теста для `ForgotPasswordScreen` — `user_app` 45/45 (было 41),
+`flutter analyze` чисто.
+
+**Живая проверка через curl против реально запущенного backend**: код
+сброса извлечён напрямую из серверного лога (`LoggingEmailNotificationProvider`
+реально его туда пишет) — неверный код → 401, верный → 200, старый
+пароль → 401, новый пароль → 200 с настоящими токенами, повторное
+использование кода → 401. Backend остановлен после проверки.
+
+### Текущий статус
 Изменения готовы, ждут коммита.

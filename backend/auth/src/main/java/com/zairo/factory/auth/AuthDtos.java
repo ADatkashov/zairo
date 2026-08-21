@@ -18,6 +18,12 @@ public final class AuthDtos {
     public record RefreshRequest(String refreshToken) {
     }
 
+    public record ForgotPasswordRequest(String email) {
+    }
+
+    public record ResetPasswordRequest(String token, String newPassword) {
+    }
+
     public record UserSummary(UUID id, String email, String displayName, UserRole role) {
     }
 

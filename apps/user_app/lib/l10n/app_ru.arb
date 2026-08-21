@@ -28,6 +28,7 @@
 
   "loginTitle": "Вход",
   "loginNoAccount": "Нет аккаунта? Зарегистрироваться",
+  "loginForgotPassword": "Забыли пароль?",
 
   "registerTitle": "Создать аккаунт",
   "registerNameLabel": "Имя",
@@ -42,6 +43,17 @@
   "errorAuthEmailAlreadyRegistered": "Этот email уже зарегистрирован.",
   "errorAuthInvalidCredentials": "Неверный email или пароль.",
   "errorAuthGeneric": "Что-то пошло не так: {error}",
+  "errorAuthInvalidResetToken": "Этот код недействителен или истёк. Запросите новый.",
+
+  "forgotPasswordTitle": "Восстановление пароля",
+  "forgotPasswordInstructions": "Введите email — мы вышлем код для сброса пароля.",
+  "forgotPasswordSendCodeButton": "Отправить код",
+  "forgotPasswordCodeSentMessage": "Если такой email зарегистрирован, мы отправили на него код. Введите код и новый пароль ниже.",
+  "resetCodeLabel": "Код сброса",
+  "validationResetCodeRequired": "Введите код сброса",
+  "newPasswordLabel": "Новый пароль",
+  "forgotPasswordResetButton": "Сбросить пароль",
+  "forgotPasswordSuccessMessage": "Пароль изменён. Войдите с новым паролем.",
 
   "errorBookingSlotTaken": "Это время только что заняли. Выберите другое время.",
   "errorPaymentAlreadyPaid": "Это бронирование уже оплачено.",

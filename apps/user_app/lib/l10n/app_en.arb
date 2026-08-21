@@ -71,6 +71,9 @@
   "loginNoAccount": "Don't have an account? Register",
   "@loginNoAccount": {"description": "Link from Login to Register."},
 
+  "loginForgotPassword": "Forgot password?",
+  "@loginForgotPassword": {"description": "Link from Login to the forgot-password flow."},
+
   "registerTitle": "Create account",
   "@registerTitle": {"description": "Register screen app bar title and submit button."},
 
@@ -108,6 +111,36 @@
       "error": {"type": "String"}
     }
   },
+
+  "errorAuthInvalidResetToken": "This code is invalid or has expired. Request a new one.",
+  "@errorAuthInvalidResetToken": {"description": "401 from POST /auth/reset-password."},
+
+  "forgotPasswordTitle": "Reset password",
+  "@forgotPasswordTitle": {"description": "Forgot-password screen app bar title."},
+
+  "forgotPasswordInstructions": "Enter your email and we'll send you a code to reset your password.",
+  "@forgotPasswordInstructions": {"description": "Forgot-password screen's first-step instructions."},
+
+  "forgotPasswordSendCodeButton": "Send code",
+  "@forgotPasswordSendCodeButton": {"description": "Forgot-password screen's first-step submit button."},
+
+  "forgotPasswordCodeSentMessage": "If that email is registered, we've sent a code to it. Enter the code below along with your new password.",
+  "@forgotPasswordCodeSentMessage": {"description": "Forgot-password screen's second-step instructions — deliberately the same whether or not the email exists."},
+
+  "resetCodeLabel": "Reset code",
+  "@resetCodeLabel": {"description": "Forgot-password screen's reset-code field label."},
+
+  "validationResetCodeRequired": "Enter the reset code",
+  "@validationResetCodeRequired": {"description": "Reset-code field validation error."},
+
+  "newPasswordLabel": "New password",
+  "@newPasswordLabel": {"description": "Forgot-password screen's new-password field label."},
+
+  "forgotPasswordResetButton": "Reset password",
+  "@forgotPasswordResetButton": {"description": "Forgot-password screen's second-step submit button."},
+
+  "forgotPasswordSuccessMessage": "Password changed. Log in with your new password.",
+  "@forgotPasswordSuccessMessage": {"description": "Snackbar shown after a successful password reset."},
 
   "errorBookingSlotTaken": "This time slot was just booked by someone else. Please pick another one.",
   "@errorBookingSlotTaken": {"description": "409 from POST /bookings."},

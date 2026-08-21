@@ -53,6 +53,17 @@ class RefreshTokenService {
         return new RotatedToken(existing.getUserId(), newRawToken);
     }
 
+    /**
+     * Called after a password reset: an account whose password just changed
+     * (e.g. because it was compromised) shouldn't leave old sessions valid
+     * on other devices. Not separately {@code @Transactional} — same as
+     * {@link #issue}/{@link #rotate}, it relies on running inside the
+     * caller's own transaction (AuthService.resetPassword).
+     */
+    void revokeAllForUser(UUID userId) {
+        refreshTokenRepository.deleteByUserId(userId);
+    }
+
     private static String hash(String value) {
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));

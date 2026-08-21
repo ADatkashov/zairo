@@ -52,4 +52,8 @@ public class Credential {
     public Instant getCreatedAt() {
         return createdAt;
     }
+
+    void changePasswordHash(String newPasswordHash) {
+        this.passwordHash = newPasswordHash;
+    }
 }

@@ -3,6 +3,7 @@ package com.zairo.factory.auth;
 import com.zairo.factory.auth.AuthDtos.RegisterRequest;
 import com.zairo.factory.auth.AuthDtos.TokenResponse;
 import com.zairo.factory.auth.AuthDtos.UserSummary;
+import com.zairo.factory.notifications.NotificationService;
 import com.zairo.factory.users.User;
 import com.zairo.factory.users.UserRepository;
 import com.zairo.factory.users.UserRole;
@@ -19,14 +20,19 @@ public class AuthService {
     private final CredentialRepository credentialRepository;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
+    private final PasswordResetTokenService passwordResetTokenService;
+    private final NotificationService notificationService;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public AuthService(UserRepository userRepository, CredentialRepository credentialRepository,
-            JwtService jwtService, RefreshTokenService refreshTokenService) {
+            JwtService jwtService, RefreshTokenService refreshTokenService,
+            PasswordResetTokenService passwordResetTokenService, NotificationService notificationService) {
         this.userRepository = userRepository;
         this.credentialRepository = credentialRepository;
         this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
+        this.passwordResetTokenService = passwordResetTokenService;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -73,6 +79,36 @@ public class AuthService {
                 .orElseThrow(() -> new InvalidRefreshTokenException("User for refresh token no longer exists"));
         String accessToken = jwtService.issueAccessToken(user.getId(), user.getRole().name());
         return new TokenResponse(accessToken, rotated.rawToken(), toSummary(user));
+    }
+
+    /**
+     * Always returns normally, whether or not the email belongs to a real
+     * account — a different response (or timing) would let a caller probe
+     * which emails are registered. If a user is found, a reset code is
+     * generated and "emailed" (see NotificationService/EmailNotificationProvider).
+     */
+    @Transactional
+    public void forgotPassword(String email) {
+        userRepository.findByEmail(email).ifPresent(user -> {
+            String rawToken = passwordResetTokenService.issue(user.getId());
+            notificationService.sendPasswordResetEmail(user.getEmail(), rawToken);
+        });
+    }
+
+    /**
+     * Consumes the reset token (single-use, see PasswordResetTokenService),
+     * re-hashes the new password through the same BCrypt encoder every
+     * other password goes through, and revokes existing sessions on other
+     * devices — same reasoning as changing a password anywhere else.
+     */
+    @Transactional
+    public void resetPassword(String rawToken, String newPassword) {
+        UUID userId = passwordResetTokenService.consume(rawToken);
+        Credential credential = credentialRepository.findByUserId(userId)
+                .orElseThrow(() -> new InvalidPasswordResetTokenException("No credentials for this account"));
+        credential.changePasswordHash(passwordEncoder.encode(newPassword));
+        credentialRepository.save(credential);
+        refreshTokenService.revokeAllForUser(userId);
     }
 
     private TokenResponse issueTokens(User user) {

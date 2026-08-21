@@ -61,6 +61,28 @@ class AuthApi {
     return AuthTokens.fromJson(response.data as Map<String, dynamic>);
   }
 
+  /// Always succeeds, whether or not the email is registered — see
+  /// backend's AuthService.forgotPassword doc comment (no leaking which
+  /// emails exist). The reset code itself is only ever emailed, never
+  /// returned here.
+  Future<void> forgotPassword(String email) async {
+    await _dioClient.post('/auth/forgot-password', data: {'email': email});
+  }
+
+  Future<void> resetPassword({required String token, required String newPassword}) async {
+    try {
+      await _dioClient.post(
+        '/auth/reset-password',
+        data: {'token': token, 'newPassword': newPassword},
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw const AuthException(AuthErrorKey.invalidResetToken);
+      }
+      rethrow;
+    }
+  }
+
   /// Passes [accessToken] explicitly via the Authorization header rather
   /// than relying on core_network's AuthTokenHolder — this is used during
   /// app-start bootstrap, before AuthController has confirmed the token is
