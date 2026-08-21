@@ -9,6 +9,7 @@ import 'package:zairo/features/discovery/data/models/provider_search_result.dart
 import 'package:zairo/features/discovery/data/models/service_summary.dart';
 import 'package:zairo/features/discovery/presentation/providers/discovery_providers.dart';
 import 'package:zairo/features/discovery/presentation/screens/search_screen.dart';
+import 'package:zairo/l10n/app_localizations.dart';
 
 class _FakeDiscoveryApi extends DiscoveryApi {
   _FakeDiscoveryApi(this._results) : super(DioClient(Dio()));
@@ -48,7 +49,12 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [discoveryApiProvider.overrideWithValue(fakeApi)],
-        child: MaterialApp(theme: factoryLightTheme(), home: const SearchScreen()),
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SearchScreen(),
+        ),
       ),
     );
 
@@ -67,7 +73,12 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [discoveryApiProvider.overrideWithValue(fakeApi)],
-        child: MaterialApp(theme: factoryLightTheme(), home: const SearchScreen()),
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SearchScreen(),
+        ),
       ),
     );
 
@@ -82,7 +93,12 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [discoveryApiProvider.overrideWithValue(fakeApi)],
-        child: MaterialApp(theme: factoryLightTheme(), home: const SearchScreen()),
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SearchScreen(),
+        ),
       ),
     );
     await tester.pumpAndSettle();

@@ -2,6 +2,7 @@ import 'package:core_ui/core_ui.dart' hide ProviderCard;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../../booking/presentation/screens/provider_detail_screen.dart';
 import '../providers/discovery_providers.dart';
 import '../widgets/provider_card.dart';
@@ -29,6 +30,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final query = DiscoveryQuery(query: _query);
     final resultsAsync = ref.watch(searchResultsProvider(query));
@@ -44,7 +46,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 controller: _searchController,
                 autofocus: true,
                 decoration: InputDecoration(
-                  hintText: 'Search services or providers',
+                  hintText: l10n.searchHint,
                   prefixIcon: Icon(Icons.search, color: colors.textTertiary),
                 ),
                 textInputAction: TextInputAction.search,
@@ -63,10 +65,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         padding: const EdgeInsets.all(FactorySpacing.space4),
                         child: FactoryEmptyState(
                           icon: _query == null ? Icons.search_rounded : Icons.search_off_rounded,
-                          title: _query == null ? 'Search for a service' : 'No results for "$_query"',
-                          message: _query == null
-                              ? 'Try "haircut", "manicure," or a salon name.'
-                              : 'Try a different search term.',
+                          title: _query == null ? l10n.searchEmptyTitle : l10n.searchEmptyTitleQuery(_query!),
+                          message: _query == null ? l10n.searchEmptyMessageDefault : l10n.searchEmptyMessageQuery,
                         ),
                       ),
                     );
@@ -97,7 +97,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   child: Padding(
                     padding: const EdgeInsets.all(FactorySpacing.space4),
                     child: FactoryErrorState(
-                      message: "Couldn't load providers.",
+                      message: l10n.errorSearchLoadFailed,
                       onRetry: () => ref.invalidate(searchResultsProvider(query)),
                     ),
                   ),

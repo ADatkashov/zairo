@@ -7,6 +7,7 @@ import 'package:zairo/features/beauty/data/beauty_api.dart';
 import 'package:zairo/features/beauty/data/models/portfolio_item.dart';
 import 'package:zairo/features/beauty/presentation/providers/beauty_providers.dart';
 import 'package:zairo/features/beauty/presentation/screens/master_portfolio_screen.dart';
+import 'package:zairo/l10n/app_localizations.dart';
 
 class _FakeBeautyApi extends BeautyApi {
   _FakeBeautyApi(this._items) : super(DioClient(Dio()));
@@ -22,8 +23,10 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [beautyApiProvider.overrideWithValue(_FakeBeautyApi(const []))],
-        child: const MaterialApp(
-          home: MasterPortfolioScreen(masterId: 'master-1', masterName: 'Jamie'),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const MasterPortfolioScreen(masterId: 'master-1', masterName: 'Jamie'),
         ),
       ),
     );
@@ -45,8 +48,10 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [beautyApiProvider.overrideWithValue(fakeApi)],
-        child: const MaterialApp(
-          home: MasterPortfolioScreen(masterId: 'master-1', masterName: 'Jamie'),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const MasterPortfolioScreen(masterId: 'master-1', masterName: 'Jamie'),
         ),
       ),
     );

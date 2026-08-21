@@ -2,6 +2,7 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/formatting/month_day_time.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
@@ -34,6 +35,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
     final slotsAsync = ref.watch(availabilitySlotsProvider(widget.provider.id));
@@ -61,10 +63,10 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               children: [
                 FactoryBadge(label: _capitalize(widget.provider.vertical)),
                 if (widget.provider.hasOpenAvailability)
-                  const FactoryBadge(label: 'Available today', variant: FactoryBadgeVariant.available),
+                  FactoryBadge(label: l10n.availableTodayLabel, variant: FactoryBadgeVariant.available),
                 if (widget.provider.distanceKm != null)
                   Text(
-                    '${widget.provider.distanceKm!.toStringAsFixed(1)} km away',
+                    l10n.providerDistanceAway(widget.provider.distanceKm!.toStringAsFixed(1)),
                     style: FactoryTypography.mono(size: 12, color: colors.textTertiary),
                   ),
               ],
@@ -75,7 +77,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                 alignment: Alignment.centerLeft,
                 child: OutlinedButton.icon(
                   icon: const Icon(Icons.map_outlined, size: 18),
-                  label: const Text('View on map'),
+                  label: Text(l10n.viewOnMapButton),
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => MockMapScreen(
@@ -91,7 +93,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
             ],
             if (masters.isNotEmpty) ...[
               const SizedBox(height: FactorySpacing.space6),
-              Text('Masters', style: textTheme.titleMedium),
+              Text(l10n.mastersSectionTitle, style: textTheme.titleMedium),
               const SizedBox(height: FactorySpacing.space3),
               ...masters.map(
                 (master) => Padding(
@@ -113,28 +115,28 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               ),
             ],
             const SizedBox(height: FactorySpacing.space6),
-            Text('Services', style: textTheme.titleMedium),
+            Text(l10n.servicesSectionTitle, style: textTheme.titleMedium),
             const SizedBox(height: FactorySpacing.space2),
             ...widget.provider.services.map(
               (service) => ServiceRow(
                 title: service.title,
-                metaText: '${service.durationMinutes} min',
+                metaText: l10n.serviceDurationMinutes(service.durationMinutes),
                 price: service.price,
                 selected: _selectedServiceId == service.id,
                 onTap: () => setState(() => _selectedServiceId = service.id),
               ),
             ),
             const SizedBox(height: FactorySpacing.space6),
-            Text('Available times', style: textTheme.titleMedium),
+            Text(l10n.availableTimesSectionTitle, style: textTheme.titleMedium),
             const SizedBox(height: FactorySpacing.space3),
             slotsAsync.when(
               data: (slots) {
                 final openSlots = slots.where((s) => s.isOpen).toList();
                 if (openSlots.isEmpty) {
-                  return const FactoryEmptyState(
+                  return FactoryEmptyState(
                     icon: Icons.event_busy_rounded,
-                    title: 'No open times',
-                    message: 'Check back later or try another provider.',
+                    title: l10n.noOpenTimesTitle,
+                    message: l10n.noOpenTimesMessage,
                   );
                 }
                 return Wrap(
@@ -143,7 +145,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                   children: openSlots
                       .map(
                         (slot) => FactoryTimeSlot(
-                          label: _formatSlot(slot.startsAt.toLocal()),
+                          label: formatMonthDayTime(l10n, slot.startsAt.toLocal()),
                           state: _selectedSlotId == slot.id
                               ? FactoryTimeSlotState.selected
                               : FactoryTimeSlotState.available,
@@ -155,7 +157,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               },
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, stackTrace) => FactoryErrorState(
-                message: "Couldn't load availability.",
+                message: l10n.errorAvailabilityLoadFailed,
                 onRetry: () => ref.invalidate(availabilitySlotsProvider(widget.provider.id)),
               ),
             ),
@@ -175,7 +177,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Book'),
+                    : Text(l10n.bookButton),
               ),
             ),
           ],
@@ -280,6 +282,7 @@ class _MasterOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
@@ -327,7 +330,7 @@ class _MasterOption extends StatelessWidget {
               ],
               IconButton(
                 icon: const Icon(Icons.photo_library_outlined),
-                tooltip: 'View portfolio',
+                tooltip: l10n.viewPortfolioTooltip,
                 style: IconButton.styleFrom(
                   backgroundColor: Colors.transparent,
                   side: BorderSide.none,
@@ -352,16 +355,4 @@ String _initialsFor(String name) {
     return parts.first.substring(0, parts.first.length >= 2 ? 2 : 1).toUpperCase();
   }
   return (parts[0][0] + parts[1][0]).toUpperCase();
-}
-
-const _months = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-];
-
-String _formatSlot(DateTime dt) {
-  final month = _months[dt.month - 1];
-  final hour = dt.hour.toString().padLeft(2, '0');
-  final minute = dt.minute.toString().padLeft(2, '0');
-  return '$month ${dt.day}, $hour:$minute';
 }

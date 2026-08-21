@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../providers/beauty_providers.dart';
 
 class MasterPortfolioScreen extends ConsumerWidget {
@@ -11,14 +12,15 @@ class MasterPortfolioScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final portfolioAsync = ref.watch(masterPortfolioProvider(masterId));
 
     return Scaffold(
-      appBar: AppBar(title: Text('$masterName — Portfolio')),
+      appBar: AppBar(title: Text(l10n.masterPortfolioTitle(masterName))),
       body: portfolioAsync.when(
         data: (items) {
           if (items.isEmpty) {
-            return const Center(child: Text('No portfolio photos yet.'));
+            return Center(child: Text(l10n.portfolioEmptyMessage));
           }
           return GridView.builder(
             padding: const EdgeInsets.all(16),
@@ -58,7 +60,7 @@ class MasterPortfolioScreen extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => Center(child: Text('Failed to load portfolio: $error')),
+        error: (error, stackTrace) => Center(child: Text(l10n.errorPortfolioLoadFailed(error.toString()))),
       ),
     );
   }

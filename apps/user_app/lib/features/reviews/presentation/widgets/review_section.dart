@@ -18,6 +18,7 @@ class ReviewSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final reviewAsync = ref.watch(reviewForBookingProvider(bookingId));
     final colors = context.factoryColors;
 
@@ -29,7 +30,7 @@ class ReviewSection extends ConsumerWidget {
             child: TextButton.icon(
               onPressed: () => _openLeaveReviewDialog(context, ref),
               icon: const Icon(Icons.star_outline),
-              label: const Text('Leave a review'),
+              label: Text(l10n.reviewLeaveButton),
             ),
           );
         }
@@ -65,7 +66,7 @@ class ReviewSection extends ConsumerWidget {
         width: 20,
         child: CircularProgressIndicator(strokeWidth: 2),
       ),
-      error: (error, stackTrace) => Text('Could not load review: $error'),
+      error: (error, stackTrace) => Text(l10n.errorReviewLoadFailed(error.toString())),
     );
   }
 
@@ -103,9 +104,10 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     return AlertDialog(
-      title: const Text('Leave a review'),
+      title: Text(l10n.reviewLeaveButton),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,7 +127,7 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
           TextField(
             controller: _commentController,
             enabled: !_isSubmitting,
-            decoration: const InputDecoration(hintText: 'Comment (optional)'),
+            decoration: InputDecoration(hintText: l10n.reviewCommentHint),
             maxLines: 3,
           ),
           if (_error != null)
@@ -138,7 +140,7 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
       actions: [
         TextButton(
           onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
+          child: Text(l10n.reviewCancel),
         ),
         FilledButton(
           onPressed: (_rating > 0 && !_isSubmitting) ? _submit : null,
@@ -148,7 +150,7 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Submit'),
+              : Text(l10n.reviewSubmit),
         ),
       ],
     );

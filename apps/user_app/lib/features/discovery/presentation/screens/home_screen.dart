@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../../booking/presentation/screens/provider_detail_screen.dart';
 import '../providers/discovery_providers.dart';
 import '../widgets/provider_card.dart';
@@ -18,6 +19,7 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final resultsAsync = ref.watch(searchResultsProvider(_homeQuery));
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
@@ -49,13 +51,13 @@ class HomeScreen extends ConsumerWidget {
                     _AvailabilityHero(count: openCount),
                   ],
                   const SizedBox(height: FactorySpacing.space6),
-                  Text('Top rated near you', style: textTheme.titleMedium),
+                  Text(l10n.homeTopRatedTitle, style: textTheme.titleMedium),
                   const SizedBox(height: FactorySpacing.space3),
                   if (topRated.isEmpty)
-                    const FactoryEmptyState(
+                    FactoryEmptyState(
                       icon: Icons.storefront_outlined,
-                      title: 'No providers yet',
-                      message: 'Check back soon — new salons are added regularly.',
+                      title: l10n.homeEmptyTitle,
+                      message: l10n.homeEmptyMessage,
                     )
                   else
                     SizedBox(
@@ -90,7 +92,7 @@ class HomeScreen extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.all(FactorySpacing.space4),
               child: FactoryErrorState(
-                message: "Couldn't load your discovery feed.",
+                message: l10n.errorHomeFeedLoadFailed,
                 onRetry: () => ref.invalidate(searchResultsProvider(_homeQuery)),
               ),
             ),
@@ -108,6 +110,7 @@ class _SearchEntry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     return Material(
       color: Colors.transparent,
@@ -126,7 +129,7 @@ class _SearchEntry extends StatelessWidget {
               Icon(Icons.search, size: 18, color: colors.textTertiary),
               const SizedBox(width: 10),
               Text(
-                'What service are you looking for?',
+                l10n.homeSearchPrompt,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
               ),
             ],
@@ -157,7 +160,7 @@ class _AvailabilityHero extends StatelessWidget {
         borderRadius: FactoryRadius.lgRadius,
       ),
       child: Text(
-        '$count salon${count == 1 ? '' : 's'} near you have open slots today',
+        AppLocalizations.of(context)!.homeAvailabilityHero(count),
         style: Theme.of(context).textTheme.titleSmall?.copyWith(color: colors.onPrimary),
       ),
     );

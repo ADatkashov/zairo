@@ -9,6 +9,7 @@ import 'package:zairo/features/favorites/data/favorites_api.dart';
 import 'package:zairo/features/favorites/data/models/favorite_provider.dart';
 import 'package:zairo/features/favorites/presentation/providers/favorites_providers.dart';
 import 'package:zairo/features/favorites/presentation/screens/favorites_screen.dart';
+import 'package:zairo/l10n/app_localizations.dart';
 
 class _FakeFavoritesApi extends FavoritesApi {
   _FakeFavoritesApi(this._favorites) : super(DioClient(Dio()));
@@ -24,7 +25,12 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [favoritesApiProvider.overrideWithValue(_FakeFavoritesApi(const []))],
-        child: MaterialApp(theme: factoryLightTheme(), home: const FavoritesScreen(userId: 'user-1')),
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const FavoritesScreen(userId: 'user-1'),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -49,7 +55,12 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [favoritesApiProvider.overrideWithValue(_FakeFavoritesApi([favorite]))],
-        child: MaterialApp(theme: factoryLightTheme(), home: const FavoritesScreen(userId: 'user-1')),
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const FavoritesScreen(userId: 'user-1'),
+        ),
       ),
     );
     await tester.pumpAndSettle();

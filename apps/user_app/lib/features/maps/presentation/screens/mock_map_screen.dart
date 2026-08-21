@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../l10n/app_localizations.dart';
+
 /// Stands in for a real interactive map (Google Maps/Mapbox/OSM) until the
 /// project has a real map provider account/API key — see
 /// docs and SESSION_NOTES.md. Shows the provider's coordinates as plain
@@ -20,6 +22,7 @@ class MockMapScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -46,13 +49,12 @@ class MockMapScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Map view placeholder',
+                l10n.mapPlaceholderTitle,
                 style: theme.textTheme.titleMedium,
               ),
               const SizedBox(height: 4),
               Text(
-                'Real map rendering (Google Maps/Mapbox/OSM) is wired in '
-                'once the project has a map provider account.',
+                l10n.mapPlaceholderMessage,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall,
               ),
@@ -60,7 +62,7 @@ class MockMapScreen extends StatelessWidget {
               Text('${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)}'),
               if (distanceKm != null) ...[
                 const SizedBox(height: 4),
-                Text('${distanceKm!.toStringAsFixed(1)} km from you'),
+                Text(l10n.mapDistanceFromYou(distanceKm!.toStringAsFixed(1))),
               ],
             ],
           ),

@@ -2,6 +2,8 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/formatting/month_day_time.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../payments/presentation/widgets/payment_status_chip.dart';
 import '../../../reviews/presentation/widgets/review_section.dart';
 import '../../data/models/booking.dart';
@@ -14,20 +16,21 @@ class MyBookingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final bookingsAsync = ref.watch(myBookingsProvider(userId));
 
     return Scaffold(
       backgroundColor: colors.bg,
-      appBar: AppBar(title: const Text('My bookings')),
+      appBar: AppBar(title: Text(l10n.myBookingsTitle)),
       body: bookingsAsync.when(
         data: (bookings) {
           if (bookings.isEmpty) {
-            return const Center(
+            return Center(
               child: FactoryEmptyState(
                 icon: Icons.event_note_outlined,
-                title: 'No bookings yet',
-                message: 'Once you book a service, it will show up here.',
+                title: l10n.bookingsEmptyTitle,
+                message: l10n.bookingsEmptyMessage,
               ),
             );
           }
@@ -44,7 +47,7 @@ class MyBookingsScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             child: FactoryErrorState(
-              message: "Couldn't load your bookings.",
+              message: l10n.errorBookingsLoadFailed,
               onRetry: () => ref.invalidate(myBookingsProvider(userId)),
             ),
           ),
@@ -61,6 +64,7 @@ class _BookingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
 
     return Card(
@@ -74,12 +78,12 @@ class _BookingCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 FactoryPriceText(amount: booking.totalPrice, fontSize: 16, weight: FontWeight.w700),
-                FactoryBadge(label: _statusLabel(booking.status), variant: _statusVariant(booking.status)),
+                FactoryBadge(label: _statusLabel(l10n, booking.status), variant: _statusVariant(booking.status)),
               ],
             ),
             const SizedBox(height: FactorySpacing.space1),
             Text(
-              'Booked on ${_formatDate(booking.createdAt.toLocal())}',
+              l10n.bookedOnLabel(formatMonthDayTime(l10n, booking.createdAt.toLocal())),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
             ),
             const SizedBox(height: FactorySpacing.space2),
@@ -92,7 +96,12 @@ class _BookingCard extends StatelessWidget {
   }
 }
 
-String _statusLabel(String status) => status.isEmpty ? status : '${status[0]}${status.substring(1).toLowerCase()}';
+String _statusLabel(AppLocalizations l10n, String status) => switch (status) {
+      'CONFIRMED' => l10n.bookingStatusConfirmed,
+      'COMPLETED' => l10n.bookingStatusCompleted,
+      'CANCELLED' => l10n.bookingStatusCancelled,
+      _ => status.isEmpty ? status : '${status[0]}${status.substring(1).toLowerCase()}',
+    };
 
 FactoryBadgeVariant _statusVariant(String status) => switch (status) {
       'CONFIRMED' => FactoryBadgeVariant.available,
@@ -100,15 +109,3 @@ FactoryBadgeVariant _statusVariant(String status) => switch (status) {
       'CANCELLED' => FactoryBadgeVariant.error,
       _ => FactoryBadgeVariant.neutral,
     };
-
-const _months = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-];
-
-String _formatDate(DateTime dt) {
-  final month = _months[dt.month - 1];
-  final hour = dt.hour.toString().padLeft(2, '0');
-  final minute = dt.minute.toString().padLeft(2, '0');
-  return '$month ${dt.day}, $hour:$minute';
-}

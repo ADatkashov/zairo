@@ -15,6 +15,7 @@ import 'package:zairo/features/payments/presentation/providers/payments_provider
 import 'package:zairo/features/reviews/data/models/review.dart';
 import 'package:zairo/features/reviews/data/reviews_api.dart';
 import 'package:zairo/features/reviews/presentation/providers/reviews_providers.dart';
+import 'package:zairo/l10n/app_localizations.dart';
 
 class _FakeBookingApi extends BookingApi {
   _FakeBookingApi(this._bookings) : super(DioClient(Dio()));
@@ -50,7 +51,12 @@ void main() {
           bookingApiProvider.overrideWithValue(_FakeBookingApi(const [])),
           paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
         ],
-        child: MaterialApp(theme: factoryLightTheme(), home: const MyBookingsScreen(userId: 'user-1')),
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const MyBookingsScreen(userId: 'user-1'),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -75,7 +81,12 @@ void main() {
           bookingApiProvider.overrideWithValue(_FakeBookingApi([booking])),
           paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
         ],
-        child: MaterialApp(theme: factoryLightTheme(), home: const MyBookingsScreen(userId: 'user-1')),
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const MyBookingsScreen(userId: 'user-1'),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -104,7 +115,12 @@ void main() {
           reviewsApiProvider.overrideWithValue(_FakeReviewsApi()),
           paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
         ],
-        child: MaterialApp(theme: factoryLightTheme(), home: const MyBookingsScreen(userId: 'user-1')),
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const MyBookingsScreen(userId: 'user-1'),
+        ),
       ),
     );
     await tester.pumpAndSettle();

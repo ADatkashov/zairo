@@ -2,6 +2,7 @@ import 'package:core_ui/core_ui.dart' hide ProviderCard;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../../booking/presentation/screens/provider_detail_screen.dart';
 import '../../../discovery/data/models/provider_search_result.dart';
 import '../../../discovery/presentation/widgets/provider_card.dart';
@@ -14,20 +15,21 @@ class FavoritesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final favoritesAsync = ref.watch(myFavoritesProvider(userId));
 
     return Scaffold(
       backgroundColor: colors.bg,
-      appBar: AppBar(title: const Text('My favorites')),
+      appBar: AppBar(title: Text(l10n.myFavoritesTitle)),
       body: favoritesAsync.when(
         data: (favorites) {
           if (favorites.isEmpty) {
-            return const Center(
+            return Center(
               child: FactoryEmptyState(
                 icon: Icons.favorite_border_rounded,
-                title: 'No favorites yet',
-                message: 'Salons and providers you favorite will show up here.',
+                title: l10n.favoritesEmptyTitle,
+                message: l10n.favoritesEmptyMessage,
               ),
             );
           }
@@ -63,7 +65,7 @@ class FavoritesScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             child: FactoryErrorState(
-              message: "Couldn't load your favorites.",
+              message: l10n.errorFavoritesLoadFailed,
               onRetry: () => ref.invalidate(myFavoritesProvider(userId)),
             ),
           ),

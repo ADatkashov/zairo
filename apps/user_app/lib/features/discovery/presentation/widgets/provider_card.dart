@@ -1,6 +1,7 @@
 import 'package:core_ui/core_ui.dart' as core_ui;
 import 'package:flutter/material.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../data/models/provider_search_result.dart';
 
 /// Adapts a backend search result to Factory's shared `core_ui.ProviderCard`
@@ -26,13 +27,14 @@ class ProviderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return core_ui.ProviderCard(
       title: result.name,
       metaText: result.distanceKm != null
-          ? '${result.distanceKm!.toStringAsFixed(1)} km · ${result.vertical}'
+          ? l10n.cardDistanceAndVertical(result.distanceKm!.toStringAsFixed(1), result.vertical)
           : result.vertical,
       priceFrom: result.minPrice,
-      availabilityLabel: result.hasOpenAvailability ? 'Available today' : null,
+      availabilityLabel: result.hasOpenAvailability ? l10n.availableTodayLabel : null,
       onTap: onTap,
       layout: layout,
       width: width,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../auth/presentation/screens/register_screen.dart';
@@ -12,10 +13,11 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final authState = ref.watch(authControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(title: Text(l10n.profileTitle)),
       body: Center(
         child: authState.when(
           data: (user) => user == null
@@ -24,7 +26,7 @@ class ProfileScreen extends ConsumerWidget {
           loading: () => const CircularProgressIndicator(),
           error: (error, stackTrace) => Padding(
             padding: const EdgeInsets.all(16),
-            child: Text('Something went wrong: $error'),
+            child: Text(l10n.errorProfileGeneric(error.toString())),
           ),
         ),
       ),
@@ -35,23 +37,24 @@ class ProfileScreen extends ConsumerWidget {
 class _LoggedOutView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Icon(Icons.person_outline, size: 100),
         const SizedBox(height: 16),
-        const Text('Log in to book and review providers', style: TextStyle(fontSize: 16)),
+        Text(l10n.profileLoggedOutPrompt, style: const TextStyle(fontSize: 16)),
         const SizedBox(height: 20),
         FilledButton(
           onPressed: () => Navigator.of(context)
               .push(MaterialPageRoute(builder: (_) => const LoginScreen())),
-          child: const Text('Log in'),
+          child: Text(l10n.loginTitle),
         ),
         const SizedBox(height: 8),
         TextButton(
           onPressed: () => Navigator.of(context)
               .push(MaterialPageRoute(builder: (_) => const RegisterScreen())),
-          child: const Text('Create an account'),
+          child: Text(l10n.profileCreateAccount),
         ),
       ],
     );
@@ -67,6 +70,7 @@ class _LoggedInView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -79,19 +83,19 @@ class _LoggedInView extends ConsumerWidget {
           onPressed: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => MyBookingsScreen(userId: userId)),
           ),
-          child: const Text('My bookings'),
+          child: Text(l10n.myBookingsTitle),
         ),
         const SizedBox(height: 8),
         FilledButton.tonal(
           onPressed: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => FavoritesScreen(userId: userId)),
           ),
-          child: const Text('My favorites'),
+          child: Text(l10n.myFavoritesTitle),
         ),
         const SizedBox(height: 8),
         OutlinedButton(
           onPressed: () => ref.read(authControllerProvider.notifier).logout(),
-          child: const Text('Log out'),
+          child: Text(l10n.profileLogOut),
         ),
       ],
     );

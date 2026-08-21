@@ -8,6 +8,7 @@ import 'package:zairo/features/payments/data/models/payment.dart';
 import 'package:zairo/features/payments/data/payments_api.dart';
 import 'package:zairo/features/payments/presentation/providers/payments_providers.dart';
 import 'package:zairo/features/payments/presentation/widgets/payment_status_chip.dart';
+import 'package:zairo/l10n/app_localizations.dart';
 
 class _FakePaymentsApi extends PaymentsApi {
   _FakePaymentsApi(this._payment) : super(DioClient(Dio()));
@@ -46,6 +47,8 @@ void main() {
         overrides: [paymentsApiProvider.overrideWithValue(_FakePaymentsApi(payment))],
         child: MaterialApp(
           theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: const Scaffold(body: PaymentStatusChip(bookingId: 'booking-1')),
         ),
       ),
