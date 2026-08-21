@@ -325,6 +325,71 @@
     }
   },
 
+  "recurringScheduleButton": "Recurring schedule",
+  "@recurringScheduleButton": {"description": "Button that opens the recurring-schedule dialog."},
+
+  "recurringScheduleDialogTitle": "Generate recurring schedule",
+  "@recurringScheduleDialogTitle": {"description": "Recurring-schedule dialog title."},
+
+  "recurringScheduleDaysLabel": "Days of week",
+  "@recurringScheduleDaysLabel": {"description": "Recurring-schedule dialog's day-of-week picker label."},
+
+  "recurringScheduleStartTimeLabel": "Start time",
+  "@recurringScheduleStartTimeLabel": {"description": "Recurring-schedule dialog's start-time picker label."},
+
+  "recurringScheduleEndTimeLabel": "End time",
+  "@recurringScheduleEndTimeLabel": {"description": "Recurring-schedule dialog's end-time picker label."},
+
+  "recurringScheduleBreakMinutesLabel": "Break between slots (minutes)",
+  "@recurringScheduleBreakMinutesLabel": {"description": "Recurring-schedule dialog's break-duration field label."},
+
+  "recurringScheduleRangeStartLabel": "From",
+  "@recurringScheduleRangeStartLabel": {"description": "Recurring-schedule dialog's date-range start picker label."},
+
+  "recurringScheduleRangeEndLabel": "To",
+  "@recurringScheduleRangeEndLabel": {"description": "Recurring-schedule dialog's date-range end picker label."},
+
+  "recurringScheduleHolidaysLabel": "Holidays (skipped)",
+  "@recurringScheduleHolidaysLabel": {"description": "Recurring-schedule dialog's holiday-list section label."},
+
+  "recurringScheduleAddHolidayButton": "Add holiday",
+  "@recurringScheduleAddHolidayButton": {"description": "Recurring-schedule dialog's button to add a holiday date."},
+
+  "recurringScheduleValidationError": "Pick at least one day, a valid time range, a date range, and a positive duration",
+  "@recurringScheduleValidationError": {"description": "Recurring-schedule dialog's validation error."},
+
+  "recurringScheduleSuccessMessage": "{created} slots created, {skipped} skipped (already existed)",
+  "@recurringScheduleSuccessMessage": {
+    "description": "Recurring-schedule dialog's success snackbar message.",
+    "placeholders": {
+      "created": {"type": "int"},
+      "skipped": {"type": "int"}
+    }
+  },
+
+  "errorRecurringScheduleFailed": "Failed to generate schedule: {error}",
+  "@errorRecurringScheduleFailed": {
+    "description": "Recurring-schedule dialog's error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "weekdayMon": "Mon",
+  "@weekdayMon": {"description": "Short Monday label for the recurring-schedule day-of-week chips."},
+  "weekdayTue": "Tue",
+  "@weekdayTue": {"description": "Short Tuesday label for the recurring-schedule day-of-week chips."},
+  "weekdayWed": "Wed",
+  "@weekdayWed": {"description": "Short Wednesday label for the recurring-schedule day-of-week chips."},
+  "weekdayThu": "Thu",
+  "@weekdayThu": {"description": "Short Thursday label for the recurring-schedule day-of-week chips."},
+  "weekdayFri": "Fri",
+  "@weekdayFri": {"description": "Short Friday label for the recurring-schedule day-of-week chips."},
+  "weekdaySat": "Sat",
+  "@weekdaySat": {"description": "Short Saturday label for the recurring-schedule day-of-week chips."},
+  "weekdaySun": "Sun",
+  "@weekdaySun": {"description": "Short Sunday label for the recurring-schedule day-of-week chips."},
+
   "addMasterDialogTitle": "Add a master",
   "@addMasterDialogTitle": {"description": "Add-master dialog title."},
 

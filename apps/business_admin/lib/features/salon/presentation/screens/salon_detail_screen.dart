@@ -15,6 +15,7 @@ import '../../data/models/admin_service.dart';
 import '../providers/salon_providers.dart';
 import '../widgets/add_service_dialog.dart';
 import '../widgets/add_slot_dialog.dart';
+import '../widgets/recurring_schedule_dialog.dart';
 
 class SalonDetailScreen extends ConsumerStatefulWidget {
   final AdminProvider provider;
@@ -392,16 +393,32 @@ class _AvailabilitySection extends ConsumerWidget {
       children: [
         _SectionHeader(
           title: l10n.availabilitySectionTitle,
-          trailing: TextButton.icon(
-            icon: const Icon(Icons.add),
-            label: Text(l10n.addButton),
-            onPressed: () async {
-              final added = await showDialog<bool>(
-                context: context,
-                builder: (_) => AddSlotDialog(providerId: providerId),
-              );
-              if (added == true) ref.invalidate(providerSlotsProvider(providerId));
-            },
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextButton.icon(
+                icon: const Icon(Icons.event_repeat),
+                label: Text(l10n.recurringScheduleButton),
+                onPressed: () async {
+                  final generated = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => RecurringScheduleDialog(providerId: providerId),
+                  );
+                  if (generated == true) ref.invalidate(providerSlotsProvider(providerId));
+                },
+              ),
+              TextButton.icon(
+                icon: const Icon(Icons.add),
+                label: Text(l10n.addButton),
+                onPressed: () async {
+                  final added = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => AddSlotDialog(providerId: providerId),
+                  );
+                  if (added == true) ref.invalidate(providerSlotsProvider(providerId));
+                },
+              ),
+            ],
           ),
         ),
         slotsAsync.when(

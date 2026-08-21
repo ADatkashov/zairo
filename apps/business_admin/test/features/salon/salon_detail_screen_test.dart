@@ -11,6 +11,7 @@ import 'package:business_admin/features/salon/data/models/admin_booking.dart';
 import 'package:business_admin/features/salon/data/models/admin_provider.dart';
 import 'package:business_admin/features/salon/data/models/admin_service.dart';
 import 'package:business_admin/features/salon/data/models/admin_slot.dart';
+import 'package:business_admin/features/salon/data/models/recurring_schedule_result.dart';
 import 'package:business_admin/features/salon/data/salon_admin_api.dart';
 import 'package:business_admin/features/salon/presentation/providers/salon_providers.dart';
 import 'package:business_admin/features/salon/presentation/screens/salon_detail_screen.dart';
@@ -44,6 +45,7 @@ class _FakeSalonAdminApi extends SalonAdminApi {
   String? lastReactivatedServiceId;
   String? lastDeletedSlotId;
   String? lastCompletedBookingId;
+  Map<String, dynamic>? lastRecurringScheduleCall;
 
   @override
   Future<List<AdminService>> listServices(String providerId, {bool includeInactive = false}) async {
@@ -170,6 +172,36 @@ class _FakeSalonAdminApi extends SalonAdminApi {
   Future<void> deleteSlot(String slotId) async {
     lastDeletedSlotId = slotId;
     _slots.removeWhere((s) => s.id == slotId);
+  }
+
+  @override
+  Future<RecurringScheduleResult> createRecurringSchedule({
+    required String providerId,
+    required List<int> daysOfWeek,
+    required int startHour,
+    required int startMinute,
+    required int endHour,
+    required int endMinute,
+    required int slotDurationMinutes,
+    required int breakMinutes,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+    List<DateTime> holidays = const [],
+  }) async {
+    lastRecurringScheduleCall = {
+      'providerId': providerId,
+      'daysOfWeek': daysOfWeek,
+      'startHour': startHour,
+      'startMinute': startMinute,
+      'endHour': endHour,
+      'endMinute': endMinute,
+      'slotDurationMinutes': slotDurationMinutes,
+      'breakMinutes': breakMinutes,
+      'rangeStart': rangeStart,
+      'rangeEnd': rangeEnd,
+      'holidays': holidays,
+    };
+    return const RecurringScheduleResult(createdCount: 3, skippedConflictCount: 1);
   }
 
   @override
@@ -523,5 +555,45 @@ void main() {
     expect(fakeBeautyApi.lastReactivatedMasterId, 'm1');
     expect(find.text('Jamie Stylist'), findsOneWidget);
     expect(find.text('Reactivate'), findsNothing);
+  });
+
+  testWidgets('recurring schedule dialog opens, toggles a day, and blocks submitting without a time/date range',
+      (tester) async {
+    final fakeApi = _FakeSalonAdminApi();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(fakeApi),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SalonDetailScreen(provider: _provider),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(TextButton, 'Recurring schedule'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Generate recurring schedule'), findsOneWidget);
+
+    // Toggling a weekday chip doesn't throw and doesn't submit anything.
+    await tester.tap(find.text('Mon'));
+    await tester.pumpAndSettle();
+
+    // No time/date picked yet — submitting is rejected client-side, the API is never called.
+    await tester.tap(find.widgetWithText(FilledButton, 'Add'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Pick at least one day, a valid time range, a date range, and a positive duration'),
+      findsOneWidget,
+    );
+    expect(fakeApi.lastRecurringScheduleCall, isNull);
   });
 }

@@ -3,6 +3,8 @@ package com.zairo.factory.booking;
 import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.booking.AvailabilitySlotDtos.AvailabilitySlotResponse;
 import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequest;
+import com.zairo.factory.booking.AvailabilitySlotDtos.RecurringScheduleRequest;
+import com.zairo.factory.booking.AvailabilitySlotDtos.RecurringScheduleResult;
 import com.zairo.factory.providers.ProviderOwnership;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -22,11 +24,13 @@ public class AvailabilitySlotController {
 
     private final AvailabilitySlotRepository availabilitySlotRepository;
     private final ProviderOwnership providerOwnership;
+    private final RecurringScheduleService recurringScheduleService;
 
     public AvailabilitySlotController(AvailabilitySlotRepository availabilitySlotRepository,
-            ProviderOwnership providerOwnership) {
+            ProviderOwnership providerOwnership, RecurringScheduleService recurringScheduleService) {
         this.availabilitySlotRepository = availabilitySlotRepository;
         this.providerOwnership = providerOwnership;
+        this.recurringScheduleService = recurringScheduleService;
     }
 
     /** Owner-only. */
@@ -38,6 +42,15 @@ public class AvailabilitySlotController {
         AvailabilitySlot slot = new AvailabilitySlot(UUID.randomUUID(), providerId, request.startsAt(),
                 request.endsAt(), AvailabilityStatus.OPEN);
         return AvailabilitySlotResponse.from(availabilitySlotRepository.save(slot));
+    }
+
+    /** Owner-only. Generates real slots from a weekly pattern — see RecurringScheduleService. */
+    @PostMapping("/api/v1/providers/{providerId}/availability-slots/recurring")
+    @ResponseStatus(HttpStatus.CREATED)
+    public RecurringScheduleResult createRecurring(@PathVariable UUID providerId,
+            @RequestBody RecurringScheduleRequest request, HttpServletRequest httpRequest) {
+        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
+        return recurringScheduleService.generate(providerId, request);
     }
 
     @GetMapping("/api/v1/providers/{providerId}/availability-slots")

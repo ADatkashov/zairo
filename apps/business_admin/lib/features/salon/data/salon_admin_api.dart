@@ -4,6 +4,7 @@ import 'models/admin_booking.dart';
 import 'models/admin_provider.dart';
 import 'models/admin_service.dart';
 import 'models/admin_slot.dart';
+import 'models/recurring_schedule_result.dart';
 
 /// Wraps Core's providers/services/booking REST endpoints from the owner's
 /// point of view — no new backend surface beyond the two additions this
@@ -150,6 +151,67 @@ class SalonAdminApi {
   /// Only an OPEN slot can be removed — see backend's AvailabilitySlotController.delete().
   Future<void> deleteSlot(String slotId) {
     return _dioClient.delete('/availability-slots/$slotId');
+  }
+
+  /// [daysOfWeek] uses [DateTime.weekday] values (1=Monday..7=Sunday).
+  /// [zoneId] defaults to the device's current fixed UTC offset (e.g.
+  /// "+06:00") — this project has no IANA timezone data on the Flutter
+  /// side, but Java's ZoneId.of accepts a fixed-offset string just as
+  /// validly as "Asia/Almaty", so this is a real zone, not a placeholder.
+  Future<RecurringScheduleResult> createRecurringSchedule({
+    required String providerId,
+    required List<int> daysOfWeek,
+    required int startHour,
+    required int startMinute,
+    required int endHour,
+    required int endMinute,
+    required int slotDurationMinutes,
+    required int breakMinutes,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+    List<DateTime> holidays = const [],
+  }) async {
+    final response = await _dioClient.post(
+      '/providers/$providerId/availability-slots/recurring',
+      data: {
+        'daysOfWeek': daysOfWeek.map(_dayOfWeekName).toList(),
+        'startTime': _formatTime(startHour, startMinute),
+        'endTime': _formatTime(endHour, endMinute),
+        'slotDurationMinutes': slotDurationMinutes,
+        'breakMinutes': breakMinutes,
+        'rangeStart': _formatDate(rangeStart),
+        'rangeEnd': _formatDate(rangeEnd),
+        'holidays': holidays.map(_formatDate).toList(),
+        'zoneId': _localZoneOffset(),
+      },
+    );
+    return RecurringScheduleResult.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  static const _dayOfWeekNames = [
+    'MONDAY',
+    'TUESDAY',
+    'WEDNESDAY',
+    'THURSDAY',
+    'FRIDAY',
+    'SATURDAY',
+    'SUNDAY',
+  ];
+
+  static String _dayOfWeekName(int weekday) => _dayOfWeekNames[weekday - 1];
+
+  static String _formatTime(int hour, int minute) =>
+      '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}:00';
+
+  static String _formatDate(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+  static String _localZoneOffset() {
+    final offset = DateTime.now().timeZoneOffset;
+    final sign = offset.isNegative ? '-' : '+';
+    final hours = offset.abs().inHours.toString().padLeft(2, '0');
+    final minutes = (offset.abs().inMinutes % 60).toString().padLeft(2, '0');
+    return '$sign$hours:$minutes';
   }
 
   Future<List<AdminBooking>> listBookings(String providerId) async {
