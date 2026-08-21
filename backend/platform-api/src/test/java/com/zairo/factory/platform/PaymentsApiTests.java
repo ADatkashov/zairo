@@ -33,11 +33,14 @@ import org.springframework.http.ResponseEntity;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
-@Import(TestcontainersConfiguration.class)
+@Import({TestcontainersConfiguration.class, TestPayments.class})
 class PaymentsApiTests {
 
     @Autowired
     private TestRestTemplate restTemplate;
+
+    @Autowired
+    private TestPayments.FailureController failureController;
 
     @Test
     void paysForABookingThenRefundsIt() {
@@ -136,6 +139,67 @@ class PaymentsApiTests {
         ResponseEntity<Map> paymentAfterCancel = restTemplate.getForEntity(
                 "/api/v1/bookings/" + bookingId + "/payments", Map.class);
         assertThat(paymentAfterCancel.getBody().get("status")).isEqualTo("REFUNDED");
+    }
+
+    @Test
+    void aFailedChargeCanBeRetriedReusingTheSamePaymentIdAsTheIdempotencyKey() {
+        UUID bookingId = createBookingForPayment("retry-", new BigDecimal("22.00"));
+
+        failureController.failNextCharge = true;
+        ResponseEntity<Map> firstAttempt = restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments",
+                null, Map.class);
+        assertThat(firstAttempt.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(firstAttempt.getBody().get("status")).isEqualTo("FAILED");
+        UUID paymentId = UUID.fromString(firstAttempt.getBody().get("id").toString());
+
+        ResponseEntity<Map> retry = restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments", null,
+                Map.class);
+        assertThat(retry.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(retry.getBody().get("status")).isEqualTo("SUCCEEDED");
+        // Same payment id across the failed attempt and the successful retry —
+        // this IS the idempotency key a real provider would rely on.
+        assertThat(retry.getBody().get("id")).isEqualTo(paymentId.toString());
+    }
+
+    @Test
+    void aProviderExceptionDuringChargeMarksThePaymentFailedInsteadOfCrashing() {
+        UUID bookingId = createBookingForPayment("outage-", new BigDecimal("18.00"));
+
+        failureController.failNextCharge = true;
+        failureController.throwOnNextCharge = true;
+        ResponseEntity<Map> response = restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments",
+                null, Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(response.getBody().get("status")).isEqualTo("FAILED");
+    }
+
+    private UUID createBookingForPayment(String prefix, BigDecimal price) {
+        String runId = UUID.randomUUID().toString();
+        UUID customerId = createUser(prefix + "customer-" + runId + "@example.com", "Pay Customer");
+        Registered owner = TestAuth.registerOwner(restTemplate, prefix + "owner-" + runId + "@example.com");
+
+        var providerRequest = new CreateProviderRequest(owner.userId(), prefix + "Salon " + runId, "beauty");
+        ResponseEntity<Map> providerResponse = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
+                new HttpEntity<>(providerRequest, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        UUID providerId = UUID.fromString(providerResponse.getBody().get("id").toString());
+
+        var serviceRequest = new CreateServiceRequest(prefix + "Service", 30, price, "USD");
+        ResponseEntity<Map> serviceResponse = restTemplate.exchange("/api/v1/providers/" + providerId + "/services",
+                HttpMethod.POST, new HttpEntity<>(serviceRequest, TestAuth.authHeaders(owner.accessToken())),
+                Map.class);
+        UUID serviceId = UUID.fromString(serviceResponse.getBody().get("id").toString());
+
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        var slotRequest = new CreateAvailabilitySlotRequest(start, start.plus(30, ChronoUnit.MINUTES));
+        ResponseEntity<Map> slotResponse = restTemplate.exchange(
+                "/api/v1/providers/" + providerId + "/availability-slots", HttpMethod.POST,
+                new HttpEntity<>(slotRequest, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        UUID slotId = UUID.fromString(slotResponse.getBody().get("id").toString());
+
+        var bookingRequest = new CreateBookingRequest(customerId, serviceId, slotId, price);
+        Map<?, ?> booking = restTemplate.postForEntity("/api/v1/bookings", bookingRequest, Map.class).getBody();
+        return UUID.fromString(booking.get("id").toString());
     }
 
     private UUID createUser(String email, String displayName) {

@@ -21,7 +21,7 @@ class MockPaymentProvider implements PaymentProvider {
     }
 
     @Override
-    public RefundResult refund(String providerReference, BigDecimal amount) {
+    public RefundResult refund(UUID paymentId, String providerReference, BigDecimal amount) {
         return new RefundResult(true, null);
     }
 }

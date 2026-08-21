@@ -18,12 +18,22 @@ import java.util.UUID;
  * resolves synchronously, since there's no real async gateway to wait on
  * yet — the webhook-driven confirmation flow is deferred until a real
  * provider exists, not built against nothing.
+ *
+ * <p><b>Idempotency:</b> {@code paymentId} is the idempotency key. A real
+ * implementation must forward it unchanged to the provider (e.g. Stripe's
+ * {@code idempotencyKey} request option on both charge and refund calls)
+ * so that a retried call with the same id is a safe no-op on the
+ * provider's side rather than a second charge/refund — this only holds
+ * if the caller reuses the same {@code Payment} row across retries
+ * instead of minting a fresh id each attempt; see
+ * {@code PaymentsService.createPayment}'s retry-reuses-the-FAILED-row
+ * logic for why that matters.
  */
 public interface PaymentProvider {
 
     ChargeResult charge(UUID paymentId, BigDecimal amount, String currency);
 
-    RefundResult refund(String providerReference, BigDecimal amount);
+    RefundResult refund(UUID paymentId, String providerReference, BigDecimal amount);
 
     record ChargeResult(boolean succeeded, String providerReference, String failureReason) {
     }
