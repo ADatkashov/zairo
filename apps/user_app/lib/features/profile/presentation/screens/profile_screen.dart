@@ -5,8 +5,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../auth/presentation/screens/register_screen.dart';
-import '../../../booking/presentation/screens/my_bookings_screen.dart';
-import '../../../favorites/presentation/screens/favorites_screen.dart';
+import '../../../settings/presentation/screens/settings_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -17,12 +16,23 @@ class ProfileScreen extends ConsumerWidget {
     final authState = ref.watch(authControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.profileTitle)),
+      appBar: AppBar(
+        title: Text(l10n.profileTitle),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: l10n.settingsButtonTooltip,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            ),
+          ),
+        ],
+      ),
       body: Center(
         child: authState.when(
           data: (user) => user == null
               ? _LoggedOutView()
-              : _LoggedInView(userId: user.id, displayName: user.displayName, email: user.email),
+              : _LoggedInView(displayName: user.displayName, email: user.email),
           loading: () => const CircularProgressIndicator(),
           error: (error, stackTrace) => Padding(
             padding: const EdgeInsets.all(16),
@@ -62,11 +72,10 @@ class _LoggedOutView extends StatelessWidget {
 }
 
 class _LoggedInView extends ConsumerWidget {
-  final String userId;
   final String displayName;
   final String email;
 
-  const _LoggedInView({required this.userId, required this.displayName, required this.email});
+  const _LoggedInView({required this.displayName, required this.email});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -79,20 +88,6 @@ class _LoggedInView extends ConsumerWidget {
         Text(displayName, style: Theme.of(context).textTheme.headlineSmall),
         Text(email, style: Theme.of(context).textTheme.bodyMedium),
         const SizedBox(height: 20),
-        FilledButton.tonal(
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => MyBookingsScreen(userId: userId)),
-          ),
-          child: Text(l10n.myBookingsTitle),
-        ),
-        const SizedBox(height: 8),
-        FilledButton.tonal(
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => FavoritesScreen(userId: userId)),
-          ),
-          child: Text(l10n.myFavoritesTitle),
-        ),
-        const SizedBox(height: 8),
         OutlinedButton(
           onPressed: () => ref.read(authControllerProvider.notifier).logout(),
           child: Text(l10n.profileLogOut),

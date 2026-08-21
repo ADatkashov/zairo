@@ -4,52 +4,84 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/formatting/month_day_time.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../auth/presentation/widgets/logged_out_gate.dart';
 import '../../../payments/presentation/widgets/payment_status_chip.dart';
 import '../../../reviews/presentation/widgets/review_section.dart';
 import '../../data/models/booking.dart';
 import '../providers/booking_providers.dart';
 
+/// Reached directly from the bottom nav (a peer tab to Home/Search/
+/// Favorites/Profile, not only pushed after already being logged in), so
+/// it resolves the current user itself instead of requiring a caller to
+/// pass one — see LoggedOutGate for the logged-out path.
 class MyBookingsScreen extends ConsumerWidget {
-  final String userId;
-
-  const MyBookingsScreen({super.key, required this.userId});
+  const MyBookingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
-    final bookingsAsync = ref.watch(myBookingsProvider(userId));
+    final authState = ref.watch(authControllerProvider);
 
     return Scaffold(
       backgroundColor: colors.bg,
       appBar: AppBar(title: Text(l10n.myBookingsTitle)),
-      body: bookingsAsync.when(
-        data: (bookings) {
-          if (bookings.isEmpty) {
-            return Center(
-              child: FactoryEmptyState(
-                icon: Icons.event_note_outlined,
-                title: l10n.bookingsEmptyTitle,
-                message: l10n.bookingsEmptyMessage,
-              ),
-            );
-          }
-          final sorted = [...bookings]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          return ListView.separated(
-            padding: const EdgeInsets.all(FactorySpacing.space4),
-            itemCount: sorted.length,
-            separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
-            itemBuilder: (context, index) => _BookingCard(booking: sorted[index]),
-          );
-        },
+      body: authState.when(
+        data: (user) => user == null
+            ? LoggedOutGate(icon: Icons.event_note_outlined, message: l10n.bookingsLoggedOutPrompt)
+            : _BookingsList(userId: user.id),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => Center(
           child: Padding(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             child: FactoryErrorState(
-              message: l10n.errorBookingsLoadFailed,
-              onRetry: () => ref.invalidate(myBookingsProvider(userId)),
+              message: l10n.errorProfileGeneric(error.toString()),
+              onRetry: () => ref.invalidate(authControllerProvider),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BookingsList extends ConsumerWidget {
+  final String userId;
+
+  const _BookingsList({required this.userId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final bookingsAsync = ref.watch(myBookingsProvider(userId));
+
+    return bookingsAsync.when(
+      data: (bookings) {
+        if (bookings.isEmpty) {
+          return Center(
+            child: FactoryEmptyState(
+              icon: Icons.event_note_outlined,
+              title: l10n.bookingsEmptyTitle,
+              message: l10n.bookingsEmptyMessage,
+            ),
+          );
+        }
+        final sorted = [...bookings]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return ListView.separated(
+          padding: const EdgeInsets.all(FactorySpacing.space4),
+          itemCount: sorted.length,
+          separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
+          itemBuilder: (context, index) => _BookingCard(booking: sorted[index]),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stackTrace) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(FactorySpacing.space4),
+          child: FactoryErrorState(
+            message: l10n.errorBookingsLoadFailed,
+            onRetry: () => ref.invalidate(myBookingsProvider(userId)),
           ),
         ),
       ),

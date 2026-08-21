@@ -1,4 +1,4 @@
-import 'package:core_ui/core_ui.dart' hide ProviderCard;
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -74,7 +74,7 @@ class HomeScreen extends ConsumerWidget {
                           final result = topRated[index];
                           return ProviderCard(
                             result: result,
-                            layout: ProviderCardLayout.vertical,
+                            layout: FactoryProviderCardLayout.vertical,
                             width: 168,
                             onTap: () => Navigator.of(context).push(
                               MaterialPageRoute(builder: (_) => ProviderDetailScreen(provider: result)),

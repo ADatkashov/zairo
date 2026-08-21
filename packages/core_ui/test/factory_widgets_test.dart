@@ -85,10 +85,10 @@ void main() {
     expect(find.text('Cancelled'), findsOneWidget);
   });
 
-  testWidgets('ProviderCard shows title, rating, price and toggles favorite', (tester) async {
+  testWidgets('FactoryProviderCard shows title, rating, price and toggles favorite', (tester) async {
     var favoriteState = false;
     await tester.pumpWidget(_wrap(StatefulBuilder(
-      builder: (context, setState) => ProviderCard(
+      builder: (context, setState) => FactoryProviderCard(
         title: 'Aigerim Beauty Studio',
         rating: 4.9,
         reviewCount: 212,
@@ -110,24 +110,24 @@ void main() {
     expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
   });
 
-  testWidgets('ProviderCard calls onTap', (tester) async {
+  testWidgets('FactoryProviderCard calls onTap', (tester) async {
     var tapped = false;
-    await tester.pumpWidget(_wrap(ProviderCard(title: 'Nail Bar 21', onTap: () => tapped = true)));
+    await tester.pumpWidget(_wrap(FactoryProviderCard(title: 'Nail Bar 21', onTap: () => tapped = true)));
 
-    await tester.tap(find.byType(ProviderCard));
+    await tester.tap(find.byType(FactoryProviderCard));
     expect(tapped, isTrue);
   });
 
-  testWidgets('ProviderCard does not overflow a narrow vertical card with a long availability label',
+  testWidgets('FactoryProviderCard does not overflow a narrow vertical card with a long availability label',
       (tester) async {
     // Regression test: a horizontally-scrolling discovery rail sizes cards
     // around 160-170px wide — price + a longer badge used to overflow the
     // footer row (see provider_card.dart's Wrap, not Row).
-    await tester.pumpWidget(_wrap(const ProviderCard(
+    await tester.pumpWidget(_wrap(const FactoryProviderCard(
       title: 'Aigerim Beauty Studio',
       priceFrom: 8000,
       availabilityLabel: 'Available today',
-      layout: ProviderCardLayout.vertical,
+      layout: FactoryProviderCardLayout.vertical,
       width: 168,
     )));
 

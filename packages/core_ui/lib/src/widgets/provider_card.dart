@@ -7,19 +7,20 @@ import 'factory_badge.dart';
 import 'factory_price_text.dart';
 import 'factory_rating_label.dart';
 
-/// How a [ProviderCard] arranges itself: [vertical] (image on top — a
-/// horizontally-scrolling discovery row) or [horizontal] (image on the
+/// How a [FactoryProviderCard] arranges itself: [vertical] (image on top —
+/// a horizontally-scrolling discovery row) or [horizontal] (image on the
 /// left — a search-results list).
-enum ProviderCardLayout { vertical, horizontal }
+enum FactoryProviderCardLayout { vertical, horizontal }
 
 /// The one card every vertical renders a provider through — a salon today,
-/// an auto workshop or dental clinic tomorrow. Named `ProviderCard`, not
+/// an auto workshop or dental clinic tomorrow. Named `FactoryProviderCard`
+/// (the `Factory` prefix every other widget in this package carries), not
 /// `SalonCard` or `BeautyProviderCard`: nothing about its API mentions
 /// beauty. It doesn't know how to load an image either — [image] is
 /// whatever widget the caller already uses for network images in that app,
 /// so this package stays free of an image-loading dependency.
-class ProviderCard extends StatelessWidget {
-  const ProviderCard({
+class FactoryProviderCard extends StatelessWidget {
+  const FactoryProviderCard({
     super.key,
     required this.title,
     this.rating,
@@ -32,7 +33,7 @@ class ProviderCard extends StatelessWidget {
     this.isFavorite = false,
     this.onFavoriteToggle,
     this.onTap,
-    this.layout = ProviderCardLayout.vertical,
+    this.layout = FactoryProviderCardLayout.vertical,
     this.width,
   });
 
@@ -58,9 +59,9 @@ class ProviderCard extends StatelessWidget {
   final bool isFavorite;
   final ValueChanged<bool>? onFavoriteToggle;
   final VoidCallback? onTap;
-  final ProviderCardLayout layout;
+  final FactoryProviderCardLayout layout;
 
-  /// Only meaningful for [ProviderCardLayout.vertical], where the card
+  /// Only meaningful for [FactoryProviderCardLayout.vertical], where the card
   /// sits in a horizontally-scrolling row and needs a fixed width.
   final double? width;
 
@@ -69,13 +70,13 @@ class ProviderCard extends StatelessWidget {
     final colors = context.factoryColors;
 
     final imageArea = SizedBox(
-      width: layout == ProviderCardLayout.horizontal ? 84 : null,
-      height: layout == ProviderCardLayout.vertical ? 96 : null,
+      width: layout == FactoryProviderCardLayout.horizontal ? 84 : null,
+      height: layout == FactoryProviderCardLayout.vertical ? 96 : null,
       child: Stack(
         fit: StackFit.expand,
         children: [
           ClipRRect(
-            borderRadius: layout == ProviderCardLayout.horizontal
+            borderRadius: layout == FactoryProviderCardLayout.horizontal
                 ? const BorderRadius.horizontal(left: Radius.circular(FactoryRadius.lg))
                 : const BorderRadius.vertical(top: Radius.circular(FactoryRadius.lg)),
             child: image ??
@@ -160,7 +161,7 @@ class ProviderCard extends StatelessWidget {
         borderRadius: FactoryRadius.lgRadius,
         border: Border.all(color: colors.border),
       ),
-      child: layout == ProviderCardLayout.horizontal
+      child: layout == FactoryProviderCardLayout.horizontal
           ? IntrinsicHeight(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,

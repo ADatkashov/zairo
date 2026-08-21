@@ -3,8 +3,9 @@
 
   "navHome": "Басты бет",
   "navSearch": "Іздеу",
-  "navSettings": "Баптаулар",
   "navProfile": "Профиль",
+  "navBookings": "Брондар",
+  "navFavorites": "Таңдаулылар",
 
   "settingsTitle": "Баптаулар",
 
@@ -130,5 +131,9 @@
 
   "paymentLabel": "Төлем: {status}",
   "paymentStatusSucceeded": "Сәтті",
-  "paymentStatusFailed": "Сәтсіз"
+  "paymentStatusFailed": "Сәтсіз",
+
+  "bookingsLoggedOutPrompt": "Брондарыңызды көру үшін кіріңіз",
+  "favoritesLoggedOutPrompt": "Таңдаулыларды көру үшін кіріңіз",
+  "settingsButtonTooltip": "Баптаулар"
 }

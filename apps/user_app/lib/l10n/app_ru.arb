@@ -3,8 +3,9 @@
 
   "navHome": "Главная",
   "navSearch": "Поиск",
-  "navSettings": "Настройки",
   "navProfile": "Профиль",
+  "navBookings": "Брони",
+  "navFavorites": "Избранное",
 
   "settingsTitle": "Настройки",
 
@@ -130,5 +131,9 @@
 
   "paymentLabel": "Оплата: {status}",
   "paymentStatusSucceeded": "Успешно",
-  "paymentStatusFailed": "Не удалось"
+  "paymentStatusFailed": "Не удалось",
+
+  "bookingsLoggedOutPrompt": "Войдите, чтобы увидеть свои бронирования",
+  "favoritesLoggedOutPrompt": "Войдите, чтобы увидеть избранное",
+  "settingsButtonTooltip": "Настройки"
 }

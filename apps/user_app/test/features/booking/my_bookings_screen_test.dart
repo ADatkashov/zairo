@@ -4,6 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zairo/features/auth/data/models/user_summary.dart';
+import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/booking/data/booking_api.dart';
 import 'package:zairo/features/booking/data/models/availability_slot.dart';
 import 'package:zairo/features/booking/data/models/booking.dart';
@@ -43,19 +45,53 @@ class _FakePaymentsApi extends PaymentsApi {
   Future<Payment?> getPayment(String bookingId) async => null;
 }
 
+class _LoggedInAuthController extends AuthController {
+  @override
+  Future<UserSummary?> build() async {
+    return const UserSummary(id: 'user-1', email: 'a@example.com', displayName: 'A', role: 'CUSTOMER');
+  }
+}
+
+class _LoggedOutAuthController extends AuthController {
+  @override
+  Future<UserSummary?> build() async => null;
+}
+
 void main() {
+  testWidgets('shows a login gate when logged out', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(_FakeBookingApi(const [])),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          authControllerProvider.overrideWith(_LoggedOutAuthController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const MyBookingsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Log in to see your bookings'), findsOneWidget);
+  });
+
   testWidgets('shows an empty state with no bookings', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           bookingApiProvider.overrideWithValue(_FakeBookingApi(const [])),
           paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
         ],
         child: MaterialApp(
           theme: factoryLightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const MyBookingsScreen(userId: 'user-1'),
+          home: const MyBookingsScreen(),
         ),
       ),
     );
@@ -80,12 +116,13 @@ void main() {
         overrides: [
           bookingApiProvider.overrideWithValue(_FakeBookingApi([booking])),
           paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
         ],
         child: MaterialApp(
           theme: factoryLightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const MyBookingsScreen(userId: 'user-1'),
+          home: const MyBookingsScreen(),
         ),
       ),
     );
@@ -114,12 +151,13 @@ void main() {
           bookingApiProvider.overrideWithValue(_FakeBookingApi([booking])),
           reviewsApiProvider.overrideWithValue(_FakeReviewsApi()),
           paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
         ],
         child: MaterialApp(
           theme: factoryLightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const MyBookingsScreen(userId: 'user-1'),
+          home: const MyBookingsScreen(),
         ),
       ),
     );

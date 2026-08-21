@@ -4,6 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zairo/features/auth/data/models/user_summary.dart';
+import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/discovery/data/models/service_summary.dart';
 import 'package:zairo/features/favorites/data/favorites_api.dart';
 import 'package:zairo/features/favorites/data/models/favorite_provider.dart';
@@ -20,16 +22,51 @@ class _FakeFavoritesApi extends FavoritesApi {
   Future<List<FavoriteProvider>> listFavorites(String userId) async => _favorites;
 }
 
+class _LoggedInAuthController extends AuthController {
+  @override
+  Future<UserSummary?> build() async {
+    return const UserSummary(id: 'user-1', email: 'a@example.com', displayName: 'A', role: 'CUSTOMER');
+  }
+}
+
+class _LoggedOutAuthController extends AuthController {
+  @override
+  Future<UserSummary?> build() async => null;
+}
+
 void main() {
-  testWidgets('shows an empty state with no favorites', (tester) async {
+  testWidgets('shows a login gate when logged out', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [favoritesApiProvider.overrideWithValue(_FakeFavoritesApi(const []))],
+        overrides: [
+          favoritesApiProvider.overrideWithValue(_FakeFavoritesApi(const [])),
+          authControllerProvider.overrideWith(_LoggedOutAuthController.new),
+        ],
         child: MaterialApp(
           theme: factoryLightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const FavoritesScreen(userId: 'user-1'),
+          home: const FavoritesScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Log in to see your favorites'), findsOneWidget);
+  });
+
+  testWidgets('shows an empty state with no favorites', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          favoritesApiProvider.overrideWithValue(_FakeFavoritesApi(const [])),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const FavoritesScreen(),
         ),
       ),
     );
@@ -54,12 +91,15 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [favoritesApiProvider.overrideWithValue(_FakeFavoritesApi([favorite]))],
+        overrides: [
+          favoritesApiProvider.overrideWithValue(_FakeFavoritesApi([favorite])),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
         child: MaterialApp(
           theme: factoryLightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const FavoritesScreen(userId: 'user-1'),
+          home: const FavoritesScreen(),
         ),
       ),
     );
@@ -67,7 +107,8 @@ void main() {
 
     // Favorite Salon renders via the shared ProviderCard — title, price and
     // availability only; per-service chips aren't part of that component
-    // (see core_ui's ProviderCard spec), so "Haircut" itself isn't asserted.
+    // (see core_ui's FactoryProviderCard spec), so "Haircut" itself isn't
+    // asserted.
     expect(find.text('Favorite Salon'), findsOneWidget);
     expect(find.text('Available today'), findsOneWidget);
   });

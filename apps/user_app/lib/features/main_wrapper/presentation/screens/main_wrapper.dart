@@ -37,9 +37,14 @@ class MainWrapper extends StatelessWidget {
             label: l10n.navSearch,
           ),
           NavigationDestination(
-            icon: const Icon(Icons.settings_outlined),
-            selectedIcon: const Icon(Icons.settings),
-            label: l10n.navSettings,
+            icon: const Icon(Icons.event_note_outlined),
+            selectedIcon: const Icon(Icons.event_note),
+            label: l10n.navBookings,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.favorite_border_rounded),
+            selectedIcon: const Icon(Icons.favorite_rounded),
+            label: l10n.navFavorites,
           ),
           NavigationDestination(
             icon: const Icon(Icons.person_outline),

@@ -7,11 +7,14 @@
   "navSearch": "Search",
   "@navSearch": {"description": "Bottom navigation label for the Search tab."},
 
-  "navSettings": "Settings",
-  "@navSettings": {"description": "Bottom navigation label for the Settings tab."},
-
   "navProfile": "Profile",
   "@navProfile": {"description": "Bottom navigation label for the Profile tab."},
+
+  "navBookings": "Bookings",
+  "@navBookings": {"description": "Bottom navigation label for the Bookings tab."},
+
+  "navFavorites": "Favorites",
+  "@navFavorites": {"description": "Bottom navigation label for the Favorites tab."},
 
   "settingsTitle": "Settings",
   "@settingsTitle": {"description": "Settings screen app bar title."},
@@ -386,5 +389,14 @@
   "@paymentStatusSucceeded": {"description": "Payment status badge label for SUCCEEDED."},
 
   "paymentStatusFailed": "Failed",
-  "@paymentStatusFailed": {"description": "Payment status badge label for FAILED."}
+  "@paymentStatusFailed": {"description": "Payment status badge label for FAILED."},
+
+  "bookingsLoggedOutPrompt": "Log in to see your bookings",
+  "@bookingsLoggedOutPrompt": {"description": "Shown on the Bookings tab when reached while logged out."},
+
+  "favoritesLoggedOutPrompt": "Log in to see your favorites",
+  "@favoritesLoggedOutPrompt": {"description": "Shown on the Favorites tab when reached while logged out."},
+
+  "settingsButtonTooltip": "Settings",
+  "@settingsButtonTooltip": {"description": "Profile screen's AppBar action opening Settings."}
 }

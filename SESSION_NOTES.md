@@ -2799,4 +2799,70 @@ Availability, Masters, Bookings + диалог редактирования са
 ждут реального триггера, см. список выше.
 
 ### Текущий статус
+Закоммичено и запушено (`1b6d7a3`).
+
+## Мелкая полировка UX (2026-08-21)
+
+Пользователь выбрал из предложенных "мелкая полировка UX" — два
+пункта, названных ещё раньше как "на будущее": naming-несоответствие
+`ProviderCard`/`FactoryProviderCard` и Bookings/Favorites не как полноценные
+вкладки нижней навигации.
+
+### `ProviderCard` → `FactoryProviderCard` в `core_ui`
+Каждый виджет в `core_ui` носит префикс `Factory` (`FactoryBadge`,
+`FactoryAvatar`, `FactoryPriceText` и т.д.), кроме одного. Причина
+нашлась в самом коде: `user_app` держит собственный класс-обёртку,
+тоже названный `ProviderCard` (маппит `ProviderSearchResult` на поля
+карточки) — из-за коллизии имён каждый импортирующий `core_ui.dart`
+экран был вынужден писать `hide ProviderCard`. Переименовал класс и
+enum (`ProviderCardLayout` → `FactoryProviderCardLayout`) в `core_ui`,
+обновил тесты `core_ui` — теперь у `user_app`'ского адаптера остаётся
+короткое имя `ProviderCard` как у собственного, не конфликтующего типа,
+а `hide ProviderCard` в трёх экранах (`home_screen.dart`,
+`search_screen.dart`, `favorites_screen.dart`) стал не нужен и убран.
+`core_ui` 22/22, `user_app` не ломается (проверено analyze+test).
+
+### Bookings и Favorites — полноценные вкладки нижней навигации
+Дизайн-артефакт v0.2 предписывал 5 вкладок (Home/Search/Bookings/
+Favorites/Profile) с самого начала работы над design system, но при
+реализации Home/Search (более ранняя фаза) осознанно отложили
+Bookings/Favorites-вкладки как отдельное решение. Пользователь выбрал
+"5 вкладок по артефакту" — конфликт с текущим Settings-таб решён
+переносом Settings с нижней навигации на кнопку-шестерёнку в AppBar
+экрана Profile (работает независимо от статуса логина, т.к. тема/язык
+не требуют авторизации).
+
+Ключевое архитектурное следствие: `MyBookingsScreen`/`FavoritesScreen`
+раньше принимали `userId` через конструктор (пушились только из уже
+залогиненного `ProfileScreen`). Теперь это вкладки-пиры для Home/
+Search/Profile, достижимые независимо от статуса логина — оба экрана
+переписаны, чтобы самостоятельно читать `authControllerProvider` и
+показывать новый общий виджет `LoggedOutGate` (иконка + сообщение +
+кнопка "Войти", ведущая на `LoginScreen`) вместо падения без
+пользователя. `ProfileScreen` лишился кнопок "My bookings"/
+"My favorites" (они больше не нужны — те же экраны теперь прямые
+вкладки).
+
+Новые ARB-ключи: `navBookings`/`navFavorites` (подписи вкладок),
+`bookingsLoggedOutPrompt`/`favoritesLoggedOutPrompt` (текст в
+`LoggedOutGate`), `settingsButtonTooltip`. Удалён более не используемый
+`navSettings` (Settings больше не таб).
+
+Тесты: добавлены новые кейсы "shows a login gate when logged out" для
+`MyBookingsScreen`/`FavoritesScreen` (по образцу уже существующего
+`favorite_button_test.dart`'s logged-out кейса) — `user_app` 38/38
+(было 36, +2 новых). `flutter analyze` — чисто.
+
+**Живая проверка в браузере** (по правилу "для UI — открыть и
+проверить"): поднял backend (`bootRun`) + `flutter run -d chrome`,
+подтвердил скриншотами — нижняя навигация показывает все 5 вкладок
+(Главная/Поиск/Брони/Избранное/Профиль) с реальными данными с backend;
+клик по "Брони" в незалогиненном состоянии показывает `LoggedOutGate`
+("Войдите, чтобы увидеть свои бронирования" + кнопка "Вход"); вкладка
+"Профиль" показывает шестерёнку настроек в AppBar; клик по шестерёнке
+открывает `SettingsScreen` (тёмная тема + язык) поверх вкладки, без
+авторизации. После проверки backend/dev-сервер остановлены (не
+оставлены висеть).
+
+### Текущий статус
 Изменения готовы, ждут коммита.
