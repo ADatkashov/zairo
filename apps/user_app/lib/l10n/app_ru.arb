@@ -16,5 +16,9 @@
   "themeModeDark": "Тёмная",
 
   "languageSectionTitle": "Язык",
-  "languageSystemDefault": "Как в системе"
+  "languageSystemDefault": "Как в системе",
+
+  "errorReviewDuplicateOrNotCompleted": "У этого бронирования уже есть отзыв, либо оно ещё не завершено.",
+  "errorReviewInvalidRating": "Оценка должна быть от 1 до 5.",
+  "errorReviewSubmitFailed": "Не удалось отправить отзыв: {error}"
 }

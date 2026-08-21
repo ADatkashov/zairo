@@ -39,12 +39,10 @@ class ReviewsApi {
     } on DioException catch (e) {
       final status = e.response?.statusCode;
       if (status == 409) {
-        throw const ReviewException(
-          'This booking already has a review, or is not completed yet.',
-        );
+        throw const ReviewException(ReviewErrorKey.duplicateOrNotCompleted);
       }
       if (status == 400) {
-        throw const ReviewException('Rating must be between 1 and 5.');
+        throw const ReviewException(ReviewErrorKey.invalidRating);
       }
       rethrow;
     }

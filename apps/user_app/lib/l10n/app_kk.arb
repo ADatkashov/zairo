@@ -16,5 +16,9 @@
   "themeModeDark": "Қараңғы",
 
   "languageSectionTitle": "Тіл",
-  "languageSystemDefault": "Жүйе тіліндей"
+  "languageSystemDefault": "Жүйе тіліндей",
+
+  "errorReviewDuplicateOrNotCompleted": "Бұл брондауда пікір бар немесе ол әлі аяқталмаған.",
+  "errorReviewInvalidRating": "Баға 1-ден 5-ке дейін болуы керек.",
+  "errorReviewSubmitFailed": "Пікірді жіберу сәтсіз аяқталды: {error}"
 }

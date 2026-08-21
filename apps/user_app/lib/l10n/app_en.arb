@@ -40,5 +40,19 @@
   "@languageSectionTitle": {"description": "Settings section header for the language picker."},
 
   "languageSystemDefault": "System default",
-  "@languageSystemDefault": {"description": "Language option that follows the device's language."}
+  "@languageSystemDefault": {"description": "Language option that follows the device's language."},
+
+  "errorReviewDuplicateOrNotCompleted": "This booking already has a review, or is not completed yet.",
+  "@errorReviewDuplicateOrNotCompleted": {"description": "409 from POST .../reviews — a review already exists, or the booking isn't COMPLETED yet."},
+
+  "errorReviewInvalidRating": "Rating must be between 1 and 5.",
+  "@errorReviewInvalidRating": {"description": "400 from POST .../reviews — the rating value failed validation."},
+
+  "errorReviewSubmitFailed": "Failed to submit review: {error}",
+  "@errorReviewSubmitFailed": {
+    "description": "Unexpected (non-ReviewException) failure submitting a review.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  }
 }

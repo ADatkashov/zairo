@@ -2,6 +2,7 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../data/review_exception.dart';
 import '../providers/reviews_providers.dart';
 
@@ -168,13 +169,15 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } on ReviewException catch (e) {
+      final l10n = AppLocalizations.of(context)!;
       setState(() {
-        _error = e.message;
+        _error = e.localizedMessage(l10n);
         _isSubmitting = false;
       });
     } catch (e) {
+      final l10n = AppLocalizations.of(context)!;
       setState(() {
-        _error = 'Failed to submit review: $e';
+        _error = l10n.errorReviewSubmitFailed(e.toString());
         _isSubmitting = false;
       });
     }

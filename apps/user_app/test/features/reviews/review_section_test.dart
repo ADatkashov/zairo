@@ -9,6 +9,7 @@ import 'package:zairo/features/reviews/data/review_exception.dart';
 import 'package:zairo/features/reviews/data/reviews_api.dart';
 import 'package:zairo/features/reviews/presentation/providers/reviews_providers.dart';
 import 'package:zairo/features/reviews/presentation/widgets/review_section.dart';
+import 'package:zairo/l10n/app_localizations.dart';
 
 class _FakeReviewsApi extends ReviewsApi {
   _FakeReviewsApi({Review? existing}) : _review = existing, super(DioClient(Dio()));
@@ -42,6 +43,8 @@ void main() {
         overrides: [reviewsApiProvider.overrideWithValue(_FakeReviewsApi())],
         child: MaterialApp(
           theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: const Scaffold(body: ReviewSection(bookingId: 'booking-1')),
         ),
       ),
@@ -65,6 +68,8 @@ void main() {
         overrides: [reviewsApiProvider.overrideWithValue(_FakeReviewsApi(existing: existing))],
         child: MaterialApp(
           theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: const Scaffold(body: ReviewSection(bookingId: 'booking-1')),
         ),
       ),
@@ -86,6 +91,8 @@ void main() {
         overrides: [reviewsApiProvider.overrideWithValue(fakeApi)],
         child: MaterialApp(
           theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: const Scaffold(body: ReviewSection(bookingId: 'booking-1')),
         ),
       ),
@@ -115,13 +122,15 @@ void main() {
 
   testWidgets('shows a readable error when submission fails', (tester) async {
     final fakeApi = _FakeReviewsApi()
-      ..errorOnCreate = const ReviewException('This booking already has a review, or is not completed yet.');
+      ..errorOnCreate = const ReviewException(ReviewErrorKey.duplicateOrNotCompleted);
 
     await tester.pumpWidget(
       ProviderScope(
         overrides: [reviewsApiProvider.overrideWithValue(fakeApi)],
         child: MaterialApp(
           theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: const Scaffold(body: ReviewSection(bookingId: 'booking-1')),
         ),
       ),
