@@ -128,6 +128,11 @@
   "masterPortfolioTitle": "{masterName} — Портфолио",
   "portfolioEmptyMessage": "Пока нет фото в портфолио.",
   "errorPortfolioLoadFailed": "Не удалось загрузить портфолио: {error}",
+  "portfolioViewerCloseTooltip": "Закрыть",
+  "portfolioViewerPreviousTooltip": "Предыдущее фото",
+  "portfolioViewerNextTooltip": "Следующее фото",
+  "portfolioViewerCounter": "{current} из {total}",
+  "errorPortfolioImageLoadFailed": "Не удалось загрузить это фото.",
 
   "reviewLeaveButton": "Оставить отзыв",
   "reviewCommentHint": "Комментарий (необязательно)",

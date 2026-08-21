@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../providers/beauty_providers.dart';
+import 'portfolio_fullscreen_viewer.dart';
 
 class MasterPortfolioScreen extends ConsumerWidget {
   final String masterId;
@@ -32,29 +33,44 @@ class MasterPortfolioScreen extends ConsumerWidget {
             itemCount: items.length,
             itemBuilder: (context, index) {
               final item = items[index];
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        item.imageUrl,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                          child: const Icon(Icons.broken_image_outlined),
+              return GestureDetector(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => PortfolioFullscreenViewer(items: items, initialIndex: index),
+                    fullscreenDialog: true,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          item.imageUrl,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          loadingBuilder: (context, child, progress) {
+                            if (progress == null) return child;
+                            return Container(
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            child: const Icon(Icons.broken_image_outlined),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  if (item.caption != null) ...[
-                    const SizedBox(height: 4),
-                    Text(item.caption!, style: Theme.of(context).textTheme.bodySmall, maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
+                    if (item.caption != null) ...[
+                      const SizedBox(height: 4),
+                      Text(item.caption!, style: Theme.of(context).textTheme.bodySmall, maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                    ],
                   ],
-                ],
+                ),
               );
             },
           );

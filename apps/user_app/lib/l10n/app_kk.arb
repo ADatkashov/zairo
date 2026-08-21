@@ -128,6 +128,11 @@
   "masterPortfolioTitle": "{masterName} — Портфолио",
   "portfolioEmptyMessage": "Портфолиода әзірге фото жоқ.",
   "errorPortfolioLoadFailed": "Портфолионы жүктеу мүмкін болмады: {error}",
+  "portfolioViewerCloseTooltip": "Жабу",
+  "portfolioViewerPreviousTooltip": "Алдыңғы сурет",
+  "portfolioViewerNextTooltip": "Келесі сурет",
+  "portfolioViewerCounter": "{current} / {total}",
+  "errorPortfolioImageLoadFailed": "Бұл суретті жүктеу мүмкін болмады.",
 
   "reviewLeaveButton": "Пікір қалдыру",
   "reviewCommentHint": "Пікір (міндетті емес)",

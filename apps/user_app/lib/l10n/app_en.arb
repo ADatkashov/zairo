@@ -405,6 +405,27 @@
     }
   },
 
+  "portfolioViewerCloseTooltip": "Close",
+  "@portfolioViewerCloseTooltip": {"description": "Fullscreen portfolio viewer's close button tooltip."},
+
+  "portfolioViewerPreviousTooltip": "Previous photo",
+  "@portfolioViewerPreviousTooltip": {"description": "Fullscreen portfolio viewer's previous-photo button tooltip."},
+
+  "portfolioViewerNextTooltip": "Next photo",
+  "@portfolioViewerNextTooltip": {"description": "Fullscreen portfolio viewer's next-photo button tooltip."},
+
+  "portfolioViewerCounter": "{current} of {total}",
+  "@portfolioViewerCounter": {
+    "description": "Fullscreen portfolio viewer's photo-position counter.",
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+
+  "errorPortfolioImageLoadFailed": "Couldn't load this photo.",
+  "@errorPortfolioImageLoadFailed": {"description": "Fullscreen portfolio viewer's per-photo error state."},
+
   "reviewLeaveButton": "Leave a review",
   "@reviewLeaveButton": {"description": "Button (and dialog title) to open the leave-a-review dialog."},
 
