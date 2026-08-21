@@ -21,4 +21,5 @@ include(
     "favorites",
     "vertical-beauty",
     "storage",
+    "country",
 )
