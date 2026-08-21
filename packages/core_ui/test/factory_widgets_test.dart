@@ -25,6 +25,13 @@ void main() {
     expect(find.text('15 000 ₸'), findsOneWidget);
   });
 
+  testWidgets('FactoryPriceText uses an explicit currencySymbol instead of the regional default',
+      (tester) async {
+    await tester.pumpWidget(_wrap(const FactoryPriceText(amount: 15000, currencySymbol: r'$')));
+
+    expect(find.text(r'15 000 $'), findsOneWidget);
+  });
+
   testWidgets('FactoryRatingLabel exposes a full semantic label for screen readers', (tester) async {
     await tester.pumpWidget(_wrap(const FactoryRatingLabel(rating: 4.9, reviewCount: 212)));
 

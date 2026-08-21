@@ -14,7 +14,7 @@ class ServiceRow extends StatelessWidget {
     required this.title,
     required this.metaText,
     required this.price,
-    this.currencySymbol = '₸',
+    this.currencySymbol,
     this.onTap,
     this.showDivider = true,
     this.selected = false,
@@ -25,7 +25,10 @@ class ServiceRow extends StatelessWidget {
   /// "90 min" or "90 min · Aigerim K.".
   final String metaText;
   final num price;
-  final String currencySymbol;
+
+  /// Passed straight through to FactoryPriceText, which resolves its own
+  /// default currency when this is null.
+  final String? currencySymbol;
   final VoidCallback? onTap;
   final bool showDivider;
 

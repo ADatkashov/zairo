@@ -152,6 +152,13 @@ packages:
       relative: true
     source: path
     version: "0.1.0"
+  core_region:
+    dependency: transitive
+    description:
+      path: "../../packages/core_region"
+      relative: true
+    source: path
+    version: "0.1.0"
   core_storage:
     dependency: "direct main"
     description:

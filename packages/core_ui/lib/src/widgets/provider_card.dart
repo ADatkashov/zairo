@@ -26,7 +26,7 @@ class ProviderCard extends StatelessWidget {
     this.reviewCount,
     this.metaText,
     this.priceFrom,
-    this.currencySymbol = '₸',
+    this.currencySymbol,
     this.availabilityLabel,
     this.image,
     this.isFavorite = false,
@@ -44,7 +44,11 @@ class ProviderCard extends StatelessWidget {
   final String? metaText;
 
   final num? priceFrom;
-  final String currencySymbol;
+
+  /// Passed straight through to [FactoryPriceText], which falls back to
+  /// [RegionDefaults.currencySymbol] when null — see that widget for why
+  /// this isn't a hardcoded literal.
+  final String? currencySymbol;
 
   /// "Today 18:00" or "Available today" — rendered as a badge, not text,
   /// so it reads as state rather than a caption.

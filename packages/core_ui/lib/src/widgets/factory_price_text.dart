@@ -1,3 +1,4 @@
+import 'package:core_region/core_region.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/factory_colors.dart';
@@ -26,7 +27,7 @@ class FactoryPriceText extends StatelessWidget {
   const FactoryPriceText({
     super.key,
     required this.amount,
-    this.currencySymbol = '₸',
+    this.currencySymbol,
     this.prefix,
     this.fontSize = 13,
     this.color,
@@ -34,7 +35,14 @@ class FactoryPriceText extends StatelessWidget {
   });
 
   final num amount;
-  final String currencySymbol;
+
+  /// Defaults to [RegionDefaults.currencySymbol] — the platform's current
+  /// (and, for now, only) market — rather than a bare literal, so a caller
+  /// that already knows the amount's real currency can override it, and the
+  /// "why tenge" question has one named, documented answer instead of a
+  /// hardcoded symbol buried in a presentation widget. See the Factory
+  /// Country Architecture document's "known debt" section.
+  final String? currencySymbol;
   final String? prefix;
   final double fontSize;
   final Color? color;
@@ -44,6 +52,7 @@ class FactoryPriceText extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.factoryColors;
     final resolvedColor = color ?? colors.text;
+    final resolvedSymbol = currencySymbol ?? RegionDefaults.currencySymbol;
     // FittedBox+scaleDown: a price can be arbitrarily wide (large amounts,
     // long currency codes) and this often sits in a tightly-constrained
     // card footer — shrink slightly rather than hard-overflow if it ever
@@ -59,7 +68,7 @@ class FactoryPriceText extends StatelessWidget {
           if (prefix != null)
             Text(prefix!, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
           Text(
-            '${formatFactoryAmount(amount)} $currencySymbol',
+            '${formatFactoryAmount(amount)} $resolvedSymbol',
             style: FactoryTypography.mono(size: fontSize, weight: weight, color: resolvedColor),
           ),
         ],
