@@ -33,11 +33,14 @@ import org.springframework.http.ResponseEntity;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
-@Import(TestcontainersConfiguration.class)
+@Import({TestcontainersConfiguration.class, TestNotifications.class})
 class BookingApiTests {
 
     @Autowired
     private TestRestTemplate restTemplate;
+
+    @Autowired
+    private TestNotifications.CapturedEmails capturedEmails;
 
     @Test
     void booksAnOpenSlotThenRejectsASecondBookingForTheSameSlot() {
@@ -129,6 +132,71 @@ class BookingApiTests {
         ResponseEntity<Map> cancelCompleted = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/cancel",
                 HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
         assertThat(cancelCompleted.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    void confirmingABookingNotifiesBothTheCustomerAndTheProviderOwner() {
+        String runId = UUID.randomUUID().toString();
+        String customerEmail = "notify-customer-" + runId + "@example.com";
+        String ownerEmail = "notify-owner-" + runId + "@example.com";
+        Registered customer = TestAuth.registerCustomer(restTemplate, customerEmail);
+        Registered owner = TestAuth.registerOwner(restTemplate, ownerEmail);
+
+        UUID providerId = createProvider(owner, "Notify Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Notify Service", new BigDecimal("25.00"));
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+
+        var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("25.00"));
+        ResponseEntity<Map> bookingResponse = restTemplate.postForEntity("/api/v1/bookings", bookingRequest,
+                Map.class);
+        assertThat(bookingResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        UUID bookingId = UUID.fromString(bookingResponse.getBody().get("id").toString());
+
+        assertThat(capturedEmails.sent).anySatisfy(email -> {
+            assertThat(email.toEmail()).isEqualTo(customerEmail);
+            assertThat(email.subject()).isEqualTo("Booking confirmed");
+            assertThat(email.body()).contains(bookingId.toString());
+        });
+        assertThat(capturedEmails.sent).anySatisfy(email -> {
+            assertThat(email.toEmail()).isEqualTo(ownerEmail);
+            assertThat(email.subject()).isEqualTo("New booking received");
+            assertThat(email.body()).contains(bookingId.toString());
+        });
+    }
+
+    @Test
+    void cancellingABookingNotifiesBothTheCustomerAndTheProviderOwner() {
+        String runId = UUID.randomUUID().toString();
+        String customerEmail = "notify-cancel-customer-" + runId + "@example.com";
+        String ownerEmail = "notify-cancel-owner-" + runId + "@example.com";
+        Registered customer = TestAuth.registerCustomer(restTemplate, customerEmail);
+        Registered owner = TestAuth.registerOwner(restTemplate, ownerEmail);
+
+        UUID providerId = createProvider(owner, "Notify Cancel Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Notify Cancel Service", new BigDecimal("25.00"));
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+
+        var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("25.00"));
+        ResponseEntity<Map> bookingResponse = restTemplate.postForEntity("/api/v1/bookings", bookingRequest,
+                Map.class);
+        UUID bookingId = UUID.fromString(bookingResponse.getBody().get("id").toString());
+
+        ResponseEntity<Map> cancelResponse = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/cancel",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(cancelResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        assertThat(capturedEmails.sent).anySatisfy(email -> {
+            assertThat(email.toEmail()).isEqualTo(customerEmail);
+            assertThat(email.subject()).isEqualTo("Booking cancelled");
+            assertThat(email.body()).contains(bookingId.toString());
+        });
+        assertThat(capturedEmails.sent).anySatisfy(email -> {
+            assertThat(email.toEmail()).isEqualTo(ownerEmail);
+            assertThat(email.subject()).isEqualTo("Booking cancelled");
+            assertThat(email.body()).contains("cancelled booking (" + bookingId);
+        });
     }
 
     @Test

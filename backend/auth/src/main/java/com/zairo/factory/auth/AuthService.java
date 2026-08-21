@@ -3,12 +3,12 @@ package com.zairo.factory.auth;
 import com.zairo.factory.auth.AuthDtos.RegisterRequest;
 import com.zairo.factory.auth.AuthDtos.TokenResponse;
 import com.zairo.factory.auth.AuthDtos.UserSummary;
-import com.zairo.factory.notifications.NotificationService;
 import com.zairo.factory.users.User;
 import com.zairo.factory.users.UserRepository;
 import com.zairo.factory.users.UserRole;
 import java.time.Instant;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,18 +21,18 @@ public class AuthService {
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
     private final PasswordResetTokenService passwordResetTokenService;
-    private final NotificationService notificationService;
+    private final ApplicationEventPublisher eventPublisher;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public AuthService(UserRepository userRepository, CredentialRepository credentialRepository,
             JwtService jwtService, RefreshTokenService refreshTokenService,
-            PasswordResetTokenService passwordResetTokenService, NotificationService notificationService) {
+            PasswordResetTokenService passwordResetTokenService, ApplicationEventPublisher eventPublisher) {
         this.userRepository = userRepository;
         this.credentialRepository = credentialRepository;
         this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
         this.passwordResetTokenService = passwordResetTokenService;
-        this.notificationService = notificationService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -91,7 +91,7 @@ public class AuthService {
     public void forgotPassword(String email) {
         userRepository.findByEmail(email).ifPresent(user -> {
             String rawToken = passwordResetTokenService.issue(user.getId());
-            notificationService.sendPasswordResetEmail(user.getEmail(), rawToken);
+            eventPublisher.publishEvent(new PasswordResetRequestedEvent(user.getId(), user.getEmail(), rawToken));
         });
     }
 

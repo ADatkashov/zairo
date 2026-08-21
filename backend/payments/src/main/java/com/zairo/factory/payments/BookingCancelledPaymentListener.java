@@ -12,8 +12,9 @@ import org.springframework.transaction.event.TransactionalEventListener;
 /**
  * Reacts to a cancelled booking by refunding its payment, if one succeeded —
  * same ADR-0002 in-process-event pattern booking already proved with
- * BookingConfirmedEvent (see BookingConfirmedEventListener). payments
- * already has a one-directional Gradle dependency on booking (reads
+ * BookingConfirmedEvent (see notifications' BookingNotificationListener for
+ * the other real consumer of these events). payments already has a
+ * one-directional Gradle dependency on booking (reads
  * Booking/BookingRepository directly), so listening for a booking-published
  * event here adds no new coupling.
  *

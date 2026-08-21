@@ -3088,4 +3088,71 @@ Flutter (`user_app`): новый `ForgotPasswordScreen` — два шага на
 использование кода → 401. Backend остановлен после проверки.
 
 ### Текущий статус
+Закоммичено и запушено (`649a45b`).
+
+## Production-ready MVP, Phase 1 — Item 3: Notifications (2026-08-21)
+
+**Backend.** `NotificationService` расширен методами для брони:
+`sendBookingConfirmedEmail`/`sendBookingCancelledEmail` (клиенту),
+`sendNewBookingReceivedEmail`/`sendProviderBookingCancelledEmail`
+(владельцу) — все через тот же `EmailNotificationProvider`, других
+каналов (Push/SMS) по-прежнему нет — сознательно не заводились
+интерфейсы `PushNotificationProvider`/`SmsNotificationProvider` из
+диаграммы ТЗ, т.к. реального потребителя для них в проекте нет (прямое
+следование принципу ТЗ "не создавай abstraction без consumer" — если
+понадобятся, добавляются по образцу `EmailNotificationProvider`).
+
+Новый модуль-компонент `BookingNotificationListener` (в `notifications`)
+подписан на уже существующие события `BookingConfirmedEvent`/
+`BookingCancelledEvent` (ADR-0002, паблишатся `booking` — та же
+инфраструктура, что уже использовал `payments` для авто-возврата при
+отмене) и рассылает по 2 письма на каждое событие — клиенту и владельцу
+провайдера (email владельца резолвится через `Provider.getOwnerUserId()`
+→ `UserRepository`). Слушатель только читает (email по id), поэтому,
+в отличие от `BookingCancelledPaymentListener` (который пишет в БД и
+требует `@Transactional(propagation = REQUIRES_NEW)` — см. Item 1), ему
+эта аннотация не нужна.
+
+Удалён `BookingConfirmedEventListener` — это был явный placeholder
+("будет заменён, когда появится реальный consumer"), который просто
+логировал факт события; теперь его роль полностью взял на себя
+`BookingNotificationListener`.
+
+**Архитектурная находка**: обнаружен и исправлен циклический
+Gradle-граф `auth → notifications → booking → auth` (возник из-за
+Item 2, где `auth` напрямую дёргал `notifications`, и Item 3, где
+`notifications` понадобился доступ к `booking`, который сам зависит от
+`auth` через `CurrentUser`). Исправлено не костылём, а архитектурно
+правильным способом: доставка password-reset письма переведена с
+прямого вызова на публикацию события `PasswordResetRequestedEvent`
+(в `auth`, по образцу `BookingConfirmedEvent`) — `auth` больше не
+зависит от `notifications` вообще, а `notifications` зависит от `auth`
+только за типом события. Итоговый граф без цикла: `notifications→auth`,
+`notifications→booking`, `booking→auth`. Как следствие, password reset
+теперь тоже идёт через единый ADR-0002 event-паттерн, а не был
+единственным исключением с прямым вызовом — это улучшение
+консистентности, а не просто обходной путь.
+
+Тесты: общий test-helper `TestNotifications` (по образцу `TestAuth`) —
+`@TestConfiguration` с `@Primary`-бином `EmailNotificationProvider`,
+перехватывающим ВСЕ письма в список (`CapturedEmails.sent`), а не
+только последнее — нужно для проверки, что по одному событию уходит
+2 письма разным получателям. `AuthApiTests` перезаведён на этот общий
+helper вместо своего локального `FakeEmailConfiguration`. В
+`BookingApiTests` — 2 новых теста: подтверждение брони шлёт письма
+клиенту ("Booking confirmed") и владельцу ("New booking received");
+отмена брони шлёт письма клиенту и владельцу (оба "Booking cancelled",
+разный текст). `./gradlew build` — BUILD SUCCESSFUL (весь backend,
+все модули).
+
+**Живая проверка через curl против реально запущенного backend**:
+полный цикл register(customer+owner)→provider→service→slot→booking→
+cancel — в логе сервера подтверждены все 4 письма (2 при подтверждении,
+2 при отмене) с правильными получателями, темами и телами, включающими
+id брони. Backend остановлен после проверки.
+
+Flutter: изменений не потребовалось — уведомления в этом Item —
+исключительно backend-триггерящиеся email, не in-app UI элемент.
+
+### Текущий статус
 Изменения готовы, ждут коммита.

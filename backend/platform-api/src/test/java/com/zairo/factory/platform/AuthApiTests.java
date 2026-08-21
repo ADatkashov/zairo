@@ -7,7 +7,6 @@ import com.zairo.factory.auth.AuthDtos.LoginRequest;
 import com.zairo.factory.auth.AuthDtos.RefreshRequest;
 import com.zairo.factory.auth.AuthDtos.RegisterRequest;
 import com.zairo.factory.auth.AuthDtos.ResetPasswordRequest;
-import com.zairo.factory.notifications.EmailNotificationProvider;
 import com.zairo.factory.users.UserRole;
 import java.util.Map;
 import java.util.UUID;
@@ -18,10 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -36,7 +32,7 @@ import org.springframework.http.ResponseEntity;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
-@Import({TestcontainersConfiguration.class, AuthApiTests.FakeEmailConfiguration.class})
+@Import({TestcontainersConfiguration.class, TestNotifications.class})
 class AuthApiTests {
 
     private static final Pattern RESET_CODE_PATTERN = Pattern.compile("reset your password: (\\S+)");
@@ -45,7 +41,7 @@ class AuthApiTests {
     private TestRestTemplate restTemplate;
 
     @Autowired
-    private CapturedEmail capturedEmail;
+    private TestNotifications.CapturedEmails capturedEmails;
 
     @Test
     void registersLogsInAndRefreshesTokens() {
@@ -127,8 +123,11 @@ class AuthApiTests {
         ResponseEntity<Void> forgotResponse = restTemplate.postForEntity("/api/v1/auth/forgot-password",
                 new ForgotPasswordRequest(email), Void.class);
         assertThat(forgotResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(capturedEmail.toEmail).isEqualTo(email);
-        String resetCode = extractResetCode(capturedEmail.body);
+        TestNotifications.CapturedEmail resetEmail = capturedEmails.sent.stream()
+                .filter(sent -> sent.toEmail().equals(email))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("No reset email captured for " + email));
+        String resetCode = extractResetCode(resetEmail.body());
 
         ResponseEntity<Void> resetResponse = restTemplate.postForEntity("/api/v1/auth/reset-password",
                 new ResetPasswordRequest(resetCode, "new password 456"), Void.class);
@@ -178,33 +177,5 @@ class AuthApiTests {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);
         return new HttpEntity<>(headers);
-    }
-
-    /**
-     * Substitutes a capturing fake for the real (logging) EmailNotificationProvider
-     * so tests can read the reset code exactly as a real email provider's
-     * recipient would, without parsing log output.
-     */
-    @TestConfiguration(proxyBeanMethods = false)
-    static class FakeEmailConfiguration {
-
-        @Bean
-        @Primary
-        EmailNotificationProvider testEmailNotificationProvider(CapturedEmail capturedEmail) {
-            return (toEmail, subject, body) -> {
-                capturedEmail.toEmail = toEmail;
-                capturedEmail.body = body;
-            };
-        }
-
-        @Bean
-        CapturedEmail capturedEmail() {
-            return new CapturedEmail();
-        }
-    }
-
-    static class CapturedEmail {
-        volatile String toEmail;
-        volatile String body;
     }
 }

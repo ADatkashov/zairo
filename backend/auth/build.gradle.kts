@@ -27,8 +27,10 @@ dependencies {
     // association, auth owns the "does this account exist" invariant.
     implementation(project(":users"))
 
-    // Password reset needs to actually send the reset code somewhere — a
-    // direct call (not an event), since there's no other module reacting
-    // to "a password reset was requested." See NotificationService.
-    implementation(project(":notifications"))
+    // Password reset publishes PasswordResetRequestedEvent (ADR-0002) for
+    // notifications to deliver, rather than calling notifications
+    // directly — a direct call would cycle back, since notifications
+    // needs a dependency on auth (for this event's type) and on booking
+    // (for booking's own events), and booking already depends on auth.
+    // See PasswordResetRequestedEvent's doc comment.
 }
