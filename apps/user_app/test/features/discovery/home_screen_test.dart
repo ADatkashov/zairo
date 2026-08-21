@@ -21,6 +21,11 @@ class _FakeDiscoveryApi extends DiscoveryApi {
     String? query,
     double? lat,
     double? lng,
+    double? minPrice,
+    double? maxPrice,
+    double? maxDistanceKm,
+    bool availableOnly = false,
+    String? sort,
   }) async {
     return _results;
   }

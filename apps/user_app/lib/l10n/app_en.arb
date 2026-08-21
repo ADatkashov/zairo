@@ -227,6 +227,56 @@
   "errorSearchLoadFailed": "Couldn't load providers.",
   "@errorSearchLoadFailed": {"description": "Search screen error state when the search request fails."},
 
+  "searchFiltersButton": "Filters",
+  "@searchFiltersButton": {"description": "Search screen button/tooltip that opens the filters dialog."},
+
+  "searchFiltersTitle": "Filters",
+  "@searchFiltersTitle": {"description": "Search filters dialog title."},
+
+  "searchSortLabel": "Sort by",
+  "@searchSortLabel": {"description": "Search filters dialog section label for the sort-order chips."},
+
+  "searchSortRecommended": "Recommended",
+  "@searchSortRecommended": {"description": "Search sort option: the default availability-then-price ranking."},
+
+  "searchSortPriceAsc": "Price: low to high",
+  "@searchSortPriceAsc": {"description": "Search sort option: cheapest first."},
+
+  "searchSortPriceDesc": "Price: high to low",
+  "@searchSortPriceDesc": {"description": "Search sort option: most expensive first."},
+
+  "searchSortDistance": "Distance",
+  "@searchSortDistance": {"description": "Search sort option: nearest first."},
+
+  "searchFilterPriceRangeLabel": "Price range",
+  "@searchFilterPriceRangeLabel": {"description": "Search filters dialog section label for the min/max price fields."},
+
+  "searchFilterPriceMinHint": "Min",
+  "@searchFilterPriceMinHint": {"description": "Search filters dialog minimum price field hint."},
+
+  "searchFilterPriceMaxHint": "Max",
+  "@searchFilterPriceMaxHint": {"description": "Search filters dialog maximum price field hint."},
+
+  "searchFilterAvailableOnlyLabel": "Available today only",
+  "@searchFilterAvailableOnlyLabel": {"description": "Search filters dialog switch label."},
+
+  "searchFilterMaxDistanceLabel": "Within distance",
+  "@searchFilterMaxDistanceLabel": {"description": "Search filters dialog switch label enabling the max-distance slider."},
+
+  "searchFilterMaxDistanceValue": "Within {km} km",
+  "@searchFilterMaxDistanceValue": {
+    "description": "Search filters dialog max-distance slider current value.",
+    "placeholders": {
+      "km": {"type": "int"}
+    }
+  },
+
+  "searchFilterClearButton": "Clear",
+  "@searchFilterClearButton": {"description": "Search filters dialog button that resets all filters."},
+
+  "searchFilterApplyButton": "Apply",
+  "@searchFilterApplyButton": {"description": "Search filters dialog button that applies the chosen filters."},
+
   "availableTodayLabel": "Available today",
   "@availableTodayLabel": {"description": "Badge shown on a provider card/detail screen with open availability today."},
 

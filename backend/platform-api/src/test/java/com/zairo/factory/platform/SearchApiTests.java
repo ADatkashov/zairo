@@ -8,6 +8,7 @@ import com.zairo.factory.platform.TestAuth.Registered;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.providers.ProviderDtos.UpdateProviderStatusRequest;
 import com.zairo.factory.providers.ProviderStatus;
+import com.zairo.factory.search.SearchSort;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
 import com.zairo.factory.users.UserRepository;
 import java.math.BigDecimal;
@@ -136,20 +137,161 @@ class SearchApiTests {
         assertThat(nearDistance).isLessThan(farDistance);
     }
 
+    @Test
+    void filtersByPriceRangeAndAvailability() {
+        String runId = UUID.randomUUID().toString();
+        String vertical = "beauty-price-" + runId;
+        Registered owner = TestAuth.registerOwner(restTemplate, "price-owner-" + runId + "@example.com");
+
+        UUID cheapAvailable = createProvider(owner, "Cheap Available " + runId, vertical);
+        createService(owner, cheapAvailable, "Cut", new BigDecimal("10.00"));
+        createOpenSlot(owner, cheapAvailable);
+        approve(cheapAvailable);
+
+        UUID midNoSlot = createProvider(owner, "Mid No Slot " + runId, vertical);
+        createService(owner, midNoSlot, "Cut", new BigDecimal("25.00"));
+        approve(midNoSlot);
+
+        UUID expensive = createProvider(owner, "Expensive " + runId, vertical);
+        createService(owner, expensive, "Cut", new BigDecimal("60.00"));
+        approve(expensive);
+
+        // Price range [15, 30] only matches the mid-priced one.
+        List<Map> priceFiltered = search(new SearchParams(vertical).minPrice(new BigDecimal("15.00"))
+                .maxPrice(new BigDecimal("30.00")));
+        assertThat(priceFiltered).extracting(r -> r.get("id")).containsExactly(midNoSlot.toString());
+
+        // availableOnly excludes the two without an open slot.
+        List<Map> availableOnly = search(new SearchParams(vertical).availableOnly(true));
+        assertThat(availableOnly).extracting(r -> r.get("id")).containsExactly(cheapAvailable.toString());
+    }
+
+    @Test
+    void sortsByPriceAscDescAndDistance() {
+        String runId = UUID.randomUUID().toString();
+        String vertical = "beauty-sort-" + runId;
+        Registered owner = TestAuth.registerOwner(restTemplate, "sort-owner-" + runId + "@example.com");
+
+        double originLat = 43.2389;
+        double originLng = 76.8897;
+
+        UUID cheapFar = createProvider(owner, "Cheap Far " + runId, vertical, 51.1694, 71.4491);
+        createService(owner, cheapFar, "Cut", new BigDecimal("10.00"));
+        approve(cheapFar);
+
+        UUID expensiveNear = createProvider(owner, "Expensive Near " + runId, vertical, 43.25, 76.90);
+        createService(owner, expensiveNear, "Cut", new BigDecimal("50.00"));
+        approve(expensiveNear);
+
+        List<Map> priceAsc = search(new SearchParams(vertical).sort(SearchSort.PRICE_ASC));
+        assertThat(priceAsc).extracting(r -> r.get("id")).containsExactly(cheapFar.toString(),
+                expensiveNear.toString());
+
+        List<Map> priceDesc = search(new SearchParams(vertical).sort(SearchSort.PRICE_DESC));
+        assertThat(priceDesc).extracting(r -> r.get("id")).containsExactly(expensiveNear.toString(),
+                cheapFar.toString());
+
+        List<Map> byDistance = search(
+                new SearchParams(vertical).lat(originLat).lng(originLng).sort(SearchSort.DISTANCE));
+        assertThat(byDistance).extracting(r -> r.get("id")).containsExactly(expensiveNear.toString(),
+                cheapFar.toString());
+
+        // maxDistanceKm excludes the far one once a location is supplied.
+        List<Map> withinRange = search(
+                new SearchParams(vertical).lat(originLat).lng(originLng).maxDistanceKm(50.0));
+        assertThat(withinRange).extracting(r -> r.get("id")).containsExactly(expensiveNear.toString());
+    }
+
     private List<Map> search(String vertical, String q) {
-        return search(vertical, q, null, null);
+        return search(new SearchParams(vertical).q(q));
     }
 
     private List<Map> search(String vertical, String q, Double lat, Double lng) {
+        return search(new SearchParams(vertical).q(q).lat(lat).lng(lng));
+    }
+
+    /** Mutable query-param builder — the search endpoint has too many optional filters for positional args. */
+    private static final class SearchParams {
+        private final String vertical;
+        private String q;
+        private Double lat;
+        private Double lng;
+        private BigDecimal minPrice;
+        private BigDecimal maxPrice;
+        private Double maxDistanceKm;
+        private boolean availableOnly;
+        private SearchSort sort;
+
+        SearchParams(String vertical) {
+            this.vertical = vertical;
+        }
+
+        SearchParams q(String q) {
+            this.q = q;
+            return this;
+        }
+
+        SearchParams lat(Double lat) {
+            this.lat = lat;
+            return this;
+        }
+
+        SearchParams lng(Double lng) {
+            this.lng = lng;
+            return this;
+        }
+
+        SearchParams minPrice(BigDecimal minPrice) {
+            this.minPrice = minPrice;
+            return this;
+        }
+
+        SearchParams maxPrice(BigDecimal maxPrice) {
+            this.maxPrice = maxPrice;
+            return this;
+        }
+
+        SearchParams maxDistanceKm(Double maxDistanceKm) {
+            this.maxDistanceKm = maxDistanceKm;
+            return this;
+        }
+
+        SearchParams availableOnly(boolean availableOnly) {
+            this.availableOnly = availableOnly;
+            return this;
+        }
+
+        SearchParams sort(SearchSort sort) {
+            this.sort = sort;
+            return this;
+        }
+    }
+
+    private List<Map> search(SearchParams params) {
         StringBuilder url = new StringBuilder("/api/v1/search/providers?");
-        if (vertical != null) {
-            url.append("vertical=").append(vertical).append("&");
+        if (params.vertical != null) {
+            url.append("vertical=").append(params.vertical).append("&");
         }
-        if (q != null) {
-            url.append("q=").append(q).append("&");
+        if (params.q != null) {
+            url.append("q=").append(params.q).append("&");
         }
-        if (lat != null && lng != null) {
-            url.append("lat=").append(lat).append("&lng=").append(lng);
+        if (params.lat != null && params.lng != null) {
+            url.append("lat=").append(params.lat).append("&lng=").append(params.lng).append("&");
+        }
+        if (params.minPrice != null) {
+            url.append("minPrice=").append(params.minPrice).append("&");
+        }
+        if (params.maxPrice != null) {
+            url.append("maxPrice=").append(params.maxPrice).append("&");
+        }
+        if (params.maxDistanceKm != null) {
+            url.append("maxDistanceKm=").append(params.maxDistanceKm).append("&");
+        }
+        if (params.availableOnly) {
+            url.append("availableOnly=true&");
+        }
+        if (params.sort != null) {
+            url.append("sort=").append(params.sort).append("&");
         }
         ResponseEntity<Map[]> response = restTemplate.getForEntity(url.toString(), Map[].class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);

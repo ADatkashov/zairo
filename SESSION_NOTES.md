@@ -3216,4 +3216,67 @@ Flutter: изменений не потребовалось — это внут�
 про idempotency key.
 
 ### Текущий статус
+Закоммичено и запушено (`f2e04d6`). **Phase 1 полностью завершена.**
+
+## Production-ready MVP, Phase 2 — Item 5: Search filters (2026-08-21)
+
+Анализ `SearchService`/`Review` (по требованию ТЗ "проанализировать
+repositories/entities/queries перед implementation") показал: `Review`
+привязан к `bookingId`, не к `providerId` напрямую — путь до провайдера
+идёт через booking → availability_slot → provider, то есть три хопа без
+прямого FK. Это ровно тот "дорогостоящий join", о котором явно
+предупреждает Item 6 ("не делать join без анализа"). Поэтому rating как
+фильтр/сортировка **сознательно вынесен в Item 6** (следующий пункт,
+где и будет сделан анализ стоимости), а Item 5 реализован по остальным
+пунктам ТЗ: price range, distance, availability, vertical (последний
+уже был), плюс сортировки recommended/price asc/price desc/distance.
+`SearchSort` задокументирован явно: "RATING не предлагается — это
+работа Item 6, не бонус здесь".
+
+**Backend**: `SearchService.search(...)` расширен параметрами
+`minPrice`/`maxPrice`/`maxDistanceKm`/`availableOnly`/`sort`
+(`SearchSort` enum). Диапазон цен фильтрует по `minPrice` результата
+(провайдер без активных услуг никогда не проходит фильтр); `maxDistanceKm`
+не бросает ошибку без координат — просто ничего не проходит фильтр
+(честно, не выдаёт мусор); `availableOnly` — по `hasOpenAvailability`.
+Default-сортировка (`RECOMMENDED`) — старое поведение без изменений.
+`SearchController` получил соответствующие `@RequestParam`. 2 новых
+теста в `SearchApiTests` (диапазон цен + availableOnly; три варианта
+сортировки + maxDistanceKm). `./gradlew build` — BUILD SUCCESSFUL.
+
+**Flutter (`user_app`)**: `DiscoveryQuery` расширен price/distance/
+availability/sort полями + `copyWith`; `DiscoveryApi.searchProviders`
+прокидывает их в query params (`sort` — обязательно в верхнем регистре,
+как ожидает Spring's enum-биндинг). `SearchScreen` получил кнопку
+фильтров (`Icons.tune_rounded`, с индикатором активного фильтра —
+маленькая точка, тот же принцип "состояние должно быть видно", что и
+`FactoryBadge`) рядом с полем поиска, открывающую `_FilterDialog`:
+чипы сортировки (`FactoryChip`), два текстовых поля диапазона цен,
+два `SwitchListTile` (доступность сегодня / ограничение по
+расстоянию) со `Slider` для км. Полностью на `core_ui` design tokens,
+без новых компонентов библиотеки. Локализация kk/ru/en (новые ключи
+`searchFilters*`/`searchSort*`/`searchFilter*`).
+
+Тесты: новый виджет-тест в `search_screen_test.dart` — открывает
+диалог, выбирает "Price: low to high", включает "Available today
+only", жмёт Apply, проверяет, что реальный вызов API получил
+`sort=PRICE_ASC`/`availableOnly=true`. Обновлены 3 фейковых
+`DiscoveryApi`-подкласса в тестах под новую сигнатуру. `flutter
+analyze` чисто, `flutter test` 46/46 (было 45), `flutter build web`
+успешен.
+
+**Живая проверка**: backend поднят, засеяны 3 провайдера с разными
+ценами (8/25/80) через реальный REST API, curl подтвердил фильтр по
+диапазону цен, availableOnly и сортировку PRICE_DESC работают
+корректно на реальных данных. Затем открыт `flutter run -d chrome`
+против реального backend — на реальном экране "Поиск" открыт диалог
+фильтров (на русском), выбрана сортировка "Цена: сначала дешевле" +
+переключатель "Только с записью на сегодня" → список сократился до 2
+салонов, отсортированных по возрастанию цены, кнопка фильтров
+показала активный индикатор (скриншоты). Для одобрения тестовых
+провайдеров пришлось завести временного ADMIN напрямую в dev Postgres
+(bcrypt-хэш сгенерирован тем же приёмом с throwaway javac + jar из
+Gradle-кэша, что и раньше в этом проекте) — удалён после проверки.
+
+### Текущий статус
 Изменения готовы, ждут коммита.

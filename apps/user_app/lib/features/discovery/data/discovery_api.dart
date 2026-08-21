@@ -16,6 +16,11 @@ class DiscoveryApi {
     String? query,
     double? lat,
     double? lng,
+    double? minPrice,
+    double? maxPrice,
+    double? maxDistanceKm,
+    bool availableOnly = false,
+    String? sort,
   }) async {
     final response = await _dioClient.get(
       '/search/providers',
@@ -24,6 +29,11 @@ class DiscoveryApi {
         if (query != null && query.isNotEmpty) 'q': query,
         if (lat != null && lng != null) 'lat': lat,
         if (lat != null && lng != null) 'lng': lng,
+        if (minPrice != null) 'minPrice': minPrice,
+        if (maxPrice != null) 'maxPrice': maxPrice,
+        if (maxDistanceKm != null) 'maxDistanceKm': maxDistanceKm,
+        if (availableOnly) 'availableOnly': true,
+        if (sort != null) 'sort': sort,
       },
     );
 

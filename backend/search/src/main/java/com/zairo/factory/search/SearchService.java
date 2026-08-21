@@ -46,7 +46,21 @@ public class SearchService {
         this.availabilitySlotRepository = availabilitySlotRepository;
     }
 
-    public List<ProviderSearchResult> search(String vertical, String query, Double originLat, Double originLng) {
+    /**
+     * {@code minPrice}/{@code maxPrice} filter on a provider's cheapest
+     * active service (the same {@code minPrice} already shown on the
+     * result); a provider with no active services (minPrice null) never
+     * matches either bound, same reasoning as {@code maxDistanceKm} below.
+     * {@code maxDistanceKm} only ever matches a result with a known
+     * distance — meaningless without the caller also supplying its own
+     * {@code originLat}/{@code originLng}, not enforced as a hard error,
+     * it just filters everything out (a provider with no distance can't
+     * prove it's within range). {@code availableOnly} filters to
+     * {@code hasOpenAvailability}. See {@link SearchSort} for why RATING
+     * isn't an option yet.
+     */
+    public List<ProviderSearchResult> search(String vertical, String query, Double originLat, Double originLng,
+            BigDecimal minPrice, BigDecimal maxPrice, Double maxDistanceKm, boolean availableOnly, SearchSort sort) {
         // Only ACTIVE providers are ever discoverable through search — a
         // PENDING (not yet moderated) or SUSPENDED provider still exists and
         // can be fetched directly by id, it's just invisible to browsing.
@@ -67,11 +81,26 @@ public class SearchService {
                     .toList();
         }
 
-        return providers.stream().map(p -> toResult(p, originLat, originLng))
-                .sorted(Comparator.comparing(ProviderSearchResult::hasOpenAvailability).reversed()
-                        .thenComparing(r -> r.distanceKm() == null ? Double.MAX_VALUE : r.distanceKm())
-                        .thenComparing(r -> r.minPrice() == null ? BigDecimal.valueOf(Long.MAX_VALUE) : r.minPrice()))
+        List<ProviderSearchResult> results = providers.stream().map(p -> toResult(p, originLat, originLng))
+                .filter(r -> minPrice == null || (r.minPrice() != null && r.minPrice().compareTo(minPrice) >= 0))
+                .filter(r -> maxPrice == null || (r.minPrice() != null && r.minPrice().compareTo(maxPrice) <= 0))
+                .filter(r -> maxDistanceKm == null || (r.distanceKm() != null && r.distanceKm() <= maxDistanceKm))
+                .filter(r -> !availableOnly || r.hasOpenAvailability())
                 .toList();
+
+        Comparator<ProviderSearchResult> comparator = switch (sort == null ? SearchSort.RECOMMENDED : sort) {
+            case PRICE_ASC -> Comparator.comparing(
+                    r -> r.minPrice() == null ? BigDecimal.valueOf(Long.MAX_VALUE) : r.minPrice());
+            case PRICE_DESC -> Comparator
+                    .comparing((ProviderSearchResult r) -> r.minPrice() == null ? BigDecimal.ZERO : r.minPrice())
+                    .reversed();
+            case DISTANCE ->
+                Comparator.comparing(r -> r.distanceKm() == null ? Double.MAX_VALUE : r.distanceKm());
+            case RECOMMENDED -> Comparator.comparing(ProviderSearchResult::hasOpenAvailability).reversed()
+                    .thenComparing(r -> r.distanceKm() == null ? Double.MAX_VALUE : r.distanceKm())
+                    .thenComparing(r -> r.minPrice() == null ? BigDecimal.valueOf(Long.MAX_VALUE) : r.minPrice());
+        };
+        return results.stream().sorted(comparator).toList();
     }
 
     private ProviderSearchResult toResult(Provider provider, Double originLat, Double originLng) {

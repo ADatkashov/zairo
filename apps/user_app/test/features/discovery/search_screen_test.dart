@@ -22,8 +22,37 @@ class _FakeDiscoveryApi extends DiscoveryApi {
     String? query,
     double? lat,
     double? lng,
+    double? minPrice,
+    double? maxPrice,
+    double? maxDistanceKm,
+    bool availableOnly = false,
+    String? sort,
   }) async {
     return _results;
+  }
+}
+
+class _RecordingDiscoveryApi extends DiscoveryApi {
+  _RecordingDiscoveryApi() : super(DioClient(Dio()));
+
+  String? lastSort;
+  bool? lastAvailableOnly;
+
+  @override
+  Future<List<ProviderSearchResult>> searchProviders({
+    String? vertical,
+    String? query,
+    double? lat,
+    double? lng,
+    double? minPrice,
+    double? maxPrice,
+    double? maxDistanceKm,
+    bool availableOnly = false,
+    String? sort,
+  }) async {
+    lastSort = sort;
+    lastAvailableOnly = availableOnly;
+    return const [];
   }
 }
 
@@ -108,5 +137,35 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('No results for "massage"'), findsOneWidget);
+  });
+
+  testWidgets('opening filters, picking a sort and available-only re-runs the search with them', (tester) async {
+    final fakeApi = _RecordingDiscoveryApi();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [discoveryApiProvider.overrideWithValue(fakeApi)],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SearchScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(fakeApi.lastSort, 'RECOMMENDED');
+    expect(fakeApi.lastAvailableOnly, false);
+
+    await tester.tap(find.byIcon(Icons.tune_rounded));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Price: low to high'));
+    await tester.tap(find.text('Available today only'));
+    await tester.tap(find.text('Apply'));
+    await tester.pumpAndSettle();
+
+    expect(fakeApi.lastSort, 'PRICE_ASC');
+    expect(fakeApi.lastAvailableOnly, true);
   });
 }
