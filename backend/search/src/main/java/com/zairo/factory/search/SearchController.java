@@ -21,9 +21,10 @@ public class SearchController {
             @RequestParam(required = false) String q, @RequestParam(required = false) Double lat,
             @RequestParam(required = false) Double lng, @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
-            @RequestParam(required = false) Double maxDistanceKm,
+            @RequestParam(required = false) Double maxDistanceKm, @RequestParam(required = false) Double minRating,
             @RequestParam(required = false, defaultValue = "false") boolean availableOnly,
             @RequestParam(required = false) SearchSort sort) {
-        return searchService.search(vertical, q, lat, lng, minPrice, maxPrice, maxDistanceKm, availableOnly, sort);
+        return searchService.search(vertical, q, lat, lng, minPrice, maxPrice, maxDistanceKm, minRating,
+                availableOnly, sort);
     }
 }

@@ -4,10 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.zairo.factory.auth.CredentialRepository;
 import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequest;
+import com.zairo.factory.booking.BookingDtos.CreateBookingRequest;
 import com.zairo.factory.platform.TestAuth.Registered;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.providers.ProviderDtos.UpdateProviderStatusRequest;
 import com.zairo.factory.providers.ProviderStatus;
+import com.zairo.factory.reviews.ReviewDtos.CreateReviewRequest;
 import com.zairo.factory.search.SearchSort;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
 import com.zairo.factory.users.UserRepository;
@@ -202,6 +204,66 @@ class SearchApiTests {
         assertThat(withinRange).extracting(r -> r.get("id")).containsExactly(expensiveNear.toString());
     }
 
+    @Test
+    void surfacesAverageRatingAndReviewCountAndSupportsRatingFilterAndSort() {
+        String runId = UUID.randomUUID().toString();
+        String vertical = "beauty-rating-" + runId;
+        Registered owner = TestAuth.registerOwner(restTemplate, "rating-owner-" + runId + "@example.com");
+
+        UUID wellRated = createProvider(owner, "Well Rated " + runId, vertical);
+        createService(owner, wellRated, "Cut", new BigDecimal("20.00"));
+        reviewProviderWithBooking(owner, wellRated, 5);
+        reviewProviderWithBooking(owner, wellRated, 4);
+        approve(wellRated);
+
+        UUID poorlyRated = createProvider(owner, "Poorly Rated " + runId, vertical);
+        createService(owner, poorlyRated, "Cut", new BigDecimal("20.00"));
+        reviewProviderWithBooking(owner, poorlyRated, 2);
+        approve(poorlyRated);
+
+        UUID unrated = createProvider(owner, "Unrated " + runId, vertical);
+        createService(owner, unrated, "Cut", new BigDecimal("20.00"));
+        approve(unrated);
+
+        List<Map> all = search(new SearchParams(vertical));
+        Map wellRatedResult = all.stream().filter(r -> r.get("id").equals(wellRated.toString())).findFirst()
+                .orElseThrow();
+        assertThat(((Number) wellRatedResult.get("averageRating")).doubleValue()).isEqualTo(4.5);
+        assertThat(((Number) wellRatedResult.get("reviewCount")).longValue()).isEqualTo(2L);
+        Map unratedResult = all.stream().filter(r -> r.get("id").equals(unrated.toString())).findFirst()
+                .orElseThrow();
+        assertThat(unratedResult.get("averageRating")).isNull();
+
+        // Rating sort: highest average first, unrated providers sort last.
+        List<Map> byRating = search(new SearchParams(vertical).sort(SearchSort.RATING));
+        assertThat(byRating).extracting(r -> r.get("id")).containsExactly(wellRated.toString(),
+                poorlyRated.toString(), unrated.toString());
+
+        // minRating excludes the poorly-rated and unrated providers.
+        List<Map> minRatingFiltered = search(new SearchParams(vertical).minRating(4.0));
+        assertThat(minRatingFiltered).extracting(r -> r.get("id")).containsExactly(wellRated.toString());
+    }
+
+    /** Books, completes, and leaves a review for a fresh customer against the given provider's one service. */
+    private void reviewProviderWithBooking(Registered owner, UUID providerId, int rating) {
+        Registered customer = TestAuth.registerCustomer(restTemplate,
+                "rating-customer-" + UUID.randomUUID() + "@example.com");
+        UUID customerId = customer.userId();
+        UUID serviceId = UUID.fromString(((Map) restTemplate
+                .getForEntity("/api/v1/providers/" + providerId + "/services", Map[].class).getBody()[0]).get("id")
+                .toString());
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS).plus((long) (Math.random() * 1000), ChronoUnit.HOURS);
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+
+        var bookingRequest = new CreateBookingRequest(customerId, serviceId, slotId, new BigDecimal("20.00"));
+        Map<?, ?> booking = restTemplate.postForEntity("/api/v1/bookings", bookingRequest, Map.class).getBody();
+        UUID bookingId = UUID.fromString(booking.get("id").toString());
+
+        restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/complete", null, Map.class);
+        restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/reviews", new CreateReviewRequest(rating, null),
+                Map.class);
+    }
+
     private List<Map> search(String vertical, String q) {
         return search(new SearchParams(vertical).q(q));
     }
@@ -219,6 +281,7 @@ class SearchApiTests {
         private BigDecimal minPrice;
         private BigDecimal maxPrice;
         private Double maxDistanceKm;
+        private Double minRating;
         private boolean availableOnly;
         private SearchSort sort;
 
@@ -256,6 +319,11 @@ class SearchApiTests {
             return this;
         }
 
+        SearchParams minRating(Double minRating) {
+            this.minRating = minRating;
+            return this;
+        }
+
         SearchParams availableOnly(boolean availableOnly) {
             this.availableOnly = availableOnly;
             return this;
@@ -286,6 +354,9 @@ class SearchApiTests {
         }
         if (params.maxDistanceKm != null) {
             url.append("maxDistanceKm=").append(params.maxDistanceKm).append("&");
+        }
+        if (params.minRating != null) {
+            url.append("minRating=").append(params.minRating).append("&");
         }
         if (params.availableOnly) {
             url.append("availableOnly=true&");
@@ -329,6 +400,15 @@ class SearchApiTests {
         ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers/" + providerId + "/status",
                 HttpMethod.PATCH, new HttpEntity<>(request, TestAuth.authHeaders(admin.accessToken())), Map.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    private UUID createSlot(Registered owner, UUID providerId, Instant startsAt, Instant endsAt) {
+        var request = new CreateAvailabilitySlotRequest(startsAt, endsAt);
+        ResponseEntity<Map> response = restTemplate.exchange(
+                "/api/v1/providers/" + providerId + "/availability-slots", HttpMethod.POST,
+                new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        return UUID.fromString(response.getBody().get("id").toString());
     }
 
     private void createOpenSlot(Registered owner, UUID providerId) {

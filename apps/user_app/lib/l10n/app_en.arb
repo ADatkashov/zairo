@@ -248,6 +248,9 @@
   "searchSortDistance": "Distance",
   "@searchSortDistance": {"description": "Search sort option: nearest first."},
 
+  "searchSortRating": "Rating",
+  "@searchSortRating": {"description": "Search sort option: highest average rating first."},
+
   "searchFilterPriceRangeLabel": "Price range",
   "@searchFilterPriceRangeLabel": {"description": "Search filters dialog section label for the min/max price fields."},
 
@@ -268,6 +271,17 @@
     "description": "Search filters dialog max-distance slider current value.",
     "placeholders": {
       "km": {"type": "int"}
+    }
+  },
+
+  "searchFilterMinRatingLabel": "Minimum rating",
+  "@searchFilterMinRatingLabel": {"description": "Search filters dialog switch label enabling the min-rating slider."},
+
+  "searchFilterMinRatingValue": "{rating} stars and up",
+  "@searchFilterMinRatingValue": {
+    "description": "Search filters dialog min-rating slider current value.",
+    "placeholders": {
+      "rating": {"type": "String"}
     }
   },
 

@@ -24,6 +24,7 @@ class _FakeDiscoveryApi extends DiscoveryApi {
     double? minPrice,
     double? maxPrice,
     double? maxDistanceKm,
+    double? minRating,
     bool availableOnly = false,
     String? sort,
   }) async {

@@ -16,6 +16,7 @@ public final class FavoriteDtos {
 
     /** Same shape as search's ProviderSearchResult — see build.gradle.kts for why this isn't shared directly. */
     public record FavoriteProviderResponse(UUID id, String name, String vertical, ProviderStatus status,
-            boolean hasOpenAvailability, BigDecimal minPrice, List<ServiceSummary> services, Instant favoritedAt) {
+            boolean hasOpenAvailability, BigDecimal minPrice, List<ServiceSummary> services, Instant favoritedAt,
+            Double averageRating, Long reviewCount) {
     }
 }

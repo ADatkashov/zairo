@@ -3279,4 +3279,74 @@ analyze` чисто, `flutter test` 46/46 (было 45), `flutter build web`
 Gradle-кэша, что и раньше в этом проекте) — удалён после проверки.
 
 ### Текущий статус
+Закоммичено и запушено (`03f69f9`).
+
+## Production-ready MVP, Phase 2 — Item 6: Rating в ranking (2026-08-21)
+
+Продолжение анализа, начатого в Item 5: `Review` привязан к `bookingId`,
+до провайдера — три хопа без прямого FK: review → booking →
+availability_slot → provider. Проверены индексы на каждом хопе:
+`review.booking_id` уникальный индекс (V6), `booking.availability_slot_id`
+уникальный индекс (V5), `availability_slot.provider_id` обычный индекс
+(V4) — то есть это цепочка индексированных equi-join'ов, а не
+неограниченный cross join. Реальная опасность была не в самом SQL, а в
+наивной реализации "один запрос агрегации на каждого провайдера в
+цикле" (N+1). Поэтому решение: **одна батч-агрегация на весь запрос
+поиска**, а не join "в лоб" и не отдельная дорогая абстракция.
+
+**Backend**: новый `ReviewRepository.aggregateRatingsByProviderIds` —
+нативный SQL-запрос (`avg(rating)`, `count(*)`, `group by provider_id`)
+по списку id провайдеров за один вызов. Обёрнут в
+`ReviewSummaryService.summarizeRatings(providerIds)` — единая точка
+входа для других модулей (провайдеры без отзывов просто отсутствуют в
+результирующей `Map`, не считаются "0 звёзд"). `search` и `favorites`
+получили новую Gradle-зависимость на `reviews` (та же "read composition,
+не invariant" логика, что и для providers/services/booking).
+`SearchDtos.ProviderSearchResult`/`FavoriteDtos.FavoriteProviderResponse`
+получили `averageRating`/`reviewCount`. `SearchService.search(...)`
+вызывает `summarizeRatings` **один раз на весь батч** кандидатов, до
+пагинации/сортировки — не по одному на провайдера. Новый `SearchSort.RATING`
+(выше рейтинг — выше в списке; провайдеры без отзывов — в конце, а не
+приравнены к нулю/первому месту) и `minRating` фильтр (закрывает и
+хвост Item 5 — "rating" как фильтр). `FavoritesService.listFavorites`
+получил ту же батч-агрегацию для консистентности карточек между
+экранами Search/Home и Favorites.
+
+Тесты: `SearchApiTests` — новый тест с тремя провайдерами (хорошо
+оценённый ×2 отзыва, плохо оценённый ×1, без отзывов), проверяет
+averageRating/reviewCount в ответе, сортировку RATING (без-отзывов —
+последний) и фильтр minRating. `FavoritesApiTests` — новый тест,
+подтверждающий рейтинг в избранном. `./gradlew build` — BUILD
+SUCCESSFUL (весь backend).
+
+**Flutter (`user_app`)**: `ProviderSearchResult`/`FavoriteProvider`
+получили `averageRating`/`reviewCount`. Локальный адаптер `ProviderCard`
+прокидывает их в уже существовавший (но никогда не использовавшийся!)
+`core_ui.FactoryProviderCard.rating`/`.reviewCount` — компонент был
+построен заранее по артефакту дизайн-системы, но не имел реального
+потребителя до этого шага. `ProviderDetailScreen` получил
+`FactoryRatingLabel` в верхнем ряду бейджей (тоже впервые применённый
+где-либо в приложении виджет). `FavoritesScreen`'s `asSearchResult`
+адаптер прокидывает рейтинг тоже — карточка не должна выглядеть
+по-разному в зависимости от экрана, с которого попала. `SearchScreen`'s
+`_FilterDialog` получил чип сортировки "Rating" и переключатель
+"Minimum rating" со слайдером (1.0–5.0). Локализация kk/ru/en.
+
+Тесты: 2 новых теста (rating-поля в фикстуре `search_screen_test.dart`
++ ассёрты "4.7"/"(128)"; выбор RATING-сортировки и minRating в
+диалоге фильтров доходит до реального вызова API), 1 новый ассёрт в
+`provider_detail_screen_test.dart` (рейтинг отображается на detail-
+экране). `flutter analyze` чисто, `flutter test` 47/47 (было 46),
+`flutter build web` успешен.
+
+**Живая проверка**: backend поднят, засеян провайдер с 3 реальными
+завершёнными+оценёнными бронированиями (5, 4, 3 звезды → среднее 4.0,
+3 отзыва) через настоящий REST API, curl подтвердил `averageRating: 4,
+reviewCount: 3` в ответе поиска. Открыт `flutter run -d chrome` —
+карточка в результатах поиска показала "★ 4.0 (3) · beauty", и на
+detail-экране того же провайдера — "★ 4.0 (3)" рядом с бейджем Beauty
+(скриншоты). Для одобрения провайдера снова понадобился временный
+ADMIN в dev Postgres (тот же bcrypt-приём) — удалён после проверки.
+
+### Текущий статус
 Изменения готовы, ждут коммита.

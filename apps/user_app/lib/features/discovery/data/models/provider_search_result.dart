@@ -14,6 +14,8 @@ class ProviderSearchResult {
   final double? distanceKm;
   final double? latitude;
   final double? longitude;
+  final double? averageRating;
+  final int? reviewCount;
 
   const ProviderSearchResult({
     required this.id,
@@ -26,6 +28,8 @@ class ProviderSearchResult {
     this.distanceKm,
     this.latitude,
     this.longitude,
+    this.averageRating,
+    this.reviewCount,
   });
 
   factory ProviderSearchResult.fromJson(Map<String, dynamic> json) {
@@ -46,6 +50,12 @@ class ProviderSearchResult {
           : (json['distanceKm'] as num).toDouble(),
       latitude: json['latitude'] == null ? null : (json['latitude'] as num).toDouble(),
       longitude: json['longitude'] == null ? null : (json['longitude'] as num).toDouble(),
+      averageRating: json['averageRating'] == null
+          ? null
+          : (json['averageRating'] as num).toDouble(),
+      reviewCount: json['reviewCount'] == null
+          ? null
+          : (json['reviewCount'] as num).toInt(),
     );
   }
 }

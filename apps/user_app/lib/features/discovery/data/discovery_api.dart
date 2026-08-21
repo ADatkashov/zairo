@@ -19,6 +19,7 @@ class DiscoveryApi {
     double? minPrice,
     double? maxPrice,
     double? maxDistanceKm,
+    double? minRating,
     bool availableOnly = false,
     String? sort,
   }) async {
@@ -32,6 +33,7 @@ class DiscoveryApi {
         if (minPrice != null) 'minPrice': minPrice,
         if (maxPrice != null) 'maxPrice': maxPrice,
         if (maxDistanceKm != null) 'maxDistanceKm': maxDistanceKm,
+        if (minRating != null) 'minRating': minRating,
         if (availableOnly) 'availableOnly': true,
         if (sort != null) 'sort': sort,
       },

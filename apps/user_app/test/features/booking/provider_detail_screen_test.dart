@@ -138,6 +138,8 @@ void main() {
       services: [
         ServiceSummary(id: 'service-1', title: 'Haircut', durationMinutes: 30, price: 30, currency: 'USD'),
       ],
+      averageRating: 4.2,
+      reviewCount: 55,
     );
 
     final navigatorKey = GlobalKey<NavigatorState>();
@@ -161,6 +163,9 @@ void main() {
     navigatorKey.currentState!
         .push(MaterialPageRoute(builder: (_) => const ProviderDetailScreen(provider: provider)));
     await tester.pumpAndSettle();
+
+    expect(find.text('4.2'), findsOneWidget);
+    expect(find.text('(55)'), findsOneWidget);
 
     final bookButtonFinder = find.widgetWithText(FilledButton, 'Book');
     expect(tester.widget<FilledButton>(bookButtonFinder).onPressed, isNull);

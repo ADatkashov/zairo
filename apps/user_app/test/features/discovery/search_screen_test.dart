@@ -25,6 +25,7 @@ class _FakeDiscoveryApi extends DiscoveryApi {
     double? minPrice,
     double? maxPrice,
     double? maxDistanceKm,
+    double? minRating,
     bool availableOnly = false,
     String? sort,
   }) async {
@@ -37,6 +38,7 @@ class _RecordingDiscoveryApi extends DiscoveryApi {
 
   String? lastSort;
   bool? lastAvailableOnly;
+  double? lastMinRating;
 
   @override
   Future<List<ProviderSearchResult>> searchProviders({
@@ -47,11 +49,13 @@ class _RecordingDiscoveryApi extends DiscoveryApi {
     double? minPrice,
     double? maxPrice,
     double? maxDistanceKm,
+    double? minRating,
     bool availableOnly = false,
     String? sort,
   }) async {
     lastSort = sort;
     lastAvailableOnly = availableOnly;
+    lastMinRating = minRating;
     return const [];
   }
 }
@@ -72,6 +76,8 @@ void main() {
         distanceKm: 3.7,
         latitude: 43.24,
         longitude: 76.9,
+        averageRating: 4.7,
+        reviewCount: 128,
       ),
     ]);
 
@@ -94,6 +100,8 @@ void main() {
     expect(find.text('Available today'), findsOneWidget);
     expect(find.text('3.7 km · beauty'), findsOneWidget);
     expect(find.text('30 ₸'), findsOneWidget);
+    expect(find.text('4.7'), findsOneWidget);
+    expect(find.text('(128)'), findsOneWidget);
   });
 
   testWidgets('shows a prompt before the first search', (tester) async {
@@ -167,5 +175,33 @@ void main() {
 
     expect(fakeApi.lastSort, 'PRICE_ASC');
     expect(fakeApi.lastAvailableOnly, true);
+  });
+
+  testWidgets('picking rating sort and enabling min-rating re-runs the search with them', (tester) async {
+    final fakeApi = _RecordingDiscoveryApi();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [discoveryApiProvider.overrideWithValue(fakeApi)],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SearchScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.tune_rounded));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Rating'));
+    await tester.tap(find.text('Minimum rating'));
+    await tester.tap(find.text('Apply'));
+    await tester.pumpAndSettle();
+
+    expect(fakeApi.lastSort, 'RATING');
+    expect(fakeApi.lastMinRating, 4.0);
   });
 }

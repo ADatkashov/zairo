@@ -17,7 +17,8 @@ enum DiscoverySort {
   recommended('RECOMMENDED'),
   priceAsc('PRICE_ASC'),
   priceDesc('PRICE_DESC'),
-  distance('DISTANCE');
+  distance('DISTANCE'),
+  rating('RATING');
 
   const DiscoverySort(this.wireValue);
 
@@ -30,6 +31,7 @@ class DiscoveryQuery {
   final double? minPrice;
   final double? maxPrice;
   final double? maxDistanceKm;
+  final double? minRating;
   final bool availableOnly;
   final DiscoverySort sort;
 
@@ -39,22 +41,25 @@ class DiscoveryQuery {
     this.minPrice,
     this.maxPrice,
     this.maxDistanceKm,
+    this.minRating,
     this.availableOnly = false,
     this.sort = DiscoverySort.recommended,
   });
 
   bool get hasActiveFilters =>
-      minPrice != null || maxPrice != null || maxDistanceKm != null || availableOnly;
+      minPrice != null || maxPrice != null || maxDistanceKm != null || minRating != null || availableOnly;
 
   DiscoveryQuery copyWith({
     String? query,
     double? minPrice,
     double? maxPrice,
     double? maxDistanceKm,
+    double? minRating,
     bool? availableOnly,
     DiscoverySort? sort,
     bool clearPriceRange = false,
     bool clearMaxDistance = false,
+    bool clearMinRating = false,
   }) {
     return DiscoveryQuery(
       vertical: vertical,
@@ -62,6 +67,7 @@ class DiscoveryQuery {
       minPrice: clearPriceRange ? null : (minPrice ?? this.minPrice),
       maxPrice: clearPriceRange ? null : (maxPrice ?? this.maxPrice),
       maxDistanceKm: clearMaxDistance ? null : (maxDistanceKm ?? this.maxDistanceKm),
+      minRating: clearMinRating ? null : (minRating ?? this.minRating),
       availableOnly: availableOnly ?? this.availableOnly,
       sort: sort ?? this.sort,
     );
@@ -76,6 +82,7 @@ class DiscoveryQuery {
           other.minPrice == minPrice &&
           other.maxPrice == maxPrice &&
           other.maxDistanceKm == maxDistanceKm &&
+          other.minRating == minRating &&
           other.availableOnly == availableOnly &&
           other.sort == sort);
 
@@ -86,6 +93,7 @@ class DiscoveryQuery {
     minPrice,
     maxPrice,
     maxDistanceKm,
+    minRating,
     availableOnly,
     sort,
   );
@@ -110,6 +118,7 @@ final searchResultsProvider = FutureProvider.autoDispose
     minPrice: params.minPrice,
     maxPrice: params.maxPrice,
     maxDistanceKm: params.maxDistanceKm,
+    minRating: params.minRating,
     availableOnly: params.availableOnly,
     sort: params.sort.wireValue,
   );

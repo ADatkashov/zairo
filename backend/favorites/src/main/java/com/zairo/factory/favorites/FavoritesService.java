@@ -6,12 +6,15 @@ import com.zairo.factory.favorites.FavoriteDtos.FavoriteProviderResponse;
 import com.zairo.factory.favorites.FavoriteDtos.ServiceSummary;
 import com.zairo.factory.providers.Provider;
 import com.zairo.factory.providers.ProviderRepository;
+import com.zairo.factory.reviews.ProviderRatingSummary;
+import com.zairo.factory.reviews.ReviewSummaryService;
 import com.zairo.factory.services.ServiceOffering;
 import com.zairo.factory.services.ServiceOfferingRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -26,14 +29,16 @@ public class FavoritesService {
     private final ProviderRepository providerRepository;
     private final ServiceOfferingRepository serviceOfferingRepository;
     private final AvailabilitySlotRepository availabilitySlotRepository;
+    private final ReviewSummaryService reviewSummaryService;
 
     public FavoritesService(FavoriteRepository favoriteRepository, ProviderRepository providerRepository,
             ServiceOfferingRepository serviceOfferingRepository,
-            AvailabilitySlotRepository availabilitySlotRepository) {
+            AvailabilitySlotRepository availabilitySlotRepository, ReviewSummaryService reviewSummaryService) {
         this.favoriteRepository = favoriteRepository;
         this.providerRepository = providerRepository;
         this.serviceOfferingRepository = serviceOfferingRepository;
         this.availabilitySlotRepository = availabilitySlotRepository;
+        this.reviewSummaryService = reviewSummaryService;
     }
 
     /** Idempotent — favoriting an already-favorited provider is a no-op, not a 409. */
@@ -59,14 +64,19 @@ public class FavoritesService {
     }
 
     public List<FavoriteProviderResponse> listFavorites(UUID userId) {
-        return favoriteRepository.findByUserId(userId).stream()
-                .map(fav -> providerRepository.findById(fav.getProviderId()).map(p -> toResult(p, fav.getCreatedAt())))
+        List<Favorite> favorites = favoriteRepository.findByUserId(userId);
+        Map<UUID, ProviderRatingSummary> ratings = reviewSummaryService
+                .summarizeRatings(favorites.stream().map(Favorite::getProviderId).toList());
+        return favorites.stream()
+                .map(fav -> providerRepository.findById(fav.getProviderId())
+                        .map(p -> toResult(p, fav.getCreatedAt(), ratings)))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .toList();
     }
 
-    private FavoriteProviderResponse toResult(Provider provider, Instant favoritedAt) {
+    private FavoriteProviderResponse toResult(Provider provider, Instant favoritedAt,
+            Map<UUID, ProviderRatingSummary> ratings) {
         List<ServiceOffering> services = serviceOfferingRepository.findByProviderIdAndActiveTrue(provider.getId());
         boolean hasOpenAvailability = availabilitySlotRepository.existsByProviderIdAndStatus(provider.getId(),
                 AvailabilityStatus.OPEN);
@@ -76,7 +86,9 @@ public class FavoritesService {
                 .map(s -> new ServiceSummary(s.getId(), s.getTitle(), s.getDurationMinutes(), s.getPrice(),
                         s.getCurrency()))
                 .toList();
+        ProviderRatingSummary rating = ratings.get(provider.getId());
         return new FavoriteProviderResponse(provider.getId(), provider.getName(), provider.getVertical(),
-                provider.getStatus(), hasOpenAvailability, minPrice, serviceSummaries, favoritedAt);
+                provider.getStatus(), hasOpenAvailability, minPrice, serviceSummaries, favoritedAt,
+                rating == null ? null : rating.averageRating(), rating == null ? null : rating.reviewCount());
     }
 }

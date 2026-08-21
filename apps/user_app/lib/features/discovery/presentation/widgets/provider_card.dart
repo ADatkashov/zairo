@@ -10,11 +10,10 @@ import '../../data/models/provider_search_result.dart';
 /// itself) so the ProviderSearchResult -> card-field mapping lives in
 /// exactly one place. Named `ProviderCard`, not `FactoryProviderCard`: this
 /// class is this app's own type, distinct from (and no longer name-
-/// colliding with) core_ui's widget of the same underlying shape. Search
-/// doesn't return a rating yet (see SearchService's javadoc), so the
-/// rating row is simply omitted — core_ui.FactoryProviderCard already
-/// handles a null rating by not rendering it, no placeholder value
-/// invented here.
+/// colliding with) core_ui's widget of the same underlying shape. A
+/// provider with no reviews yet has a null averageRating, which
+/// core_ui.FactoryProviderCard already handles by not rendering the
+/// rating row — no placeholder value invented here.
 class ProviderCard extends StatelessWidget {
   final ProviderSearchResult result;
   final VoidCallback? onTap;
@@ -38,6 +37,8 @@ class ProviderCard extends StatelessWidget {
           ? l10n.cardDistanceAndVertical(result.distanceKm!.toStringAsFixed(1), result.vertical)
           : result.vertical,
       priceFrom: result.minPrice,
+      rating: result.averageRating,
+      reviewCount: result.reviewCount,
       availabilityLabel: result.hasOpenAvailability ? l10n.availableTodayLabel : null,
       onTap: onTap,
       layout: layout,

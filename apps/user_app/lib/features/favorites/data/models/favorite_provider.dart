@@ -13,6 +13,8 @@ class FavoriteProvider {
   final double? minPrice;
   final List<ServiceSummary> services;
   final DateTime favoritedAt;
+  final double? averageRating;
+  final int? reviewCount;
 
   const FavoriteProvider({
     required this.id,
@@ -23,6 +25,8 @@ class FavoriteProvider {
     this.minPrice,
     required this.services,
     required this.favoritedAt,
+    this.averageRating,
+    this.reviewCount,
   });
 
   factory FavoriteProvider.fromJson(Map<String, dynamic> json) {
@@ -37,6 +41,12 @@ class FavoriteProvider {
           .map((e) => ServiceSummary.fromJson(e as Map<String, dynamic>))
           .toList(),
       favoritedAt: DateTime.parse(json['favoritedAt'] as String),
+      averageRating: json['averageRating'] == null
+          ? null
+          : (json['averageRating'] as num).toDouble(),
+      reviewCount: json['reviewCount'] == null
+          ? null
+          : (json['reviewCount'] as num).toInt(),
     );
   }
 }

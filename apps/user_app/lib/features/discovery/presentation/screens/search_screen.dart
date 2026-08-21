@@ -192,6 +192,8 @@ class _FilterDialogState extends State<_FilterDialog> {
   late final TextEditingController _maxPriceController;
   late bool _distanceEnabled;
   late double _maxDistanceKm;
+  late bool _minRatingEnabled;
+  late double _minRating;
 
   @override
   void initState() {
@@ -203,6 +205,8 @@ class _FilterDialogState extends State<_FilterDialog> {
     _maxPriceController = TextEditingController(text: initial.maxPrice?.toStringAsFixed(0) ?? '');
     _distanceEnabled = initial.maxDistanceKm != null;
     _maxDistanceKm = initial.maxDistanceKm ?? 10;
+    _minRatingEnabled = initial.minRating != null;
+    _minRating = initial.minRating ?? 4;
   }
 
   @override
@@ -234,6 +238,7 @@ class _FilterDialogState extends State<_FilterDialog> {
                 _sortChip(l10n.searchSortPriceAsc, DiscoverySort.priceAsc),
                 _sortChip(l10n.searchSortPriceDesc, DiscoverySort.priceDesc),
                 _sortChip(l10n.searchSortDistance, DiscoverySort.distance),
+                _sortChip(l10n.searchSortRating, DiscoverySort.rating),
               ],
             ),
             const SizedBox(height: FactorySpacing.space4),
@@ -284,6 +289,25 @@ class _FilterDialogState extends State<_FilterDialog> {
                 onChanged: (value) => setState(() => _maxDistanceKm = value),
               ),
             ],
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.searchFilterMinRatingLabel),
+              value: _minRatingEnabled,
+              onChanged: (value) => setState(() => _minRatingEnabled = value),
+            ),
+            if (_minRatingEnabled) ...[
+              Text(
+                l10n.searchFilterMinRatingValue(_minRating.toStringAsFixed(1)),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
+              ),
+              Slider(
+                value: _minRating,
+                min: 1,
+                max: 5,
+                divisions: 8,
+                onChanged: (value) => setState(() => _minRating = value),
+              ),
+            ],
           ],
         ),
       ),
@@ -299,6 +323,7 @@ class _FilterDialogState extends State<_FilterDialog> {
               minPrice: double.tryParse(_minPriceController.text.trim()),
               maxPrice: double.tryParse(_maxPriceController.text.trim()),
               maxDistanceKm: _distanceEnabled ? _maxDistanceKm : null,
+              minRating: _minRatingEnabled ? _minRating : null,
               availableOnly: _availableOnly,
               sort: _sort,
             ),

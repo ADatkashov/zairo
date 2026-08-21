@@ -83,6 +83,8 @@ class _FavoritesList extends ConsumerWidget {
               hasOpenAvailability: favorite.hasOpenAvailability,
               minPrice: favorite.minPrice,
               services: favorite.services,
+              averageRating: favorite.averageRating,
+              reviewCount: favorite.reviewCount,
             );
             return ProviderCard(
               result: asSearchResult,

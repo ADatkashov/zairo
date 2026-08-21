@@ -61,6 +61,11 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               runSpacing: 8,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
+                if (widget.provider.averageRating != null)
+                  FactoryRatingLabel(
+                    rating: widget.provider.averageRating!,
+                    reviewCount: widget.provider.reviewCount,
+                  ),
                 FactoryBadge(label: _capitalize(widget.provider.vertical)),
                 if (widget.provider.hasOpenAvailability)
                   FactoryBadge(label: l10n.availableTodayLabel, variant: FactoryBadgeVariant.available),

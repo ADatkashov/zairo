@@ -13,4 +13,8 @@ dependencies {
     implementation(project(":providers"))
     implementation(project(":services"))
     implementation(project(":booking"))
+
+    // Only for ReviewSummaryService's batched rating aggregate — same
+    // reasoning as search/build.gradle.kts.
+    implementation(project(":reviews"))
 }

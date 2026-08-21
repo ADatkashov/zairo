@@ -12,4 +12,9 @@ dependencies {
     implementation(project(":providers"))
     implementation(project(":services"))
     implementation(project(":booking"))
+
+    // Only for ReviewSummaryService's batched rating aggregate — see its
+    // doc comment for why this is one query per search request, not a
+    // per-provider join.
+    implementation(project(":reviews"))
 }

@@ -15,6 +15,6 @@ public final class SearchDtos {
 
     public record ProviderSearchResult(UUID id, String name, String vertical, ProviderStatus status,
             boolean hasOpenAvailability, BigDecimal minPrice, List<ServiceSummary> services, Double distanceKm,
-            Double latitude, Double longitude) {
+            Double latitude, Double longitude, Double averageRating, Long reviewCount) {
     }
 }
