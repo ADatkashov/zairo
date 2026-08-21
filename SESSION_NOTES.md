@@ -2957,4 +2957,81 @@ Visual Studio C++ toolchain, известное давнее ограничен�
 проверялась в этом шаге.
 
 ### Текущий статус
+Закоммичено и запушено (`63551a4`).
+
+## Production-ready MVP, Phase 1 — Item 1: отмена брони клиентом (2026-08-21)
+
+Пользователь прислал развёрнутое ТЗ на перевод Factory из "технически
+рабочего MVP" в "production-ready MVP" — 4 фазы (критический функционал,
+search/discovery, business admin UX, дизайн-система), с явным повтором
+принципа "реальная потребность важнее архитектурной сложности" и тем же
+списком запрещённых заранее абстракций (Tenant/Marketplace/RBAC/Kafka/
+провайдеры и т.д.). Начал строго по заявленному порядку: анализ кода
+перед реализацией, один пункт за раз, компиляция+тесты после каждого
+крупного изменения.
+
+**Phase 1, пункт 1 — CUSTOMER может отменить бронь.** Анализ показал:
+`BookingStatus.CANCELLED` уже существовал в enum (заготовлен заранее),
+но ни разу не устанавливался — метода отмены не было вообще.
+
+Backend:
+- `Booking.markCancelled()`, `AvailabilitySlot.markOpen()` — симметрично
+  существующим `markCompleted()`/`markBooked()`.
+- `BookingService.cancelBooking(bookingId, callerId)`: 404 если брони
+  нет, 403 если бронь не принадлежит вызывающему, 409 если статус не
+  CONFIRMED (нельзя отменить уже отменённую/завершённую) — тот же паттерн
+  guard'ов, что у `completeBooking`. Слот освобождается обратно в OPEN.
+  Осознанно НЕ стал добавлять `@Version`-оптимистичную блокировку на
+  Booking (в отличие от AvailabilitySlot) — риск двойной отмены только
+  от одного и того же клиента (двойной тап), а не от гонки между чужими
+  пользователями, как у бронирования слота; статус-guard внутри
+  транзакции уже этого достаточно, тот же уровень строгости, что у
+  `completeBooking`.
+- `POST /api/v1/bookings/{id}/cancel` — защищён `CurrentUser.requireUserId`
+  (модуль `booking` уже зависел от `auth`).
+- **Возврат платежа через существующий payment abstraction, без
+  добавления зависимости `booking → payments`** (это создало бы цикл,
+  т.к. `payments → booking` уже существует): новый `BookingCancelledEvent`
+  публикуется по тому же ADR-0002 паттерну in-process событий, что уже
+  доказан на `BookingConfirmedEvent`. Слушатель `BookingCancelledPaymentListener`
+  живёт в модуле `payments` (он и так уже зависит от `booking`) и вызывает
+  `PaymentsService.refundPayment`, если у брони был успешный платёж.
+- **Реальный баг, найденный и исправленный по ходу**: `@TransactionalEventListener(phase = AFTER_COMMIT)`
+  без `@Transactional(propagation = REQUIRES_NEW)` на самом методе-слушателе
+  выглядел рабочим (возвращал `REFUNDED` из `refundPayment`), но НЕ
+  сохранялся в БД — слушатель "присоединялся" к уже закоммиченной
+  транзакции вместо открытия новой, и запись молча терялась. Нашёл через
+  диагностическое логирование (метод реально выполнялся и возвращал
+  правильный статус, но повторный HTTP GET показывал старое значение).
+  Исправлено добавлением `@Transactional(propagation = Propagation.REQUIRES_NEW)`
+  на метод слушателя — стандартный, задокументированный паттерн Spring
+  для записи в БД из AFTER_COMMIT-хуков.
+- `PaymentProvider`/`MockPaymentProvider` уже были готовы под реальный
+  провайдер (charge/refund/status/failure) — ничего менять не пришлось,
+  архитектура уже удовлетворяет требованию "production-ready payment
+  abstraction" из ТЗ.
+
+Flutter (`user_app`): `BookingApi.cancelBooking` (403→`notYourBooking`,
+409→`notCancellable`), кнопка "Cancel booking" на карточке брони (только
+для CONFIRMED) с диалогом подтверждения, инвалидация
+`myBookingsProvider`/`paymentForBookingProvider` после успеха,
+`PaymentStatusChip` получил статус REFUNDED (`FactoryBadgeVariant.limited`).
+Новые ARB-ключи (en/ru/kk) для всех новых строк.
+
+Тесты: backend — 2 новых теста в `BookingApiTests` (успешная отмена +
+освобождение слота + повторная отмена = 409; чужая бронь = 403,
+без токена = 401, завершённая бронь = 409) + 1 новый тест в
+`PaymentsApiTests` (отмена оплаченной брони автоматически возвращает
+деньги) — `./gradlew build` BUILD SUCCESSFUL, весь бэкенд включая новые
+тесты. Flutter — 3 новых виджет-теста (кнопка видна только для CONFIRMED,
+полный флоу подтверждения+отмены+снекбар, читаемая ошибка при отказе) —
+`user_app` 41/41 (было 38), `flutter analyze` чисто.
+
+**Живая проверка через curl против реально запущенного backend** (не
+только Testcontainers): полный цикл owner→customer→provider→service→
+slot→booking→payment→cancel — подтверждено кодами и телами ответов:
+бронь CONFIRMED→CANCELLED, слот BOOKED→OPEN, платёж SUCCEEDED→REFUNDED
+автоматически, повторная отмена — 409. Backend остановлен после проверки.
+
+### Текущий статус
 Изменения готовы, ждут коммита.

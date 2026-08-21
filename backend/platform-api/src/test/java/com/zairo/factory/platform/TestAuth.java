@@ -37,6 +37,14 @@ final class TestAuth {
         return new Registered(userId, body.get("accessToken").toString());
     }
 
+    static Registered registerCustomer(TestRestTemplate restTemplate, String email) {
+        var request = new RegisterRequest(email, "password123", "Registered Customer", "+1000000003",
+                UserRole.CUSTOMER);
+        Map<?, ?> body = restTemplate.postForEntity("/api/v1/auth/register", request, Map.class).getBody();
+        UUID userId = UUID.fromString(((Map<?, ?>) body.get("user")).get("id").toString());
+        return new Registered(userId, body.get("accessToken").toString());
+    }
+
     static HttpHeaders authHeaders(String accessToken) {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);

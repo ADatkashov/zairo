@@ -106,4 +106,8 @@ public class Booking {
     void markCompleted() {
         this.status = BookingStatus.COMPLETED;
     }
+
+    void markCancelled() {
+        this.status = BookingStatus.CANCELLED;
+    }
 }

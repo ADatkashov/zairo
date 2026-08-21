@@ -65,6 +65,73 @@ class BookingApiTests {
     }
 
     @Test
+    void customerCancelsTheirOwnConfirmedBookingAndTheSlotReopens() {
+        String runId = UUID.randomUUID().toString();
+        Registered customer = TestAuth.registerCustomer(restTemplate, "cancel-customer-" + runId + "@example.com");
+        Registered owner = TestAuth.registerOwner(restTemplate, "cancel-owner-" + runId + "@example.com");
+
+        UUID providerId = createProvider(owner, "Cancel Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Cancel Service", new BigDecimal("20.00"));
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+
+        var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("20.00"));
+        ResponseEntity<Map> bookingResponse = restTemplate.postForEntity("/api/v1/bookings", bookingRequest,
+                Map.class);
+        UUID bookingId = UUID.fromString(bookingResponse.getBody().get("id").toString());
+
+        ResponseEntity<Map> cancelResponse = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/cancel",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(cancelResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(cancelResponse.getBody().get("status")).isEqualTo("CANCELLED");
+
+        // Slot released back to OPEN — someone else can book it again.
+        ResponseEntity<Map[]> slots = restTemplate.getForEntity(
+                "/api/v1/providers/" + providerId + "/availability-slots", Map[].class);
+        assertThat(slots.getBody()).extracting(s -> s.get("status")).containsExactly("OPEN");
+
+        // Cancelling an already-cancelled booking is rejected.
+        ResponseEntity<Map> secondCancel = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/cancel",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(secondCancel.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    void cancellingSomeoneElsesBookingIsForbiddenAndCancellingACompletedBookingIsRejected() {
+        String runId = UUID.randomUUID().toString();
+        Registered customer = TestAuth.registerCustomer(restTemplate, "cancel-owner2-" + runId + "@example.com");
+        Registered otherCustomer = TestAuth.registerCustomer(restTemplate, "cancel-other-" + runId + "@example.com");
+        Registered owner = TestAuth.registerOwner(restTemplate, "cancel-owner3-" + runId + "@example.com");
+
+        UUID providerId = createProvider(owner, "Cancel Forbidden Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Cancel Service 2", new BigDecimal("15.00"));
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+
+        var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("15.00"));
+        ResponseEntity<Map> bookingResponse = restTemplate.postForEntity("/api/v1/bookings", bookingRequest,
+                Map.class);
+        UUID bookingId = UUID.fromString(bookingResponse.getBody().get("id").toString());
+
+        // A different customer can't cancel this booking.
+        ResponseEntity<Map> forbidden = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/cancel",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(otherCustomer.accessToken())),
+                Map.class);
+        assertThat(forbidden.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        // No token at all -> 401.
+        ResponseEntity<Map> unauthenticated = restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/cancel",
+                null, Map.class);
+        assertThat(unauthenticated.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        // A completed booking can no longer be cancelled.
+        restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/complete", null, Map.class);
+        ResponseEntity<Map> cancelCompleted = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/cancel",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(cancelCompleted.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
     void deletesAnOpenSlotButRefusesToDeleteABookedOne() {
         Registered owner = TestAuth.registerOwner(restTemplate, "owner-slot-delete@example.com");
         UUID customerId = createUser("customer-slot-delete@example.com", "Slot Delete Customer");

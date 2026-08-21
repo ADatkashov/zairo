@@ -6,8 +6,10 @@ import '../../../../core/formatting/month_day_time.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/widgets/logged_out_gate.dart';
+import '../../../payments/presentation/providers/payments_providers.dart';
 import '../../../payments/presentation/widgets/payment_status_chip.dart';
 import '../../../reviews/presentation/widgets/review_section.dart';
+import '../../data/booking_exception.dart';
 import '../../data/models/booking.dart';
 import '../providers/booking_providers.dart';
 
@@ -72,7 +74,7 @@ class _BookingsList extends ConsumerWidget {
           padding: const EdgeInsets.all(FactorySpacing.space4),
           itemCount: sorted.length,
           separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
-          itemBuilder: (context, index) => _BookingCard(booking: sorted[index]),
+          itemBuilder: (context, index) => _BookingCard(booking: sorted[index], userId: userId),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -89,15 +91,24 @@ class _BookingsList extends ConsumerWidget {
   }
 }
 
-class _BookingCard extends StatelessWidget {
+class _BookingCard extends ConsumerStatefulWidget {
   final Booking booking;
+  final String userId;
 
-  const _BookingCard({required this.booking});
+  const _BookingCard({required this.booking, required this.userId});
+
+  @override
+  ConsumerState<_BookingCard> createState() => _BookingCardState();
+}
+
+class _BookingCardState extends ConsumerState<_BookingCard> {
+  bool _isCancelling = false;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
+    final booking = widget.booking;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -121,10 +132,63 @@ class _BookingCard extends StatelessWidget {
             const SizedBox(height: FactorySpacing.space2),
             PaymentStatusChip(bookingId: booking.id),
             if (booking.status == 'COMPLETED') ReviewSection(bookingId: booking.id),
+            if (booking.status == 'CONFIRMED') ...[
+              const SizedBox(height: FactorySpacing.space2),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: _isCancelling ? null : _confirmAndCancel,
+                  style: TextButton.styleFrom(foregroundColor: colors.error),
+                  child: _isCancelling
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : Text(l10n.cancelBookingButton),
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _confirmAndCancel() async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.cancelBookingConfirmTitle),
+        content: Text(l10n.cancelBookingConfirmMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.cancelBookingKeepButton),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.cancelBookingConfirmButton),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _isCancelling = true);
+    try {
+      await ref.read(bookingApiProvider).cancelBooking(widget.booking.id);
+      ref.invalidate(myBookingsProvider(widget.userId));
+      ref.invalidate(paymentForBookingProvider(widget.booking.id));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.bookingCancelledMessage)));
+    } on BookingException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
+      setState(() => _isCancelling = false);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.errorBookingGeneric(e.toString()))));
+      setState(() => _isCancelling = false);
+    }
   }
 }
 

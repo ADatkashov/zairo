@@ -398,5 +398,32 @@
   "@favoritesLoggedOutPrompt": {"description": "Shown on the Favorites tab when reached while logged out."},
 
   "settingsButtonTooltip": "Settings",
-  "@settingsButtonTooltip": {"description": "Profile screen's AppBar action opening Settings."}
+  "@settingsButtonTooltip": {"description": "Profile screen's AppBar action opening Settings."},
+
+  "errorBookingNotCancellable": "This booking can no longer be cancelled.",
+  "@errorBookingNotCancellable": {"description": "409 from POST .../bookings/{id}/cancel — already cancelled or completed."},
+
+  "errorBookingNotYours": "This isn't your booking.",
+  "@errorBookingNotYours": {"description": "403 from POST .../bookings/{id}/cancel."},
+
+  "cancelBookingButton": "Cancel booking",
+  "@cancelBookingButton": {"description": "Button on a CONFIRMED booking card."},
+
+  "cancelBookingConfirmTitle": "Cancel this booking?",
+  "@cancelBookingConfirmTitle": {"description": "Cancel-booking confirmation dialog title."},
+
+  "cancelBookingConfirmMessage": "If you already paid, you'll be refunded automatically.",
+  "@cancelBookingConfirmMessage": {"description": "Cancel-booking confirmation dialog body."},
+
+  "cancelBookingKeepButton": "Keep booking",
+  "@cancelBookingKeepButton": {"description": "Cancel-booking confirmation dialog's dismiss action."},
+
+  "cancelBookingConfirmButton": "Cancel booking",
+  "@cancelBookingConfirmButton": {"description": "Cancel-booking confirmation dialog's confirm action."},
+
+  "bookingCancelledMessage": "Booking cancelled.",
+  "@bookingCancelledMessage": {"description": "Snackbar shown after a successful cancellation."},
+
+  "paymentStatusRefunded": "Refunded",
+  "@paymentStatusRefunded": {"description": "Payment status badge label for REFUNDED."}
 }

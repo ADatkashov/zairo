@@ -135,5 +135,15 @@
 
   "bookingsLoggedOutPrompt": "Войдите, чтобы увидеть свои бронирования",
   "favoritesLoggedOutPrompt": "Войдите, чтобы увидеть избранное",
-  "settingsButtonTooltip": "Настройки"
+  "settingsButtonTooltip": "Настройки",
+
+  "errorBookingNotCancellable": "Это бронирование больше нельзя отменить.",
+  "errorBookingNotYours": "Это не ваше бронирование.",
+  "cancelBookingButton": "Отменить бронирование",
+  "cancelBookingConfirmTitle": "Отменить это бронирование?",
+  "cancelBookingConfirmMessage": "Если вы уже оплатили, деньги вернутся автоматически.",
+  "cancelBookingKeepButton": "Оставить бронирование",
+  "cancelBookingConfirmButton": "Отменить бронирование",
+  "bookingCancelledMessage": "Бронирование отменено.",
+  "paymentStatusRefunded": "Возвращено"
 }

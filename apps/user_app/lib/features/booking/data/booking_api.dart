@@ -48,4 +48,23 @@ class BookingApi {
     final data = response.data as List<dynamic>;
     return data.map((e) => Booking.fromJson(e as Map<String, dynamic>)).toList();
   }
+
+  /// Customer-initiated cancellation — backend enforces ownership (403 if
+  /// this isn't the caller's own booking) and status (409 if it's already
+  /// CANCELLED/COMPLETED). A refund, if the booking had a successful
+  /// payment, happens server-side as part of the same call.
+  Future<Booking> cancelBooking(String bookingId) async {
+    try {
+      final response = await _dioClient.post('/bookings/$bookingId/cancel');
+      return Booking.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 409) {
+        throw const BookingException(BookingErrorKey.notCancellable);
+      }
+      if (e.response?.statusCode == 403) {
+        throw const BookingException(BookingErrorKey.notYourBooking);
+      }
+      rethrow;
+    }
+  }
 }

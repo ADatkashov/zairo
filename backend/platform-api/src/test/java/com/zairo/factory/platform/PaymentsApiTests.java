@@ -97,6 +97,47 @@ class PaymentsApiTests {
         assertThat(duplicateRefund.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
     }
 
+    @Test
+    void cancellingAPaidBookingAutomaticallyRefundsIt() {
+        String runId = UUID.randomUUID().toString();
+        Registered customer = TestAuth.registerCustomer(restTemplate, "refund-customer-" + runId + "@example.com");
+        Registered owner = TestAuth.registerOwner(restTemplate, "refund-owner-" + runId + "@example.com");
+
+        var providerRequest = new CreateProviderRequest(owner.userId(), "Refund Test Salon " + runId, "beauty");
+        ResponseEntity<Map> providerResponse = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
+                new HttpEntity<>(providerRequest, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        UUID providerId = UUID.fromString(providerResponse.getBody().get("id").toString());
+
+        var serviceRequest = new CreateServiceRequest("Refund Service", 30, new BigDecimal("40.00"), "USD");
+        ResponseEntity<Map> serviceResponse = restTemplate.exchange("/api/v1/providers/" + providerId + "/services",
+                HttpMethod.POST, new HttpEntity<>(serviceRequest, TestAuth.authHeaders(owner.accessToken())),
+                Map.class);
+        UUID serviceId = UUID.fromString(serviceResponse.getBody().get("id").toString());
+
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        var slotRequest = new CreateAvailabilitySlotRequest(start, start.plus(30, ChronoUnit.MINUTES));
+        ResponseEntity<Map> slotResponse = restTemplate.exchange(
+                "/api/v1/providers/" + providerId + "/availability-slots", HttpMethod.POST,
+                new HttpEntity<>(slotRequest, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        UUID slotId = UUID.fromString(slotResponse.getBody().get("id").toString());
+
+        var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("40.00"));
+        Map<?, ?> booking = restTemplate.postForEntity("/api/v1/bookings", bookingRequest, Map.class).getBody();
+        UUID bookingId = UUID.fromString(booking.get("id").toString());
+
+        restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments", null, Map.class);
+
+        ResponseEntity<Map> cancelResponse = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/cancel",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(cancelResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // BookingCancelledPaymentListener (AFTER_COMMIT, REQUIRES_NEW) already
+        // ran synchronously by the time the cancel response comes back.
+        ResponseEntity<Map> paymentAfterCancel = restTemplate.getForEntity(
+                "/api/v1/bookings/" + bookingId + "/payments", Map.class);
+        assertThat(paymentAfterCancel.getBody().get("status")).isEqualTo("REFUNDED");
+    }
+
     private UUID createUser(String email, String displayName) {
         var request = new CreateUserRequest(email, "+1000000000", displayName, UserRole.CUSTOMER);
         Map<?, ?> body = restTemplate.postForEntity("/api/v1/users", request, Map.class).getBody();

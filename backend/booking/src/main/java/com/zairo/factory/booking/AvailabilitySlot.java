@@ -74,4 +74,9 @@ public class AvailabilitySlot {
     void markBooked() {
         this.status = AvailabilityStatus.BOOKED;
     }
+
+    /** Releases the slot back to OPEN — called when the booking holding it is cancelled. */
+    void markOpen() {
+        this.status = AvailabilityStatus.OPEN;
+    }
 }

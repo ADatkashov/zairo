@@ -1,7 +1,9 @@
 package com.zairo.factory.booking;
 
+import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.booking.BookingDtos.BookingResponse;
 import com.zairo.factory.booking.BookingDtos.CreateBookingRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -44,6 +46,13 @@ public class BookingController {
     @PostMapping("/api/v1/bookings/{id}/complete")
     public BookingResponse complete(@PathVariable UUID id) {
         return BookingResponse.from(bookingService.completeBooking(id));
+    }
+
+    /** Customer-only — 401 without a valid token, 403 if the token belongs to someone else's booking. */
+    @PostMapping("/api/v1/bookings/{id}/cancel")
+    public BookingResponse cancel(@PathVariable UUID id, HttpServletRequest httpRequest) {
+        UUID callerId = CurrentUser.requireUserId(httpRequest);
+        return BookingResponse.from(bookingService.cancelBooking(id, callerId));
     }
 
     @GetMapping("/api/v1/users/{userId}/bookings")

@@ -25,6 +25,7 @@ class PaymentStatusChip extends ConsumerWidget {
           variant: switch (payment.status) {
             'SUCCEEDED' => FactoryBadgeVariant.available,
             'FAILED' => FactoryBadgeVariant.error,
+            'REFUNDED' => FactoryBadgeVariant.limited,
             _ => FactoryBadgeVariant.neutral,
           },
         );
@@ -38,5 +39,6 @@ class PaymentStatusChip extends ConsumerWidget {
 String _label(AppLocalizations l10n, String status) => switch (status) {
       'SUCCEEDED' => l10n.paymentStatusSucceeded,
       'FAILED' => l10n.paymentStatusFailed,
+      'REFUNDED' => l10n.paymentStatusRefunded,
       _ => status.isEmpty ? status : '${status[0]}${status.substring(1).toLowerCase()}',
     };

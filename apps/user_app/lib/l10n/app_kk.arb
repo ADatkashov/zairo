@@ -135,5 +135,15 @@
 
   "bookingsLoggedOutPrompt": "Брондарыңызды көру үшін кіріңіз",
   "favoritesLoggedOutPrompt": "Таңдаулыларды көру үшін кіріңіз",
-  "settingsButtonTooltip": "Баптаулар"
+  "settingsButtonTooltip": "Баптаулар",
+
+  "errorBookingNotCancellable": "Бұл брондауды енді бас тартуға болмайды.",
+  "errorBookingNotYours": "Бұл сіздің брондауыңыз емес.",
+  "cancelBookingButton": "Брондаудан бас тарту",
+  "cancelBookingConfirmTitle": "Осы брондаудан бас тартасыз ба?",
+  "cancelBookingConfirmMessage": "Егер төлеген болсаңыз, ақша автоматты түрде қайтарылады.",
+  "cancelBookingKeepButton": "Брондауды сақтау",
+  "cancelBookingConfirmButton": "Брондаудан бас тарту",
+  "bookingCancelledMessage": "Брондаудан бас тартылды.",
+  "paymentStatusRefunded": "Қайтарылды"
 }

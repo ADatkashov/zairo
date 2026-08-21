@@ -84,4 +84,48 @@ public class BookingService {
         booking.markCompleted();
         return bookingRepository.save(booking);
     }
+
+    /**
+     * Customer-initiated cancellation. Only a CONFIRMED booking can be
+     * cancelled (not PENDING/COMPLETED/already-CANCELLED) — mirrors
+     * completeBooking's status guard. Releases the slot back to OPEN so
+     * someone else can book it, and publishes {@link BookingCancelledEvent}
+     * so payments (refund) and notifications can react without booking
+     * depending on either — same ADR-0002 pattern as
+     * {@link BookingConfirmedEvent}.
+     *
+     * <p>Deliberately no {@code @Version}-style optimistic locking here
+     * (unlike the slot's OPEN->BOOKED claim): two different customers can
+     * never race for the same booking, only the same customer double-
+     * tapping cancel could — a much lower-stakes race than double-booking a
+     * shared slot between strangers, and the status guard already rejects
+     * the second call once the first has committed.
+     */
+    @Transactional
+    public Booking cancelBooking(UUID bookingId, UUID callerId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
+                        + bookingId));
+
+        if (!booking.getUserId().equals(callerId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not own this booking: " + bookingId);
+        }
+
+        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new InvalidBookingStateException("Booking is not in a cancellable state: " + bookingId
+                    + " (status=" + booking.getStatus() + ")");
+        }
+
+        AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
+                        + booking.getAvailabilitySlotId()));
+        slot.markOpen();
+        availabilitySlotRepository.save(slot);
+
+        booking.markCancelled();
+        Booking cancelled = bookingRepository.save(booking);
+
+        eventPublisher.publishEvent(new BookingCancelledEvent(cancelled.getId(), callerId, slot.getProviderId()));
+        return cancelled;
+    }
 }
