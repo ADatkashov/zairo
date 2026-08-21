@@ -2,6 +2,8 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/formatting/month_day_time.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../beauty/data/models/admin_master.dart';
 import '../../../beauty/presentation/providers/beauty_admin_providers.dart';
 import '../../../beauty/presentation/widgets/add_master_dialog.dart';
@@ -28,6 +30,7 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
 
     return Scaffold(
@@ -37,7 +40,7 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined),
-            tooltip: 'Edit salon',
+            tooltip: l10n.editSalonTooltip,
             onPressed: () async {
               final updated = await showDialog<AdminProvider>(
                 context: context,
@@ -60,7 +63,10 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               FactoryBadge(label: _capitalize(_provider.vertical)),
-              FactoryBadge(label: _capitalize(_provider.status), variant: _providerStatusVariant(_provider.status)),
+              FactoryBadge(
+                label: _providerStatusLabel(l10n, _provider.status),
+                variant: _providerStatusVariant(_provider.status),
+              ),
             ],
           ),
           const SizedBox(height: FactorySpacing.space6),
@@ -84,6 +90,13 @@ FactoryBadgeVariant _providerStatusVariant(String status) => switch (status) {
       'PENDING' => FactoryBadgeVariant.limited,
       'SUSPENDED' => FactoryBadgeVariant.error,
       _ => FactoryBadgeVariant.neutral,
+    };
+
+String _providerStatusLabel(AppLocalizations l10n, String status) => switch (status) {
+      'ACTIVE' => l10n.providerStatusActive,
+      'PENDING' => l10n.providerStatusPending,
+      'SUSPENDED' => l10n.providerStatusSuspended,
+      _ => _capitalize(status),
     };
 
 String _capitalize(String s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1).toLowerCase()}';
@@ -116,27 +129,28 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: const Text('Edit salon'),
+      title: Text(l10n.editSalonTooltip),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
             controller: _nameController,
             enabled: !_isSubmitting,
-            decoration: const InputDecoration(labelText: 'Salon name'),
+            decoration: InputDecoration(labelText: l10n.salonNameLabel),
           ),
           TextField(
             controller: _latController,
             enabled: !_isSubmitting,
             keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-            decoration: const InputDecoration(labelText: 'Latitude (optional)'),
+            decoration: InputDecoration(labelText: l10n.latitudeOptionalLabel),
           ),
           TextField(
             controller: _lngController,
             enabled: !_isSubmitting,
             keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-            decoration: const InputDecoration(labelText: 'Longitude (optional)'),
+            decoration: InputDecoration(labelText: l10n.longitudeOptionalLabel),
           ),
           if (_error != null)
             Padding(
@@ -148,22 +162,23 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
       actions: [
         TextButton(
           onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancelButton),
         ),
         FilledButton(
           onPressed: _isSubmitting ? null : _submit,
           child: _isSubmitting
               ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('Save'),
+              : Text(l10n.saveButton),
         ),
       ],
     );
   }
 
   Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context)!;
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      setState(() => _error = 'Enter a salon name');
+      setState(() => _error = l10n.validationSalonNameRequired);
       return;
     }
     final latText = _latController.text.trim();
@@ -171,7 +186,7 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
     final lat = latText.isEmpty ? null : double.tryParse(latText);
     final lng = lngText.isEmpty ? null : double.tryParse(lngText);
     if ((latText.isNotEmpty && lat == null) || (lngText.isNotEmpty && lng == null)) {
-      setState(() => _error = 'Latitude/longitude must be valid numbers');
+      setState(() => _error = l10n.validationLatLngInvalid);
       return;
     }
     setState(() {
@@ -189,7 +204,7 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
       Navigator.of(context).pop(updated);
     } catch (e) {
       setState(() {
-        _error = 'Failed to save salon: $e';
+        _error = l10n.errorSaveSalonFailed(e.toString());
         _isSubmitting = false;
       });
     }
@@ -221,6 +236,7 @@ class _ServicesSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final showInactive = ref.watch(showInactiveServicesProvider(providerId));
     final servicesAsync = ref.watch(providerServicesProvider((providerId, showInactive)));
@@ -229,18 +245,18 @@ class _ServicesSection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _SectionHeader(
-          title: 'Services',
+          title: l10n.servicesSectionTitle,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextButton(
                 onPressed: () =>
                     ref.read(showInactiveServicesProvider(providerId).notifier).state = !showInactive,
-                child: Text(showInactive ? 'Hide removed' : 'Show removed'),
+                child: Text(showInactive ? l10n.hideRemovedButton : l10n.showRemovedButton),
               ),
               TextButton.icon(
                 icon: const Icon(Icons.add),
-                label: const Text('Add'),
+                label: Text(l10n.addButton),
                 onPressed: () async {
                   final added = await showDialog<bool>(
                     context: context,
@@ -256,7 +272,7 @@ class _ServicesSection extends ConsumerWidget {
           data: (services) {
             if (services.isEmpty) {
               return Text(
-                showInactive ? 'No services yet.' : 'No active services.',
+                showInactive ? l10n.noServicesYet : l10n.noActiveServices,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
               );
             }
@@ -287,7 +303,7 @@ class _ServicesSection extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: 8),
             child: LinearProgressIndicator(),
           ),
-          error: (error, stackTrace) => Text('Failed to load services: $error'),
+          error: (error, stackTrace) => Text(l10n.errorServicesLoadFailed(error.toString())),
         ),
       ],
     );
@@ -309,6 +325,7 @@ class _ServiceAdminRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
@@ -332,12 +349,13 @@ class _ServiceAdminRow extends StatelessWidget {
                     ),
                     if (!service.active) ...[
                       const SizedBox(width: FactorySpacing.space2),
-                      const FactoryBadge(label: 'Removed'),
+                      FactoryBadge(label: l10n.removedBadge),
                     ],
                   ],
                 ),
                 const SizedBox(height: 2),
-                Text('${service.durationMinutes} min', style: textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
+                Text(l10n.serviceDurationMinutes(service.durationMinutes),
+                    style: textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
               ],
             ),
           ),
@@ -347,12 +365,12 @@ class _ServiceAdminRow extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(icon: const Icon(Icons.edit_outlined), tooltip: 'Edit', onPressed: onEdit),
-                IconButton(icon: const Icon(Icons.delete_outline), tooltip: 'Remove', onPressed: onRemove),
+                IconButton(icon: const Icon(Icons.edit_outlined), tooltip: l10n.editTooltip, onPressed: onEdit),
+                IconButton(icon: const Icon(Icons.delete_outline), tooltip: l10n.removeTooltip, onPressed: onRemove),
               ],
             )
           else
-            TextButton(onPressed: onReactivate, child: const Text('Reactivate')),
+            TextButton(onPressed: onReactivate, child: Text(l10n.reactivateButton)),
         ],
       ),
     );
@@ -366,16 +384,17 @@ class _AvailabilitySection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final slotsAsync = ref.watch(providerSlotsProvider(providerId));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _SectionHeader(
-          title: 'Availability',
+          title: l10n.availabilitySectionTitle,
           trailing: TextButton.icon(
             icon: const Icon(Icons.add),
-            label: const Text('Add'),
+            label: Text(l10n.addButton),
             onPressed: () async {
               final added = await showDialog<bool>(
                 context: context,
@@ -389,7 +408,7 @@ class _AvailabilitySection extends ConsumerWidget {
           data: (slots) {
             if (slots.isEmpty) {
               return Text(
-                'No time slots yet.',
+                l10n.noSlotsYet,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
               );
             }
@@ -403,8 +422,8 @@ class _AvailabilitySection extends ConsumerWidget {
                   .map((s) => Chip(
                         label: Text(
                           s.status == 'OPEN'
-                              ? _formatDateTime(s.startsAt.toLocal())
-                              : '${_formatDateTime(s.startsAt.toLocal())} · ${_capitalize(s.status)}',
+                              ? formatMonthDayTime(l10n, s.startsAt.toLocal())
+                              : '${formatMonthDayTime(l10n, s.startsAt.toLocal())} · ${_capitalize(s.status)}',
                         ),
                         onDeleted: s.status == 'OPEN'
                             ? () async {
@@ -420,7 +439,7 @@ class _AvailabilitySection extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: 8),
             child: LinearProgressIndicator(),
           ),
-          error: (error, stackTrace) => Text('Failed to load availability: $error'),
+          error: (error, stackTrace) => Text(l10n.errorAvailabilityLoadFailed(error.toString())),
         ),
       ],
     );
@@ -434,6 +453,7 @@ class _MastersSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final showInactive = ref.watch(showInactiveMastersProvider(providerId));
     final mastersAsync = ref.watch(adminMastersProvider((providerId, showInactive)));
@@ -442,18 +462,18 @@ class _MastersSection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _SectionHeader(
-          title: 'Masters',
+          title: l10n.mastersSectionTitle,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextButton(
                 onPressed: () =>
                     ref.read(showInactiveMastersProvider(providerId).notifier).state = !showInactive,
-                child: Text(showInactive ? 'Hide removed' : 'Show removed'),
+                child: Text(showInactive ? l10n.hideRemovedButton : l10n.showRemovedButton),
               ),
               TextButton.icon(
                 icon: const Icon(Icons.add),
-                label: const Text('Add'),
+                label: Text(l10n.addButton),
                 onPressed: () async {
                   final added = await showDialog<bool>(
                     context: context,
@@ -469,7 +489,7 @@ class _MastersSection extends ConsumerWidget {
           data: (masters) {
             if (masters.isEmpty) {
               return Text(
-                showInactive ? 'No masters yet.' : 'No active masters.',
+                showInactive ? l10n.noMastersYet : l10n.noActiveMasters,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
               );
             }
@@ -504,7 +524,7 @@ class _MastersSection extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: 8),
             child: LinearProgressIndicator(),
           ),
-          error: (error, stackTrace) => Text('Failed to load masters: $error'),
+          error: (error, stackTrace) => Text(l10n.errorMastersLoadFailed(error.toString())),
         ),
       ],
     );
@@ -528,6 +548,7 @@ class _MasterAdminRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
@@ -560,7 +581,7 @@ class _MasterAdminRow extends StatelessWidget {
                     ),
                     if (!master.active) ...[
                       const SizedBox(width: FactorySpacing.space2),
-                      const FactoryBadge(label: 'Removed'),
+                      FactoryBadge(label: l10n.removedBadge),
                     ],
                   ],
                 ),
@@ -582,23 +603,23 @@ class _MasterAdminRow extends StatelessWidget {
               children: [
                 IconButton(
                   icon: const Icon(Icons.design_services_outlined),
-                  tooltip: 'Services this master offers',
+                  tooltip: l10n.manageServicesTooltip,
                   onPressed: onManageServices,
                 ),
                 IconButton(
                   icon: const Icon(Icons.add_a_photo_outlined),
-                  tooltip: 'Add portfolio photo',
+                  tooltip: l10n.addPortfolioPhotoTooltip,
                   onPressed: onAddPortfolioItem,
                 ),
                 IconButton(
                   icon: const Icon(Icons.person_remove_outlined),
-                  tooltip: 'Remove master',
+                  tooltip: l10n.removeMasterTooltip,
                   onPressed: onRemove,
                 ),
               ],
             )
           else
-            TextButton(onPressed: onReactivate, child: const Text('Reactivate')),
+            TextButton(onPressed: onReactivate, child: Text(l10n.reactivateButton)),
         ],
       ),
     );
@@ -612,18 +633,19 @@ class _BookingsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final bookingsAsync = ref.watch(providerBookingsProvider(providerId));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Bookings', style: Theme.of(context).textTheme.titleMedium),
+        Text(l10n.bookingsSectionTitle, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: FactorySpacing.space2),
         bookingsAsync.when(
           data: (bookings) {
             if (bookings.isEmpty) {
               return Text(
-                'No bookings yet.',
+                l10n.noBookingsYet,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
               );
             }
@@ -645,7 +667,7 @@ class _BookingsSection extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: 8),
             child: LinearProgressIndicator(),
           ),
-          error: (error, stackTrace) => Text('Failed to load bookings: $error'),
+          error: (error, stackTrace) => Text(l10n.errorBookingsLoadFailed(error.toString())),
         ),
       ],
     );
@@ -660,6 +682,7 @@ class _BookingAdminRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
 
     return Container(
@@ -678,18 +701,21 @@ class _BookingAdminRow extends StatelessWidget {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     FactoryPriceText(amount: booking.totalPrice, fontSize: 14),
-                    FactoryBadge(label: _capitalize(booking.status), variant: _bookingStatusVariant(booking.status)),
+                    FactoryBadge(
+                      label: _bookingStatusLabel(l10n, booking.status),
+                      variant: _bookingStatusVariant(booking.status),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  _formatDateTime(booking.createdAt.toLocal()),
+                  formatMonthDayTime(l10n, booking.createdAt.toLocal()),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
                 ),
               ],
             ),
           ),
-          if (onMarkComplete != null) TextButton(onPressed: onMarkComplete, child: const Text('Mark complete')),
+          if (onMarkComplete != null) TextButton(onPressed: onMarkComplete, child: Text(l10n.markCompleteButton)),
         ],
       ),
     );
@@ -703,6 +729,13 @@ FactoryBadgeVariant _bookingStatusVariant(String status) => switch (status) {
       _ => FactoryBadgeVariant.neutral,
     };
 
+String _bookingStatusLabel(AppLocalizations l10n, String status) => switch (status) {
+      'CONFIRMED' => l10n.bookingStatusConfirmed,
+      'COMPLETED' => l10n.bookingStatusCompleted,
+      'CANCELLED' => l10n.bookingStatusCancelled,
+      _ => _capitalize(status),
+    };
+
 String _initialsFor(String name) {
   final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
   if (parts.isEmpty) return '?';
@@ -710,16 +743,4 @@ String _initialsFor(String name) {
     return parts.first.substring(0, parts.first.length >= 2 ? 2 : 1).toUpperCase();
   }
   return (parts[0][0] + parts[1][0]).toUpperCase();
-}
-
-const _months = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-];
-
-String _formatDateTime(DateTime dt) {
-  final month = _months[dt.month - 1];
-  final hour = dt.hour.toString().padLeft(2, '0');
-  final minute = dt.minute.toString().padLeft(2, '0');
-  return '$month ${dt.day}, $hour:$minute';
 }

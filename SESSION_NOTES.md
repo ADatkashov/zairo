@@ -2751,4 +2751,52 @@ Item 4 — только `business_admin`: `DashboardScreen`, `SalonDetailScreen`
 предыдущий раздел).
 
 ### Текущий статус
+Закоммичено и запушено (`8a57f32`).
+
+## Item 4, финал — весь business_admin локализован (2026-08-21)
+
+Пользователь выбрал "Item 4 — business_admin" следующим шагом. Закрыт
+весь оставшийся scope: `DashboardScreen` (приветствие, форма создания
+салона, диалог "Add another salon"), `ModerationScreen`, и самый
+большой экран проекта — `SalonDetailScreen` (4 секции: Services,
+Availability, Masters, Bookings + диалог редактирования салона) со
+всеми 5 CRUD-диалогами (`AddServiceDialog`, `AddSlotDialog`,
+`AddMasterDialog`, `AddPortfolioItemDialog`,
+`ManageMasterServicesDialog`).
+
+- Новый `lib/core/formatting/month_day_time.dart` в `business_admin` —
+  та же схема, что и в `user_app` (независимая копия, не общий пакет:
+  два приложения делят только `core_ui`/`core_network`/`core_storage`,
+  не фичи и не эту утилиту — уже устоявшийся в проекте выбор).
+- Статусы провайдера (`ACTIVE`/`PENDING`/`SUSPENDED`) и брони
+  (`CONFIRMED`/`COMPLETED`/`CANCELLED`) получили явные ARB-ключи с тем
+  же generic-capitalize fallback на нераспознанный статус, что и в
+  `user_app`. Vertical (`beauty` и т.д.) остаётся непереведённым сырым
+  значением — тот же принцип "не заводить UI-хардкод под конкретный
+  vertical", что и в пункте 2 и в `user_app`'ском `ProviderCard`.
+- ~90 новых ARB-ключей на английском + переводы на ru/kk. Много
+  переиспользуемых generic-ключей (`cancelButton`, `saveButton`,
+  `addButton`, `durationMinutesLabel`, `errorServicesLoadFailed` и
+  т.д.) — сознательно не заводил отдельный ключ на каждый диалог,
+  раз текст физически одинаковый ("Cancel" в диалоге создания слота и
+  в диалоге редактирования услуги — один и тот же ключ).
+
+Проверено: `flutter analyze` — чисто; `flutter test` — 18/18 (после
+добавления `localizationsDelegates`/`supportedLocales` в 4 тестовых
+файла — `auth_gate_test.dart`, `dashboard_screen_test.dart`,
+`moderation_screen_test.dart`, `salon_detail_screen_test.dart` — тот же
+паттерн фикса, что уже применялся трижды в этой сессии). Grep по
+`lib/features` подтвердил: непереведённых `Text(...)`/`labelText`/
+`tooltip`/`title` литералов не осталось.
+
+**И `user_app`, и `business_admin` теперь полностью на
+`AppLocalizations` (kk/ru/en).** Item 4 закрыт целиком. Из
+рекомендованных архитектором 4 пунктов не осталось ни одного открытого
+подпункта — остаётся только уже названная ранее "на будущее" работа:
+носитель казахского языка ещё не проверял переводы вживую (см. более
+раннюю заметку), и все темы, сознательно спроектированные, но не
+реализованные (Tenant/Marketplace/Region/RBAC/Events/провайдеры) —
+ждут реального триггера, см. список выше.
+
+### Текущий статус
 Изменения готовы, ждут коммита.

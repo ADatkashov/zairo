@@ -2,6 +2,7 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../salon/data/models/admin_provider.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
@@ -16,17 +17,18 @@ class ModerationScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final pendingAsync = ref.watch(pendingProvidersProvider);
 
     return Scaffold(
       backgroundColor: colors.bg,
       appBar: AppBar(
-        title: const Text('Salon moderation'),
+        title: Text(l10n.moderationTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            tooltip: 'Log out',
+            tooltip: l10n.logOutTooltip,
             onPressed: () => ref.read(authControllerProvider.notifier).logout(),
           ),
         ],
@@ -34,11 +36,11 @@ class ModerationScreen extends ConsumerWidget {
       body: pendingAsync.when(
         data: (providers) {
           if (providers.isEmpty) {
-            return const Center(
+            return Center(
               child: FactoryEmptyState(
                 icon: Icons.fact_check_outlined,
-                title: 'No salons awaiting approval',
-                message: 'New salons will show up here once an owner creates one.',
+                title: l10n.moderationEmptyTitle,
+                message: l10n.moderationEmptyMessage,
               ),
             );
           }
@@ -68,7 +70,7 @@ class ModerationScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             child: FactoryErrorState(
-              message: "Couldn't load pending salons.",
+              message: l10n.errorPendingSalonsLoadFailed,
               onRetry: () => ref.invalidate(pendingProvidersProvider),
             ),
           ),
@@ -87,6 +89,7 @@ class _PendingSalonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
 
     return Card(
@@ -110,8 +113,8 @@ class _PendingSalonCard extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextButton(onPressed: onSuspend, child: const Text('Suspend')),
-                FilledButton(onPressed: onApprove, child: const Text('Approve')),
+                TextButton(onPressed: onSuspend, child: Text(l10n.suspendButton)),
+                FilledButton(onPressed: onApprove, child: Text(l10n.approveButton)),
               ],
             ),
           ],

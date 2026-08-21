@@ -8,6 +8,7 @@ import 'package:business_admin/features/moderation/presentation/screens/moderati
 import 'package:business_admin/features/salon/data/models/admin_provider.dart';
 import 'package:business_admin/features/salon/data/salon_admin_api.dart';
 import 'package:business_admin/features/salon/presentation/providers/salon_providers.dart';
+import 'package:business_admin/l10n/app_localizations.dart';
 
 class _FakeSalonAdminApi extends SalonAdminApi {
   _FakeSalonAdminApi(this._pending) : super(DioClient(Dio()));
@@ -51,7 +52,12 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [salonAdminApiProvider.overrideWithValue(fakeApi)],
-        child: MaterialApp(theme: factoryLightTheme(), home: const ModerationScreen()),
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const ModerationScreen(),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -71,7 +77,12 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [salonAdminApiProvider.overrideWithValue(_FakeSalonAdminApi([]))],
-        child: MaterialApp(theme: factoryLightTheme(), home: const ModerationScreen()),
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const ModerationScreen(),
+        ),
       ),
     );
     await tester.pumpAndSettle();

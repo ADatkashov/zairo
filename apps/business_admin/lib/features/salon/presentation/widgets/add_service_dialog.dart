@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../data/models/admin_service.dart';
 import '../providers/salon_providers.dart';
 
@@ -38,27 +39,28 @@ class _AddServiceDialogState extends ConsumerState<AddServiceDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: Text(_isEditing ? 'Edit service' : 'Add a service'),
+      title: Text(_isEditing ? l10n.editServiceDialogTitle : l10n.addServiceDialogTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
             controller: _titleController,
             enabled: !_isSubmitting,
-            decoration: const InputDecoration(labelText: 'Title'),
+            decoration: InputDecoration(labelText: l10n.titleLabel),
           ),
           TextField(
             controller: _durationController,
             enabled: !_isSubmitting,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Duration (minutes)'),
+            decoration: InputDecoration(labelText: l10n.durationMinutesLabel),
           ),
           TextField(
             controller: _priceController,
             enabled: !_isSubmitting,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(labelText: 'Price (USD)'),
+            decoration: InputDecoration(labelText: l10n.priceUsdLabel),
           ),
           if (_error != null)
             Padding(
@@ -70,24 +72,25 @@ class _AddServiceDialogState extends ConsumerState<AddServiceDialog> {
       actions: [
         TextButton(
           onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancelButton),
         ),
         FilledButton(
           onPressed: _isSubmitting ? null : _submit,
           child: _isSubmitting
               ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-              : Text(_isEditing ? 'Save' : 'Add'),
+              : Text(_isEditing ? l10n.saveButton : l10n.addButton),
         ),
       ],
     );
   }
 
   Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context)!;
     final title = _titleController.text.trim();
     final duration = int.tryParse(_durationController.text.trim());
     final price = double.tryParse(_priceController.text.trim());
     if (title.isEmpty || duration == null || duration <= 0 || price == null || price < 0) {
-      setState(() => _error = 'Enter a title, a positive duration, and a valid price');
+      setState(() => _error = l10n.validationServiceFields);
       return;
     }
     setState(() {
@@ -117,7 +120,7 @@ class _AddServiceDialogState extends ConsumerState<AddServiceDialog> {
       Navigator.of(context).pop(true);
     } catch (e) {
       setState(() {
-        _error = 'Failed to ${_isEditing ? 'save' : 'add'} service: $e';
+        _error = _isEditing ? l10n.errorServiceSaveFailed(e.toString()) : l10n.errorServiceAddFailed(e.toString());
         _isSubmitting = false;
       });
     }

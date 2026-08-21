@@ -14,6 +14,7 @@ import 'package:business_admin/features/salon/data/models/admin_slot.dart';
 import 'package:business_admin/features/salon/data/salon_admin_api.dart';
 import 'package:business_admin/features/salon/presentation/providers/salon_providers.dart';
 import 'package:business_admin/features/salon/presentation/screens/salon_detail_screen.dart';
+import 'package:business_admin/l10n/app_localizations.dart';
 
 const _provider = AdminProvider(
   id: 'p1',
@@ -247,7 +248,12 @@ void main() {
           salonAdminApiProvider.overrideWithValue(fakeApi),
           beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
         ],
-        child: MaterialApp(theme: factoryLightTheme(), home: const SalonDetailScreen(provider: _provider)),
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SalonDetailScreen(provider: _provider),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -286,7 +292,12 @@ void main() {
           salonAdminApiProvider.overrideWithValue(fakeApi),
           beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
         ],
-        child: MaterialApp(theme: factoryLightTheme(), home: const SalonDetailScreen(provider: _provider)),
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SalonDetailScreen(provider: _provider),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -336,7 +347,12 @@ void main() {
           salonAdminApiProvider.overrideWithValue(fakeApi),
           beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
         ],
-        child: MaterialApp(theme: factoryLightTheme(), home: const SalonDetailScreen(provider: _provider)),
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SalonDetailScreen(provider: _provider),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -372,7 +388,12 @@ void main() {
           salonAdminApiProvider.overrideWithValue(fakeApi),
           beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
         ],
-        child: MaterialApp(theme: factoryLightTheme(), home: const SalonDetailScreen(provider: _provider)),
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SalonDetailScreen(provider: _provider),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -396,7 +417,12 @@ void main() {
           salonAdminApiProvider.overrideWithValue(fakeApi),
           beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
         ],
-        child: MaterialApp(theme: factoryLightTheme(), home: const SalonDetailScreen(provider: _provider)),
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SalonDetailScreen(provider: _provider),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -432,7 +458,12 @@ void main() {
           salonAdminApiProvider.overrideWithValue(fakeApi),
           beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
         ],
-        child: MaterialApp(theme: factoryLightTheme(), home: const SalonDetailScreen(provider: _provider)),
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SalonDetailScreen(provider: _provider),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -468,7 +499,12 @@ void main() {
           salonAdminApiProvider.overrideWithValue(fakeApi),
           beautyAdminApiProvider.overrideWithValue(fakeBeautyApi),
         ],
-        child: MaterialApp(theme: factoryLightTheme(), home: const SalonDetailScreen(provider: _provider)),
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SalonDetailScreen(provider: _provider),
+        ),
       ),
     );
     await tester.pumpAndSettle();

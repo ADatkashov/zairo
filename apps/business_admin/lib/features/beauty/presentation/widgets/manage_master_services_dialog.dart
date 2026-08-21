@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
 import '../providers/beauty_admin_providers.dart';
 
@@ -17,17 +18,18 @@ class ManageMasterServicesDialog extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final servicesAsync = ref.watch(providerServicesProvider((providerId, false)));
     final linkedAsync = ref.watch(adminMasterServicesProvider(masterId));
 
     return AlertDialog(
-      title: const Text('Services this master offers'),
+      title: Text(l10n.manageServicesDialogTitle),
       content: SizedBox(
         width: 360,
         child: servicesAsync.when(
           data: (services) {
             if (services.isEmpty) {
-              return const Text('Add a service to this salon first.');
+              return Text(l10n.addServiceFirstMessage);
             }
             final linkedIds = linkedAsync.value?.map((s) => s.serviceId).toSet() ?? const <String>{};
             return Column(
@@ -47,11 +49,11 @@ class ManageMasterServicesDialog extends ConsumerWidget {
             padding: EdgeInsets.all(24),
             child: Center(child: CircularProgressIndicator()),
           ),
-          error: (error, stackTrace) => Text('Failed to load services: $error'),
+          error: (error, stackTrace) => Text(l10n.errorServicesLoadFailed(error.toString())),
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Done')),
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(l10n.doneButton)),
       ],
     );
   }

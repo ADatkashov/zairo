@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../providers/salon_providers.dart';
 
 /// Returns true via Navigator.pop when a slot was created.
@@ -28,21 +29,22 @@ class _AddSlotDialogState extends ConsumerState<AddSlotDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: const Text('Add a time slot'),
+      title: Text(l10n.addSlotDialogTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ListTile(
             contentPadding: EdgeInsets.zero,
-            title: Text(_date == null ? 'Pick a date' : '${_date!.year}-${_date!.month}-${_date!.day}'),
+            title: Text(_date == null ? l10n.pickDateLabel : '${_date!.year}-${_date!.month}-${_date!.day}'),
             trailing: const Icon(Icons.calendar_today),
             onTap: _isSubmitting ? null : _pickDate,
           ),
           ListTile(
             contentPadding: EdgeInsets.zero,
-            title: Text(_time == null ? 'Pick a start time' : _time!.format(context)),
+            title: Text(_time == null ? l10n.pickTimeLabel : _time!.format(context)),
             trailing: const Icon(Icons.access_time),
             onTap: _isSubmitting ? null : _pickTime,
           ),
@@ -50,7 +52,7 @@ class _AddSlotDialogState extends ConsumerState<AddSlotDialog> {
             controller: _durationController,
             enabled: !_isSubmitting,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Duration (minutes)'),
+            decoration: InputDecoration(labelText: l10n.durationMinutesLabel),
           ),
           if (_error != null)
             Padding(
@@ -62,13 +64,13 @@ class _AddSlotDialogState extends ConsumerState<AddSlotDialog> {
       actions: [
         TextButton(
           onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancelButton),
         ),
         FilledButton(
           onPressed: _isSubmitting ? null : _submit,
           child: _isSubmitting
               ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('Add'),
+              : Text(l10n.addButton),
         ),
       ],
     );
@@ -91,9 +93,10 @@ class _AddSlotDialogState extends ConsumerState<AddSlotDialog> {
   }
 
   Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context)!;
     final duration = int.tryParse(_durationController.text.trim());
     if (_date == null || _time == null || duration == null || duration <= 0) {
-      setState(() => _error = 'Pick a date, a start time, and a positive duration');
+      setState(() => _error = l10n.validationSlotFields);
       return;
     }
     final startsAt = DateTime(_date!.year, _date!.month, _date!.day, _time!.hour, _time!.minute);
@@ -113,7 +116,7 @@ class _AddSlotDialogState extends ConsumerState<AddSlotDialog> {
       Navigator.of(context).pop(true);
     } catch (e) {
       setState(() {
-        _error = 'Failed to add slot: $e';
+        _error = l10n.errorAddSlotFailed(e.toString());
         _isSubmitting = false;
       });
     }

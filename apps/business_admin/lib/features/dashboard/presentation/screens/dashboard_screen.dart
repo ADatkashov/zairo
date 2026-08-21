@@ -2,6 +2,7 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../salon/data/models/admin_provider.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
@@ -17,6 +18,7 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final user = ref.watch(authControllerProvider).value;
     if (user == null) {
@@ -30,11 +32,11 @@ class DashboardScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: colors.bg,
       appBar: AppBar(
-        title: Text('Hi, ${user.displayName}'),
+        title: Text(l10n.dashboardGreeting(user.displayName)),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            tooltip: 'Log out',
+            tooltip: l10n.logOutTooltip,
             onPressed: () => ref.read(authControllerProvider.notifier).logout(),
           ),
         ],
@@ -52,7 +54,7 @@ class DashboardScreen extends ConsumerWidget {
               if (index == providers.length) {
                 return OutlinedButton.icon(
                   icon: const Icon(Icons.add),
-                  label: const Text('Add another salon'),
+                  label: Text(l10n.addAnotherSalonButton),
                   onPressed: () => _openCreateSalonDialog(context, ref, user.id),
                 );
               }
@@ -71,7 +73,7 @@ class DashboardScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             child: FactoryErrorState(
-              message: "Couldn't load your salons.",
+              message: l10n.errorSalonsLoadFailed,
               onRetry: () => ref.invalidate(myProvidersProvider(user.id)),
             ),
           ),
@@ -81,18 +83,19 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Future<void> _openCreateSalonDialog(BuildContext context, WidgetRef ref, String ownerUserId) async {
+    final l10n = AppLocalizations.of(context)!;
     final nameController = TextEditingController();
     final created = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Add a salon'),
+        title: Text(l10n.addSalonDialogTitle),
         content: TextField(
           controller: nameController,
-          decoration: const InputDecoration(labelText: 'Salon name'),
+          decoration: InputDecoration(labelText: l10n.salonNameLabel),
           autofocus: true,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancelButton)),
           FilledButton(
             onPressed: () async {
               if (nameController.text.trim().isEmpty) return;
@@ -103,7 +106,7 @@ class DashboardScreen extends ConsumerWidget {
                   );
               if (context.mounted) Navigator.of(context).pop(true);
             },
-            child: const Text('Create'),
+            child: Text(l10n.createButton),
           ),
         ],
       ),
@@ -122,6 +125,7 @@ class _SalonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
@@ -145,7 +149,7 @@ class _SalonCard extends StatelessWidget {
                   ],
                 ),
               ),
-              FactoryBadge(label: _capitalize(provider.status), variant: _providerStatusVariant(provider.status)),
+              FactoryBadge(label: _providerStatusLabel(l10n, provider.status), variant: _providerStatusVariant(provider.status)),
               const SizedBox(width: FactorySpacing.space2),
               Icon(Icons.chevron_right, color: colors.textTertiary),
             ],
@@ -161,6 +165,13 @@ FactoryBadgeVariant _providerStatusVariant(String status) => switch (status) {
       'PENDING' => FactoryBadgeVariant.limited,
       'SUSPENDED' => FactoryBadgeVariant.error,
       _ => FactoryBadgeVariant.neutral,
+    };
+
+String _providerStatusLabel(AppLocalizations l10n, String status) => switch (status) {
+      'ACTIVE' => l10n.providerStatusActive,
+      'PENDING' => l10n.providerStatusPending,
+      'SUSPENDED' => l10n.providerStatusSuspended,
+      _ => _capitalize(status),
     };
 
 String _capitalize(String s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1).toLowerCase()}';
@@ -187,6 +198,7 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
@@ -203,12 +215,12 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
               child: Icon(Icons.storefront_outlined, size: 22, color: colors.textTertiary),
             ),
             const SizedBox(height: FactorySpacing.space4),
-            Text('You have no salons yet', style: textTheme.titleSmall),
+            Text(l10n.noSalonsYetTitle, style: textTheme.titleSmall),
             const SizedBox(height: FactorySpacing.space4),
             TextField(
               controller: _nameController,
               enabled: !_isSubmitting,
-              decoration: const InputDecoration(labelText: 'Salon name'),
+              decoration: InputDecoration(labelText: l10n.salonNameLabel),
             ),
             const SizedBox(height: FactorySpacing.space4),
             if (_error != null)
@@ -224,7 +236,7 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Create salon'),
+                  : Text(l10n.createSalonButton),
             ),
           ],
         ),
@@ -233,8 +245,9 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
   }
 
   Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_nameController.text.trim().isEmpty) {
-      setState(() => _error = 'Enter a salon name');
+      setState(() => _error = l10n.validationSalonNameRequired);
       return;
     }
     setState(() {
@@ -250,7 +263,7 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
       ref.invalidate(myProvidersProvider(widget.ownerUserId));
     } catch (e) {
       setState(() {
-        _error = 'Failed to create salon: $e';
+        _error = l10n.errorCreateSalonFailed(e.toString());
         _isSubmitting = false;
       });
     }

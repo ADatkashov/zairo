@@ -55,5 +55,330 @@
     "placeholders": {
       "error": {"type": "String"}
     }
-  }
+  },
+
+  "logOutTooltip": "Log out",
+  "@logOutTooltip": {"description": "Log-out icon button tooltip, shown on Dashboard and Moderation."},
+
+  "cancelButton": "Cancel",
+  "@cancelButton": {"description": "Shared cancel button across all dialogs."},
+
+  "saveButton": "Save",
+  "@saveButton": {"description": "Shared save button (edit salon, edit service)."},
+
+  "addButton": "Add",
+  "@addButton": {"description": "Shared add button/label — a section's \"Add\" trigger and a dialog's submit button."},
+
+  "dashboardGreeting": "Hi, {name}",
+  "@dashboardGreeting": {
+    "description": "Dashboard app bar title.",
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+
+  "addAnotherSalonButton": "Add another salon",
+  "@addAnotherSalonButton": {"description": "Button below the salon list to create another one."},
+
+  "addSalonDialogTitle": "Add a salon",
+  "@addSalonDialogTitle": {"description": "Dialog title for creating a salon from the dashboard's salon list."},
+
+  "salonNameLabel": "Salon name",
+  "@salonNameLabel": {"description": "Salon name text field label — used on create and edit."},
+
+  "createButton": "Create",
+  "@createButton": {"description": "Add-a-salon dialog's submit button."},
+
+  "errorSalonsLoadFailed": "Couldn't load your salons.",
+  "@errorSalonsLoadFailed": {"description": "Dashboard error state."},
+
+  "noSalonsYetTitle": "You have no salons yet",
+  "@noSalonsYetTitle": {"description": "Dashboard's zero-salons empty state title."},
+
+  "createSalonButton": "Create salon",
+  "@createSalonButton": {"description": "Zero-salons form's submit button."},
+
+  "errorCreateSalonFailed": "Failed to create salon: {error}",
+  "@errorCreateSalonFailed": {
+    "description": "Zero-salons form's error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "validationSalonNameRequired": "Enter a salon name",
+  "@validationSalonNameRequired": {"description": "Salon name validation error."},
+
+  "moderationTitle": "Salon moderation",
+  "@moderationTitle": {"description": "Moderation screen app bar title."},
+
+  "moderationEmptyTitle": "No salons awaiting approval",
+  "@moderationEmptyTitle": {"description": "Moderation screen empty state title."},
+
+  "moderationEmptyMessage": "New salons will show up here once an owner creates one.",
+  "@moderationEmptyMessage": {"description": "Moderation screen empty state message."},
+
+  "errorPendingSalonsLoadFailed": "Couldn't load pending salons.",
+  "@errorPendingSalonsLoadFailed": {"description": "Moderation screen error state."},
+
+  "suspendButton": "Suspend",
+  "@suspendButton": {"description": "Moderation card's suspend action."},
+
+  "approveButton": "Approve",
+  "@approveButton": {"description": "Moderation card's approve action."},
+
+  "editSalonTooltip": "Edit salon",
+  "@editSalonTooltip": {"description": "Salon detail screen's AppBar edit action tooltip and dialog title."},
+
+  "latitudeOptionalLabel": "Latitude (optional)",
+  "@latitudeOptionalLabel": {"description": "Edit-salon dialog's latitude field label."},
+
+  "longitudeOptionalLabel": "Longitude (optional)",
+  "@longitudeOptionalLabel": {"description": "Edit-salon dialog's longitude field label."},
+
+  "validationLatLngInvalid": "Latitude/longitude must be valid numbers",
+  "@validationLatLngInvalid": {"description": "Edit-salon dialog's coordinate validation error."},
+
+  "errorSaveSalonFailed": "Failed to save salon: {error}",
+  "@errorSaveSalonFailed": {
+    "description": "Edit-salon dialog's error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "servicesSectionTitle": "Services",
+  "@servicesSectionTitle": {"description": "Salon detail screen's services section header."},
+
+  "showRemovedButton": "Show removed",
+  "@showRemovedButton": {"description": "Toggle to reveal deactivated services/masters."},
+
+  "hideRemovedButton": "Hide removed",
+  "@hideRemovedButton": {"description": "Toggle to hide deactivated services/masters again."},
+
+  "noServicesYet": "No services yet.",
+  "@noServicesYet": {"description": "Services section empty state including inactive ones."},
+
+  "noActiveServices": "No active services.",
+  "@noActiveServices": {"description": "Services section empty state, active only."},
+
+  "errorServicesLoadFailed": "Failed to load services: {error}",
+  "@errorServicesLoadFailed": {
+    "description": "Services section error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "removedBadge": "Removed",
+  "@removedBadge": {"description": "Badge on a deactivated service/master row."},
+
+  "editTooltip": "Edit",
+  "@editTooltip": {"description": "Service row's edit icon button tooltip."},
+
+  "removeTooltip": "Remove",
+  "@removeTooltip": {"description": "Service row's remove icon button tooltip."},
+
+  "reactivateButton": "Reactivate",
+  "@reactivateButton": {"description": "Button on a deactivated service/master row."},
+
+  "availabilitySectionTitle": "Availability",
+  "@availabilitySectionTitle": {"description": "Salon detail screen's availability section header."},
+
+  "noSlotsYet": "No time slots yet.",
+  "@noSlotsYet": {"description": "Availability section empty state."},
+
+  "errorAvailabilityLoadFailed": "Failed to load availability: {error}",
+  "@errorAvailabilityLoadFailed": {
+    "description": "Availability section error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "mastersSectionTitle": "Masters",
+  "@mastersSectionTitle": {"description": "Salon detail screen's masters section header."},
+
+  "noMastersYet": "No masters yet.",
+  "@noMastersYet": {"description": "Masters section empty state including inactive ones."},
+
+  "noActiveMasters": "No active masters.",
+  "@noActiveMasters": {"description": "Masters section empty state, active only."},
+
+  "errorMastersLoadFailed": "Failed to load masters: {error}",
+  "@errorMastersLoadFailed": {
+    "description": "Masters section error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "manageServicesTooltip": "Services this master offers",
+  "@manageServicesTooltip": {"description": "Master row's manage-services icon button tooltip and dialog title."},
+
+  "addPortfolioPhotoTooltip": "Add portfolio photo",
+  "@addPortfolioPhotoTooltip": {"description": "Master row's add-portfolio-photo icon button tooltip."},
+
+  "removeMasterTooltip": "Remove master",
+  "@removeMasterTooltip": {"description": "Master row's remove icon button tooltip."},
+
+  "bookingsSectionTitle": "Bookings",
+  "@bookingsSectionTitle": {"description": "Salon detail screen's bookings section header."},
+
+  "noBookingsYet": "No bookings yet.",
+  "@noBookingsYet": {"description": "Bookings section empty state."},
+
+  "errorBookingsLoadFailed": "Failed to load bookings: {error}",
+  "@errorBookingsLoadFailed": {
+    "description": "Bookings section error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "markCompleteButton": "Mark complete",
+  "@markCompleteButton": {"description": "Button on a CONFIRMED booking row."},
+
+  "serviceDurationMinutes": "{minutes} min",
+  "@serviceDurationMinutes": {
+    "description": "Service row's duration meta text.",
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+
+  "providerStatusActive": "Active",
+  "providerStatusPending": "Pending",
+  "providerStatusSuspended": "Suspended",
+  "@providerStatusActive": {"description": "Provider status badge label for ACTIVE."},
+
+  "bookingStatusConfirmed": "Confirmed",
+  "bookingStatusCompleted": "Completed",
+  "bookingStatusCancelled": "Cancelled",
+  "@bookingStatusConfirmed": {"description": "Booking status badge label for CONFIRMED."},
+
+  "monthJan": "Jan",
+  "monthFeb": "Feb",
+  "monthMar": "Mar",
+  "monthApr": "Apr",
+  "monthMay": "May",
+  "monthJun": "Jun",
+  "monthJul": "Jul",
+  "monthAug": "Aug",
+  "monthSep": "Sep",
+  "monthOct": "Oct",
+  "monthNov": "Nov",
+  "monthDec": "Dec",
+  "@monthJan": {"description": "Abbreviated month name, used in slot/booking date formatting."},
+
+  "editServiceDialogTitle": "Edit service",
+  "@editServiceDialogTitle": {"description": "Add/edit service dialog title when editing."},
+
+  "addServiceDialogTitle": "Add a service",
+  "@addServiceDialogTitle": {"description": "Add/edit service dialog title when adding."},
+
+  "titleLabel": "Title",
+  "@titleLabel": {"description": "Service dialog's title field label."},
+
+  "durationMinutesLabel": "Duration (minutes)",
+  "@durationMinutesLabel": {"description": "Duration field label, shared by the service and slot dialogs."},
+
+  "priceUsdLabel": "Price (USD)",
+  "@priceUsdLabel": {"description": "Service dialog's price field label."},
+
+  "validationServiceFields": "Enter a title, a positive duration, and a valid price",
+  "@validationServiceFields": {"description": "Add/edit service dialog's validation error."},
+
+  "errorServiceSaveFailed": "Failed to save service: {error}",
+  "@errorServiceSaveFailed": {
+    "description": "Edit-service dialog's error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "errorServiceAddFailed": "Failed to add service: {error}",
+  "@errorServiceAddFailed": {
+    "description": "Add-service dialog's error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "addSlotDialogTitle": "Add a time slot",
+  "@addSlotDialogTitle": {"description": "Add-slot dialog title."},
+
+  "pickDateLabel": "Pick a date",
+  "@pickDateLabel": {"description": "Add-slot dialog's date picker placeholder."},
+
+  "pickTimeLabel": "Pick a start time",
+  "@pickTimeLabel": {"description": "Add-slot dialog's time picker placeholder."},
+
+  "validationSlotFields": "Pick a date, a start time, and a positive duration",
+  "@validationSlotFields": {"description": "Add-slot dialog's validation error."},
+
+  "errorAddSlotFailed": "Failed to add slot: {error}",
+  "@errorAddSlotFailed": {
+    "description": "Add-slot dialog's error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "addMasterDialogTitle": "Add a master",
+  "@addMasterDialogTitle": {"description": "Add-master dialog title."},
+
+  "masterNameLabel": "Name",
+  "@masterNameLabel": {"description": "Add-master dialog's name field label."},
+
+  "bioOptionalLabel": "Bio (optional)",
+  "@bioOptionalLabel": {"description": "Add-master dialog's bio field label."},
+
+  "validationMasterNameRequired": "Enter a name",
+  "@validationMasterNameRequired": {"description": "Add-master dialog's validation error."},
+
+  "errorAddMasterFailed": "Failed to add master: {error}",
+  "@errorAddMasterFailed": {
+    "description": "Add-master dialog's error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "addPortfolioDialogTitle": "Add a portfolio photo",
+  "@addPortfolioDialogTitle": {"description": "Add-portfolio-item dialog title."},
+
+  "choosePhotoLabel": "Choose photo",
+  "@choosePhotoLabel": {"description": "Add-portfolio-item dialog's file picker button default label."},
+
+  "captionOptionalLabel": "Caption (optional)",
+  "@captionOptionalLabel": {"description": "Add-portfolio-item dialog's caption field label."},
+
+  "validationChoosePhoto": "Choose a photo first",
+  "@validationChoosePhoto": {"description": "Add-portfolio-item dialog's validation error."},
+
+  "errorReadFileFailed": "Failed to read file: {error}",
+  "@errorReadFileFailed": {
+    "description": "Add-portfolio-item dialog's file-picker error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "errorAddPhotoFailed": "Failed to add photo: {error}",
+  "@errorAddPhotoFailed": {
+    "description": "Add-portfolio-item dialog's submit error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "manageServicesDialogTitle": "Services this master offers",
+  "@manageServicesDialogTitle": {"description": "Manage-master-services dialog title (same text as the row's tooltip)."},
+
+  "addServiceFirstMessage": "Add a service to this salon first.",
+  "@addServiceFirstMessage": {"description": "Manage-master-services dialog's empty state when the salon has no services."},
+
+  "doneButton": "Done",
+  "@doneButton": {"description": "Manage-master-services dialog's close button."}
 }

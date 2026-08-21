@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../../storage/presentation/providers/storage_providers.dart';
 import '../providers/beauty_admin_providers.dart';
 
@@ -35,22 +36,23 @@ class _AddPortfolioItemDialogState extends ConsumerState<AddPortfolioItemDialog>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: const Text('Add a portfolio photo'),
+      title: Text(l10n.addPortfolioDialogTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           OutlinedButton.icon(
             icon: const Icon(Icons.image_outlined),
-            label: Text(_pickedName ?? 'Choose photo'),
+            label: Text(_pickedName ?? l10n.choosePhotoLabel),
             onPressed: _isSubmitting ? null : _pickFile,
           ),
           const SizedBox(height: 8),
           TextField(
             controller: _captionController,
             enabled: !_isSubmitting,
-            decoration: const InputDecoration(labelText: 'Caption (optional)'),
+            decoration: InputDecoration(labelText: l10n.captionOptionalLabel),
           ),
           if (_error != null)
             Padding(
@@ -62,13 +64,13 @@ class _AddPortfolioItemDialogState extends ConsumerState<AddPortfolioItemDialog>
       actions: [
         TextButton(
           onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancelButton),
         ),
         FilledButton(
           onPressed: _isSubmitting ? null : _submit,
           child: _isSubmitting
               ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('Add'),
+              : Text(l10n.addButton),
         ),
       ],
     );
@@ -85,15 +87,17 @@ class _AddPortfolioItemDialogState extends ConsumerState<AddPortfolioItemDialog>
         _error = null;
       });
     } catch (e) {
-      setState(() => _error = 'Failed to read file: $e');
+      if (!mounted) return;
+      setState(() => _error = AppLocalizations.of(context)!.errorReadFileFailed(e.toString()));
     }
   }
 
   Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context)!;
     final bytes = _pickedBytes;
     final name = _pickedName;
     if (bytes == null || name == null) {
-      setState(() => _error = 'Choose a photo first');
+      setState(() => _error = l10n.validationChoosePhoto);
       return;
     }
     setState(() {
@@ -112,7 +116,7 @@ class _AddPortfolioItemDialogState extends ConsumerState<AddPortfolioItemDialog>
       Navigator.of(context).pop(true);
     } catch (e) {
       setState(() {
-        _error = 'Failed to add photo: $e';
+        _error = l10n.errorAddPhotoFailed(e.toString());
         _isSubmitting = false;
       });
     }

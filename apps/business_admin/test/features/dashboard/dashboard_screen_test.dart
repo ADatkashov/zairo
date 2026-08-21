@@ -16,6 +16,7 @@ import 'package:business_admin/features/salon/data/models/admin_service.dart';
 import 'package:business_admin/features/salon/data/models/admin_slot.dart';
 import 'package:business_admin/features/salon/data/salon_admin_api.dart';
 import 'package:business_admin/features/salon/presentation/providers/salon_providers.dart';
+import 'package:business_admin/l10n/app_localizations.dart';
 
 class _FakeSalonAdminApi extends SalonAdminApi {
   _FakeSalonAdminApi(this._providers) : super(DioClient(Dio()));
@@ -72,7 +73,12 @@ void main() {
           salonAdminApiProvider.overrideWithValue(fakeApi),
           authControllerProvider.overrideWith(_LoggedInOwnerController.new),
         ],
-        child: MaterialApp(theme: factoryLightTheme(), home: const DashboardScreen()),
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const DashboardScreen(),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -98,7 +104,12 @@ void main() {
           beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
           authControllerProvider.overrideWith(_LoggedInOwnerController.new),
         ],
-        child: MaterialApp(theme: factoryLightTheme(), home: const DashboardScreen()),
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const DashboardScreen(),
+        ),
       ),
     );
     await tester.pumpAndSettle();

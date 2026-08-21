@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../providers/beauty_admin_providers.dart';
 
 /// Returns true via Navigator.pop when a master was created.
@@ -28,20 +29,21 @@ class _AddMasterDialogState extends ConsumerState<AddMasterDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: const Text('Add a master'),
+      title: Text(l10n.addMasterDialogTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
             controller: _nameController,
             enabled: !_isSubmitting,
-            decoration: const InputDecoration(labelText: 'Name'),
+            decoration: InputDecoration(labelText: l10n.masterNameLabel),
           ),
           TextField(
             controller: _bioController,
             enabled: !_isSubmitting,
-            decoration: const InputDecoration(labelText: 'Bio (optional)'),
+            decoration: InputDecoration(labelText: l10n.bioOptionalLabel),
             maxLines: 2,
           ),
           if (_error != null)
@@ -54,22 +56,23 @@ class _AddMasterDialogState extends ConsumerState<AddMasterDialog> {
       actions: [
         TextButton(
           onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancelButton),
         ),
         FilledButton(
           onPressed: _isSubmitting ? null : _submit,
           child: _isSubmitting
               ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('Add'),
+              : Text(l10n.addButton),
         ),
       ],
     );
   }
 
   Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context)!;
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      setState(() => _error = 'Enter a name');
+      setState(() => _error = l10n.validationMasterNameRequired);
       return;
     }
     setState(() {
@@ -87,7 +90,7 @@ class _AddMasterDialogState extends ConsumerState<AddMasterDialog> {
       Navigator.of(context).pop(true);
     } catch (e) {
       setState(() {
-        _error = 'Failed to add master: $e';
+        _error = l10n.errorAddMasterFailed(e.toString());
         _isSubmitting = false;
       });
     }
