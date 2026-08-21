@@ -2923,4 +2923,38 @@ Kotlin-задач этого подпроекта (иначе конфликту
 "уже проверяли похожее приложение" не переносится автоматически.
 
 ### Текущий статус
+Закоммичено и запушено (`0974480`).
+
+## business_admin: добавлена платформа iOS (2026-08-21)
+
+В ходе разбора Android-проблем выяснилось: у `business_admin` нет
+папок `ios/`, `linux/`, `macos/` вообще — только `windows/` (у
+`user_app` есть все). Пользователь попросил добавить iOS и Windows,
+без обязательной проверки сборки прямо сейчас (Xcode на этой машине
+нет физически; Windows desktop-сборка блокирована отсутствующим
+Visual Studio C++ toolchain, известное давнее ограничение машины) —
+проверим оба позже.
+
+- Windows у `business_admin` уже существовал и полностью настроен
+  (`windows/runner/Runner.rc` — корректное имя `business_admin`, не
+  placeholder) — трогать не потребовалось.
+- iOS добавлен через `flutter create --platforms=ios --org com.zairo .`
+  — bundle id получился `com.zairo.businessAdmin`, согласовано со
+  схемой `user_app` (`com.zairo`) и Android-namespace `business_admin`
+  (`com.zairo.business_admin`).
+- **Побочный эффект команды, исправлен вручную**: `flutter create
+  --platforms=ios .` на существующем проекте неожиданно перезаписал
+  `.metadata`, стерев записи migration-платформ `android`/`web`/
+  `windows`, оставив только `ios`. Чисто bookkeeping-файл для `flutter
+  migrate`, не влияет на сборку, но восстановил все записи вручную
+  (сверился с форматом в `user_app/.metadata`) — на будущее: после
+  `flutter create --platforms=X .` на существующем проекте всегда
+  проверять `git diff .metadata`, команда не строго аддитивна.
+
+Проверено: `git status` подтвердил, что затронуты только `.metadata` и
+новая папка `ios/` (ничего в `android/`, `windows/`, `lib/` не
+задето); `flutter analyze` — чисто. Сборка iOS/Windows намеренно НЕ
+проверялась в этом шаге.
+
+### Текущий статус
 Изменения готовы, ждут коммита.
