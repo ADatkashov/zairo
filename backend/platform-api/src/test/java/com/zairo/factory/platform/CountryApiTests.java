@@ -59,4 +59,24 @@ class CountryApiTests {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
+
+    /**
+     * The actual claim of the Factory Country Architecture document: adding
+     * a second market (see V16__seed_uzbekistan_country_draft.sql) required
+     * zero changes to CountryController/CountryService/CountryRepository —
+     * this test exercises that row through the exact same, already-existing
+     * code the KZ tests above do.
+     */
+    @Test
+    void aSecondCountrySeededAsDraftIsFetchableByCodeButExcludedFromThePublicList() {
+        ResponseEntity<Map> byCode = restTemplate.getForEntity("/api/v1/countries/UZ", Map.class);
+        assertThat(byCode.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(byCode.getBody().get("name")).isEqualTo("Uzbekistan");
+        assertThat(byCode.getBody().get("currency")).isEqualTo("UZS");
+        assertThat(byCode.getBody().get("status")).isEqualTo("DRAFT");
+
+        ResponseEntity<List> active = restTemplate.getForEntity("/api/v1/countries", List.class);
+        List<Map<String, Object>> countries = active.getBody();
+        assertThat(countries).noneMatch(c -> "UZ".equals(c.get("code")));
+    }
 }
