@@ -64,9 +64,7 @@ class BeautyApi {
         // offer this service, or the slot was just taken by someone else)
         // that the response body doesn't distinguish for the client, so
         // this message stays general enough to cover both.
-        throw const BeautyException(
-          "Couldn't complete this booking — the master may not offer this service, or the time slot was just taken. Please try again.",
-        );
+        throw const BeautyException(BeautyErrorKey.bookingFailed);
       }
       rethrow;
     }

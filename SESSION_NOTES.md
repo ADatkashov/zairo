@@ -2473,13 +2473,229 @@ KZ, `/countries/uz` — полные узбекские данные, `/countrie
 Phase A `020a5f5`, Phase B `7ccac23`, Phase C `7518bb0`, Phase F
 `3c9974f` (D/E — без коммита, т.к. без кода).
 
+## Мастер-архитектура платформы (2026-08-21)
+
+Пользователь прислал ещё более широкий бриф — 52 раздела: Factory не
+как одно приложение и не как набор страновых приложений, а как
+"фабрика композиции" (multi-tenant, multi-marketplace, multi-industry,
+multi-country, с Money/Tax/Fiscalization/Delivery/Identity/Compliance/
+Events/RBAC/Admin/Observability и т.д.). Финальный раздел брифа сам
+явно говорит: "Do not over-engineer implementation details prematurely.
+First establish clean architectural boundaries..." — это прямая
+инструкция, что этот шаг снова документ, не код (та же логика, что и
+с Country Architecture ранее).
+
+Опубликован документ "Factory Master Architecture":
+https://claude.ai/code/artifact/81acb780-9136-4e4d-932a-7ee5602c96bd
+— не дублирует Country Architecture (тот документ остаётся детальным
+описанием оси Market/Localization), а даёт карту верхнего уровня и
+явно на неё ссылается.
+
+### Подход
+Вместо того чтобы одинаково подробно расписать все 52 пункта (это
+дало бы либо нереалистичный объём, либо поверхностность), документ:
+1. Даёт единожды полную целевую иерархию (Platform/Tenant/Marketplace/
+   Industry/Market/Localization/Core Marketplace/Regional Integrations/
+   External Providers) одной mermaid-диаграммой.
+2. **Честно сопоставляет её с реальным состоянием кода** — таблица по
+   каждому измерению: что реально построено (Country — Phase A–F;
+   Core Marketplace — весь текущий бэкенд; Industry — `vertical`-поле +
+   `vertical-beauty` модуль), что осознанно отложено (Tenant/
+   Marketplace/Region — ни разу не понадобились), что частично есть
+   (Identity/RBAC — 3 роли + ownership-проверки, не общая
+   Role/Permission/Scope модель).
+3. Переиспользует и явно называет "лакмусовую бумажку", уже дважды
+   доказанную в проекте (Payments/Maps органически,
+   Country/core_region осознанно): не строить абстракцию, пока нет
+   реального второго потребителя.
+4. Проверил реальную схему БД перед тем как писать раздел про Money:
+   `ServiceOffering.price`+`currency`, `Booking.totalPrice` (без
+   currency вообще), `Payment.amount`+`currency` — три независимые,
+   задублированные пары amount+currency, нигде не собранные в один
+   тип. Это единственное место во всём документе, где реальный
+   триггер уже есть сегодня (в отличие от Tax/Delivery/Identity-
+   провайдеров, у которых пока ноль реальных потребителей) — назван
+   как самая дешёвая и обоснованная штука, которую стоит сделать
+   в следующий раз.
+5. Явно прогнал раздел "What NOT to build" (§50 брифа) как чек-лист
+   против реального кода — чисто везде, кроме одного: хардкод
+   `"beauty".equals(vertical)` в `MasterDirectoryService`, который
+   теперь назван уже в третий раз за проект (research-форк, Country
+   Architecture, этот документ) и всё ещё не исправлен.
+6. Закрывает документ явным, дисциплинированным списком из 4 пунктов
+   "что реально стоит делать дальше" — специально НЕ превращает 52
+   раздела брифа в 52-пунктный бэклог, это и есть послание документа
+   пользователю: сдержанность — не пробел в архитектуре, а её цель.
+
+### Статус
+Документ опубликован. Код не менялся — по прямой инструкции самого
+брифа не форсировать реализацию раньше реальной необходимости.
+
 ## Следующий шаг — рекомендация архитектора
-Архитектурный фундамент (Country/CountryContext/core_region/
-message-key паттерн) готов и доказан на реальном коде. Дальше на
-выбор: (1) домигрировать оставшиеся исключения (`BookingException` и
-т.д.) на ключи тем же паттерном, что и Review; (2) докатить
-`AppLocalizations` до остальных экранов `user_app` и повторить
-локализационную инфраструктуру в `business_admin`; (3) когда появится
-реальный триггер — Phase D (переводы доменного контента) или Phase E
-(адаптеры доставки/SMS). Также по-прежнему актуальна вычитка казахского
-перевода носителем языка перед реальным запуском.
+Из документа: (1) общий тип `Money` вместо трёх задублированных пар
+amount+currency — самое дешёвое и обоснованное; (2) наконец исправить
+хардкод `"beauty".equals(vertical)`; (3) доделать миграцию исключений
+на ключи (`BookingException`/`AuthException`/`PaymentException`/
+`BeautyException` + `business_admin`); (4) докатить `AppLocalizations`
+до остальных экранов `user_app` и повторить в `business_admin`. Все
+остальные темы брифа (Tenant/Marketplace/Region, Events, общий RBAC,
+Tax/Delivery/Identity-провайдеры, единый ConfigurationEngine) сознательно
+остаются спроектированными, но не реализованными — ждут своего
+реального триггера.
+
+## Реализация рекомендованных 4 пунктов (2026-08-21)
+
+Пользователь подтвердил делать все 4 пункта по порядку, одним общим
+коммитом, с явным запретом расширять scope на Tenant/Marketplace/
+Region/RBAC/ConfigurationEngine/Events/Tax-Delivery-Identity-провайдеры
+без реального триггера.
+
+### Пункт 1 — общий тип `Money` (сделано)
+- Новый foundational-модуль `backend/money` (зависимостей ни на что не
+  имеет, зависят от него `services`/`booking`/`payments`/`platform-api`)
+  — `Money` (`@Embeddable`, `BigDecimal amount` + validated ISO 4217
+  `currencyCode` через `java.util.Currency`, не отрицательный,
+  value-equality через `compareTo`, не `equals`). 8 unit-тестов.
+- `ServiceOffering.price`, `Payment.amount` переведены на `@Embedded
+  Money` через `@AttributeOverrides` **без изменения публичных
+  конструкторов/геттеров** — колонки в БД те же (`price`/`currency`,
+  `amount`/`currency`), DTO не менялись.
+- `Booking` **не имел** своей валюты вообще (баг с самого начала) —
+  добавлено по-настоящему: `totalPrice` теперь `@Embedded Money`,
+  новая колонка `booking.currency` (Flyway `V17`, backfill из
+  `service.currency` для существующих строк). `BookingResponse` DTO
+  получил новое поле `currency` — аддитивно, не ломает старых клиентов.
+- Попутно найден и исправлен реальный скрытый баг: `Payment` брал
+  валюту из собственного независимого конфига
+  (`app.payments.currency`), который мог разойтись с валютой брони.
+  Теперь `Payment` наследует валюту от `booking.getCurrency()`, единый
+  источник — переименованный `app.platform.default-currency`,
+  читается только в `BookingService`.
+- **Осознанно не сделано**: exchange rates, конвертация мультивалюты,
+  исторические курсы, отдельный currency engine — ни одного реального
+  потребителя.
+
+### Пункт 2 — хардкод `"beauty".equals(vertical)` (сделано)
+- `MasterDirectoryService`: проверка вынесена в именованный
+  `isBeautyVertical(Provider)`, стала case/whitespace-tolerant
+  (`" Beauty "` теперь тоже проходит) — `Provider.vertical` в системе
+  и так непрозрачная нетипизированная строка (Core её вообще не
+  валидирует, подтверждено через grep и доккомент `Provider.java`), так
+  что нормализация — реальное устранение хрупкости, а не
+  гипотетическое. Новый тест
+  `acceptsMasterCreationRegardlessOfVerticalCasingOrWhitespace`.
+- **Важная переоценка по ходу работы**: изначально предполагалось, что
+  сама проверка — нарушение архитектуры (Core, ветвящийся по
+  конкретному vertical). После грепа выяснилось, что это не так: Core
+  (`providers`-модуль) нигде не читает и не валидирует `vertical` —
+  проверка живёт целиком внутри `vertical-beauty` и валидирует
+  собственное предусловие модуля. Архитектурно это ок; улучшение —
+  только устойчивость к регистру/пробелам.
+- Регрессия-тест на «Core не завязан на конкретное значение "beauty"»
+  фактически уже покрыта существующим тестом
+  `rejectsMasterCreationOnANonBeautyProvider` (использует `"auto-" +
+  runId` как произвольный non-beauty vertical, не привязан к
+  конкретному второму vertical).
+
+### Пункт 3 — исключения → message keys (сделано, оба Flutter-приложения)
+Продолжение паттерна, доказанного на Reviews (Phase C выше).
+- `user_app`: `AuthException`, `BookingException`, `PaymentException`,
+  `BeautyException` — у каждого теперь `enum ...ErrorKey` +
+  `localizedMessage(AppLocalizations l10n)` вместо голого `String
+  message`; throw-сайты (`auth_api.dart`, `booking_api.dart`,
+  `payments_api.dart`, `beauty_api.dart`) кидают по enum. Экраны, что
+  ловят эти исключения (`LoginScreen`, `RegisterScreen`,
+  `ProviderDetailScreen._book()`), резолвят текст на месте через
+  `AppLocalizations.of(context)!` — API-слой по-прежнему без
+  `BuildContext`, резолюция только на UI-границе.
+- `business_admin` **не имел вообще никакой l10n-инфраструктуры**
+  (ни `flutter_localizations`/`intl`, ни ARB, ни `l10n.yaml`) — заведена
+  с нуля тем же паттерном, что в `user_app` (минимальный: `MaterialApp`
+  берёт `localizationsDelegates`/`supportedLocales` из
+  `AppLocalizations`, локаль не закреплена — следует системной, своего
+  переключателя языка в `business_admin` пока нет). `AuthException`
+  (единственный класс исключений во всём `business_admin`) переведён
+  на тот же `enum`-паттерн.
+- Ни одного нового API-контракта, ни одной новой системы локализации —
+  везде переиспользован уже существующий ARB/intl/`AppLocalizations`
+  механизм. `backend` не менялся под этот пункт: сообщения и раньше не
+  доходили до клиента текстом (Spring не шлёт `message` по умолчанию),
+  вся логика "текст по HTTP-статусу" и так жила во Flutter — то, что
+  мигрировало, ключи, а не источник сообщений.
+
+### Пункт 4 — AppLocalizations (сделано частично, явно не всё)
+- `user_app`: `LoginScreen`, `RegisterScreen` полностью переведены на
+  `l10n.*` (не только строка ошибки — раз уж экран трогать пришлось для
+  пункта 3, полностью локализован за один проход, без повторного
+  захода). `ProviderDetailScreen._book()` — весь catch-блок и все
+  snackbar-сообщения переведены на `l10n.*`; остальная часть экрана
+  (заголовки секций, кнопка "View on map", пустые состояния) **не
+  тронута**.
+- `business_admin`: заведена l10n-инфраструктура (см. пункт 3) +
+  `LoginScreen`/`RegisterScreen` полностью локализованы (та же причина
+  "раз уж трогаем экран для AuthException").
+- **Сознательно НЕ сделано в этом проходе** (весь остальной чек-лист
+  из брифа "buttons, labels, validation, empty states, error states,
+  dialogs, notifications, navigation, forms, status messages" за
+  пределами Login/Register/booking-ошибок):
+  - `user_app`: Home/Search (`DiscoveryScreen`), `MyBookingsScreen`
+    (кроме уже переведённых ошибок), `FavoritesScreen`, `ProfileScreen`,
+    `MockMapScreen`, `MasterPortfolioScreen`, диалог отзыва
+    (`_LeaveReviewDialog`), карточки провайдера/сервиса.
+  - `business_admin`: `DashboardScreen`, `SalonDetailScreen` (все 4
+    секции), `ModerationScreen`.
+  - Это не оговорка — сделан честный выбор закрыть Item 1-3 полностью
+    и заложить настоящий фундамент под Item 4 (работающая
+    инфраструктура + доказанный на реальных экранах паттерн в обоих
+    приложениях), а не размазать оставшийся бюджет по десяткам
+    экранов частично. Список экранов выше — точный remaining scope
+    следующего прохода по Item 4, ничего придумывать заново не нужно.
+  - kk/ru/en — единственные поддерживаемые языки, как и было; носитель
+    казахского языка переводы ещё не проверял (см. более раннюю
+    заметку про Kazakh localization).
+
+### Проверено
+- Backend: `./gradlew build` (весь монолит, все модули + Testcontainers-
+  тесты `platform-api`, включая `MoneyTest` (8/8) и обновлённый
+  `BeautyApiTests`) — BUILD SUCCESSFUL.
+- `user_app`: `flutter analyze` — чисто; `flutter test` — 36/36 (включая
+  фикс двух ранее сломанных тестов — `provider_detail_screen_test.dart`
+  и `favorite_button_test.dart` не оборачивали `MaterialApp` в
+  `localizationsDelegates`, из-за чего `AppLocalizations.of(context)`
+  падал с `null`-check — тот же паттерн фикса, что уже был найден в
+  Phase C для `review_section_test.dart`/`settings_screen_test.dart`).
+- `business_admin`: `flutter analyze` — чисто; `flutter test` — 18/18.
+- Архитектурный чек-лист "должно остаться чистым" перепроверен через
+  grep после всех изменений: нет `nameKz`/`nameRu`/`nameEn`, нет
+  `KZOrderService`/`UZOrderService`/`TROrderService`, нет хардкода
+  `"beauty"` вне `vertical-beauty`, нет хардкода `₸`/других символов
+  валют в коде — чисто.
+
+### Возможные будущие триггеры для отложенных компонентов
+(не построены сейчас, ждут реального повода — из документов Country
+Architecture и Master Architecture, повторено здесь коротко, не
+пересказ архитектуры):
+- **Tenant/Marketplace/Region** — когда появится второй реальный
+  оператор платформы или второй географический рынок с иной бизнес-
+  логикой (не просто другой `country`-строкой).
+- **Общий RBAC/Permission-движок** — когда ролей/скоупов станет больше
+  трёх текущих (`CUSTOMER`/`PROVIDER_OWNER`/`ADMIN`) настолько, что
+  точечные ownership-проверки перестанут быть читаемыми.
+- **ConfigurationEngine** — когда конфигурация, специфичная для
+  vertical/страны, перестанет умещаться в `application.yml` +
+  `RegionDefaults`.
+- **Events/Kafka** — когда появится реальный второй процесс/сервис,
+  которому нужны доменные события за пределами текущего
+  `ApplicationEventPublisher` в одном JVM (см. ADR-0002).
+- **Tax/Delivery/Identity/Notification/Search/Analytics-провайдеры** —
+  каждый ждёт своего первого реального потребителя (как уже было с
+  `PaymentProvider`/`LocationService` — интерфейс появился одновременно
+  с первой mock-реализацией, не раньше).
+- **Exchange rates/мультивалюта** — когда появится второй реальный
+  рынок с другой валютой одновременно с первым (сейчас вся платформа
+  работает в одной валюте за раз).
+
+### Текущий статус
+Всё изменено и протестировано, ждёт единого коммита по итогам
+пунктов 1-4 (одним коммитом, по прямому указанию пользователя, в
+отличие от Country Architecture, которая коммитилась по фазам).

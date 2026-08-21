@@ -1,6 +1,10 @@
 package com.zairo.factory.booking;
 
+import com.zairo.factory.money.Money;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -35,8 +39,20 @@ public class Booking {
     @Column(nullable = false)
     private BookingStatus status;
 
-    @Column(name = "total_price", nullable = false)
-    private BigDecimal totalPrice;
+    /**
+     * Was a bare BigDecimal with no currency of its own (implicitly "the
+     * platform default", never actually stored) — now a real Money, backed
+     * by a new currency column backfilled from each booking's own service
+     * at migration time. See V17__money_value_type.sql and
+     * BookingService.createBooking (currency comes from the same platform
+     * default config Payment used to configure independently).
+     */
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "amount", column = @Column(name = "total_price", nullable = false)),
+            @AttributeOverride(name = "currencyCode", column = @Column(name = "currency", nullable = false))
+    })
+    private Money totalPrice;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -45,13 +61,13 @@ public class Booking {
     }
 
     public Booking(UUID id, UUID userId, UUID serviceId, UUID availabilitySlotId, BookingStatus status,
-            BigDecimal totalPrice, Instant createdAt) {
+            BigDecimal totalPrice, String currency, Instant createdAt) {
         this.id = id;
         this.userId = userId;
         this.serviceId = serviceId;
         this.availabilitySlotId = availabilitySlotId;
         this.status = status;
-        this.totalPrice = totalPrice;
+        this.totalPrice = new Money(totalPrice, currency);
         this.createdAt = createdAt;
     }
 
@@ -76,7 +92,11 @@ public class Booking {
     }
 
     public BigDecimal getTotalPrice() {
-        return totalPrice;
+        return totalPrice.amount();
+    }
+
+    public String getCurrency() {
+        return totalPrice.currencyCode();
     }
 
     public Instant getCreatedAt() {

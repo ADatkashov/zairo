@@ -1,0 +1,25 @@
+{
+  "@@locale": "kk",
+
+  "loginAppBarTitle": "Business Admin — Кіру",
+  "loginSubmit": "Кіру",
+  "loginNoAccount": "Бизнес-аккаунтыңыз жоқ па? Тіркелу",
+
+  "registerAppBarTitle": "Бизнесті тіркеу",
+  "registerSubmit": "Бизнес-аккаунт құру",
+
+  "emailLabel": "Email",
+  "passwordLabel": "Құпия сөз",
+  "nameLabel": "Аты-жөні",
+  "phoneLabel": "Телефон",
+
+  "validationEmailInvalid": "Дұрыс email енгізіңіз",
+  "validationPasswordRequired": "Құпия сөзді енгізіңіз",
+  "validationPasswordMinLength": "Кемінде 8 таңба",
+  "validationNameRequired": "Атыңызды енгізіңіз",
+  "validationPhoneRequired": "Телефон нөмірін енгізіңіз",
+
+  "errorAuthEmailAlreadyRegistered": "Бұл email бұрын тіркелген.",
+  "errorAuthInvalidCredentials": "Email немесе құпия сөз қате.",
+  "errorAuthGeneric": "Бірдеңе дұрыс болмады: {error}"
+}

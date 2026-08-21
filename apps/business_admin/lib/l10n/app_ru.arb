@@ -1,0 +1,25 @@
+{
+  "@@locale": "ru",
+
+  "loginAppBarTitle": "Business Admin — Вход",
+  "loginSubmit": "Войти",
+  "loginNoAccount": "Нет бизнес-аккаунта? Зарегистрироваться",
+
+  "registerAppBarTitle": "Регистрация бизнеса",
+  "registerSubmit": "Создать бизнес-аккаунт",
+
+  "emailLabel": "Email",
+  "passwordLabel": "Пароль",
+  "nameLabel": "Ваше имя",
+  "phoneLabel": "Телефон",
+
+  "validationEmailInvalid": "Введите корректный email",
+  "validationPasswordRequired": "Введите пароль",
+  "validationPasswordMinLength": "Минимум 8 символов",
+  "validationNameRequired": "Введите имя",
+  "validationPhoneRequired": "Введите телефон",
+
+  "errorAuthEmailAlreadyRegistered": "Этот email уже зарегистрирован.",
+  "errorAuthInvalidCredentials": "Неверный email или пароль.",
+  "errorAuthGeneric": "Что-то пошло не так: {error}"
+}

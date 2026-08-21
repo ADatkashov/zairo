@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
+import '../../data/auth_exception.dart';
 import '../providers/auth_providers.dart';
 import 'register_screen.dart';
 
@@ -28,11 +30,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final authState = ref.watch(authControllerProvider);
     final isLoading = authState.isLoading;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Business Admin — Log in')),
+      appBar: AppBar(title: Text(l10n.loginAppBarTitle)),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -42,24 +45,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(labelText: 'Email'),
+                decoration: InputDecoration(labelText: l10n.emailLabel),
                 validator: (value) =>
-                    (value == null || !value.contains('@')) ? 'Enter a valid email' : null,
+                    (value == null || !value.contains('@')) ? l10n.validationEmailInvalid : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _passwordController,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'Password'),
+                decoration: InputDecoration(labelText: l10n.passwordLabel),
                 validator: (value) =>
-                    (value == null || value.isEmpty) ? 'Enter your password' : null,
+                    (value == null || value.isEmpty) ? l10n.validationPasswordRequired : null,
               ),
               const SizedBox(height: 20),
               if (authState.hasError)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
-                    authState.error.toString(),
+                    _errorText(l10n, authState.error!),
                     style: TextStyle(color: Theme.of(context).colorScheme.error),
                   ),
                 ),
@@ -71,7 +74,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Log in'),
+                    : Text(l10n.loginSubmit),
               ),
               const SizedBox(height: 8),
               TextButton(
@@ -80,13 +83,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     : () => Navigator.of(context).push(
                           MaterialPageRoute(builder: (_) => const RegisterScreen()),
                         ),
-                child: const Text("Don't have a business account? Register"),
+                child: Text(l10n.loginNoAccount),
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  String _errorText(AppLocalizations l10n, Object error) {
+    if (error is AuthException) return error.localizedMessage(l10n);
+    return l10n.errorAuthGeneric(error.toString());
   }
 
   void _submit() {

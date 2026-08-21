@@ -4,7 +4,6 @@ import com.zairo.factory.booking.Booking;
 import com.zairo.factory.booking.BookingRepository;
 import java.time.Instant;
 import java.util.UUID;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,14 +15,12 @@ public class PaymentsService {
     private final PaymentRepository paymentRepository;
     private final BookingRepository bookingRepository;
     private final PaymentProvider paymentProvider;
-    private final String defaultCurrency;
 
     public PaymentsService(PaymentRepository paymentRepository, BookingRepository bookingRepository,
-            PaymentProvider paymentProvider, @Value("${app.payments.currency:USD}") String defaultCurrency) {
+            PaymentProvider paymentProvider) {
         this.paymentRepository = paymentRepository;
         this.bookingRepository = bookingRepository;
         this.paymentProvider = paymentProvider;
-        this.defaultCurrency = defaultCurrency;
     }
 
     /**
@@ -45,7 +42,12 @@ public class PaymentsService {
         });
 
         Instant now = Instant.now();
-        Payment payment = new Payment(UUID.randomUUID(), bookingId, booking.getTotalPrice(), defaultCurrency, now);
+        // The booking's own currency, not an independently configured
+        // default — see Money migration notes (SESSION_NOTES.md): two
+        // separately-configured "USD" defaults that happened to agree were
+        // a real latent bug (they could silently diverge), not a feature.
+        Payment payment = new Payment(UUID.randomUUID(), bookingId, booking.getTotalPrice(), booking.getCurrency(),
+                now);
         payment = paymentRepository.save(payment);
 
         PaymentProvider.ChargeResult result = paymentProvider.charge(payment.getId(), payment.getAmount(),

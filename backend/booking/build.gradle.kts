@@ -11,4 +11,5 @@ dependencies {
     // dependency.
     implementation(project(":providers"))
     implementation(project(":auth"))
+    implementation(project(":money"))
 }

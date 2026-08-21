@@ -2,6 +2,7 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../beauty/data/beauty_exception.dart';
@@ -199,6 +200,8 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       return;
     }
 
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
     final service = widget.provider.services.firstWhere((s) => s.id == _selectedServiceId);
     try {
       // A master was selected only when this provider has a beauty master
@@ -225,14 +228,14 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       // SESSION_NOTES.md for why this isn't gated behind a webhook yet
       // (no real payment provider/webhook exists; the mock resolves
       // synchronously, so there's nothing async to wait on).
-      String message = 'Booking confirmed!';
+      String message = l10n.bookingConfirmed;
       try {
         final payment = await ref.read(paymentsApiProvider).createPayment(booking.id);
         message = payment.status == 'SUCCEEDED'
-            ? 'Booking confirmed and paid!'
-            : 'Booking confirmed, but payment ${payment.status.toLowerCase()}.';
+            ? l10n.bookingConfirmedAndPaid
+            : l10n.bookingConfirmedPaymentStatus(payment.status.toLowerCase());
       } on PaymentException catch (e) {
-        message = 'Booking confirmed, but ${e.message}';
+        message = l10n.bookingConfirmedButError(e.localizedMessage(l10n));
       }
 
       if (!mounted) return;
@@ -240,7 +243,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       Navigator.of(context).pop();
     } on BookingException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
       ref.invalidate(availabilitySlotsProvider(widget.provider.id));
       setState(() {
         _selectedSlotId = null;
@@ -248,7 +251,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       });
     } on BeautyException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
       ref.invalidate(availabilitySlotsProvider(widget.provider.id));
       setState(() {
         _selectedSlotId = null;
@@ -256,7 +259,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Booking failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.errorBookingGeneric(e.toString()))));
       setState(() => _isBooking = false);
     }
   }

@@ -42,7 +42,9 @@ public class MasterDirectoryService {
      * attach a master to a provider that isn't actually in the beauty
      * vertical. This is the vertical module checking its own precondition,
      * not Core branching on vertical — Core (providers module) still never
-     * looks at this string itself. Owner-only.
+     * looks at this string itself, and never validates it either (see
+     * {@code Provider}'s own doc comment: "stored and returned as-is").
+     * Owner-only.
      */
     @Transactional
     public Master createMaster(UUID providerId, String displayName, String bio, String photoUrl,
@@ -51,13 +53,26 @@ public class MasterDirectoryService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Provider not found: "
                         + providerId));
         providerOwnership.requireOwner(providerId, requestingUserId);
-        if (!BEAUTY_VERTICAL.equals(provider.getVertical())) {
+        if (!isBeautyVertical(provider)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Provider is not in the beauty vertical: "
                     + providerId);
         }
 
         Master master = new Master(UUID.randomUUID(), providerId, displayName, bio, photoUrl, true, Instant.now());
         return masterRepository.save(master);
+    }
+
+    /**
+     * Case/whitespace-tolerant on purpose: {@code Provider.vertical} is
+     * free, unvalidated text (Core deliberately never checks it — see
+     * createMaster's javadoc), so a provider owner typing "Beauty" or
+     * " beauty " when creating their salon is a real possibility, not a
+     * hypothetical. A future second vertical (e.g. "auto") gets the exact
+     * same tiny pattern in its own module — this one check never has to
+     * change for that to work, and never needs to know "auto" exists.
+     */
+    private boolean isBeautyVertical(Provider provider) {
+        return provider.getVertical() != null && BEAUTY_VERTICAL.equalsIgnoreCase(provider.getVertical().trim());
     }
 
     /**

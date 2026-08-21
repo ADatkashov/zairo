@@ -20,5 +20,35 @@
 
   "errorReviewDuplicateOrNotCompleted": "Бұл брондауда пікір бар немесе ол әлі аяқталмаған.",
   "errorReviewInvalidRating": "Баға 1-ден 5-ке дейін болуы керек.",
-  "errorReviewSubmitFailed": "Пікірді жіберу сәтсіз аяқталды: {error}"
+  "errorReviewSubmitFailed": "Пікірді жіберу сәтсіз аяқталды: {error}",
+
+  "emailLabel": "Email",
+  "passwordLabel": "Құпия сөз",
+
+  "loginTitle": "Кіру",
+  "loginNoAccount": "Аккаунтыңыз жоқ па? Тіркелу",
+
+  "registerTitle": "Аккаунт құру",
+  "registerNameLabel": "Аты-жөні",
+  "registerPhoneLabel": "Телефон",
+
+  "validationEmailInvalid": "Дұрыс email енгізіңіз",
+  "validationPasswordRequired": "Құпия сөзді енгізіңіз",
+  "validationPasswordMinLength": "Кемінде 8 таңба",
+  "validationNameRequired": "Атыңызды енгізіңіз",
+  "validationPhoneRequired": "Телефон нөмірін енгізіңіз",
+
+  "errorAuthEmailAlreadyRegistered": "Бұл email бұрын тіркелген.",
+  "errorAuthInvalidCredentials": "Email немесе құпия сөз қате.",
+  "errorAuthGeneric": "Бірдеңе дұрыс болмады: {error}",
+
+  "errorBookingSlotTaken": "Бұл уақытты жаңа ғана біреу брондап қойды. Басқа уақытты таңдаңыз.",
+  "errorPaymentAlreadyPaid": "Бұл брондау үшін төлем бұрын жасалған.",
+  "errorBeautyBookingFailed": "Брондауды аяқтау мүмкін болмады — шебер бұл қызметті орындамайтын шығар, немесе уақытты жаңа ғана біреу алды. Қайта көріңіз.",
+
+  "bookingConfirmed": "Брондау расталды!",
+  "bookingConfirmedAndPaid": "Брондау расталды және төленді!",
+  "bookingConfirmedPaymentStatus": "Брондау расталды, бірақ төлем: {status}.",
+  "bookingConfirmedButError": "Брондау расталды, бірақ {error}",
+  "errorBookingGeneric": "Брондау сәтсіз аяқталды: {error}"
 }

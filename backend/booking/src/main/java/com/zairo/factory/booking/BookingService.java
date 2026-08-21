@@ -3,6 +3,7 @@ package com.zairo.factory.booking;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
@@ -16,12 +17,15 @@ public class BookingService {
     private final AvailabilitySlotRepository availabilitySlotRepository;
     private final BookingRepository bookingRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final String defaultCurrency;
 
     public BookingService(AvailabilitySlotRepository availabilitySlotRepository, BookingRepository bookingRepository,
-            ApplicationEventPublisher eventPublisher) {
+            ApplicationEventPublisher eventPublisher,
+            @Value("${app.platform.default-currency:USD}") String defaultCurrency) {
         this.availabilitySlotRepository = availabilitySlotRepository;
         this.bookingRepository = bookingRepository;
         this.eventPublisher = eventPublisher;
+        this.defaultCurrency = defaultCurrency;
     }
 
     /**
@@ -49,8 +53,12 @@ public class BookingService {
                     + availabilitySlotId);
         }
 
+        // No per-service currency lookup yet (booking deliberately doesn't
+        // depend on services — see the class doc) — same single-market MVP
+        // assumption Payment used to make independently, now one config
+        // value instead of two that happened to agree.
         Booking booking = new Booking(UUID.randomUUID(), userId, serviceId, availabilitySlotId,
-                BookingStatus.CONFIRMED, totalPrice, Instant.now());
+                BookingStatus.CONFIRMED, totalPrice, defaultCurrency, Instant.now());
         booking = bookingRepository.save(booking);
 
         eventPublisher.publishEvent(new BookingConfirmedEvent(booking.getId(), userId, slot.getProviderId()));

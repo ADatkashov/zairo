@@ -1,6 +1,10 @@
 package com.zairo.factory.services;
 
+import com.zairo.factory.money.Money;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -29,11 +33,17 @@ public class ServiceOffering {
     @Column(name = "duration_minutes", nullable = false)
     private int durationMinutes;
 
-    @Column(nullable = false)
-    private BigDecimal price;
-
-    @Column(nullable = false)
-    private String currency;
+    /**
+     * Was two independent columns (price + currency); now one Money value
+     * type, kept on the same column names via @AttributeOverrides so this
+     * is a representation change only — see V17__money_value_type.sql.
+     */
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "amount", column = @Column(name = "price", nullable = false)),
+            @AttributeOverride(name = "currencyCode", column = @Column(name = "currency", nullable = false))
+    })
+    private Money price;
 
     @Column(name = "is_active", nullable = false)
     private boolean active;
@@ -47,8 +57,7 @@ public class ServiceOffering {
         this.providerId = providerId;
         this.title = title;
         this.durationMinutes = durationMinutes;
-        this.price = price;
-        this.currency = currency;
+        this.price = new Money(price, currency);
         this.active = active;
     }
 
@@ -68,12 +77,13 @@ public class ServiceOffering {
         return durationMinutes;
     }
 
+    /** Kept as a plain BigDecimal getter — every existing caller (ServiceResponse, etc.) already expects this shape. */
     public BigDecimal getPrice() {
-        return price;
+        return price.amount();
     }
 
     public String getCurrency() {
-        return currency;
+        return price.currencyCode();
     }
 
     public boolean isActive() {
@@ -83,8 +93,7 @@ public class ServiceOffering {
     void update(String title, int durationMinutes, BigDecimal price, String currency) {
         this.title = title;
         this.durationMinutes = durationMinutes;
-        this.price = price;
-        this.currency = currency;
+        this.price = new Money(price, currency);
     }
 
     /** Soft-delete: existing bookings still reference this service by id, so the row must stay. */

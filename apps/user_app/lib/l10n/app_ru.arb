@@ -20,5 +20,35 @@
 
   "errorReviewDuplicateOrNotCompleted": "У этого бронирования уже есть отзыв, либо оно ещё не завершено.",
   "errorReviewInvalidRating": "Оценка должна быть от 1 до 5.",
-  "errorReviewSubmitFailed": "Не удалось отправить отзыв: {error}"
+  "errorReviewSubmitFailed": "Не удалось отправить отзыв: {error}",
+
+  "emailLabel": "Email",
+  "passwordLabel": "Пароль",
+
+  "loginTitle": "Вход",
+  "loginNoAccount": "Нет аккаунта? Зарегистрироваться",
+
+  "registerTitle": "Создать аккаунт",
+  "registerNameLabel": "Имя",
+  "registerPhoneLabel": "Телефон",
+
+  "validationEmailInvalid": "Введите корректный email",
+  "validationPasswordRequired": "Введите пароль",
+  "validationPasswordMinLength": "Минимум 8 символов",
+  "validationNameRequired": "Введите имя",
+  "validationPhoneRequired": "Введите телефон",
+
+  "errorAuthEmailAlreadyRegistered": "Этот email уже зарегистрирован.",
+  "errorAuthInvalidCredentials": "Неверный email или пароль.",
+  "errorAuthGeneric": "Что-то пошло не так: {error}",
+
+  "errorBookingSlotTaken": "Это время только что заняли. Выберите другое время.",
+  "errorPaymentAlreadyPaid": "Это бронирование уже оплачено.",
+  "errorBeautyBookingFailed": "Не удалось завершить бронирование — возможно, мастер не выполняет эту услугу, либо время только что заняли. Попробуйте ещё раз.",
+
+  "bookingConfirmed": "Бронирование подтверждено!",
+  "bookingConfirmedAndPaid": "Бронирование подтверждено и оплачено!",
+  "bookingConfirmedPaymentStatus": "Бронирование подтверждено, но оплата: {status}.",
+  "bookingConfirmedButError": "Бронирование подтверждено, но {error}",
+  "errorBookingGeneric": "Не удалось создать бронирование: {error}"
 }

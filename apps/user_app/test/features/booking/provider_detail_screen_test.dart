@@ -19,6 +19,7 @@ import 'package:zairo/features/discovery/data/models/service_summary.dart';
 import 'package:zairo/features/payments/data/models/payment.dart';
 import 'package:zairo/features/payments/data/payments_api.dart';
 import 'package:zairo/features/payments/presentation/providers/payments_providers.dart';
+import 'package:zairo/l10n/app_localizations.dart';
 
 class _FakeBookingApi extends BookingApi {
   _FakeBookingApi(this._slots) : super(DioClient(Dio()));
@@ -151,6 +152,8 @@ void main() {
         child: MaterialApp(
           theme: factoryLightTheme(),
           navigatorKey: navigatorKey,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: const Scaffold(body: SizedBox()),
         ),
       ),
@@ -216,7 +219,12 @@ void main() {
           beautyApiProvider.overrideWithValue(fakeBeautyApi),
           authControllerProvider.overrideWith(_LoggedInAuthController.new),
         ],
-        child: MaterialApp(theme: factoryLightTheme(), home: ProviderDetailScreen(provider: provider)),
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ProviderDetailScreen(provider: provider),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -270,7 +278,12 @@ void main() {
           beautyApiProvider.overrideWithValue(_FakeBeautyApi()),
           authControllerProvider.overrideWith(_LoggedInAuthController.new),
         ],
-        child: MaterialApp(theme: factoryLightTheme(), home: ProviderDetailScreen(provider: provider)),
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ProviderDetailScreen(provider: provider),
+        ),
       ),
     );
     await tester.pumpAndSettle();

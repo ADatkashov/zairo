@@ -1,8 +1,18 @@
-class BookingException implements Exception {
-  final String message;
+import '../../../l10n/app_localizations.dart';
 
-  const BookingException(this.message);
+enum BookingErrorKey {
+  slotTaken,
+}
+
+class BookingException implements Exception {
+  final BookingErrorKey key;
+
+  const BookingException(this.key);
+
+  String localizedMessage(AppLocalizations l10n) => switch (key) {
+        BookingErrorKey.slotTaken => l10n.errorBookingSlotTaken,
+      };
 
   @override
-  String toString() => message;
+  String toString() => 'BookingException($key)';
 }

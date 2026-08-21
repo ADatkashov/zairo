@@ -31,7 +31,7 @@ class PaymentsApi {
       return Payment.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       if (e.response?.statusCode == 409) {
-        throw const PaymentException('This booking has already been paid for.');
+        throw const PaymentException(PaymentErrorKey.alreadyPaid);
       }
       rethrow;
     }

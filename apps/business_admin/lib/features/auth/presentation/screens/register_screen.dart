@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
+import '../../data/auth_exception.dart';
 import '../providers/auth_providers.dart';
 
 /// Always registers as PROVIDER_OWNER — see AuthApi.register's doc comment.
@@ -31,6 +33,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final authState = ref.watch(authControllerProvider);
     final isLoading = authState.isLoading;
 
@@ -41,7 +44,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     });
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Register your business')),
+      appBar: AppBar(title: Text(l10n.registerAppBarTitle)),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -50,38 +53,38 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             children: [
               TextFormField(
                 controller: _displayNameController,
-                decoration: const InputDecoration(labelText: 'Your name'),
-                validator: (value) => (value == null || value.isEmpty) ? 'Enter your name' : null,
+                decoration: InputDecoration(labelText: l10n.nameLabel),
+                validator: (value) => (value == null || value.isEmpty) ? l10n.validationNameRequired : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(labelText: 'Email'),
+                decoration: InputDecoration(labelText: l10n.emailLabel),
                 validator: (value) =>
-                    (value == null || !value.contains('@')) ? 'Enter a valid email' : null,
+                    (value == null || !value.contains('@')) ? l10n.validationEmailInvalid : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(labelText: 'Phone'),
-                validator: (value) => (value == null || value.isEmpty) ? 'Enter your phone' : null,
+                decoration: InputDecoration(labelText: l10n.phoneLabel),
+                validator: (value) => (value == null || value.isEmpty) ? l10n.validationPhoneRequired : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _passwordController,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'Password'),
+                decoration: InputDecoration(labelText: l10n.passwordLabel),
                 validator: (value) =>
-                    (value == null || value.length < 8) ? 'At least 8 characters' : null,
+                    (value == null || value.length < 8) ? l10n.validationPasswordMinLength : null,
               ),
               const SizedBox(height: 20),
               if (authState.hasError)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
-                    authState.error.toString(),
+                    _errorText(l10n, authState.error!),
                     style: TextStyle(color: Theme.of(context).colorScheme.error),
                   ),
                 ),
@@ -93,13 +96,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Create business account'),
+                    : Text(l10n.registerSubmit),
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  String _errorText(AppLocalizations l10n, Object error) {
+    if (error is AuthException) return error.localizedMessage(l10n);
+    return l10n.errorAuthGeneric(error.toString());
   }
 
   void _submit() {

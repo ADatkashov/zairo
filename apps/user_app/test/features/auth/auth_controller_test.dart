@@ -33,7 +33,7 @@ class _FakeAuthApi extends AuthApi {
   @override
   Future<UserSummary> me(String accessToken) async {
     if (meShouldSucceed) return _user;
-    throw const AuthException('no session');
+    throw const AuthException(AuthErrorKey.invalidCredentials);
   }
 
   @override
@@ -95,7 +95,7 @@ void main() {
   });
 
   test('failed login surfaces an error and does not store tokens', () async {
-    final fakeApi = _FakeAuthApi()..loginError = const AuthException('Invalid email or password.');
+    final fakeApi = _FakeAuthApi()..loginError = const AuthException(AuthErrorKey.invalidCredentials);
     final storage = _InMemorySecureStorageService();
     final container = ProviderContainer(overrides: [
       authApiProvider.overrideWithValue(fakeApi),

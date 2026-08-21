@@ -11,4 +11,5 @@ dependencies {
     // (CurrentUser), not something a client-supplied id could fake.
     implementation(project(":providers"))
     implementation(project(":auth"))
+    implementation(project(":money"))
 }

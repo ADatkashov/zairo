@@ -54,5 +54,94 @@
     "placeholders": {
       "error": {"type": "String"}
     }
+  },
+
+  "emailLabel": "Email",
+  "@emailLabel": {"description": "Email text field label."},
+
+  "passwordLabel": "Password",
+  "@passwordLabel": {"description": "Password text field label."},
+
+  "loginTitle": "Log in",
+  "@loginTitle": {"description": "Login screen app bar title and submit button."},
+
+  "loginNoAccount": "Don't have an account? Register",
+  "@loginNoAccount": {"description": "Link from Login to Register."},
+
+  "registerTitle": "Create account",
+  "@registerTitle": {"description": "Register screen app bar title and submit button."},
+
+  "registerNameLabel": "Name",
+  "@registerNameLabel": {"description": "Display-name text field label on Register."},
+
+  "registerPhoneLabel": "Phone",
+  "@registerPhoneLabel": {"description": "Phone text field label on Register."},
+
+  "validationEmailInvalid": "Enter a valid email",
+  "@validationEmailInvalid": {"description": "Email field validation error."},
+
+  "validationPasswordRequired": "Enter your password",
+  "@validationPasswordRequired": {"description": "Password field validation error on Login."},
+
+  "validationPasswordMinLength": "At least 8 characters",
+  "@validationPasswordMinLength": {"description": "Password field validation error on Register."},
+
+  "validationNameRequired": "Enter your name",
+  "@validationNameRequired": {"description": "Name field validation error on Register."},
+
+  "validationPhoneRequired": "Enter your phone",
+  "@validationPhoneRequired": {"description": "Phone field validation error on Register."},
+
+  "errorAuthEmailAlreadyRegistered": "This email is already registered.",
+  "@errorAuthEmailAlreadyRegistered": {"description": "409 from POST /auth/register."},
+
+  "errorAuthInvalidCredentials": "Invalid email or password.",
+  "@errorAuthInvalidCredentials": {"description": "401 from POST /auth/login."},
+
+  "errorAuthGeneric": "Something went wrong: {error}",
+  "@errorAuthGeneric": {
+    "description": "Unexpected (non-AuthException) failure during login/register.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "errorBookingSlotTaken": "This time slot was just booked by someone else. Please pick another one.",
+  "@errorBookingSlotTaken": {"description": "409 from POST /bookings."},
+
+  "errorPaymentAlreadyPaid": "This booking has already been paid for.",
+  "@errorPaymentAlreadyPaid": {"description": "409 from POST .../payments."},
+
+  "errorBeautyBookingFailed": "Couldn't complete this booking — the master may not offer this service, or the time slot was just taken. Please try again.",
+  "@errorBeautyBookingFailed": {"description": "409 from POST .../beauty bookings — covers two distinct backend rejections the response body doesn't distinguish."},
+
+  "bookingConfirmed": "Booking confirmed!",
+  "@bookingConfirmed": {"description": "Snackbar shown when a booking succeeds but no payment status is known yet."},
+
+  "bookingConfirmedAndPaid": "Booking confirmed and paid!",
+  "@bookingConfirmedAndPaid": {"description": "Snackbar shown when booking + payment both succeed."},
+
+  "bookingConfirmedPaymentStatus": "Booking confirmed, but payment {status}.",
+  "@bookingConfirmedPaymentStatus": {
+    "description": "Snackbar shown when booking succeeds but payment did not (status is a lowercased backend status word, e.g. \"failed\").",
+    "placeholders": {
+      "status": {"type": "String"}
+    }
+  },
+
+  "bookingConfirmedButError": "Booking confirmed, but {error}",
+  "@bookingConfirmedButError": {
+    "description": "Snackbar shown when booking succeeds but charging for it threw a PaymentException.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "errorBookingGeneric": "Booking failed: {error}",
+  "@errorBookingGeneric": {
+    "description": "Unexpected (non-Booking/Beauty exception) failure creating a booking.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
   }
 }

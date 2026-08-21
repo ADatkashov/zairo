@@ -1,0 +1,59 @@
+{
+  "@@locale": "en",
+
+  "loginAppBarTitle": "Business Admin — Log in",
+  "@loginAppBarTitle": {"description": "Login screen app bar title."},
+
+  "loginSubmit": "Log in",
+  "@loginSubmit": {"description": "Login submit button."},
+
+  "loginNoAccount": "Don't have a business account? Register",
+  "@loginNoAccount": {"description": "Link from Login to Register."},
+
+  "registerAppBarTitle": "Register your business",
+  "@registerAppBarTitle": {"description": "Register screen app bar title."},
+
+  "registerSubmit": "Create business account",
+  "@registerSubmit": {"description": "Register submit button."},
+
+  "emailLabel": "Email",
+  "@emailLabel": {"description": "Email text field label."},
+
+  "passwordLabel": "Password",
+  "@passwordLabel": {"description": "Password text field label."},
+
+  "nameLabel": "Your name",
+  "@nameLabel": {"description": "Display-name text field label on Register."},
+
+  "phoneLabel": "Phone",
+  "@phoneLabel": {"description": "Phone text field label on Register."},
+
+  "validationEmailInvalid": "Enter a valid email",
+  "@validationEmailInvalid": {"description": "Email field validation error."},
+
+  "validationPasswordRequired": "Enter your password",
+  "@validationPasswordRequired": {"description": "Password field validation error on Login."},
+
+  "validationPasswordMinLength": "At least 8 characters",
+  "@validationPasswordMinLength": {"description": "Password field validation error on Register."},
+
+  "validationNameRequired": "Enter your name",
+  "@validationNameRequired": {"description": "Name field validation error on Register."},
+
+  "validationPhoneRequired": "Enter your phone",
+  "@validationPhoneRequired": {"description": "Phone field validation error on Register."},
+
+  "errorAuthEmailAlreadyRegistered": "This email is already registered.",
+  "@errorAuthEmailAlreadyRegistered": {"description": "409 from POST /auth/register."},
+
+  "errorAuthInvalidCredentials": "Invalid email or password.",
+  "@errorAuthInvalidCredentials": {"description": "401 from POST /auth/login."},
+
+  "errorAuthGeneric": "Something went wrong: {error}",
+  "@errorAuthGeneric": {
+    "description": "Unexpected (non-AuthException) failure during login/register.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  }
+}

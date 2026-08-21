@@ -30,6 +30,7 @@ dependencies {
     implementation(project(":vertical-beauty"))
     implementation(project(":storage"))
     implementation(project(":country"))
+    implementation(project(":money"))
 
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")

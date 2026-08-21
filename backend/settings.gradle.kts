@@ -22,4 +22,5 @@ include(
     "vertical-beauty",
     "storage",
     "country",
+    "money",
 )

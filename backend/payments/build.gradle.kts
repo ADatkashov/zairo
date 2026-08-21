@@ -7,4 +7,5 @@ dependencies {
     // Needs to read the booking being paid for (amount, existence) — same
     // one-directional dependency pattern as reviews -> booking.
     implementation(project(":booking"))
+    implementation(project(":money"))
 }

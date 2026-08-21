@@ -8,6 +8,7 @@ import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/favorites/data/favorites_api.dart';
 import 'package:zairo/features/favorites/presentation/providers/favorites_providers.dart';
 import 'package:zairo/features/favorites/presentation/widgets/favorite_button.dart';
+import 'package:zairo/l10n/app_localizations.dart';
 
 class _FakeFavoritesApi extends FavoritesApi {
   _FakeFavoritesApi({bool initiallyFavorited = false})
@@ -54,7 +55,11 @@ void main() {
           favoritesApiProvider.overrideWithValue(_FakeFavoritesApi()),
           authControllerProvider.overrideWith(_LoggedOutAuthController.new),
         ],
-        child: const MaterialApp(home: Scaffold(body: FavoriteButton(providerId: 'provider-1'))),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: FavoriteButton(providerId: 'provider-1')),
+        ),
       ),
     );
     await tester.pumpAndSettle();

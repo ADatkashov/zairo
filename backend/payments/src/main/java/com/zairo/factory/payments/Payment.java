@@ -1,6 +1,10 @@
 package com.zairo.factory.payments;
 
+import com.zairo.factory.money.Money;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -26,11 +30,18 @@ public class Payment {
     @Column(name = "booking_id", nullable = false, unique = true)
     private UUID bookingId;
 
-    @Column(nullable = false)
-    private BigDecimal amount;
-
-    @Column(nullable = false)
-    private String currency;
+    /**
+     * Was two independent columns (amount + currency); now one Money value
+     * type, kept on the same column names via @AttributeOverrides — see
+     * V17__money_value_type.sql. Always the booking's own currency (see
+     * PaymentsService.createPayment), never independently configured.
+     */
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "amount", column = @Column(name = "amount", nullable = false)),
+            @AttributeOverride(name = "currencyCode", column = @Column(name = "currency", nullable = false))
+    })
+    private Money amount;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -54,8 +65,7 @@ public class Payment {
     public Payment(UUID id, UUID bookingId, BigDecimal amount, String currency, Instant createdAt) {
         this.id = id;
         this.bookingId = bookingId;
-        this.amount = amount;
-        this.currency = currency;
+        this.amount = new Money(amount, currency);
         this.status = PaymentStatus.PENDING;
         this.createdAt = createdAt;
         this.updatedAt = createdAt;
@@ -70,11 +80,11 @@ public class Payment {
     }
 
     public BigDecimal getAmount() {
-        return amount;
+        return amount.amount();
     }
 
     public String getCurrency() {
-        return currency;
+        return amount.currencyCode();
     }
 
     public PaymentStatus getStatus() {

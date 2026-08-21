@@ -36,7 +36,7 @@ class AuthApi {
       return AuthTokens.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       if (e.response?.statusCode == 409) {
-        throw const AuthException('This email is already registered.');
+        throw const AuthException(AuthErrorKey.emailAlreadyRegistered);
       }
       rethrow;
     }
@@ -51,7 +51,7 @@ class AuthApi {
       return AuthTokens.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
-        throw const AuthException('Invalid email or password.');
+        throw const AuthException(AuthErrorKey.invalidCredentials);
       }
       rethrow;
     }

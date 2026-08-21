@@ -54,13 +54,37 @@ class BeautyApiTests {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
+    /**
+     * Provider.vertical is free, unvalidated text (Core never checks it) —
+     * a real owner could easily type "Beauty" or " beauty " when creating
+     * their salon. This proves the vertical check tolerates that instead of
+     * silently, confusingly rejecting a genuinely-beauty provider — and,
+     * together with the test above, that the check is driven by one
+     * explicit comparison in vertical-beauty, not some assumption Core
+     * makes about the string "beauty" (Core makes none — see
+     * providers.Provider's own doc comment).
+     */
+    @Test
+    void acceptsMasterCreationRegardlessOfVerticalCasingOrWhitespace() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "cased-vertical-owner-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Cased Vertical Salon " + runId, " Beauty ");
+
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/beauty/providers/" + providerId + "/masters",
+                HttpMethod.POST, new HttpEntity<>(new CreateMasterRequest("Someone", null, null),
+                        TestAuth.authHeaders(owner.accessToken())),
+                Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+    }
+
     @Test
     void fullMasterDirectoryAndBookingFlow() {
         String runId = UUID.randomUUID().toString();
         Registered owner = TestAuth.registerOwner(restTemplate, "beauty-owner-" + runId + "@example.com");
         UUID customerId = createUser("beauty-customer-" + runId + "@example.com");
-        // Vertical must be the exact literal "beauty" -- MasterDirectoryService checks it
-        // precisely (see createMaster's javadoc), not a prefix match.
+        // Case/whitespace-normalized but still an exact vertical match, not
+        // a prefix match — see MasterDirectoryService.isBeautyVertical.
         UUID providerId = createProvider(owner, "Glow Salon " + runId, "beauty");
         UUID serviceId = createService(owner, providerId, "Balayage", new BigDecimal("120.00"));
 

@@ -37,9 +37,7 @@ class BookingApi {
       return Booking.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       if (e.response?.statusCode == 409) {
-        throw const BookingException(
-          'This time slot was just booked by someone else. Please pick another one.',
-        );
+        throw const BookingException(BookingErrorKey.slotTaken);
       }
       rethrow;
     }

@@ -14,11 +14,11 @@ public final class BookingDtos {
     }
 
     public record BookingResponse(UUID id, UUID userId, UUID serviceId, UUID availabilitySlotId,
-            BookingStatus status, BigDecimal totalPrice, Instant createdAt) {
+            BookingStatus status, BigDecimal totalPrice, String currency, Instant createdAt) {
         static BookingResponse from(Booking booking) {
             return new BookingResponse(booking.getId(), booking.getUserId(), booking.getServiceId(),
                     booking.getAvailabilitySlotId(), booking.getStatus(), booking.getTotalPrice(),
-                    booking.getCreatedAt());
+                    booking.getCurrency(), booking.getCreatedAt());
         }
     }
 }
