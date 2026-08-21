@@ -6,7 +6,9 @@ plugins {
 
 android {
     namespace = "com.zairo.business_admin"
-    compileSdk = flutter.compileSdkVersion
+    // flutter_secure_storage requires compileSdk 37+; flutter.compileSdkVersion (36) is too low.
+    // Same fix as apps/user_app/android/app/build.gradle.kts.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

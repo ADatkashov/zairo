@@ -37,7 +37,38 @@ melos run test
 ## Текущее состояние
 
 - `apps/user_app` — клиентское приложение (бывший `zairo`).
-- `packages/core_network` — generic HTTP-клиент (Dio) + сетевые ошибки.
-- `packages/core_storage` — secure key/value storage.
-- `verticals/`, `backend/`, `infrastructure/` — скелет, наполняются по
-  роадмапу (см. Phase 2+).
+- `apps/business_admin` — приложение для владельцев/модераторов салонов.
+- `packages/core_network`, `packages/core_storage`, `packages/core_ui` —
+  переиспользуемые Flutter-пакеты Factory Core.
+- `backend/` — Spring Boot modular monolith, полноценно построен.
+- `verticals/`, `infrastructure/` — скелет/конфиги, наполняются по
+  роадмапу.
+
+## Как открыть в Android Studio
+
+Это монорепо, а не один Flutter-проект — **корень репозитория не
+открывать**. Каждое Flutter-приложение открывается как **отдельный,
+самостоятельный проект**, указывая на его собственную папку:
+
+```
+File → Open → C:\app\zairo\apps\user_app
+```
+
+и отдельным окном/инстансом — для второго приложения:
+
+```
+File → Open → C:\app\zairo\apps\business_admin
+```
+
+Если открыть корень `C:\app\zairo\` напрямую, Android Studio не находит
+ни `pubspec.yaml`, ни настоящий Gradle/Android-проект на этом уровне —
+структура проекта окажется пустой, а Flutter/Android run-конфигурации
+не появятся. Если это уже произошло и `.idea/` в корне репозитория
+выглядит "пустым" или предлагает несуществующий Gradle-модуль — можно
+безопасно удалить `.idea/` в корне (он никогда не хранится в git) и
+открыть заново по инструкции выше.
+
+`packages/*` не открываются отдельно — они подключены через
+`path:`-зависимости в `pubspec.yaml` каждого приложения и появляются в
+Project-панели автоматически при открытии `apps/user_app` или
+`apps/business_admin`.
