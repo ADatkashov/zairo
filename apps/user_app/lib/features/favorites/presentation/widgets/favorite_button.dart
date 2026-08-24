@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../providers/favorites_providers.dart';
@@ -22,11 +23,13 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final currentUser = ref.watch(authControllerProvider).value;
 
     if (currentUser == null) {
       return IconButton(
         icon: const Icon(Icons.favorite_border),
+        tooltip: l10n.favoriteAddTooltip,
         onPressed: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
         ),
@@ -40,10 +43,12 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton> {
       data: (isFavorited) => IconButton(
         icon: Icon(isFavorited ? Icons.favorite : Icons.favorite_border),
         color: isFavorited ? Colors.red : null,
+        tooltip: isFavorited ? l10n.favoriteRemoveTooltip : l10n.favoriteAddTooltip,
         onPressed: _isToggling ? null : () => _toggle(currentUser.id, isFavorited),
       ),
-      loading: () => const IconButton(icon: Icon(Icons.favorite_border), onPressed: null),
-      error: (error, stackTrace) => const IconButton(icon: Icon(Icons.favorite_border), onPressed: null),
+      loading: () => IconButton(icon: const Icon(Icons.favorite_border), tooltip: l10n.favoriteAddTooltip, onPressed: null),
+      error: (error, stackTrace) =>
+          IconButton(icon: const Icon(Icons.favorite_border), tooltip: l10n.favoriteAddTooltip, onPressed: null),
     );
   }
 

@@ -115,6 +115,11 @@
   "favoritesEmptyTitle": "Пока нет избранного",
   "favoritesEmptyMessage": "Салоны и провайдеры, которые вы добавите в избранное, появятся здесь.",
   "errorFavoritesLoadFailed": "Не удалось загрузить избранное.",
+  "favoriteAddTooltip": "Добавить в избранное",
+  "favoriteRemoveTooltip": "Убрать из избранного",
+  "ratingSemanticLabel": "{rating} из 5",
+  "ratingSemanticLabelWithReviews": "{rating} из 5, {count, plural, one{{count} отзыв} few{{count} отзыва} many{{count} отзывов} other{{count} отзывов}}",
+  "starRatingSemanticLabel": "Поставить оценку {count, plural, one{{count} звезда} few{{count} звезды} many{{count} звёзд} other{{count} звёзд}}",
 
   "profileTitle": "Профиль",
   "errorProfileGeneric": "Что-то пошло не так: {error}",

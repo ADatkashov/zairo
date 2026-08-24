@@ -25,6 +25,7 @@ class FactoryProviderCard extends StatelessWidget {
     required this.title,
     this.rating,
     this.reviewCount,
+    this.ratingSemanticLabel,
     this.metaText,
     this.priceFrom,
     this.currencySymbol,
@@ -32,6 +33,8 @@ class FactoryProviderCard extends StatelessWidget {
     this.image,
     this.isFavorite = false,
     this.onFavoriteToggle,
+    this.favoriteAddSemanticLabel = 'Add to favorites',
+    this.favoriteRemoveSemanticLabel = 'Remove from favorites',
     this.onTap,
     this.layout = FactoryProviderCardLayout.vertical,
     this.width,
@@ -40,6 +43,10 @@ class FactoryProviderCard extends StatelessWidget {
   final String title;
   final double? rating;
   final int? reviewCount;
+
+  /// See FactoryRatingLabel.semanticLabel — this app has no localization of
+  /// its own to derive the English "out of 5" fallback from another language.
+  final String? ratingSemanticLabel;
 
   /// A short secondary line — typically "1.2 km" or "1.2 km · Almaty".
   final String? metaText;
@@ -58,6 +65,13 @@ class FactoryProviderCard extends StatelessWidget {
   final Widget? image;
   final bool isFavorite;
   final ValueChanged<bool>? onFavoriteToggle;
+
+  /// core_ui has no app-level localization of its own — callers that show
+  /// this app in more than English must pass their own translated strings
+  /// here rather than relying on the English fallback default.
+  final String favoriteAddSemanticLabel;
+  final String favoriteRemoveSemanticLabel;
+
   final VoidCallback? onTap;
   final FactoryProviderCardLayout layout;
 
@@ -94,7 +108,12 @@ class FactoryProviderCard extends StatelessWidget {
             Positioned(
               top: 8,
               right: 8,
-              child: _FavoriteButton(isFavorite: isFavorite, onToggle: onFavoriteToggle!),
+              child: _FavoriteButton(
+                isFavorite: isFavorite,
+                onToggle: onFavoriteToggle!,
+                addLabel: favoriteAddSemanticLabel,
+                removeLabel: favoriteRemoveSemanticLabel,
+              ),
             ),
         ],
       ),
@@ -115,7 +134,13 @@ class FactoryProviderCard extends StatelessWidget {
           const SizedBox(height: 4),
           Row(
             children: [
-              if (rating != null) FactoryRatingLabel(rating: rating!, reviewCount: reviewCount, iconSize: 11),
+              if (rating != null)
+                FactoryRatingLabel(
+                  rating: rating!,
+                  reviewCount: reviewCount,
+                  iconSize: 11,
+                  semanticLabel: ratingSemanticLabel,
+                ),
               if (rating != null && metaText != null) ...[
                 const SizedBox(width: 5),
                 Text('·', style: TextStyle(color: colors.textTertiary)),
@@ -184,17 +209,30 @@ class FactoryProviderCard extends StatelessWidget {
 }
 
 class _FavoriteButton extends StatelessWidget {
-  const _FavoriteButton({required this.isFavorite, required this.onToggle});
+  const _FavoriteButton({
+    required this.isFavorite,
+    required this.onToggle,
+    required this.addLabel,
+    required this.removeLabel,
+  });
 
   final bool isFavorite;
   final ValueChanged<bool> onToggle;
+  final String addLabel;
+  final String removeLabel;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.factoryColors;
     return Semantics(
       button: true,
-      label: isFavorite ? 'Remove from favorites' : 'Add to favorites',
+      // container: true gives this its own semantics node — without it,
+      // this label silently merges into the whole card's InkWell node
+      // (which also picks up the title text), so a screen reader user
+      // never gets a distinct, actionable "favorite" control nested
+      // inside the card's own tap target.
+      container: true,
+      label: isFavorite ? removeLabel : addLabel,
       child: GestureDetector(
         onTap: () => onToggle(!isFavorite),
         child: Container(

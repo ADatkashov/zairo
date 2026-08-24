@@ -3463,4 +3463,67 @@ grid. `flutter analyze` чисто, `flutter test` 51/51 (было 47),
 стоит использовать именно так в следующий раз.
 
 ### Текущий статус
+Закоммичено и запушено (`8feacba`). **Phase 3 полностью завершена.**
+
+## Production-ready MVP, Phase 4 — Accessibility (2026-08-22)
+
+Начало Phase 4 (UI/accessibility/localization/branding/platform
+validation) с конкретного, уже выявленного пункта ТЗ: хардкод
+английской семантики "Add to favorites"/"Remove from favorites".
+
+Анализ показал, что реальная проблема шире одной строки:
+- `user_app`'s `FavoriteButton` (реально используемая кнопка-сердце на
+  `ProviderDetailScreen` и др.) — обычный `IconButton` **вообще без**
+  `tooltip`/`Semantics` — скринридер объявлял бы её просто как
+  безымянную кнопку, ни на английском, ни на любом другом языке.
+  Добавлены `tooltip: l10n.favoriteAddTooltip`/`favoriteRemoveTooltip`.
+- `core_ui`'s `FactoryProviderCard._FavoriteButton` — тот самый хардкод
+  из ТЗ. Поскольку `core_ui` — общий пакет без доступа к
+  app-level `AppLocalizations`, добавлены параметры
+  `favoriteAddSemanticLabel`/`favoriteRemoveSemanticLabel` (со
+  english-fallback по умолчанию для обратной совместимости — сейчас
+  этот путь виджета вообще не используется ни в одном реальном экране,
+  но остаётся частью публичной библиотеки компонентов).
+- При написании теста на новые метки найдена **более серьёзная,
+  независимая a11y-проблема**: `_FavoriteButton`'s `Semantics` не имел
+  `container: true`, из-за чего его label сливался с семантикой всей
+  карточки (InkWell) — скринридер получил бы один слипшийся узел
+  "Add to favorites\nAigerim Beauty Studio" вместо отдельного
+  доступного элемента управления, вложенного в область тапа карточки.
+  Добавлен `container: true` — теперь у кнопки избранного собственный
+  узел семантики.
+- Заодно найдена и исправлена такая же проблема в `FactoryRatingLabel`
+  (используется в `ProviderDetailScreen`/`ProviderCard` с Item 6) —
+  хардкод "out of 5"/"reviews". Добавлен параметр `semanticLabel`
+  (caller-supplied override), обе живые точки использования в
+  `user_app` теперь передают локализованный текст
+  (`ratingSemanticLabel`/`ratingSemanticLabelWithReviews`, с
+  корректной плюрализацией ru/kk через ICU `{count, plural, ...}`).
+- Звёздный picker в диалоге "оставить отзыв" (`review_section.dart`) —
+  5 `IconButton` вообще без подписи ни на каком языке. Добавлен
+  `tooltip: l10n.starRatingSemanticLabel(i + 1)` ("Rate 4 stars" и
+  т.п., с плюрализацией).
+
+Новые ARB-ключи (`favoriteAddTooltip`/`favoriteRemoveTooltip`,
+`ratingSemanticLabel`/`ratingSemanticLabelWithReviews`,
+`starRatingSemanticLabel`) — en/ru/kk, ru с полной плюрализацией
+(one/few/many/other), kk только с `other` (соответствует CLDR-правилам
+для казахского и уже устоявшейся практике в этом проекте, см.
+`homeAvailabilityHero`).
+
+Тесты: `core_ui` — новый тест, подтверждающий, что кастомная метка
+доходит до `Semantics.label` (этот тест и обнаружил баг с `container:
+true` — до фикса падал на слипшемся тексте). `user_app` — 2 из 3 тестов
+`favorite_button_test.dart` использовали `const MaterialApp(home:
+...)` без `localizationsDelegates` — упали сразу же, как только кнопка
+стала звать `AppLocalizations.of(context)!` (тот самый паттерн, что
+уже раз десять встречался в этом проекте) — исправлено, плюс добавлены
+прямые ассёрты на `find.byTooltip(...)` в обоих файлах
+(`favorite_button_test.dart`, `review_section_test.dart`). `core_ui`
+23/23 (+1), `user_app` 51/51 (то же число тестов, 2 переписаны + 2
+новых ассёрта), `business_admin` `flutter analyze` чисто (тоже зависит
+от `core_ui`, изменения обратно совместимы), `flutter build web`
+успешен в `user_app`.
+
+### Текущий статус
 Изменения готовы, ждут коммита.

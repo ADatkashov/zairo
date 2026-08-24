@@ -39,6 +39,11 @@ class ProviderCard extends StatelessWidget {
       priceFrom: result.minPrice,
       rating: result.averageRating,
       reviewCount: result.reviewCount,
+      ratingSemanticLabel: result.averageRating == null
+          ? null
+          : (result.reviewCount == null
+              ? l10n.ratingSemanticLabel(result.averageRating!.toStringAsFixed(1))
+              : l10n.ratingSemanticLabelWithReviews(result.averageRating!.toStringAsFixed(1), result.reviewCount!)),
       availabilityLabel: result.hasOpenAvailability ? l10n.availableTodayLabel : null,
       onTap: onTap,
       layout: layout,

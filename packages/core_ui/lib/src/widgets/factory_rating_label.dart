@@ -7,23 +7,28 @@ import '../theme/factory_colors.dart';
 /// semantic label ("4.9 out of 5, 212 reviews") so a screen reader gets the
 /// full meaning, not just the glyph and two numbers.
 class FactoryRatingLabel extends StatelessWidget {
-  const FactoryRatingLabel({super.key, required this.rating, this.reviewCount, this.iconSize = 13});
+  const FactoryRatingLabel({super.key, required this.rating, this.reviewCount, this.iconSize = 13, this.semanticLabel});
 
   final double rating;
   final int? reviewCount;
   final double iconSize;
+
+  /// core_ui has no app-level localization of its own — callers that show
+  /// this app in more than English must pass their own translated label
+  /// here (see FactoryProviderCard.ratingSemanticLabel) rather than relying
+  /// on the English fallback this widget computes when it's null.
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
     final ratingText = rating.toStringAsFixed(1);
-    final semanticLabel = reviewCount == null
-        ? '$ratingText out of 5'
-        : '$ratingText out of 5, $reviewCount reviews';
+    final effectiveSemanticLabel = semanticLabel ??
+        (reviewCount == null ? '$ratingText out of 5' : '$ratingText out of 5, $reviewCount reviews');
 
     return Semantics(
-      label: semanticLabel,
+      label: effectiveSemanticLabel,
       excludeSemantics: true,
       child: Row(
         mainAxisSize: MainAxisSize.min,

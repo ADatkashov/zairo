@@ -360,6 +360,37 @@
   "errorFavoritesLoadFailed": "Couldn't load your favorites.",
   "@errorFavoritesLoadFailed": {"description": "Favorites screen error state."},
 
+  "favoriteAddTooltip": "Add to favorites",
+  "@favoriteAddTooltip": {"description": "Screen-reader/tooltip label for the favorite-toggle button when not yet favorited."},
+
+  "favoriteRemoveTooltip": "Remove from favorites",
+  "@favoriteRemoveTooltip": {"description": "Screen-reader/tooltip label for the favorite-toggle button when already favorited."},
+
+  "ratingSemanticLabel": "{rating} out of 5",
+  "@ratingSemanticLabel": {
+    "description": "Screen-reader label for a star rating with no known review count.",
+    "placeholders": {
+      "rating": {"type": "String"}
+    }
+  },
+
+  "ratingSemanticLabelWithReviews": "{rating} out of 5, {count, plural, one{{count} review} other{{count} reviews}}",
+  "@ratingSemanticLabelWithReviews": {
+    "description": "Screen-reader label for a star rating with a known review count.",
+    "placeholders": {
+      "rating": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+
+  "starRatingSemanticLabel": "{count, plural, one{Rate {count} star} other{Rate {count} stars}}",
+  "@starRatingSemanticLabel": {
+    "description": "Screen-reader label for one star button in the leave-a-review star picker.",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
   "profileTitle": "Profile",
   "@profileTitle": {"description": "Profile screen app bar title."},
 

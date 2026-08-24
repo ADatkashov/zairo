@@ -117,6 +117,7 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
               5,
               (i) => IconButton(
                 onPressed: _isSubmitting ? null : () => setState(() => _rating = i + 1),
+                tooltip: l10n.starRatingSemanticLabel(i + 1),
                 icon: Icon(
                   i < _rating ? Icons.star : Icons.star_border,
                   color: colors.accent,

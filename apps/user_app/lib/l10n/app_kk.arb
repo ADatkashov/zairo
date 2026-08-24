@@ -115,6 +115,11 @@
   "favoritesEmptyTitle": "Әзірге таңдаулылар жоқ",
   "favoritesEmptyMessage": "Таңдаулыға қосқан салондар мен провайдерлер осында пайда болады.",
   "errorFavoritesLoadFailed": "Таңдаулыларды жүктеу мүмкін болмады.",
+  "favoriteAddTooltip": "Таңдаулыларға қосу",
+  "favoriteRemoveTooltip": "Таңдаулылардан алып тастау",
+  "ratingSemanticLabel": "5-тен {rating}",
+  "ratingSemanticLabelWithReviews": "5-тен {rating}, {count, plural, other{{count} пікір}}",
+  "starRatingSemanticLabel": "{count, plural, other{{count} жұлдыз қою}}",
 
   "profileTitle": "Профиль",
   "errorProfileGeneric": "Бірдеңе дұрыс болмады: {error}",

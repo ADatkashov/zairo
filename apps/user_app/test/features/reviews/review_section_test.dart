@@ -103,6 +103,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Tap the 4th star icon button to set rating = 4.
+    expect(find.byTooltip('Rate 4 stars'), findsOneWidget);
     final starButtons = find.byIcon(Icons.star_border);
     await tester.tap(starButtons.at(3));
     await tester.pumpAndSettle();

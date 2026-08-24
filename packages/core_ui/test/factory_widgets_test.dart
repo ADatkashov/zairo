@@ -110,6 +110,19 @@ void main() {
     expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
   });
 
+  testWidgets('FactoryProviderCard forwards caller-supplied favorite semantic labels, not the English fallback', (tester) async {
+    await tester.pumpWidget(_wrap(FactoryProviderCard(
+      title: 'Aigerim Beauty Studio',
+      isFavorite: false,
+      onFavoriteToggle: (_) {},
+      favoriteAddSemanticLabel: 'Таңдаулыларға қосу',
+      favoriteRemoveSemanticLabel: 'Таңдаулылардан алып тастау',
+    )));
+
+    final semantics = tester.getSemantics(find.byIcon(Icons.favorite_border_rounded));
+    expect(semantics.label, 'Таңдаулыларға қосу');
+  });
+
   testWidgets('FactoryProviderCard calls onTap', (tester) async {
     var tapped = false;
     await tester.pumpWidget(_wrap(FactoryProviderCard(title: 'Nail Bar 21', onTap: () => tapped = true)));

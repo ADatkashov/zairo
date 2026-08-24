@@ -81,12 +81,17 @@ void main() {
           favoritesApiProvider.overrideWithValue(fakeApi),
           authControllerProvider.overrideWith(_LoggedInAuthController.new),
         ],
-        child: const MaterialApp(home: Scaffold(body: FavoriteButton(providerId: 'provider-1'))),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: FavoriteButton(providerId: 'provider-1')),
+        ),
       ),
     );
     await tester.pumpAndSettle();
 
     expect(find.byIcon(Icons.favorite), findsOneWidget);
+    expect(find.byTooltip('Remove from favorites'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.favorite));
     await tester.pumpAndSettle();
@@ -104,7 +109,11 @@ void main() {
           favoritesApiProvider.overrideWithValue(fakeApi),
           authControllerProvider.overrideWith(_LoggedInAuthController.new),
         ],
-        child: const MaterialApp(home: Scaffold(body: FavoriteButton(providerId: 'provider-1'))),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: FavoriteButton(providerId: 'provider-1')),
+        ),
       ),
     );
     await tester.pumpAndSettle();

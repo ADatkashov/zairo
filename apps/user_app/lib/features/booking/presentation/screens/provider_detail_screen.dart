@@ -65,6 +65,10 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                   FactoryRatingLabel(
                     rating: widget.provider.averageRating!,
                     reviewCount: widget.provider.reviewCount,
+                    semanticLabel: widget.provider.reviewCount == null
+                        ? l10n.ratingSemanticLabel(widget.provider.averageRating!.toStringAsFixed(1))
+                        : l10n.ratingSemanticLabelWithReviews(
+                            widget.provider.averageRating!.toStringAsFixed(1), widget.provider.reviewCount!),
                   ),
                 FactoryBadge(label: _capitalize(widget.provider.vertical)),
                 if (widget.provider.hasOpenAvailability)
