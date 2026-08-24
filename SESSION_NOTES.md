@@ -3701,4 +3701,39 @@ build apk --debug` успешны в обоих приложениях (Android 
 hot reload/restart, нужен полный переустанов) — регистрация заработала.
 
 ### Текущий статус
+Закоммичено и запушено в `test` (`70d5869`).
+
+## Экран настроек в business_admin (2026-08-25)
+
+Пользователь тестировал `business_admin` и заметил, что интерфейс
+только на английском, без возможности сменить язык — в отличие от
+`user_app`, у `business_admin` вообще не было экрана настроек, хотя
+переводы на ru/kk в его собственных ARB-файлах уже полные (использовались
+для recurring schedule, модерации и т.д.). Тёмная тема тоже жёстко
+зависела только от системной без переключателя.
+
+По просьбе пользователя добавлен полный паритет с `user_app`:
+- `lib/app/locale/locale_controller.dart`, `lib/app/theme/theme_provider.dart`
+  (новые) — точная копия паттерна `user_app` (язык персистится через
+  `secureStorageServiceProvider`, тема — нет, как и в `user_app`).
+- `lib/app/app.dart` — `BusinessAdminApp` стал `ConsumerWidget`,
+  `MaterialApp` получил `themeMode`/`locale` из этих провайдеров.
+- `lib/features/settings/presentation/screens/settings_screen.dart`
+  (новый) — переключатель тёмной темы + пикер языка (System default/
+  English/Русский/Қазақша), дословная копия `user_app`'s `SettingsScreen`.
+- Кнопка-шестерёнка добавлена в `AppBar` обоих корневых экранов
+  (`DashboardScreen` для owner, `ModerationScreen` для admin — оба ведут
+  на один и тот же `SettingsScreen`), рядом с уже существующей кнопкой
+  logout.
+- Новые ARB-ключи (en/ru/kk): `settingsButtonTooltip`, `settingsTitle`,
+  `darkModeTitle`, `darkModeSubtitle`, `themeModeSystem/Light/Dark`,
+  `languageSectionTitle`, `languageSystemDefault` — значения взяты один в
+  один из `user_app`.
+
+Тесты: новый `settings_screen_test.dart` (2 теста, зеркалит `user_app`'s
+версию) — дефолт на системный язык + переключение на казахский с
+персистентностью, и сброс на "как в системе". `flutter analyze` чисто,
+`flutter test` 21/21 (было 19), `flutter build web` успешен.
+
+### Текущий статус
 Изменения готовы, ждут коммита.

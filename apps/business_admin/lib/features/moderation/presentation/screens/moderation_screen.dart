@@ -6,6 +6,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../salon/data/models/admin_provider.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
+import '../../../settings/presentation/screens/settings_screen.dart';
 import '../providers/moderation_providers.dart';
 
 /// Shown by AuthGate instead of DashboardScreen when the logged-in user is
@@ -26,6 +27,13 @@ class ModerationScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.moderationTitle),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: l10n.settingsButtonTooltip,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: l10n.logOutTooltip,

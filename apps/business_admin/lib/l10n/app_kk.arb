@@ -24,6 +24,16 @@
   "errorAuthGeneric": "Бірдеңе дұрыс болмады: {error}",
 
   "logOutTooltip": "Шығу",
+
+  "settingsButtonTooltip": "Баптаулар",
+  "settingsTitle": "Баптаулар",
+  "darkModeTitle": "Қараңғы режим",
+  "darkModeSubtitle": "Ағымдағы тақырып: {mode}",
+  "themeModeSystem": "Жүйелік",
+  "themeModeLight": "Ашық",
+  "themeModeDark": "Қараңғы",
+  "languageSectionTitle": "Тіл",
+  "languageSystemDefault": "Жүйе тіліндей",
   "cancelButton": "Бас тарту",
   "saveButton": "Сақтау",
   "addButton": "Қосу",
