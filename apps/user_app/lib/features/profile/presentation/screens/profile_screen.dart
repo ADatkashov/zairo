@@ -1,3 +1,4 @@
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -35,8 +36,11 @@ class ProfileScreen extends ConsumerWidget {
               : _LoggedInView(displayName: user.displayName, email: user.email),
           loading: () => const CircularProgressIndicator(),
           error: (error, stackTrace) => Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(l10n.errorProfileGeneric(error.toString())),
+            padding: const EdgeInsets.all(FactorySpacing.space4),
+            child: FactoryErrorState(
+              message: l10n.errorProfileGeneric(error.toString()),
+              onRetry: () => ref.invalidate(authControllerProvider),
+            ),
           ),
         ),
       ),

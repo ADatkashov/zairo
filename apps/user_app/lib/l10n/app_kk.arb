@@ -131,6 +131,7 @@
   "mapPlaceholderMessage": "Нақты карта (Google Maps/Mapbox/OSM) жобада карта провайдерінің аккаунты пайда болған соң қосылады.",
 
   "masterPortfolioTitle": "{masterName} — Портфолио",
+  "portfolioEmptyTitle": "Әзірге фото жоқ",
   "portfolioEmptyMessage": "Портфолиода әзірге фото жоқ.",
   "errorPortfolioLoadFailed": "Портфолионы жүктеу мүмкін болмады: {error}",
   "portfolioViewerCloseTooltip": "Жабу",

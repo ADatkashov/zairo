@@ -1,3 +1,4 @@
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -48,7 +49,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.forgotPasswordTitle)),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(FactorySpacing.space4),
         child: _step == _Step.enterEmail ? _buildEmailStep(l10n) : _buildResetStep(l10n),
       ),
     );
@@ -70,7 +71,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           const SizedBox(height: 20),
           if (_error != null)
             Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
               child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
             ),
           FilledButton(
@@ -107,7 +108,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           const SizedBox(height: 20),
           if (_error != null)
             Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
               child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
             ),
           FilledButton(

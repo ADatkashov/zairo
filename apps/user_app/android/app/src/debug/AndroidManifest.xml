@@ -4,4 +4,9 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- The local backend is plain HTTP (no deployed HTTPS environment yet,
+         see environment.dart) — Android blocks cleartext traffic by default
+         for targetSdk 28+. Debug-only, so a real release build stays
+         HTTPS-only. -->
+    <application android:usesCleartextTraffic="true"/>
 </manifest>
