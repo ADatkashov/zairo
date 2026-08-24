@@ -3526,4 +3526,214 @@ true` — до фикса падал на слипшемся тексте). `use
 успешен в `user_app`.
 
 ### Текущий статус
+Закоммичено и запушено (`c91ccfd`). От `master` создана и запушена
+ветка `test` (`origin/test`, тот же коммит) — по просьбе пользователя,
+дальнейшая работа Phase 4 ведётся в ней.
+
+По ходу обнаружена и исправлена повторно всплывшая проблема окружения:
+Android Studio, открытая в корне репозитория, показывала модули `app`/
+`zairo_android` с красными крестиками — протухшие ссылки в локальном
+(негитовом) `.idea/workspace.xml` на давно удалённый дублирующий
+Android-проект (см. `zairo_android_project_fix` в памяти). Исправлено
+удалением `C:\app\zairo\.idea` (полностью регенерируемый кэш) — далее
+Android Studio открывается не на корне репозитория, а на `apps/user_app`
+или `apps/business_admin` напрямую.
+
+## Production-ready MVP, Phase 4 — UI-аудит, локализация, брендинг (2026-08-24)
+
+Продолжение Phase 4 после accessibility-прохода: UI/design-system-аудит
+обоих Flutter-приложений, техническая ревизия казахской локализации,
+подключение реального логотипа/брендинга.
+
+### UI/design-system аудит
+
+Два параллельных read-only аудита (по одному на приложение) против
+токенов `core_ui` (`FactoryColors`, `FactorySpacing`, `FactoryEmptyState`/
+`FactoryErrorState`, `FactorySkeleton`). Найденное и исправленное:
+
+**`user_app`:**
+- `FavoriteButton` — заливка сердца хардкодила `Colors.red` вместо
+  `context.factoryColors.error` (тот самый токен, который уже
+  использует `core_ui`'s `_FavoriteButton` для того же состояния) — не
+  адаптировалось бы к тёмной теме. Исправлено.
+- `MasterPortfolioScreen` — пустое состояние и состояние ошибки были
+  голым `Center(child: Text(...))`, в отличие от всех остальных
+  списочных/детальных экранов приложения, которые используют
+  `FactoryEmptyState`/`FactoryErrorState`. Добавлен новый ключ
+  `portfolioEmptyTitle` (en/ru/kk) под уже существующий
+  `portfolioEmptyMessage`; error-состояние получило `onRetry`,
+  инвалидирующий `masterPortfolioProvider`.
+- `ProfileScreen` — то же самое для error-состояния (`errorProfileGeneric`
+  уже использовался с `FactoryErrorState` в `FavoritesScreen` — здесь
+  просто не был применён тот же паттерн).
+- Точечная зачистка «магических» отступов, не попадающих в шкалу
+  `FactorySpacing` (4/8/12/16/20/24/32/40/48), на login/register/forgot-
+  password экранах, `home_screen.dart`, `review_section.dart` — везде
+  заменено на именованные токены. `FactorySkeleton` в приложении нигде
+  не используется (подтверждено), так что везде используемый голый
+  `CircularProgressIndicator()` — это установившийся паттерн, а не
+  отклонение, трогать не стал.
+
+**`business_admin`:**
+- `ManageMasterServicesDialog` — самая существенная находка: диалог
+  жёстко фиксировал `SizedBox(width: 360)` вместо auto-sizing, которым
+  пользуются все остальные диалоги приложения. На Android-экране шириной
+  360dp (частый класс разрешений) стандартные отступы `AlertDialog`
+  оставляют ~232dp полезной ширины — фиксированные 360dp гарантированно
+  вылезли бы за экран. Исправлено удалением `SizedBox`.
+- Механическая зачистка raw-чисел, дублирующих значения из
+  `FactorySpacing` (`EdgeInsets.all(24)`, `top: 8`, `vertical: 8`,
+  `16`/`12` на login/register) в 8 файлах — та же логика, что и в
+  `user_app`. `FactoryEmptyState`/`FactoryErrorState` уже применяются
+  корректно там, где нужны (полноэкранные состояния в
+  `moderation_screen`/`dashboard_screen`); компактные inline-заглушки
+  внутри секций `salon_detail_screen.dart` (services/slots/masters/
+  bookings) осознанно НЕ заменены — `FactoryEmptyState` — это тяжёлый
+  icon+title+message блок для полноэкранных состояний, а не для
+  подсекции карточки, замена была бы избыточной. Нет ни одного
+  хардкоженного `Colors.*` во всём приложении.
+
+Тесты: после правок 3 теста в `user_app` упали, так как
+`FactoryEmptyState`/цвет из `context.factoryColors` требуют
+`theme: factoryLightTheme()` в тестовом `MaterialApp` (тот самый паттерн
+отсутствующих делегатов/темы, что и раньше) — добавлено в
+`master_portfolio_screen_test.dart` и `favorite_button_test.dart` (все 3
+теста файла, включая logged-out ветку — она пушит `LoginScreen`, который
+после следующего пункта тоже стал зависеть от темы).
+
+### Локализация — техническая ревизия казахского
+
+Скрипт сравнил каждый ключ `app_kk.arb` с `app_ru.arb`/`app_en.arb` в
+обоих приложениях (полнота ключей подтверждена — пропусков нет).
+Результат — `docs/NEEDS_NATIVE_REVIEW.md`: список ключей, где kk-значение
+дословно совпадает с ru (вероятные заимствования вроде «профиль»,
+«рейтинг», «портфолио» — почти наверняка нормально для казахского, но
+не проверено носителем) плюс один более уверенный кандидат —
+`weekdayWed` в `business_admin` («Ср» в kk совпадает с ru побуквенно, в
+отличие от всех остальных 6 дней недели, которые различаются корректно).
+Ничего в ARB-файлах не менялось — по инструкции ТЗ правильнее пометить
+для ревью носителем, чем самому придумывать перевод.
+
+### Брендинг — логотип
+
+Нашёлся уже опубликованный ранее в этой сессии артефакт "Factory
+Logomark" (design artifact, не подключён ранее к реальным ассетам) —
+"Module Mark": три закрашенных блока (Core + первая живая вертикаль
+Beauty, в золотом accent) и четвёртый блок нарисован открытым/
+пунктирным — незанятый слот под следующую вертикаль. Полностью собран
+из уже существующих токенов `core_ui` (primaryStrong/accent/primary/
+borderStrong), ничего нового в палитру не добавлено. Подключено:
+
+- `packages/core_ui/lib/src/widgets/factory_logomark.dart` (новый) —
+  `FactoryLogomark` виджет, `CustomPainter`, рисует марку через
+  `context.factoryColors` (адаптируется к тёмной теме автоматически).
+  Ниже ~32px четвёртый блок автоматически переключается с пунктирного
+  на плоский «тихий» — то же правило, что и в самом артефакте
+  (`dashedFourthBlock` параметр для ручного оverride). Добавлен в
+  `login_screen.dart` обоих приложений (только сама марка, без текста
+  "Factory" — рабочее кодовое имя не должно светиться в реальном UI,
+  см. `[[factory_platform_pivot]]`).
+- Реальные PNG-иконки: одноразовый генератор
+  (`test/_tool/generate_app_icon.dart`, запущен через `flutter test` с
+  `tester.runAsync` — прямые `dart:ui` Canvas/PictureRecorder вызовы не
+  завершаются без него, зависают на fake-time зоне тестов; удалён после
+  использования) отрисовал master-иконки 1024×1024 под каждое
+  приложение (`user_app`: тёмно-зелёный фон, `business_admin`: зелёный
+  фон посветлее — чтобы иконки различались на рабочем столе). Дальше
+  `flutter_launcher_icons` (новая dev-зависимость обоих приложений)
+  сгенерировал полный набор: Android `mipmap-*/launcher_icon.png` +
+  `AndroidManifest.xml` `android:icon` перепривязан, iOS
+  `AppIcon.appiconset` (не блокер по ТЗ, но раз папка уже есть — сделано
+  заодно, `remove_alpha_ios: true` для App Store совместимости), web
+  `favicon.png`/`icons/Icon-*.png`/`manifest.json`. Старые дефолтные
+  `ic_launcher.png` удалены как осиротевшие.
+
+Найдена и исправлена попутная проблема окружения: `dart run
+flutter_launcher_icons` падал с "Could not find pubspec.yaml" на
+`path_provider_linux`/`path_provider_windows` в pub-кэше — оказались
+пустыми (повреждённая распаковка, не связана с AVG/SSL). Исправлено
+удалением повреждённых директорий из
+`~/AppData/Local/Pub/Cache/hosted/pub.dev/` и повторным `flutter pub get`.
+
+Тесты: `core_ui` 24/24 (+1, smoke-тест `FactoryLogomark` на обоих
+size-вариантах), `user_app` 51/51, `business_admin` 19/19,
+`flutter analyze` чисто на всех трёх. `flutter build web` и `flutter
+build apk --debug` успешны в обоих приложениях (Android APK — то самое
+"Android+Web platform validation" из ТЗ Phase 4; предупреждение про
+`file_picker`/Kotlin Gradle Plugin в `business_admin` — известная,
+задокументированная в памяти особенность, не новая регрессия).
+
+### Текущий статус
+Закоммичено и запушено в `test` (`5301643`).
+
+## Фикс регистрации на Android-эмуляторе (2026-08-25)
+
+Пользователь сообщил, что регистрация падает с ошибкой на Android-
+эмуляторе, хотя backend поднят и `/actuator/health` отвечает `UP`.
+Найдены две накладывающиеся причины:
+
+1. `baseUrl` в обоих приложениях был жёстко прописан как
+   `http://localhost:8080/api/v1` (`environment.dart`) — внутри
+   Android-эмулятора `localhost` указывает на сам эмулятор, а не на
+   хост-машину; нужен специальный алиас `10.0.2.2`.
+2. Даже после смены хоста трафик всё равно был бы заблокирован: Android
+   по умолчанию запрещает cleartext (незашифрованный `http://`) для
+   `targetSdk` 28+, а backend работает по обычному HTTP (HTTPS-окружения
+   пока нет — см. комментарий в `environment.dart`).
+
+Исправлено в обоих приложениях:
+- `lib/core/constants/environment.dart` — `appNetworkConfig`/
+  `adminNetworkConfig` из `const` превращены в геттеры, которые
+  определяют платформу (`kIsWeb`/`Platform.isAndroid`) и подставляют
+  `10.0.2.2` только на Android, иначе `localhost`. Физическое
+  устройство (не эмулятор) этим не покрывается — там нужен реальный
+  LAN IP хоста, задокументировано в комментарии.
+- `android/app/src/debug/AndroidManifest.xml` — добавлен
+  `<application android:usesCleartextTraffic="true"/>`, смёрживается
+  только в debug-сборку (Android Gradle manifest merger объединяет
+  `<application>` из debug/main без конфликта) — релизная сборка
+  cleartext не получает.
+
+Тесты: `flutter analyze` чисто в обоих приложениях, `user_app` 51/51,
+`business_admin` 19/19, `flutter build apk --debug` успешен в обоих
+(манифест смёржился без ошибок). Живая проверка: пользователь
+перезапустил приложение в эмуляторе (native-манифест не подхватывается
+hot reload/restart, нужен полный переустанов) — регистрация заработала.
+
+### Текущий статус
+Закоммичено и запушено в `test` (`70d5869`).
+
+## Экран настроек в business_admin (2026-08-25)
+
+Пользователь тестировал `business_admin` и заметил, что интерфейс
+только на английском, без возможности сменить язык — в отличие от
+`user_app`, у `business_admin` вообще не было экрана настроек, хотя
+переводы на ru/kk в его собственных ARB-файлах уже полные (использовались
+для recurring schedule, модерации и т.д.). Тёмная тема тоже жёстко
+зависела только от системной без переключателя.
+
+По просьбе пользователя добавлен полный паритет с `user_app`:
+- `lib/app/locale/locale_controller.dart`, `lib/app/theme/theme_provider.dart`
+  (новые) — точная копия паттерна `user_app` (язык персистится через
+  `secureStorageServiceProvider`, тема — нет, как и в `user_app`).
+- `lib/app/app.dart` — `BusinessAdminApp` стал `ConsumerWidget`,
+  `MaterialApp` получил `themeMode`/`locale` из этих провайдеров.
+- `lib/features/settings/presentation/screens/settings_screen.dart`
+  (новый) — переключатель тёмной темы + пикер языка (System default/
+  English/Русский/Қазақша), дословная копия `user_app`'s `SettingsScreen`.
+- Кнопка-шестерёнка добавлена в `AppBar` обоих корневых экранов
+  (`DashboardScreen` для owner, `ModerationScreen` для admin — оба ведут
+  на один и тот же `SettingsScreen`), рядом с уже существующей кнопкой
+  logout.
+- Новые ARB-ключи (en/ru/kk): `settingsButtonTooltip`, `settingsTitle`,
+  `darkModeTitle`, `darkModeSubtitle`, `themeModeSystem/Light/Dark`,
+  `languageSectionTitle`, `languageSystemDefault` — значения взяты один в
+  один из `user_app`.
+
+Тесты: новый `settings_screen_test.dart` (2 теста, зеркалит `user_app`'s
+версию) — дефолт на системный язык + переключение на казахский с
+персистентностью, и сброс на "как в системе". `flutter analyze` чисто,
+`flutter test` 21/21 (было 19), `flutter build web` успешен.
+
+### Текущий статус
 Изменения готовы, ждут коммита.

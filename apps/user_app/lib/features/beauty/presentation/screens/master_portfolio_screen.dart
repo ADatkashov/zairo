@@ -1,3 +1,4 @@
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -21,7 +22,13 @@ class MasterPortfolioScreen extends ConsumerWidget {
       body: portfolioAsync.when(
         data: (items) {
           if (items.isEmpty) {
-            return Center(child: Text(l10n.portfolioEmptyMessage));
+            return Center(
+              child: FactoryEmptyState(
+                icon: Icons.photo_library_outlined,
+                title: l10n.portfolioEmptyTitle,
+                message: l10n.portfolioEmptyMessage,
+              ),
+            );
           }
           return GridView.builder(
             padding: const EdgeInsets.all(16),
@@ -76,7 +83,12 @@ class MasterPortfolioScreen extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => Center(child: Text(l10n.errorPortfolioLoadFailed(error.toString()))),
+        error: (error, stackTrace) => Center(
+          child: FactoryErrorState(
+            message: l10n.errorPortfolioLoadFailed(error.toString()),
+            onRetry: () => ref.invalidate(masterPortfolioProvider(masterId)),
+          ),
+        ),
       ),
     );
   }

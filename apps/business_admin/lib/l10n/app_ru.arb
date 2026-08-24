@@ -24,6 +24,16 @@
   "errorAuthGeneric": "Что-то пошло не так: {error}",
 
   "logOutTooltip": "Выйти",
+
+  "settingsButtonTooltip": "Настройки",
+  "settingsTitle": "Настройки",
+  "darkModeTitle": "Тёмная тема",
+  "darkModeSubtitle": "Текущая тема: {mode}",
+  "themeModeSystem": "Системная",
+  "themeModeLight": "Светлая",
+  "themeModeDark": "Тёмная",
+  "languageSectionTitle": "Язык",
+  "languageSystemDefault": "Как в системе",
   "cancelButton": "Отмена",
   "saveButton": "Сохранить",
   "addButton": "Добавить",

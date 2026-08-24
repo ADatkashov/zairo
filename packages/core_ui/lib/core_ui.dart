@@ -15,6 +15,7 @@ export 'src/widgets/factory_badge.dart';
 export 'src/widgets/factory_chip.dart';
 export 'src/widgets/factory_empty_state.dart';
 export 'src/widgets/factory_error_state.dart';
+export 'src/widgets/factory_logomark.dart';
 export 'src/widgets/factory_price_text.dart';
 export 'src/widgets/factory_rating_label.dart';
 export 'src/widgets/factory_skeleton.dart';

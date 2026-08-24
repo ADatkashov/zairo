@@ -1,3 +1,4 @@
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -24,33 +25,30 @@ class ManageMasterServicesDialog extends ConsumerWidget {
 
     return AlertDialog(
       title: Text(l10n.manageServicesDialogTitle),
-      content: SizedBox(
-        width: 360,
-        child: servicesAsync.when(
-          data: (services) {
-            if (services.isEmpty) {
-              return Text(l10n.addServiceFirstMessage);
-            }
-            final linkedIds = linkedAsync.value?.map((s) => s.serviceId).toSet() ?? const <String>{};
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: services
-                  .map(
-                    (service) => CheckboxListTile(
-                      value: linkedIds.contains(service.id),
-                      title: Text(service.title),
-                      onChanged: (checked) => _toggle(ref, service.id, checked ?? false),
-                    ),
-                  )
-                  .toList(),
-            );
-          },
-          loading: () => const Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(child: CircularProgressIndicator()),
-          ),
-          error: (error, stackTrace) => Text(l10n.errorServicesLoadFailed(error.toString())),
+      content: servicesAsync.when(
+        data: (services) {
+          if (services.isEmpty) {
+            return Text(l10n.addServiceFirstMessage);
+          }
+          final linkedIds = linkedAsync.value?.map((s) => s.serviceId).toSet() ?? const <String>{};
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: services
+                .map(
+                  (service) => CheckboxListTile(
+                    value: linkedIds.contains(service.id),
+                    title: Text(service.title),
+                    onChanged: (checked) => _toggle(ref, service.id, checked ?? false),
+                  ),
+                )
+                .toList(),
+          );
+        },
+        loading: () => const Padding(
+          padding: EdgeInsets.all(FactorySpacing.space6),
+          child: Center(child: CircularProgressIndicator()),
         ),
+        error: (error, stackTrace) => Text(l10n.errorServicesLoadFailed(error.toString())),
       ),
       actions: [
         TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(l10n.doneButton)),

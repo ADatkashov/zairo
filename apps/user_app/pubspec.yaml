@@ -39,6 +39,7 @@ dev_dependencies:
   # Only used in tests to build a bare SecureStorageService(FlutterSecureStorage())
   # for fake subclasses — the app itself only touches it through core_storage.
   flutter_secure_storage: ^11.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true

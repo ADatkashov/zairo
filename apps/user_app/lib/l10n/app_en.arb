@@ -425,6 +425,9 @@
     }
   },
 
+  "portfolioEmptyTitle": "No photos yet",
+  "@portfolioEmptyTitle": {"description": "Master portfolio screen empty state title."},
+
   "portfolioEmptyMessage": "No portfolio photos yet.",
   "@portfolioEmptyMessage": {"description": "Master portfolio screen empty state."},
 

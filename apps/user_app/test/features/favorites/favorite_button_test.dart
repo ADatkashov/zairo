@@ -1,4 +1,5 @@
 import 'package:core_network/core_network.dart';
+import 'package:core_ui/core_ui.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -56,6 +57,7 @@ void main() {
           authControllerProvider.overrideWith(_LoggedOutAuthController.new),
         ],
         child: MaterialApp(
+          theme: factoryLightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: const Scaffold(body: FavoriteButton(providerId: 'provider-1')),
@@ -82,6 +84,7 @@ void main() {
           authControllerProvider.overrideWith(_LoggedInAuthController.new),
         ],
         child: MaterialApp(
+          theme: factoryLightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: const Scaffold(body: FavoriteButton(providerId: 'provider-1')),
@@ -110,6 +113,7 @@ void main() {
           authControllerProvider.overrideWith(_LoggedInAuthController.new),
         ],
         child: MaterialApp(
+          theme: factoryLightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: const Scaffold(body: FavoriteButton(providerId: 'provider-1')),

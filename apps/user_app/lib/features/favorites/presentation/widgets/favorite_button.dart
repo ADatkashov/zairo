@@ -1,3 +1,4 @@
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -42,7 +43,7 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton> {
     return favoritedAsync.when(
       data: (isFavorited) => IconButton(
         icon: Icon(isFavorited ? Icons.favorite : Icons.favorite_border),
-        color: isFavorited ? Colors.red : null,
+        color: isFavorited ? context.factoryColors.error : null,
         tooltip: isFavorited ? l10n.favoriteRemoveTooltip : l10n.favoriteAddTooltip,
         onPressed: _isToggling ? null : () => _toggle(currentUser.id, isFavorited),
       ),

@@ -1,3 +1,4 @@
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -64,7 +65,7 @@ class _AddServiceDialogState extends ConsumerState<AddServiceDialog> {
           ),
           if (_error != null)
             Padding(
-              padding: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.only(top: FactorySpacing.space2),
               child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
             ),
         ],

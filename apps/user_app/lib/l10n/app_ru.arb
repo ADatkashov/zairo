@@ -131,6 +131,7 @@
   "mapPlaceholderMessage": "Настоящая карта (Google Maps/Mapbox/OSM) будет подключена, когда у проекта появится аккаунт провайдера карт.",
 
   "masterPortfolioTitle": "{masterName} — Портфолио",
+  "portfolioEmptyTitle": "Пока нет фото",
   "portfolioEmptyMessage": "Пока нет фото в портфолио.",
   "errorPortfolioLoadFailed": "Не удалось загрузить портфолио: {error}",
   "portfolioViewerCloseTooltip": "Закрыть",

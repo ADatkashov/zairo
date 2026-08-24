@@ -155,7 +155,7 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
           ),
           if (_error != null)
             Padding(
-              padding: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.only(top: FactorySpacing.space2),
               child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
             ),
         ],
@@ -301,7 +301,7 @@ class _ServicesSection extends ConsumerWidget {
             );
           },
           loading: () => const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
+            padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
             child: LinearProgressIndicator(),
           ),
           error: (error, stackTrace) => Text(l10n.errorServicesLoadFailed(error.toString())),
@@ -453,7 +453,7 @@ class _AvailabilitySection extends ConsumerWidget {
             );
           },
           loading: () => const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
+            padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
             child: LinearProgressIndicator(),
           ),
           error: (error, stackTrace) => Text(l10n.errorAvailabilityLoadFailed(error.toString())),
@@ -538,7 +538,7 @@ class _MastersSection extends ConsumerWidget {
             );
           },
           loading: () => const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
+            padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
             child: LinearProgressIndicator(),
           ),
           error: (error, stackTrace) => Text(l10n.errorMastersLoadFailed(error.toString())),
@@ -681,7 +681,7 @@ class _BookingsSection extends ConsumerWidget {
             );
           },
           loading: () => const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
+            padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
             child: LinearProgressIndicator(),
           ),
           error: (error, stackTrace) => Text(l10n.errorBookingsLoadFailed(error.toString())),
