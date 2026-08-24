@@ -1,3 +1,4 @@
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -37,11 +38,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.loginAppBarTitle)),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(FactorySpacing.space4),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
+              const Center(child: FactoryLogomark(size: 56)),
+              const SizedBox(height: FactorySpacing.space6),
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
@@ -49,7 +52,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 validator: (value) =>
                     (value == null || !value.contains('@')) ? l10n.validationEmailInvalid : null,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: FactorySpacing.space3),
               TextFormField(
                 controller: _passwordController,
                 obscureText: true,
@@ -57,10 +60,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 validator: (value) =>
                     (value == null || value.isEmpty) ? l10n.validationPasswordRequired : null,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: FactorySpacing.space5),
               if (authState.hasError)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
                   child: Text(
                     _errorText(l10n, authState.error!),
                     style: TextStyle(color: Theme.of(context).colorScheme.error),
@@ -76,7 +79,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       )
                     : Text(l10n.loginSubmit),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: FactorySpacing.space2),
               TextButton(
                 onPressed: isLoading
                     ? null

@@ -227,4 +227,14 @@ void main() {
       findsNothing,
     );
   });
+
+  testWidgets('FactoryLogomark renders at both the dashed and flat-block size variants', (tester) async {
+    await tester.pumpWidget(_wrap(const FactoryLogomark(size: 56)));
+    expect(find.byType(FactoryLogomark), findsOneWidget);
+
+    // Below ~32px the fourth block swaps from dashed-open to a flat block —
+    // both must render without throwing, not just the default size.
+    await tester.pumpWidget(_wrap(const FactoryLogomark(size: 16)));
+    expect(find.byType(FactoryLogomark), findsOneWidget);
+  });
 }

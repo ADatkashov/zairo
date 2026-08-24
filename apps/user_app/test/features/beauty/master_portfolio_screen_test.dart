@@ -1,4 +1,5 @@
 import 'package:core_network/core_network.dart';
+import 'package:core_ui/core_ui.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,6 +25,7 @@ void main() {
       ProviderScope(
         overrides: [beautyApiProvider.overrideWithValue(_FakeBeautyApi(const []))],
         child: MaterialApp(
+          theme: factoryLightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: const MasterPortfolioScreen(masterId: 'master-1', masterName: 'Jamie'),
@@ -49,6 +51,7 @@ void main() {
       ProviderScope(
         overrides: [beautyApiProvider.overrideWithValue(fakeApi)],
         child: MaterialApp(
+          theme: factoryLightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: const MasterPortfolioScreen(masterId: 'master-1', masterName: 'Jamie'),

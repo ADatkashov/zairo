@@ -118,7 +118,7 @@ class _SearchEntry extends StatelessWidget {
         borderRadius: FactoryRadius.mdRadius,
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space3, vertical: 13),
+          padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space3, vertical: FactorySpacing.space3),
           decoration: BoxDecoration(
             color: colors.surface,
             borderRadius: FactoryRadius.mdRadius,
