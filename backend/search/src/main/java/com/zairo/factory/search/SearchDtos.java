@@ -1,6 +1,7 @@
 package com.zairo.factory.search;
 
 import com.zairo.factory.providers.ProviderStatus;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -10,11 +11,30 @@ public final class SearchDtos {
     private SearchDtos() {
     }
 
-    public record ServiceSummary(UUID id, String title, int durationMinutes, BigDecimal price, String currency) {
+    public record ServiceSummary(
+            @Schema(example = "550e8400-e29b-41d4-a716-446655440000") UUID id,
+            @Schema(example = "Classic Manicure") String title,
+            @Schema(example = "60") int durationMinutes,
+            @Schema(example = "25.00") BigDecimal price,
+            @Schema(example = "USD") String currency) {
     }
 
-    public record ProviderSearchResult(UUID id, String name, String vertical, ProviderStatus status,
-            boolean hasOpenAvailability, BigDecimal minPrice, List<ServiceSummary> services, Double distanceKm,
-            Double latitude, Double longitude, Double averageRating, Long reviewCount) {
+    public record ProviderSearchResult(
+            @Schema(example = "550e8400-e29b-41d4-a716-446655440000") UUID id,
+            @Schema(example = "Aigerim Beauty Studio") String name,
+            @Schema(example = "beauty") String vertical,
+            ProviderStatus status,
+            @Schema(description = "True if at least one OPEN slot exists for this provider right now.")
+            boolean hasOpenAvailability,
+            @Schema(description = "The cheapest active service's price, null if it has none.", example = "25.00")
+            BigDecimal minPrice,
+            List<ServiceSummary> services,
+            @Schema(description = "Null unless both `lat`/`lng` were supplied on the request.", example = "1.8")
+            Double distanceKm,
+            @Schema(example = "43.238293") Double latitude,
+            @Schema(example = "76.945465") Double longitude,
+            @Schema(description = "Null if the provider has no reviews yet (absent, not zero).", example = "4.5")
+            Double averageRating,
+            @Schema(example = "12") Long reviewCount) {
     }
 }

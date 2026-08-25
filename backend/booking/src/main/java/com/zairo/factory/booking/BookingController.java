@@ -3,7 +3,15 @@ package com.zairo.factory.booking;
 import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.booking.BookingDtos.BookingResponse;
 import com.zairo.factory.booking.BookingDtos.CreateBookingRequest;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -16,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
+@Tag(name = "Bookings")
 public class BookingController {
 
     private final BookingService bookingService;
@@ -29,45 +38,88 @@ public class BookingController {
         this.availabilitySlotRepository = availabilitySlotRepository;
     }
 
+    @Operation(summary = "Create a booking", description = """
+            Reserves a Service at an Availability slot for a user — atomically claims the slot \
+            (OPEN -> BOOKED), so two customers racing for the same slot resolve to one 201 and one 409. \
+            No authentication is required by this endpoint itself (any caller can book on behalf of any \
+            `userId`) — see Known Limitations in the project's audit notes.
+
+            **Workflow**: `Search -> Get provider details -> Create booking` — this is the last step, using \
+            a `serviceId`/`availabilitySlotId` pair found via GET /search/providers and \
+            GET /providers/{id}/availability-slots.""")
+    @ApiResponse(responseCode = "201", description = "Booking created, status PENDING, slot now BOOKED")
+    @ApiResponse(responseCode = "400", ref = "BadRequest")
+    @ApiResponse(responseCode = "404", ref = "NotFound", description = "The availability slot doesn't exist.")
+    @ApiResponse(responseCode = "409", description = "The slot isn't OPEN, or was just claimed by a "
+            + "concurrent request for someone else.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @PostMapping("/api/v1/bookings")
     @ResponseStatus(HttpStatus.CREATED)
-    public BookingResponse create(@RequestBody CreateBookingRequest request) {
+    public BookingResponse create(@Valid @RequestBody CreateBookingRequest request) {
         Booking booking = bookingService.createBooking(request.userId(), request.serviceId(),
                 request.availabilitySlotId(), request.totalPrice());
         return BookingResponse.from(booking);
     }
 
+    @Operation(summary = "Get a booking by id")
+    @ApiResponse(responseCode = "200", description = "The booking")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
     @GetMapping("/api/v1/bookings/{id}")
-    public BookingResponse getById(@PathVariable UUID id) {
+    public BookingResponse getById(@Parameter(description = "The booking's id.") @PathVariable UUID id) {
         return bookingRepository.findById(id).map(BookingResponse::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: " + id));
     }
 
+    @Operation(summary = "Mark a booking complete", description = "Only a CONFIRMED booking can be completed "
+            + "— this is the gate Reviews checks before allowing a review (no review without a verified "
+            + "visit). No authentication is required by this endpoint itself.")
+    @ApiResponse(responseCode = "200", description = "Booking marked COMPLETED")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @ApiResponse(responseCode = "409", description = "The booking isn't in a completable state (not "
+            + "CONFIRMED).",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @PostMapping("/api/v1/bookings/{id}/complete")
-    public BookingResponse complete(@PathVariable UUID id) {
+    public BookingResponse complete(@Parameter(description = "The booking's id.") @PathVariable UUID id) {
         return BookingResponse.from(bookingService.completeBooking(id));
     }
 
-    /** Customer-only — 401 without a valid token, 403 if the token belongs to someone else's booking. */
+    @Operation(summary = "Cancel a booking", description = "Customer-only — the caller must be the booking's "
+            + "own user. If it had been paid, the payment is automatically refunded as part of the same "
+            + "cancellation (see the Payments module).")
+    @ApiResponse(responseCode = "200", description = "Booking cancelled (and refunded, if it was paid)")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "The token belongs to a different user than the "
+            + "booking's own.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @ApiResponse(responseCode = "409", description = "The booking isn't in a cancellable state (already "
+            + "CANCELLED or COMPLETED).",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/bookings/{id}/cancel")
-    public BookingResponse cancel(@PathVariable UUID id, HttpServletRequest httpRequest) {
+    public BookingResponse cancel(@Parameter(description = "The booking's id.") @PathVariable UUID id,
+            HttpServletRequest httpRequest) {
         UUID callerId = CurrentUser.requireUserId(httpRequest);
         return BookingResponse.from(bookingService.cancelBooking(id, callerId));
     }
 
+    @Operation(summary = "List a user's bookings", description = "No authentication is required by this "
+            + "endpoint itself — see Known Limitations in the project's audit notes.")
+    @ApiResponse(responseCode = "200", description = "The user's bookings (empty list if none)")
     @GetMapping("/api/v1/users/{userId}/bookings")
-    public List<BookingResponse> listByUser(@PathVariable UUID userId) {
+    public List<BookingResponse> listByUser(@Parameter(description = "The user's id.") @PathVariable UUID userId) {
         return bookingRepository.findByUserId(userId).stream().map(BookingResponse::from).toList();
     }
 
-    /**
-     * For the Business Admin app: "which bookings has my salon received."
-     * Booking has no providerId of its own (see docs/erd/core-domain.md —
-     * it only references the slot/service by id), so this composes it via
-     * the slot -> booking hop rather than adding a denormalized column.
-     */
+    @Operation(summary = "List a provider's received bookings", description = "For the Business Admin app: "
+            + "\"which bookings has my salon received.\" Booking has no providerId of its own — this "
+            + "composes it via the availability-slot -> booking hop. No authentication is required by this "
+            + "endpoint itself.")
+    @ApiResponse(responseCode = "200", description = "Bookings against this provider's slots (empty list if "
+            + "none)")
     @GetMapping("/api/v1/providers/{providerId}/bookings")
-    public List<BookingResponse> listByProvider(@PathVariable UUID providerId) {
+    public List<BookingResponse> listByProvider(
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId) {
         List<UUID> slotIds = availabilitySlotRepository.findByProviderId(providerId).stream()
                 .map(AvailabilitySlot::getId).toList();
         return bookingRepository.findByAvailabilitySlotIdIn(slotIds).stream().map(BookingResponse::from).toList();

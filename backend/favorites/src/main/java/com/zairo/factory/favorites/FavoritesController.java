@@ -1,6 +1,10 @@
 package com.zairo.factory.favorites;
 
 import com.zairo.factory.favorites.FavoriteDtos.FavoriteProviderResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -12,7 +16,13 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+/**
+ * No authentication is required by any endpoint here — {@code userId} is
+ * taken from the path, not the caller's token. Documented as-is; see Known
+ * Limitations in the project's audit notes.
+ */
 @RestController
+@Tag(name = "Favorites")
 public class FavoritesController {
 
     private final FavoritesService favoritesService;
@@ -21,27 +31,45 @@ public class FavoritesController {
         this.favoritesService = favoritesService;
     }
 
+    @Operation(summary = "Favorite a provider", description = "Idempotent — favoriting an already-favorited "
+            + "provider again is a no-op, still 204.")
+    @ApiResponse(responseCode = "204", description = "Favorited (or already was)")
     @PostMapping("/api/v1/users/{userId}/favorites/{providerId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void addFavorite(@PathVariable UUID userId, @PathVariable UUID providerId) {
+    public void addFavorite(@Parameter(description = "The user's id.") @PathVariable UUID userId,
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId) {
         favoritesService.addFavorite(userId, providerId);
     }
 
+    @Operation(summary = "Unfavorite a provider", description = "Idempotent — removing a favorite that isn't "
+            + "there is a no-op, still 204.")
+    @ApiResponse(responseCode = "204", description = "Removed (or already wasn't favorited)")
     @DeleteMapping("/api/v1/users/{userId}/favorites/{providerId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void removeFavorite(@PathVariable UUID userId, @PathVariable UUID providerId) {
+    public void removeFavorite(@Parameter(description = "The user's id.") @PathVariable UUID userId,
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId) {
         favoritesService.removeFavorite(userId, providerId);
     }
 
+    @Operation(summary = "Check whether a provider is favorited", description = "An existence check, not a "
+            + "boolean body — 200 with an empty body means favorited, 404 means not. Useful for a quick "
+            + "HEAD-style check without pulling the full favorites list.")
+    @ApiResponse(responseCode = "200", description = "Favorited")
+    @ApiResponse(responseCode = "404", ref = "NotFound", description = "Not favorited.")
     @GetMapping("/api/v1/users/{userId}/favorites/{providerId}")
-    public void checkFavorited(@PathVariable UUID userId, @PathVariable UUID providerId) {
+    public void checkFavorited(@Parameter(description = "The user's id.") @PathVariable UUID userId,
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId) {
         if (!favoritesService.isFavorited(userId, providerId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Not favorited");
         }
     }
 
+    @Operation(summary = "List a user's favorited providers", description = "Full provider cards (rating, "
+            + "cheapest price, availability), not just ids — the same shape Search returns.")
+    @ApiResponse(responseCode = "200", description = "The user's favorites (empty list if none)")
     @GetMapping("/api/v1/users/{userId}/favorites")
-    public List<FavoriteProviderResponse> listFavorites(@PathVariable UUID userId) {
+    public List<FavoriteProviderResponse> listFavorites(
+            @Parameter(description = "The user's id.") @PathVariable UUID userId) {
         return favoritesService.listFavorites(userId);
     }
 }

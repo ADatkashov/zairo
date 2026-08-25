@@ -1,8 +1,10 @@
 description = "Booking Engine — Booking, Availability, TimeSlot. The heart of Factory's Commerce layer."
 
 dependencies {
+    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.38")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("jakarta.validation:jakarta.validation-api")
 
     // Trust invariant, not just an id reference: deleting an availability
     // slot has to prove the caller owns the provider it belongs to, which

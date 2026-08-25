@@ -3752,4 +3752,143 @@ hot reload/restart, нужен полный переустанов) — реги
 чисто, `flutter test` 21/21.
 
 ### Текущий статус
+Закоммичено и запушено в `test` (`811ea4a`).
+
+## OpenAPI/Swagger документация всего backend (2026-08-25)
+
+По отдельному запросу пользователя — полноценная production-quality
+Swagger/OpenAPI документация на весь REST API backend'а, с локализацией
+en/ru/kk. Не точечные `@Operation` на паре контроллеров, а системная
+документация: все 14 контроллеров / 57 операций / 42 path.
+
+### Аудит перед внедрением
+Сначала полный анализ кодовой базы (см. переписку) выявил:
+- **Нет Spring Security** — лёгкий кастомный `JwtAuthFilter` + ручные
+  проверки `CurrentUser.require*` по каждому методу отдельно (не единый
+  security-конфиг). Из 57 операций 18 реально защищены токеном — список
+  вычислен вручную по коду.
+- **Нет global exception handler и единой модели ошибок** — только
+  дефолтный Spring Boot `{timestamp,status,error,path}`, без `message`.
+- **Ноль bean-validation аннотаций** во всём проекте — невалидный
+  `POST /auth/register` реально падал в 500 вместо 400 (проверено curl'ом
+  на живом backend).
+- Пагинации нигде нет (все списки — плоский `List<T>`).
+- Найдены недокументированные API: `POST/GET /users` (без аутентификации
+  вообще), `PATCH /providers/{id}/status` (admin-only).
+
+Пользователь подтвердил (после явного вопроса) добавить минимальный слой
+validation + global exception handler — это исправление реального бага
+(500→400), а не смена бизнес-логики.
+
+### Phase 1 — фундамент
+- `springdoc-openapi-starter-webmvc-ui:3.0.0` (только `platform-api`,
+  проверено резолвом — совместимо со Spring Boot 4.1/Spring 7).
+- `ApiError`/`GlobalExceptionHandler` (`platform-api/.../error/`) —
+  единая модель ошибок для вообще всех исключений в проекте, включая уже
+  существующие (`EmailAlreadyRegisteredException` и т.п.) — работает
+  "из коробки" без правок в каждом модуле.
+- `jakarta.validation`-аннотации на все request DTO 7 модулей —
+  **обоснованные кодом**: длины полей — из SQL-миграций (`varchar(255)`
+  и т.д.), `price >= 0` — из уже существующего `Money.requireNonNegative()`,
+  `rating 1-5` — из уже существующей проверки в `ReviewService`. Ничего
+  не выдумано.
+- `OpenApiConfig` — title/description/servers (из `application.yml`)/JWT
+  Bearer security scheme/14 тегов по модулям/6 переиспользуемых
+  компонентов ошибок (`BadRequest`/`Unauthorized`/`Forbidden`/`NotFound`/
+  `Conflict`/`ServerError`, через `ModelConverters` + `$ref`).
+- `spring.web.locale: en` — иначе bean-validation сообщения шли на
+  русском (JVM брала локаль ОС), что не билось с остальным English-контрактом
+  ошибок.
+
+**Живая проверка**: `POST /auth/register {}` — было 500, стало
+`400 {"errors":{"email":"must not be blank",...}}`. `swagger-ui/index.html`,
+`/v3/api-docs`, `/v3/api-docs.yaml` — все 200, JSON валиден.
+
+### Phase 2 — документация каждого endpoint'а
+`@Operation`/`@ApiResponse`/`@Parameter`/`@Schema(example=...)` на все 14
+контроллеров и их DTO, по модулям (Auth → Users → Providers → Services →
+Availability → Bookings → Payments → Reviews → Favorites → Search →
+Storage → Country → Beauty Masters → Beauty Bookings), с промежуточными
+компиляциями каждые 2-6 контроллеров. Паттерн: `ref="BadRequest"` для
+типовых 400, инлайн `@ApiResponse` с текстом через `@Schema(ref=
+"#/components/schemas/ApiError")` там, где причина специфична для
+конкретного endpoint'а (иначе OpenAPI молча игнорирует `description`
+рядом с `$ref` — сиблинги `$ref` не учитываются спекой). Multipart upload
+(`StorageController`) задокументирован через `@RequestBody(content=
+@Content(mediaType=MULTIPART_FORM_DATA_VALUE, schema=@Schema(type=
+"string", format="binary")))`.
+
+Добавлен `OpenApiTests.java` — регрессионный тест: у каждой операции
+обязан быть непустой `summary`, иначе билд падает; плюс проверка
+`/v3/api-docs`, `/v3/api-docs.yaml`, `/swagger-ui/index.html`.
+
+**Живая проверка**: полный curl-сценарий Register→Login→/auth/me через
+реальный backend/Postgres; Swagger UI открыт в Chrome, `Try it out`
+подтверждён визуально (скриншоты). Найден и исправлен свой же баг
+конфига: `springdoc.swagger-ui.path: /swagger-ui/index.html` дублирует
+путь (`/swagger-ui/swagger-ui/index.html`, 404/зависшая загрузка) —
+убрано, дефолтный путь и так `/swagger-ui/index.html`.
+
+### Phase 3 — локализация en/ru/kk
+Архитектура: `GroupedOpenApi` (springdoc) — 3 бина (`en`/`ru`/`kk`),
+каждый покрывает `/**`, `ru`/`kk` несут `LocalizingOpenApiCustomizer`.
+Тексты в аннотациях (`@Operation`/`@Tag`/`@Parameter`/`@ApiResponse`)
+остаются английскими навсегда — единственный источник истины; customizer
+после сборки документа проходит по всему дереву `OpenAPI` (info, tags,
+securitySchemes, components.responses, каждая operation: summary/
+description/parameters/responses) и подменяет текст через таблицу
+переводов. Таблицы — JSON (не `.properties`: значения — многострочный
+текст с markdown/бэктиками, `.properties`-экранирование для этого
+хрупкое), ключ — сама английская строка (gettext-стиль), не выдуманный
+короткий ключ — под несовпавшую строку просто остаётся английский текст,
+а не ошибка сборки. `docs/openapi/translations_ru.json`,
+`translations_kk.json` — по 222 строки каждый (summary/description
+операций, tag-описания, parameter-описания, response-описания, включая
+6 переиспользуемых компонентов ошибок и info/security-scheme текст).
+`@Schema`-описания на уровне полей DTO осознанно оставлены
+английскими — иначе объём перевода утраивается, а это не то, что
+разработчик читает в первую очередь.
+
+Swagger UI подхватывает доп. группы автоматически — верхний правый
+"Servers" превращается в "Select a definition" пикер (`English`/
+`Русский`/`Қазақша`), без отдельной фронтенд-работы. `/v3/api-docs/ru`,
+`/v3/api-docs/kk`, а с явно добавленной `en`-группой (иначе дефолтный
+документ не появлялся в пикере вообще) — и `/v3/api-docs/en`.
+
+**Два реальных бага найдены и исправлены по ходу**:
+1. `info.description`/`securitySchemes.description` не переводились —
+   `springdoc.cache.disabled: true` не помогло (неверная гипотеза),
+   реальная причина другая — см. следующий пункт.
+2. **Главный баг**: Java text block (`"""..."""`) при компиляции убирает
+   общий отступ и схлопывает `\` + перенос строки — но мой Python-скрипт
+   извлечения текста для перевода взял **сырой** текст между `"""` с
+   исходными отступами и обратными слэшами. Ключи в JSON не совпадали с
+   реальными runtime-строками ни на йоту → `translate()` тихо возвращал
+   английский текст как есть (fallback), без ошибки — отсюда и казалось,
+   что "часть полей не переводится". Исправлено: живой EN `/v3/api-docs`
+   стал источником канонических ключей — все 222 строки сопоставлены с
+   существующими (уже написанными) переводами через сравнение с
+   нормализацией (схлопывание `\`+перенос, как это делает javac), затем
+   значения-переводы для текстовых блоков дополнительно очищены от тех
+   же артефактов (в исходных ru/kk файлах перевод тоже был скопирован
+   с лишними `\` и отступами). Это ценный урок: **никогда не парсить
+   Java text blocks регуляркой без явной репликации JLS 3.10.6
+   (индентация) и обработки `\`-продолжений** — либо тянуть канонические
+   строки из уже скомпилированного/сериализованного вывода.
+
+**Живая проверка**: `/v3/api-docs`, `/v3/api-docs/ru`, `/v3/api-docs/kk`
+сверены по всем типам полей (info/tag/securityScheme/operation/parameter/
+component-response) — все переведены корректно, кроме английского
+(намеренно эталон). Swagger UI открыт в Chrome — пикер языка со всеми
+тремя опциями, переключение на Русский и Қазақша визуально подтверждено
+(скриншоты), верхняя часть страницы и весь список endpoint'ов
+переведены.
+
+### Итог
+`./gradlew test` — зелёный после каждой фазы. 57 операций, 42 path, 14
+тегов, 3 языка, единая модель ошибок, JWT Bearer auth, 222×2 строки
+перевода. `swagger.enabled` через `springdoc.swagger-ui.enabled=false`/
+`springdoc.api-docs.enabled=false` (env vars) для прод.
+
+### Текущий статус
 Изменения готовы, ждут коммита.
