@@ -193,7 +193,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
             Text(l10n.servicesSectionTitle, style: textTheme.titleMedium),
             const SizedBox(height: FactorySpacing.space2),
             ...widget.provider.services.map(
-              (service) => ServiceRow(
+              (service) => FactoryServiceCard(
                 title: service.title,
                 metaText: l10n.serviceDurationMinutes(service.durationMinutes),
                 price: service.price,
