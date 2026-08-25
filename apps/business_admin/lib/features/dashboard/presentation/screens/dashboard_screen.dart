@@ -9,11 +9,11 @@ import '../../../salon/presentation/providers/salon_providers.dart';
 import '../../../salon/presentation/screens/salon_detail_screen.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
 
-/// Shown by AuthGate once logged in. Lists the salons this owner manages
-/// (usually one, but nothing stops an owner running several) and lets them
-/// create a new one. Vertical is fixed to 'beauty' when creating — the
-/// only vertical with real admin screens (masters/portfolio) built so far;
-/// a vertical picker becomes meaningful once a second vertical exists.
+/// Shown by AuthGate once logged in. Lists the salons/workshops this owner
+/// manages (usually one, but nothing stops an owner running several) and
+/// lets them create a new one, picking which vertical (beauty/auto) it
+/// belongs to — Core's Provider.vertical is opaque free text, but these are
+/// the only two verticals with real admin screens built so far.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -93,35 +93,68 @@ class DashboardScreen extends ConsumerWidget {
   Future<void> _openCreateSalonDialog(BuildContext context, WidgetRef ref, String ownerUserId) async {
     final l10n = AppLocalizations.of(context)!;
     final nameController = TextEditingController();
+    String vertical = 'beauty';
     final created = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(l10n.addSalonDialogTitle),
-        content: TextField(
-          controller: nameController,
-          decoration: InputDecoration(labelText: l10n.salonNameLabel),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancelButton)),
-          FilledButton(
-            onPressed: () async {
-              if (nameController.text.trim().isEmpty) return;
-              await ref.read(salonAdminApiProvider).createProvider(
-                    ownerUserId: ownerUserId,
-                    name: nameController.text.trim(),
-                    vertical: 'beauty',
-                  );
-              if (context.mounted) Navigator.of(context).pop(true);
-            },
-            child: Text(l10n.createButton),
+      builder: (_) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(l10n.addSalonDialogTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(labelText: l10n.salonNameLabel),
+                autofocus: true,
+              ),
+              const SizedBox(height: FactorySpacing.space3),
+              _VerticalPicker(
+                value: vertical,
+                onChanged: (v) => setDialogState(() => vertical = v),
+              ),
+            ],
           ),
-        ],
+          actions: [
+            TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancelButton)),
+            FilledButton(
+              onPressed: () async {
+                if (nameController.text.trim().isEmpty) return;
+                await ref.read(salonAdminApiProvider).createProvider(
+                      ownerUserId: ownerUserId,
+                      name: nameController.text.trim(),
+                      vertical: vertical,
+                    );
+                if (context.mounted) Navigator.of(context).pop(true);
+              },
+              child: Text(l10n.createButton),
+            ),
+          ],
+        ),
       ),
     );
     if (created == true) {
       ref.invalidate(myProvidersProvider(ownerUserId));
     }
+  }
+}
+
+class _VerticalPicker extends StatelessWidget {
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  const _VerticalPicker({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return SegmentedButton<String>(
+      segments: [
+        ButtonSegment(value: 'beauty', label: Text(l10n.verticalBeautyLabel)),
+        ButtonSegment(value: 'auto', label: Text(l10n.verticalAutoLabel)),
+      ],
+      selected: {value},
+      onSelectionChanged: (selection) => onChanged(selection.first),
+    );
   }
 }
 
@@ -195,6 +228,7 @@ class _CreateSalonForm extends ConsumerStatefulWidget {
 
 class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
   final _nameController = TextEditingController();
+  String _vertical = 'beauty';
   bool _isSubmitting = false;
   String? _error;
 
@@ -229,6 +263,11 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
               controller: _nameController,
               enabled: !_isSubmitting,
               decoration: InputDecoration(labelText: l10n.salonNameLabel),
+            ),
+            const SizedBox(height: FactorySpacing.space3),
+            _VerticalPicker(
+              value: _vertical,
+              onChanged: _isSubmitting ? (_) {} : (v) => setState(() => _vertical = v),
             ),
             const SizedBox(height: FactorySpacing.space4),
             if (_error != null)
@@ -266,7 +305,7 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
       await ref.read(salonAdminApiProvider).createProvider(
             ownerUserId: widget.ownerUserId,
             name: _nameController.text.trim(),
-            vertical: 'beauty',
+            vertical: _vertical,
           );
       ref.invalidate(myProvidersProvider(widget.ownerUserId));
     } catch (e) {

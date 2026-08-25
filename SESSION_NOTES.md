@@ -3964,5 +3964,79 @@ list user's bookings, list provider's bookings, favorites
 (add/list), upload. `POST/GET /users` — 401 без токена, 403 для не-ADMIN.
 
 ### Текущий статус
-Изменения готовы (код + тесты + Swagger-доки + переводы + живая
-проверка), ждут коммита.
+Закоммичено и запушено в `test` (`a5f5b9b`).
+
+## Реализация vertical-auto (2026-08-25)
+
+После спайка ("можно ли добавить второй vertical без изменений в Core")
+пользователь явно попросил полноценную реализацию с UI — не просто
+proof-of-concept. Сделано по паттерну vertical-beauty один в один.
+
+**Backend** — новый модуль `backend/vertical-auto`
+(`com.zairo.factory.vertical.auto`):
+- `Mechanic`/`MechanicServiceLink` — зеркалят `Master`/`MasterServiceLink`
+  (без аналога портфолио — осознанное сокращение объёма: `Mechanic.photoUrl`
+  как единственное фото, без отдельной галереи).
+- `Vehicle` — новая, специфичная для auto сущность: принадлежит `User`
+  (`ownerUserId`), а не `Provider` — self-service CRUD (владелец = сам
+  пользователь), как favorites/vehicles-by-user.
+- `AutoBooking` — зеркалит `MasterBooking`, плюс `vehicleId`.
+- `AutoBookingService` — две проверки перед делегированием в Core
+  `BookingService.createBooking`: механик предлагает услугу
+  (`MechanicDoesNotOfferServiceException`, 409) и автомобиль принадлежит
+  `userId` бронирования (`VehicleNotOwnedByUserException`, 403) — второе
+  правило не имеет аналога в beauty, честная проверка, что паттерн
+  обобщается не только копипастой.
+- Контроллеры (`MechanicController`, `VehicleController`,
+  `AutoBookingController`) сразу написаны с правильной авторизацией
+  (self-service/provider-ownership/admin), без повторения дыр, найденных
+  и закрытых в предыдущей задаче.
+- Flyway V19–V22 (`auto_mechanic`, `auto_mechanic_service`, `auto_vehicle`,
+  `auto_booking`) — в общем каталоге платформы, но чисто additive,
+  V1–V18 не тронуты.
+- OpenAPI: 3 новых тега ("Auto — Mechanics/Vehicles/Bookings"), 259×2
+  строк перевода ru/kk (было 223×2, +36 новых — 12 из предыдущей задачи
+  плюс 24 для auto).
+- Новый интеграционный тест `AutoApiTests.java` (6 тестов, зеркалит
+  `BeautyApiTests`, плюс отдельный тест на "чужой автомобиль → 403").
+  `./gradlew test` — 67/67 зелёных (было 61).
+
+**user_app** (Flutter) — `features/auto/`: `AutoApi` (механики + vehicle
+CRUD + бронирование), `VehiclesScreen` (доступен с Profile через новую
+кнопку "Мои автомобили"), `AddVehicleDialog`. `ProviderDetailScreen`
+расширен: секция "Механики" (зеркалит "Мастера") + секция "Ваш
+автомобиль" (рендерится только когда `vertical == 'auto'` И пользователь
+залогинен — анонимному пользователю нечего выбирать), с инлайн-кнопкой
+добавления машины прямо в потоке бронирования.
+
+**business_admin** (Flutter) — `features/auto/`: `AutoAdminApi`,
+`AddMechanicDialog`, `ManageMechanicServicesDialog`. `SalonDetailScreen`
+получил секцию "Механики" (условно на `vertical == 'auto'`). Дашборд
+создания салона/мастерской ранее жёстко ставил `vertical: 'beauty'` —
+теперь `SegmentedButton` Beauty/Auto (первый реальный UI-выбор вертикали
+в проекте, стал осмысленным только сейчас, когда появился второй
+вариант).
+
+**Локализация**: ~20 новых ключей на en/ru/kk в каждом приложении
+(секции, диалоги, валидация, ошибки) — переведены сразу, не отложены на
+`NEEDS_NATIVE_REVIEW` (короткие, однозначные технические строки того же
+типа, что уже переводились весь проект).
+
+**Тесты и живая проверка**:
+- `flutter analyze`/`flutter test` — чисто в обоих приложениях (user_app
+  51/51, business_admin 21/21, без регрессий).
+- Полный E2E вручную в Chrome: business_admin — регистрация владельца,
+  создание мастерской с вертикалью Auto (новый picker), добавление
+  услуги и механика, привязка услуги к механику — все переводы
+  подтверждены визуально ("Механики", "Услуги этого механика" — не
+  скопированный с мастера текст). user_app — approve через ADMIN
+  (создан вручную в dev Postgres, bcrypt-хеш through сохранённый с
+  прошлой сессии `HashGen`), регистрация клиента, секция "Ваш
+  автомобиль" с пустым состоянием → диалог регистрации → авто-выбор
+  созданной машины → полный booking flow (механик + авто + услуга +
+  слот) → **"Бронирование подтверждено и оплачено!"** — подтверждено
+  через `GET /users/{id}/bookings`, статус CONFIRMED.
+
+### Текущий статус
+Изменения готовы (backend + оба Flutter-приложения + тесты + переводы +
+полная живая E2E-проверка), ждут коммита.

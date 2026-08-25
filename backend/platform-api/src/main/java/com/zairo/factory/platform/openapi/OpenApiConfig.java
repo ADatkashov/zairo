@@ -208,7 +208,15 @@ class OpenApiConfig {
                                 + "each one performs."),
                 new Tag().name("Beauty — Bookings").description(
                         "Beauty-vertical booking: like a generic Booking, but also names which Master performs "
-                                + "it, and enforces that the master actually offers the requested Service."));
+                                + "it, and enforces that the master actually offers the requested Service."),
+                new Tag().name("Auto — Mechanics").description(
+                        "Auto-vertical staff directory: mechanics and which Services each one performs."),
+                new Tag().name("Auto — Vehicles").description(
+                        "A customer's registered vehicles — owned by a User, not a Provider."),
+                new Tag().name("Auto — Bookings").description(
+                        "Auto-vertical booking: like a generic Booking, but also names which Mechanic performs "
+                                + "it and which Vehicle it's for, and enforces that the mechanic actually offers "
+                                + "the requested Service and the vehicle belongs to the booking's own user."));
         // Actuator (health/info, GET /actuator/health) is deliberately not
         // listed here or exposed through Swagger — springdoc.show-actuator
         // is off (see application.yml). It's a platform/ops endpoint, not

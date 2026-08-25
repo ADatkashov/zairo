@@ -28,6 +28,7 @@ dependencies {
     implementation(project(":search"))
     implementation(project(":favorites"))
     implementation(project(":vertical-beauty"))
+    implementation(project(":vertical-auto"))
     implementation(project(":storage"))
     implementation(project(":country"))
     implementation(project(":money"))

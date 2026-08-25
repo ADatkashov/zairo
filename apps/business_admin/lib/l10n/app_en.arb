@@ -118,6 +118,12 @@
   "salonNameLabel": "Salon name",
   "@salonNameLabel": {"description": "Salon name text field label — used on create and edit."},
 
+  "verticalBeautyLabel": "Beauty",
+  "@verticalBeautyLabel": {"description": "Vertical picker segment label when creating a provider."},
+
+  "verticalAutoLabel": "Auto",
+  "@verticalAutoLabel": {"description": "Vertical picker segment label when creating a provider."},
+
   "createButton": "Create",
   "@createButton": {"description": "Add-a-salon dialog's submit button."},
 
@@ -253,6 +259,32 @@
 
   "removeMasterTooltip": "Remove master",
   "@removeMasterTooltip": {"description": "Master row's remove icon button tooltip."},
+
+  "mechanicsSectionTitle": "Mechanics",
+  "@mechanicsSectionTitle": {"description": "Salon detail screen's mechanics section header (auto vertical)."},
+
+  "noMechanicsYet": "No mechanics yet.",
+  "@noMechanicsYet": {"description": "Mechanics section empty state including inactive ones."},
+
+  "noActiveMechanics": "No active mechanics.",
+  "@noActiveMechanics": {"description": "Mechanics section empty state, active only."},
+
+  "errorMechanicsLoadFailed": "Failed to load mechanics: {error}",
+  "@errorMechanicsLoadFailed": {
+    "description": "Mechanics section error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "removeMechanicTooltip": "Remove mechanic",
+  "@removeMechanicTooltip": {"description": "Mechanic row's remove icon button tooltip."},
+
+  "manageMechanicServicesTooltip": "Services this mechanic offers",
+  "@manageMechanicServicesTooltip": {"description": "Mechanic row's manage-services icon button tooltip and dialog title."},
+
+  "manageMechanicServicesDialogTitle": "Services this mechanic offers",
+  "@manageMechanicServicesDialogTitle": {"description": "Manage-mechanic-services dialog title (same text as the row's tooltip)."},
 
   "bookingsSectionTitle": "Bookings",
   "@bookingsSectionTitle": {"description": "Salon detail screen's bookings section header."},
@@ -437,6 +469,23 @@
   "errorAddMasterFailed": "Failed to add master: {error}",
   "@errorAddMasterFailed": {
     "description": "Add-master dialog's error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "addMechanicDialogTitle": "Add a mechanic",
+  "@addMechanicDialogTitle": {"description": "Add-mechanic dialog title."},
+
+  "mechanicNameLabel": "Name",
+  "@mechanicNameLabel": {"description": "Add-mechanic dialog's name field label."},
+
+  "validationMechanicNameRequired": "Enter a name",
+  "@validationMechanicNameRequired": {"description": "Add-mechanic dialog's validation error."},
+
+  "errorAddMechanicFailed": "Failed to add mechanic: {error}",
+  "@errorAddMechanicFailed": {
+    "description": "Add-mechanic dialog's error state.",
     "placeholders": {
       "error": {"type": "String"}
     }

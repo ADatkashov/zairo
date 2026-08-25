@@ -507,6 +507,71 @@
   "viewPortfolioTooltip": "View portfolio",
   "@viewPortfolioTooltip": {"description": "Tooltip on the master row's portfolio icon button."},
 
+  "mechanicsSectionTitle": "Mechanics",
+  "@mechanicsSectionTitle": {"description": "Provider detail screen's mechanics section header (auto vertical)."},
+
+  "vehiclesSectionTitle": "Your vehicle",
+  "@vehiclesSectionTitle": {"description": "Provider detail screen's vehicle-selection section header (auto vertical)."},
+
+  "vehiclesEmptyTitle": "No vehicles yet",
+  "@vehiclesEmptyTitle": {"description": "Empty state title where a vehicle list would otherwise render."},
+
+  "vehiclesEmptyMessage": "Add a vehicle to book an auto service.",
+  "@vehiclesEmptyMessage": {"description": "Empty state message on the provider detail screen's vehicle section."},
+
+  "addVehicleButton": "Add vehicle",
+  "@addVehicleButton": {"description": "Button that opens the add-vehicle dialog."},
+
+  "addVehicleDialogTitle": "Register a vehicle",
+  "@addVehicleDialogTitle": {"description": "Add-vehicle dialog title."},
+
+  "vehicleMakeLabel": "Make",
+  "@vehicleMakeLabel": {"description": "Add-vehicle dialog's make field label, e.g. Toyota."},
+
+  "vehicleModelLabel": "Model",
+  "@vehicleModelLabel": {"description": "Add-vehicle dialog's model field label, e.g. Camry."},
+
+  "vehicleYearLabel": "Year",
+  "@vehicleYearLabel": {"description": "Add-vehicle dialog's model year field label."},
+
+  "vehicleLicensePlateLabel": "License plate",
+  "@vehicleLicensePlateLabel": {"description": "Add-vehicle dialog's license plate field label."},
+
+  "addVehicleFieldRequired": "Required",
+  "@addVehicleFieldRequired": {"description": "Add-vehicle dialog's field validation error for a blank required field."},
+
+  "addVehicleYearInvalid": "Enter a valid year",
+  "@addVehicleYearInvalid": {"description": "Add-vehicle dialog's year field validation error for a non-numeric value."},
+
+  "addVehicleCancelButton": "Cancel",
+  "@addVehicleCancelButton": {"description": "Add-vehicle dialog's cancel button."},
+
+  "vehiclesScreenTitle": "My vehicles",
+  "@vehiclesScreenTitle": {"description": "My Vehicles screen's app bar title."},
+
+  "errorVehiclesLoadFailed": "Couldn't load your vehicles.",
+  "@errorVehiclesLoadFailed": {"description": "My Vehicles screen error state when the list fails to load."},
+
+  "deleteVehicleButton": "Delete",
+  "@deleteVehicleButton": {"description": "My Vehicles screen's per-vehicle delete action, and the confirm dialog's confirm button."},
+
+  "deleteVehicleConfirmTitle": "Delete this vehicle?",
+  "@deleteVehicleConfirmTitle": {"description": "Delete-vehicle confirmation dialog title."},
+
+  "deleteVehicleConfirmMessage": "Remove {vehicle} from your vehicles.",
+  "@deleteVehicleConfirmMessage": {
+    "description": "Delete-vehicle confirmation dialog message, names the vehicle being deleted.",
+    "placeholders": {
+      "vehicle": {"type": "String"}
+    }
+  },
+
+  "myVehiclesButton": "My vehicles",
+  "@myVehiclesButton": {"description": "Profile screen's button opening the My Vehicles screen."},
+
+  "errorAutoBookingFailed": "Couldn't complete this booking — the mechanic may not offer this service, or the time slot was just taken. Please try again.",
+  "@errorAutoBookingFailed": {"description": "409 from POST .../auto/bookings — covers two distinct backend rejections the response body doesn't distinguish."},
+
   "serviceDurationMinutes": "{minutes} min",
   "@serviceDurationMinutes": {
     "description": "Service row's duration meta text.",
