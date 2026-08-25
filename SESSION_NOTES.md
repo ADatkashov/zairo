@@ -4505,10 +4505,5 @@ PRO") → "Перейти на PRO" → тариф PRO активен, лими�
 без нового эндпоинта).
 
 ### Текущий статус
-Изменения готовы (backend: `subscriptions`, `payment-provider`,
-правки в `providers`/`vertical-beauty`/`vertical-auto`/`booking`/
-`notifications`/`platform-api`, миграция V23, ADR-0005; Flutter:
-новая фича `billing`, правки в 7 существующих файлах) — все автотесты
-зелёные (backend `./gradlew test`, Flutter `flutter analyze`+`flutter
-test`), живая проверка в Chrome пройдена. Ждёт явного подтверждения на
-коммит.
+Закоммичено и запушено в `test` (`43da369`), с явным подтверждением
+пользователя.
