@@ -65,9 +65,10 @@ class OpenApiConfig {
                                 REST API for Factory — a multi-vertical marketplace platform. \
                                 "Factory" is a working codename, not a final product name.
 
-                                The first live vertical is Beauty (salons, masters, beauty bookings) built on \
-                                top of a vertical-agnostic Core (providers, services, generic bookings, \
-                                payments, reviews, favorites, search).
+                                Two verticals are live so far — Beauty (salons, masters, beauty bookings) and \
+                                Auto (workshops, mechanics, vehicle bookings) — both built on top of a \
+                                vertical-agnostic Core (providers, services, generic bookings, payments, \
+                                reviews, favorites, search).
 
                                 Authentication is a custom JWT bearer scheme (not Spring Security) — obtain a \
                                 token from **POST /api/v1/auth/login** or **/api/v1/auth/register**, then use \

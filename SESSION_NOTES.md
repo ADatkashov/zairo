@@ -4236,6 +4236,40 @@ Phase 9)", что формально уже наступило, но перес�
 тексте, действий не предпринимал.
 
 ### Текущий статус
-Изменения готовы (`README.md`, `verticals/README.md`,
-`docs/factory-blueprint.md` — новый файл), ждут явного подтверждения на
-коммит.
+Закоммичено и запушено в `test` (`7dbcca1`), с явным подтверждением
+пользователя.
+
+## Тот же класс находок в backend-комментариях и Swagger description (2026-08-25)
+
+Продолжил поиск (`grep -i "beauty"` по `*.java`) — нашёл ту же
+"написано, когда Auto ещё не существовал" проблему в двух местах:
+
+1. **Doc-комментарии в Core**: `ProviderOwnership.java` и
+   `CurrentUser.java` перечисляли модули, зависящие от них, как
+   "(services/booking/vertical-beauty)" — без vertical-auto, хотя
+   `MechanicDirectoryService` (vertical-auto) реально использует и то, и
+   другое (проверено через `grep -rl ProviderOwnership backend/`).
+   Дописал "/vertical-auto" в оба комментария.
+
+2. **Более заметная находка — верхнеуровневое OpenAPI `description`**,
+   видимое пользователям напрямую в Swagger UI (`OpenApiConfig.java`):
+   "The first live vertical is Beauty (salons, masters, beauty bookings)
+   built on top of a vertical-agnostic Core..." — без единого слова про
+   Auto, при том что теги "Auto — Mechanics"/"Auto — Vehicles"/"Auto —
+   Bookings" в том же файле ниже уже полноценно описаны. Переписал на
+   "Two verticals are live so far — Beauty (...) and Auto (workshops,
+   mechanics, vehicle bookings) — both built on...". Эта строка — ключ
+   i18n-таблицы (`translations_ru.json`/`translations_kk.json`), поэтому
+   синхронно обновил перевод и ключ в обоих файлах (иначе перевод молча
+   перестал бы находиться и Swagger откатился бы на английский для
+   ru/kk).
+
+**Тесты**: `OpenApiTests` (проверяет валидность `/v3/api-docs`, что
+каждая операция задокументирована, что `/v3/api-docs.yaml` и Swagger UI
+отдаются) не завязан на конкретный текст description — прогнан,
+зелёный. Точечных тестов на сам текст перевода нет.
+
+### Текущий статус
+Изменения готовы (`ProviderOwnership.java`, `CurrentUser.java`,
+`OpenApiConfig.java`, `translations_ru.json`, `translations_kk.json`),
+ждут явного подтверждения на коммит.
