@@ -233,6 +233,12 @@
   "searchFiltersTitle": "Filters",
   "@searchFiltersTitle": {"description": "Search filters dialog title."},
 
+  "searchFilterCategoryLabel": "Category",
+  "@searchFilterCategoryLabel": {"description": "Search filters dialog section label for the vertical (Beauty/Auto) chips."},
+
+  "searchFilterCategoryAll": "All",
+  "@searchFilterCategoryAll": {"description": "Search filters dialog's vertical chip meaning no filter — every vertical."},
+
   "searchSortLabel": "Sort by",
   "@searchSortLabel": {"description": "Search filters dialog section label for the sort-order chips."},
 

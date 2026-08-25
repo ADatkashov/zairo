@@ -80,6 +80,8 @@
   "errorSearchLoadFailed": "Провайдерлерді жүктеу мүмкін болмады.",
   "searchFiltersButton": "Сүзгілер",
   "searchFiltersTitle": "Сүзгілер",
+  "searchFilterCategoryLabel": "Санат",
+  "searchFilterCategoryAll": "Барлығы",
   "searchSortLabel": "Сұрыптау",
   "searchSortRecommended": "Ұсынылатын",
   "searchSortPriceAsc": "Баға: арзаннан қымбатқа",

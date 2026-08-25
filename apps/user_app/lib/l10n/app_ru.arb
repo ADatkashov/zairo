@@ -80,6 +80,8 @@
   "errorSearchLoadFailed": "Не удалось загрузить провайдеров.",
   "searchFiltersButton": "Фильтры",
   "searchFiltersTitle": "Фильтры",
+  "searchFilterCategoryLabel": "Категория",
+  "searchFilterCategoryAll": "Все",
   "searchSortLabel": "Сортировка",
   "searchSortRecommended": "Рекомендуемые",
   "searchSortPriceAsc": "Цена: сначала дешевле",
