@@ -67,15 +67,15 @@
 
   "homeSearchPrompt": "Какую услугу вы ищете?",
   "homeEmptyTitle": "Пока нет провайдеров",
-  "homeEmptyMessage": "Загляните позже — новые салоны добавляются регулярно.",
+  "homeEmptyMessage": "Загляните позже — новые провайдеры добавляются регулярно.",
   "errorHomeFeedLoadFailed": "Не удалось загрузить ленту.",
   "homeTopRatedTitle": "Лучшие рядом с вами",
-  "homeAvailabilityHero": "{count, plural, one{Рядом с вами {count} салон со свободными окнами сегодня} few{Рядом с вами {count} салона со свободными окнами сегодня} many{Рядом с вами {count} салонов со свободными окнами сегодня} other{Рядом с вами {count} салона со свободными окнами сегодня}}",
+  "homeAvailabilityHero": "{count, plural, one{Рядом с вами {count} провайдер со свободными окнами сегодня} few{Рядом с вами {count} провайдера со свободными окнами сегодня} many{Рядом с вами {count} провайдеров со свободными окнами сегодня} other{Рядом с вами {count} провайдера со свободными окнами сегодня}}",
 
   "searchHint": "Поиск услуг или провайдеров",
   "searchEmptyTitle": "Найдите услугу",
   "searchEmptyTitleQuery": "Ничего не найдено по запросу «{query}»",
-  "searchEmptyMessageDefault": "Попробуйте «стрижка», «маникюр» или название салона.",
+  "searchEmptyMessageDefault": "Попробуйте «стрижка», «маникюр» или название провайдера.",
   "searchEmptyMessageQuery": "Попробуйте другой запрос.",
   "errorSearchLoadFailed": "Не удалось загрузить провайдеров.",
   "searchFiltersButton": "Фильтры",
@@ -115,7 +115,7 @@
 
   "myFavoritesTitle": "Избранное",
   "favoritesEmptyTitle": "Пока нет избранного",
-  "favoritesEmptyMessage": "Салоны и провайдеры, которые вы добавите в избранное, появятся здесь.",
+  "favoritesEmptyMessage": "Провайдеры, которых вы добавите в избранное, появятся здесь.",
   "errorFavoritesLoadFailed": "Не удалось загрузить избранное.",
   "favoriteAddTooltip": "Добавить в избранное",
   "favoriteRemoveTooltip": "Убрать из избранного",

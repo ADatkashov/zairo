@@ -187,7 +187,7 @@
   "homeEmptyTitle": "No providers yet",
   "@homeEmptyTitle": {"description": "Home screen empty state title when discovery returns nothing."},
 
-  "homeEmptyMessage": "Check back soon — new salons are added regularly.",
+  "homeEmptyMessage": "Check back soon — new providers are added regularly.",
   "@homeEmptyMessage": {"description": "Home screen empty state message."},
 
   "errorHomeFeedLoadFailed": "Couldn't load your discovery feed.",
@@ -196,7 +196,7 @@
   "homeTopRatedTitle": "Top rated near you",
   "@homeTopRatedTitle": {"description": "Home screen section header for the curated provider rail."},
 
-  "homeAvailabilityHero": "{count, plural, one{{count} salon near you have open slots today} other{{count} salons near you have open slots today}}",
+  "homeAvailabilityHero": "{count, plural, one{{count} provider near you have open slots today} other{{count} providers near you have open slots today}}",
   "@homeAvailabilityHero": {
     "description": "Home screen banner shown when at least one nearby provider has open availability today.",
     "placeholders": {
@@ -218,7 +218,7 @@
     }
   },
 
-  "searchEmptyMessageDefault": "Try \"haircut\", \"manicure,\" or a salon name.",
+  "searchEmptyMessageDefault": "Try \"haircut\", \"manicure,\" or a provider name.",
   "@searchEmptyMessageDefault": {"description": "Search screen empty state message before the first search."},
 
   "searchEmptyMessageQuery": "Try a different search term.",
@@ -360,7 +360,7 @@
   "favoritesEmptyTitle": "No favorites yet",
   "@favoritesEmptyTitle": {"description": "Favorites screen empty state title."},
 
-  "favoritesEmptyMessage": "Salons and providers you favorite will show up here.",
+  "favoritesEmptyMessage": "Providers you favorite will show up here.",
   "@favoritesEmptyMessage": {"description": "Favorites screen empty state message."},
 
   "errorFavoritesLoadFailed": "Couldn't load your favorites.",
