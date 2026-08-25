@@ -437,6 +437,9 @@
   "portfolioEmptyMessage": "No portfolio photos yet.",
   "@portfolioEmptyMessage": {"description": "Master portfolio screen empty state."},
 
+  "portfolioPhotoSemanticLabel": "Portfolio photo",
+  "@portfolioPhotoSemanticLabel": {"description": "Grid tile's accessibility label when the photo has no caption to use instead."},
+
   "errorPortfolioLoadFailed": "Failed to load portfolio: {error}",
   "@errorPortfolioLoadFailed": {
     "description": "Master portfolio screen error state.",

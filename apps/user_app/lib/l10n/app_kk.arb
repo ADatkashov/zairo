@@ -135,6 +135,7 @@
   "masterPortfolioTitle": "{masterName} — Портфолио",
   "portfolioEmptyTitle": "Әзірге фото жоқ",
   "portfolioEmptyMessage": "Портфолиода әзірге фото жоқ.",
+  "portfolioPhotoSemanticLabel": "Портфолио фотосы",
   "errorPortfolioLoadFailed": "Портфолионы жүктеу мүмкін болмады: {error}",
   "portfolioViewerCloseTooltip": "Жабу",
   "portfolioViewerPreviousTooltip": "Алдыңғы сурет",
