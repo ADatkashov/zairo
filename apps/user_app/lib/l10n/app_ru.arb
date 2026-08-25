@@ -135,6 +135,7 @@
   "masterPortfolioTitle": "{masterName} — Портфолио",
   "portfolioEmptyTitle": "Пока нет фото",
   "portfolioEmptyMessage": "Пока нет фото в портфолио.",
+  "portfolioPhotoSemanticLabel": "Фото из портфолио",
   "errorPortfolioLoadFailed": "Не удалось загрузить портфолио: {error}",
   "portfolioViewerCloseTooltip": "Закрыть",
   "portfolioViewerPreviousTooltip": "Предыдущее фото",

@@ -4539,3 +4539,42 @@ Chrome, без Flutter widget-теста самого UI. Добавлен те�
 ### Текущий статус
 Закоммичено и запушено в `test` (`357c3c5`), с явным подтверждением
 пользователя.
+
+## Accessibility: незалейбленная сетка портфолио в user_app (2026-08-26)
+
+Продолжение поиска пробелов после последнего accessibility-прохода
+пользователя в master (`c91ccfd`, ограничен favorites/rating). Проверил
+весь `user_app` на тот же класс проблем: все `IconButton` уже с
+`tooltip` (закрыто полностью), но нашёл один пропущенный `GestureDetector`
+— плитка сетки портфолио мастера (`master_portfolio_screen.dart`) без
+`Semantics`-обёртки вообще, в отличие от аналогичных мест в `core_ui`
+(`provider_card.dart`, `factory_chip.dart`), которые её уже имеют.
+
+Добавил `Semantics(button: true, container: true, excludeSemantics: true,
+label: item.caption ?? l10n.portfolioPhotoSemanticLabel, ...)`. По ходу
+поймал собственную ошибку: сначала поставил только `container: true` (по
+образцу `FactoryProviderCard`'s favorite-button фикса) — тест на
+caption-плитку падал, `bySemanticsLabel('Balayage look')` не находил
+узел. Оказалось, `container: true` защищает только от слияния **вверх**
+(в семантику родителя), а не от слияния **дочерних** узлов внутрь себя —
+вложенный `Text(caption)` всё равно сливался с моим `label`, дублируя
+подпись. `FactoryProviderCard`'s фикс не столкнулся с этим, потому что
+его единственный потомок — голая `Icon` без собственной семантики.
+Добавил `excludeSemantics: true`, чтобы скрыть авто-семантику
+`Image`/`Text` и оставить только явный label — тест прошёл.
+
+Новый l10n-ключ `portfolioPhotoSemanticLabel` ("Portfolio photo"/"Фото
+из портфолио"/"Портфолио фотосы") — для плиток без caption.
+
+**Тесты**: 2 новых assertion'а/тест в `master_portfolio_screen_test.dart`
+(`bySemanticsLabel` на captioned- и uncaptioned-плитках). Живая проверка
+в Chrome не делалась — семантика не видна визуально, механизм уже
+напрямую проверен через дерево семантики в тесте (тот же подход, что
+использовался для исходного accessibility-прохода). `flutter analyze` —
+чисто (5 pre-existing info-заметок в несвязанном файле), `flutter test`
+— все 58 зелёные.
+
+### Текущий статус
+Изменения готовы (`master_portfolio_screen.dart`,
+`master_portfolio_screen_test.dart`, `app_en/ru/kk.arb`), ждут явного
+подтверждения на коммит.
