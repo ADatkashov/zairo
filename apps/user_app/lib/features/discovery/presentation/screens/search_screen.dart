@@ -7,10 +7,7 @@ import '../../../booking/presentation/screens/provider_detail_screen.dart';
 import '../providers/discovery_providers.dart';
 import '../widgets/provider_card.dart';
 
-/// The Search tab — GET /api/v1/search/providers. Vertical filtering isn't
-/// exposed in this UI yet (no vertical-selection UX exists beyond the
-/// single "beauty" test data) even though the backend already supports it;
-/// only the free-text query is wired up here.
+/// The Search tab — GET /api/v1/search/providers.
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
 
@@ -186,6 +183,7 @@ class _FilterDialog extends StatefulWidget {
 }
 
 class _FilterDialogState extends State<_FilterDialog> {
+  late String? _vertical;
   late DiscoverySort _sort;
   late bool _availableOnly;
   late final TextEditingController _minPriceController;
@@ -199,6 +197,7 @@ class _FilterDialogState extends State<_FilterDialog> {
   void initState() {
     super.initState();
     final initial = widget.initial;
+    _vertical = initial.vertical;
     _sort = initial.sort;
     _availableOnly = initial.availableOnly;
     _minPriceController = TextEditingController(text: initial.minPrice?.toStringAsFixed(0) ?? '');
@@ -228,6 +227,18 @@ class _FilterDialogState extends State<_FilterDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(l10n.searchFilterCategoryLabel, style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: FactorySpacing.space2),
+            Wrap(
+              spacing: FactorySpacing.space2,
+              runSpacing: FactorySpacing.space2,
+              children: [
+                _verticalChip(l10n.searchFilterCategoryAll, null),
+                _verticalChip('Beauty', 'beauty'),
+                _verticalChip('Auto', 'auto'),
+              ],
+            ),
+            const SizedBox(height: FactorySpacing.space4),
             Text(l10n.searchSortLabel, style: Theme.of(context).textTheme.labelLarge),
             const SizedBox(height: FactorySpacing.space2),
             Wrap(
@@ -320,6 +331,7 @@ class _FilterDialogState extends State<_FilterDialog> {
           onPressed: () => Navigator.of(context).pop(
             DiscoveryQuery(
               query: widget.initial.query,
+              vertical: _vertical,
               minPrice: double.tryParse(_minPriceController.text.trim()),
               maxPrice: double.tryParse(_maxPriceController.text.trim()),
               maxDistanceKm: _distanceEnabled ? _maxDistanceKm : null,
@@ -331,6 +343,14 @@ class _FilterDialogState extends State<_FilterDialog> {
           child: Text(l10n.searchFilterApplyButton),
         ),
       ],
+    );
+  }
+
+  Widget _verticalChip(String label, String? value) {
+    return FactoryChip(
+      label: label,
+      selected: _vertical == value,
+      onTap: () => setState(() => _vertical = value),
     );
   }
 

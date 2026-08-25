@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/app_localizations.dart';
+import '../../../settings/presentation/screens/settings_screen.dart';
 import '../../data/auth_exception.dart';
 import '../providers/auth_providers.dart';
 import 'register_screen.dart';
@@ -36,7 +37,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final isLoading = authState.isLoading;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.loginAppBarTitle)),
+      appBar: AppBar(
+        title: Text(l10n.loginAppBarTitle),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: l10n.settingsButtonTooltip,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            ),
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(FactorySpacing.space4),
         child: Form(

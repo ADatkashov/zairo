@@ -36,6 +36,7 @@ class _FakeDiscoveryApi extends DiscoveryApi {
 class _RecordingDiscoveryApi extends DiscoveryApi {
   _RecordingDiscoveryApi() : super(DioClient(Dio()));
 
+  String? lastVertical;
   String? lastSort;
   bool? lastAvailableOnly;
   double? lastMinRating;
@@ -53,6 +54,7 @@ class _RecordingDiscoveryApi extends DiscoveryApi {
     bool availableOnly = false,
     String? sort,
   }) async {
+    lastVertical = vertical;
     lastSort = sort;
     lastAvailableOnly = availableOnly;
     lastMinRating = minRating;
@@ -169,7 +171,9 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Price: low to high'));
+    await tester.ensureVisible(find.text('Available today only'));
     await tester.tap(find.text('Available today only'));
+    await tester.ensureVisible(find.text('Apply'));
     await tester.tap(find.text('Apply'));
     await tester.pumpAndSettle();
 
@@ -197,11 +201,50 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Rating'));
+    await tester.ensureVisible(find.text('Minimum rating'));
     await tester.tap(find.text('Minimum rating'));
+    await tester.ensureVisible(find.text('Apply'));
     await tester.tap(find.text('Apply'));
     await tester.pumpAndSettle();
 
     expect(fakeApi.lastSort, 'RATING');
     expect(fakeApi.lastMinRating, 4.0);
+  });
+
+  testWidgets('picking the Auto category filter re-runs the search with vertical=auto', (tester) async {
+    final fakeApi = _RecordingDiscoveryApi();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [discoveryApiProvider.overrideWithValue(fakeApi)],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SearchScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(fakeApi.lastVertical, isNull);
+
+    await tester.tap(find.byIcon(Icons.tune_rounded));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Auto'));
+    await tester.ensureVisible(find.text('Apply'));
+    await tester.tap(find.text('Apply'));
+    await tester.pumpAndSettle();
+
+    expect(fakeApi.lastVertical, 'auto');
+
+    // Reopening the dialog and clearing goes back to no vertical filter.
+    await tester.tap(find.byIcon(Icons.tune_rounded));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Clear'));
+    await tester.tap(find.text('Clear'));
+    await tester.pumpAndSettle();
+
+    expect(fakeApi.lastVertical, isNull);
   });
 }

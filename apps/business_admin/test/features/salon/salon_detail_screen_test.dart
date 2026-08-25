@@ -4,6 +4,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:business_admin/features/auto/data/auto_admin_api.dart';
+import 'package:business_admin/features/auto/data/models/admin_mechanic.dart';
+import 'package:business_admin/features/auto/presentation/providers/auto_admin_providers.dart';
 import 'package:business_admin/features/beauty/data/beauty_admin_api.dart';
 import 'package:business_admin/features/beauty/data/models/admin_master.dart';
 import 'package:business_admin/features/beauty/presentation/providers/beauty_admin_providers.dart';
@@ -22,6 +25,14 @@ const _provider = AdminProvider(
   ownerUserId: 'owner-1',
   name: 'Glow Salon',
   vertical: 'beauty',
+  status: 'ACTIVE',
+);
+
+const _autoProvider = AdminProvider(
+  id: 'p2',
+  ownerUserId: 'owner-1',
+  name: 'Speedy Workshop',
+  vertical: 'auto',
   status: 'ACTIVE',
 );
 
@@ -270,6 +281,64 @@ class _FakeBeautyAdminApi extends BeautyAdminApi {
   }
 }
 
+class _FakeAutoAdminApi extends AutoAdminApi {
+  _FakeAutoAdminApi([List<AdminMechanic>? mechanics])
+      : _mechanics = mechanics ?? [],
+        super(DioClient(Dio()));
+
+  final List<AdminMechanic> _mechanics;
+  Map<String, dynamic>? lastCreateMechanicCall;
+  String? lastDeactivatedMechanicId;
+  String? lastReactivatedMechanicId;
+
+  @override
+  Future<List<AdminMechanic>> listMechanics(String providerId, {bool includeInactive = false}) async {
+    return includeInactive ? _mechanics : _mechanics.where((m) => m.active).toList();
+  }
+
+  @override
+  Future<AdminMechanic> createMechanic({
+    required String providerId,
+    required String displayName,
+    String? bio,
+  }) async {
+    lastCreateMechanicCall = {'providerId': providerId, 'displayName': displayName, 'bio': bio};
+    final created = AdminMechanic(id: 'mech-new', providerId: providerId, displayName: displayName, bio: bio, active: true);
+    _mechanics.add(created);
+    return created;
+  }
+
+  @override
+  Future<void> deactivateMechanic(String mechanicId) async {
+    lastDeactivatedMechanicId = mechanicId;
+    final index = _mechanics.indexWhere((m) => m.id == mechanicId);
+    _mechanics[index] = AdminMechanic(
+      id: _mechanics[index].id,
+      providerId: _mechanics[index].providerId,
+      displayName: _mechanics[index].displayName,
+      bio: _mechanics[index].bio,
+      photoUrl: _mechanics[index].photoUrl,
+      active: false,
+    );
+  }
+
+  @override
+  Future<AdminMechanic> reactivateMechanic(String mechanicId) async {
+    lastReactivatedMechanicId = mechanicId;
+    final index = _mechanics.indexWhere((m) => m.id == mechanicId);
+    final reactivated = AdminMechanic(
+      id: _mechanics[index].id,
+      providerId: _mechanics[index].providerId,
+      displayName: _mechanics[index].displayName,
+      bio: _mechanics[index].bio,
+      photoUrl: _mechanics[index].photoUrl,
+      active: true,
+    );
+    _mechanics[index] = reactivated;
+    return reactivated;
+  }
+}
+
 void main() {
   testWidgets('shows services and adding one calls the API and refreshes the list', (tester) async {
     final fakeApi = _FakeSalonAdminApi();
@@ -335,7 +404,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Tooltip 'Edit', not the icon, to disambiguate from the AppBar's
-    // 'Edit salon' action which uses the same Icons.edit_outlined.
+    // 'Edit business' action which uses the same Icons.edit_outlined.
     await tester.tap(find.byTooltip('Edit'));
     await tester.pumpAndSettle();
 
@@ -459,10 +528,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Edit salon'));
+    await tester.tap(find.byTooltip('Edit business'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.widgetWithText(TextField, 'Salon name'), 'Renamed Salon');
+    await tester.enterText(find.widgetWithText(TextField, 'Business name'), 'Renamed Salon');
     await tester.enterText(find.widgetWithText(TextField, 'Latitude (optional)'), '43.25');
     await tester.enterText(find.widgetWithText(TextField, 'Longitude (optional)'), '76.90');
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));
@@ -595,5 +664,85 @@ void main() {
       findsOneWidget,
     );
     expect(fakeApi.lastRecurringScheduleCall, isNull);
+  });
+
+  testWidgets('shows mechanics for an auto workshop and adding one calls the API and refreshes the list',
+      (tester) async {
+    final fakeApi = _FakeSalonAdminApi();
+    final fakeAutoApi = _FakeAutoAdminApi();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(fakeApi),
+          autoAdminApiProvider.overrideWithValue(fakeAutoApi),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SalonDetailScreen(provider: _autoProvider),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // No Masters section for an auto-vertical workshop.
+    expect(find.text('Masters'), findsNothing);
+    expect(find.text('No active mechanics.'), findsOneWidget);
+
+    // .last: Services and Availability each render their own "Add" button
+    // first — the Mechanics section's is the last one in the tree.
+    await tester.tap(find.widgetWithText(TextButton, 'Add').last);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.widgetWithText(TextField, 'Name'), 'Yerlan Mechanic');
+    await tester.tap(find.widgetWithText(FilledButton, 'Add'));
+    await tester.pumpAndSettle();
+
+    expect(fakeAutoApi.lastCreateMechanicCall, {
+      'providerId': 'p2',
+      'displayName': 'Yerlan Mechanic',
+      'bio': null,
+    });
+    expect(find.text('Yerlan Mechanic'), findsOneWidget);
+  });
+
+  testWidgets('a deactivated mechanic is hidden by default and reactivating it brings it back', (tester) async {
+    final fakeApi = _FakeSalonAdminApi();
+    final fakeAutoApi = _FakeAutoAdminApi([
+      const AdminMechanic(id: 'm1', providerId: 'p2', displayName: 'Yerlan Mechanic', active: false),
+    ]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(fakeApi),
+          autoAdminApiProvider.overrideWithValue(fakeAutoApi),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SalonDetailScreen(provider: _autoProvider),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('No active mechanics.'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(TextButton, 'Show removed').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Yerlan Mechanic'), findsOneWidget);
+    expect(find.text('Reactivate'), findsOneWidget);
+
+    await tester.tap(find.text('Reactivate'));
+    await tester.pumpAndSettle();
+
+    expect(fakeAutoApi.lastReactivatedMechanicId, 'm1');
+    expect(find.text('Yerlan Mechanic'), findsOneWidget);
+    expect(find.text('Reactivate'), findsNothing);
   });
 }

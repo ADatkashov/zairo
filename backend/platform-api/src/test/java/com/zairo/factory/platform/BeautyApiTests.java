@@ -6,8 +6,6 @@ import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequ
 import com.zairo.factory.platform.TestAuth.Registered;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
-import com.zairo.factory.users.UserDtos.CreateUserRequest;
-import com.zairo.factory.users.UserRole;
 import com.zairo.factory.vertical.beauty.BeautyBookingDtos.CreateBeautyBookingRequest;
 import com.zairo.factory.vertical.beauty.MasterDtos.AddPortfolioItemRequest;
 import com.zairo.factory.vertical.beauty.MasterDtos.CreateMasterRequest;
@@ -82,7 +80,8 @@ class BeautyApiTests {
     void fullMasterDirectoryAndBookingFlow() {
         String runId = UUID.randomUUID().toString();
         Registered owner = TestAuth.registerOwner(restTemplate, "beauty-owner-" + runId + "@example.com");
-        UUID customerId = createUser("beauty-customer-" + runId + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "beauty-customer-" + runId + "@example.com");
+        UUID customerId = customer.userId();
         // Case/whitespace-normalized but still an exact vertical match, not
         // a prefix match — see MasterDirectoryService.isBeautyVertical.
         UUID providerId = createProvider(owner, "Glow Salon " + runId, "beauty");
@@ -102,8 +101,11 @@ class BeautyApiTests {
 
         // Booking rule: master hasn't been linked to the service yet -> 409.
         UUID slotId = createOpenSlot(owner, providerId);
-        ResponseEntity<Map> rejected = restTemplate.postForEntity("/api/v1/beauty/bookings",
-                new CreateBeautyBookingRequest(customerId, masterId, serviceId, slotId, new BigDecimal("120.00")),
+        ResponseEntity<Map> rejected = restTemplate.exchange("/api/v1/beauty/bookings", HttpMethod.POST,
+                new HttpEntity<>(
+                        new CreateBeautyBookingRequest(customerId, masterId, serviceId, slotId,
+                                new BigDecimal("120.00")),
+                        TestAuth.authHeaders(customer.accessToken())),
                 Map.class);
         assertThat(rejected.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
 
@@ -118,8 +120,11 @@ class BeautyApiTests {
         assertThat(getList("/api/v1/beauty/masters/" + masterId + "/services")).hasSize(1);
 
         // Now the booking succeeds.
-        ResponseEntity<Map> created = restTemplate.postForEntity("/api/v1/beauty/bookings",
-                new CreateBeautyBookingRequest(customerId, masterId, serviceId, slotId, new BigDecimal("120.00")),
+        ResponseEntity<Map> created = restTemplate.exchange("/api/v1/beauty/bookings", HttpMethod.POST,
+                new HttpEntity<>(
+                        new CreateBeautyBookingRequest(customerId, masterId, serviceId, slotId,
+                                new BigDecimal("120.00")),
+                        TestAuth.authHeaders(customer.accessToken())),
                 Map.class);
         assertThat(created.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         String bookingId = created.getBody().get("bookingId").toString();
@@ -218,11 +223,5 @@ class BeautyApiTests {
                 new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         return UUID.fromString(response.getBody().get("id").toString());
-    }
-
-    private UUID createUser(String email) {
-        var request = new CreateUserRequest(email, "+1000000000", "Beauty Test User", UserRole.PROVIDER_OWNER);
-        Map<?, ?> body = restTemplate.postForEntity("/api/v1/users", request, Map.class).getBody();
-        return UUID.fromString(body.get("id").toString());
     }
 }

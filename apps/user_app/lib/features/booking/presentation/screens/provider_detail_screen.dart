@@ -6,6 +6,11 @@ import '../../../../core/formatting/month_day_time.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
+import '../../../auto/data/auto_exception.dart';
+import '../../../auto/data/models/mechanic.dart';
+import '../../../auto/data/models/vehicle.dart';
+import '../../../auto/presentation/providers/auto_providers.dart';
+import '../../../auto/presentation/widgets/add_vehicle_dialog.dart';
 import '../../../beauty/data/beauty_exception.dart';
 import '../../../beauty/data/models/master.dart';
 import '../../../beauty/presentation/providers/beauty_providers.dart';
@@ -16,6 +21,7 @@ import '../../../maps/presentation/screens/mock_map_screen.dart';
 import '../../../payments/data/payment_exception.dart';
 import '../../../payments/presentation/providers/payments_providers.dart';
 import '../../data/booking_exception.dart';
+import '../../data/models/booking.dart';
 import '../providers/booking_providers.dart';
 
 class ProviderDetailScreen extends ConsumerStatefulWidget {
@@ -31,6 +37,8 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
   String? _selectedServiceId;
   String? _selectedSlotId;
   String? _selectedMasterId;
+  String? _selectedMechanicId;
+  String? _selectedVehicleId;
   bool _isBooking = false;
 
   @override
@@ -39,12 +47,25 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
     final slotsAsync = ref.watch(availabilitySlotsProvider(widget.provider.id));
+    final currentUser = ref.watch(authControllerProvider).value;
     // Only the beauty vertical has masters; other verticals never touch
     // this provider, so the section below simply doesn't render for them.
     final mastersAsync = widget.provider.vertical == 'beauty'
         ? ref.watch(mastersProvider(widget.provider.id))
         : const AsyncValue.data(<Master>[]);
     final masters = mastersAsync.value ?? const <Master>[];
+    // Same reasoning for the auto vertical's mechanics.
+    final mechanicsAsync = widget.provider.vertical == 'auto'
+        ? ref.watch(mechanicsProvider(widget.provider.id))
+        : const AsyncValue.data(<Mechanic>[]);
+    final mechanics = mechanicsAsync.value ?? const <Mechanic>[];
+    // Vehicles are owned by the current user, not the provider — only
+    // fetchable once logged in (an anonymous caller has none to select).
+    final vehiclesAsync = (widget.provider.vertical == 'auto' && currentUser != null)
+        ? ref.watch(vehiclesProvider(currentUser.id))
+        : const AsyncValue.data(<Vehicle>[]);
+    final vehicles = vehiclesAsync.value ?? const <Vehicle>[];
+    final requiresVehicleSelection = mechanics.isNotEmpty && currentUser != null;
 
     return Scaffold(
       backgroundColor: colors.bg,
@@ -123,6 +144,51 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                 ),
               ),
             ],
+            if (mechanics.isNotEmpty) ...[
+              const SizedBox(height: FactorySpacing.space6),
+              Text(l10n.mechanicsSectionTitle, style: textTheme.titleMedium),
+              const SizedBox(height: FactorySpacing.space3),
+              ...mechanics.map(
+                (mechanic) => Padding(
+                  padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
+                  child: _MechanicOption(
+                    mechanic: mechanic,
+                    selected: _selectedMechanicId == mechanic.id,
+                    onTap: () => setState(() => _selectedMechanicId = mechanic.id),
+                  ),
+                ),
+              ),
+            ],
+            if (widget.provider.vertical == 'auto' && currentUser != null) ...[
+              const SizedBox(height: FactorySpacing.space6),
+              Text(l10n.vehiclesSectionTitle, style: textTheme.titleMedium),
+              const SizedBox(height: FactorySpacing.space3),
+              if (vehicles.isEmpty)
+                FactoryEmptyState(
+                  icon: Icons.directions_car_outlined,
+                  title: l10n.vehiclesEmptyTitle,
+                  message: l10n.vehiclesEmptyMessage,
+                )
+              else
+                ...vehicles.map(
+                  (vehicle) => Padding(
+                    padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
+                    child: _VehicleOption(
+                      vehicle: vehicle,
+                      selected: _selectedVehicleId == vehicle.id,
+                      onTap: () => setState(() => _selectedVehicleId = vehicle.id),
+                    ),
+                  ),
+                ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  icon: const Icon(Icons.add, size: 18),
+                  label: Text(l10n.addVehicleButton),
+                  onPressed: () => _addVehicle(currentUser.id),
+                ),
+              ),
+            ],
             const SizedBox(height: FactorySpacing.space6),
             Text(l10n.servicesSectionTitle, style: textTheme.titleMedium),
             const SizedBox(height: FactorySpacing.space2),
@@ -177,6 +243,8 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                 onPressed: (_selectedServiceId != null &&
                         _selectedSlotId != null &&
                         (masters.isEmpty || _selectedMasterId != null) &&
+                        (mechanics.isEmpty || _selectedMechanicId != null) &&
+                        (!requiresVehicleSelection || _selectedVehicleId != null) &&
                         !_isBooking)
                     ? _book
                     : null,
@@ -193,6 +261,20 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _addVehicle(String userId) async {
+    final result = await showAddVehicleDialog(context);
+    if (result == null) return;
+    final vehicle = await ref.read(autoApiProvider).registerVehicle(
+          ownerUserId: userId,
+          make: result.make,
+          model: result.model,
+          year: result.year,
+          licensePlate: result.licensePlate,
+        );
+    ref.invalidate(vehiclesProvider(userId));
+    setState(() => _selectedVehicleId = vehicle.id);
   }
 
   Future<void> _book() async {
@@ -215,25 +297,37 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     final l10n = AppLocalizations.of(context)!;
     final service = widget.provider.services.firstWhere((s) => s.id == _selectedServiceId);
     try {
-      // A master was selected only when this provider has a beauty master
-      // directory (see the Book button's enable condition above) — route
-      // through the beauty booking endpoint so the "master offers this
-      // service" rule is enforced server-side; otherwise use Core's plain
-      // booking flow, unchanged from before masters existed.
-      final booking = _selectedMasterId != null
-          ? await ref.read(beautyApiProvider).createBeautyBooking(
-                userId: currentUser.id,
-                masterId: _selectedMasterId!,
-                serviceId: service.id,
-                availabilitySlotId: _selectedSlotId!,
-                totalPrice: service.price,
-              )
-          : await ref.read(bookingApiProvider).createBooking(
-                userId: currentUser.id,
-                serviceId: service.id,
-                availabilitySlotId: _selectedSlotId!,
-                totalPrice: service.price,
-              );
+      // A master/mechanic was selected only when this provider has a
+      // beauty/auto staff directory (see the Book button's enable
+      // condition above) — route through the matching vertical booking
+      // endpoint so its own rules are enforced server-side; otherwise use
+      // Core's plain booking flow, unchanged from before verticals existed.
+      final Booking booking;
+      if (_selectedMechanicId != null) {
+        booking = await ref.read(autoApiProvider).createAutoBooking(
+              userId: currentUser.id,
+              mechanicId: _selectedMechanicId!,
+              vehicleId: _selectedVehicleId!,
+              serviceId: service.id,
+              availabilitySlotId: _selectedSlotId!,
+              totalPrice: service.price,
+            );
+      } else if (_selectedMasterId != null) {
+        booking = await ref.read(beautyApiProvider).createBeautyBooking(
+              userId: currentUser.id,
+              masterId: _selectedMasterId!,
+              serviceId: service.id,
+              availabilitySlotId: _selectedSlotId!,
+              totalPrice: service.price,
+            );
+      } else {
+        booking = await ref.read(bookingApiProvider).createBooking(
+              userId: currentUser.id,
+              serviceId: service.id,
+              availabilitySlotId: _selectedSlotId!,
+              totalPrice: service.price,
+            );
+      }
 
       // Charged right after booking creation, in the same flow — see
       // SESSION_NOTES.md for why this isn't gated behind a webhook yet
@@ -261,6 +355,14 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
         _isBooking = false;
       });
     } on BeautyException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
+      ref.invalidate(availabilitySlotsProvider(widget.provider.id));
+      setState(() {
+        _selectedSlotId = null;
+        _isBooking = false;
+      });
+    } on AutoException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
       ref.invalidate(availabilitySlotsProvider(widget.provider.id));
@@ -347,6 +449,124 @@ class _MasterOption extends StatelessWidget {
                 ),
                 onPressed: onViewPortfolio,
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MechanicOption extends StatelessWidget {
+  const _MechanicOption({
+    required this.mechanic,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final Mechanic mechanic;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: FactoryRadius.mdRadius,
+        child: Container(
+          padding: const EdgeInsets.all(FactorySpacing.space3),
+          decoration: BoxDecoration(
+            color: selected ? colors.primaryTint : colors.surface,
+            borderRadius: FactoryRadius.mdRadius,
+            border: Border.all(color: selected ? colors.primary : colors.border, width: selected ? 1.5 : 1),
+          ),
+          child: Row(
+            children: [
+              FactoryAvatar(
+                initials: _initialsFor(mechanic.displayName),
+                image: mechanic.photoUrl != null ? NetworkImage(mechanic.photoUrl!) : null,
+              ),
+              const SizedBox(width: FactorySpacing.space3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(mechanic.displayName, style: textTheme.titleSmall),
+                    if (mechanic.bio != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        mechanic.bio!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (selected) Icon(Icons.check_circle_rounded, size: 20, color: colors.primary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VehicleOption extends StatelessWidget {
+  const _VehicleOption({
+    required this.vehicle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final Vehicle vehicle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: FactoryRadius.mdRadius,
+        child: Container(
+          padding: const EdgeInsets.all(FactorySpacing.space3),
+          decoration: BoxDecoration(
+            color: selected ? colors.primaryTint : colors.surface,
+            borderRadius: FactoryRadius.mdRadius,
+            border: Border.all(color: selected ? colors.primary : colors.border, width: selected ? 1.5 : 1),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.directions_car_rounded, color: colors.textSecondary),
+              const SizedBox(width: FactorySpacing.space3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(vehicle.displayName, style: textTheme.titleSmall),
+                    Text(
+                      vehicle.licensePlate,
+                      style: FactoryTypography.mono(size: 13, color: colors.textTertiary),
+                    ),
+                  ],
+                ),
+              ),
+              if (selected) Icon(Icons.check_circle_rounded, size: 20, color: colors.primary),
             ],
           ),
         ),

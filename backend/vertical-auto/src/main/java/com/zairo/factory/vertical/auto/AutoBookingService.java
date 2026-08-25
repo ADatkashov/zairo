@@ -1,0 +1,78 @@
+package com.zairo.factory.vertical.auto;
+
+import com.zairo.factory.booking.Booking;
+import com.zairo.factory.booking.BookingRepository;
+import com.zairo.factory.booking.BookingService;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.UUID;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+/**
+ * Enforces the two auto booking rules ("the named mechanic must offer the
+ * requested service" and "the vehicle must belong to the booking's own
+ * user") and then delegates the actual slot-claim/booking creation to
+ * Core's {@link BookingService} — see build.gradle.kts for why this calls
+ * into another module's service, not just its repository.
+ */
+@Service
+public class AutoBookingService {
+
+    private final MechanicRepository mechanicRepository;
+    private final MechanicServiceLinkRepository mechanicServiceLinkRepository;
+    private final VehicleRepository vehicleRepository;
+    private final AutoBookingRepository autoBookingRepository;
+    private final BookingService bookingService;
+    private final BookingRepository bookingRepository;
+
+    public AutoBookingService(MechanicRepository mechanicRepository,
+            MechanicServiceLinkRepository mechanicServiceLinkRepository, VehicleRepository vehicleRepository,
+            AutoBookingRepository autoBookingRepository, BookingService bookingService,
+            BookingRepository bookingRepository) {
+        this.mechanicRepository = mechanicRepository;
+        this.mechanicServiceLinkRepository = mechanicServiceLinkRepository;
+        this.vehicleRepository = vehicleRepository;
+        this.autoBookingRepository = autoBookingRepository;
+        this.bookingService = bookingService;
+        this.bookingRepository = bookingRepository;
+    }
+
+    @Transactional
+    public AutoBookingResult createBooking(UUID userId, UUID mechanicId, UUID vehicleId, UUID serviceId,
+            UUID availabilitySlotId, BigDecimal totalPrice) {
+        if (!mechanicRepository.existsById(mechanicId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Mechanic not found: " + mechanicId);
+        }
+        Vehicle vehicle = vehicleRepository.findById(vehicleId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Vehicle not found: "
+                        + vehicleId));
+        if (!vehicle.getOwnerUserId().equals(userId)) {
+            throw new VehicleNotOwnedByUserException("Vehicle " + vehicleId + " does not belong to user " + userId);
+        }
+        if (!mechanicServiceLinkRepository.existsByMechanicIdAndServiceId(mechanicId, serviceId)) {
+            throw new MechanicDoesNotOfferServiceException("Mechanic " + mechanicId + " does not offer service "
+                    + serviceId);
+        }
+
+        Booking booking = bookingService.createBooking(userId, serviceId, availabilitySlotId, totalPrice);
+        autoBookingRepository.save(new AutoBooking(UUID.randomUUID(), booking.getId(), mechanicId, vehicleId,
+                Instant.now()));
+        return new AutoBookingResult(booking, mechanicId, vehicleId);
+    }
+
+    public AutoBookingResult getBooking(UUID bookingId) {
+        AutoBooking link = autoBookingRepository.findByBookingId(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Not an auto booking: "
+                        + bookingId));
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
+                        + bookingId));
+        return new AutoBookingResult(booking, link.getMechanicId(), link.getVehicleId());
+    }
+
+    public record AutoBookingResult(Booking booking, UUID mechanicId, UUID vehicleId) {
+    }
+}

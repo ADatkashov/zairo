@@ -7,9 +7,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Shared "does this user own this provider" check for other modules'
- * write endpoints (services/booking/vertical-beauty) — one place for the
- * 404-vs-403 logic instead of duplicating it in every module that needs
- * it. No role-based override yet (e.g. a future ADMIN bypass) — the only
+ * write endpoints (services/booking/vertical-beauty/vertical-auto) — one
+ * place for the 404-vs-403 logic instead of duplicating it in every
+ * module that needs it. No role-based override yet (e.g. a future ADMIN
+ * bypass) — the only
  * rule right now is exact ownership; revisit if/when an admin console
  * needs to act on someone else's provider.
  */

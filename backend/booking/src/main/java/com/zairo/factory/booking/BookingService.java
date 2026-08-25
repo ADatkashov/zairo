@@ -1,7 +1,12 @@
 package com.zairo.factory.booking;
 
+import com.zairo.factory.providers.Provider;
+import com.zairo.factory.providers.ProviderRepository;
+import com.zairo.factory.subscriptions.SubscriptionLimitService;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.YearMonth;
+import java.time.ZoneOffset;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -16,14 +21,19 @@ public class BookingService {
 
     private final AvailabilitySlotRepository availabilitySlotRepository;
     private final BookingRepository bookingRepository;
+    private final ProviderRepository providerRepository;
+    private final SubscriptionLimitService subscriptionLimitService;
     private final ApplicationEventPublisher eventPublisher;
     private final String defaultCurrency;
 
     public BookingService(AvailabilitySlotRepository availabilitySlotRepository, BookingRepository bookingRepository,
+            ProviderRepository providerRepository, SubscriptionLimitService subscriptionLimitService,
             ApplicationEventPublisher eventPublisher,
             @Value("${app.platform.default-currency:USD}") String defaultCurrency) {
         this.availabilitySlotRepository = availabilitySlotRepository;
         this.bookingRepository = bookingRepository;
+        this.providerRepository = providerRepository;
+        this.subscriptionLimitService = subscriptionLimitService;
         this.eventPublisher = eventPublisher;
         this.defaultCurrency = defaultCurrency;
     }
@@ -44,6 +54,16 @@ public class BookingService {
         if (slot.getStatus() != AvailabilityStatus.OPEN) {
             throw new SlotNotAvailableException("Availability slot is not open: " + availabilitySlotId);
         }
+
+        Provider provider = providerRepository.findById(slot.getProviderId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Provider not found: "
+                        + slot.getProviderId()));
+        YearMonth thisMonth = YearMonth.now(ZoneOffset.UTC);
+        Instant monthStart = thisMonth.atDay(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+        Instant monthEnd = thisMonth.plusMonths(1).atDay(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+        long bookingsThisMonth = bookingRepository.countByProviderIdAndCreatedAtBetween(slot.getProviderId(),
+                monthStart, monthEnd);
+        subscriptionLimitService.checkCanCreateBooking(provider.getOwnerUserId(), (int) bookingsThisMonth);
 
         try {
             slot.markBooked();

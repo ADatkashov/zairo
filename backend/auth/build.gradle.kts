@@ -1,8 +1,10 @@
 description = "Identity & access — authentication, tokens, sessions."
 
 dependencies {
+    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.38")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("jakarta.validation:jakarta.validation-api")
 
     // BCrypt password hashing only — deliberately not spring-boot-starter-security,
     // which would auto-register a filter chain securing every endpoint by

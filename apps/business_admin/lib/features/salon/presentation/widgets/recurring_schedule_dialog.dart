@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/app_localizations.dart';
+import '../../../billing/data/billing_exception.dart';
 import '../providers/salon_providers.dart';
 
 /// Returns true via Navigator.pop when a schedule was generated (even if
@@ -254,7 +255,7 @@ class _RecurringScheduleDialogState extends ConsumerState<RecurringScheduleDialo
       );
     } catch (e) {
       setState(() {
-        _error = l10n.errorRecurringScheduleFailed(e.toString());
+        _error = e is BillingException ? e.localizedMessage(l10n) : l10n.errorRecurringScheduleFailed(e.toString());
         _isSubmitting = false;
       });
     }

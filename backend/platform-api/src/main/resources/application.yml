@@ -1,6 +1,15 @@
 spring:
   application:
     name: app-factory-platform-api
+  # Without this, bean-validation messages ("must not be blank" etc.) come
+  # out in whatever locale the OS the JVM runs on defaults to — this
+  # machine is Russian, which mismatched every other English error string
+  # in ApiError. Fixed to English regardless of deploy host; this is a
+  # separate concern from the OpenAPI/Swagger *documentation* localization
+  # (en/ru/kk) — that's about the docs text, not the live API's error body.
+  web:
+    locale: en
+    locale-resolver: fixed
   datasource:
     url: jdbc:postgresql://localhost:5432/app_factory
     username: app_factory
@@ -43,9 +52,48 @@ app:
     access-key: app_factory
     secret-key: app_factory_secret
     bucket: factory-media
+  openapi:
+    # Swagger UI's environment picker (see OpenApiConfig) — add a Test/
+    # Production entry here once one is actually deployed. Never hardcode
+    # a real URL in Java for this.
+    servers:
+      - url: http://localhost:8080
+        description: Local
 
 management:
   endpoints:
     web:
       exposure:
         include: health,info
+
+springdoc:
+  swagger-ui:
+    # http://localhost:8080/swagger-ui/index.html — this is springdoc's own
+    # default path already; do NOT set swagger-ui.path to that same string
+    # ("/swagger-ui/index.html"), it gets appended under the default
+    # "/swagger-ui" mapping and 404s at "/swagger-ui/swagger-ui/index.html"
+    # instead. Leave unset.
+    # tagsSorter intentionally not set to "alpha" — leaving it unset keeps
+    # the declaration order OpenApiConfig's tags() list defines, matching
+    # the module reading order (Auth -> Users -> Providers -> ...).
+    operationsSorter: method
+    # Lets "Try it out" send the Authorization header set via Authorize
+    # across every request in the session, not just the one endpoint.
+    persistAuthorization: true
+  api-docs:
+    # http://localhost:8080/v3/api-docs (JSON) and /v3/api-docs.yaml (YAML,
+    # springdoc serves this automatically alongside the JSON path).
+    path: /v3/api-docs
+  show-actuator: false
+  cache:
+    # With caching on, info/components (title, description, security scheme
+    # hint) are computed once and reused verbatim across every language
+    # group, so LocalizingOpenApiCustomizer never gets a chance to touch
+    # them for /v3/api-docs/ru|kk (only paths/tags, rebuilt per request,
+    # were actually being translated). Disabling the cache costs a bit of
+    # per-request CPU on doc generation — fine for a docs endpoint.
+    disabled: true
+  # Master on/off switch for both the UI and the raw JSON/YAML docs — set
+  # both false (e.g. via SPRINGDOC_SWAGGER_UI_ENABLED=false /
+  # SPRINGDOC_API_DOCS_ENABLED=false, or an application-prod.yml once a
+  # real prod profile exists) to fully disable Swagger outside local/test.

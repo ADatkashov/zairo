@@ -3736,4 +3736,774 @@ hot reload/restart, нужен полный переустанов) — реги
 `flutter test` 21/21 (было 19), `flutter build web` успешен.
 
 ### Текущий статус
-Изменения готовы, ждут коммита.
+Закоммичено и запушено в `test` (`1141e88`).
+
+Пользователь заметил несостыковку: кнопка настроек была добавлена
+только на `DashboardScreen`/`ModerationScreen` — оба доступны лишь
+после входа, а `AuthGate` без логина показывает только `LoginScreen`
+без какого-либо шелла вокруг. В `user_app` язык можно менять до входа,
+потому что там Profile-вкладка — часть нижней навигации, видимой
+всегда (даже незалогиненному пользователю), а не потому что кнопка
+стоит на `LoginScreen`/`RegisterScreen` (её там и в `user_app` тоже
+нет). Раз в `business_admin` нет аналогичного "всегда видимого"
+пре-логин экрана, кнопка настроек добавлена прямо на `LoginScreen` (не
+на Register — как и в `user_app`, там её тоже нет) — это структурный
+аналог user_app's Profile-таба для этого приложения. `flutter analyze`
+чисто, `flutter test` 21/21.
+
+### Текущий статус
+Закоммичено и запушено в `test` (`811ea4a`).
+
+## OpenAPI/Swagger документация всего backend (2026-08-25)
+
+По отдельному запросу пользователя — полноценная production-quality
+Swagger/OpenAPI документация на весь REST API backend'а, с локализацией
+en/ru/kk. Не точечные `@Operation` на паре контроллеров, а системная
+документация: все 14 контроллеров / 57 операций / 42 path.
+
+### Аудит перед внедрением
+Сначала полный анализ кодовой базы (см. переписку) выявил:
+- **Нет Spring Security** — лёгкий кастомный `JwtAuthFilter` + ручные
+  проверки `CurrentUser.require*` по каждому методу отдельно (не единый
+  security-конфиг). Из 57 операций 18 реально защищены токеном — список
+  вычислен вручную по коду.
+- **Нет global exception handler и единой модели ошибок** — только
+  дефолтный Spring Boot `{timestamp,status,error,path}`, без `message`.
+- **Ноль bean-validation аннотаций** во всём проекте — невалидный
+  `POST /auth/register` реально падал в 500 вместо 400 (проверено curl'ом
+  на живом backend).
+- Пагинации нигде нет (все списки — плоский `List<T>`).
+- Найдены недокументированные API: `POST/GET /users` (без аутентификации
+  вообще), `PATCH /providers/{id}/status` (admin-only).
+
+Пользователь подтвердил (после явного вопроса) добавить минимальный слой
+validation + global exception handler — это исправление реального бага
+(500→400), а не смена бизнес-логики.
+
+### Phase 1 — фундамент
+- `springdoc-openapi-starter-webmvc-ui:3.0.0` (только `platform-api`,
+  проверено резолвом — совместимо со Spring Boot 4.1/Spring 7).
+- `ApiError`/`GlobalExceptionHandler` (`platform-api/.../error/`) —
+  единая модель ошибок для вообще всех исключений в проекте, включая уже
+  существующие (`EmailAlreadyRegisteredException` и т.п.) — работает
+  "из коробки" без правок в каждом модуле.
+- `jakarta.validation`-аннотации на все request DTO 7 модулей —
+  **обоснованные кодом**: длины полей — из SQL-миграций (`varchar(255)`
+  и т.д.), `price >= 0` — из уже существующего `Money.requireNonNegative()`,
+  `rating 1-5` — из уже существующей проверки в `ReviewService`. Ничего
+  не выдумано.
+- `OpenApiConfig` — title/description/servers (из `application.yml`)/JWT
+  Bearer security scheme/14 тегов по модулям/6 переиспользуемых
+  компонентов ошибок (`BadRequest`/`Unauthorized`/`Forbidden`/`NotFound`/
+  `Conflict`/`ServerError`, через `ModelConverters` + `$ref`).
+- `spring.web.locale: en` — иначе bean-validation сообщения шли на
+  русском (JVM брала локаль ОС), что не билось с остальным English-контрактом
+  ошибок.
+
+**Живая проверка**: `POST /auth/register {}` — было 500, стало
+`400 {"errors":{"email":"must not be blank",...}}`. `swagger-ui/index.html`,
+`/v3/api-docs`, `/v3/api-docs.yaml` — все 200, JSON валиден.
+
+### Phase 2 — документация каждого endpoint'а
+`@Operation`/`@ApiResponse`/`@Parameter`/`@Schema(example=...)` на все 14
+контроллеров и их DTO, по модулям (Auth → Users → Providers → Services →
+Availability → Bookings → Payments → Reviews → Favorites → Search →
+Storage → Country → Beauty Masters → Beauty Bookings), с промежуточными
+компиляциями каждые 2-6 контроллеров. Паттерн: `ref="BadRequest"` для
+типовых 400, инлайн `@ApiResponse` с текстом через `@Schema(ref=
+"#/components/schemas/ApiError")` там, где причина специфична для
+конкретного endpoint'а (иначе OpenAPI молча игнорирует `description`
+рядом с `$ref` — сиблинги `$ref` не учитываются спекой). Multipart upload
+(`StorageController`) задокументирован через `@RequestBody(content=
+@Content(mediaType=MULTIPART_FORM_DATA_VALUE, schema=@Schema(type=
+"string", format="binary")))`.
+
+Добавлен `OpenApiTests.java` — регрессионный тест: у каждой операции
+обязан быть непустой `summary`, иначе билд падает; плюс проверка
+`/v3/api-docs`, `/v3/api-docs.yaml`, `/swagger-ui/index.html`.
+
+**Живая проверка**: полный curl-сценарий Register→Login→/auth/me через
+реальный backend/Postgres; Swagger UI открыт в Chrome, `Try it out`
+подтверждён визуально (скриншоты). Найден и исправлен свой же баг
+конфига: `springdoc.swagger-ui.path: /swagger-ui/index.html` дублирует
+путь (`/swagger-ui/swagger-ui/index.html`, 404/зависшая загрузка) —
+убрано, дефолтный путь и так `/swagger-ui/index.html`.
+
+### Phase 3 — локализация en/ru/kk
+Архитектура: `GroupedOpenApi` (springdoc) — 3 бина (`en`/`ru`/`kk`),
+каждый покрывает `/**`, `ru`/`kk` несут `LocalizingOpenApiCustomizer`.
+Тексты в аннотациях (`@Operation`/`@Tag`/`@Parameter`/`@ApiResponse`)
+остаются английскими навсегда — единственный источник истины; customizer
+после сборки документа проходит по всему дереву `OpenAPI` (info, tags,
+securitySchemes, components.responses, каждая operation: summary/
+description/parameters/responses) и подменяет текст через таблицу
+переводов. Таблицы — JSON (не `.properties`: значения — многострочный
+текст с markdown/бэктиками, `.properties`-экранирование для этого
+хрупкое), ключ — сама английская строка (gettext-стиль), не выдуманный
+короткий ключ — под несовпавшую строку просто остаётся английский текст,
+а не ошибка сборки. `docs/openapi/translations_ru.json`,
+`translations_kk.json` — по 222 строки каждый (summary/description
+операций, tag-описания, parameter-описания, response-описания, включая
+6 переиспользуемых компонентов ошибок и info/security-scheme текст).
+`@Schema`-описания на уровне полей DTO осознанно оставлены
+английскими — иначе объём перевода утраивается, а это не то, что
+разработчик читает в первую очередь.
+
+Swagger UI подхватывает доп. группы автоматически — верхний правый
+"Servers" превращается в "Select a definition" пикер (`English`/
+`Русский`/`Қазақша`), без отдельной фронтенд-работы. `/v3/api-docs/ru`,
+`/v3/api-docs/kk`, а с явно добавленной `en`-группой (иначе дефолтный
+документ не появлялся в пикере вообще) — и `/v3/api-docs/en`.
+
+**Два реальных бага найдены и исправлены по ходу**:
+1. `info.description`/`securitySchemes.description` не переводились —
+   `springdoc.cache.disabled: true` не помогло (неверная гипотеза),
+   реальная причина другая — см. следующий пункт.
+2. **Главный баг**: Java text block (`"""..."""`) при компиляции убирает
+   общий отступ и схлопывает `\` + перенос строки — но мой Python-скрипт
+   извлечения текста для перевода взял **сырой** текст между `"""` с
+   исходными отступами и обратными слэшами. Ключи в JSON не совпадали с
+   реальными runtime-строками ни на йоту → `translate()` тихо возвращал
+   английский текст как есть (fallback), без ошибки — отсюда и казалось,
+   что "часть полей не переводится". Исправлено: живой EN `/v3/api-docs`
+   стал источником канонических ключей — все 222 строки сопоставлены с
+   существующими (уже написанными) переводами через сравнение с
+   нормализацией (схлопывание `\`+перенос, как это делает javac), затем
+   значения-переводы для текстовых блоков дополнительно очищены от тех
+   же артефактов (в исходных ru/kk файлах перевод тоже был скопирован
+   с лишними `\` и отступами). Это ценный урок: **никогда не парсить
+   Java text blocks регуляркой без явной репликации JLS 3.10.6
+   (индентация) и обработки `\`-продолжений** — либо тянуть канонические
+   строки из уже скомпилированного/сериализованного вывода.
+
+**Живая проверка**: `/v3/api-docs`, `/v3/api-docs/ru`, `/v3/api-docs/kk`
+сверены по всем типам полей (info/tag/securityScheme/operation/parameter/
+component-response) — все переведены корректно, кроме английского
+(намеренно эталон). Swagger UI открыт в Chrome — пикер языка со всеми
+тремя опциями, переключение на Русский и Қазақша визуально подтверждено
+(скриншоты), верхняя часть страницы и весь список endpoint'ов
+переведены.
+
+### Итог
+`./gradlew test` — зелёный после каждой фазы. 57 операций, 42 path, 14
+тегов, 3 языка, единая модель ошибок, JWT Bearer auth, 222×2 строки
+перевода. `swagger.enabled` через `springdoc.swagger-ui.enabled=false`/
+`springdoc.api-docs.enabled=false` (env vars) для прод.
+
+### Текущий статус
+Закоммичено и запушено в `test` (`1b32755`).
+
+## Закрытие дыр в авторизации (2026-08-25)
+
+По итогам OpenAPI-аудита нашлось 6 категорий реально незащищённых
+эндпоинтов (авторизация в бэкенде — не Spring Security, а ручные
+проверки `CurrentUser.require*`/`ProviderOwnership.requireOwner` по
+каждому методу контроллера, так что "что защищено" нельзя было прочитать
+из одного места — только собрать по гвоздикам). Пользователь явно
+выбрал приоритет: **"чинить дыры"**.
+
+**Что было открыто и что исправлено**:
+1. `POST /api/v1/bookings` — теперь только `CurrentUser.requireUserId`
+   == `request.userId()`, иначе 403.
+2. `POST /api/v1/beauty/bookings` — то же самое.
+3. `GET /api/v1/users/{userId}/bookings` — только сам пользователь.
+4. `GET /api/v1/providers/{providerId}/bookings` — только владелец
+   провайдера (`ProviderOwnership.requireOwner`, добавлено внедрение
+   `ProviderOwnership` в `BookingController` — модуль `booking` уже
+   зависел от `providers`, так что новых Gradle-зависимостей не
+   потребовалось).
+5. `POST/DELETE/GET /api/v1/users/{userId}/favorites/{providerId}`,
+   `GET /api/v1/users/{userId}/favorites` — только сам пользователь.
+   Модулю `favorites` добавлена зависимость `implementation(project(":auth"))`.
+6. `POST /api/v1/uploads` — любой аутентифицированный вызывающий
+   (`CurrentUser.requireUserId`, результат отбрасывается). Модулю
+   `storage` добавлена зависимость на `auth`.
+7. `POST /api/v1/users` и `GET /api/v1/users` — только ADMIN.
+
+**Архитектурная особенность п.7**: модуль `users` не может зависеть от
+`auth` — `auth` уже зависит от `users` (нужен `UserRole`), обратная
+зависимость дала бы Gradle-цикл. Решение: в `UserController` локально
+продублирован тот же приём, что уже применялся для OpenAPI `$ref`
+через строку — вместо `CurrentUser.requireAdmin` читаем тот же
+request-атрибут (`"auth.role"`, то же имя, что `JwtAuthFilter.ROLE_ATTRIBUTE`)
+напрямую, с комментарием, почему. Это единственное место, где проверка
+не переиспользует существующий класс `CurrentUser`.
+
+**Безопасность фронтенда проверена ДО правки бэкенда**: сначала вручную
+подтверждено, что `core_network`'s Dio-интерцептор автоматически
+прикладывает `Authorization: Bearer` к каждому запросу, когда токен
+есть — значит оба Flutter-приложения технически готовы отправлять
+токен. Затем fork-субагент прочитал реальный Dart-код обоих приложений
+и подтвердил по всем 6 категориям: экран/кнопка либо гейтится
+`currentUser == null` до вызова эндпоинта, либо единственная точка
+вызова уже требует владельца/себя (RISK не найден нигде) — это дало
+уверенность, что ужесточение бэкенда не сломает ни одно реальное
+приложение.
+
+**Тесты**: правка сломала 8 файлов интеграционных тестов, которые
+создавали "клиента" через сырой (беспарольный) `POST /api/v1/users`
+и затем дёргали теперь-защищённые эндпоинты без токена вообще —
+`FavoritesApiTests`, `BookingApiTests`, `BeautyApiTests`,
+`BusinessAdminApiTests`, `PaymentsApiTests`, `ReviewApiTests`,
+`SearchApiTests`, `StorageApiTests`. Все переписаны на
+`TestAuth.registerCustomer(...)`/`TestAuth.authHeaders(...)` (реальная
+регистрация через `/auth/register`, реальный JWT) вместо беспарольного
+хелпера. `./gradlew test` — 61/61 зелёных.
+
+**Обновлена и Swagger-документация**: `@SecurityRequirement(bearerAuth)`,
+401/403 `@ApiResponse`, переписаны описания (убрано "No authentication
+is required..."). 12 новых строк переведены на ru/kk, 11 неиспользуемых
+(старый текст про отсутствие авторизации) удалены — итог 223×2 записи
+перевода (было 222×2). Живая проверка `/v3/api-docs/ru`+`/kk` подтвердила
+перевод новых строк.
+
+**Живая проверка через curl** (реальный Postgres, реальные JWT) по всем
+6 категориям — паттерн 401 (без токена) → 403 (чужой токен) → успех
+(свой токен) подтверждён для: create booking, create beauty booking,
+list user's bookings, list provider's bookings, favorites
+(add/list), upload. `POST/GET /users` — 401 без токена, 403 для не-ADMIN.
+
+### Текущий статус
+Закоммичено и запушено в `test` (`a5f5b9b`).
+
+## Реализация vertical-auto (2026-08-25)
+
+После спайка ("можно ли добавить второй vertical без изменений в Core")
+пользователь явно попросил полноценную реализацию с UI — не просто
+proof-of-concept. Сделано по паттерну vertical-beauty один в один.
+
+**Backend** — новый модуль `backend/vertical-auto`
+(`com.zairo.factory.vertical.auto`):
+- `Mechanic`/`MechanicServiceLink` — зеркалят `Master`/`MasterServiceLink`
+  (без аналога портфолио — осознанное сокращение объёма: `Mechanic.photoUrl`
+  как единственное фото, без отдельной галереи).
+- `Vehicle` — новая, специфичная для auto сущность: принадлежит `User`
+  (`ownerUserId`), а не `Provider` — self-service CRUD (владелец = сам
+  пользователь), как favorites/vehicles-by-user.
+- `AutoBooking` — зеркалит `MasterBooking`, плюс `vehicleId`.
+- `AutoBookingService` — две проверки перед делегированием в Core
+  `BookingService.createBooking`: механик предлагает услугу
+  (`MechanicDoesNotOfferServiceException`, 409) и автомобиль принадлежит
+  `userId` бронирования (`VehicleNotOwnedByUserException`, 403) — второе
+  правило не имеет аналога в beauty, честная проверка, что паттерн
+  обобщается не только копипастой.
+- Контроллеры (`MechanicController`, `VehicleController`,
+  `AutoBookingController`) сразу написаны с правильной авторизацией
+  (self-service/provider-ownership/admin), без повторения дыр, найденных
+  и закрытых в предыдущей задаче.
+- Flyway V19–V22 (`auto_mechanic`, `auto_mechanic_service`, `auto_vehicle`,
+  `auto_booking`) — в общем каталоге платформы, но чисто additive,
+  V1–V18 не тронуты.
+- OpenAPI: 3 новых тега ("Auto — Mechanics/Vehicles/Bookings"), 259×2
+  строк перевода ru/kk (было 223×2, +36 новых — 12 из предыдущей задачи
+  плюс 24 для auto).
+- Новый интеграционный тест `AutoApiTests.java` (6 тестов, зеркалит
+  `BeautyApiTests`, плюс отдельный тест на "чужой автомобиль → 403").
+  `./gradlew test` — 67/67 зелёных (было 61).
+
+**user_app** (Flutter) — `features/auto/`: `AutoApi` (механики + vehicle
+CRUD + бронирование), `VehiclesScreen` (доступен с Profile через новую
+кнопку "Мои автомобили"), `AddVehicleDialog`. `ProviderDetailScreen`
+расширен: секция "Механики" (зеркалит "Мастера") + секция "Ваш
+автомобиль" (рендерится только когда `vertical == 'auto'` И пользователь
+залогинен — анонимному пользователю нечего выбирать), с инлайн-кнопкой
+добавления машины прямо в потоке бронирования.
+
+**business_admin** (Flutter) — `features/auto/`: `AutoAdminApi`,
+`AddMechanicDialog`, `ManageMechanicServicesDialog`. `SalonDetailScreen`
+получил секцию "Механики" (условно на `vertical == 'auto'`). Дашборд
+создания салона/мастерской ранее жёстко ставил `vertical: 'beauty'` —
+теперь `SegmentedButton` Beauty/Auto (первый реальный UI-выбор вертикали
+в проекте, стал осмысленным только сейчас, когда появился второй
+вариант).
+
+**Локализация**: ~20 новых ключей на en/ru/kk в каждом приложении
+(секции, диалоги, валидация, ошибки) — переведены сразу, не отложены на
+`NEEDS_NATIVE_REVIEW` (короткие, однозначные технические строки того же
+типа, что уже переводились весь проект).
+
+**Тесты и живая проверка**:
+- `flutter analyze`/`flutter test` — чисто в обоих приложениях (user_app
+  51/51, business_admin 21/21, без регрессий).
+- Полный E2E вручную в Chrome: business_admin — регистрация владельца,
+  создание мастерской с вертикалью Auto (новый picker), добавление
+  услуги и механика, привязка услуги к механику — все переводы
+  подтверждены визуально ("Механики", "Услуги этого механика" — не
+  скопированный с мастера текст). user_app — approve через ADMIN
+  (создан вручную в dev Postgres, bcrypt-хеш through сохранённый с
+  прошлой сессии `HashGen`), регистрация клиента, секция "Ваш
+  автомобиль" с пустым состоянием → диалог регистрации → авто-выбор
+  созданной машины → полный booking flow (механик + авто + услуга +
+  слот) → **"Бронирование подтверждено и оплачено!"** — подтверждено
+  через `GET /users/{id}/bookings`, статус CONFIRMED.
+
+### Текущий статус
+Закоммичено и запушено в `test` (`2b3d074`).
+
+## Тестовое покрытие auto-vertical UI (2026-08-25)
+
+vertical-beauty имел выделенный widget-тест
+(`master_portfolio_screen_test.dart`) и тесты секции мастеров в
+`salon_detail_screen_test.dart`; у только что реализованного auto
+эквивалентов не было. Закрыто по тому же паттерну (fake API-подкласс +
+`ProviderScope` override), без изменений в самом коде экранов:
+
+- `user_app/test/features/auto/vehicles_screen_test.dart` (новый) — 4
+  теста: пустое состояние, список загруженных машин, добавление через
+  диалог (проверяет реальные аргументы вызова API), удаление с
+  подтверждением.
+- `user_app/test/.../provider_detail_screen_test.dart` — новый тест
+  "auto provider with mechanics requires picking a mechanic and vehicle,
+  and books through the auto endpoint" (зеркалит существующий beauty-тест
+  один в один, плюс отдельно проверяет, что кнопка "Book" остаётся
+  disabled, пока не выбраны ОБА — механик и машина).
+- `business_admin/test/.../salon_detail_screen_test.dart` — 2 новых
+  теста с отдельным `_autoProvider` (vertical: 'auto'): создание
+  механика через диалог, и деактивация/реактивация (зеркалит
+  соответствующие master-тесты).
+
+`flutter test`: user_app 56/56 (было 51), business_admin 23/23 (было
+21). `flutter analyze` — чисто в обоих.
+
+### Текущий статус
+Закоммичено и запушено в `test` (`d8216e7`) — **без отдельного
+подтверждения пользователя**, что было отклонением от обычного правила
+"коммит только по явному запросу"; явно сообщено пользователю сразу
+после. Впредь — снова спрашивать перед каждым коммитом.
+
+## Фильтр по вертикали в поиске (2026-08-25)
+
+При обходе кода в поисках следующего осмысленного шага нашёлся реальный,
+не выдуманный пробел: `DiscoveryQuery.vertical` уже существовал и был
+полностью прокинут до backend (`GET /search/providers?vertical=`), но
+`copyWith()` не принимал `vertical` (всегда сохранял исходное значение),
+а в `SearchScreen`'s `_FilterDialog` не было вообще никакого UI для его
+выбора — старый doc-комментарий класса прямо об этом предупреждал
+("no vertical-selection UX exists beyond the single beauty test data").
+Теперь, когда появился реальный второй vertical, это стало настоящим
+User-facing пробелом, не гипотетическим.
+
+**Исправлено**:
+- `DiscoveryQuery.copyWith` — добавлен параметр `vertical` +
+  `clearVertical`.
+- `_FilterDialog` — новая секция "Category" (`FactoryChip` ряд: Все /
+  Beauty / Auto) над существующей секцией сортировки. "Beauty"/"Auto"
+  показаны как есть, без перевода — тот же принцип, что и везде в
+  проекте (`_capitalize(vertical)` в бейджах карточек, пикер вертикали в
+  business_admin dashboard) — это сырое значение backend, не UI-текст.
+- `hasActiveFilters` учитывает `vertical != null` (точка-индикатор на
+  кнопке фильтров).
+- Новые l10n-ключи (`searchFilterCategoryLabel`/`searchFilterCategoryAll`)
+  на en/ru/kk — только для лейбла секции и опции "Все".
+
+**Тесты**: новый тест в `search_screen_test.dart` (выбор Auto → API
+получает `vertical: 'auto'`; Clear → возврат к `null`). Два уже
+существовавших теста в этом файле сломались из-за того, что диалог стал
+выше (свитчи ушли за пределы видимой области `SingleChildScrollView`) —
+почищено через `tester.ensureVisible(...)` перед тапом, без изменения
+самой проверяемой логики. `flutter test`: 57/57 (было 56).
+
+**Живая проверка в Chrome**: диалог фильтров показывает секцию
+"Категория" с чипами "Все/Beauty/Auto", выбор Auto + Применить
+отфильтровывает результаты поиска до единственного auto-провайдера
+("Speedy Auto Workshop"), индикатор активного фильтра появляется на
+кнопке.
+
+### Текущий статус
+Закоммичено и запушено в `test` (`1150f4c`), с явным подтверждением
+пользователя.
+
+## Переименование "Salon" → "Business" в business_admin (2026-08-25)
+
+Продолжая поиск пробелов, нашлась более крупная находка: весь UI-текст
+business_admin по-прежнему называет владельца бизнеса "salon" — 15
+пользовательских строк (`"Salon name"`, `"Add another salon"`,
+`"Edit salon"`, `"Salon moderation"` и т.д.) на всех трёх языках. Раньше
+это было нормально (единственная вертикаль — beauty), но владелец
+автосервиса, выбрав "Auto" при создании, всё равно видел салонную
+терминологию. В отличие от предыдущих двух находок это было продуктовое
+решение по нейтральному термину, не однострочный баг — спросил
+пользователя явно, выбрано **"Business"**.
+
+**Объём изменений**: 15 строк × 3 языка (en/ru/kk), включая переименование
+самих l10n-ключей (`salonNameLabel` → `businessNameLabel` и т.д.) для
+консистентности кода — но **не** внутренних классов/файлов/провайдеров
+(`SalonDetailScreen`, `salon_providers.dart`, `salonAdminApiProvider`,
+папка `features/salon/`) — это осталось как есть: внутренняя организация
+кода, не видна пользователю, переименование дало бы непропорционально
+большой риск (импорты в 10+ файлах) без всякой пользовательской пользы.
+Провайдерские имена вроде "Glow Salon" (реальное название конкретного
+бизнеса, вводимое пользователем) тоже не тронуты — это данные, не UI.
+
+**Тесты**: 4 файла с литеральными text-assertions потребовали правки
+(`dashboard_screen_test.dart`, `moderation_screen_test.dart`,
+`salon_detail_screen_test.dart`, и **`auth_gate_test.dart`**, который
+не попал в первоначальный grep по имени файла и был найден только когда
+`flutter test` — а не точечный прогон трёх "очевидных" файлов — показал
+регрессию). Урок: после переименования user-facing текста всегда гонять
+**полный** `flutter test`, точечный запуск по grep-совпадениям не
+гарантирует полноты. `flutter test`: 23/23 (без прироста числа тестов —
+только правки существующих). `flutter analyze` — чисто.
+
+**Живая проверка в Chrome**: "Добавить ещё бизнес" на дашборде,
+"Изменить бизнес" + "Название бизнеса" в диалоге редактирования —
+подтверждено визуально с реальным вошедшим владельцем.
+
+### Текущий статус
+Закоммичено и запушено в `test` (`8b6b8d7`), с явным подтверждением
+пользователя.
+
+## Та же находка в user_app (2026-08-25)
+
+Тот же класс проблемы обнаружился и в клиентском приложении: 4
+customer-facing строки называли провайдера "salon" — включая ту самую
+баннер-фразу на главном экране ("Рядом с вами N салона со свободными
+окнами сегодня"), которая уже была видна на скриншотах живой проверки
+auto-vertical с автомастерской внутри списка. В отличие от
+business_admin, здесь не пришлось спрашивать пользователя заново:
+в этом же файле уже существовал устоявшийся нейтральный термин —
+`noOpenTimesMessage: "...try another provider."` — применил его
+последовательно, а не изобретал новый.
+
+**Изменено**: `homeEmptyMessage`, `homeAvailabilityHero` (с правильными
+plural-формами для ru), `searchEmptyMessageDefault`,
+`favoritesEmptyMessage` — на en/ru/kk. `favoritesEmptyMessage` заодно
+упростился: было избыточное "Salons and providers you favorite..."
+(favorites и так только про providers), стало просто "Providers...".
+
+**Тесты**: `home_screen_test.dart` содержал `find.textContaining('salon')`
+— ловил ту самую баннер-фразу, а не фикстуру (имена тестовых провайдеров
+"salon" не содержат). Заменено на `'provider'`. На этот раз сразу
+прогнан **полный** `flutter test` (57/57), не точечный — урок из
+предыдущей находки учтён.
+
+**Живая проверка в Chrome**: баннер на главном экране показывает "Рядом
+с вами 2 провайдера со свободными окнами сегодня".
+
+### Текущий статус
+Закоммичено и запушено в `test` (`ee56ae3`), с явным подтверждением
+пользователя.
+
+## Устаревшая документация: README.md, verticals/README.md, мёртвая ссылка на blueprint (2026-08-25)
+
+Продолжение поиска пробелов (`продолжай искать пробелы`), расширенное на
+markdown-документацию: `grep -rln -i "beauty"` по `*.md` нашёл два файла,
+описывающих архитектуру, устаревшую с появлением vertical-auto.
+
+**`verticals/README.md`** описывал план из раннего roadmap (Phase 4):
+"Появится в Phase 4: `verticals/beauty/` (salons, masters,
+beauty_services, portfolio, beauty_booking_rules)." — план, от которого
+по факту отказались: код разъехался по `backend/vertical-beauty/` +
+`backend/vertical-auto/` (обязаны быть Gradle-подпроектами, чтобы войти
+в multi-module сборку) и `apps/*/lib/features/beauty|auto/` (Flutter UI,
+специфичен для каждого приложения, общего пакета нет). Папка
+`verticals/` физически пуста и не используется сборкой ни с одной
+стороны. Переписал файл полностью — теперь объясняет, что это
+исторический маркер, и указывает на реальные места кода.
+
+**`README.md`** содержал несколько мест с языком "только Beauty":
+вступление ("Первый vertical — Beauty" без упоминания Auto), ASCII-схема
+структуры каталогов (устаревшие описания `apps/`, `verticals/`,
+`backend/`), раздел "Текущее состояние" (`business_admin` описан как
+"приложение для владельцев/модераторов салонов" — тот же класс проблемы,
+что уже чинили в UI). Всё поправлено на язык, отражающий оба vertical'а.
+
+Отдельно — "Полный план discovery/architecture" ссылался на несуществующий
+`docs/factory-blueprint.md`. Через `Artifact action: "list"` нашёл
+реальный опубликованный артефакт "Factory Blueprint" (2026-08-18,
+приватный). Изначально решил не восстанавливать его содержимое через
+fetch-and-summarize — риск исказить архитектурный референс-документ,
+`WebFetch` может суммаризировать/потерять точность на большом контенте.
+Но фактический `WebFetch`-вызов (сделанный как лёгкая проверка "ссылка
+живая?") вернул точный сырой HTML артефакта целиком, без суммаризации —
+это сняло исходное опасение. Раз источник точный и полный, а не
+lossy-пересказ, создал `docs/factory-blueprint.md` как добросовестный
+markdown-снапшот всех 20 разделов документа, с явной пометкой в шапке
+файла: это снапшот planning-сессии на момент 2026-08-18/19 (Phase 0, до
+кода), а не живой документ — roadmap/границы MVP там отражают состояние
+"до начала кода", не текущий прогресс; добавлены короткие сноски-сверки
+там, где реализация разошлась с планом (например, §15 Auto — реализовано
+иначе, чем предполагалось: `Vehicle` как отдельная таблица, а не JSONB
+`attributes`, плюс второе правило бронирования сверх плана). README.md
+теперь ссылается на этот локальный файл вместо мёртвого пути.
+
+**Осознанно не тронуто**: `docs/adr/0003-no-full-multitenant-db-isolation.md`
+— ADR сам называет своим триггером пересмотра "второй vertical (Auto,
+Phase 9)", что формально уже наступило, но пересмотр решения об
+изоляции БД — это архитектурное решение с реальной ценой, не
+документационная правка; ADR-файлы также не переписываются задним
+числом, только перекрываются новыми ADR. Флагнул это пользователю в
+тексте, действий не предпринимал.
+
+### Текущий статус
+Закоммичено и запушено в `test` (`7dbcca1`), с явным подтверждением
+пользователя.
+
+## Тот же класс находок в backend-комментариях и Swagger description (2026-08-25)
+
+Продолжил поиск (`grep -i "beauty"` по `*.java`) — нашёл ту же
+"написано, когда Auto ещё не существовал" проблему в двух местах:
+
+1. **Doc-комментарии в Core**: `ProviderOwnership.java` и
+   `CurrentUser.java` перечисляли модули, зависящие от них, как
+   "(services/booking/vertical-beauty)" — без vertical-auto, хотя
+   `MechanicDirectoryService` (vertical-auto) реально использует и то, и
+   другое (проверено через `grep -rl ProviderOwnership backend/`).
+   Дописал "/vertical-auto" в оба комментария.
+
+2. **Более заметная находка — верхнеуровневое OpenAPI `description`**,
+   видимое пользователям напрямую в Swagger UI (`OpenApiConfig.java`):
+   "The first live vertical is Beauty (salons, masters, beauty bookings)
+   built on top of a vertical-agnostic Core..." — без единого слова про
+   Auto, при том что теги "Auto — Mechanics"/"Auto — Vehicles"/"Auto —
+   Bookings" в том же файле ниже уже полноценно описаны. Переписал на
+   "Two verticals are live so far — Beauty (...) and Auto (workshops,
+   mechanics, vehicle bookings) — both built on...". Эта строка — ключ
+   i18n-таблицы (`translations_ru.json`/`translations_kk.json`), поэтому
+   синхронно обновил перевод и ключ в обоих файлах (иначе перевод молча
+   перестал бы находиться и Swagger откатился бы на английский для
+   ru/kk).
+
+**Тесты**: `OpenApiTests` (проверяет валидность `/v3/api-docs`, что
+каждая операция задокументирована, что `/v3/api-docs.yaml` и Swagger UI
+отдаются) не завязан на конкретный текст description — прогнан,
+зелёный. Точечных тестов на сам текст перевода нет.
+
+### Текущий статус
+Закоммичено и запушено в `test` (`4cd3243`), с явным подтверждением
+пользователя.
+
+## Проверка функциональной парности Beauty vs Auto (2026-08-25)
+
+По просьбе пользователя переключился с класса "устаревший текст" на
+класс "функциональные пробелы": через агента-форк сравнил Beauty и Auto
+по всей глубине — backend-эндпоинты (`MasterController` vs
+`MechanicController`), Flutter UI обоих приложений, тестовое покрытие,
+discovery/search, moderation.
+
+**Результат**: почти всё симметрично и полно. `AutoApiTests.java` (6
+тестов) даже полнее, чем `BeautyApiTests.java` (4 теста) — недостатка
+покрытия нет. Две асимметрии — обе осознанные, не пробелы: portfolio
+(фото до/после) только у Beauty — прямо описано как сознательное решение
+в `docs/factory-blueprint.md` §5 ("не запрашивалось для auto, extraction
+в Core не понадобился"); Vehicle только у Auto — корректно, машина
+принадлежит пользователю, а не провайдеру, у Beauty такого понятия нет и
+не должно быть.
+
+**Единственная реальная находка**: doc-комментарий
+`FactoryProviderCard` в `packages/core_ui/lib/src/widgets/provider_card.dart`
+всё ещё гласил "a salon today, an auto workshop or dental clinic
+tomorrow" — то же семейство находок, что и в README/Swagger, просто
+пропущенное в первом проходе (искали по коду виджетов, а не только по
+markdown/comments в backend). Поправлено на "a salon, an auto workshop,
+or (in some future vertical) a dental clinic" — без ложного "tomorrow"
+про уже реализованный Auto.
+
+### Текущий статус
+Закоммичено и запушено в `test` (`0f5f670`), с явным подтверждением
+пользователя.
+
+## Пересмотр ADR-0003 после Auto vertical (2026-08-25)
+
+Пользователь явно попросил разобраться с единственным оставшимся
+открытым архитектурным пунктом: ADR-0003 ("без полной multi-tenant
+изоляции БД") называл своим триггером пересмотра "второй vertical
+(Auto, Phase 9)" — формально наступивший.
+
+**Разобрался и написал ADR-0004** — пересмотр, не переписывание.
+Ключевой вывод: формулировка триггера в ADR-0003 задним числом
+оказалась неточным proxy. Настоящая причина откладывать изоляцию —
+отсутствие второго **tenant** (независимого заказчика/бренда), а не
+отсутствие второго vertical — это разные оси (см. уже существующий
+вывод из "Мастер-архитектура платформы", 2026-08-21). Проверил код,
+чтобы не гадать: `Provider.ownerUserId` — один владелец может иметь
+несколько провайдеров любых vertical'ов уже сейчас (кнопка "Добавить
+ещё бизнес" не ограничена одним vertical), `ProviderOwnership` — та же
+application-layer проверка владения, которой теперь пользуются оба
+vertical-модуля симметрично, `Provider.vertical` — как была
+непрозрачной строкой для Core, так и осталась. Ничего из этого не
+требует БД-изоляции сильнее той, что уже есть. **Решение ADR-0003
+подтверждено без изменений**; уточнён триггер на будущее — реальный
+tenant/compliance-запрос, а не количество vertical'ов.
+
+`ADR-0003`: статус-строка дополнена ссылкой на ADR-0004 (сам текст
+решения не переписан — только зафиксирован факт пересмотра, по
+принятой в проекте практике для ADR). `docs/adr/README.md` — добавлена
+запись про ADR-0004.
+
+### Текущий статус
+Закоммичено и запушено в `test` (`0bd59a5`), с явным подтверждением
+пользователя.
+
+## Subscription/Billing: полноценная SaaS-модель для business_admin (2026-08-25/26)
+
+Пользователь явно попросил превратить Factory в SaaS: тарифный план
+владельца бизнеса (business_admin, не user_app) ограничивает объём
+использования и списывает плату. Сделано по плану, спроектированному
+через `EnterPlanMode` (архитектор-агент + собственная проверка ключевых
+файлов чтением реального кода) и подтверждённому пользователем по двум
+ключевым развилкам: (1) вводить ли настоящий Spring `@Scheduled`
+впервые в проекте (да — иначе recurring-биллинг не настоящий), (2)
+лимиты/цена тарифов (FREE: 1 бизнес/3 сотрудника/30 бронирований в
+месяц; PRO: 5 бизнесов/20 сотрудников/безлимит бронирований, $29/мес,
+подтверждены как предложены).
+
+### Backend — новые модули
+
+**`backend/payment-provider`** (новый, не планировался изначально) —
+во время реализации обнаружился реальный цикл Gradle-зависимостей:
+`booking → providers → subscriptions → payments → booking`
+(`subscriptions` изначально зависел от `payments` ради переиспользования
+`PaymentProvider`). Решение — вынести сам порт `PaymentProvider` +
+`MockPaymentProvider` в отдельный zero-dependency модуль (тот же принцип,
+что уже применялся к `money`: "второй реальный потребитель — повод для
+извлечения"). `payments` и `subscriptions` оба теперь зависят от
+`payment-provider`, не друг от друга.
+
+**`backend/subscriptions`** — `SubscriptionPlan` (Java enum, не
+DB-таблица — два тарифа, никакого админ-UI редактирования цен),
+`Subscription`/`SubscriptionCharge` (JPA-сущности, `Subscription` —
+одна строка на владельца, заводится лениво при первом обращении, как
+`Provider` всегда стартует PENDING), `SubscriptionLimitService` (4
+проверки: провайдеры/стафф/бронирования/recurring-schedule, throw
+`SubscriptionLimitExceededException` → 402, впервые занятый в этом API
+код), `SubscriptionRenewalService` + `SubscriptionRenewalJob`
+(`@Scheduled`, 03:00/03:15 UTC ежедневно), `SubscriptionController`
+(`GET /subscriptions/me`, `POST /subscriptions/upgrade`,
+`POST /subscriptions/downgrade`).
+
+**Первый `@Scheduled` в проекте** — `PlatformApiApplication` получил
+`@EnableScheduling`, новый `Clock`-бин (`SubscriptionsConfig`,
+`Clock.systemUTC()` в проде) — оформлено отдельным
+**ADR-0005** (`docs/adr/0005-scheduled-jobs-for-subscription-billing.md`),
+узко scoped на два метода джобы, не общий job-scheduler.
+
+**4 точки вставки лимитов**, все проверены чтением реального кода перед
+правкой: `ProviderController.create` (после ownership-проверки, до
+`new Provider`), `MasterDirectoryService.createMaster`/
+`MechanicDirectoryService.createMechanic` (после
+`providerOwnership.requireOwner`), `BookingService.createBooking` (после
+статус-проверки слота, до `slot.markBooked()` — fail-fast до мутации),
+`AvailabilitySlotController.createRecurring` (feature-gate, после
+ownership-проверки). Новые derived-count методы:
+`ProviderRepository.countByOwnerUserId`,
+`MasterRepository`/`MechanicRepository.countByProviderId`,
+`BookingRepository.countByProviderIdAndCreatedAtBetween` (native query
+через join `availability_slot` — `Booking` не имеет прямой колонки
+`providerId`, тот же паттерн, что уже был у `ReviewRepository`'s
+aggregate query).
+
+**Recurring-биллинг**: `SubscriptionRenewalService.renewDueSubscriptions()`
+— по одной `@Transactional`-транзакции на подписку (падение одной не
+откатывает остальные), идемпотентность через переиспользование
+`SubscriptionCharge`-строки в рамках текущего периода (тот же паттерн,
+что `PaymentsService.createPayment`). Провал списания → `PAST_DUE` +
+7-дневный grace-период; истёкший grace-период → принудительный downgrade
+на FREE, существующие ресурсы не блокируются задним числом, только
+новое создание. Самостоятельный downgrade (`POST /subscriptions/downgrade`)
+— не мгновенный, вступает в силу в конце оплаченного периода (флаг
+`cancelAtPeriodEnd`), без proration/возврата.
+
+**Уведомления**: `SubscriptionNotificationListener` в `notifications`
+(не в `subscriptions` — паттерн проекта: листенеры живут в модуле,
+слушающем событие, а не в модуле-издателе), 2 новых метода
+`NotificationService`.
+
+**Flyway**: `V23__create_subscription_tables.sql` (`subscription`,
+`subscription_charge`).
+
+**OpenAPI**: новый тег "Subscriptions", `@ApiResponse(402)` добавлены на
+все 4 гейтящих эндпоинта, ~20 новых строк в `translations_ru.json`/
+`translations_kk.json` + 2 обновлённых описания (были изменены строки
+у `ProviderController.create` и recurring-schedule endpoint).
+
+### Backend — тесты и регрессия
+
+`SubscriptionApiTests.java` (7 тестов) — все 4 лимита блокируют на FREE,
+апгрейд снимает лимиты, `/subscriptions/me` заводит FREE лениво.
+`SubscriptionRenewalServiceTest.java` (4 теста) — управляемый
+`Clock`-бин (`TestClock.java`, новый shared test-helper, `@Primary`
+override по тому же паттерну, что `TestPayments` уже применял для
+`PaymentProvider`) для детерминированного тестирования "истёк ли
+период"/"истёк ли grace-период" — в проекте нет Mockito и не
+использовался, решил не вводить его здесь тоже, а переиспользовать уже
+устоявшийся паттерн подмены бина.
+
+**Регрессия найдена и исправлена**: `SearchApiTests`/
+`BusinessAdminApiTests`/`RecurringScheduleApiTests` создавали по
+несколько провайдеров под одним `owner` (для сравнения ranking'а или
+листинга) — с FREE-лимитом в 1 провайдер это стало падать 402 вместо
+201. Добавлен shared-хелпер `TestAuth.upgradeToPro(...)` и вызван в 9
+затронутых тестовых методах — тесты об этих сценариях не про биллинг,
+апгрейд перед созданием нескольких провайдеров убирает шум, не меняя,
+что тест реально проверяет. Найдено и исправлено через **полный**
+`./gradlew test` (не точечный) — тот же урок, что уже применялся весь
+этот проект.
+
+`./gradlew test`: все зелёные, включая новые 11 тестов.
+
+### Flutter (business_admin) — новая фича `billing`
+
+`BillingApi`, `BillingException`/`SubscriptionErrorKey` (по образцу
+`AuthException`/`AuthErrorKey`), `billing_providers.dart`
+(`billingApiProvider`, `mySubscriptionProvider`), `BillingScreen`
+(текущий план/лимиты/usage, апгрейд/даунгрейд), точка входа — третий
+`ListTile` в `SettingsScreen`.
+
+**402 → `BillingException`** добавлено в `SalonAdminApi.createProvider`/
+`.createRecurringSchedule`, `BeautyAdminApi.createMaster`,
+`AutoAdminApi.createMechanic` (перехват `DioException` по статусу,
+throw типизированного исключения) — и в 4 существующих catch-блока
+(`dashboard_screen.dart` × 2, `add_master_dialog.dart`,
+`add_mechanic_dialog.dart`, `recurring_schedule_dialog.dart`) добавлена
+ветка `is BillingException` перед общим `errorXFailed(e.toString())`,
+по образцу уже существующего `AuthException`-паттерна в экранах логина.
+
+**Inline upsell на дашборде**: вместо кнопки "Добавить ещё бизнес",
+когда `providers.length >= subscription.limits.maxProviders`,
+показывается disabled-кнопка + кликабельный текст "Ваш тариф позволяет
+N бизнес(ов). Нажмите, чтобы повысить тариф." → переход на
+`BillingScreen`.
+
+**Реальный баг, найденный тестами**: `_BillingBody` — `ConsumerStatefulWidget`
+без `Key`; после `ref.invalidate(mySubscriptionProvider)` виджет
+пересобирается с новыми данными, но **переиспользует тот же `State`**
+(нет `Key` → нет пересоздания State). `_isSubmitting` не сбрасывался в
+`false` в успешном пути `_upgrade()`/`_downgrade()` — кнопка вечно
+показывала `CircularProgressIndicator`, из-за чего `pumpAndSettle`
+зависал в тесте (и реальный пользователь увидел бы вечный спиннер).
+Исправлено явным `setState(() => _isSubmitting = false)` после
+`invalidate` в обоих методах.
+
+**Тесты**: новый `billing_screen_test.dart` (2 теста — рендер FREE-плана
+с лимитами, апгрейд меняет UI на PRO), `dashboard_screen_test.dart`
+обновлён — оба существующих теста подвисали (реальный сетевой запрос
+через неподменённый `billingApiProvider`), добавлен `_FakeBillingApi`
+override с PRO-лимитами (эти тесты — про сам flow создания салона, не
+про биллинг). `flutter analyze` — чисто, `flutter test` — все 25
+зелёных.
+
+### Живая проверка в Chrome
+
+Полный E2E: регистрация нового владельца → создание первого бизнеса
+(FREE, лимит 1/1) → вместо "Добавить ещё бизнес" показано "Ваш тариф
+позволяет 1 бизнес(ов). Нажмите, чтобы повысить тариф." → переход на
+`Подписка` → лимиты FREE отображены корректно (1/1, до 3, до 30, "Только
+PRO") → "Перейти на PRO" → тариф PRO активен, лимиты обновились (1/5,
+до 20, "Без ограничений", "Включено") → возврат на дашборд → кнопка
+"Добавить ещё бизнес" снова доступна (лимит снят). Подтверждено
+скриншотами на каждом шаге.
+
+### Осознанно не сделано в этом заходе
+
+Реальный платёжный шлюз (остаёмся на `MockPaymentProvider`), proration
+при смене тарифа, годовая оплата, мультивалютность, промокоды/триалы,
+реконсиляция ресурсов при даунгрейде с превышением лимита, ADMIN-эндпоинт
+ручной выдачи тарифа, `GET /subscriptions/usage` (полная разбивка usage
+по стаффу/бронированиям — `BillingScreen` показывает только число
+бизнесов, которое уже доступно через существующий `myProvidersProvider`,
+без нового эндпоинта).
+
+### Текущий статус
+Закоммичено и запушено в `test` (`43da369`), с явным подтверждением
+пользователя.

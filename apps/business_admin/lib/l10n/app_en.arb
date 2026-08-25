@@ -109,49 +109,55 @@
     }
   },
 
-  "addAnotherSalonButton": "Add another salon",
-  "@addAnotherSalonButton": {"description": "Button below the salon list to create another one."},
+  "addAnotherBusinessButton": "Add another business",
+  "@addAnotherBusinessButton": {"description": "Button below the business list to create another one."},
 
-  "addSalonDialogTitle": "Add a salon",
-  "@addSalonDialogTitle": {"description": "Dialog title for creating a salon from the dashboard's salon list."},
+  "addBusinessDialogTitle": "Add a business",
+  "@addBusinessDialogTitle": {"description": "Dialog title for creating a business from the dashboard's business list."},
 
-  "salonNameLabel": "Salon name",
-  "@salonNameLabel": {"description": "Salon name text field label — used on create and edit."},
+  "businessNameLabel": "Business name",
+  "@businessNameLabel": {"description": "Business name text field label — used on create and edit."},
+
+  "verticalBeautyLabel": "Beauty",
+  "@verticalBeautyLabel": {"description": "Vertical picker segment label when creating a provider."},
+
+  "verticalAutoLabel": "Auto",
+  "@verticalAutoLabel": {"description": "Vertical picker segment label when creating a provider."},
 
   "createButton": "Create",
   "@createButton": {"description": "Add-a-salon dialog's submit button."},
 
-  "errorSalonsLoadFailed": "Couldn't load your salons.",
-  "@errorSalonsLoadFailed": {"description": "Dashboard error state."},
+  "errorBusinessesLoadFailed": "Couldn't load your businesses.",
+  "@errorBusinessesLoadFailed": {"description": "Dashboard error state."},
 
-  "noSalonsYetTitle": "You have no salons yet",
-  "@noSalonsYetTitle": {"description": "Dashboard's zero-salons empty state title."},
+  "noBusinessesYetTitle": "You have no businesses yet",
+  "@noBusinessesYetTitle": {"description": "Dashboard's zero-businesses empty state title."},
 
-  "createSalonButton": "Create salon",
-  "@createSalonButton": {"description": "Zero-salons form's submit button."},
+  "createBusinessButton": "Create business",
+  "@createBusinessButton": {"description": "Zero-businesses form's submit button."},
 
-  "errorCreateSalonFailed": "Failed to create salon: {error}",
-  "@errorCreateSalonFailed": {
-    "description": "Zero-salons form's error state.",
+  "errorCreateBusinessFailed": "Failed to create business: {error}",
+  "@errorCreateBusinessFailed": {
+    "description": "Zero-businesses form's error state.",
     "placeholders": {
       "error": {"type": "String"}
     }
   },
 
-  "validationSalonNameRequired": "Enter a salon name",
-  "@validationSalonNameRequired": {"description": "Salon name validation error."},
+  "validationBusinessNameRequired": "Enter a business name",
+  "@validationBusinessNameRequired": {"description": "Business name validation error."},
 
-  "moderationTitle": "Salon moderation",
+  "moderationTitle": "Business moderation",
   "@moderationTitle": {"description": "Moderation screen app bar title."},
 
-  "moderationEmptyTitle": "No salons awaiting approval",
+  "moderationEmptyTitle": "No businesses awaiting approval",
   "@moderationEmptyTitle": {"description": "Moderation screen empty state title."},
 
-  "moderationEmptyMessage": "New salons will show up here once an owner creates one.",
+  "moderationEmptyMessage": "New businesses will show up here once an owner creates one.",
   "@moderationEmptyMessage": {"description": "Moderation screen empty state message."},
 
-  "errorPendingSalonsLoadFailed": "Couldn't load pending salons.",
-  "@errorPendingSalonsLoadFailed": {"description": "Moderation screen error state."},
+  "errorPendingBusinessesLoadFailed": "Couldn't load pending businesses.",
+  "@errorPendingBusinessesLoadFailed": {"description": "Moderation screen error state."},
 
   "suspendButton": "Suspend",
   "@suspendButton": {"description": "Moderation card's suspend action."},
@@ -159,21 +165,21 @@
   "approveButton": "Approve",
   "@approveButton": {"description": "Moderation card's approve action."},
 
-  "editSalonTooltip": "Edit salon",
-  "@editSalonTooltip": {"description": "Salon detail screen's AppBar edit action tooltip and dialog title."},
+  "editBusinessTooltip": "Edit business",
+  "@editBusinessTooltip": {"description": "Business detail screen's AppBar edit action tooltip and dialog title."},
 
   "latitudeOptionalLabel": "Latitude (optional)",
-  "@latitudeOptionalLabel": {"description": "Edit-salon dialog's latitude field label."},
+  "@latitudeOptionalLabel": {"description": "Edit-business dialog's latitude field label."},
 
   "longitudeOptionalLabel": "Longitude (optional)",
-  "@longitudeOptionalLabel": {"description": "Edit-salon dialog's longitude field label."},
+  "@longitudeOptionalLabel": {"description": "Edit-business dialog's longitude field label."},
 
   "validationLatLngInvalid": "Latitude/longitude must be valid numbers",
-  "@validationLatLngInvalid": {"description": "Edit-salon dialog's coordinate validation error."},
+  "@validationLatLngInvalid": {"description": "Edit-business dialog's coordinate validation error."},
 
-  "errorSaveSalonFailed": "Failed to save salon: {error}",
-  "@errorSaveSalonFailed": {
-    "description": "Edit-salon dialog's error state.",
+  "errorSaveBusinessFailed": "Failed to save business: {error}",
+  "@errorSaveBusinessFailed": {
+    "description": "Edit-business dialog's error state.",
     "placeholders": {
       "error": {"type": "String"}
     }
@@ -253,6 +259,32 @@
 
   "removeMasterTooltip": "Remove master",
   "@removeMasterTooltip": {"description": "Master row's remove icon button tooltip."},
+
+  "mechanicsSectionTitle": "Mechanics",
+  "@mechanicsSectionTitle": {"description": "Salon detail screen's mechanics section header (auto vertical)."},
+
+  "noMechanicsYet": "No mechanics yet.",
+  "@noMechanicsYet": {"description": "Mechanics section empty state including inactive ones."},
+
+  "noActiveMechanics": "No active mechanics.",
+  "@noActiveMechanics": {"description": "Mechanics section empty state, active only."},
+
+  "errorMechanicsLoadFailed": "Failed to load mechanics: {error}",
+  "@errorMechanicsLoadFailed": {
+    "description": "Mechanics section error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "removeMechanicTooltip": "Remove mechanic",
+  "@removeMechanicTooltip": {"description": "Mechanic row's remove icon button tooltip."},
+
+  "manageMechanicServicesTooltip": "Services this mechanic offers",
+  "@manageMechanicServicesTooltip": {"description": "Mechanic row's manage-services icon button tooltip and dialog title."},
+
+  "manageMechanicServicesDialogTitle": "Services this mechanic offers",
+  "@manageMechanicServicesDialogTitle": {"description": "Manage-mechanic-services dialog title (same text as the row's tooltip)."},
 
   "bookingsSectionTitle": "Bookings",
   "@bookingsSectionTitle": {"description": "Salon detail screen's bookings section header."},
@@ -442,6 +474,23 @@
     }
   },
 
+  "addMechanicDialogTitle": "Add a mechanic",
+  "@addMechanicDialogTitle": {"description": "Add-mechanic dialog title."},
+
+  "mechanicNameLabel": "Name",
+  "@mechanicNameLabel": {"description": "Add-mechanic dialog's name field label."},
+
+  "validationMechanicNameRequired": "Enter a name",
+  "@validationMechanicNameRequired": {"description": "Add-mechanic dialog's validation error."},
+
+  "errorAddMechanicFailed": "Failed to add mechanic: {error}",
+  "@errorAddMechanicFailed": {
+    "description": "Add-mechanic dialog's error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
   "addPortfolioDialogTitle": "Add a portfolio photo",
   "@addPortfolioDialogTitle": {"description": "Add-portfolio-item dialog title."},
 
@@ -473,9 +522,122 @@
   "manageServicesDialogTitle": "Services this master offers",
   "@manageServicesDialogTitle": {"description": "Manage-master-services dialog title (same text as the row's tooltip)."},
 
-  "addServiceFirstMessage": "Add a service to this salon first.",
-  "@addServiceFirstMessage": {"description": "Manage-master-services dialog's empty state when the salon has no services."},
+  "addServiceFirstMessage": "Add a service to this business first.",
+  "@addServiceFirstMessage": {"description": "Manage-master-services dialog's empty state when the business has no services."},
 
   "doneButton": "Done",
-  "@doneButton": {"description": "Manage-master-services dialog's close button."}
+  "@doneButton": {"description": "Manage-master-services dialog's close button."},
+
+  "errorProviderLimitReached": "Your plan doesn't allow another business — upgrade to add more.",
+  "@errorProviderLimitReached": {"description": "BillingException message: 402 on provider creation."},
+
+  "errorStaffLimitReached": "Your plan doesn't allow another staff member on this business — upgrade to add more.",
+  "@errorStaffLimitReached": {"description": "BillingException message: 402 on master/mechanic creation."},
+
+  "errorBookingLimitReached": "Your plan doesn't allow another booking this month — upgrade for unlimited bookings.",
+  "@errorBookingLimitReached": {"description": "BillingException message: 402 on booking creation."},
+
+  "errorFeatureRequiresUpgrade": "This feature requires the PRO plan.",
+  "@errorFeatureRequiresUpgrade": {"description": "BillingException message: 402 on recurring-schedule generation."},
+
+  "providerLimitReachedUpgradePrompt": "Your plan allows {maxProviders} business(es). Tap to upgrade.",
+  "@providerLimitReachedUpgradePrompt": {
+    "description": "Dashboard's disabled 'Add another business' notice once the plan's provider limit is reached.",
+    "placeholders": {
+      "maxProviders": {"type": "int"}
+    }
+  },
+
+  "billingSettingsRowTitle": "Subscription",
+  "@billingSettingsRowTitle": {"description": "Settings screen row leading to BillingScreen."},
+
+  "billingScreenTitle": "Subscription",
+  "@billingScreenTitle": {"description": "BillingScreen app bar title."},
+
+  "errorBillingLoadFailed": "Couldn't load your subscription.",
+  "@errorBillingLoadFailed": {"description": "BillingScreen's error state when GET /subscriptions/me fails."},
+
+  "billingPlanFree": "FREE plan",
+  "@billingPlanFree": {"description": "BillingScreen's plan name when plan == FREE."},
+
+  "billingPlanPro": "PRO plan",
+  "@billingPlanPro": {"description": "BillingScreen's plan name when plan == PRO."},
+
+  "billingStatusActive": "Active",
+  "@billingStatusActive": {"description": "BillingScreen's status badge when status == ACTIVE."},
+
+  "billingStatusPastDue": "Payment overdue",
+  "@billingStatusPastDue": {"description": "BillingScreen's status badge when status == PAST_DUE."},
+
+  "billingProPriceLabel": "Upgrade to PRO for",
+  "@billingProPriceLabel": {"description": "BillingScreen's price row, before the FactoryPriceText amount."},
+
+  "billingPerMonthSuffix": " / month",
+  "@billingPerMonthSuffix": {"description": "BillingScreen's price row, after the FactoryPriceText amount."},
+
+  "billingDowngradeScheduledNotice": "Downgrading to FREE on {date}.",
+  "@billingDowngradeScheduledNotice": {
+    "description": "BillingScreen's notice when cancelAtPeriodEnd is true.",
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+
+  "billingUsageSectionTitle": "Plan limits",
+  "@billingUsageSectionTitle": {"description": "BillingScreen's usage/limits card section header."},
+
+  "billingLimitProvidersLabel": "Businesses",
+  "@billingLimitProvidersLabel": {"description": "BillingScreen's limits row label for provider count."},
+
+  "billingUsageXOfY": "{used} / {max}",
+  "@billingUsageXOfY": {
+    "description": "BillingScreen's 'used / max' value for the provider count row.",
+    "placeholders": {
+      "used": {"type": "int"},
+      "max": {"type": "int"}
+    }
+  },
+
+  "billingLimitStaffLabel": "Staff per business",
+  "@billingLimitStaffLabel": {"description": "BillingScreen's limits row label for staff-per-provider."},
+
+  "billingLimitStaffValue": "up to {max}",
+  "@billingLimitStaffValue": {
+    "description": "BillingScreen's value for the staff-per-provider row.",
+    "placeholders": {
+      "max": {"type": "int"}
+    }
+  },
+
+  "billingLimitBookingsLabel": "Bookings per month",
+  "@billingLimitBookingsLabel": {"description": "BillingScreen's limits row label for monthly booking limit."},
+
+  "billingLimitBookingsValue": "up to {max}",
+  "@billingLimitBookingsValue": {
+    "description": "BillingScreen's value for the monthly booking limit row, when not unlimited.",
+    "placeholders": {
+      "max": {"type": "int"}
+    }
+  },
+
+  "billingLimitUnlimited": "Unlimited",
+  "@billingLimitUnlimited": {"description": "BillingScreen's value for the monthly booking limit row, when unlimited (PRO)."},
+
+  "billingLimitRecurringScheduleLabel": "Recurring schedules",
+  "@billingLimitRecurringScheduleLabel": {"description": "BillingScreen's limits row label for the recurring-schedule feature gate."},
+
+  "billingFeatureIncluded": "Included",
+  "@billingFeatureIncluded": {"description": "BillingScreen's value for a feature row when the plan includes it."},
+
+  "billingFeatureRequiresPro": "PRO only",
+  "@billingFeatureRequiresPro": {"description": "BillingScreen's value for a feature row when the plan doesn't include it."},
+
+  "billingUpgradeButtonLabel": "Upgrade to PRO",
+  "@billingUpgradeButtonLabel": {"description": "BillingScreen's upgrade button, shown on FREE."},
+
+  "billingDowngradeButtonLabel": "Downgrade to FREE",
+  "@billingDowngradeButtonLabel": {"description": "BillingScreen's downgrade button, shown on PRO."},
+
+  "errorBillingUpgradeFailed": "Couldn't upgrade — please try again.",
+  "@errorBillingUpgradeFailed": {"description": "BillingScreen's error state when the upgrade charge fails."}
 }

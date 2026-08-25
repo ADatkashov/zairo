@@ -8,8 +8,6 @@ import com.zairo.factory.platform.TestAuth.Registered;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.reviews.ReviewDtos.CreateReviewRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
-import com.zairo.factory.users.UserDtos.CreateUserRequest;
-import com.zairo.factory.users.UserRole;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -41,7 +39,9 @@ class FavoritesApiTests {
     @Test
     void favoritesAProviderThenUnfavoritesIt() {
         String runId = UUID.randomUUID().toString();
-        UUID customerId = createUser("fav-customer-" + runId + "@example.com", "Fav Customer");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "fav-customer-" + runId + "@example.com");
+        UUID customerId = customer.userId();
+        var customerAuth = new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken()));
         Registered owner = TestAuth.registerOwner(restTemplate, "fav-owner-" + runId + "@example.com");
 
         var providerRequest = new CreateProviderRequest(owner.userId(), "Favorite Test Salon " + runId, "beauty");
@@ -54,23 +54,24 @@ class FavoritesApiTests {
                 new HttpEntity<>(serviceRequest, TestAuth.authHeaders(owner.accessToken())), Map.class);
 
         // Not favorited yet.
-        ResponseEntity<Map> checkBefore = restTemplate.getForEntity(
-                "/api/v1/users/" + customerId + "/favorites/" + providerId, Map.class);
+        ResponseEntity<Map> checkBefore = restTemplate.exchange(
+                "/api/v1/users/" + customerId + "/favorites/" + providerId, HttpMethod.GET, customerAuth, Map.class);
         assertThat(checkBefore.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 
         // Add favorite — idempotent, calling twice should not error.
         for (int i = 0; i < 2; i++) {
-            ResponseEntity<Void> addResponse = restTemplate.postForEntity(
-                    "/api/v1/users/" + customerId + "/favorites/" + providerId, null, Void.class);
+            ResponseEntity<Void> addResponse = restTemplate.exchange(
+                    "/api/v1/users/" + customerId + "/favorites/" + providerId, HttpMethod.POST, customerAuth,
+                    Void.class);
             assertThat(addResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         }
 
-        ResponseEntity<Map> checkAfter = restTemplate.getForEntity(
-                "/api/v1/users/" + customerId + "/favorites/" + providerId, Map.class);
+        ResponseEntity<Map> checkAfter = restTemplate.exchange(
+                "/api/v1/users/" + customerId + "/favorites/" + providerId, HttpMethod.GET, customerAuth, Map.class);
         assertThat(checkAfter.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-        ResponseEntity<Map[]> listResponse = restTemplate.getForEntity(
-                "/api/v1/users/" + customerId + "/favorites", Map[].class);
+        ResponseEntity<Map[]> listResponse = restTemplate.exchange("/api/v1/users/" + customerId + "/favorites",
+                HttpMethod.GET, customerAuth, Map[].class);
         assertThat(listResponse.getBody()).hasSize(1);
         assertThat(listResponse.getBody()[0].get("id")).isEqualTo(providerId.toString());
         assertThat(listResponse.getBody()[0].get("services")).asList().hasSize(1);
@@ -78,20 +79,23 @@ class FavoritesApiTests {
         // Remove — idempotent, calling twice should not error.
         for (int i = 0; i < 2; i++) {
             ResponseEntity<Void> removeResponse = restTemplate.exchange(
-                    "/api/v1/users/" + customerId + "/favorites/" + providerId,
-                    org.springframework.http.HttpMethod.DELETE, null, Void.class);
+                    "/api/v1/users/" + customerId + "/favorites/" + providerId, HttpMethod.DELETE, customerAuth,
+                    Void.class);
             assertThat(removeResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         }
 
-        ResponseEntity<Map> checkFinal = restTemplate.getForEntity(
-                "/api/v1/users/" + customerId + "/favorites/" + providerId, Map.class);
+        ResponseEntity<Map> checkFinal = restTemplate.exchange(
+                "/api/v1/users/" + customerId + "/favorites/" + providerId, HttpMethod.GET, customerAuth, Map.class);
         assertThat(checkFinal.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test
     void favoritedProviderSurfacesAverageRatingAndReviewCount() {
         String runId = UUID.randomUUID().toString();
-        UUID customerId = createUser("fav-rating-customer-" + runId + "@example.com", "Fav Rating Customer");
+        Registered customer = TestAuth.registerCustomer(restTemplate,
+                "fav-rating-customer-" + runId + "@example.com");
+        UUID customerId = customer.userId();
+        var customerAuth = new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken()));
         Registered owner = TestAuth.registerOwner(restTemplate, "fav-rating-owner-" + runId + "@example.com");
 
         var providerRequest = new CreateProviderRequest(owner.userId(), "Fav Rating Salon " + runId, "beauty");
@@ -107,6 +111,7 @@ class FavoritesApiTests {
 
         Registered reviewer = TestAuth.registerCustomer(restTemplate,
                 "fav-rating-reviewer-" + runId + "@example.com");
+        var reviewerAuth = new HttpEntity<>(null, TestAuth.authHeaders(reviewer.accessToken()));
         Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
         var slotRequest = new CreateAvailabilitySlotRequest(start, start.plus(30, ChronoUnit.MINUTES));
         ResponseEntity<Map> slotResponse = restTemplate.exchange(
@@ -114,24 +119,21 @@ class FavoritesApiTests {
                 new HttpEntity<>(slotRequest, TestAuth.authHeaders(owner.accessToken())), Map.class);
         UUID slotId = UUID.fromString(slotResponse.getBody().get("id").toString());
         var bookingRequest = new CreateBookingRequest(reviewer.userId(), serviceId, slotId, new BigDecimal("15.00"));
-        Map<?, ?> booking = restTemplate.postForEntity("/api/v1/bookings", bookingRequest, Map.class).getBody();
+        Map<?, ?> booking = restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
+                new HttpEntity<>(bookingRequest, TestAuth.authHeaders(reviewer.accessToken())), Map.class).getBody();
         UUID bookingId = UUID.fromString(booking.get("id").toString());
         restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/complete", null, Map.class);
-        restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/reviews", new CreateReviewRequest(5, null),
+        restTemplate.exchange("/api/v1/bookings/" + bookingId + "/reviews", HttpMethod.POST,
+                new HttpEntity<>(new CreateReviewRequest(5, null), TestAuth.authHeaders(reviewer.accessToken())),
                 Map.class);
 
-        restTemplate.postForEntity("/api/v1/users/" + customerId + "/favorites/" + providerId, null, Void.class);
+        restTemplate.exchange("/api/v1/users/" + customerId + "/favorites/" + providerId, HttpMethod.POST,
+                customerAuth, Void.class);
 
-        ResponseEntity<Map[]> listResponse = restTemplate.getForEntity(
-                "/api/v1/users/" + customerId + "/favorites", Map[].class);
+        ResponseEntity<Map[]> listResponse = restTemplate.exchange("/api/v1/users/" + customerId + "/favorites",
+                HttpMethod.GET, customerAuth, Map[].class);
         Map favorited = listResponse.getBody()[0];
         assertThat(((Number) favorited.get("averageRating")).doubleValue()).isEqualTo(5.0);
         assertThat(((Number) favorited.get("reviewCount")).longValue()).isEqualTo(1L);
-    }
-
-    private UUID createUser(String email, String displayName) {
-        var request = new CreateUserRequest(email, "+1000000000", displayName, UserRole.CUSTOMER);
-        Map<?, ?> body = restTemplate.postForEntity("/api/v1/users", request, Map.class).getBody();
-        return UUID.fromString(body.get("id").toString());
     }
 }

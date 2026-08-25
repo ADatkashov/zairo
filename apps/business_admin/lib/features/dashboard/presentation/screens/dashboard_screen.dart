@@ -4,16 +4,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../billing/data/billing_exception.dart';
+import '../../../billing/data/models/subscription.dart';
+import '../../../billing/presentation/providers/billing_providers.dart';
+import '../../../billing/presentation/screens/billing_screen.dart';
 import '../../../salon/data/models/admin_provider.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
 import '../../../salon/presentation/screens/salon_detail_screen.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
 
-/// Shown by AuthGate once logged in. Lists the salons this owner manages
-/// (usually one, but nothing stops an owner running several) and lets them
-/// create a new one. Vertical is fixed to 'beauty' when creating — the
-/// only vertical with real admin screens (masters/portfolio) built so far;
-/// a vertical picker becomes meaningful once a second vertical exists.
+/// Shown by AuthGate once logged in. Lists the salons/workshops this owner
+/// manages (usually one, but nothing stops an owner running several) and
+/// lets them create a new one, picking which vertical (beauty/auto) it
+/// belongs to — Core's Provider.vertical is opaque free text, but these are
+/// the only two verticals with real admin screens built so far.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -29,6 +33,7 @@ class DashboardScreen extends ConsumerWidget {
     }
 
     final providersAsync = ref.watch(myProvidersProvider(user.id));
+    final subscriptionAsync = ref.watch(mySubscriptionProvider);
 
     return Scaffold(
       backgroundColor: colors.bg,
@@ -60,9 +65,14 @@ class DashboardScreen extends ConsumerWidget {
             separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
             itemBuilder: (context, index) {
               if (index == providers.length) {
+                final subscription = subscriptionAsync.value;
+                final atLimit = subscription != null && providers.length >= subscription.limits.maxProviders;
+                if (atLimit) {
+                  return _ProviderLimitReachedNotice(subscription: subscription);
+                }
                 return OutlinedButton.icon(
                   icon: const Icon(Icons.add),
-                  label: Text(l10n.addAnotherSalonButton),
+                  label: Text(l10n.addAnotherBusinessButton),
                   onPressed: () => _openCreateSalonDialog(context, ref, user.id),
                 );
               }
@@ -81,7 +91,7 @@ class DashboardScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             child: FactoryErrorState(
-              message: l10n.errorSalonsLoadFailed,
+              message: l10n.errorBusinessesLoadFailed,
               onRetry: () => ref.invalidate(myProvidersProvider(user.id)),
             ),
           ),
@@ -93,35 +103,110 @@ class DashboardScreen extends ConsumerWidget {
   Future<void> _openCreateSalonDialog(BuildContext context, WidgetRef ref, String ownerUserId) async {
     final l10n = AppLocalizations.of(context)!;
     final nameController = TextEditingController();
+    String vertical = 'beauty';
     final created = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(l10n.addSalonDialogTitle),
-        content: TextField(
-          controller: nameController,
-          decoration: InputDecoration(labelText: l10n.salonNameLabel),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancelButton)),
-          FilledButton(
-            onPressed: () async {
-              if (nameController.text.trim().isEmpty) return;
-              await ref.read(salonAdminApiProvider).createProvider(
-                    ownerUserId: ownerUserId,
-                    name: nameController.text.trim(),
-                    vertical: 'beauty',
-                  );
-              if (context.mounted) Navigator.of(context).pop(true);
-            },
-            child: Text(l10n.createButton),
+      builder: (_) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(l10n.addBusinessDialogTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(labelText: l10n.businessNameLabel),
+                autofocus: true,
+              ),
+              const SizedBox(height: FactorySpacing.space3),
+              _VerticalPicker(
+                value: vertical,
+                onChanged: (v) => setDialogState(() => vertical = v),
+              ),
+            ],
           ),
-        ],
+          actions: [
+            TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancelButton)),
+            FilledButton(
+              onPressed: () async {
+                if (nameController.text.trim().isEmpty) return;
+                try {
+                  await ref.read(salonAdminApiProvider).createProvider(
+                        ownerUserId: ownerUserId,
+                        name: nameController.text.trim(),
+                        vertical: vertical,
+                      );
+                  if (context.mounted) Navigator.of(context).pop(true);
+                } on BillingException catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
+                  }
+                }
+              },
+              child: Text(l10n.createButton),
+            ),
+          ],
+        ),
       ),
     );
     if (created == true) {
       ref.invalidate(myProvidersProvider(ownerUserId));
     }
+  }
+}
+
+class _VerticalPicker extends StatelessWidget {
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  const _VerticalPicker({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return SegmentedButton<String>(
+      segments: [
+        ButtonSegment(value: 'beauty', label: Text(l10n.verticalBeautyLabel)),
+        ButtonSegment(value: 'auto', label: Text(l10n.verticalAutoLabel)),
+      ],
+      selected: {value},
+      onSelectionChanged: (selection) => onChanged(selection.first),
+    );
+  }
+}
+
+class _ProviderLimitReachedNotice extends StatelessWidget {
+  const _ProviderLimitReachedNotice({required this.subscription});
+
+  final Subscription subscription;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        OutlinedButton.icon(
+          icon: const Icon(Icons.add),
+          label: Text(l10n.addAnotherBusinessButton),
+          onPressed: null,
+        ),
+        const SizedBox(height: FactorySpacing.space2),
+        Center(
+          child: TextButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const BillingScreen()),
+            ),
+            child: Text(
+              l10n.providerLimitReachedUpgradePrompt(subscription.limits.maxProviders),
+              style: TextStyle(color: colors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -195,6 +280,7 @@ class _CreateSalonForm extends ConsumerStatefulWidget {
 
 class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
   final _nameController = TextEditingController();
+  String _vertical = 'beauty';
   bool _isSubmitting = false;
   String? _error;
 
@@ -223,12 +309,17 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
               child: Icon(Icons.storefront_outlined, size: 22, color: colors.textTertiary),
             ),
             const SizedBox(height: FactorySpacing.space4),
-            Text(l10n.noSalonsYetTitle, style: textTheme.titleSmall),
+            Text(l10n.noBusinessesYetTitle, style: textTheme.titleSmall),
             const SizedBox(height: FactorySpacing.space4),
             TextField(
               controller: _nameController,
               enabled: !_isSubmitting,
-              decoration: InputDecoration(labelText: l10n.salonNameLabel),
+              decoration: InputDecoration(labelText: l10n.businessNameLabel),
+            ),
+            const SizedBox(height: FactorySpacing.space3),
+            _VerticalPicker(
+              value: _vertical,
+              onChanged: _isSubmitting ? (_) {} : (v) => setState(() => _vertical = v),
             ),
             const SizedBox(height: FactorySpacing.space4),
             if (_error != null)
@@ -244,7 +335,7 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : Text(l10n.createSalonButton),
+                  : Text(l10n.createBusinessButton),
             ),
           ],
         ),
@@ -255,7 +346,7 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context)!;
     if (_nameController.text.trim().isEmpty) {
-      setState(() => _error = l10n.validationSalonNameRequired);
+      setState(() => _error = l10n.validationBusinessNameRequired);
       return;
     }
     setState(() {
@@ -266,12 +357,12 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
       await ref.read(salonAdminApiProvider).createProvider(
             ownerUserId: widget.ownerUserId,
             name: _nameController.text.trim(),
-            vertical: 'beauty',
+            vertical: _vertical,
           );
       ref.invalidate(myProvidersProvider(widget.ownerUserId));
     } catch (e) {
       setState(() {
-        _error = l10n.errorCreateSalonFailed(e.toString());
+        _error = e is BillingException ? e.localizedMessage(l10n) : l10n.errorCreateBusinessFailed(e.toString());
         _isSubmitting = false;
       });
     }

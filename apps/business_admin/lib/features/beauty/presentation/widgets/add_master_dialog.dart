@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/app_localizations.dart';
+import '../../../billing/data/billing_exception.dart';
 import '../providers/beauty_admin_providers.dart';
 
 /// Returns true via Navigator.pop when a master was created.
@@ -91,7 +92,7 @@ class _AddMasterDialogState extends ConsumerState<AddMasterDialog> {
       Navigator.of(context).pop(true);
     } catch (e) {
       setState(() {
-        _error = l10n.errorAddMasterFailed(e.toString());
+        _error = e is BillingException ? e.localizedMessage(l10n) : l10n.errorAddMasterFailed(e.toString());
         _isSubmitting = false;
       });
     }

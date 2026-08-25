@@ -20,7 +20,10 @@ include(
     "search",
     "favorites",
     "vertical-beauty",
+    "vertical-auto",
     "storage",
     "country",
     "money",
+    "payment-provider",
+    "subscriptions",
 )

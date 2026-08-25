@@ -70,7 +70,7 @@ void main() {
 
     expect(fakeApi.lastStatusCall, {'providerId': 'p1', 'status': 'ACTIVE'});
     // No longer PENDING, so it drops out of the moderation queue.
-    expect(find.text('No salons awaiting approval'), findsOneWidget);
+    expect(find.text('No businesses awaiting approval'), findsOneWidget);
   });
 
   testWidgets('shows the empty state when nothing is pending', (tester) async {
@@ -87,6 +87,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('No salons awaiting approval'), findsOneWidget);
+    expect(find.text('No businesses awaiting approval'), findsOneWidget);
   });
 }

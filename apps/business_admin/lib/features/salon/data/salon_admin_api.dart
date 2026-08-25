@@ -1,5 +1,7 @@
 import 'package:core_network/core_network.dart';
+import 'package:dio/dio.dart';
 
+import '../../billing/data/billing_exception.dart';
 import 'models/admin_booking.dart';
 import 'models/admin_provider.dart';
 import 'models/admin_service.dart';
@@ -27,11 +29,18 @@ class SalonAdminApi {
     required String name,
     required String vertical,
   }) async {
-    final response = await _dioClient.post(
-      '/providers',
-      data: {'ownerUserId': ownerUserId, 'name': name, 'vertical': vertical},
-    );
-    return AdminProvider.fromJson(response.data as Map<String, dynamic>);
+    try {
+      final response = await _dioClient.post(
+        '/providers',
+        data: {'ownerUserId': ownerUserId, 'name': name, 'vertical': vertical},
+      );
+      return AdminProvider.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 402) {
+        throw const BillingException(SubscriptionErrorKey.providerLimitReached);
+      }
+      rethrow;
+    }
   }
 
   /// Admin-only listing, used by the moderation screen — e.g.
@@ -171,21 +180,28 @@ class SalonAdminApi {
     required DateTime rangeEnd,
     List<DateTime> holidays = const [],
   }) async {
-    final response = await _dioClient.post(
-      '/providers/$providerId/availability-slots/recurring',
-      data: {
-        'daysOfWeek': daysOfWeek.map(_dayOfWeekName).toList(),
-        'startTime': _formatTime(startHour, startMinute),
-        'endTime': _formatTime(endHour, endMinute),
-        'slotDurationMinutes': slotDurationMinutes,
-        'breakMinutes': breakMinutes,
-        'rangeStart': _formatDate(rangeStart),
-        'rangeEnd': _formatDate(rangeEnd),
-        'holidays': holidays.map(_formatDate).toList(),
-        'zoneId': _localZoneOffset(),
-      },
-    );
-    return RecurringScheduleResult.fromJson(response.data as Map<String, dynamic>);
+    try {
+      final response = await _dioClient.post(
+        '/providers/$providerId/availability-slots/recurring',
+        data: {
+          'daysOfWeek': daysOfWeek.map(_dayOfWeekName).toList(),
+          'startTime': _formatTime(startHour, startMinute),
+          'endTime': _formatTime(endHour, endMinute),
+          'slotDurationMinutes': slotDurationMinutes,
+          'breakMinutes': breakMinutes,
+          'rangeStart': _formatDate(rangeStart),
+          'rangeEnd': _formatDate(rangeEnd),
+          'holidays': holidays.map(_formatDate).toList(),
+          'zoneId': _localZoneOffset(),
+        },
+      );
+      return RecurringScheduleResult.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 402) {
+        throw const BillingException(SubscriptionErrorKey.featureRequiresUpgrade);
+      }
+      rethrow;
+    }
   }
 
   static const _dayOfWeekNames = [

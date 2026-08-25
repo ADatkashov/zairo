@@ -4,6 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/formatting/month_day_time.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../auto/data/models/admin_mechanic.dart';
+import '../../../auto/presentation/providers/auto_admin_providers.dart';
+import '../../../auto/presentation/widgets/add_mechanic_dialog.dart';
+import '../../../auto/presentation/widgets/manage_mechanic_services_dialog.dart';
 import '../../../beauty/data/models/admin_master.dart';
 import '../../../beauty/presentation/providers/beauty_admin_providers.dart';
 import '../../../beauty/presentation/widgets/add_master_dialog.dart';
@@ -41,7 +45,7 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined),
-            tooltip: l10n.editSalonTooltip,
+            tooltip: l10n.editBusinessTooltip,
             onPressed: () async {
               final updated = await showDialog<AdminProvider>(
                 context: context,
@@ -77,6 +81,10 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
           if (_provider.vertical == 'beauty') ...[
             const SizedBox(height: FactorySpacing.space6),
             _MastersSection(providerId: _provider.id),
+          ],
+          if (_provider.vertical == 'auto') ...[
+            const SizedBox(height: FactorySpacing.space6),
+            _MechanicsSection(providerId: _provider.id),
           ],
           const SizedBox(height: FactorySpacing.space6),
           _BookingsSection(providerId: _provider.id),
@@ -132,14 +140,14 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: Text(l10n.editSalonTooltip),
+      title: Text(l10n.editBusinessTooltip),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
             controller: _nameController,
             enabled: !_isSubmitting,
-            decoration: InputDecoration(labelText: l10n.salonNameLabel),
+            decoration: InputDecoration(labelText: l10n.businessNameLabel),
           ),
           TextField(
             controller: _latController,
@@ -179,7 +187,7 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
     final l10n = AppLocalizations.of(context)!;
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      setState(() => _error = l10n.validationSalonNameRequired);
+      setState(() => _error = l10n.validationBusinessNameRequired);
       return;
     }
     final latText = _latController.text.trim();
@@ -205,7 +213,7 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
       Navigator.of(context).pop(updated);
     } catch (e) {
       setState(() {
-        _error = l10n.errorSaveSalonFailed(e.toString());
+        _error = l10n.errorSaveBusinessFailed(e.toString());
         _isSubmitting = false;
       });
     }
@@ -631,6 +639,176 @@ class _MasterAdminRow extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.person_remove_outlined),
                   tooltip: l10n.removeMasterTooltip,
+                  onPressed: onRemove,
+                ),
+              ],
+            )
+          else
+            TextButton(onPressed: onReactivate, child: Text(l10n.reactivateButton)),
+        ],
+      ),
+    );
+  }
+}
+
+class _MechanicsSection extends ConsumerWidget {
+  final String providerId;
+
+  const _MechanicsSection({required this.providerId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final showInactive = ref.watch(showInactiveMechanicsProvider(providerId));
+    final mechanicsAsync = ref.watch(adminMechanicsProvider((providerId, showInactive)));
+    void refresh() => ref.invalidate(adminMechanicsProvider((providerId, showInactive)));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(
+          title: l10n.mechanicsSectionTitle,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextButton(
+                onPressed: () =>
+                    ref.read(showInactiveMechanicsProvider(providerId).notifier).state = !showInactive,
+                child: Text(showInactive ? l10n.hideRemovedButton : l10n.showRemovedButton),
+              ),
+              TextButton.icon(
+                icon: const Icon(Icons.add),
+                label: Text(l10n.addButton),
+                onPressed: () async {
+                  final added = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => AddMechanicDialog(providerId: providerId),
+                  );
+                  if (added == true) refresh();
+                },
+              ),
+            ],
+          ),
+        ),
+        mechanicsAsync.when(
+          data: (mechanics) {
+            if (mechanics.isEmpty) {
+              return Text(
+                showInactive ? l10n.noMechanicsYet : l10n.noActiveMechanics,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+              );
+            }
+            return Column(
+              children: mechanics
+                  .map((m) => Padding(
+                        padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
+                        child: _MechanicAdminRow(
+                          mechanic: m,
+                          onManageServices: () => showDialog(
+                            context: context,
+                            builder: (_) => ManageMechanicServicesDialog(providerId: providerId, mechanicId: m.id),
+                          ),
+                          onRemove: () async {
+                            await ref.read(autoAdminApiProvider).deactivateMechanic(m.id);
+                            refresh();
+                          },
+                          onReactivate: () async {
+                            await ref.read(autoAdminApiProvider).reactivateMechanic(m.id);
+                            refresh();
+                          },
+                        ),
+                      ))
+                  .toList(),
+            );
+          },
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
+            child: LinearProgressIndicator(),
+          ),
+          error: (error, stackTrace) => Text(l10n.errorMechanicsLoadFailed(error.toString())),
+        ),
+      ],
+    );
+  }
+}
+
+class _MechanicAdminRow extends StatelessWidget {
+  const _MechanicAdminRow({
+    required this.mechanic,
+    required this.onManageServices,
+    required this.onRemove,
+    required this.onReactivate,
+  });
+
+  final AdminMechanic mechanic;
+  final VoidCallback onManageServices;
+  final VoidCallback onRemove;
+  final VoidCallback onReactivate;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.all(FactorySpacing.space3),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: FactoryRadius.mdRadius,
+        border: Border.all(color: colors.border),
+      ),
+      child: Row(
+        children: [
+          FactoryAvatar(
+            initials: _initialsFor(mechanic.displayName),
+            image: mechanic.photoUrl != null ? NetworkImage(mechanic.photoUrl!) : null,
+          ),
+          const SizedBox(width: FactorySpacing.space3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        mechanic.displayName,
+                        style:
+                            textTheme.titleSmall?.copyWith(color: mechanic.active ? colors.text : colors.textTertiary),
+                      ),
+                    ),
+                    if (!mechanic.active) ...[
+                      const SizedBox(width: FactorySpacing.space2),
+                      FactoryBadge(label: l10n.removedBadge),
+                    ],
+                  ],
+                ),
+                if (mechanic.bio != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    mechanic.bio!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (mechanic.active)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.design_services_outlined),
+                  tooltip: l10n.manageMechanicServicesTooltip,
+                  onPressed: onManageServices,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.person_remove_outlined),
+                  tooltip: l10n.removeMechanicTooltip,
                   onPressed: onRemove,
                 ),
               ],

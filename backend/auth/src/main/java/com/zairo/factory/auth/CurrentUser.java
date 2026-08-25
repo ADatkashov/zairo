@@ -11,8 +11,9 @@ import org.springframework.web.server.ResponseStatusException;
  * {@link JwtAuthFilter} already populated on the request, without other
  * modules needing to know the attribute name or touch JWT validation
  * themselves. Bounded-context modules that need to enforce "only the owner
- * can do this" (see e.g. services/booking/vertical-beauty's update/delete
- * endpoints) depend on this module for exactly this one class.
+ * can do this" (see e.g. services/booking/vertical-beauty/vertical-auto's
+ * update/delete endpoints) depend on this module for exactly this one
+ * class.
  */
 public final class CurrentUser {
 

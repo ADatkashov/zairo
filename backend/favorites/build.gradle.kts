@@ -1,6 +1,7 @@
 description = "Saved/favorited providers — a user's shortlist, shown as full provider cards."
 
 dependencies {
+    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.38")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
 
@@ -17,4 +18,9 @@ dependencies {
     // Only for ReviewSummaryService's batched rating aggregate — same
     // reasoning as search/build.gradle.kts.
     implementation(project(":reviews"))
+
+    // Ownership check (caller must be the userId in the path) needs auth's
+    // real identity (CurrentUser) — same reasoning as providers/services/
+    // booking's own write endpoints.
+    implementation(project(":auth"))
 }
