@@ -12,8 +12,9 @@ import 'factory_rating_label.dart';
 /// left — a search-results list).
 enum FactoryProviderCardLayout { vertical, horizontal }
 
-/// The one card every vertical renders a provider through — a salon today,
-/// an auto workshop or dental clinic tomorrow. Named `FactoryProviderCard`
+/// The one card every vertical renders a provider through — a salon, an
+/// auto workshop, or (in some future vertical) a dental clinic. Named
+/// `FactoryProviderCard`
 /// (the `Factory` prefix every other widget in this package carries), not
 /// `SalonCard` or `BeautyProviderCard`: nothing about its API mentions
 /// beauty. It doesn't know how to load an image either — [image] is

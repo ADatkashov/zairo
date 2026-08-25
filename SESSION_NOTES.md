@@ -4270,6 +4270,35 @@ Phase 9)", что формально уже наступило, но перес�
 зелёный. Точечных тестов на сам текст перевода нет.
 
 ### Текущий статус
-Изменения готовы (`ProviderOwnership.java`, `CurrentUser.java`,
-`OpenApiConfig.java`, `translations_ru.json`, `translations_kk.json`),
-ждут явного подтверждения на коммит.
+Закоммичено и запушено в `test` (`4cd3243`), с явным подтверждением
+пользователя.
+
+## Проверка функциональной парности Beauty vs Auto (2026-08-25)
+
+По просьбе пользователя переключился с класса "устаревший текст" на
+класс "функциональные пробелы": через агента-форк сравнил Beauty и Auto
+по всей глубине — backend-эндпоинты (`MasterController` vs
+`MechanicController`), Flutter UI обоих приложений, тестовое покрытие,
+discovery/search, moderation.
+
+**Результат**: почти всё симметрично и полно. `AutoApiTests.java` (6
+тестов) даже полнее, чем `BeautyApiTests.java` (4 теста) — недостатка
+покрытия нет. Две асимметрии — обе осознанные, не пробелы: portfolio
+(фото до/после) только у Beauty — прямо описано как сознательное решение
+в `docs/factory-blueprint.md` §5 ("не запрашивалось для auto, extraction
+в Core не понадобился"); Vehicle только у Auto — корректно, машина
+принадлежит пользователю, а не провайдеру, у Beauty такого понятия нет и
+не должно быть.
+
+**Единственная реальная находка**: doc-комментарий
+`FactoryProviderCard` в `packages/core_ui/lib/src/widgets/provider_card.dart`
+всё ещё гласил "a salon today, an auto workshop or dental clinic
+tomorrow" — то же семейство находок, что и в README/Swagger, просто
+пропущенное в первом проходе (искали по коду виджетов, а не только по
+markdown/comments в backend). Поправлено на "a salon, an auto workshop,
+or (in some future vertical) a dental clinic" — без ложного "tomorrow"
+про уже реализованный Auto.
+
+### Текущий статус
+Изменение готово (`provider_card.dart`), ждёт явного подтверждения на
+коммит.
