@@ -404,7 +404,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Tooltip 'Edit', not the icon, to disambiguate from the AppBar's
-    // 'Edit salon' action which uses the same Icons.edit_outlined.
+    // 'Edit business' action which uses the same Icons.edit_outlined.
     await tester.tap(find.byTooltip('Edit'));
     await tester.pumpAndSettle();
 
@@ -528,10 +528,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Edit salon'));
+    await tester.tap(find.byTooltip('Edit business'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.widgetWithText(TextField, 'Salon name'), 'Renamed Salon');
+    await tester.enterText(find.widgetWithText(TextField, 'Business name'), 'Renamed Salon');
     await tester.enterText(find.widgetWithText(TextField, 'Latitude (optional)'), '43.25');
     await tester.enterText(find.widgetWithText(TextField, 'Longitude (optional)'), '76.90');
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));

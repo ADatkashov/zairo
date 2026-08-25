@@ -19,8 +19,9 @@ public final class ProviderDtos {
     public record CreateProviderRequest(
             @NotNull @Schema(example = "550e8400-e29b-41d4-a716-446655440000") UUID ownerUserId,
             @NotBlank @Size(max = 255) @Schema(example = "Aigerim Beauty Studio") String name,
-            @NotBlank @Size(max = 50) @Schema(description = "Free-form today, not an enum — \"beauty\" is the "
-                    + "only vertical with real functionality built on top of it so far.", example = "beauty")
+            @NotBlank @Size(max = 50) @Schema(description = "Free-form today, not an enum — \"beauty\" and "
+                    + "\"auto\" are the two verticals with real functionality built on top of it so far.",
+                    example = "beauty")
             String vertical,
             @Schema(example = "43.238293") Double latitude,
             @Schema(example = "76.945465") Double longitude) {

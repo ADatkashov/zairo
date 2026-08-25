@@ -62,7 +62,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Salon moderation'), findsOneWidget);
+    expect(find.text('Business moderation'), findsOneWidget);
     expect(find.text('Hi, Test User'), findsNothing);
   });
 
@@ -85,6 +85,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Hi, Test User'), findsOneWidget);
-    expect(find.text('Salon moderation'), findsNothing);
+    expect(find.text('Business moderation'), findsNothing);
   });
 }

@@ -62,7 +62,7 @@ class DashboardScreen extends ConsumerWidget {
               if (index == providers.length) {
                 return OutlinedButton.icon(
                   icon: const Icon(Icons.add),
-                  label: Text(l10n.addAnotherSalonButton),
+                  label: Text(l10n.addAnotherBusinessButton),
                   onPressed: () => _openCreateSalonDialog(context, ref, user.id),
                 );
               }
@@ -81,7 +81,7 @@ class DashboardScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             child: FactoryErrorState(
-              message: l10n.errorSalonsLoadFailed,
+              message: l10n.errorBusinessesLoadFailed,
               onRetry: () => ref.invalidate(myProvidersProvider(user.id)),
             ),
           ),
@@ -98,13 +98,13 @@ class DashboardScreen extends ConsumerWidget {
       context: context,
       builder: (_) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: Text(l10n.addSalonDialogTitle),
+          title: Text(l10n.addBusinessDialogTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: nameController,
-                decoration: InputDecoration(labelText: l10n.salonNameLabel),
+                decoration: InputDecoration(labelText: l10n.businessNameLabel),
                 autofocus: true,
               ),
               const SizedBox(height: FactorySpacing.space3),
@@ -257,12 +257,12 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
               child: Icon(Icons.storefront_outlined, size: 22, color: colors.textTertiary),
             ),
             const SizedBox(height: FactorySpacing.space4),
-            Text(l10n.noSalonsYetTitle, style: textTheme.titleSmall),
+            Text(l10n.noBusinessesYetTitle, style: textTheme.titleSmall),
             const SizedBox(height: FactorySpacing.space4),
             TextField(
               controller: _nameController,
               enabled: !_isSubmitting,
-              decoration: InputDecoration(labelText: l10n.salonNameLabel),
+              decoration: InputDecoration(labelText: l10n.businessNameLabel),
             ),
             const SizedBox(height: FactorySpacing.space3),
             _VerticalPicker(
@@ -283,7 +283,7 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : Text(l10n.createSalonButton),
+                  : Text(l10n.createBusinessButton),
             ),
           ],
         ),
@@ -294,7 +294,7 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context)!;
     if (_nameController.text.trim().isEmpty) {
-      setState(() => _error = l10n.validationSalonNameRequired);
+      setState(() => _error = l10n.validationBusinessNameRequired);
       return;
     }
     setState(() {
@@ -310,7 +310,7 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
       ref.invalidate(myProvidersProvider(widget.ownerUserId));
     } catch (e) {
       setState(() {
-        _error = l10n.errorCreateSalonFailed(e.toString());
+        _error = l10n.errorCreateBusinessFailed(e.toString());
         _isSubmitting = false;
       });
     }

@@ -45,7 +45,7 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined),
-            tooltip: l10n.editSalonTooltip,
+            tooltip: l10n.editBusinessTooltip,
             onPressed: () async {
               final updated = await showDialog<AdminProvider>(
                 context: context,
@@ -140,14 +140,14 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: Text(l10n.editSalonTooltip),
+      title: Text(l10n.editBusinessTooltip),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
             controller: _nameController,
             enabled: !_isSubmitting,
-            decoration: InputDecoration(labelText: l10n.salonNameLabel),
+            decoration: InputDecoration(labelText: l10n.businessNameLabel),
           ),
           TextField(
             controller: _latController,
@@ -187,7 +187,7 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
     final l10n = AppLocalizations.of(context)!;
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      setState(() => _error = l10n.validationSalonNameRequired);
+      setState(() => _error = l10n.validationBusinessNameRequired);
       return;
     }
     final latText = _latController.text.trim();
@@ -213,7 +213,7 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
       Navigator.of(context).pop(updated);
     } catch (e) {
       setState(() {
-        _error = l10n.errorSaveSalonFailed(e.toString());
+        _error = l10n.errorSaveBusinessFailed(e.toString());
         _isSubmitting = false;
       });
     }

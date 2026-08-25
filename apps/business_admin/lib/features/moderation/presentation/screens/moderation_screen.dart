@@ -78,7 +78,7 @@ class ModerationScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             child: FactoryErrorState(
-              message: l10n.errorPendingSalonsLoadFailed,
+              message: l10n.errorPendingBusinessesLoadFailed,
               onRetry: () => ref.invalidate(pendingProvidersProvider),
             ),
           ),

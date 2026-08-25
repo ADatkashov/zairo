@@ -83,10 +83,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('You have no salons yet'), findsOneWidget);
+    expect(find.text('You have no businesses yet'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), 'Glow Salon');
-    await tester.tap(find.widgetWithText(FilledButton, 'Create salon'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Create business'));
     await tester.pumpAndSettle();
 
     expect(fakeApi.lastCreateCall, {'ownerUserId': 'owner-1', 'name': 'Glow Salon', 'vertical': 'beauty'});
