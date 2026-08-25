@@ -73,12 +73,15 @@ class _FakeBillingApi extends BillingApi {
         // PRO-shaped limits so these dashboard tests (about the create-salon
         // flow itself, not plan gating) never hit a disabled/limit-reached
         // UI — see SubscriptionApiTests (backend) for the FREE-limit tests.
-        limits: const PlanLimits(
-          maxProviders: 5,
-          maxStaffPerProvider: 20,
-          maxBookingsPerMonth: 2147483647,
-          recurringScheduleAllowed: true,
-        ),
+        limits: _plan == 'FREE'
+            ? const PlanLimits(maxProviders: 1, maxStaffPerProvider: 3, maxBookingsPerMonth: 30,
+                recurringScheduleAllowed: false)
+            : const PlanLimits(
+                maxProviders: 5,
+                maxStaffPerProvider: 20,
+                maxBookingsPerMonth: 2147483647,
+                recurringScheduleAllowed: true,
+              ),
         currentPeriodStart: DateTime(2026, 1, 1),
         currentPeriodEnd: DateTime(2026, 2, 1),
         cancelAtPeriodEnd: false,
@@ -152,5 +155,40 @@ void main() {
 
     expect(find.text('Beauty'), findsOneWidget);
     expect(find.text('Active'), findsOneWidget);
+  });
+
+  testWidgets('shows a disabled upgrade notice instead of "Add another business" once the FREE limit is reached',
+      (tester) async {
+    final fakeApi = _FakeSalonAdminApi([
+      const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE'),
+    ]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(fakeApi),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+          billingApiProvider.overrideWithValue(_FakeBillingApi('FREE')),
+          authControllerProvider.overrideWith(_LoggedInOwnerController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const DashboardScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Your plan allows 1 business(es). Tap to upgrade.'), findsOneWidget);
+    final disabledButton = tester.widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Add another business'));
+    expect(disabledButton.onPressed, isNull);
+
+    await tester.tap(find.text('Your plan allows 1 business(es). Tap to upgrade.'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Subscription'), findsOneWidget);
+    expect(find.text('FREE plan'), findsOneWidget);
   });
 }

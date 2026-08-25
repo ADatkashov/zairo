@@ -61,5 +61,30 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Balayage look'), findsOneWidget);
+    // The whole grid tile is a single accessible tap target (Semantics
+    // button: true) — a screen reader should announce the caption as the
+    // action's label, not just describe the bare image inside it.
+    expect(find.bySemanticsLabel('Balayage look'), findsOneWidget);
+  });
+
+  testWidgets('gives an uncaptioned portfolio photo a generic accessibility label', (tester) async {
+    final fakeApi = _FakeBeautyApi(const [
+      PortfolioItem(id: 'item-1', masterId: 'master-1', imageUrl: 'https://example.com/photo.jpg'),
+    ]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [beautyApiProvider.overrideWithValue(fakeApi)],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const MasterPortfolioScreen(masterId: 'master-1', masterName: 'Jamie'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsLabel('Portfolio photo'), findsOneWidget);
   });
 }

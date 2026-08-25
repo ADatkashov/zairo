@@ -4506,4 +4506,74 @@ PRO") → "Перейти на PRO" → тариф PRO активен, лими�
 
 ### Текущий статус
 Закоммичено и запушено в `test` (`43da369`), с явным подтверждением
+пользователя. Влито в `master` через PR #2 (`0350240`) — см. следующую
+запись.
+
+## Merge test → master через PR #2 (2026-08-26)
+
+Пользователь явно попросил смержить `test` в `master`. `gh` CLI на этой
+машине не был авторизован (найден в `copilot-desktop-gh-2.96.0`,
+установлен для другого инструмента) — прошли `gh auth login --web`
+(код устройства, пользователь подтвердил на телефоне), затем создан PR
+#2 (test → master, полное summary всех изменений с прошлого мержа) и
+замержен merge-commit'ом (как и PR #1) — `0350240`. Локальная `master`
+подтянута fast-forward.
+
+## Тест-покрытие upsell-виджета на дашборде (2026-08-26)
+
+Продолжение поиска пробелов после мержа. Нашёл: `_ProviderLimitReachedNotice`
+(disabled-кнопка + текст со ссылкой на апгрейд, добавлен в фиче
+Subscription/Billing) не был покрыт собственным тестом — только
+backend-тестом лимита (`SubscriptionApiTests`) и живой проверкой в
+Chrome, без Flutter widget-теста самого UI. Добавлен тест в
+`dashboard_screen_test.dart`: провайдер на лимите FREE (1/1) → кнопка
+"Add another business" видна, но disabled (`onPressed == null`), рядом
+текст "Your plan allows 1 business(es). Tap to upgrade." → тап по нему
+открывает `BillingScreen` с корректным FREE-планом. По ходу поймал и
+поправил свою же ошибку в первой версии теста (утверждал одновременно
+`findsNothing` и наличие того же текста — виджет не прячет кнопку,
+только дизейблит).
+
+`flutter analyze` — чисто, `flutter test` — все 26 (было 25) зелёные.
+
+### Текущий статус
+Закоммичено и запушено в `test` (`357c3c5`), с явным подтверждением
+пользователя.
+
+## Accessibility: незалейбленная сетка портфолио в user_app (2026-08-26)
+
+Продолжение поиска пробелов после последнего accessibility-прохода
+пользователя в master (`c91ccfd`, ограничен favorites/rating). Проверил
+весь `user_app` на тот же класс проблем: все `IconButton` уже с
+`tooltip` (закрыто полностью), но нашёл один пропущенный `GestureDetector`
+— плитка сетки портфолио мастера (`master_portfolio_screen.dart`) без
+`Semantics`-обёртки вообще, в отличие от аналогичных мест в `core_ui`
+(`provider_card.dart`, `factory_chip.dart`), которые её уже имеют.
+
+Добавил `Semantics(button: true, container: true, excludeSemantics: true,
+label: item.caption ?? l10n.portfolioPhotoSemanticLabel, ...)`. По ходу
+поймал собственную ошибку: сначала поставил только `container: true` (по
+образцу `FactoryProviderCard`'s favorite-button фикса) — тест на
+caption-плитку падал, `bySemanticsLabel('Balayage look')` не находил
+узел. Оказалось, `container: true` защищает только от слияния **вверх**
+(в семантику родителя), а не от слияния **дочерних** узлов внутрь себя —
+вложенный `Text(caption)` всё равно сливался с моим `label`, дублируя
+подпись. `FactoryProviderCard`'s фикс не столкнулся с этим, потому что
+его единственный потомок — голая `Icon` без собственной семантики.
+Добавил `excludeSemantics: true`, чтобы скрыть авто-семантику
+`Image`/`Text` и оставить только явный label — тест прошёл.
+
+Новый l10n-ключ `portfolioPhotoSemanticLabel` ("Portfolio photo"/"Фото
+из портфолио"/"Портфолио фотосы") — для плиток без caption.
+
+**Тесты**: 2 новых assertion'а/тест в `master_portfolio_screen_test.dart`
+(`bySemanticsLabel` на captioned- и uncaptioned-плитках). Живая проверка
+в Chrome не делалась — семантика не видна визуально, механизм уже
+напрямую проверен через дерево семантики в тесте (тот же подход, что
+использовался для исходного accessibility-прохода). `flutter analyze` —
+чисто (5 pre-existing info-заметок в несвязанном файле), `flutter test`
+— все 58 зелёные.
+
+### Текущий статус
+Закоммичено и запушено в `test` (`7f5a5b3`), с явным подтверждением
 пользователя.

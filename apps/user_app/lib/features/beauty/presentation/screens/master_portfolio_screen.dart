@@ -40,43 +40,55 @@ class MasterPortfolioScreen extends ConsumerWidget {
             itemCount: items.length,
             itemBuilder: (context, index) {
               final item = items[index];
-              return GestureDetector(
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => PortfolioFullscreenViewer(items: items, initialIndex: index),
-                    fullscreenDialog: true,
+              return Semantics(
+                button: true,
+                container: true,
+                // excludeSemantics: true hides the descendant caption
+                // Text's own auto-generated semantics node — without it,
+                // that node merges into this one alongside the explicit
+                // label below, so a screen reader would announce the
+                // caption twice (once as this tile's label, once as the
+                // merged-in Text child) instead of once.
+                excludeSemantics: true,
+                label: item.caption ?? l10n.portfolioPhotoSemanticLabel,
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => PortfolioFullscreenViewer(items: items, initialIndex: index),
+                      fullscreenDialog: true,
+                    ),
                   ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          item.imageUrl,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          loadingBuilder: (context, child, progress) {
-                            if (progress == null) return child;
-                            return Container(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            item.imageUrl,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            loadingBuilder: (context, child, progress) {
+                              if (progress == null) return child;
+                              return Container(
+                                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) => Container(
                               color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                              child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                            child: const Icon(Icons.broken_image_outlined),
+                              child: const Icon(Icons.broken_image_outlined),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    if (item.caption != null) ...[
-                      const SizedBox(height: 4),
-                      Text(item.caption!, style: Theme.of(context).textTheme.bodySmall, maxLines: 1,
-                          overflow: TextOverflow.ellipsis),
+                      if (item.caption != null) ...[
+                        const SizedBox(height: 4),
+                        Text(item.caption!, style: Theme.of(context).textTheme.bodySmall, maxLines: 1,
+                            overflow: TextOverflow.ellipsis),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               );
             },
