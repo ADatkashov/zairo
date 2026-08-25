@@ -4575,6 +4575,5 @@ caption-плитку падал, `bySemanticsLabel('Balayage look')` не нах
 — все 58 зелёные.
 
 ### Текущий статус
-Изменения готовы (`master_portfolio_screen.dart`,
-`master_portfolio_screen_test.dart`, `app_en/ru/kk.arb`), ждут явного
-подтверждения на коммит.
+Закоммичено и запушено в `test` (`7f5a5b3`), с явным подтверждением
+пользователя.
