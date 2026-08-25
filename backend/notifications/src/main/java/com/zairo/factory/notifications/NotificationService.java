@@ -48,4 +48,15 @@ public class NotificationService {
         emailProvider.send(toEmail, "Booking cancelled",
                 "A customer cancelled booking (" + bookingId + ").");
     }
+
+    public void sendSubscriptionPaymentFailedEmail(String toEmail) {
+        emailProvider.send(toEmail, "Subscription payment failed",
+                "We couldn't charge your PRO subscription. Please update your payment details — your plan "
+                        + "will be downgraded to FREE if this isn't resolved within the grace period.");
+    }
+
+    public void sendSubscriptionDowngradedEmail(String toEmail) {
+        emailProvider.send(toEmail, "Subscription downgraded to FREE",
+                "Your subscription has been downgraded to the FREE plan. You can upgrade again at any time.");
+    }
 }

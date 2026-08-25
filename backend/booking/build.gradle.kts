@@ -14,4 +14,8 @@ dependencies {
     implementation(project(":providers"))
     implementation(project(":auth"))
     implementation(project(":money"))
+
+    // Creating a booking is gated by the owner's subscription plan's
+    // monthly booking-count limit — see SubscriptionLimitService.
+    implementation(project(":subscriptions"))
 }

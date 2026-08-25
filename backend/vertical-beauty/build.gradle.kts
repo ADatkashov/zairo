@@ -25,4 +25,8 @@ dependencies {
     // needs auth's real identity (CurrentUser) — same reasoning as the new
     // dependency added to services/booking for their own write endpoints.
     implementation(project(":auth"))
+
+    // Creating a master is gated by the owner's subscription plan's
+    // staff-count limit — see SubscriptionLimitService.
+    implementation(project(":subscriptions"))
 }

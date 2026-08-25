@@ -53,6 +53,9 @@ public class BookingController {
     @ApiResponse(responseCode = "201", description = "Booking created, status PENDING, slot now BOOKED")
     @ApiResponse(responseCode = "400", ref = "BadRequest")
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "402", description = "The provider owner's subscription plan doesn't allow "
+            + "another booking this month — upgrade for unlimited bookings.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @ApiResponse(responseCode = "403", description = "userId doesn't match the caller's own id.",
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @ApiResponse(responseCode = "404", ref = "NotFound", description = "The availability slot doesn't exist.")

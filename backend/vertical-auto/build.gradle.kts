@@ -22,4 +22,8 @@ dependencies {
     // vehicle mutations, both need auth's real identity (CurrentUser) —
     // same reasoning as vertical-beauty's own dependency.
     implementation(project(":auth"))
+
+    // Creating a mechanic is gated by the owner's subscription plan's
+    // staff-count limit — see SubscriptionLimitService.
+    implementation(project(":subscriptions"))
 }

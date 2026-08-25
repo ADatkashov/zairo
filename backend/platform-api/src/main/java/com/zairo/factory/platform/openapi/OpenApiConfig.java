@@ -197,6 +197,9 @@ class OpenApiConfig {
                         "Reserving a Service at an Availability slot, and the booking lifecycle "
                                 + "(PENDING -> CONFIRMED -> COMPLETED, or CANCELLED)."),
                 new Tag().name("Payments").description("Charging and refunding a booking."),
+                new Tag().name("Subscriptions").description(
+                        "The provider owner's tariff plan (FREE/PRO): usage limits and the recurring charge "
+                                + "cycle against the payment provider."),
                 new Tag().name("Reviews").description("A rating and comment left on a completed booking."),
                 new Tag().name("Favorites").description("A user's saved/bookmarked providers."),
                 new Tag().name("Search").description("Customer-facing provider discovery — filters to ACTIVE "

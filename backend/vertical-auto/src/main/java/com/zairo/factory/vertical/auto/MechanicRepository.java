@@ -8,5 +8,7 @@ public interface MechanicRepository extends JpaRepository<Mechanic, UUID> {
 
     List<Mechanic> findByProviderId(UUID providerId);
 
+    long countByProviderId(UUID providerId);
+
     List<Mechanic> findByProviderIdAndActiveTrue(UUID providerId);
 }

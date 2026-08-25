@@ -1,5 +1,7 @@
 import 'package:core_network/core_network.dart';
+import 'package:dio/dio.dart';
 
+import '../../billing/data/billing_exception.dart';
 import 'models/admin_mechanic.dart';
 import 'models/admin_mechanic_service_summary.dart';
 
@@ -26,11 +28,18 @@ class AutoAdminApi {
     required String displayName,
     String? bio,
   }) async {
-    final response = await _dioClient.post(
-      '/auto/providers/$providerId/mechanics',
-      data: {'displayName': displayName, 'bio': bio, 'photoUrl': null},
-    );
-    return AdminMechanic.fromJson(response.data as Map<String, dynamic>);
+    try {
+      final response = await _dioClient.post(
+        '/auto/providers/$providerId/mechanics',
+        data: {'displayName': displayName, 'bio': bio, 'photoUrl': null},
+      );
+      return AdminMechanic.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 402) {
+        throw const BillingException(SubscriptionErrorKey.staffLimitReached);
+      }
+      rethrow;
+    }
   }
 
   Future<List<AdminMechanicServiceSummary>> listMechanicServices(String mechanicId) async {

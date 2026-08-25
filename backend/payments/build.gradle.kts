@@ -9,4 +9,9 @@ dependencies {
     // one-directional dependency pattern as reviews -> booking.
     implementation(project(":booking"))
     implementation(project(":money"))
+
+    // The PaymentProvider port itself now lives in its own dependency-free
+    // module — see payment-provider/build.gradle.kts for why (subscriptions
+    // needed the same port without a Gradle cycle).
+    implementation(project(":payment-provider"))
 }

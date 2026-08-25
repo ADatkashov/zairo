@@ -6,6 +6,7 @@ import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequ
 import com.zairo.factory.booking.AvailabilitySlotDtos.RecurringScheduleRequest;
 import com.zairo.factory.booking.AvailabilitySlotDtos.RecurringScheduleResult;
 import com.zairo.factory.providers.ProviderOwnership;
+import com.zairo.factory.subscriptions.SubscriptionLimitService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -34,12 +35,15 @@ public class AvailabilitySlotController {
     private final AvailabilitySlotRepository availabilitySlotRepository;
     private final ProviderOwnership providerOwnership;
     private final RecurringScheduleService recurringScheduleService;
+    private final SubscriptionLimitService subscriptionLimitService;
 
     public AvailabilitySlotController(AvailabilitySlotRepository availabilitySlotRepository,
-            ProviderOwnership providerOwnership, RecurringScheduleService recurringScheduleService) {
+            ProviderOwnership providerOwnership, RecurringScheduleService recurringScheduleService,
+            SubscriptionLimitService subscriptionLimitService) {
         this.availabilitySlotRepository = availabilitySlotRepository;
         this.providerOwnership = providerOwnership;
         this.recurringScheduleService = recurringScheduleService;
+        this.subscriptionLimitService = subscriptionLimitService;
     }
 
     @Operation(summary = "Add a single availability slot", description = "Owner-only. Always created OPEN.")
@@ -59,10 +63,11 @@ public class AvailabilitySlotController {
     }
 
     @Operation(summary = "Generate a recurring weekly schedule", description = """
-            Owner-only. Generates real OPEN slots from a weekly day-of-week/time-range pattern over a date \
-            range (max 92 days) — see the request schema for every field's own constraints. Safe to call \
-            repeatedly: a candidate slot that would overlap an already-existing slot (any status) is \
-            skipped, not overwritten or duplicated — `skippedConflictCount` reports how many.""")
+            Owner-only, PRO plan only (see GET /subscriptions/me). Generates real OPEN slots from a weekly \
+            day-of-week/time-range pattern over a date range (max 92 days) — see the request schema for \
+            every field's own constraints. Safe to call repeatedly: a candidate slot that would overlap an \
+            already-existing slot (any status) is skipped, not overwritten or duplicated — \
+            `skippedConflictCount` reports how many.""")
     @ApiResponse(responseCode = "201", description = "Slots generated (possibly zero, if every candidate "
             + "conflicted)")
     @ApiResponse(responseCode = "400", description = "A field violates one of the constraints described on the "
@@ -70,6 +75,8 @@ public class AvailabilitySlotController {
             + "over 92 days, missing/invalid zoneId).",
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "402", description = "This feature requires the PRO plan.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/providers/{providerId}/availability-slots/recurring")
@@ -77,7 +84,9 @@ public class AvailabilitySlotController {
     public RecurringScheduleResult createRecurring(
             @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             @RequestBody RecurringScheduleRequest request, HttpServletRequest httpRequest) {
-        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
+        UUID ownerId = CurrentUser.requireUserId(httpRequest);
+        providerOwnership.requireOwner(providerId, ownerId);
+        subscriptionLimitService.checkRecurringScheduleAllowed(ownerId);
         return recurringScheduleService.generate(providerId, request);
     }
 

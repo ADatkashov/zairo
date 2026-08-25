@@ -526,5 +526,118 @@
   "@addServiceFirstMessage": {"description": "Manage-master-services dialog's empty state when the business has no services."},
 
   "doneButton": "Done",
-  "@doneButton": {"description": "Manage-master-services dialog's close button."}
+  "@doneButton": {"description": "Manage-master-services dialog's close button."},
+
+  "errorProviderLimitReached": "Your plan doesn't allow another business — upgrade to add more.",
+  "@errorProviderLimitReached": {"description": "BillingException message: 402 on provider creation."},
+
+  "errorStaffLimitReached": "Your plan doesn't allow another staff member on this business — upgrade to add more.",
+  "@errorStaffLimitReached": {"description": "BillingException message: 402 on master/mechanic creation."},
+
+  "errorBookingLimitReached": "Your plan doesn't allow another booking this month — upgrade for unlimited bookings.",
+  "@errorBookingLimitReached": {"description": "BillingException message: 402 on booking creation."},
+
+  "errorFeatureRequiresUpgrade": "This feature requires the PRO plan.",
+  "@errorFeatureRequiresUpgrade": {"description": "BillingException message: 402 on recurring-schedule generation."},
+
+  "providerLimitReachedUpgradePrompt": "Your plan allows {maxProviders} business(es). Tap to upgrade.",
+  "@providerLimitReachedUpgradePrompt": {
+    "description": "Dashboard's disabled 'Add another business' notice once the plan's provider limit is reached.",
+    "placeholders": {
+      "maxProviders": {"type": "int"}
+    }
+  },
+
+  "billingSettingsRowTitle": "Subscription",
+  "@billingSettingsRowTitle": {"description": "Settings screen row leading to BillingScreen."},
+
+  "billingScreenTitle": "Subscription",
+  "@billingScreenTitle": {"description": "BillingScreen app bar title."},
+
+  "errorBillingLoadFailed": "Couldn't load your subscription.",
+  "@errorBillingLoadFailed": {"description": "BillingScreen's error state when GET /subscriptions/me fails."},
+
+  "billingPlanFree": "FREE plan",
+  "@billingPlanFree": {"description": "BillingScreen's plan name when plan == FREE."},
+
+  "billingPlanPro": "PRO plan",
+  "@billingPlanPro": {"description": "BillingScreen's plan name when plan == PRO."},
+
+  "billingStatusActive": "Active",
+  "@billingStatusActive": {"description": "BillingScreen's status badge when status == ACTIVE."},
+
+  "billingStatusPastDue": "Payment overdue",
+  "@billingStatusPastDue": {"description": "BillingScreen's status badge when status == PAST_DUE."},
+
+  "billingProPriceLabel": "Upgrade to PRO for",
+  "@billingProPriceLabel": {"description": "BillingScreen's price row, before the FactoryPriceText amount."},
+
+  "billingPerMonthSuffix": " / month",
+  "@billingPerMonthSuffix": {"description": "BillingScreen's price row, after the FactoryPriceText amount."},
+
+  "billingDowngradeScheduledNotice": "Downgrading to FREE on {date}.",
+  "@billingDowngradeScheduledNotice": {
+    "description": "BillingScreen's notice when cancelAtPeriodEnd is true.",
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+
+  "billingUsageSectionTitle": "Plan limits",
+  "@billingUsageSectionTitle": {"description": "BillingScreen's usage/limits card section header."},
+
+  "billingLimitProvidersLabel": "Businesses",
+  "@billingLimitProvidersLabel": {"description": "BillingScreen's limits row label for provider count."},
+
+  "billingUsageXOfY": "{used} / {max}",
+  "@billingUsageXOfY": {
+    "description": "BillingScreen's 'used / max' value for the provider count row.",
+    "placeholders": {
+      "used": {"type": "int"},
+      "max": {"type": "int"}
+    }
+  },
+
+  "billingLimitStaffLabel": "Staff per business",
+  "@billingLimitStaffLabel": {"description": "BillingScreen's limits row label for staff-per-provider."},
+
+  "billingLimitStaffValue": "up to {max}",
+  "@billingLimitStaffValue": {
+    "description": "BillingScreen's value for the staff-per-provider row.",
+    "placeholders": {
+      "max": {"type": "int"}
+    }
+  },
+
+  "billingLimitBookingsLabel": "Bookings per month",
+  "@billingLimitBookingsLabel": {"description": "BillingScreen's limits row label for monthly booking limit."},
+
+  "billingLimitBookingsValue": "up to {max}",
+  "@billingLimitBookingsValue": {
+    "description": "BillingScreen's value for the monthly booking limit row, when not unlimited.",
+    "placeholders": {
+      "max": {"type": "int"}
+    }
+  },
+
+  "billingLimitUnlimited": "Unlimited",
+  "@billingLimitUnlimited": {"description": "BillingScreen's value for the monthly booking limit row, when unlimited (PRO)."},
+
+  "billingLimitRecurringScheduleLabel": "Recurring schedules",
+  "@billingLimitRecurringScheduleLabel": {"description": "BillingScreen's limits row label for the recurring-schedule feature gate."},
+
+  "billingFeatureIncluded": "Included",
+  "@billingFeatureIncluded": {"description": "BillingScreen's value for a feature row when the plan includes it."},
+
+  "billingFeatureRequiresPro": "PRO only",
+  "@billingFeatureRequiresPro": {"description": "BillingScreen's value for a feature row when the plan doesn't include it."},
+
+  "billingUpgradeButtonLabel": "Upgrade to PRO",
+  "@billingUpgradeButtonLabel": {"description": "BillingScreen's upgrade button, shown on FREE."},
+
+  "billingDowngradeButtonLabel": "Downgrade to FREE",
+  "@billingDowngradeButtonLabel": {"description": "BillingScreen's downgrade button, shown on PRO."},
+
+  "errorBillingUpgradeFailed": "Couldn't upgrade — please try again.",
+  "@errorBillingUpgradeFailed": {"description": "BillingScreen's error state when the upgrade charge fails."}
 }

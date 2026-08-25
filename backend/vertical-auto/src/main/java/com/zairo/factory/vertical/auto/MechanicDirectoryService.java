@@ -5,6 +5,7 @@ import com.zairo.factory.providers.ProviderOwnership;
 import com.zairo.factory.providers.ProviderRepository;
 import com.zairo.factory.services.ServiceOffering;
 import com.zairo.factory.services.ServiceOfferingRepository;
+import com.zairo.factory.subscriptions.SubscriptionLimitService;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -24,15 +25,18 @@ public class MechanicDirectoryService {
     private final ProviderRepository providerRepository;
     private final ServiceOfferingRepository serviceOfferingRepository;
     private final ProviderOwnership providerOwnership;
+    private final SubscriptionLimitService subscriptionLimitService;
 
     public MechanicDirectoryService(MechanicRepository mechanicRepository,
             MechanicServiceLinkRepository mechanicServiceLinkRepository, ProviderRepository providerRepository,
-            ServiceOfferingRepository serviceOfferingRepository, ProviderOwnership providerOwnership) {
+            ServiceOfferingRepository serviceOfferingRepository, ProviderOwnership providerOwnership,
+            SubscriptionLimitService subscriptionLimitService) {
         this.mechanicRepository = mechanicRepository;
         this.mechanicServiceLinkRepository = mechanicServiceLinkRepository;
         this.providerRepository = providerRepository;
         this.serviceOfferingRepository = serviceOfferingRepository;
         this.providerOwnership = providerOwnership;
+        this.subscriptionLimitService = subscriptionLimitService;
     }
 
     /**
@@ -52,6 +56,8 @@ public class MechanicDirectoryService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Provider is not in the auto vertical: "
                     + providerId);
         }
+        subscriptionLimitService.checkCanAddStaff(provider.getOwnerUserId(),
+                (int) mechanicRepository.countByProviderId(providerId));
 
         Mechanic mechanic = new Mechanic(UUID.randomUUID(), providerId, displayName, bio, photoUrl, true,
                 Instant.now());

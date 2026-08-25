@@ -4332,6 +4332,183 @@ tenant/compliance-запрос, а не количество vertical'ов.
 запись про ADR-0004.
 
 ### Текущий статус
-Изменения готовы (`docs/adr/0004-...md` — новый файл,
-`0003-...md`, `docs/adr/README.md`), ждут явного подтверждения на
+Закоммичено и запушено в `test` (`0bd59a5`), с явным подтверждением
+пользователя.
+
+## Subscription/Billing: полноценная SaaS-модель для business_admin (2026-08-25/26)
+
+Пользователь явно попросил превратить Factory в SaaS: тарифный план
+владельца бизнеса (business_admin, не user_app) ограничивает объём
+использования и списывает плату. Сделано по плану, спроектированному
+через `EnterPlanMode` (архитектор-агент + собственная проверка ключевых
+файлов чтением реального кода) и подтверждённому пользователем по двум
+ключевым развилкам: (1) вводить ли настоящий Spring `@Scheduled`
+впервые в проекте (да — иначе recurring-биллинг не настоящий), (2)
+лимиты/цена тарифов (FREE: 1 бизнес/3 сотрудника/30 бронирований в
+месяц; PRO: 5 бизнесов/20 сотрудников/безлимит бронирований, $29/мес,
+подтверждены как предложены).
+
+### Backend — новые модули
+
+**`backend/payment-provider`** (новый, не планировался изначально) —
+во время реализации обнаружился реальный цикл Gradle-зависимостей:
+`booking → providers → subscriptions → payments → booking`
+(`subscriptions` изначально зависел от `payments` ради переиспользования
+`PaymentProvider`). Решение — вынести сам порт `PaymentProvider` +
+`MockPaymentProvider` в отдельный zero-dependency модуль (тот же принцип,
+что уже применялся к `money`: "второй реальный потребитель — повод для
+извлечения"). `payments` и `subscriptions` оба теперь зависят от
+`payment-provider`, не друг от друга.
+
+**`backend/subscriptions`** — `SubscriptionPlan` (Java enum, не
+DB-таблица — два тарифа, никакого админ-UI редактирования цен),
+`Subscription`/`SubscriptionCharge` (JPA-сущности, `Subscription` —
+одна строка на владельца, заводится лениво при первом обращении, как
+`Provider` всегда стартует PENDING), `SubscriptionLimitService` (4
+проверки: провайдеры/стафф/бронирования/recurring-schedule, throw
+`SubscriptionLimitExceededException` → 402, впервые занятый в этом API
+код), `SubscriptionRenewalService` + `SubscriptionRenewalJob`
+(`@Scheduled`, 03:00/03:15 UTC ежедневно), `SubscriptionController`
+(`GET /subscriptions/me`, `POST /subscriptions/upgrade`,
+`POST /subscriptions/downgrade`).
+
+**Первый `@Scheduled` в проекте** — `PlatformApiApplication` получил
+`@EnableScheduling`, новый `Clock`-бин (`SubscriptionsConfig`,
+`Clock.systemUTC()` в проде) — оформлено отдельным
+**ADR-0005** (`docs/adr/0005-scheduled-jobs-for-subscription-billing.md`),
+узко scoped на два метода джобы, не общий job-scheduler.
+
+**4 точки вставки лимитов**, все проверены чтением реального кода перед
+правкой: `ProviderController.create` (после ownership-проверки, до
+`new Provider`), `MasterDirectoryService.createMaster`/
+`MechanicDirectoryService.createMechanic` (после
+`providerOwnership.requireOwner`), `BookingService.createBooking` (после
+статус-проверки слота, до `slot.markBooked()` — fail-fast до мутации),
+`AvailabilitySlotController.createRecurring` (feature-gate, после
+ownership-проверки). Новые derived-count методы:
+`ProviderRepository.countByOwnerUserId`,
+`MasterRepository`/`MechanicRepository.countByProviderId`,
+`BookingRepository.countByProviderIdAndCreatedAtBetween` (native query
+через join `availability_slot` — `Booking` не имеет прямой колонки
+`providerId`, тот же паттерн, что уже был у `ReviewRepository`'s
+aggregate query).
+
+**Recurring-биллинг**: `SubscriptionRenewalService.renewDueSubscriptions()`
+— по одной `@Transactional`-транзакции на подписку (падение одной не
+откатывает остальные), идемпотентность через переиспользование
+`SubscriptionCharge`-строки в рамках текущего периода (тот же паттерн,
+что `PaymentsService.createPayment`). Провал списания → `PAST_DUE` +
+7-дневный grace-период; истёкший grace-период → принудительный downgrade
+на FREE, существующие ресурсы не блокируются задним числом, только
+новое создание. Самостоятельный downgrade (`POST /subscriptions/downgrade`)
+— не мгновенный, вступает в силу в конце оплаченного периода (флаг
+`cancelAtPeriodEnd`), без proration/возврата.
+
+**Уведомления**: `SubscriptionNotificationListener` в `notifications`
+(не в `subscriptions` — паттерн проекта: листенеры живут в модуле,
+слушающем событие, а не в модуле-издателе), 2 новых метода
+`NotificationService`.
+
+**Flyway**: `V23__create_subscription_tables.sql` (`subscription`,
+`subscription_charge`).
+
+**OpenAPI**: новый тег "Subscriptions", `@ApiResponse(402)` добавлены на
+все 4 гейтящих эндпоинта, ~20 новых строк в `translations_ru.json`/
+`translations_kk.json` + 2 обновлённых описания (были изменены строки
+у `ProviderController.create` и recurring-schedule endpoint).
+
+### Backend — тесты и регрессия
+
+`SubscriptionApiTests.java` (7 тестов) — все 4 лимита блокируют на FREE,
+апгрейд снимает лимиты, `/subscriptions/me` заводит FREE лениво.
+`SubscriptionRenewalServiceTest.java` (4 теста) — управляемый
+`Clock`-бин (`TestClock.java`, новый shared test-helper, `@Primary`
+override по тому же паттерну, что `TestPayments` уже применял для
+`PaymentProvider`) для детерминированного тестирования "истёк ли
+период"/"истёк ли grace-период" — в проекте нет Mockito и не
+использовался, решил не вводить его здесь тоже, а переиспользовать уже
+устоявшийся паттерн подмены бина.
+
+**Регрессия найдена и исправлена**: `SearchApiTests`/
+`BusinessAdminApiTests`/`RecurringScheduleApiTests` создавали по
+несколько провайдеров под одним `owner` (для сравнения ranking'а или
+листинга) — с FREE-лимитом в 1 провайдер это стало падать 402 вместо
+201. Добавлен shared-хелпер `TestAuth.upgradeToPro(...)` и вызван в 9
+затронутых тестовых методах — тесты об этих сценариях не про биллинг,
+апгрейд перед созданием нескольких провайдеров убирает шум, не меняя,
+что тест реально проверяет. Найдено и исправлено через **полный**
+`./gradlew test` (не точечный) — тот же урок, что уже применялся весь
+этот проект.
+
+`./gradlew test`: все зелёные, включая новые 11 тестов.
+
+### Flutter (business_admin) — новая фича `billing`
+
+`BillingApi`, `BillingException`/`SubscriptionErrorKey` (по образцу
+`AuthException`/`AuthErrorKey`), `billing_providers.dart`
+(`billingApiProvider`, `mySubscriptionProvider`), `BillingScreen`
+(текущий план/лимиты/usage, апгрейд/даунгрейд), точка входа — третий
+`ListTile` в `SettingsScreen`.
+
+**402 → `BillingException`** добавлено в `SalonAdminApi.createProvider`/
+`.createRecurringSchedule`, `BeautyAdminApi.createMaster`,
+`AutoAdminApi.createMechanic` (перехват `DioException` по статусу,
+throw типизированного исключения) — и в 4 существующих catch-блока
+(`dashboard_screen.dart` × 2, `add_master_dialog.dart`,
+`add_mechanic_dialog.dart`, `recurring_schedule_dialog.dart`) добавлена
+ветка `is BillingException` перед общим `errorXFailed(e.toString())`,
+по образцу уже существующего `AuthException`-паттерна в экранах логина.
+
+**Inline upsell на дашборде**: вместо кнопки "Добавить ещё бизнес",
+когда `providers.length >= subscription.limits.maxProviders`,
+показывается disabled-кнопка + кликабельный текст "Ваш тариф позволяет
+N бизнес(ов). Нажмите, чтобы повысить тариф." → переход на
+`BillingScreen`.
+
+**Реальный баг, найденный тестами**: `_BillingBody` — `ConsumerStatefulWidget`
+без `Key`; после `ref.invalidate(mySubscriptionProvider)` виджет
+пересобирается с новыми данными, но **переиспользует тот же `State`**
+(нет `Key` → нет пересоздания State). `_isSubmitting` не сбрасывался в
+`false` в успешном пути `_upgrade()`/`_downgrade()` — кнопка вечно
+показывала `CircularProgressIndicator`, из-за чего `pumpAndSettle`
+зависал в тесте (и реальный пользователь увидел бы вечный спиннер).
+Исправлено явным `setState(() => _isSubmitting = false)` после
+`invalidate` в обоих методах.
+
+**Тесты**: новый `billing_screen_test.dart` (2 теста — рендер FREE-плана
+с лимитами, апгрейд меняет UI на PRO), `dashboard_screen_test.dart`
+обновлён — оба существующих теста подвисали (реальный сетевой запрос
+через неподменённый `billingApiProvider`), добавлен `_FakeBillingApi`
+override с PRO-лимитами (эти тесты — про сам flow создания салона, не
+про биллинг). `flutter analyze` — чисто, `flutter test` — все 25
+зелёных.
+
+### Живая проверка в Chrome
+
+Полный E2E: регистрация нового владельца → создание первого бизнеса
+(FREE, лимит 1/1) → вместо "Добавить ещё бизнес" показано "Ваш тариф
+позволяет 1 бизнес(ов). Нажмите, чтобы повысить тариф." → переход на
+`Подписка` → лимиты FREE отображены корректно (1/1, до 3, до 30, "Только
+PRO") → "Перейти на PRO" → тариф PRO активен, лимиты обновились (1/5,
+до 20, "Без ограничений", "Включено") → возврат на дашборд → кнопка
+"Добавить ещё бизнес" снова доступна (лимит снят). Подтверждено
+скриншотами на каждом шаге.
+
+### Осознанно не сделано в этом заходе
+
+Реальный платёжный шлюз (остаёмся на `MockPaymentProvider`), proration
+при смене тарифа, годовая оплата, мультивалютность, промокоды/триалы,
+реконсиляция ресурсов при даунгрейде с превышением лимита, ADMIN-эндпоинт
+ручной выдачи тарифа, `GET /subscriptions/usage` (полная разбивка usage
+по стаффу/бронированиям — `BillingScreen` показывает только число
+бизнесов, которое уже доступно через существующий `myProvidersProvider`,
+без нового эндпоинта).
+
+### Текущий статус
+Изменения готовы (backend: `subscriptions`, `payment-provider`,
+правки в `providers`/`vertical-beauty`/`vertical-auto`/`booking`/
+`notifications`/`platform-api`, миграция V23, ADR-0005; Flutter:
+новая фича `billing`, правки в 7 существующих файлах) — все автотесты
+зелёные (backend `./gradlew test`, Flutter `flutter analyze`+`flutter
+test`), живая проверка в Chrome пройдена. Ждёт явного подтверждения на
 коммит.

@@ -41,6 +41,10 @@ class RecurringScheduleApiTests {
         String runId = UUID.randomUUID().toString();
         Registered owner = TestAuth.registerOwner(restTemplate, "recurring-owner-" + runId + "@example.com");
         UUID providerId = createProvider(owner, "Recurring Salon " + runId);
+        // Recurring schedule generation is PRO-only — this test is about the
+        // generation logic itself, covered separately for the FREE-plan
+        // gate by SubscriptionApiTests.
+        TestAuth.upgradeToPro(restTemplate, owner);
 
         LocalDate monday = nextDayOfWeek(DayOfWeek.MONDAY);
         LocalDate sunday = monday.plusDays(6);
@@ -65,6 +69,7 @@ class RecurringScheduleApiTests {
         String runId = UUID.randomUUID().toString();
         Registered owner = TestAuth.registerOwner(restTemplate, "recurring-holiday-owner-" + runId + "@example.com");
         UUID providerId = createProvider(owner, "Recurring Holiday Salon " + runId);
+        TestAuth.upgradeToPro(restTemplate, owner);
 
         LocalDate monday = nextDayOfWeek(DayOfWeek.MONDAY);
         var request = new RecurringScheduleRequest(List.of(DayOfWeek.MONDAY), LocalTime.of(10, 0),
@@ -81,6 +86,7 @@ class RecurringScheduleApiTests {
         String runId = UUID.randomUUID().toString();
         Registered owner = TestAuth.registerOwner(restTemplate, "recurring-invalid-owner-" + runId + "@example.com");
         UUID providerId = createProvider(owner, "Recurring Invalid Salon " + runId);
+        TestAuth.upgradeToPro(restTemplate, owner);
 
         LocalDate monday = nextDayOfWeek(DayOfWeek.MONDAY);
         var request = new RecurringScheduleRequest(List.of(DayOfWeek.MONDAY), LocalTime.of(11, 0),

@@ -6,6 +6,8 @@ import com.zairo.factory.vertical.auto.MechanicDtos.MechanicResponse;
 import com.zairo.factory.vertical.auto.MechanicDtos.MechanicServiceResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -39,6 +41,9 @@ public class MechanicController {
     @ApiResponse(responseCode = "400", ref = "BadRequest", description = "Validation failed, or the provider "
             + "isn't in the auto vertical.")
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "402", description = "The owner's subscription plan doesn't allow another "
+            + "staff member on this provider — upgrade to add more.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @ApiResponse(responseCode = "404", ref = "NotFound", description = "The provider doesn't exist.")
     @SecurityRequirement(name = "bearerAuth")

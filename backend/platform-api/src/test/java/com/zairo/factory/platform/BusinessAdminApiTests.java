@@ -37,6 +37,10 @@ class BusinessAdminApiTests {
         String runId = UUID.randomUUID().toString();
         Registered owner = TestAuth.registerOwner(restTemplate, "admin-owner-" + runId + "@example.com");
         Registered otherOwner = TestAuth.registerOwner(restTemplate, "admin-other-" + runId + "@example.com");
+        // FREE only allows one provider — this test is about listing by
+        // owner, not about plan limits, so upgrade rather than assert on
+        // the (already covered by SubscriptionApiTests) 402.
+        TestAuth.upgradeToPro(restTemplate, owner);
 
         UUID providerA = createProvider(owner, "Owner Salon A " + runId);
         UUID providerB = createProvider(owner, "Owner Salon B " + runId);

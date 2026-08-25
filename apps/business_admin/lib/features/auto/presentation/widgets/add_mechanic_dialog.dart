@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/app_localizations.dart';
+import '../../../billing/data/billing_exception.dart';
 import '../providers/auto_admin_providers.dart';
 
 /// Returns true via Navigator.pop when a mechanic was created.
@@ -91,7 +92,7 @@ class _AddMechanicDialogState extends ConsumerState<AddMechanicDialog> {
       Navigator.of(context).pop(true);
     } catch (e) {
       setState(() {
-        _error = l10n.errorAddMechanicFailed(e.toString());
+        _error = e is BillingException ? e.localizedMessage(l10n) : l10n.errorAddMechanicFailed(e.toString());
         _isSubmitting = false;
       });
     }

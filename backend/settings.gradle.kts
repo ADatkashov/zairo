@@ -24,4 +24,6 @@ include(
     "storage",
     "country",
     "money",
+    "payment-provider",
+    "subscriptions",
 )

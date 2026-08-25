@@ -11,4 +11,8 @@ dependencies {
     // (CurrentUser), same reasoning as the dependency added to
     // services/booking/vertical-beauty for their own write endpoints.
     implementation(project(":auth"))
+
+    // Creating a provider is gated by the owner's subscription plan's
+    // provider-count limit — see SubscriptionLimitService.
+    implementation(project(":subscriptions"))
 }

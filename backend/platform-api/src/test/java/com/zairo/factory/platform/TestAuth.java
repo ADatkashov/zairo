@@ -11,7 +11,9 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.boot.resttestclient.TestRestTemplate;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 /**
@@ -49,6 +51,18 @@ final class TestAuth {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);
         return headers;
+    }
+
+    /**
+     * For tests unrelated to billing that need an owner unconstrained by the
+     * FREE plan's limits (e.g. more than one provider, or recurring-schedule
+     * generation) — the plain MockPaymentProvider always succeeds, so this
+     * needs no special payment test-config. See SubscriptionApiTests for the
+     * tests that actually exercise the FREE-plan limits themselves.
+     */
+    static void upgradeToPro(TestRestTemplate restTemplate, Registered owner) {
+        restTemplate.exchange("/api/v1/subscriptions/upgrade", HttpMethod.POST,
+                new HttpEntity<>(null, authHeaders(owner.accessToken())), Void.class);
     }
 
     /**

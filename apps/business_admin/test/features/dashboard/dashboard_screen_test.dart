@@ -9,6 +9,9 @@ import 'package:business_admin/features/auth/presentation/providers/auth_provide
 import 'package:business_admin/features/beauty/data/beauty_admin_api.dart';
 import 'package:business_admin/features/beauty/data/models/admin_master.dart';
 import 'package:business_admin/features/beauty/presentation/providers/beauty_admin_providers.dart';
+import 'package:business_admin/features/billing/data/billing_api.dart';
+import 'package:business_admin/features/billing/data/models/subscription.dart';
+import 'package:business_admin/features/billing/presentation/providers/billing_providers.dart';
 import 'package:business_admin/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:business_admin/features/salon/data/models/admin_booking.dart';
 import 'package:business_admin/features/salon/data/models/admin_provider.dart';
@@ -56,6 +59,32 @@ class _FakeBeautyAdminApi extends BeautyAdminApi {
   Future<List<AdminMaster>> listMasters(String providerId, {bool includeInactive = false}) async => const [];
 }
 
+class _FakeBillingApi extends BillingApi {
+  _FakeBillingApi([this._plan = 'PRO']) : super(DioClient(Dio()));
+
+  final String _plan;
+
+  @override
+  Future<Subscription> getMine() async => Subscription(
+        id: 'sub-1',
+        ownerUserId: 'owner-1',
+        plan: _plan,
+        status: 'ACTIVE',
+        // PRO-shaped limits so these dashboard tests (about the create-salon
+        // flow itself, not plan gating) never hit a disabled/limit-reached
+        // UI — see SubscriptionApiTests (backend) for the FREE-limit tests.
+        limits: const PlanLimits(
+          maxProviders: 5,
+          maxStaffPerProvider: 20,
+          maxBookingsPerMonth: 2147483647,
+          recurringScheduleAllowed: true,
+        ),
+        currentPeriodStart: DateTime(2026, 1, 1),
+        currentPeriodEnd: DateTime(2026, 2, 1),
+        cancelAtPeriodEnd: false,
+      );
+}
+
 class _LoggedInOwnerController extends AuthController {
   @override
   Future<UserSummary?> build() async {
@@ -71,6 +100,7 @@ void main() {
       ProviderScope(
         overrides: [
           salonAdminApiProvider.overrideWithValue(fakeApi),
+          billingApiProvider.overrideWithValue(_FakeBillingApi()),
           authControllerProvider.overrideWith(_LoggedInOwnerController.new),
         ],
         child: MaterialApp(
@@ -102,6 +132,7 @@ void main() {
         overrides: [
           salonAdminApiProvider.overrideWithValue(fakeApi),
           beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+          billingApiProvider.overrideWithValue(_FakeBillingApi()),
           authControllerProvider.overrideWith(_LoggedInOwnerController.new),
         ],
         child: MaterialApp(

@@ -4,6 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../billing/data/billing_exception.dart';
+import '../../../billing/data/models/subscription.dart';
+import '../../../billing/presentation/providers/billing_providers.dart';
+import '../../../billing/presentation/screens/billing_screen.dart';
 import '../../../salon/data/models/admin_provider.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
 import '../../../salon/presentation/screens/salon_detail_screen.dart';
@@ -29,6 +33,7 @@ class DashboardScreen extends ConsumerWidget {
     }
 
     final providersAsync = ref.watch(myProvidersProvider(user.id));
+    final subscriptionAsync = ref.watch(mySubscriptionProvider);
 
     return Scaffold(
       backgroundColor: colors.bg,
@@ -60,6 +65,11 @@ class DashboardScreen extends ConsumerWidget {
             separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
             itemBuilder: (context, index) {
               if (index == providers.length) {
+                final subscription = subscriptionAsync.value;
+                final atLimit = subscription != null && providers.length >= subscription.limits.maxProviders;
+                if (atLimit) {
+                  return _ProviderLimitReachedNotice(subscription: subscription);
+                }
                 return OutlinedButton.icon(
                   icon: const Icon(Icons.add),
                   label: Text(l10n.addAnotherBusinessButton),
@@ -119,12 +129,19 @@ class DashboardScreen extends ConsumerWidget {
             FilledButton(
               onPressed: () async {
                 if (nameController.text.trim().isEmpty) return;
-                await ref.read(salonAdminApiProvider).createProvider(
-                      ownerUserId: ownerUserId,
-                      name: nameController.text.trim(),
-                      vertical: vertical,
-                    );
-                if (context.mounted) Navigator.of(context).pop(true);
+                try {
+                  await ref.read(salonAdminApiProvider).createProvider(
+                        ownerUserId: ownerUserId,
+                        name: nameController.text.trim(),
+                        vertical: vertical,
+                      );
+                  if (context.mounted) Navigator.of(context).pop(true);
+                } on BillingException catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
+                  }
+                }
               },
               child: Text(l10n.createButton),
             ),
@@ -154,6 +171,41 @@ class _VerticalPicker extends StatelessWidget {
       ],
       selected: {value},
       onSelectionChanged: (selection) => onChanged(selection.first),
+    );
+  }
+}
+
+class _ProviderLimitReachedNotice extends StatelessWidget {
+  const _ProviderLimitReachedNotice({required this.subscription});
+
+  final Subscription subscription;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        OutlinedButton.icon(
+          icon: const Icon(Icons.add),
+          label: Text(l10n.addAnotherBusinessButton),
+          onPressed: null,
+        ),
+        const SizedBox(height: FactorySpacing.space2),
+        Center(
+          child: TextButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const BillingScreen()),
+            ),
+            child: Text(
+              l10n.providerLimitReachedUpgradePrompt(subscription.limits.maxProviders),
+              style: TextStyle(color: colors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -310,7 +362,7 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
       ref.invalidate(myProvidersProvider(widget.ownerUserId));
     } catch (e) {
       setState(() {
-        _error = l10n.errorCreateBusinessFailed(e.toString());
+        _error = e is BillingException ? e.localizedMessage(l10n) : l10n.errorCreateBusinessFailed(e.toString());
         _isSubmitting = false;
       });
     }

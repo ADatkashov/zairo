@@ -32,6 +32,8 @@ dependencies {
     implementation(project(":storage"))
     implementation(project(":country"))
     implementation(project(":money"))
+    implementation(project(":payment-provider"))
+    implementation(project(":subscriptions"))
 
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.0")
     implementation("org.springframework.boot:spring-boot-starter-web")

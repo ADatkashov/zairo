@@ -5,6 +5,7 @@ import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.providers.ProviderDtos.ProviderResponse;
 import com.zairo.factory.providers.ProviderDtos.UpdateProviderRequest;
 import com.zairo.factory.providers.ProviderDtos.UpdateProviderStatusRequest;
+import com.zairo.factory.subscriptions.SubscriptionLimitService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -34,19 +35,26 @@ import org.springframework.web.server.ResponseStatusException;
 public class ProviderController {
 
     private final ProviderRepository providerRepository;
+    private final SubscriptionLimitService subscriptionLimitService;
 
-    public ProviderController(ProviderRepository providerRepository) {
+    public ProviderController(ProviderRepository providerRepository,
+            SubscriptionLimitService subscriptionLimitService) {
         this.providerRepository = providerRepository;
+        this.subscriptionLimitService = subscriptionLimitService;
     }
 
     @Operation(summary = "Create a provider (salon)", description = "Owner-only: the caller must be "
             + "authenticated and must be the exact user named as `ownerUserId` — can't create a provider "
             + "\"owned\" by someone else. Always starts PENDING; invisible to Search until an ADMIN approves "
-            + "it via PATCH /providers/{id}/status.")
+            + "it via PATCH /providers/{id}/status. Gated by the owner's subscription plan's provider-count "
+            + "limit (see GET /subscriptions/me).")
     @ApiResponse(responseCode = "201", description = "Provider created, status PENDING")
     @ApiResponse(responseCode = "400", ref = "BadRequest")
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @ApiResponse(responseCode = "403", description = "ownerUserId doesn't match the caller's own id.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @ApiResponse(responseCode = "402", description = "The owner's subscription plan doesn't allow another "
+            + "provider — upgrade to add more.",
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/providers")
@@ -57,6 +65,8 @@ public class ProviderController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Cannot create a provider owned by a different user");
         }
+        subscriptionLimitService.checkCanCreateProvider(currentUserId,
+                (int) providerRepository.countByOwnerUserId(currentUserId));
         Provider provider = new Provider(UUID.randomUUID(), request.ownerUserId(), request.name(),
                 request.vertical(), ProviderStatus.PENDING, Instant.now(), request.latitude(),
                 request.longitude());
