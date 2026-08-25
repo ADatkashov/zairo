@@ -18,4 +18,9 @@ dependencies {
     // Only for ReviewSummaryService's batched rating aggregate — same
     // reasoning as search/build.gradle.kts.
     implementation(project(":reviews"))
+
+    // Ownership check (caller must be the userId in the path) needs auth's
+    // real identity (CurrentUser) — same reasoning as providers/services/
+    // booking's own write endpoints.
+    implementation(project(":auth"))
 }

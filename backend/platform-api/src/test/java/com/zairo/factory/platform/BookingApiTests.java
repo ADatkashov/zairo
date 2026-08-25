@@ -7,8 +7,6 @@ import com.zairo.factory.booking.BookingDtos.CreateBookingRequest;
 import com.zairo.factory.platform.TestAuth.Registered;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
-import com.zairo.factory.users.UserDtos.CreateUserRequest;
-import com.zairo.factory.users.UserRole;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -45,7 +43,8 @@ class BookingApiTests {
     @Test
     void booksAnOpenSlotThenRejectsASecondBookingForTheSameSlot() {
         Registered owner = TestAuth.registerOwner(restTemplate, "owner2@example.com");
-        UUID customerId = createUser("customer@example.com", "Customer");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "customer@example.com");
+        UUID customerId = customer.userId();
 
         UUID providerId = createProvider(owner, "Second Salon");
         UUID serviceId = createService(owner, providerId, "Manicure", new BigDecimal("20.00"));
@@ -54,16 +53,15 @@ class BookingApiTests {
         UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
 
         var bookingRequest = new CreateBookingRequest(customerId, serviceId, slotId, new BigDecimal("20.00"));
-        ResponseEntity<Map> firstBooking = restTemplate.postForEntity("/api/v1/bookings", bookingRequest, Map.class);
+        ResponseEntity<Map> firstBooking = createBooking(customer, bookingRequest);
         assertThat(firstBooking.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(firstBooking.getBody().get("status")).isEqualTo("CONFIRMED");
 
-        ResponseEntity<Map> secondBooking = restTemplate.postForEntity("/api/v1/bookings", bookingRequest,
-                Map.class);
+        ResponseEntity<Map> secondBooking = createBooking(customer, bookingRequest);
         assertThat(secondBooking.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
 
-        ResponseEntity<Map[]> userBookings = restTemplate.getForEntity("/api/v1/users/" + customerId + "/bookings",
-                Map[].class);
+        ResponseEntity<Map[]> userBookings = restTemplate.exchange("/api/v1/users/" + customerId + "/bookings",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map[].class);
         assertThat(userBookings.getBody()).hasSize(1);
     }
 
@@ -79,8 +77,7 @@ class BookingApiTests {
         UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
 
         var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("20.00"));
-        ResponseEntity<Map> bookingResponse = restTemplate.postForEntity("/api/v1/bookings", bookingRequest,
-                Map.class);
+        ResponseEntity<Map> bookingResponse = createBooking(customer, bookingRequest);
         UUID bookingId = UUID.fromString(bookingResponse.getBody().get("id").toString());
 
         ResponseEntity<Map> cancelResponse = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/cancel",
@@ -112,8 +109,7 @@ class BookingApiTests {
         UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
 
         var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("15.00"));
-        ResponseEntity<Map> bookingResponse = restTemplate.postForEntity("/api/v1/bookings", bookingRequest,
-                Map.class);
+        ResponseEntity<Map> bookingResponse = createBooking(customer, bookingRequest);
         UUID bookingId = UUID.fromString(bookingResponse.getBody().get("id").toString());
 
         // A different customer can't cancel this booking.
@@ -148,8 +144,7 @@ class BookingApiTests {
         UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
 
         var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("25.00"));
-        ResponseEntity<Map> bookingResponse = restTemplate.postForEntity("/api/v1/bookings", bookingRequest,
-                Map.class);
+        ResponseEntity<Map> bookingResponse = createBooking(customer, bookingRequest);
         assertThat(bookingResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         UUID bookingId = UUID.fromString(bookingResponse.getBody().get("id").toString());
 
@@ -179,8 +174,7 @@ class BookingApiTests {
         UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
 
         var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("25.00"));
-        ResponseEntity<Map> bookingResponse = restTemplate.postForEntity("/api/v1/bookings", bookingRequest,
-                Map.class);
+        ResponseEntity<Map> bookingResponse = createBooking(customer, bookingRequest);
         UUID bookingId = UUID.fromString(bookingResponse.getBody().get("id").toString());
 
         ResponseEntity<Map> cancelResponse = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/cancel",
@@ -202,7 +196,7 @@ class BookingApiTests {
     @Test
     void deletesAnOpenSlotButRefusesToDeleteABookedOne() {
         Registered owner = TestAuth.registerOwner(restTemplate, "owner-slot-delete@example.com");
-        UUID customerId = createUser("customer-slot-delete@example.com", "Slot Delete Customer");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "customer-slot-delete@example.com");
 
         UUID providerId = createProvider(owner, "Slot Delete Salon");
         UUID serviceId = createService(owner, providerId, "Trim", new BigDecimal("15.00"));
@@ -211,8 +205,8 @@ class BookingApiTests {
         UUID openSlotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
         UUID bookedSlotId = createSlot(owner, providerId, start.plus(1, ChronoUnit.HOURS),
                 start.plus(90, ChronoUnit.MINUTES));
-        restTemplate.postForEntity("/api/v1/bookings",
-                new CreateBookingRequest(customerId, serviceId, bookedSlotId, new BigDecimal("15.00")), Map.class);
+        createBooking(customer,
+                new CreateBookingRequest(customer.userId(), serviceId, bookedSlotId, new BigDecimal("15.00")));
 
         ResponseEntity<Void> deleteOpen = restTemplate.exchange("/api/v1/availability-slots/" + openSlotId,
                 HttpMethod.DELETE, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
@@ -250,9 +244,8 @@ class BookingApiTests {
         return UUID.fromString(response.getBody().get("id").toString());
     }
 
-    private UUID createUser(String email, String displayName) {
-        var request = new CreateUserRequest(email, "+1000000000", displayName, UserRole.CUSTOMER);
-        Map<?, ?> body = restTemplate.postForEntity("/api/v1/users", request, Map.class).getBody();
-        return UUID.fromString(body.get("id").toString());
+    private ResponseEntity<Map> createBooking(Registered customer, CreateBookingRequest request) {
+        return restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
+                new HttpEntity<>(request, TestAuth.authHeaders(customer.accessToken())), Map.class);
     }
 }

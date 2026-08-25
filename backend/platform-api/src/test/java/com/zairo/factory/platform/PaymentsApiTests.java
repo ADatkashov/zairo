@@ -7,8 +7,6 @@ import com.zairo.factory.booking.BookingDtos.CreateBookingRequest;
 import com.zairo.factory.platform.TestAuth.Registered;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
-import com.zairo.factory.users.UserDtos.CreateUserRequest;
-import com.zairo.factory.users.UserRole;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -45,7 +43,7 @@ class PaymentsApiTests {
     @Test
     void paysForABookingThenRefundsIt() {
         String runId = UUID.randomUUID().toString();
-        UUID customerId = createUser("pay-customer-" + runId + "@example.com", "Pay Customer");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "pay-customer-" + runId + "@example.com");
         Registered owner = TestAuth.registerOwner(restTemplate, "pay-owner-" + runId + "@example.com");
 
         var providerRequest = new CreateProviderRequest(owner.userId(), "Payment Test Salon " + runId, "beauty");
@@ -66,8 +64,9 @@ class PaymentsApiTests {
                 new HttpEntity<>(slotRequest, TestAuth.authHeaders(owner.accessToken())), Map.class);
         UUID slotId = UUID.fromString(slotResponse.getBody().get("id").toString());
 
-        var bookingRequest = new CreateBookingRequest(customerId, serviceId, slotId, new BigDecimal("35.00"));
-        Map<?, ?> booking = restTemplate.postForEntity("/api/v1/bookings", bookingRequest, Map.class).getBody();
+        var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("35.00"));
+        Map<?, ?> booking = restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
+                new HttpEntity<>(bookingRequest, TestAuth.authHeaders(customer.accessToken())), Map.class).getBody();
         UUID bookingId = UUID.fromString(booking.get("id").toString());
 
         // No payment yet.
@@ -125,7 +124,8 @@ class PaymentsApiTests {
         UUID slotId = UUID.fromString(slotResponse.getBody().get("id").toString());
 
         var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("40.00"));
-        Map<?, ?> booking = restTemplate.postForEntity("/api/v1/bookings", bookingRequest, Map.class).getBody();
+        Map<?, ?> booking = restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
+                new HttpEntity<>(bookingRequest, TestAuth.authHeaders(customer.accessToken())), Map.class).getBody();
         UUID bookingId = UUID.fromString(booking.get("id").toString());
 
         restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments", null, Map.class);
@@ -176,7 +176,7 @@ class PaymentsApiTests {
 
     private UUID createBookingForPayment(String prefix, BigDecimal price) {
         String runId = UUID.randomUUID().toString();
-        UUID customerId = createUser(prefix + "customer-" + runId + "@example.com", "Pay Customer");
+        Registered customer = TestAuth.registerCustomer(restTemplate, prefix + "customer-" + runId + "@example.com");
         Registered owner = TestAuth.registerOwner(restTemplate, prefix + "owner-" + runId + "@example.com");
 
         var providerRequest = new CreateProviderRequest(owner.userId(), prefix + "Salon " + runId, "beauty");
@@ -197,14 +197,9 @@ class PaymentsApiTests {
                 new HttpEntity<>(slotRequest, TestAuth.authHeaders(owner.accessToken())), Map.class);
         UUID slotId = UUID.fromString(slotResponse.getBody().get("id").toString());
 
-        var bookingRequest = new CreateBookingRequest(customerId, serviceId, slotId, price);
-        Map<?, ?> booking = restTemplate.postForEntity("/api/v1/bookings", bookingRequest, Map.class).getBody();
+        var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, price);
+        Map<?, ?> booking = restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
+                new HttpEntity<>(bookingRequest, TestAuth.authHeaders(customer.accessToken())), Map.class).getBody();
         return UUID.fromString(booking.get("id").toString());
-    }
-
-    private UUID createUser(String email, String displayName) {
-        var request = new CreateUserRequest(email, "+1000000000", displayName, UserRole.CUSTOMER);
-        Map<?, ?> body = restTemplate.postForEntity("/api/v1/users", request, Map.class).getBody();
-        return UUID.fromString(body.get("id").toString());
     }
 }

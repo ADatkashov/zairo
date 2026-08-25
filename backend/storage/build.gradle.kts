@@ -4,4 +4,8 @@ dependencies {
     compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.38")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("io.minio:minio:9.0.3")
+
+    // Upload requires a valid access token (any authenticated caller) —
+    // needs auth's real identity (CurrentUser).
+    implementation(project(":auth"))
 }

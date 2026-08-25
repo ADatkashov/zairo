@@ -3,6 +3,7 @@ package com.zairo.factory.booking;
 import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.booking.BookingDtos.BookingResponse;
 import com.zairo.factory.booking.BookingDtos.CreateBookingRequest;
+import com.zairo.factory.providers.ProviderOwnership;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -30,32 +31,42 @@ public class BookingController {
     private final BookingService bookingService;
     private final BookingRepository bookingRepository;
     private final AvailabilitySlotRepository availabilitySlotRepository;
+    private final ProviderOwnership providerOwnership;
 
     public BookingController(BookingService bookingService, BookingRepository bookingRepository,
-            AvailabilitySlotRepository availabilitySlotRepository) {
+            AvailabilitySlotRepository availabilitySlotRepository, ProviderOwnership providerOwnership) {
         this.bookingService = bookingService;
         this.bookingRepository = bookingRepository;
         this.availabilitySlotRepository = availabilitySlotRepository;
+        this.providerOwnership = providerOwnership;
     }
 
     @Operation(summary = "Create a booking", description = """
             Reserves a Service at an Availability slot for a user — atomically claims the slot \
             (OPEN -> BOOKED), so two customers racing for the same slot resolve to one 201 and one 409. \
-            No authentication is required by this endpoint itself (any caller can book on behalf of any \
-            `userId`) — see Known Limitations in the project's audit notes.
+            Self-service only: the caller must be the exact user named by `userId` — can't book on behalf \
+            of someone else.
 
             **Workflow**: `Search -> Get provider details -> Create booking` — this is the last step, using \
             a `serviceId`/`availabilitySlotId` pair found via GET /search/providers and \
             GET /providers/{id}/availability-slots.""")
     @ApiResponse(responseCode = "201", description = "Booking created, status PENDING, slot now BOOKED")
     @ApiResponse(responseCode = "400", ref = "BadRequest")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "userId doesn't match the caller's own id.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @ApiResponse(responseCode = "404", ref = "NotFound", description = "The availability slot doesn't exist.")
     @ApiResponse(responseCode = "409", description = "The slot isn't OPEN, or was just claimed by a "
             + "concurrent request for someone else.",
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/bookings")
     @ResponseStatus(HttpStatus.CREATED)
-    public BookingResponse create(@Valid @RequestBody CreateBookingRequest request) {
+    public BookingResponse create(@Valid @RequestBody CreateBookingRequest request, HttpServletRequest httpRequest) {
+        UUID callerId = CurrentUser.requireUserId(httpRequest);
+        if (!callerId.equals(request.userId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot book on behalf of a different user");
+        }
         Booking booking = bookingService.createBooking(request.userId(), request.serviceId(),
                 request.availabilitySlotId(), request.totalPrice());
         return BookingResponse.from(booking);
@@ -103,23 +114,37 @@ public class BookingController {
         return BookingResponse.from(bookingService.cancelBooking(id, callerId));
     }
 
-    @Operation(summary = "List a user's bookings", description = "No authentication is required by this "
-            + "endpoint itself — see Known Limitations in the project's audit notes.")
+    @Operation(summary = "List a user's bookings", description = "Owner-only: the caller must be the exact "
+            + "user named by `userId`.")
     @ApiResponse(responseCode = "200", description = "The user's bookings (empty list if none)")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/users/{userId}/bookings")
-    public List<BookingResponse> listByUser(@Parameter(description = "The user's id.") @PathVariable UUID userId) {
+    public List<BookingResponse> listByUser(@Parameter(description = "The user's id.") @PathVariable UUID userId,
+            HttpServletRequest httpRequest) {
+        UUID callerId = CurrentUser.requireUserId(httpRequest);
+        if (!callerId.equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot view another user's bookings");
+        }
         return bookingRepository.findByUserId(userId).stream().map(BookingResponse::from).toList();
     }
 
     @Operation(summary = "List a provider's received bookings", description = "For the Business Admin app: "
             + "\"which bookings has my salon received.\" Booking has no providerId of its own — this "
-            + "composes it via the availability-slot -> booking hop. No authentication is required by this "
-            + "endpoint itself.")
+            + "composes it via the availability-slot -> booking hop. Owner-only: the caller must own the "
+            + "provider.")
     @ApiResponse(responseCode = "200", description = "Bookings against this provider's slots (empty list if "
             + "none)")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound", description = "The provider doesn't exist.")
+    @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/providers/{providerId}/bookings")
     public List<BookingResponse> listByProvider(
-            @Parameter(description = "The provider's id.") @PathVariable UUID providerId) {
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
+            HttpServletRequest httpRequest) {
+        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         List<UUID> slotIds = availabilitySlotRepository.findByProviderId(providerId).stream()
                 .map(AvailabilitySlot::getId).toList();
         return bookingRepository.findByAvailabilitySlotIdIn(slotIds).stream().map(BookingResponse::from).toList();

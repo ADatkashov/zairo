@@ -8,8 +8,6 @@ import com.zairo.factory.platform.TestAuth.Registered;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.reviews.ReviewDtos.CreateReviewRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
-import com.zairo.factory.users.UserDtos.CreateUserRequest;
-import com.zairo.factory.users.UserRole;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -44,7 +42,7 @@ class ReviewApiTests {
     @Test
     void reviewRequiresACompletedBookingAndAllowsOnlyOnePerBooking() {
         Registered owner = TestAuth.registerOwner(restTemplate, "owner4@example.com");
-        UUID customerId = createUser("customer4@example.com", "Customer 4");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "customer4@example.com");
 
         var providerRequest = new CreateProviderRequest(owner.userId(), "Fourth Salon", "beauty");
         ResponseEntity<Map> providerResponse = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
@@ -64,8 +62,9 @@ class ReviewApiTests {
                 new HttpEntity<>(slotRequest, TestAuth.authHeaders(owner.accessToken())), Map.class);
         UUID slotId = UUID.fromString(slotResponse.getBody().get("id").toString());
 
-        var bookingRequest = new CreateBookingRequest(customerId, serviceId, slotId, new BigDecimal("50.00"));
-        Map<?, ?> booking = restTemplate.postForEntity("/api/v1/bookings", bookingRequest, Map.class).getBody();
+        var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("50.00"));
+        Map<?, ?> booking = restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
+                new HttpEntity<>(bookingRequest, TestAuth.authHeaders(customer.accessToken())), Map.class).getBody();
         UUID bookingId = UUID.fromString(booking.get("id").toString());
 
         var reviewRequest = new CreateReviewRequest(5, "Great massage!");
@@ -96,11 +95,5 @@ class ReviewApiTests {
                 Map.class);
         assertThat(fetched.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(fetched.getBody().get("comment")).isEqualTo("Great massage!");
-    }
-
-    private UUID createUser(String email, String displayName) {
-        var request = new CreateUserRequest(email, "+1000000000", displayName, UserRole.CUSTOMER);
-        Map<?, ?> body = restTemplate.postForEntity("/api/v1/users", request, Map.class).getBody();
-        return UUID.fromString(body.get("id").toString());
     }
 }

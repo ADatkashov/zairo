@@ -3891,4 +3891,78 @@ component-response) — все переведены корректно, кром
 `springdoc.api-docs.enabled=false` (env vars) для прод.
 
 ### Текущий статус
-Изменения готовы, ждут коммита.
+Закоммичено и запушено в `test` (`1b32755`).
+
+## Закрытие дыр в авторизации (2026-08-25)
+
+По итогам OpenAPI-аудита нашлось 6 категорий реально незащищённых
+эндпоинтов (авторизация в бэкенде — не Spring Security, а ручные
+проверки `CurrentUser.require*`/`ProviderOwnership.requireOwner` по
+каждому методу контроллера, так что "что защищено" нельзя было прочитать
+из одного места — только собрать по гвоздикам). Пользователь явно
+выбрал приоритет: **"чинить дыры"**.
+
+**Что было открыто и что исправлено**:
+1. `POST /api/v1/bookings` — теперь только `CurrentUser.requireUserId`
+   == `request.userId()`, иначе 403.
+2. `POST /api/v1/beauty/bookings` — то же самое.
+3. `GET /api/v1/users/{userId}/bookings` — только сам пользователь.
+4. `GET /api/v1/providers/{providerId}/bookings` — только владелец
+   провайдера (`ProviderOwnership.requireOwner`, добавлено внедрение
+   `ProviderOwnership` в `BookingController` — модуль `booking` уже
+   зависел от `providers`, так что новых Gradle-зависимостей не
+   потребовалось).
+5. `POST/DELETE/GET /api/v1/users/{userId}/favorites/{providerId}`,
+   `GET /api/v1/users/{userId}/favorites` — только сам пользователь.
+   Модулю `favorites` добавлена зависимость `implementation(project(":auth"))`.
+6. `POST /api/v1/uploads` — любой аутентифицированный вызывающий
+   (`CurrentUser.requireUserId`, результат отбрасывается). Модулю
+   `storage` добавлена зависимость на `auth`.
+7. `POST /api/v1/users` и `GET /api/v1/users` — только ADMIN.
+
+**Архитектурная особенность п.7**: модуль `users` не может зависеть от
+`auth` — `auth` уже зависит от `users` (нужен `UserRole`), обратная
+зависимость дала бы Gradle-цикл. Решение: в `UserController` локально
+продублирован тот же приём, что уже применялся для OpenAPI `$ref`
+через строку — вместо `CurrentUser.requireAdmin` читаем тот же
+request-атрибут (`"auth.role"`, то же имя, что `JwtAuthFilter.ROLE_ATTRIBUTE`)
+напрямую, с комментарием, почему. Это единственное место, где проверка
+не переиспользует существующий класс `CurrentUser`.
+
+**Безопасность фронтенда проверена ДО правки бэкенда**: сначала вручную
+подтверждено, что `core_network`'s Dio-интерцептор автоматически
+прикладывает `Authorization: Bearer` к каждому запросу, когда токен
+есть — значит оба Flutter-приложения технически готовы отправлять
+токен. Затем fork-субагент прочитал реальный Dart-код обоих приложений
+и подтвердил по всем 6 категориям: экран/кнопка либо гейтится
+`currentUser == null` до вызова эндпоинта, либо единственная точка
+вызова уже требует владельца/себя (RISK не найден нигде) — это дало
+уверенность, что ужесточение бэкенда не сломает ни одно реальное
+приложение.
+
+**Тесты**: правка сломала 8 файлов интеграционных тестов, которые
+создавали "клиента" через сырой (беспарольный) `POST /api/v1/users`
+и затем дёргали теперь-защищённые эндпоинты без токена вообще —
+`FavoritesApiTests`, `BookingApiTests`, `BeautyApiTests`,
+`BusinessAdminApiTests`, `PaymentsApiTests`, `ReviewApiTests`,
+`SearchApiTests`, `StorageApiTests`. Все переписаны на
+`TestAuth.registerCustomer(...)`/`TestAuth.authHeaders(...)` (реальная
+регистрация через `/auth/register`, реальный JWT) вместо беспарольного
+хелпера. `./gradlew test` — 61/61 зелёных.
+
+**Обновлена и Swagger-документация**: `@SecurityRequirement(bearerAuth)`,
+401/403 `@ApiResponse`, переписаны описания (убрано "No authentication
+is required..."). 12 новых строк переведены на ru/kk, 11 неиспользуемых
+(старый текст про отсутствие авторизации) удалены — итог 223×2 записи
+перевода (было 222×2). Живая проверка `/v3/api-docs/ru`+`/kk` подтвердила
+перевод новых строк.
+
+**Живая проверка через curl** (реальный Postgres, реальные JWT) по всем
+6 категориям — паттерн 401 (без токена) → 403 (чужой токен) → успех
+(свой токен) подтверждён для: create booking, create beauty booking,
+list user's bookings, list provider's bookings, favorites
+(add/list), upload. `POST/GET /users` — 401 без токена, 403 для не-ADMIN.
+
+### Текущий статус
+Изменения готовы (код + тесты + Swagger-доки + переводы + живая
+проверка), ждут коммита.

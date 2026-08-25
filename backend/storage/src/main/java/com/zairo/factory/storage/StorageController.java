@@ -1,10 +1,12 @@
 package com.zairo.factory.storage;
 
+import com.zairo.factory.auth.CurrentUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
@@ -21,7 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-/** No authentication is required by either endpoint here today. */
+/** Download stays public (a photo URL embedded elsewhere must load without a token); upload requires any
+ * authenticated caller. */
 @RestController
 @Tag(name = "Storage")
 public class StorageController {
@@ -45,17 +48,23 @@ public class StorageController {
 
     @Operation(summary = "Upload a file", description = "Stores any file in MinIO (S3-compatible) and returns "
             + "a key you can pass to GET /uploads/{key} or embed as a photo URL elsewhere (e.g. a master's "
-            + "portfolio). No MIME-type restriction — max size is 10MB (`spring.servlet.multipart.max-file-size`).")
+            + "portfolio). No MIME-type restriction — max size is 10MB (`spring.servlet.multipart.max-file-size`). "
+            + "Requires a valid access token — any authenticated user, no ownership check against the file "
+            + "itself (it isn't tied to a resource until you pass its key/URL somewhere else, e.g. a "
+            + "portfolio item, which is checked there).")
     @ApiResponse(responseCode = "201", description = "Uploaded")
     @ApiResponse(responseCode = "400", description = "The file field is missing or empty.",
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true,
             content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
                     schema = @Schema(type = "object", requiredProperties = "file")))
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping(value = "/api/v1/uploads", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public UploadResponse upload(@Parameter(description = "The file to upload.", schema = @Schema(type = "string",
             format = "binary")) @RequestParam MultipartFile file, HttpServletRequest request) {
+        CurrentUser.requireUserId(request);
         if (file.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File is empty");
         }

@@ -46,9 +46,12 @@ class StorageApiTests {
             }
         };
 
+        TestAuth.Registered uploader = TestAuth.registerCustomer(restTemplate,
+                "storage-uploader-" + java.util.UUID.randomUUID() + "@example.com");
+
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("file", resource);
-        HttpHeaders headers = new HttpHeaders();
+        HttpHeaders headers = TestAuth.authHeaders(uploader.accessToken());
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
 

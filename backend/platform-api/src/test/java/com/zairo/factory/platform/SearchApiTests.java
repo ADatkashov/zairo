@@ -256,7 +256,8 @@ class SearchApiTests {
         UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
 
         var bookingRequest = new CreateBookingRequest(customerId, serviceId, slotId, new BigDecimal("20.00"));
-        Map<?, ?> booking = restTemplate.postForEntity("/api/v1/bookings", bookingRequest, Map.class).getBody();
+        Map<?, ?> booking = restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
+                new HttpEntity<>(bookingRequest, TestAuth.authHeaders(customer.accessToken())), Map.class).getBody();
         UUID bookingId = UUID.fromString(booking.get("id").toString());
 
         restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/complete", null, Map.class);
