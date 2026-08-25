@@ -4,7 +4,12 @@
 /// package is the Flutter translation of its foundations layer.
 library core_ui;
 
+export 'src/theme/factory_avatar_size.dart';
+export 'src/theme/factory_breakpoints.dart';
 export 'src/theme/factory_colors.dart';
+export 'src/theme/factory_control_size.dart';
+export 'src/theme/factory_elevation.dart';
+export 'src/theme/factory_icon_size.dart';
 export 'src/theme/factory_motion.dart';
 export 'src/theme/factory_radius.dart';
 export 'src/theme/factory_spacing.dart';
