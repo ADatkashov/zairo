@@ -4038,5 +4038,32 @@ CRUD + бронирование), `VehiclesScreen` (доступен с Profile 
   через `GET /users/{id}/bookings`, статус CONFIRMED.
 
 ### Текущий статус
-Изменения готовы (backend + оба Flutter-приложения + тесты + переводы +
-полная живая E2E-проверка), ждут коммита.
+Закоммичено и запушено в `test` (`2b3d074`).
+
+## Тестовое покрытие auto-vertical UI (2026-08-25)
+
+vertical-beauty имел выделенный widget-тест
+(`master_portfolio_screen_test.dart`) и тесты секции мастеров в
+`salon_detail_screen_test.dart`; у только что реализованного auto
+эквивалентов не было. Закрыто по тому же паттерну (fake API-подкласс +
+`ProviderScope` override), без изменений в самом коде экранов:
+
+- `user_app/test/features/auto/vehicles_screen_test.dart` (новый) — 4
+  теста: пустое состояние, список загруженных машин, добавление через
+  диалог (проверяет реальные аргументы вызова API), удаление с
+  подтверждением.
+- `user_app/test/.../provider_detail_screen_test.dart` — новый тест
+  "auto provider with mechanics requires picking a mechanic and vehicle,
+  and books through the auto endpoint" (зеркалит существующий beauty-тест
+  один в один, плюс отдельно проверяет, что кнопка "Book" остаётся
+  disabled, пока не выбраны ОБА — механик и машина).
+- `business_admin/test/.../salon_detail_screen_test.dart` — 2 новых
+  теста с отдельным `_autoProvider` (vertical: 'auto'): создание
+  механика через диалог, и деактивация/реактивация (зеркалит
+  соответствующие master-тесты).
+
+`flutter test`: user_app 56/56 (было 51), business_admin 23/23 (было
+21). `flutter analyze` — чисто в обоих.
+
+### Текущий статус
+Изменения готовы (4 файла: 1 новый, 3 расширены), ждут коммита.

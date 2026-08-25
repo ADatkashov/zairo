@@ -6,6 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zairo/features/auth/data/models/user_summary.dart';
 import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
+import 'package:zairo/features/auto/data/auto_api.dart';
+import 'package:zairo/features/auto/data/models/mechanic.dart';
+import 'package:zairo/features/auto/data/models/vehicle.dart';
+import 'package:zairo/features/auto/presentation/providers/auto_providers.dart';
 import 'package:zairo/features/beauty/data/beauty_api.dart';
 import 'package:zairo/features/beauty/data/models/master.dart';
 import 'package:zairo/features/beauty/presentation/providers/beauty_providers.dart';
@@ -100,6 +104,48 @@ class _FakeBeautyApi extends BeautyApi {
     };
     return Booking(
       id: 'beauty-booking-1',
+      userId: userId,
+      serviceId: serviceId,
+      availabilitySlotId: availabilitySlotId,
+      status: 'CONFIRMED',
+      totalPrice: totalPrice,
+      createdAt: DateTime.now(),
+    );
+  }
+}
+
+class _FakeAutoApi extends AutoApi {
+  _FakeAutoApi({this._mechanics = const [], this._vehicles = const []}) : super(DioClient(Dio()));
+
+  final List<Mechanic> _mechanics;
+  final List<Vehicle> _vehicles;
+  Map<String, dynamic>? lastAutoBookingCall;
+
+  @override
+  Future<List<Mechanic>> listMechanics(String providerId) async => _mechanics;
+
+  @override
+  Future<List<Vehicle>> listVehicles(String userId) async => _vehicles;
+
+  @override
+  Future<Booking> createAutoBooking({
+    required String userId,
+    required String mechanicId,
+    required String vehicleId,
+    required String serviceId,
+    required String availabilitySlotId,
+    required double totalPrice,
+  }) async {
+    lastAutoBookingCall = {
+      'userId': userId,
+      'mechanicId': mechanicId,
+      'vehicleId': vehicleId,
+      'serviceId': serviceId,
+      'availabilitySlotId': availabilitySlotId,
+      'totalPrice': totalPrice,
+    };
+    return Booking(
+      id: 'auto-booking-1',
       userId: userId,
       serviceId: serviceId,
       availabilitySlotId: availabilitySlotId,
@@ -262,6 +308,94 @@ void main() {
     });
     expect(fakeBookingApi.lastBookingCall, isNull);
     expect(fakePaymentsApi.lastChargedBookingId, 'beauty-booking-1');
+  });
+
+  testWidgets(
+      'an auto provider with mechanics requires picking a mechanic and vehicle, and books through the auto endpoint',
+      (tester) async {
+    final slot = AvailabilitySlot(
+      id: 'slot-1',
+      providerId: 'provider-4',
+      startsAt: DateTime(2026, 1, 1, 10, 0),
+      endsAt: DateTime(2026, 1, 1, 10, 30),
+      status: 'OPEN',
+    );
+    final fakeBookingApi = _FakeBookingApi([slot]);
+    final fakeAutoApi = _FakeAutoApi(
+      mechanics: const [
+        Mechanic(id: 'mechanic-1', providerId: 'provider-4', displayName: 'Yerlan Mechanic', active: true),
+      ],
+      vehicles: const [
+        Vehicle(id: 'vehicle-1', ownerUserId: 'user-1', make: 'Toyota', model: 'Camry', year: 2019, licensePlate: '777 ABC 02'),
+      ],
+    );
+    final fakePaymentsApi = _FakePaymentsApi();
+    const provider = ProviderSearchResult(
+      id: 'provider-4',
+      name: 'Speedy Workshop',
+      vertical: 'auto',
+      status: 'ACTIVE',
+      hasOpenAvailability: true,
+      minPrice: 35,
+      services: [
+        ServiceSummary(id: 'service-1', title: 'Oil Change', durationMinutes: 30, price: 35, currency: 'USD'),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(fakeBookingApi),
+          paymentsApiProvider.overrideWithValue(fakePaymentsApi),
+          autoApiProvider.overrideWithValue(fakeAutoApi),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ProviderDetailScreen(provider: provider),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Yerlan Mechanic'), findsOneWidget);
+    expect(find.text('Toyota Camry (2019)'), findsOneWidget);
+
+    final bookButtonFinder = find.widgetWithText(FilledButton, 'Book');
+    await tester.tap(find.text('Yerlan Mechanic'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Toyota Camry (2019)'));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Oil Change'));
+    await tester.tap(find.text('Oil Change'));
+    await tester.pumpAndSettle();
+
+    // Mechanic + vehicle + service picked, but no slot yet -> still disabled.
+    expect(tester.widget<FilledButton>(bookButtonFinder).onPressed, isNull);
+
+    await tester.ensureVisible(find.text('Jan 1, 10:00'));
+    await tester.tap(find.text('Jan 1, 10:00'));
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<FilledButton>(bookButtonFinder).onPressed, isNotNull);
+
+    await tester.ensureVisible(bookButtonFinder);
+    await tester.tap(bookButtonFinder);
+    await tester.pumpAndSettle();
+
+    expect(fakeAutoApi.lastAutoBookingCall, {
+      'userId': 'user-1',
+      'mechanicId': 'mechanic-1',
+      'vehicleId': 'vehicle-1',
+      'serviceId': 'service-1',
+      'availabilitySlotId': 'slot-1',
+      'totalPrice': 35.0,
+    });
+    expect(fakeBookingApi.lastBookingCall, isNull);
+    expect(fakePaymentsApi.lastChargedBookingId, 'auto-booking-1');
   });
 
   testWidgets('shows a message when there are no open slots', (tester) async {
