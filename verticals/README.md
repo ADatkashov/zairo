@@ -1,8 +1,22 @@
 # verticals/
 
-Бизнес-логика конкретных отраслей. Каждый vertical реализует интерфейсы,
-которые определяет Marketplace Engine в `packages/` и `backend/` — Core не
-знает про содержимое этой папки.
+Эта папка — из раннего планирования (Phase 4 в исходном roadmap), когда
+предполагалось держать vertical-код в отдельном top-level каталоге. По
+факту, когда до реализации дошло дело, это оказалось не совместимо с
+тем, как реально устроен монорепозиторий, и код разъехался по двум
+местам, где он реально нужен сборке:
 
-Появится в Phase 4: `verticals/beauty/` (salons, masters, beauty_services,
-portfolio, beauty_booking_rules).
+- **Backend**: `backend/vertical-beauty/`, `backend/vertical-auto/` — обычные
+  Gradle-подпроекты (нужно быть частью Gradle multi-module сборки, а не
+  отдельной, не подключённой к сборке папкой). Каждый зависит *от* Core
+  (`providers`, `services`, `booking`, `auth`), никогда не наоборот — см.
+  `docs/erd/core-domain.md`.
+- **Flutter UI**: `apps/user_app/lib/features/beauty/` +
+  `apps/user_app/lib/features/auto/`, и то же самое в `apps/business_admin/`
+  — UI специфичен для каждого приложения, общего пакета под это нет.
+
+Эта папка (`verticals/`) сейчас пустая и не используется сборкой ни с
+одной стороны. Оставлена как исторический маркер того, что vertical-код
+— это осознанно отдельная, additive-only зона (Core никогда не знает про
+конкретный vertical, только про `Provider.vertical` как непрозрачную
+строку), а не потому что здесь реально что-то лежит.

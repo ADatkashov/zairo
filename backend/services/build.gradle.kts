@@ -1,8 +1,10 @@
 description = "Generic marketplace Service (what a Provider offers, with a price). Vertical-agnostic."
 
 dependencies {
+    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.38")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("jakarta.validation:jakarta.validation-api")
 
     // Trust invariants, not just id references (same exception class as
     // reviews -> booking): editing/deactivating a service has to prove the

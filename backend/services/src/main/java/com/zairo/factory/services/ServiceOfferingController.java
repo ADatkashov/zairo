@@ -5,7 +5,13 @@ import com.zairo.factory.providers.ProviderOwnership;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.ServiceResponse;
 import com.zairo.factory.services.ServiceOfferingDtos.UpdateServiceRequest;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -21,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
+@Tag(name = "Services")
 public class ServiceOfferingController {
 
     private final ServiceOfferingRepository serviceOfferingRepository;
@@ -32,41 +39,57 @@ public class ServiceOfferingController {
         this.providerOwnership = providerOwnership;
     }
 
-    /** Owner-only. */
+    @Operation(summary = "Add a service to a provider", description = "Owner-only. Created active by default.")
+    @ApiResponse(responseCode = "201", description = "Service created")
+    @ApiResponse(responseCode = "400", ref = "BadRequest")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/providers/{providerId}/services")
     @ResponseStatus(HttpStatus.CREATED)
-    public ServiceResponse create(@PathVariable UUID providerId, @RequestBody CreateServiceRequest request,
-            HttpServletRequest httpRequest) {
+    public ServiceResponse create(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
+            @Valid @RequestBody CreateServiceRequest request, HttpServletRequest httpRequest) {
         providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         ServiceOffering service = new ServiceOffering(UUID.randomUUID(), providerId, request.title(),
                 request.durationMinutes(), request.price(), request.currency(), true);
         return ServiceResponse.from(serviceOfferingRepository.save(service));
     }
 
-    /**
-     * Active services by default — a deactivated one (see deactivate()
-     * below) drops out of both this listing and search. Business Admin
-     * passes includeInactive=true to also show deactivated services (with
-     * a reactivate action); nothing else needs to see them.
-     */
+    @Operation(summary = "List a provider's services", description = """
+            Active services by default — a deactivated one (see DELETE below) drops out of both this \
+            listing and Search. Pass `includeInactive=true` (used by Business Admin) to also see \
+            deactivated services alongside a way to reactivate them. No authentication required.""")
+    @ApiResponse(responseCode = "200", description = "Matching services")
     @GetMapping("/api/v1/providers/{providerId}/services")
-    public List<ServiceResponse> listByProvider(@PathVariable UUID providerId,
+    public List<ServiceResponse> listByProvider(
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
+            @Parameter(description = "Include deactivated services too.")
             @RequestParam(defaultValue = "false") boolean includeInactive) {
         List<ServiceOffering> services = includeInactive ? serviceOfferingRepository.findByProviderId(providerId)
                 : serviceOfferingRepository.findByProviderIdAndActiveTrue(providerId);
         return services.stream().map(ServiceResponse::from).toList();
     }
 
+    @Operation(summary = "Get a service by id")
+    @ApiResponse(responseCode = "200", description = "The service")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
     @GetMapping("/api/v1/services/{id}")
-    public ServiceResponse getById(@PathVariable UUID id) {
+    public ServiceResponse getById(@Parameter(description = "The service's id.") @PathVariable UUID id) {
         return serviceOfferingRepository.findById(id).map(ServiceResponse::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found: " + id));
     }
 
-    /** Owner-only. */
+    @Operation(summary = "Update a service", description = "Owner-only. Replaces title/duration/price/currency "
+            + "wholesale.")
+    @ApiResponse(responseCode = "200", description = "Service updated")
+    @ApiResponse(responseCode = "400", ref = "BadRequest")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/api/v1/services/{id}")
-    public ServiceResponse update(@PathVariable UUID id, @RequestBody UpdateServiceRequest request,
-            HttpServletRequest httpRequest) {
+    public ServiceResponse update(@Parameter(description = "The service's id.") @PathVariable UUID id,
+            @Valid @RequestBody UpdateServiceRequest request, HttpServletRequest httpRequest) {
         ServiceOffering service = serviceOfferingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found: " + id));
         providerOwnership.requireOwner(service.getProviderId(), CurrentUser.requireUserId(httpRequest));
@@ -74,10 +97,17 @@ public class ServiceOfferingController {
         return ServiceResponse.from(serviceOfferingRepository.save(service));
     }
 
-    /** Soft-delete (active=false) — existing bookings still reference this service by id, see ServiceOffering.deactivate(). Owner-only, idempotent. */
+    @Operation(summary = "Deactivate a service (soft-delete)", description = "Owner-only, idempotent — calling "
+            + "it again on an already-deactivated (or missing) service silently succeeds. Existing bookings "
+            + "still reference this service by id; it just drops out of listings/Search until reactivated.")
+    @ApiResponse(responseCode = "204", description = "Deactivated (or already was)")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/api/v1/services/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deactivate(@PathVariable UUID id, HttpServletRequest httpRequest) {
+    public void deactivate(@Parameter(description = "The service's id.") @PathVariable UUID id,
+            HttpServletRequest httpRequest) {
         serviceOfferingRepository.findById(id).ifPresent(service -> {
             providerOwnership.requireOwner(service.getProviderId(), CurrentUser.requireUserId(httpRequest));
             service.deactivate();
@@ -85,9 +115,15 @@ public class ServiceOfferingController {
         });
     }
 
-    /** Owner-only, idempotent — undoes deactivate(). */
+    @Operation(summary = "Reactivate a service", description = "Owner-only, idempotent — undoes deactivate().")
+    @ApiResponse(responseCode = "200", description = "Service reactivated")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/services/{id}/reactivate")
-    public ServiceResponse reactivate(@PathVariable UUID id, HttpServletRequest httpRequest) {
+    public ServiceResponse reactivate(@Parameter(description = "The service's id.") @PathVariable UUID id,
+            HttpServletRequest httpRequest) {
         ServiceOffering service = serviceOfferingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found: " + id));
         providerOwnership.requireOwner(service.getProviderId(), CurrentUser.requireUserId(httpRequest));

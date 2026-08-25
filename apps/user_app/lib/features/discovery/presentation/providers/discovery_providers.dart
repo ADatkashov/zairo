@@ -47,22 +47,29 @@ class DiscoveryQuery {
   });
 
   bool get hasActiveFilters =>
-      minPrice != null || maxPrice != null || maxDistanceKm != null || minRating != null || availableOnly;
+      vertical != null ||
+      minPrice != null ||
+      maxPrice != null ||
+      maxDistanceKm != null ||
+      minRating != null ||
+      availableOnly;
 
   DiscoveryQuery copyWith({
     String? query,
+    String? vertical,
     double? minPrice,
     double? maxPrice,
     double? maxDistanceKm,
     double? minRating,
     bool? availableOnly,
     DiscoverySort? sort,
+    bool clearVertical = false,
     bool clearPriceRange = false,
     bool clearMaxDistance = false,
     bool clearMinRating = false,
   }) {
     return DiscoveryQuery(
-      vertical: vertical,
+      vertical: clearVertical ? null : (vertical ?? this.vertical),
       query: query ?? this.query,
       minPrice: clearPriceRange ? null : (minPrice ?? this.minPrice),
       maxPrice: clearPriceRange ? null : (maxPrice ?? this.maxPrice),

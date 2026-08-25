@@ -1,4 +1,4 @@
-package com.zairo.factory.payments;
+package com.zairo.factory.paymentprovider;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -9,11 +9,12 @@ import org.springframework.stereotype.Component;
  * this project has a real provider account and API keys. Replace with a
  * real {@link PaymentProvider} implementation (e.g. backed by
  * stripe-java's PaymentIntent/Refund APIs) behind a Spring profile or
- * conditional bean once those credentials exist; nothing else in this
- * module should need to change.
+ * conditional bean once those credentials exist; nothing else in either
+ * caller module ({@code payments}, {@code subscriptions}) should need to
+ * change.
  */
 @Component
-class MockPaymentProvider implements PaymentProvider {
+public class MockPaymentProvider implements PaymentProvider {
 
     @Override
     public ChargeResult charge(UUID paymentId, BigDecimal amount, String currency) {

@@ -2,20 +2,27 @@
 
 Монорепозиторий платформы Factory — набора переиспользуемых Flutter +
 Spring Boot модулей для быстрой сборки сервисных marketplace-приложений.
-Первый vertical — Beauty.
+Первый vertical — Beauty, второй — Auto (оба с реальной функциональностью;
+Core остаётся vertical-агностичным).
 
 `Factory` — рабочее кодовое имя, не финальный бренд.
 
-Полный план discovery/architecture: `docs/factory-blueprint.md` (или см.
-опубликованный артефакт из сессии planning).
+Полный план discovery/architecture: [`docs/factory-blueprint.md`](docs/factory-blueprint.md)
+— снапшот опубликованного артефакта "Factory Blueprint" из сессии
+planning (2026-08-18/19, Phase 0, до начала кода). Roadmap и границы MVP
+в нём отражают состояние на момент написания, не текущий статус — см.
+`SESSION_NOTES.md` для актуального прогресса.
 
 ## Структура
 
 ```
-apps/            конечные Flutter-приложения (тонкая сборка поверх packages/)
+apps/            конечные Flutter-приложения (тонкая сборка поверх packages/);
+                 vertical-специфичный UI — в apps/*/lib/features/{beauty,auto}/
 packages/        Factory Core — переиспользуемые Flutter-пакеты
-verticals/       бизнес-логика конкретных отраслей (Beauty, Auto, ...)
-backend/         Spring Boot, modular monolith
+verticals/       исторический маркер (см. verticals/README.md) — реальный
+                 vertical-код живёт в backend/vertical-*/ и apps/*/lib/features/*/
+backend/         Spring Boot, modular monolith; vertical-beauty/vertical-auto —
+                 отдельные Gradle-подпроекты, зависят от Core, не наоборот
 infrastructure/  docker-compose, CI
 docs/adr/        architecture decision records
 ```
@@ -37,12 +44,14 @@ melos run test
 ## Текущее состояние
 
 - `apps/user_app` — клиентское приложение (бывший `zairo`).
-- `apps/business_admin` — приложение для владельцев/модераторов салонов.
+- `apps/business_admin` — приложение для владельцев/модераторов бизнеса
+  (салоны и мастерские — обе вертикали, beauty и auto).
 - `packages/core_network`, `packages/core_storage`, `packages/core_ui` —
   переиспользуемые Flutter-пакеты Factory Core.
-- `backend/` — Spring Boot modular monolith, полноценно построен.
-- `verticals/`, `infrastructure/` — скелет/конфиги, наполняются по
-  роадмапу.
+- `backend/` — Spring Boot modular monolith, полноценно построен,
+  включая `vertical-beauty` и `vertical-auto`.
+- `verticals/` — не используется сборкой, см. `verticals/README.md`.
+- `infrastructure/` — скелет/конфиги, наполняются по роадмапу.
 
 ## Как открыть в Android Studio
 

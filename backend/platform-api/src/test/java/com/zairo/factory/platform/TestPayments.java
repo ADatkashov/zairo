@@ -1,6 +1,6 @@
 package com.zairo.factory.platform;
 
-import com.zairo.factory.payments.PaymentProvider;
+import com.zairo.factory.paymentprovider.PaymentProvider;
 import java.math.BigDecimal;
 import java.util.UUID;
 import org.springframework.boot.test.context.TestConfiguration;

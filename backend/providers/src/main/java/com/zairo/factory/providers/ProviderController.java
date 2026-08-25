@@ -5,7 +5,16 @@ import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.providers.ProviderDtos.ProviderResponse;
 import com.zairo.factory.providers.ProviderDtos.UpdateProviderRequest;
 import com.zairo.factory.providers.ProviderDtos.UpdateProviderStatusRequest;
+import com.zairo.factory.subscriptions.SubscriptionLimitService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -22,53 +31,85 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
+@Tag(name = "Providers")
 public class ProviderController {
 
     private final ProviderRepository providerRepository;
+    private final SubscriptionLimitService subscriptionLimitService;
 
-    public ProviderController(ProviderRepository providerRepository) {
+    public ProviderController(ProviderRepository providerRepository,
+            SubscriptionLimitService subscriptionLimitService) {
         this.providerRepository = providerRepository;
+        this.subscriptionLimitService = subscriptionLimitService;
     }
 
-    /** Owner-only: the caller must be authenticated and must be the exact user named as owner — can't create a provider "owned" by someone else. */
+    @Operation(summary = "Create a provider (salon)", description = "Owner-only: the caller must be "
+            + "authenticated and must be the exact user named as `ownerUserId` — can't create a provider "
+            + "\"owned\" by someone else. Always starts PENDING; invisible to Search until an ADMIN approves "
+            + "it via PATCH /providers/{id}/status. Gated by the owner's subscription plan's provider-count "
+            + "limit (see GET /subscriptions/me).")
+    @ApiResponse(responseCode = "201", description = "Provider created, status PENDING")
+    @ApiResponse(responseCode = "400", ref = "BadRequest")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "ownerUserId doesn't match the caller's own id.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @ApiResponse(responseCode = "402", description = "The owner's subscription plan doesn't allow another "
+            + "provider — upgrade to add more.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/providers")
     @ResponseStatus(HttpStatus.CREATED)
-    public ProviderResponse create(@RequestBody CreateProviderRequest request, HttpServletRequest httpRequest) {
+    public ProviderResponse create(@Valid @RequestBody CreateProviderRequest request, HttpServletRequest httpRequest) {
         UUID currentUserId = CurrentUser.requireUserId(httpRequest);
         if (!request.ownerUserId().equals(currentUserId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Cannot create a provider owned by a different user");
         }
+        subscriptionLimitService.checkCanCreateProvider(currentUserId,
+                (int) providerRepository.countByOwnerUserId(currentUserId));
         Provider provider = new Provider(UUID.randomUUID(), request.ownerUserId(), request.name(),
                 request.vertical(), ProviderStatus.PENDING, Instant.now(), request.latitude(),
                 request.longitude());
         return ProviderResponse.from(providerRepository.save(provider));
     }
 
-    /**
-     * Unfiltered by default (matches every provider regardless of moderation
-     * status) — this raw listing isn't the customer-facing discovery path
-     * (that's the search module, which filters to ACTIVE only). The
-     * optional {@code status} filter exists for the Business Admin
-     * moderation screen, e.g. {@code ?status=PENDING}.
-     */
+    @Operation(summary = "List providers", description = """
+            Unfiltered by default (every provider regardless of moderation status) — this raw listing isn't \
+            the customer-facing discovery path (that's **GET /search/providers**, which filters to ACTIVE \
+            only). The optional `status` filter exists for the Business Admin moderation screen, e.g. \
+            `?status=PENDING`. No authentication required.""")
+    @ApiResponse(responseCode = "200", description = "Matching providers")
     @GetMapping("/api/v1/providers")
-    public List<ProviderResponse> list(@RequestParam(required = false) ProviderStatus status) {
+    public List<ProviderResponse> list(
+            @Parameter(description = "Filter to one moderation status. Omit for every provider.")
+            @RequestParam(required = false) ProviderStatus status) {
         List<Provider> providers = status == null ? providerRepository.findAll()
                 : providerRepository.findByStatus(status);
         return providers.stream().map(ProviderResponse::from).toList();
     }
 
+    @Operation(summary = "Get a provider by id")
+    @ApiResponse(responseCode = "200", description = "The provider")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
     @GetMapping("/api/v1/providers/{id}")
-    public ProviderResponse getById(@PathVariable UUID id) {
+    public ProviderResponse getById(@Parameter(description = "The provider's id.") @PathVariable UUID id) {
         return providerRepository.findById(id).map(ProviderResponse::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Provider not found: " + id));
     }
 
-    /** Owner-only. Name/location only — see Provider.update()'s doc comment for what's deliberately not editable. */
+    @Operation(summary = "Update a provider's name/location", description = "Owner-only. Name and location "
+            + "only — status is changed exclusively via PATCH /providers/{id}/status, vertical is immutable "
+            + "after creation.")
+    @ApiResponse(responseCode = "200", description = "Provider updated")
+    @ApiResponse(responseCode = "400", ref = "BadRequest")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "The caller doesn't own this provider.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/api/v1/providers/{id}")
-    public ProviderResponse update(@PathVariable UUID id, @RequestBody UpdateProviderRequest request,
-            HttpServletRequest httpRequest) {
+    public ProviderResponse update(@Parameter(description = "The provider's id.") @PathVariable UUID id,
+            @Valid @RequestBody UpdateProviderRequest request, HttpServletRequest httpRequest) {
         Provider provider = providerRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Provider not found: " + id));
         UUID currentUserId = CurrentUser.requireUserId(httpRequest);
@@ -79,22 +120,32 @@ public class ProviderController {
         return ProviderResponse.from(providerRepository.save(provider));
     }
 
-    /** For the Business Admin app: "which salons does this owner manage." */
+    @Operation(summary = "List a user's providers", description = "For the Business Admin app: \"which salons "
+            + "does this owner manage.\" No authentication required.")
+    @ApiResponse(responseCode = "200", description = "The owner's providers (empty list if none)")
     @GetMapping("/api/v1/users/{ownerUserId}/providers")
-    public List<ProviderResponse> listByOwner(@PathVariable UUID ownerUserId) {
+    public List<ProviderResponse> listByOwner(
+            @Parameter(description = "The owning user's id.") @PathVariable UUID ownerUserId) {
         return providerRepository.findByOwnerUserId(ownerUserId).stream().map(ProviderResponse::from).toList();
     }
 
-    /**
-     * Admin-only moderation action — approve a PENDING provider, or suspend/
-     * reinstate one. This is the only way a provider ever leaves PENDING:
-     * there's no auto-approval anywhere. Search only surfaces ACTIVE
-     * providers (see SearchService), so an unapproved or suspended provider
-     * is invisible to customer discovery even though it still exists.
-     */
+    @Operation(summary = "Approve, suspend, or reinstate a provider", description = """
+            Admin-only moderation action. This is the only way a provider ever leaves PENDING — there's no \
+            auto-approval anywhere. Search only surfaces ACTIVE providers, so an unapproved or suspended \
+            provider still exists but is invisible to customer discovery either way.
+
+            **Workflow**: `Create booking...` scenarios all assume the provider is already ACTIVE — this is \
+            the step that gets it there.""")
+    @ApiResponse(responseCode = "200", description = "Status updated")
+    @ApiResponse(responseCode = "400", ref = "BadRequest")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "The caller is authenticated but isn't ADMIN.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/api/v1/providers/{id}/status")
-    public ProviderResponse updateStatus(@PathVariable UUID id, @RequestBody UpdateProviderStatusRequest request,
-            HttpServletRequest httpRequest) {
+    public ProviderResponse updateStatus(@Parameter(description = "The provider's id.") @PathVariable UUID id,
+            @Valid @RequestBody UpdateProviderStatusRequest request, HttpServletRequest httpRequest) {
         CurrentUser.requireAdmin(httpRequest);
         Provider provider = providerRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Provider not found: " + id));

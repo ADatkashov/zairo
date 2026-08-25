@@ -1,8 +1,10 @@
 description = "Beauty vertical: masters, portfolios, and the booking rule that a beauty booking must name a master who actually offers the requested service."
 
 dependencies {
+    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.38")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("jakarta.validation:jakarta.validation-api")
 
     // Read-composition over Core to validate vertical data against real
     // provider/service records — same pattern as search/favorites reading
@@ -23,4 +25,8 @@ dependencies {
     // needs auth's real identity (CurrentUser) — same reasoning as the new
     // dependency added to services/booking for their own write endpoints.
     implementation(project(":auth"))
+
+    // Creating a master is gated by the owner's subscription plan's
+    // staff-count limit — see SubscriptionLimitService.
+    implementation(project(":subscriptions"))
 }

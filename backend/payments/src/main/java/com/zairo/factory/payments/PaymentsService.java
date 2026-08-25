@@ -2,6 +2,7 @@ package com.zairo.factory.payments;
 
 import com.zairo.factory.booking.Booking;
 import com.zairo.factory.booking.BookingRepository;
+import com.zairo.factory.paymentprovider.PaymentProvider;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;

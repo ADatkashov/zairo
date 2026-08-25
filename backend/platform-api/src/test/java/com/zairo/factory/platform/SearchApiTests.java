@@ -79,6 +79,10 @@ class SearchApiTests {
         String verticalBeauty = "beauty-" + runId;
         String verticalAuto = "auto-" + runId;
         Registered owner = TestAuth.registerOwner(restTemplate, "search-owner-" + runId + "@example.com");
+        // FREE only allows one provider per owner — these search tests need
+        // several providers under the same owner to compare ranking, which
+        // is unrelated to plan limits (covered separately by SubscriptionApiTests).
+        TestAuth.upgradeToPro(restTemplate, owner);
 
         UUID providerA = createProvider(owner, "Hair Studio A " + runId, verticalBeauty);
         createService(owner, providerA, "Haircut", new BigDecimal("30.00"));
@@ -114,6 +118,7 @@ class SearchApiTests {
         String runId = UUID.randomUUID().toString();
         String vertical = "beauty-dist-" + runId;
         Registered owner = TestAuth.registerOwner(restTemplate, "dist-owner-" + runId + "@example.com");
+        TestAuth.upgradeToPro(restTemplate, owner);
 
         // Almaty city center as the search origin.
         double originLat = 43.2389;
@@ -144,6 +149,7 @@ class SearchApiTests {
         String runId = UUID.randomUUID().toString();
         String vertical = "beauty-price-" + runId;
         Registered owner = TestAuth.registerOwner(restTemplate, "price-owner-" + runId + "@example.com");
+        TestAuth.upgradeToPro(restTemplate, owner);
 
         UUID cheapAvailable = createProvider(owner, "Cheap Available " + runId, vertical);
         createService(owner, cheapAvailable, "Cut", new BigDecimal("10.00"));
@@ -173,6 +179,7 @@ class SearchApiTests {
         String runId = UUID.randomUUID().toString();
         String vertical = "beauty-sort-" + runId;
         Registered owner = TestAuth.registerOwner(restTemplate, "sort-owner-" + runId + "@example.com");
+        TestAuth.upgradeToPro(restTemplate, owner);
 
         double originLat = 43.2389;
         double originLng = 76.8897;
@@ -209,6 +216,7 @@ class SearchApiTests {
         String runId = UUID.randomUUID().toString();
         String vertical = "beauty-rating-" + runId;
         Registered owner = TestAuth.registerOwner(restTemplate, "rating-owner-" + runId + "@example.com");
+        TestAuth.upgradeToPro(restTemplate, owner);
 
         UUID wellRated = createProvider(owner, "Well Rated " + runId, vertical);
         createService(owner, wellRated, "Cut", new BigDecimal("20.00"));
@@ -256,7 +264,8 @@ class SearchApiTests {
         UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
 
         var bookingRequest = new CreateBookingRequest(customerId, serviceId, slotId, new BigDecimal("20.00"));
-        Map<?, ?> booking = restTemplate.postForEntity("/api/v1/bookings", bookingRequest, Map.class).getBody();
+        Map<?, ?> booking = restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
+                new HttpEntity<>(bookingRequest, TestAuth.authHeaders(customer.accessToken())), Map.class).getBody();
         UUID bookingId = UUID.fromString(booking.get("id").toString());
 
         restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/complete", null, Map.class);

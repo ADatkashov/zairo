@@ -93,7 +93,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('salon'), findsWidgets);
+    expect(find.textContaining('provider'), findsWidgets);
     expect(find.textContaining('open slots today'), findsOneWidget);
   });
 

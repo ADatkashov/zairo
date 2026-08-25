@@ -6,8 +6,6 @@ import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequ
 import com.zairo.factory.platform.TestAuth.Registered;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
-import com.zairo.factory.users.UserDtos.CreateUserRequest;
-import com.zairo.factory.users.UserRole;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -39,6 +37,10 @@ class BusinessAdminApiTests {
         String runId = UUID.randomUUID().toString();
         Registered owner = TestAuth.registerOwner(restTemplate, "admin-owner-" + runId + "@example.com");
         Registered otherOwner = TestAuth.registerOwner(restTemplate, "admin-other-" + runId + "@example.com");
+        // FREE only allows one provider — this test is about listing by
+        // owner, not about plan limits, so upgrade rather than assert on
+        // the (already covered by SubscriptionApiTests) 402.
+        TestAuth.upgradeToPro(restTemplate, owner);
 
         UUID providerA = createProvider(owner, "Owner Salon A " + runId);
         UUID providerB = createProvider(owner, "Owner Salon B " + runId);
@@ -53,28 +55,39 @@ class BusinessAdminApiTests {
     void listsBookingsForAProvider() {
         String runId = UUID.randomUUID().toString();
         Registered owner = TestAuth.registerOwner(restTemplate, "admin-booking-owner-" + runId + "@example.com");
-        UUID customerId = createUser("admin-booking-customer-" + runId + "@example.com", UserRole.CUSTOMER);
+        Registered customer = TestAuth.registerCustomer(restTemplate,
+                "admin-booking-customer-" + runId + "@example.com");
         UUID providerId = createProvider(owner, "Booking Admin Salon " + runId);
         UUID serviceId = createService(owner, providerId, "Cut", new BigDecimal("20.00"));
 
         // No bookings yet.
-        assertThat(getList("/api/v1/providers/" + providerId + "/bookings")).isEmpty();
+        assertThat(getList("/api/v1/providers/" + providerId + "/bookings", owner)).isEmpty();
 
         UUID slotId = createOpenSlot(owner, providerId);
-        ResponseEntity<Map> booking = restTemplate.postForEntity("/api/v1/bookings", Map.of(
-                "userId", customerId,
-                "serviceId", serviceId,
-                "availabilitySlotId", slotId,
-                "totalPrice", new BigDecimal("20.00")), Map.class);
+        ResponseEntity<Map> booking = restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
+                new HttpEntity<>(Map.of(
+                        "userId", customer.userId(),
+                        "serviceId", serviceId,
+                        "availabilitySlotId", slotId,
+                        "totalPrice", new BigDecimal("20.00")),
+                        TestAuth.authHeaders(customer.accessToken())),
+                Map.class);
         assertThat(booking.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         String bookingId = booking.getBody().get("id").toString();
 
-        List<Map> bookings = getList("/api/v1/providers/" + providerId + "/bookings");
+        List<Map> bookings = getList("/api/v1/providers/" + providerId + "/bookings", owner);
         assertThat(bookings).extracting(b -> b.get("id")).containsExactly(bookingId);
     }
 
     private List<Map> getList(String path) {
         ResponseEntity<Map[]> response = restTemplate.getForEntity(path, Map[].class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        return List.of(response.getBody());
+    }
+
+    private List<Map> getList(String path, Registered caller) {
+        ResponseEntity<Map[]> response = restTemplate.exchange(path, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(caller.accessToken())), Map[].class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         return List.of(response.getBody());
     }
@@ -103,11 +116,5 @@ class BusinessAdminApiTests {
                 new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         return UUID.fromString(response.getBody().get("id").toString());
-    }
-
-    private UUID createUser(String email, UserRole role) {
-        var request = new CreateUserRequest(email, "+1000000000", "Admin Test User", role);
-        Map<?, ?> body = restTemplate.postForEntity("/api/v1/users", request, Map.class).getBody();
-        return UUID.fromString(body.get("id").toString());
     }
 }

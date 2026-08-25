@@ -5,6 +5,7 @@ import com.zairo.factory.providers.ProviderOwnership;
 import com.zairo.factory.providers.ProviderRepository;
 import com.zairo.factory.services.ServiceOffering;
 import com.zairo.factory.services.ServiceOfferingRepository;
+import com.zairo.factory.subscriptions.SubscriptionLimitService;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -25,16 +26,19 @@ public class MasterDirectoryService {
     private final ProviderRepository providerRepository;
     private final ServiceOfferingRepository serviceOfferingRepository;
     private final ProviderOwnership providerOwnership;
+    private final SubscriptionLimitService subscriptionLimitService;
 
     public MasterDirectoryService(MasterRepository masterRepository, PortfolioItemRepository portfolioItemRepository,
             MasterServiceLinkRepository masterServiceLinkRepository, ProviderRepository providerRepository,
-            ServiceOfferingRepository serviceOfferingRepository, ProviderOwnership providerOwnership) {
+            ServiceOfferingRepository serviceOfferingRepository, ProviderOwnership providerOwnership,
+            SubscriptionLimitService subscriptionLimitService) {
         this.masterRepository = masterRepository;
         this.portfolioItemRepository = portfolioItemRepository;
         this.masterServiceLinkRepository = masterServiceLinkRepository;
         this.providerRepository = providerRepository;
         this.serviceOfferingRepository = serviceOfferingRepository;
         this.providerOwnership = providerOwnership;
+        this.subscriptionLimitService = subscriptionLimitService;
     }
 
     /**
@@ -57,6 +61,8 @@ public class MasterDirectoryService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Provider is not in the beauty vertical: "
                     + providerId);
         }
+        subscriptionLimitService.checkCanAddStaff(provider.getOwnerUserId(),
+                (int) masterRepository.countByProviderId(providerId));
 
         Master master = new Master(UUID.randomUUID(), providerId, displayName, bio, photoUrl, true, Instant.now());
         return masterRepository.save(master);

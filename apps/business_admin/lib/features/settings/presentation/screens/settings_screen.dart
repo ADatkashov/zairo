@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/locale/locale_controller.dart';
 import '../../../../app/theme/theme_provider.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../billing/presentation/screens/billing_screen.dart';
 
 /// Mirrors apps/user_app's identical SettingsScreen — same layout, same
 /// providers, same behavior — just wired to this app's own l10n/providers.
@@ -36,6 +37,13 @@ class SettingsScreen extends ConsumerWidget {
             subtitle: Text(_languageLabel(l10n, locale)),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _openLanguagePicker(context, ref, l10n, locale),
+          ),
+          ListTile(
+            title: Text(l10n.billingSettingsRowTitle),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const BillingScreen()),
+            ),
           ),
         ],
       ),

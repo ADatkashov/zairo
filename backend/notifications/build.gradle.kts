@@ -16,4 +16,9 @@ dependencies {
     // Only for PasswordResetRequestedEvent's type — see auth/build.gradle.kts
     // for why auth doesn't depend back on notifications instead.
     implementation(project(":auth"))
+
+    // Only for SubscriptionPaymentFailedEvent/SubscriptionPastDueEvent's
+    // types — same one-directional "listen for the event" reasoning as the
+    // booking/auth dependencies above.
+    implementation(project(":subscriptions"))
 }

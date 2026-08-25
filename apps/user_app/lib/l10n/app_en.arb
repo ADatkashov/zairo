@@ -187,7 +187,7 @@
   "homeEmptyTitle": "No providers yet",
   "@homeEmptyTitle": {"description": "Home screen empty state title when discovery returns nothing."},
 
-  "homeEmptyMessage": "Check back soon — new salons are added regularly.",
+  "homeEmptyMessage": "Check back soon — new providers are added regularly.",
   "@homeEmptyMessage": {"description": "Home screen empty state message."},
 
   "errorHomeFeedLoadFailed": "Couldn't load your discovery feed.",
@@ -196,7 +196,7 @@
   "homeTopRatedTitle": "Top rated near you",
   "@homeTopRatedTitle": {"description": "Home screen section header for the curated provider rail."},
 
-  "homeAvailabilityHero": "{count, plural, one{{count} salon near you have open slots today} other{{count} salons near you have open slots today}}",
+  "homeAvailabilityHero": "{count, plural, one{{count} provider near you have open slots today} other{{count} providers near you have open slots today}}",
   "@homeAvailabilityHero": {
     "description": "Home screen banner shown when at least one nearby provider has open availability today.",
     "placeholders": {
@@ -218,7 +218,7 @@
     }
   },
 
-  "searchEmptyMessageDefault": "Try \"haircut\", \"manicure,\" or a salon name.",
+  "searchEmptyMessageDefault": "Try \"haircut\", \"manicure,\" or a provider name.",
   "@searchEmptyMessageDefault": {"description": "Search screen empty state message before the first search."},
 
   "searchEmptyMessageQuery": "Try a different search term.",
@@ -232,6 +232,12 @@
 
   "searchFiltersTitle": "Filters",
   "@searchFiltersTitle": {"description": "Search filters dialog title."},
+
+  "searchFilterCategoryLabel": "Category",
+  "@searchFilterCategoryLabel": {"description": "Search filters dialog section label for the vertical (Beauty/Auto) chips."},
+
+  "searchFilterCategoryAll": "All",
+  "@searchFilterCategoryAll": {"description": "Search filters dialog's vertical chip meaning no filter — every vertical."},
 
   "searchSortLabel": "Sort by",
   "@searchSortLabel": {"description": "Search filters dialog section label for the sort-order chips."},
@@ -354,7 +360,7 @@
   "favoritesEmptyTitle": "No favorites yet",
   "@favoritesEmptyTitle": {"description": "Favorites screen empty state title."},
 
-  "favoritesEmptyMessage": "Salons and providers you favorite will show up here.",
+  "favoritesEmptyMessage": "Providers you favorite will show up here.",
   "@favoritesEmptyMessage": {"description": "Favorites screen empty state message."},
 
   "errorFavoritesLoadFailed": "Couldn't load your favorites.",
@@ -506,6 +512,71 @@
 
   "viewPortfolioTooltip": "View portfolio",
   "@viewPortfolioTooltip": {"description": "Tooltip on the master row's portfolio icon button."},
+
+  "mechanicsSectionTitle": "Mechanics",
+  "@mechanicsSectionTitle": {"description": "Provider detail screen's mechanics section header (auto vertical)."},
+
+  "vehiclesSectionTitle": "Your vehicle",
+  "@vehiclesSectionTitle": {"description": "Provider detail screen's vehicle-selection section header (auto vertical)."},
+
+  "vehiclesEmptyTitle": "No vehicles yet",
+  "@vehiclesEmptyTitle": {"description": "Empty state title where a vehicle list would otherwise render."},
+
+  "vehiclesEmptyMessage": "Add a vehicle to book an auto service.",
+  "@vehiclesEmptyMessage": {"description": "Empty state message on the provider detail screen's vehicle section."},
+
+  "addVehicleButton": "Add vehicle",
+  "@addVehicleButton": {"description": "Button that opens the add-vehicle dialog."},
+
+  "addVehicleDialogTitle": "Register a vehicle",
+  "@addVehicleDialogTitle": {"description": "Add-vehicle dialog title."},
+
+  "vehicleMakeLabel": "Make",
+  "@vehicleMakeLabel": {"description": "Add-vehicle dialog's make field label, e.g. Toyota."},
+
+  "vehicleModelLabel": "Model",
+  "@vehicleModelLabel": {"description": "Add-vehicle dialog's model field label, e.g. Camry."},
+
+  "vehicleYearLabel": "Year",
+  "@vehicleYearLabel": {"description": "Add-vehicle dialog's model year field label."},
+
+  "vehicleLicensePlateLabel": "License plate",
+  "@vehicleLicensePlateLabel": {"description": "Add-vehicle dialog's license plate field label."},
+
+  "addVehicleFieldRequired": "Required",
+  "@addVehicleFieldRequired": {"description": "Add-vehicle dialog's field validation error for a blank required field."},
+
+  "addVehicleYearInvalid": "Enter a valid year",
+  "@addVehicleYearInvalid": {"description": "Add-vehicle dialog's year field validation error for a non-numeric value."},
+
+  "addVehicleCancelButton": "Cancel",
+  "@addVehicleCancelButton": {"description": "Add-vehicle dialog's cancel button."},
+
+  "vehiclesScreenTitle": "My vehicles",
+  "@vehiclesScreenTitle": {"description": "My Vehicles screen's app bar title."},
+
+  "errorVehiclesLoadFailed": "Couldn't load your vehicles.",
+  "@errorVehiclesLoadFailed": {"description": "My Vehicles screen error state when the list fails to load."},
+
+  "deleteVehicleButton": "Delete",
+  "@deleteVehicleButton": {"description": "My Vehicles screen's per-vehicle delete action, and the confirm dialog's confirm button."},
+
+  "deleteVehicleConfirmTitle": "Delete this vehicle?",
+  "@deleteVehicleConfirmTitle": {"description": "Delete-vehicle confirmation dialog title."},
+
+  "deleteVehicleConfirmMessage": "Remove {vehicle} from your vehicles.",
+  "@deleteVehicleConfirmMessage": {
+    "description": "Delete-vehicle confirmation dialog message, names the vehicle being deleted.",
+    "placeholders": {
+      "vehicle": {"type": "String"}
+    }
+  },
+
+  "myVehiclesButton": "My vehicles",
+  "@myVehiclesButton": {"description": "Profile screen's button opening the My Vehicles screen."},
+
+  "errorAutoBookingFailed": "Couldn't complete this booking — the mechanic may not offer this service, or the time slot was just taken. Please try again.",
+  "@errorAutoBookingFailed": {"description": "409 from POST .../auto/bookings — covers two distinct backend rejections the response body doesn't distinguish."},
 
   "serviceDurationMinutes": "{minutes} min",
   "@serviceDurationMinutes": {
