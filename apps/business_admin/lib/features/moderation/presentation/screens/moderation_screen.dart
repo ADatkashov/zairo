@@ -24,8 +24,8 @@ class ModerationScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: colors.bg,
-      appBar: AppBar(
-        title: Text(l10n.moderationTitle),
+      appBar: FactoryAppBar(
+        title: l10n.moderationTitle,
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -100,33 +100,30 @@ class _PendingSalonCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
 
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(FactorySpacing.space4),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(provider.name, style: textTheme.titleSmall),
-                  const SizedBox(height: FactorySpacing.space2),
-                  FactoryBadge(label: _capitalize(provider.vertical)),
-                ],
-              ),
-            ),
-            const SizedBox(width: FactorySpacing.space2),
-            Row(
+    return FactoryCard(
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextButton(onPressed: onSuspend, child: Text(l10n.suspendButton)),
-                FilledButton(onPressed: onApprove, child: Text(l10n.approveButton)),
+                Text(provider.name, style: textTheme.titleSmall),
+                const SizedBox(height: FactorySpacing.space2),
+                FactoryBadge(label: _capitalize(provider.vertical)),
               ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(width: FactorySpacing.space2),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FactoryButton(label: l10n.suspendButton, variant: FactoryButtonVariant.text, onPressed: onSuspend),
+              const SizedBox(width: FactorySpacing.space2),
+              FactoryButton(label: l10n.approveButton, onPressed: onApprove),
+            ],
+          ),
+        ],
       ),
     );
   }
