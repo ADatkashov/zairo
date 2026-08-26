@@ -70,8 +70,8 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
 
     return Scaffold(
       backgroundColor: colors.bg,
-      appBar: AppBar(
-        title: Text(widget.provider.name),
+      appBar: FactoryAppBar(
+        title: widget.provider.name,
         actions: [FavoriteButton(providerId: widget.provider.id)],
       ),
       body: SafeArea(
