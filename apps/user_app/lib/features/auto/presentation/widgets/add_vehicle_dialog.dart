@@ -1,3 +1,4 @@
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../l10n/app_localizations.dart';
@@ -50,43 +51,48 @@ class _AddVehicleDialogState extends State<_AddVehicleDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return AlertDialog(
-      title: Text(l10n.addVehicleDialogTitle),
+    return FactoryDialog(
+      title: l10n.addVehicleDialogTitle,
       content: Form(
         key: _formKey,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextFormField(
+            FactoryTextField(
               controller: _makeController,
-              decoration: InputDecoration(labelText: l10n.vehicleMakeLabel),
+              label: l10n.vehicleMakeLabel,
               validator: (value) => (value == null || value.trim().isEmpty) ? l10n.addVehicleFieldRequired : null,
             ),
-            TextFormField(
+            const SizedBox(height: FactorySpacing.space3),
+            FactoryTextField(
               controller: _modelController,
-              decoration: InputDecoration(labelText: l10n.vehicleModelLabel),
+              label: l10n.vehicleModelLabel,
               validator: (value) => (value == null || value.trim().isEmpty) ? l10n.addVehicleFieldRequired : null,
             ),
-            TextFormField(
+            const SizedBox(height: FactorySpacing.space3),
+            FactoryTextField(
               controller: _yearController,
-              decoration: InputDecoration(labelText: l10n.vehicleYearLabel),
+              label: l10n.vehicleYearLabel,
               keyboardType: TextInputType.number,
               validator: (value) => int.tryParse(value ?? '') == null ? l10n.addVehicleYearInvalid : null,
             ),
-            TextFormField(
+            const SizedBox(height: FactorySpacing.space3),
+            FactoryTextField(
               controller: _licensePlateController,
-              decoration: InputDecoration(labelText: l10n.vehicleLicensePlateLabel),
+              label: l10n.vehicleLicensePlateLabel,
               validator: (value) => (value == null || value.trim().isEmpty) ? l10n.addVehicleFieldRequired : null,
             ),
           ],
         ),
       ),
       actions: [
-        TextButton(
+        FactoryButton(
+          label: l10n.addVehicleCancelButton,
+          variant: FactoryButtonVariant.text,
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.addVehicleCancelButton),
         ),
-        FilledButton(
+        FactoryButton(
+          label: l10n.addVehicleButton,
           onPressed: () {
             if (!(_formKey.currentState?.validate() ?? false)) return;
             Navigator.of(context).pop(
@@ -98,7 +104,6 @@ class _AddVehicleDialogState extends State<_AddVehicleDialog> {
               ),
             );
           },
-          child: Text(l10n.addVehicleButton),
         ),
       ],
     );

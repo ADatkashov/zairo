@@ -204,6 +204,29 @@
     }
   },
 
+  "homeGreeting": "Hi, {name}",
+  "@homeGreeting": {
+    "description": "Home screen greeting for a logged-in user.",
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+
+  "homeGreetingGuest": "Welcome",
+  "@homeGreetingGuest": {"description": "Home screen greeting shown when logged out."},
+
+  "homeLocationUnknown": "Your location",
+  "@homeLocationUnknown": {"description": "Home screen location label fallback when no location label is available."},
+
+  "homeSeeAll": "See all",
+  "@homeSeeAll": {"description": "Home screen section header action that opens Search."},
+
+  "discoveryVerticalBeauty": "Beauty",
+  "@discoveryVerticalBeauty": {"description": "Vertical filter chip label for the beauty vertical."},
+
+  "discoveryVerticalAuto": "Auto",
+  "@discoveryVerticalAuto": {"description": "Vertical filter chip label for the auto vertical."},
+
   "searchHint": "Search services or providers",
   "@searchHint": {"description": "Search screen text field hint."},
 
@@ -407,6 +430,9 @@
       "error": {"type": "String"}
     }
   },
+
+  "profileLoggedOutTitle": "You're not logged in",
+  "@profileLoggedOutTitle": {"description": "Profile screen's logged-out empty state title."},
 
   "profileLoggedOutPrompt": "Log in to book and review providers",
   "@profileLoggedOutPrompt": {"description": "Profile screen's logged-out prompt above the Log in button."},

@@ -18,7 +18,7 @@ class MasterPortfolioScreen extends ConsumerWidget {
     final portfolioAsync = ref.watch(masterPortfolioProvider(masterId));
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.masterPortfolioTitle(masterName))),
+      appBar: FactoryAppBar(title: l10n.masterPortfolioTitle(masterName)),
       body: portfolioAsync.when(
         data: (items) {
           if (items.isEmpty) {

@@ -1,3 +1,4 @@
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../l10n/app_localizations.dart';
@@ -26,7 +27,7 @@ class MockMapScreen extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(providerName)),
+      appBar: FactoryAppBar(title: providerName),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),

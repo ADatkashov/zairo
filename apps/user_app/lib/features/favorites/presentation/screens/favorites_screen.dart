@@ -25,7 +25,7 @@ class FavoritesScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: colors.bg,
-      appBar: AppBar(title: Text(l10n.myFavoritesTitle)),
+      appBar: FactoryAppBar(title: l10n.myFavoritesTitle),
       body: authState.when(
         data: (user) => user == null
             ? LoggedOutGate(icon: Icons.favorite_border_rounded, message: l10n.favoritesLoggedOutPrompt)
