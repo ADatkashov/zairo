@@ -50,8 +50,8 @@ class _RecurringScheduleDialogState extends ConsumerState<RecurringScheduleDialo
       l10n.weekdaySun,
     ];
 
-    return AlertDialog(
-      title: Text(l10n.recurringScheduleDialogTitle),
+    return FactoryDialog(
+      title: l10n.recurringScheduleDialogTitle,
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -92,18 +92,18 @@ class _RecurringScheduleDialogState extends ConsumerState<RecurringScheduleDialo
               trailing: const Icon(Icons.access_time),
               onTap: _isSubmitting ? null : () => _pickTime(isStart: false),
             ),
-            TextField(
+            FactoryTextField(
               controller: _durationController,
               enabled: !_isSubmitting,
               keyboardType: TextInputType.number,
-              decoration: InputDecoration(labelText: l10n.durationMinutesLabel),
+              label: l10n.durationMinutesLabel,
             ),
             const SizedBox(height: FactorySpacing.space2),
-            TextField(
+            FactoryTextField(
               controller: _breakController,
               enabled: !_isSubmitting,
               keyboardType: TextInputType.number,
-              decoration: InputDecoration(labelText: l10n.recurringScheduleBreakMinutesLabel),
+              label: l10n.recurringScheduleBreakMinutesLabel,
             ),
             const SizedBox(height: FactorySpacing.space2),
             ListTile(
@@ -150,15 +150,15 @@ class _RecurringScheduleDialogState extends ConsumerState<RecurringScheduleDialo
         ),
       ),
       actions: [
-        TextButton(
+        FactoryButton(
+          label: l10n.cancelButton,
+          variant: FactoryButtonVariant.text,
           onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
-          child: Text(l10n.cancelButton),
         ),
-        FilledButton(
+        FactoryButton(
+          label: l10n.addButton,
+          isLoading: _isSubmitting,
           onPressed: _isSubmitting ? null : _submit,
-          child: _isSubmitting
-              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-              : Text(l10n.addButton),
         ),
       ],
     );
