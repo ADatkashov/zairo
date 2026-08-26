@@ -1,3 +1,4 @@
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../l10n/app_localizations.dart';
@@ -18,21 +19,31 @@ class LoggedOutGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(FactorySpacing.space6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 64, color: Theme.of(context).colorScheme.outline),
-            const SizedBox(height: 16),
-            Text(message, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16)),
-            const SizedBox(height: 20),
-            FilledButton(
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(color: colors.surfaceAlt, shape: BoxShape.circle),
+              child: Icon(icon, size: FactoryIconSize.lg, color: colors.textTertiary),
+            ),
+            const SizedBox(height: FactorySpacing.space4),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
+            ),
+            const SizedBox(height: FactorySpacing.space5),
+            FactoryButton(
+              label: l10n.loginTitle,
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const LoginScreen()),
               ),
-              child: Text(l10n.loginTitle),
             ),
           ],
         ),

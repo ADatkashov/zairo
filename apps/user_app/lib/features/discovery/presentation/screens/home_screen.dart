@@ -64,21 +64,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(height: FactorySpacing.space4),
                   _SearchEntry(onTap: () => context.go('/search')),
                   const SizedBox(height: FactorySpacing.space4),
-                  Wrap(
-                    spacing: FactorySpacing.space2,
-                    runSpacing: FactorySpacing.space2,
+                  Text(l10n.homeCategoriesTitle, style: textTheme.titleSmall),
+                  const SizedBox(height: FactorySpacing.space3),
+                  Row(
                     children: [
-                      FactoryChip(
+                      FactoryCategoryTile(
+                        icon: Icons.apps_rounded,
                         label: l10n.searchFilterCategoryAll,
                         selected: _vertical == null,
                         onTap: () => setState(() => _vertical = null),
                       ),
-                      FactoryChip(
+                      const SizedBox(width: FactorySpacing.space3),
+                      FactoryCategoryTile(
+                        icon: Icons.content_cut_rounded,
                         label: l10n.discoveryVerticalBeauty,
                         selected: _vertical == 'beauty',
                         onTap: () => setState(() => _vertical = 'beauty'),
                       ),
-                      FactoryChip(
+                      const SizedBox(width: FactorySpacing.space3),
+                      FactoryCategoryTile(
+                        icon: Icons.directions_car_filled_rounded,
                         label: l10n.discoveryVerticalAuto,
                         selected: _vertical == 'auto',
                         onTap: () => setState(() => _vertical = 'auto'),
