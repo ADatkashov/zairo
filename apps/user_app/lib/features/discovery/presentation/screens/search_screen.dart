@@ -279,22 +279,18 @@ class _FilterSheetState extends State<_FilterSheet> {
           Row(
             children: [
               Expanded(
-                child: TextField(
+                child: FactoryTextField(
                   controller: _minPriceController,
                   keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    hintText: l10n.searchFilterPriceMinHint,
-                  ),
+                  label: l10n.searchFilterPriceMinHint,
                 ),
               ),
               const SizedBox(width: FactorySpacing.space2),
               Expanded(
-                child: TextField(
+                child: FactoryTextField(
                   controller: _maxPriceController,
                   keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    hintText: l10n.searchFilterPriceMaxHint,
-                  ),
+                  label: l10n.searchFilterPriceMaxHint,
                 ),
               ),
             ],

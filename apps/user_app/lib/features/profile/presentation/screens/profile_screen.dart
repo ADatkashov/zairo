@@ -19,8 +19,8 @@ class ProfileScreen extends ConsumerWidget {
     final authState = ref.watch(authControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.profileTitle),
+      appBar: FactoryAppBar(
+        title: l10n.profileTitle,
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -70,10 +70,11 @@ class _LoggedOutView extends StatelessWidget {
               onAction: () =>
                   Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginScreen())),
             ),
-            TextButton(
+            FactoryButton(
+              label: l10n.profileCreateAccount,
+              variant: FactoryButtonVariant.text,
               onPressed: () =>
                   Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RegisterScreen())),
-              child: Text(l10n.profileCreateAccount),
             ),
           ],
         ),
