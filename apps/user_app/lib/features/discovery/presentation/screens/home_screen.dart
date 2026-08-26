@@ -4,23 +4,36 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../l10n/app_localizations.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../booking/presentation/screens/provider_detail_screen.dart';
+import '../../../maps/presentation/providers/maps_providers.dart';
 import '../providers/discovery_providers.dart';
 import '../widgets/provider_card.dart';
-
-const _homeQuery = DiscoveryQuery();
 
 /// The Home tab: curated discovery, not a search box with results glued
 /// underneath (that's the Search tab). Tapping the search field switches to
 /// Search rather than pushing a new screen, matching how the other bottom
 /// nav destinations behave.
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  /// null = every vertical. Only two real values exist today (`beauty`,
+  /// `auto`) — this mirrors Search's own filter sheet rather than inventing
+  /// a category taxonomy the backend doesn't have.
+  String? _vertical;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final resultsAsync = ref.watch(searchResultsProvider(_homeQuery));
+    final query = DiscoveryQuery(vertical: _vertical);
+    final resultsAsync = ref.watch(searchResultsProvider(query));
+    final locationAsync = ref.watch(currentLocationProvider);
+    final user = ref.watch(authControllerProvider).valueOrNull;
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
@@ -32,7 +45,7 @@ class HomeScreen extends ConsumerWidget {
             final openCount = results.where((r) => r.hasOpenAvailability).length;
             final topRated = results.take(8).toList();
             return RefreshIndicator(
-              onRefresh: () => ref.refresh(searchResultsProvider(_homeQuery).future),
+              onRefresh: () => ref.refresh(searchResultsProvider(query).future),
               child: ListView(
                 padding: const EdgeInsets.all(FactorySpacing.space4),
                 children: [
@@ -40,18 +53,48 @@ class HomeScreen extends ConsumerWidget {
                     children: [
                       Icon(Icons.location_on_outlined, size: 16, color: colors.primary),
                       const SizedBox(width: 4),
-                      // Fixed mock origin (Almaty) — see maps/data/location_service.dart.
-                      Text('Almaty', style: textTheme.titleSmall),
+                      Text(locationAsync.valueOrNull?.label ?? l10n.homeLocationUnknown, style: textTheme.titleSmall),
                     ],
+                  ),
+                  const SizedBox(height: FactorySpacing.space1),
+                  Text(
+                    user != null ? l10n.homeGreeting(user.displayName) : l10n.homeGreetingGuest,
+                    style: textTheme.headlineSmall?.copyWith(color: colors.text),
                   ),
                   const SizedBox(height: FactorySpacing.space4),
                   _SearchEntry(onTap: () => context.go('/search')),
+                  const SizedBox(height: FactorySpacing.space4),
+                  Wrap(
+                    spacing: FactorySpacing.space2,
+                    runSpacing: FactorySpacing.space2,
+                    children: [
+                      FactoryChip(
+                        label: l10n.searchFilterCategoryAll,
+                        selected: _vertical == null,
+                        onTap: () => setState(() => _vertical = null),
+                      ),
+                      FactoryChip(
+                        label: l10n.discoveryVerticalBeauty,
+                        selected: _vertical == 'beauty',
+                        onTap: () => setState(() => _vertical = 'beauty'),
+                      ),
+                      FactoryChip(
+                        label: l10n.discoveryVerticalAuto,
+                        selected: _vertical == 'auto',
+                        onTap: () => setState(() => _vertical = 'auto'),
+                      ),
+                    ],
+                  ),
                   if (openCount > 0) ...[
                     const SizedBox(height: FactorySpacing.space5),
                     _AvailabilityHero(count: openCount),
                   ],
                   const SizedBox(height: FactorySpacing.space6),
-                  Text(l10n.homeTopRatedTitle, style: textTheme.titleMedium),
+                  FactorySectionHeader(
+                    title: l10n.homeTopRatedTitle,
+                    actionLabel: l10n.homeSeeAll,
+                    onActionTap: () => context.go('/search'),
+                  ),
                   const SizedBox(height: FactorySpacing.space3),
                   if (topRated.isEmpty)
                     FactoryEmptyState(
@@ -93,7 +136,7 @@ class HomeScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(FactorySpacing.space4),
               child: FactoryErrorState(
                 message: l10n.errorHomeFeedLoadFailed,
-                onRetry: () => ref.invalidate(searchResultsProvider(_homeQuery)),
+                onRetry: () => ref.invalidate(searchResultsProvider(query)),
               ),
             ),
           ),
