@@ -1,3 +1,4 @@
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -17,7 +18,7 @@ class MainWrapper extends StatelessWidget {
 
     return Scaffold(
       body: navigationShell,
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: FactoryBottomNavigation(
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: (index) {
           navigationShell.goBranch(
@@ -26,31 +27,19 @@ class MainWrapper extends StatelessWidget {
           );
         },
         destinations: [
-          NavigationDestination(
-            icon: const Icon(Icons.home_outlined),
-            selectedIcon: const Icon(Icons.home),
-            label: l10n.navHome,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.search_outlined),
-            selectedIcon: const Icon(Icons.search),
-            label: l10n.navSearch,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.event_note_outlined),
-            selectedIcon: const Icon(Icons.event_note),
+          FactoryNavDestination(icon: Icons.home_outlined, selectedIcon: Icons.home, label: l10n.navHome),
+          FactoryNavDestination(icon: Icons.search_outlined, selectedIcon: Icons.search, label: l10n.navSearch),
+          FactoryNavDestination(
+            icon: Icons.event_note_outlined,
+            selectedIcon: Icons.event_note,
             label: l10n.navBookings,
           ),
-          NavigationDestination(
-            icon: const Icon(Icons.favorite_border_rounded),
-            selectedIcon: const Icon(Icons.favorite_rounded),
+          FactoryNavDestination(
+            icon: Icons.favorite_border_rounded,
+            selectedIcon: Icons.favorite_rounded,
             label: l10n.navFavorites,
           ),
-          NavigationDestination(
-            icon: const Icon(Icons.person_outline),
-            selectedIcon: const Icon(Icons.person),
-            label: l10n.navProfile,
-          ),
+          FactoryNavDestination(icon: Icons.person_outline, selectedIcon: Icons.person, label: l10n.navProfile),
         ],
       ),
     );
