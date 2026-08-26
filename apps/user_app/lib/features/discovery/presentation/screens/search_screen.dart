@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../booking/presentation/screens/provider_detail_screen.dart';
+import '../../data/models/provider_search_result.dart';
 import '../providers/discovery_providers.dart';
 import '../widgets/provider_card.dart';
 
@@ -35,107 +36,139 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     return Scaffold(
       backgroundColor: colors.bg,
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(FactorySpacing.space4),
-              child: FactorySearchField(
-                controller: _searchController,
-                hint: l10n.searchHint,
-                autofocus: true,
-                onSubmitted: (value) {
-                  final trimmed = value.trim();
-                  setState(
-                    () => _query = _query.copyWith(
-                      query: trimmed.isEmpty ? null : trimmed,
-                    ),
-                  );
-                },
-                filterSemanticLabel: l10n.searchFiltersButton,
-                filterActive:
-                    query.hasActiveFilters ||
-                    query.sort != DiscoverySort.recommended,
-                onFilterTap: () async {
-                  final updated = await showFactoryBottomSheet<DiscoveryQuery>(
-                    context: context,
-                    isScrollControlled: true,
-                    builder: (_) => _FilterSheet(initial: _query),
-                  );
-                  if (updated != null) {
-                    setState(() => _query = updated);
-                  }
-                },
-              ),
-            ),
-            Expanded(
-              child: resultsAsync.when(
-                data: (results) {
-                  if (results.isEmpty) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(FactorySpacing.space4),
-                        child: FactoryEmptyState(
-                          icon: query.query == null
-                              ? Icons.search_rounded
-                              : Icons.search_off_rounded,
-                          title: query.query == null
-                              ? l10n.searchEmptyTitle
-                              : l10n.searchEmptyTitleQuery(query.query!),
-                          message: query.query == null
-                              ? l10n.searchEmptyMessageDefault
-                              : l10n.searchEmptyMessageQuery,
-                        ),
+        child: FactoryPageWidth(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(FactorySpacing.space4),
+                child: FactorySearchField(
+                  controller: _searchController,
+                  hint: l10n.searchHint,
+                  autofocus: true,
+                  onSubmitted: (value) {
+                    final trimmed = value.trim();
+                    setState(
+                      () => _query = _query.copyWith(
+                        query: trimmed.isEmpty ? null : trimmed,
                       ),
                     );
-                  }
-                  return RefreshIndicator(
-                    onRefresh: () =>
-                        ref.refresh(searchResultsProvider(query).future),
-                    child: ListView.separated(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: FactorySpacing.space4,
-                        vertical: FactorySpacing.space2,
-                      ),
-                      itemCount: results.length,
-                      separatorBuilder: (_, _) =>
-                          const SizedBox(height: FactorySpacing.space3),
-                      itemBuilder: (context, index) {
-                        final result = results[index];
-                        return ProviderCard(
-                          result: result,
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  ProviderDetailScreen(provider: result),
-                            ),
+                  },
+                  filterSemanticLabel: l10n.searchFiltersButton,
+                  filterActive:
+                      query.hasActiveFilters ||
+                      query.sort != DiscoverySort.recommended,
+                  onFilterTap: () async {
+                    final updated =
+                        await showFactoryBottomSheet<DiscoveryQuery>(
+                          context: context,
+                          isScrollControlled: true,
+                          builder: (_) => _FilterSheet(initial: _query),
+                        );
+                    if (updated != null) {
+                      setState(() => _query = updated);
+                    }
+                  },
+                ),
+              ),
+              Expanded(
+                child: resultsAsync.when(
+                  data: (results) {
+                    if (results.isEmpty) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(FactorySpacing.space4),
+                          child: FactoryEmptyState(
+                            icon: query.query == null
+                                ? Icons.search_rounded
+                                : Icons.search_off_rounded,
+                            title: query.query == null
+                                ? l10n.searchEmptyTitle
+                                : l10n.searchEmptyTitleQuery(query.query!),
+                            message: query.query == null
+                                ? l10n.searchEmptyMessageDefault
+                                : l10n.searchEmptyMessageQuery,
+                          ),
+                        ),
+                      );
+                    }
+                    final columns = switch (FactoryBreakpoints.of(context)) {
+                      FactoryScreenSize.mobile => 1,
+                      FactoryScreenSize.tablet => 2,
+                      FactoryScreenSize.desktop => 3,
+                    };
+                    void openProvider(ProviderSearchResult result) =>
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ProviderDetailScreen(provider: result),
                           ),
                         );
-                      },
-                    ),
-                  );
-                },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stackTrace) => Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(FactorySpacing.space4),
-                    child: FactoryErrorState(
-                      message: l10n.errorSearchLoadFailed,
-                      onRetry: () =>
-                          ref.invalidate(searchResultsProvider(query)),
+
+                    return RefreshIndicator(
+                      onRefresh: () =>
+                          ref.refresh(searchResultsProvider(query).future),
+                      child: columns == 1
+                          ? ListView.separated(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: FactorySpacing.space4,
+                                vertical: FactorySpacing.space2,
+                              ),
+                              itemCount: results.length,
+                              separatorBuilder: (_, _) =>
+                                  const SizedBox(height: FactorySpacing.space3),
+                              itemBuilder: (context, index) {
+                                final result = results[index];
+                                return ProviderCard(
+                                  result: result,
+                                  onTap: () => openProvider(result),
+                                );
+                              },
+                            )
+                          : GridView.builder(
+                              padding: const EdgeInsets.all(
+                                FactorySpacing.space4,
+                              ),
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: columns,
+                                    mainAxisSpacing: FactorySpacing.space4,
+                                    crossAxisSpacing: FactorySpacing.space4,
+                                    childAspectRatio: 0.78,
+                                  ),
+                              itemCount: results.length,
+                              itemBuilder: (context, index) {
+                                final result = results[index];
+                                return ProviderCard(
+                                  result: result,
+                                  layout: FactoryProviderCardLayout.vertical,
+                                  onTap: () => openProvider(result),
+                                );
+                              },
+                            ),
+                    );
+                  },
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (error, stackTrace) => Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(FactorySpacing.space4),
+                      child: FactoryErrorState(
+                        message: l10n.errorSearchLoadFailed,
+                        onRetry: () =>
+                            ref.invalidate(searchResultsProvider(query)),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// A plain IconButton wouldn't show whether a filter is currently active —
-/// this fills that gap with a small dot, same "state must be visible, not
 /// The filter form — presented as a bottom sheet (see [showFactoryBottomSheet]
 /// in build()), matching the design system's rule that filters live in a
 /// FilterSheet on mobile/tablet, not a centered dialog.
