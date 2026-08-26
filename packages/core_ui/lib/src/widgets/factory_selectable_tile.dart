@@ -19,9 +19,15 @@ class FactorySelectableTile extends StatelessWidget {
     this.trailing,
     this.selected = false,
     this.onTap,
+    this.titleColor,
   });
 
   final String title;
+
+  /// Defaults to the theme's usual title color — set this to dim the title
+  /// itself (e.g. `colors.textTertiary`) for a deactivated/removed row,
+  /// same idea as [FactoryServiceCard]'s inactive-state dimming.
+  final Color? titleColor;
 
   /// Free-form so callers keep control of subtitle style — a bio reads as
   /// body text, a license plate reads as mono, and this doesn't pick for them.
@@ -61,7 +67,12 @@ class FactorySelectableTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: textTheme.titleSmall),
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: titleColor == null ? textTheme.titleSmall : textTheme.titleSmall?.copyWith(color: titleColor),
+                    ),
                     if (subtitle != null) ...[const SizedBox(height: 2), subtitle!],
                   ],
                 ),
