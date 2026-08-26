@@ -16,6 +16,7 @@ class FactorySearchField extends StatelessWidget {
     this.onSubmitted,
     this.onFilterTap,
     this.filterSemanticLabel = 'Filters',
+    this.filterActive = false,
     this.autofocus = false,
   });
 
@@ -30,6 +31,12 @@ class FactorySearchField extends StatelessWidget {
   /// relying on the English default (same convention as
   /// FactoryProviderCard's favorite labels).
   final String filterSemanticLabel;
+
+  /// Tints the filter button the same way a selected [FactoryChip] reads —
+  /// set this when [onFilterTap] leads to a filter set that isn't the
+  /// default, so the field itself shows a filter is applied without the
+  /// caller needing a separate indicator.
+  final bool filterActive;
 
   final bool autofocus;
 
@@ -51,6 +58,7 @@ class FactorySearchField extends StatelessWidget {
                 icon: Icons.tune_rounded,
                 onPressed: onFilterTap,
                 semanticLabel: filterSemanticLabel,
+                isActive: filterActive,
               )
             : null,
       ),

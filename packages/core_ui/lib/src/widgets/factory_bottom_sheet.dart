@@ -19,19 +19,31 @@ class FactoryBottomSheet extends StatelessWidget {
 
     return SafeArea(
       top: false,
-      child: Padding(
-        padding: const EdgeInsets.only(top: FactorySpacing.space2),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(color: colors.borderStrong, borderRadius: BorderRadius.circular(999)),
-            ),
-            const SizedBox(height: FactorySpacing.space3),
-            child,
-          ],
+      // A single scroll region for the handle + content together — nesting a
+      // second SingleChildScrollView inside [child] doesn't get a bounded
+      // height from this Column (mainAxisSize.min) and silently stops
+      // scrolling, overflowing instead once content exceeds the sheet's
+      // available height. Content that needs its own internal scrolling
+      // (a long list) should size itself explicitly rather than relying on
+      // this one.
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.only(top: FactorySpacing.space2),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: colors.borderStrong,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              const SizedBox(height: FactorySpacing.space3),
+              child,
+            ],
+          ),
         ),
       ),
     );
