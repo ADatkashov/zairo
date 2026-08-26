@@ -4716,3 +4716,70 @@ trust-сигналы бренда, нужен отдельный цветово�
 (`82f2463` … `bed695e`), без отдельных подтверждений на каждый коммит —
 по правилу из `CLAUDE.md` и по прямому запросу пользователя работать
 автономно. Слияние `develop` → `test` — решение пользователя, не мной.
+
+## Миграция голого Material на Factory-компоненты (2026-08-26, продолжение)
+
+После завершения 15 фаз пользователь попросил закрыть один из
+осознанно отложенных пунктов: домигрировать ~150 мест голого Material
+(`business_admin` — dashboard/salon_detail/moderation и остальное;
+затем то же для `user_app`) на компоненты из core_ui.
+
+**business_admin** — мигрирован полностью: Settings, Moderation,
+Dashboard, Login, Register, Billing, все 8 form-диалогов
+(add_master/add_mechanic/add_slot/add_service/add_portfolio_item/
+recurring_schedule/manage_master_services/manage_mechanic_services),
+и `salon_detail_screen.dart` (941 строка, самый крупный файл в
+приложении). По ходу удалил локальный дубликат `_SectionHeader`
+(идентичен `FactorySectionHeader`, просто не был им назван) и
+объединил `_MasterAdminRow`/`_MechanicAdminRow` в `FactorySelectableTile`
+(тот же паттерн дублирования, что чинили в Phase 8–10 для booking flow).
+Единственное осознанно оставшееся место — многострочная
+кастомно-стилизованная ссылка в `dashboard_screen.dart` (не влезает в
+API `FactoryButton`).
+
+**user_app** — тоже мигрирован полностью (0 оставшихся голых
+ElevatedButton/TextButton/OutlinedButton/TextField/TextFormField/
+AppBar/AlertDialog): Settings, MockMap, Favorites, ProviderDetail,
+MasterPortfolio, Profile, Search (включая min/max price поля), Vehicles
++ AddVehicleDialog, MyBookings, ReviewSection, ForgotPassword, Login,
+Register.
+
+**Расширения core_ui, понадобившиеся по ходу** (не выдумывались заранее
+— каждое всплыло как реальный блокер при попытке мигрировать конкретный
+экран):
+- `FactoryTextField` пересобран на `TextFormField` (+`validator`/
+  `autovalidateMode`) — без этого не мигрировался ни один экран с
+  `Form`/`GlobalKey<FormState>` (login, register, add_vehicle и т.д.).
+- `FactoryDialog`/`showFactoryDialog` получили необязательный `content`
+  (виджет) в дополнение к `message` (строке) — почти все form-диалоги
+  имеют кастомный контент (текстовые поля, чекбоксы), а не просто текст.
+- `FactorySelectableTile` получил `titleColor` — иначе терялась
+  приглушённая подпись у деактивированных мастеров/механиков при
+  переносе с ручного `Container` на компонент.
+- `FactoryButton` получил вариант `textDanger` (красный TextButton, в
+  дополнение к уже существующему `danger` — красной FilledButton) —
+  `my_bookings_screen.dart` использует "Cancel booking" дважды (триггер
+  на карточке и подтверждение в диалоге), и схлопывание обоих в один
+  `danger` сделало их визуально неразличимыми и сломало тест на
+  `widgetWithText(FilledButton, ...)`.
+
+**Попутные находки/фиксы, не связанные напрямую с Material-миграцией**:
+- Осиротевший фрагмент doc-комментария от старого `_FiltersButton`
+  (Phase 7) в `search_screen.dart` — удалён.
+- Несколько мест с hint-only полями (`hintText` без `labelText`) —
+  Search price min/max, review comment — переведены на persistent
+  label по правилу design system'а ("никогда только placeholder").
+- Хардкоженные `SizedBox(height: 12/16/20)` в `register_screen.dart`
+  (оба приложения) и `forgot_password_screen.dart` — на `FactorySpacing`.
+
+**Тесты**: добавлены `login_screen_test.dart`/`register_screen_test.dart`
+для business_admin (раньше не было вообще, только unit-тест на
+`AuthController`), плюс тесты на новые возможности core_ui (`validator`,
+`content`, `textDanger`). Финальный прогон: `core_ui` 44/44, `user_app`
+62/62, `business_admin` 32/32, `flutter analyze` чист во всех трёх
+(только 5 предсуществующих info-заметок в несвязанном
+`discovery_api.dart`).
+
+### Текущий статус
+Закоммичено 5 отдельными коммитами, запушено в `develop`
+(`eacc70e` … `9d53a72`), без подтверждений — по тому же правилу.
