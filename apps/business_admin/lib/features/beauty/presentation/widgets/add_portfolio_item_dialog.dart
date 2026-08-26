@@ -38,22 +38,23 @@ class _AddPortfolioItemDialogState extends ConsumerState<AddPortfolioItemDialog>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return AlertDialog(
-      title: Text(l10n.addPortfolioDialogTitle),
+    return FactoryDialog(
+      title: l10n.addPortfolioDialogTitle,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          OutlinedButton.icon(
-            icon: const Icon(Icons.image_outlined),
-            label: Text(_pickedName ?? l10n.choosePhotoLabel),
+          FactoryButton(
+            icon: Icons.image_outlined,
+            label: _pickedName ?? l10n.choosePhotoLabel,
+            variant: FactoryButtonVariant.secondary,
             onPressed: _isSubmitting ? null : _pickFile,
           ),
-          const SizedBox(height: 8),
-          TextField(
+          const SizedBox(height: FactorySpacing.space3),
+          FactoryTextField(
             controller: _captionController,
             enabled: !_isSubmitting,
-            decoration: InputDecoration(labelText: l10n.captionOptionalLabel),
+            label: l10n.captionOptionalLabel,
           ),
           if (_error != null)
             Padding(
@@ -63,15 +64,15 @@ class _AddPortfolioItemDialogState extends ConsumerState<AddPortfolioItemDialog>
         ],
       ),
       actions: [
-        TextButton(
+        FactoryButton(
+          label: l10n.cancelButton,
+          variant: FactoryButtonVariant.text,
           onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
-          child: Text(l10n.cancelButton),
         ),
-        FilledButton(
+        FactoryButton(
+          label: l10n.addButton,
+          isLoading: _isSubmitting,
           onPressed: _isSubmitting ? null : _submit,
-          child: _isSubmitting
-              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-              : Text(l10n.addButton),
         ),
       ],
     );

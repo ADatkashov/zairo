@@ -26,6 +26,7 @@
   "logOutTooltip": "Выйти",
 
   "settingsButtonTooltip": "Настройки",
+  "navDashboard": "Дашборд",
   "settingsTitle": "Настройки",
   "darkModeTitle": "Тёмная тема",
   "darkModeSubtitle": "Текущая тема: {mode}",

@@ -31,8 +31,8 @@ class _AddSlotDialogState extends ConsumerState<AddSlotDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return AlertDialog(
-      title: Text(l10n.addSlotDialogTitle),
+    return FactoryDialog(
+      title: l10n.addSlotDialogTitle,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,11 +49,11 @@ class _AddSlotDialogState extends ConsumerState<AddSlotDialog> {
             trailing: const Icon(Icons.access_time),
             onTap: _isSubmitting ? null : _pickTime,
           ),
-          TextField(
+          FactoryTextField(
             controller: _durationController,
             enabled: !_isSubmitting,
             keyboardType: TextInputType.number,
-            decoration: InputDecoration(labelText: l10n.durationMinutesLabel),
+            label: l10n.durationMinutesLabel,
           ),
           if (_error != null)
             Padding(
@@ -63,15 +63,15 @@ class _AddSlotDialogState extends ConsumerState<AddSlotDialog> {
         ],
       ),
       actions: [
-        TextButton(
+        FactoryButton(
+          label: l10n.cancelButton,
+          variant: FactoryButtonVariant.text,
           onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
-          child: Text(l10n.cancelButton),
         ),
-        FilledButton(
+        FactoryButton(
+          label: l10n.addButton,
+          isLoading: _isSubmitting,
           onPressed: _isSubmitting ? null : _submit,
-          child: _isSubmitting
-              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-              : Text(l10n.addButton),
         ),
       ],
     );

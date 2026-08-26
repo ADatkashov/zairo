@@ -66,7 +66,10 @@ class FactoryColors extends ThemeExtension<FactoryColors> {
     accent: Color(0xFFC99A3E),
     accentTint: Color(0xFFE6CD97),
     success: Color(0xFF2E8B6F),
-    warning: Color(0xFFB9862E),
+    // Darkened from the design system artifact's #B9862E (2.98:1 on `bg` —
+    // fails WCAG AA even at the 3:1 large-text/UI-component floor). Same
+    // hue/saturation, lower lightness: 4.64:1.
+    warning: Color(0xFF906824),
     error: Color(0xFFB5453B),
     info: Color(0xFF3E6E93),
   );

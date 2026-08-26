@@ -28,7 +28,7 @@ class MyBookingsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: colors.bg,
-      appBar: AppBar(title: Text(l10n.myBookingsTitle)),
+      appBar: FactoryAppBar(title: l10n.myBookingsTitle),
       body: authState.when(
         data: (user) => user == null
             ? LoggedOutGate(icon: Icons.event_note_outlined, message: l10n.bookingsLoggedOutPrompt)
@@ -110,65 +110,64 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
     final colors = context.factoryColors;
     final booking = widget.booking;
 
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(FactorySpacing.space4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                FactoryPriceText(amount: booking.totalPrice, fontSize: 16, weight: FontWeight.w700),
-                FactoryBadge(label: _statusLabel(l10n, booking.status), variant: _statusVariant(booking.status)),
-              ],
-            ),
-            const SizedBox(height: FactorySpacing.space1),
-            Text(
-              l10n.bookedOnLabel(formatMonthDayTime(l10n, booking.createdAt.toLocal())),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-            ),
-            const SizedBox(height: FactorySpacing.space2),
-            PaymentStatusChip(bookingId: booking.id),
-            if (booking.status == 'COMPLETED') ReviewSection(bookingId: booking.id),
-            if (booking.status == 'CONFIRMED') ...[
-              const SizedBox(height: FactorySpacing.space2),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  onPressed: _isCancelling ? null : _confirmAndCancel,
-                  style: TextButton.styleFrom(foregroundColor: colors.error),
-                  child: _isCancelling
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                      : Text(l10n.cancelBookingButton),
-                ),
-              ),
+    return FactoryCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              FactoryPriceText(amount: booking.totalPrice, fontSize: 16, weight: FontWeight.w700),
+              FactoryBadge(label: _statusLabel(l10n, booking.status), variant: _statusVariant(booking.status)),
             ],
+          ),
+          const SizedBox(height: FactorySpacing.space1),
+          Text(
+            l10n.bookedOnLabel(formatMonthDayTime(l10n, booking.createdAt.toLocal())),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+          ),
+          const SizedBox(height: FactorySpacing.space2),
+          PaymentStatusChip(bookingId: booking.id),
+          if (booking.status == 'COMPLETED') ReviewSection(bookingId: booking.id),
+          if (booking.status == 'CONFIRMED') ...[
+            const SizedBox(height: FactorySpacing.space2),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: FactoryButton(
+                label: l10n.cancelBookingButton,
+                variant: FactoryButtonVariant.textDanger,
+                isLoading: _isCancelling,
+                onPressed: _isCancelling ? null : _confirmAndCancel,
+              ),
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
 
   Future<void> _confirmAndCancel() async {
     final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showFactoryDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.cancelBookingConfirmTitle),
-        content: Text(l10n.cancelBookingConfirmMessage),
-        actions: [
-          TextButton(
+      title: l10n.cancelBookingConfirmTitle,
+      message: l10n.cancelBookingConfirmMessage,
+      actions: [
+        Builder(
+          builder: (dialogContext) => FactoryButton(
+            label: l10n.cancelBookingKeepButton,
+            variant: FactoryButtonVariant.text,
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(l10n.cancelBookingKeepButton),
           ),
-          FilledButton(
+        ),
+        Builder(
+          builder: (dialogContext) => FactoryButton(
+            label: l10n.cancelBookingConfirmButton,
+            variant: FactoryButtonVariant.danger,
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(l10n.cancelBookingConfirmButton),
           ),
-        ],
-      ),
+        ),
+      ],
     );
     if (confirmed != true) return;
 

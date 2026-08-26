@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'factory_colors.dart';
+import 'factory_control_size.dart';
 import 'factory_radius.dart';
 import 'factory_typography.dart';
 
@@ -76,6 +77,7 @@ ThemeData _factoryTheme(FactoryColors colors) {
         disabledForegroundColor: colors.onPrimary.withValues(alpha: 0.8),
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        minimumSize: const Size(64, FactoryButtonHeight.md),
         textStyle: textTheme.labelLarge,
         shape: RoundedRectangleBorder(borderRadius: FactoryRadius.mdRadius),
       ),
@@ -92,6 +94,7 @@ ThemeData _factoryTheme(FactoryColors colors) {
         disabledForegroundColor: colors.onPrimary.withValues(alpha: 0.8),
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        minimumSize: const Size(64, FactoryButtonHeight.md),
         textStyle: textTheme.labelLarge,
         shape: RoundedRectangleBorder(borderRadius: FactoryRadius.mdRadius),
       ),
@@ -101,6 +104,7 @@ ThemeData _factoryTheme(FactoryColors colors) {
         foregroundColor: colors.text,
         side: BorderSide(color: colors.border, width: 1.5),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        minimumSize: const Size(64, FactoryButtonHeight.md),
         textStyle: textTheme.labelLarge,
         shape: RoundedRectangleBorder(borderRadius: FactoryRadius.mdRadius),
       ),
@@ -109,6 +113,9 @@ ThemeData _factoryTheme(FactoryColors colors) {
       style: TextButton.styleFrom(
         foregroundColor: colors.primaryStrong,
         textStyle: textTheme.labelLarge,
+        // 44×44 accessible minimum even though a text button reads visually
+        // compact — Factory Design System, Component API §Button.
+        minimumSize: const Size(44, 44),
       ),
     ),
     iconButtonTheme: IconButtonThemeData(
@@ -116,6 +123,7 @@ ThemeData _factoryTheme(FactoryColors colors) {
         backgroundColor: colors.surface,
         foregroundColor: colors.text,
         side: BorderSide(color: colors.border),
+        minimumSize: const Size(44, 44),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(

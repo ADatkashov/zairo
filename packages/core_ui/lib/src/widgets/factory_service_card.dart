@@ -7,9 +7,12 @@ import 'factory_price_text.dart';
 
 /// A bookable line item — a haircut today, an oil change or a lesson hour
 /// tomorrow. Duration/meta on the left, price on the right; nothing here
-/// is beauty-specific.
-class ServiceRow extends StatelessWidget {
-  const ServiceRow({
+/// is beauty-specific. Named `FactoryServiceCard` per the Factory Design
+/// System artifact's Flutter mapping table, even though it renders as a row
+/// rather than a card shape — the design system's component name, not its
+/// visual shape, is what call sites and docs refer to it by.
+class FactoryServiceCard extends StatelessWidget {
+  const FactoryServiceCard({
     super.key,
     required this.title,
     required this.metaText,
