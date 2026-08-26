@@ -2,6 +2,7 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/formatting/initials.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
@@ -30,13 +31,13 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: Center(
-        child: authState.when(
-          data: (user) => user == null
-              ? _LoggedOutView()
-              : _LoggedInView(userId: user.id, displayName: user.displayName, email: user.email),
-          loading: () => const CircularProgressIndicator(),
-          error: (error, stackTrace) => Padding(
+      body: authState.when(
+        data: (user) => user == null
+            ? const _LoggedOutView()
+            : _LoggedInView(userId: user.id, displayName: user.displayName, email: user.email),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) => Center(
+          child: Padding(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             child: FactoryErrorState(
               message: l10n.errorProfileGeneric(error.toString()),
@@ -50,28 +51,33 @@ class ProfileScreen extends ConsumerWidget {
 }
 
 class _LoggedOutView extends StatelessWidget {
+  const _LoggedOutView();
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(Icons.person_outline, size: 100),
-        const SizedBox(height: 16),
-        Text(l10n.profileLoggedOutPrompt, style: const TextStyle(fontSize: 16)),
-        const SizedBox(height: 20),
-        FilledButton(
-          onPressed: () => Navigator.of(context)
-              .push(MaterialPageRoute(builder: (_) => const LoginScreen())),
-          child: Text(l10n.loginTitle),
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(FactorySpacing.space6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FactoryEmptyState(
+              icon: Icons.person_outline,
+              title: l10n.profileLoggedOutTitle,
+              message: l10n.profileLoggedOutPrompt,
+              actionLabel: l10n.loginTitle,
+              onAction: () =>
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginScreen())),
+            ),
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RegisterScreen())),
+              child: Text(l10n.profileCreateAccount),
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
-        TextButton(
-          onPressed: () => Navigator.of(context)
-              .push(MaterialPageRoute(builder: (_) => const RegisterScreen())),
-          child: Text(l10n.profileCreateAccount),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -86,25 +92,37 @@ class _LoggedInView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return ListView(
+      padding: const EdgeInsets.all(FactorySpacing.space4),
       children: [
-        const Icon(Icons.person, size: 100),
-        const SizedBox(height: 16),
-        Text(displayName, style: Theme.of(context).textTheme.headlineSmall),
-        Text(email, style: Theme.of(context).textTheme.bodyMedium),
-        const SizedBox(height: 20),
-        OutlinedButton.icon(
-          icon: const Icon(Icons.directions_car_outlined),
-          onPressed: () => Navigator.of(context).push(
+        const SizedBox(height: FactorySpacing.space4),
+        Center(
+          child: FactoryAvatar(initials: initialsFor(displayName), size: FactoryAvatarSize.xl),
+        ),
+        const SizedBox(height: FactorySpacing.space3),
+        Center(child: Text(displayName, style: textTheme.headlineSmall, textAlign: TextAlign.center)),
+        const SizedBox(height: FactorySpacing.space1),
+        Center(
+          child: Text(email, style: textTheme.bodyMedium?.copyWith(color: colors.textTertiary)),
+        ),
+        const SizedBox(height: FactorySpacing.space8),
+        FactorySelectableTile(
+          title: l10n.myVehiclesButton,
+          leading: Icon(Icons.directions_car_outlined, color: colors.textSecondary),
+          trailing: Icon(Icons.chevron_right_rounded, color: colors.textTertiary),
+          onTap: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => VehiclesScreen(userId: userId)),
           ),
-          label: Text(l10n.myVehiclesButton),
         ),
-        const SizedBox(height: 8),
-        OutlinedButton(
+        const SizedBox(height: FactorySpacing.space6),
+        FactoryButton(
+          label: l10n.profileLogOut,
+          variant: FactoryButtonVariant.secondary,
+          expand: true,
           onPressed: () => ref.read(authControllerProvider.notifier).logout(),
-          child: Text(l10n.profileLogOut),
         ),
       ],
     );
