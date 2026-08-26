@@ -63,6 +63,9 @@
   "settingsButtonTooltip": "Settings",
   "@settingsButtonTooltip": {"description": "Dashboard/Moderation AppBar action opening Settings."},
 
+  "navDashboard": "Dashboard",
+  "@navDashboard": {"description": "Desktop sidebar nav label for the salon dashboard destination."},
+
   "settingsTitle": "Settings",
   "@settingsTitle": {"description": "Settings screen app bar title."},
 
