@@ -2,6 +2,7 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/formatting/initials.dart';
 import '../../../../core/formatting/month_day_time.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
@@ -408,7 +409,7 @@ class _MasterOption extends StatelessWidget {
             )
           : null,
       leading: FactoryAvatar(
-        initials: _initialsFor(master.displayName),
+        initials: initialsFor(master.displayName),
         image: master.photoUrl != null ? NetworkImage(master.photoUrl!) : null,
       ),
       trailing: IconButton(
@@ -454,7 +455,7 @@ class _MechanicOption extends StatelessWidget {
             )
           : null,
       leading: FactoryAvatar(
-        initials: _initialsFor(mechanic.displayName),
+        initials: initialsFor(mechanic.displayName),
         image: mechanic.photoUrl != null ? NetworkImage(mechanic.photoUrl!) : null,
       ),
       selected: selected,
@@ -489,12 +490,3 @@ class _VehicleOption extends StatelessWidget {
 }
 
 String _capitalize(String s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';
-
-String _initialsFor(String name) {
-  final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
-  if (parts.isEmpty) return '?';
-  if (parts.length == 1) {
-    return parts.first.substring(0, parts.first.length >= 2 ? 2 : 1).toUpperCase();
-  }
-  return (parts[0][0] + parts[1][0]).toUpperCase();
-}

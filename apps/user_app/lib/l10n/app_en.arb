@@ -431,6 +431,9 @@
     }
   },
 
+  "profileLoggedOutTitle": "You're not logged in",
+  "@profileLoggedOutTitle": {"description": "Profile screen's logged-out empty state title."},
+
   "profileLoggedOutPrompt": "Log in to book and review providers",
   "@profileLoggedOutPrompt": {"description": "Profile screen's logged-out prompt above the Log in button."},
 

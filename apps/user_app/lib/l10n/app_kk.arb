@@ -131,6 +131,7 @@
 
   "profileTitle": "Профиль",
   "errorProfileGeneric": "Бірдеңе дұрыс болмады: {error}",
+  "profileLoggedOutTitle": "Сіз жүйеге кірмегенсіз",
   "profileLoggedOutPrompt": "Брондау және пікір қалдыру үшін кіріңіз",
   "profileCreateAccount": "Аккаунт құру",
   "profileLogOut": "Шығу",

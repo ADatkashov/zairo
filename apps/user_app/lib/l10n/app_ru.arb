@@ -131,6 +131,7 @@
 
   "profileTitle": "Профиль",
   "errorProfileGeneric": "Что-то пошло не так: {error}",
+  "profileLoggedOutTitle": "Вы не авторизованы",
   "profileLoggedOutPrompt": "Войдите, чтобы бронировать и оставлять отзывы",
   "profileCreateAccount": "Создать аккаунт",
   "profileLogOut": "Выйти",
