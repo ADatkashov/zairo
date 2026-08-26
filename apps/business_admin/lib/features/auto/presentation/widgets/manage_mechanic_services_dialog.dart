@@ -23,8 +23,8 @@ class ManageMechanicServicesDialog extends ConsumerWidget {
     final servicesAsync = ref.watch(providerServicesProvider((providerId, false)));
     final linkedAsync = ref.watch(adminMechanicServicesProvider(mechanicId));
 
-    return AlertDialog(
-      title: Text(l10n.manageMechanicServicesDialogTitle),
+    return FactoryDialog(
+      title: l10n.manageMechanicServicesDialogTitle,
       content: servicesAsync.when(
         data: (services) {
           if (services.isEmpty) {
@@ -51,7 +51,11 @@ class ManageMechanicServicesDialog extends ConsumerWidget {
         error: (error, stackTrace) => Text(l10n.errorServicesLoadFailed(error.toString())),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(l10n.doneButton)),
+        FactoryButton(
+          label: l10n.doneButton,
+          variant: FactoryButtonVariant.text,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ],
     );
   }

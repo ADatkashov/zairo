@@ -26,6 +26,7 @@
   "logOutTooltip": "Шығу",
 
   "settingsButtonTooltip": "Баптаулар",
+  "navDashboard": "Дашборд",
   "settingsTitle": "Баптаулар",
   "darkModeTitle": "Қараңғы режим",
   "darkModeSubtitle": "Ағымдағы тақырып: {mode}",

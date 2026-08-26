@@ -40,8 +40,8 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
 
     return Scaffold(
       backgroundColor: colors.bg,
-      appBar: AppBar(
-        title: Text(_provider.name),
+      appBar: FactoryAppBar(
+        title: _provider.name,
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined),
@@ -139,27 +139,29 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return AlertDialog(
-      title: Text(l10n.editBusinessTooltip),
+    return FactoryDialog(
+      title: l10n.editBusinessTooltip,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextField(
+          FactoryTextField(
             controller: _nameController,
             enabled: !_isSubmitting,
-            decoration: InputDecoration(labelText: l10n.businessNameLabel),
+            label: l10n.businessNameLabel,
           ),
-          TextField(
+          const SizedBox(height: FactorySpacing.space3),
+          FactoryTextField(
             controller: _latController,
             enabled: !_isSubmitting,
             keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-            decoration: InputDecoration(labelText: l10n.latitudeOptionalLabel),
+            label: l10n.latitudeOptionalLabel,
           ),
-          TextField(
+          const SizedBox(height: FactorySpacing.space3),
+          FactoryTextField(
             controller: _lngController,
             enabled: !_isSubmitting,
             keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-            decoration: InputDecoration(labelText: l10n.longitudeOptionalLabel),
+            label: l10n.longitudeOptionalLabel,
           ),
           if (_error != null)
             Padding(
@@ -169,15 +171,15 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
         ],
       ),
       actions: [
-        TextButton(
+        FactoryButton(
+          label: l10n.cancelButton,
+          variant: FactoryButtonVariant.text,
           onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
-          child: Text(l10n.cancelButton),
         ),
-        FilledButton(
+        FactoryButton(
+          label: l10n.saveButton,
+          isLoading: _isSubmitting,
           onPressed: _isSubmitting ? null : _submit,
-          child: _isSubmitting
-              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-              : Text(l10n.saveButton),
         ),
       ],
     );
@@ -220,24 +222,6 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, required this.trailing});
-
-  final String title;
-  final Widget trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(title, style: Theme.of(context).textTheme.titleMedium),
-        trailing,
-      ],
-    );
-  }
-}
-
 class _ServicesSection extends ConsumerWidget {
   final String providerId;
 
@@ -253,19 +237,21 @@ class _ServicesSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionHeader(
+        FactorySectionHeader(
           title: l10n.servicesSectionTitle,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextButton(
+              FactoryButton(
+                label: showInactive ? l10n.hideRemovedButton : l10n.showRemovedButton,
+                variant: FactoryButtonVariant.text,
                 onPressed: () =>
                     ref.read(showInactiveServicesProvider(providerId).notifier).state = !showInactive,
-                child: Text(showInactive ? l10n.hideRemovedButton : l10n.showRemovedButton),
               ),
-              TextButton.icon(
-                icon: const Icon(Icons.add),
-                label: Text(l10n.addButton),
+              FactoryButton(
+                icon: Icons.add,
+                label: l10n.addButton,
+                variant: FactoryButtonVariant.text,
                 onPressed: () async {
                   final added = await showDialog<bool>(
                     context: context,
@@ -379,7 +365,7 @@ class _ServiceAdminRow extends StatelessWidget {
               ],
             )
           else
-            TextButton(onPressed: onReactivate, child: Text(l10n.reactivateButton)),
+            FactoryButton(label: l10n.reactivateButton, variant: FactoryButtonVariant.text, onPressed: onReactivate),
         ],
       ),
     );
@@ -399,14 +385,15 @@ class _AvailabilitySection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionHeader(
+        FactorySectionHeader(
           title: l10n.availabilitySectionTitle,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextButton.icon(
-                icon: const Icon(Icons.event_repeat),
-                label: Text(l10n.recurringScheduleButton),
+              FactoryButton(
+                icon: Icons.event_repeat,
+                label: l10n.recurringScheduleButton,
+                variant: FactoryButtonVariant.text,
                 onPressed: () async {
                   final generated = await showDialog<bool>(
                     context: context,
@@ -415,9 +402,10 @@ class _AvailabilitySection extends ConsumerWidget {
                   if (generated == true) ref.invalidate(providerSlotsProvider(providerId));
                 },
               ),
-              TextButton.icon(
-                icon: const Icon(Icons.add),
-                label: Text(l10n.addButton),
+              FactoryButton(
+                icon: Icons.add,
+                label: l10n.addButton,
+                variant: FactoryButtonVariant.text,
                 onPressed: () async {
                   final added = await showDialog<bool>(
                     context: context,
@@ -486,19 +474,21 @@ class _MastersSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionHeader(
+        FactorySectionHeader(
           title: l10n.mastersSectionTitle,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextButton(
+              FactoryButton(
+                label: showInactive ? l10n.hideRemovedButton : l10n.showRemovedButton,
+                variant: FactoryButtonVariant.text,
                 onPressed: () =>
                     ref.read(showInactiveMastersProvider(providerId).notifier).state = !showInactive,
-                child: Text(showInactive ? l10n.hideRemovedButton : l10n.showRemovedButton),
               ),
-              TextButton.icon(
-                icon: const Icon(Icons.add),
-                label: Text(l10n.addButton),
+              FactoryButton(
+                icon: Icons.add,
+                label: l10n.addButton,
+                variant: FactoryButtonVariant.text,
                 onPressed: () async {
                   final added = await showDialog<bool>(
                     context: context,
@@ -577,53 +567,23 @@ class _MasterAdminRow extends StatelessWidget {
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
-    return Container(
-      padding: const EdgeInsets.all(FactorySpacing.space3),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: FactoryRadius.mdRadius,
-        border: Border.all(color: colors.border),
+    return FactorySelectableTile(
+      leading: FactoryAvatar(
+        initials: _initialsFor(master.displayName),
+        image: master.photoUrl != null ? NetworkImage(master.photoUrl!) : null,
       ),
-      child: Row(
-        children: [
-          FactoryAvatar(
-            initials: _initialsFor(master.displayName),
-            image: master.photoUrl != null ? NetworkImage(master.photoUrl!) : null,
-          ),
-          const SizedBox(width: FactorySpacing.space3),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        master.displayName,
-                        style: textTheme.titleSmall?.copyWith(color: master.active ? colors.text : colors.textTertiary),
-                      ),
-                    ),
-                    if (!master.active) ...[
-                      const SizedBox(width: FactorySpacing.space2),
-                      FactoryBadge(label: l10n.removedBadge),
-                    ],
-                  ],
-                ),
-                if (master.bio != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    master.bio!,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          if (master.active)
-            Row(
+      title: master.displayName,
+      titleColor: master.active ? null : colors.textTertiary,
+      subtitle: master.bio != null
+          ? Text(
+              master.bio!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+            )
+          : null,
+      trailing: master.active
+          ? Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
@@ -643,10 +603,14 @@ class _MasterAdminRow extends StatelessWidget {
                 ),
               ],
             )
-          else
-            TextButton(onPressed: onReactivate, child: Text(l10n.reactivateButton)),
-        ],
-      ),
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FactoryBadge(label: l10n.removedBadge),
+                const SizedBox(width: FactorySpacing.space2),
+                FactoryButton(label: l10n.reactivateButton, variant: FactoryButtonVariant.text, onPressed: onReactivate),
+              ],
+            ),
     );
   }
 }
@@ -666,19 +630,21 @@ class _MechanicsSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionHeader(
+        FactorySectionHeader(
           title: l10n.mechanicsSectionTitle,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextButton(
+              FactoryButton(
+                label: showInactive ? l10n.hideRemovedButton : l10n.showRemovedButton,
+                variant: FactoryButtonVariant.text,
                 onPressed: () =>
                     ref.read(showInactiveMechanicsProvider(providerId).notifier).state = !showInactive,
-                child: Text(showInactive ? l10n.hideRemovedButton : l10n.showRemovedButton),
               ),
-              TextButton.icon(
-                icon: const Icon(Icons.add),
-                label: Text(l10n.addButton),
+              FactoryButton(
+                icon: Icons.add,
+                label: l10n.addButton,
+                variant: FactoryButtonVariant.text,
                 onPressed: () async {
                   final added = await showDialog<bool>(
                     context: context,
@@ -751,54 +717,23 @@ class _MechanicAdminRow extends StatelessWidget {
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
-    return Container(
-      padding: const EdgeInsets.all(FactorySpacing.space3),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: FactoryRadius.mdRadius,
-        border: Border.all(color: colors.border),
+    return FactorySelectableTile(
+      leading: FactoryAvatar(
+        initials: _initialsFor(mechanic.displayName),
+        image: mechanic.photoUrl != null ? NetworkImage(mechanic.photoUrl!) : null,
       ),
-      child: Row(
-        children: [
-          FactoryAvatar(
-            initials: _initialsFor(mechanic.displayName),
-            image: mechanic.photoUrl != null ? NetworkImage(mechanic.photoUrl!) : null,
-          ),
-          const SizedBox(width: FactorySpacing.space3),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        mechanic.displayName,
-                        style:
-                            textTheme.titleSmall?.copyWith(color: mechanic.active ? colors.text : colors.textTertiary),
-                      ),
-                    ),
-                    if (!mechanic.active) ...[
-                      const SizedBox(width: FactorySpacing.space2),
-                      FactoryBadge(label: l10n.removedBadge),
-                    ],
-                  ],
-                ),
-                if (mechanic.bio != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    mechanic.bio!,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          if (mechanic.active)
-            Row(
+      title: mechanic.displayName,
+      titleColor: mechanic.active ? null : colors.textTertiary,
+      subtitle: mechanic.bio != null
+          ? Text(
+              mechanic.bio!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+            )
+          : null,
+      trailing: mechanic.active
+          ? Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
@@ -813,10 +748,14 @@ class _MechanicAdminRow extends StatelessWidget {
                 ),
               ],
             )
-          else
-            TextButton(onPressed: onReactivate, child: Text(l10n.reactivateButton)),
-        ],
-      ),
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FactoryBadge(label: l10n.removedBadge),
+                const SizedBox(width: FactorySpacing.space2),
+                FactoryButton(label: l10n.reactivateButton, variant: FactoryButtonVariant.text, onPressed: onReactivate),
+              ],
+            ),
     );
   }
 }
@@ -834,7 +773,7 @@ class _BookingsSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(l10n.bookingsSectionTitle, style: Theme.of(context).textTheme.titleMedium),
+        FactorySectionHeader(title: l10n.bookingsSectionTitle),
         const SizedBox(height: FactorySpacing.space2),
         bookingsAsync.when(
           data: (bookings) {
@@ -910,7 +849,8 @@ class _BookingAdminRow extends StatelessWidget {
               ],
             ),
           ),
-          if (onMarkComplete != null) TextButton(onPressed: onMarkComplete, child: Text(l10n.markCompleteButton)),
+          if (onMarkComplete != null)
+            FactoryButton(label: l10n.markCompleteButton, variant: FactoryButtonVariant.text, onPressed: onMarkComplete),
         ],
       ),
     );
