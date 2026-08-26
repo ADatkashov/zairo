@@ -106,6 +106,44 @@ void main() {
     expect(find.text('(128)'), findsOneWidget);
   });
 
+  testWidgets('shows results as a multi-column grid at desktop width', (tester) async {
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final fakeApi = _FakeDiscoveryApi([
+      const ProviderSearchResult(
+        id: 'p1',
+        name: 'Hair Studio',
+        vertical: 'beauty',
+        status: 'ACTIVE',
+        hasOpenAvailability: true,
+        minPrice: 30,
+        services: [
+          ServiceSummary(id: 's1', title: 'Haircut', durationMinutes: 30, price: 30, currency: 'USD'),
+        ],
+      ),
+    ]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [discoveryApiProvider.overrideWithValue(fakeApi)],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SearchScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(GridView), findsOneWidget);
+    expect(find.byType(ListView), findsNothing);
+    expect(find.text('Hair Studio'), findsOneWidget);
+  });
+
   testWidgets('shows a prompt before the first search', (tester) async {
     final fakeApi = _FakeDiscoveryApi(const []);
 
