@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 
-/// Which of the Component Library's four button roles this is — drives
-/// color only; height/radius/padding all come from the theme's
+/// Which of the Component Library's button roles this is — drives color
+/// only; height/radius/padding all come from the theme's
 /// `FilledButton`/`OutlinedButton`/`TextButton` styles (`factory_theme.dart`)
-/// so every Factory button shares one shape regardless of variant.
-enum FactoryButtonVariant { primary, secondary, text, danger }
+/// so every Factory button shares one shape regardless of variant. [danger]
+/// is the filled, high-emphasis destructive action (a confirm-delete
+/// dialog's final button); [textDanger] is the low-emphasis inline one (a
+/// "Cancel booking" link sitting on a card among several) — same red,
+/// different weight, same distinction [primary]/[text] already draw.
+enum FactoryButtonVariant { primary, secondary, text, danger, textDanger }
 
 /// The screen's primary or secondary action — "Book", "Cancel", "Delete
 /// account". Wraps Flutter's own button widgets rather than reinventing
@@ -67,6 +71,11 @@ class FactoryButton extends StatelessWidget {
           onPressed: pressHandler,
           child: child,
         ),
+      FactoryButtonVariant.textDanger => TextButton(
+          style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+          onPressed: pressHandler,
+          child: child,
+        ),
     };
 
     return expand ? SizedBox(width: double.infinity, child: button) : button;
@@ -75,5 +84,6 @@ class FactoryButton extends StatelessWidget {
   Color _spinnerColor(BuildContext context) => switch (variant) {
         FactoryButtonVariant.primary || FactoryButtonVariant.danger => Theme.of(context).colorScheme.onPrimary,
         FactoryButtonVariant.secondary || FactoryButtonVariant.text => Theme.of(context).colorScheme.primary,
+        FactoryButtonVariant.textDanger => Theme.of(context).colorScheme.error,
       };
 }

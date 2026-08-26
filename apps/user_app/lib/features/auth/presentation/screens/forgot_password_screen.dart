@@ -47,7 +47,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.forgotPasswordTitle)),
+      appBar: FactoryAppBar(title: l10n.forgotPasswordTitle),
       body: Padding(
         padding: const EdgeInsets.all(FactorySpacing.space4),
         child: _step == _Step.enterEmail ? _buildEmailStep(l10n) : _buildResetStep(l10n),
@@ -61,24 +61,23 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       child: ListView(
         children: [
           Text(l10n.forgotPasswordInstructions),
-          const SizedBox(height: 16),
-          TextFormField(
+          const SizedBox(height: FactorySpacing.space4),
+          FactoryTextField(
             controller: _emailController,
+            label: l10n.emailLabel,
             keyboardType: TextInputType.emailAddress,
-            decoration: InputDecoration(labelText: l10n.emailLabel),
             validator: (value) => (value == null || !value.contains('@')) ? l10n.validationEmailInvalid : null,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: FactorySpacing.space5),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
               child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
             ),
-          FilledButton(
+          FactoryButton(
+            label: l10n.forgotPasswordSendCodeButton,
+            isLoading: _isSubmitting,
             onPressed: _isSubmitting ? null : _submitEmail,
-            child: _isSubmitting
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                : Text(l10n.forgotPasswordSendCodeButton),
           ),
         ],
       ),
@@ -91,31 +90,30 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       child: ListView(
         children: [
           Text(l10n.forgotPasswordCodeSentMessage),
-          const SizedBox(height: 16),
-          TextFormField(
+          const SizedBox(height: FactorySpacing.space4),
+          FactoryTextField(
             controller: _codeController,
-            decoration: InputDecoration(labelText: l10n.resetCodeLabel),
+            label: l10n.resetCodeLabel,
             validator: (value) => (value == null || value.isEmpty) ? l10n.validationResetCodeRequired : null,
           ),
-          const SizedBox(height: 12),
-          TextFormField(
+          const SizedBox(height: FactorySpacing.space3),
+          FactoryTextField(
             controller: _newPasswordController,
+            label: l10n.newPasswordLabel,
             obscureText: true,
-            decoration: InputDecoration(labelText: l10n.newPasswordLabel),
             validator: (value) =>
                 (value == null || value.length < 8) ? l10n.validationPasswordMinLength : null,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: FactorySpacing.space5),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
               child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
             ),
-          FilledButton(
+          FactoryButton(
+            label: l10n.forgotPasswordResetButton,
+            isLoading: _isSubmitting,
             onPressed: _isSubmitting ? null : _submitReset,
-            child: _isSubmitting
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                : Text(l10n.forgotPasswordResetButton),
           ),
         ],
       ),

@@ -260,6 +260,13 @@ void main() {
     expect(tapped, isTrue);
   });
 
+  testWidgets('FactoryButton textDanger renders as a TextButton, not a filled one', (tester) async {
+    await tester.pumpWidget(_wrap(FactoryButton(label: 'Cancel booking', variant: FactoryButtonVariant.textDanger, onPressed: () {})));
+
+    expect(find.byType(TextButton), findsOneWidget);
+    expect(find.byType(FilledButton), findsNothing);
+  });
+
   testWidgets('FactoryIconButton exposes its label as a tooltip/semantic label', (tester) async {
     await tester.pumpWidget(_wrap(FactoryIconButton(
       icon: Icons.favorite_border_rounded,
