@@ -32,20 +32,21 @@ class _AddMasterDialogState extends ConsumerState<AddMasterDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return AlertDialog(
-      title: Text(l10n.addMasterDialogTitle),
+    return FactoryDialog(
+      title: l10n.addMasterDialogTitle,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextField(
+          FactoryTextField(
             controller: _nameController,
             enabled: !_isSubmitting,
-            decoration: InputDecoration(labelText: l10n.masterNameLabel),
+            label: l10n.masterNameLabel,
           ),
-          TextField(
+          const SizedBox(height: FactorySpacing.space3),
+          FactoryTextField(
             controller: _bioController,
             enabled: !_isSubmitting,
-            decoration: InputDecoration(labelText: l10n.bioOptionalLabel),
+            label: l10n.bioOptionalLabel,
             maxLines: 2,
           ),
           if (_error != null)
@@ -56,15 +57,15 @@ class _AddMasterDialogState extends ConsumerState<AddMasterDialog> {
         ],
       ),
       actions: [
-        TextButton(
+        FactoryButton(
+          label: l10n.cancelButton,
+          variant: FactoryButtonVariant.text,
           onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
-          child: Text(l10n.cancelButton),
         ),
-        FilledButton(
+        FactoryButton(
+          label: l10n.addButton,
+          isLoading: _isSubmitting,
           onPressed: _isSubmitting ? null : _submit,
-          child: _isSubmitting
-              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-              : Text(l10n.addButton),
         ),
       ],
     );

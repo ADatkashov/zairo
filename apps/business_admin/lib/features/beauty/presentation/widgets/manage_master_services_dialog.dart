@@ -23,8 +23,8 @@ class ManageMasterServicesDialog extends ConsumerWidget {
     final servicesAsync = ref.watch(providerServicesProvider((providerId, false)));
     final linkedAsync = ref.watch(adminMasterServicesProvider(masterId));
 
-    return AlertDialog(
-      title: Text(l10n.manageServicesDialogTitle),
+    return FactoryDialog(
+      title: l10n.manageServicesDialogTitle,
       content: servicesAsync.when(
         data: (services) {
           if (services.isEmpty) {
@@ -51,7 +51,11 @@ class ManageMasterServicesDialog extends ConsumerWidget {
         error: (error, stackTrace) => Text(l10n.errorServicesLoadFailed(error.toString())),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(l10n.doneButton)),
+        FactoryButton(
+          label: l10n.doneButton,
+          variant: FactoryButtonVariant.text,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ],
     );
   }
