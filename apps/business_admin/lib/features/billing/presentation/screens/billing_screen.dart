@@ -22,7 +22,7 @@ class BillingScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: colors.bg,
-      appBar: AppBar(title: Text(l10n.billingScreenTitle)),
+      appBar: FactoryAppBar(title: l10n.billingScreenTitle),
       body: subscriptionAsync.when(
         data: (subscription) => _BillingBody(subscription: subscription),
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -65,79 +65,73 @@ class _BillingBodyState extends ConsumerState<_BillingBody> {
     return ListView(
       padding: const EdgeInsets.all(FactorySpacing.space4),
       children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(FactorySpacing.space4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+        FactoryCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(_planLabel(l10n, subscription.plan), style: textTheme.titleMedium),
+                  const SizedBox(width: FactorySpacing.space2),
+                  FactoryBadge(
+                    label: _statusLabel(l10n, subscription.status),
+                    variant: _statusVariant(subscription.status),
+                  ),
+                ],
+              ),
+              if (!subscription.isPro) ...[
+                const SizedBox(height: FactorySpacing.space2),
                 Row(
                   children: [
-                    Text(_planLabel(l10n, subscription.plan), style: textTheme.titleMedium),
-                    const SizedBox(width: FactorySpacing.space2),
-                    FactoryBadge(
-                      label: _statusLabel(l10n, subscription.status),
-                      variant: _statusVariant(subscription.status),
-                    ),
+                    Text('${l10n.billingProPriceLabel} ', style: textTheme.bodySmall),
+                    FactoryPriceText(amount: 29),
+                    Text(l10n.billingPerMonthSuffix, style: textTheme.bodySmall),
                   ],
                 ),
-                if (!subscription.isPro) ...[
-                  const SizedBox(height: FactorySpacing.space2),
-                  Row(
-                    children: [
-                      Text('${l10n.billingProPriceLabel} ', style: textTheme.bodySmall),
-                      FactoryPriceText(amount: 29),
-                      Text(l10n.billingPerMonthSuffix, style: textTheme.bodySmall),
-                    ],
-                  ),
-                ],
-                if (subscription.cancelAtPeriodEnd) ...[
-                  const SizedBox(height: FactorySpacing.space3),
-                  Text(
-                    l10n.billingDowngradeScheduledNotice(_formatDate(subscription.currentPeriodEnd)),
-                    style: textTheme.bodySmall?.copyWith(color: colors.warning),
-                  ),
-                ],
               ],
-            ),
+              if (subscription.cancelAtPeriodEnd) ...[
+                const SizedBox(height: FactorySpacing.space3),
+                Text(
+                  l10n.billingDowngradeScheduledNotice(_formatDate(subscription.currentPeriodEnd)),
+                  style: textTheme.bodySmall?.copyWith(color: colors.warning),
+                ),
+              ],
+            ],
           ),
         ),
         const SizedBox(height: FactorySpacing.space4),
         Text(l10n.billingUsageSectionTitle, style: textTheme.titleSmall),
         const SizedBox(height: FactorySpacing.space2),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(FactorySpacing.space4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _LimitRow(
-                  label: l10n.billingLimitProvidersLabel,
-                  value: providerCount == null
-                      ? l10n.billingUsageXOfY(0, subscription.limits.maxProviders)
-                      : l10n.billingUsageXOfY(providerCount, subscription.limits.maxProviders),
-                ),
-                const SizedBox(height: FactorySpacing.space2),
-                _LimitRow(
-                  label: l10n.billingLimitStaffLabel,
-                  value: l10n.billingLimitStaffValue(subscription.limits.maxStaffPerProvider),
-                ),
-                const SizedBox(height: FactorySpacing.space2),
-                _LimitRow(
-                  label: l10n.billingLimitBookingsLabel,
-                  value: subscription.limits.isUnlimitedBookings
-                      ? l10n.billingLimitUnlimited
-                      : l10n.billingLimitBookingsValue(subscription.limits.maxBookingsPerMonth),
-                ),
-                const SizedBox(height: FactorySpacing.space2),
-                _LimitRow(
-                  label: l10n.billingLimitRecurringScheduleLabel,
-                  value: subscription.limits.recurringScheduleAllowed
-                      ? l10n.billingFeatureIncluded
-                      : l10n.billingFeatureRequiresPro,
-                ),
-              ],
-            ),
+        FactoryCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _LimitRow(
+                label: l10n.billingLimitProvidersLabel,
+                value: providerCount == null
+                    ? l10n.billingUsageXOfY(0, subscription.limits.maxProviders)
+                    : l10n.billingUsageXOfY(providerCount, subscription.limits.maxProviders),
+              ),
+              const SizedBox(height: FactorySpacing.space2),
+              _LimitRow(
+                label: l10n.billingLimitStaffLabel,
+                value: l10n.billingLimitStaffValue(subscription.limits.maxStaffPerProvider),
+              ),
+              const SizedBox(height: FactorySpacing.space2),
+              _LimitRow(
+                label: l10n.billingLimitBookingsLabel,
+                value: subscription.limits.isUnlimitedBookings
+                    ? l10n.billingLimitUnlimited
+                    : l10n.billingLimitBookingsValue(subscription.limits.maxBookingsPerMonth),
+              ),
+              const SizedBox(height: FactorySpacing.space2),
+              _LimitRow(
+                label: l10n.billingLimitRecurringScheduleLabel,
+                value: subscription.limits.recurringScheduleAllowed
+                    ? l10n.billingFeatureIncluded
+                    : l10n.billingFeatureRequiresPro,
+              ),
+            ],
           ),
         ),
         const SizedBox(height: FactorySpacing.space4),
@@ -147,18 +141,17 @@ class _BillingBodyState extends ConsumerState<_BillingBody> {
             child: Text(_error!, style: TextStyle(color: colors.error)),
           ),
         if (!subscription.isPro)
-          FilledButton(
+          FactoryButton(
+            label: l10n.billingUpgradeButtonLabel,
+            isLoading: _isSubmitting,
             onPressed: _isSubmitting ? null : _upgrade,
-            child: _isSubmitting
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                : Text(l10n.billingUpgradeButtonLabel),
           )
         else if (!subscription.cancelAtPeriodEnd)
-          OutlinedButton(
+          FactoryButton(
+            label: l10n.billingDowngradeButtonLabel,
+            variant: FactoryButtonVariant.secondary,
+            isLoading: _isSubmitting,
             onPressed: _isSubmitting ? null : _downgrade,
-            child: _isSubmitting
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                : Text(l10n.billingDowngradeButtonLabel),
           ),
       ],
     );
