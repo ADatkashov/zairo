@@ -40,7 +40,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.loginTitle)),
+      appBar: FactoryAppBar(title: l10n.loginTitle),
       body: Padding(
         padding: const EdgeInsets.all(FactorySpacing.space4),
         child: Form(
@@ -49,18 +49,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             children: [
               const Center(child: FactoryLogomark(size: 56)),
               const SizedBox(height: FactorySpacing.space6),
-              TextFormField(
+              FactoryTextField(
                 controller: _emailController,
+                label: l10n.emailLabel,
                 keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(labelText: l10n.emailLabel),
                 validator: (value) =>
                     (value == null || !value.contains('@')) ? l10n.validationEmailInvalid : null,
               ),
               const SizedBox(height: FactorySpacing.space3),
-              TextFormField(
+              FactoryTextField(
                 controller: _passwordController,
+                label: l10n.passwordLabel,
                 obscureText: true,
-                decoration: InputDecoration(labelText: l10n.passwordLabel),
                 validator: (value) =>
                     (value == null || value.isEmpty) ? l10n.validationPasswordRequired : null,
               ),
@@ -73,32 +73,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     style: TextStyle(color: Theme.of(context).colorScheme.error),
                   ),
                 ),
-              FilledButton(
+              FactoryButton(
+                label: l10n.loginTitle,
+                isLoading: isLoading,
                 onPressed: isLoading ? null : _submit,
-                child: isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(l10n.loginTitle),
               ),
               const SizedBox(height: FactorySpacing.space2),
-              TextButton(
+              FactoryButton(
+                label: l10n.loginNoAccount,
+                variant: FactoryButtonVariant.text,
                 onPressed: isLoading
                     ? null
                     : () => Navigator.of(context).push(
                           MaterialPageRoute(builder: (_) => const RegisterScreen()),
                         ),
-                child: Text(l10n.loginNoAccount),
               ),
-              TextButton(
+              FactoryButton(
+                label: l10n.loginForgotPassword,
+                variant: FactoryButtonVariant.text,
                 onPressed: isLoading
                     ? null
                     : () => Navigator.of(context).push(
                           MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
                         ),
-                child: Text(l10n.loginForgotPassword),
               ),
             ],
           ),

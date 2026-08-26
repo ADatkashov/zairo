@@ -27,10 +27,11 @@ class ReviewSection extends ConsumerWidget {
         if (review == null) {
           return Align(
             alignment: Alignment.centerLeft,
-            child: TextButton.icon(
+            child: FactoryButton(
+              icon: Icons.star_outline,
+              label: l10n.reviewLeaveButton,
+              variant: FactoryButtonVariant.text,
               onPressed: () => _openLeaveReviewDialog(context, ref),
-              icon: const Icon(Icons.star_outline),
-              label: Text(l10n.reviewLeaveButton),
             ),
           );
         }
@@ -106,8 +107,8 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
-    return AlertDialog(
-      title: Text(l10n.reviewLeaveButton),
+    return FactoryDialog(
+      title: l10n.reviewLeaveButton,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,10 +126,10 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
               ),
             ),
           ),
-          TextField(
+          FactoryTextField(
             controller: _commentController,
             enabled: !_isSubmitting,
-            decoration: InputDecoration(hintText: l10n.reviewCommentHint),
+            label: l10n.reviewCommentHint,
             maxLines: 3,
           ),
           if (_error != null)
@@ -139,19 +140,15 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
         ],
       ),
       actions: [
-        TextButton(
+        FactoryButton(
+          label: l10n.reviewCancel,
+          variant: FactoryButtonVariant.text,
           onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
-          child: Text(l10n.reviewCancel),
         ),
-        FilledButton(
+        FactoryButton(
+          label: l10n.reviewSubmit,
+          isLoading: _isSubmitting,
           onPressed: (_rating > 0 && !_isSubmitting) ? _submit : null,
-          child: _isSubmitting
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(l10n.reviewSubmit),
         ),
       ],
     );
