@@ -369,6 +369,29 @@ void main() {
     expect(find.text('Cancel booking?'), findsNothing);
   });
 
+  testWidgets('showFactoryDialog renders custom content instead of message when both would otherwise apply',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: factoryLightTheme(),
+      home: Builder(
+        builder: (context) => ElevatedButton(
+          onPressed: () => showFactoryDialog(
+            context: context,
+            title: 'Add a business',
+            content: const TextField(key: Key('name-field')),
+          ),
+          child: const Text('Open'),
+        ),
+      ),
+    ));
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Add a business'), findsOneWidget);
+    expect(find.byKey(const Key('name-field')), findsOneWidget);
+  });
+
   testWidgets('FactorySelectableTile shows a check icon and reports selected state to semantics', (tester) async {
     var tapped = false;
     await tester.pumpWidget(_wrap(FactorySelectableTile(

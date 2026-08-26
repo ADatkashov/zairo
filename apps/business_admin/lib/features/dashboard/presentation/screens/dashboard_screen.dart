@@ -37,8 +37,8 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: colors.bg,
-      appBar: AppBar(
-        title: Text(l10n.dashboardGreeting(user.displayName)),
+      appBar: FactoryAppBar(
+        title: l10n.dashboardGreeting(user.displayName),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -70,9 +70,10 @@ class DashboardScreen extends ConsumerWidget {
                 if (atLimit) {
                   return _ProviderLimitReachedNotice(subscription: subscription);
                 }
-                return OutlinedButton.icon(
-                  icon: const Icon(Icons.add),
-                  label: Text(l10n.addAnotherBusinessButton),
+                return FactoryButton(
+                  icon: Icons.add,
+                  label: l10n.addAnotherBusinessButton,
+                  variant: FactoryButtonVariant.secondary,
                   onPressed: () => _openCreateSalonDialog(context, ref, user.id),
                 );
               }
@@ -104,50 +105,53 @@ class DashboardScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final nameController = TextEditingController();
     String vertical = 'beauty';
-    final created = await showDialog<bool>(
+    final created = await showFactoryDialog<bool>(
       context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text(l10n.addBusinessDialogTitle),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(labelText: l10n.businessNameLabel),
-                autofocus: true,
-              ),
-              const SizedBox(height: FactorySpacing.space3),
-              _VerticalPicker(
-                value: vertical,
-                onChanged: (v) => setDialogState(() => vertical = v),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancelButton)),
-            FilledButton(
-              onPressed: () async {
-                if (nameController.text.trim().isEmpty) return;
-                try {
-                  await ref.read(salonAdminApiProvider).createProvider(
-                        ownerUserId: ownerUserId,
-                        name: nameController.text.trim(),
-                        vertical: vertical,
-                      );
-                  if (context.mounted) Navigator.of(context).pop(true);
-                } on BillingException catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
-                  }
-                }
-              },
-              child: Text(l10n.createButton),
+      title: l10n.addBusinessDialogTitle,
+      content: StatefulBuilder(
+        builder: (context, setDialogState) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FactoryTextField(
+              controller: nameController,
+              label: l10n.businessNameLabel,
+            ),
+            const SizedBox(height: FactorySpacing.space3),
+            _VerticalPicker(
+              value: vertical,
+              onChanged: (v) => setDialogState(() => vertical = v),
             ),
           ],
         ),
       ),
+      actions: [
+        FactoryButton(
+          label: l10n.cancelButton,
+          variant: FactoryButtonVariant.text,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        Builder(
+          builder: (context) => FactoryButton(
+            label: l10n.createButton,
+            onPressed: () async {
+              if (nameController.text.trim().isEmpty) return;
+              try {
+                await ref.read(salonAdminApiProvider).createProvider(
+                      ownerUserId: ownerUserId,
+                      name: nameController.text.trim(),
+                      vertical: vertical,
+                    );
+                if (context.mounted) Navigator.of(context).pop(true);
+              } on BillingException catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
+                }
+              }
+            },
+          ),
+        ),
+      ],
     );
     if (created == true) {
       ref.invalidate(myProvidersProvider(ownerUserId));
@@ -187,9 +191,10 @@ class _ProviderLimitReachedNotice extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        OutlinedButton.icon(
-          icon: const Icon(Icons.add),
-          label: Text(l10n.addAnotherBusinessButton),
+        FactoryButton(
+          icon: Icons.add,
+          label: l10n.addAnotherBusinessButton,
+          variant: FactoryButtonVariant.secondary,
           onPressed: null,
         ),
         const SizedBox(height: FactorySpacing.space2),
@@ -222,32 +227,25 @@ class _SalonCard extends StatelessWidget {
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
-    return Card(
-      margin: EdgeInsets.zero,
-      child: InkWell(
-        borderRadius: FactoryRadius.lgRadius,
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(FactorySpacing.space4),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(provider.name, style: textTheme.titleSmall),
-                    const SizedBox(height: 4),
-                    Text(_capitalize(provider.vertical), style: textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
-                  ],
-                ),
-              ),
-              FactoryBadge(label: _providerStatusLabel(l10n, provider.status), variant: _providerStatusVariant(provider.status)),
-              const SizedBox(width: FactorySpacing.space2),
-              Icon(Icons.chevron_right, color: colors.textTertiary),
-            ],
+    return FactoryCard(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(provider.name, style: textTheme.titleSmall),
+                const SizedBox(height: 4),
+                Text(_capitalize(provider.vertical), style: textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
+              ],
+            ),
           ),
-        ),
+          FactoryBadge(label: _providerStatusLabel(l10n, provider.status), variant: _providerStatusVariant(provider.status)),
+          const SizedBox(width: FactorySpacing.space2),
+          Icon(Icons.chevron_right, color: colors.textTertiary),
+        ],
       ),
     );
   }
@@ -311,10 +309,10 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
             const SizedBox(height: FactorySpacing.space4),
             Text(l10n.noBusinessesYetTitle, style: textTheme.titleSmall),
             const SizedBox(height: FactorySpacing.space4),
-            TextField(
+            FactoryTextField(
               controller: _nameController,
               enabled: !_isSubmitting,
-              decoration: InputDecoration(labelText: l10n.businessNameLabel),
+              label: l10n.businessNameLabel,
             ),
             const SizedBox(height: FactorySpacing.space3),
             _VerticalPicker(
@@ -327,15 +325,10 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
                 padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
                 child: Text(_error!, style: TextStyle(color: colors.error)),
               ),
-            FilledButton(
+            FactoryButton(
+              label: l10n.createBusinessButton,
+              isLoading: _isSubmitting,
               onPressed: _isSubmitting ? null : _submit,
-              child: _isSubmitting
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(l10n.createBusinessButton),
             ),
           ],
         ),
