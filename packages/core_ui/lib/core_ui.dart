@@ -23,6 +23,7 @@ export 'src/widgets/factory_bottom_navigation.dart';
 export 'src/widgets/factory_bottom_sheet.dart';
 export 'src/widgets/factory_button.dart';
 export 'src/widgets/factory_card.dart';
+export 'src/widgets/factory_category_tile.dart';
 export 'src/widgets/factory_chip.dart';
 export 'src/widgets/factory_dialog.dart';
 export 'src/widgets/factory_empty_state.dart';

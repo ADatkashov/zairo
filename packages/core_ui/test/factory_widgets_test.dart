@@ -414,6 +414,22 @@ void main() {
     expect(find.byKey(const Key('name-field')), findsOneWidget);
   });
 
+  testWidgets('FactoryCategoryTile reports selected state and responds to taps', (tester) async {
+    var tapped = false;
+    await tester.pumpWidget(_wrap(FactoryCategoryTile(
+      icon: Icons.content_cut_rounded,
+      label: 'Beauty',
+      selected: true,
+      onTap: () => tapped = true,
+    )));
+
+    expect(find.text('Beauty'), findsOneWidget);
+    final semantics = tester.getSemantics(find.byType(FactoryCategoryTile));
+    expect(semantics.flagsCollection.isSelected.toBoolOrNull(), isTrue);
+    await tester.tap(find.byType(FactoryCategoryTile));
+    expect(tapped, isTrue);
+  });
+
   testWidgets('FactorySelectableTile shows a check icon and reports selected state to semantics', (tester) async {
     var tapped = false;
     await tester.pumpWidget(_wrap(FactorySelectableTile(

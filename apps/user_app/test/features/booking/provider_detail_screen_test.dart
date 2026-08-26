@@ -289,6 +289,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Service + slot picked, but no master yet -> still disabled.
+    await tester.scrollUntilVisible(bookButtonFinder, 200);
     expect(tester.widget<FilledButton>(bookButtonFinder).onPressed, isNull);
 
     await tester.tap(find.text('Jamie Stylist'));
@@ -369,20 +370,21 @@ void main() {
     await tester.tap(find.text('Toyota Camry (2019)'));
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Oil Change'));
+    await tester.scrollUntilVisible(find.text('Oil Change'), 200);
     await tester.tap(find.text('Oil Change'));
     await tester.pumpAndSettle();
 
     // Mechanic + vehicle + service picked, but no slot yet -> still disabled.
+    await tester.scrollUntilVisible(bookButtonFinder, 200);
     expect(tester.widget<FilledButton>(bookButtonFinder).onPressed, isNull);
 
-    await tester.ensureVisible(find.text('Jan 1, 10:00'));
+    await tester.scrollUntilVisible(find.text('Jan 1, 10:00'), 200);
     await tester.tap(find.text('Jan 1, 10:00'));
     await tester.pumpAndSettle();
 
     expect(tester.widget<FilledButton>(bookButtonFinder).onPressed, isNotNull);
 
-    await tester.ensureVisible(bookButtonFinder);
+    await tester.scrollUntilVisible(bookButtonFinder, 200);
     await tester.tap(bookButtonFinder);
     await tester.pumpAndSettle();
 
