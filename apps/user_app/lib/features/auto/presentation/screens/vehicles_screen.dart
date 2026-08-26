@@ -111,38 +111,15 @@ class _VehicleTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
-    final textTheme = Theme.of(context).textTheme;
 
-    return Container(
-      padding: const EdgeInsets.all(FactorySpacing.space3),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: FactoryRadius.mdRadius,
-        border: Border.all(color: colors.border),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.directions_car_rounded, color: colors.textSecondary),
-          const SizedBox(width: FactorySpacing.space3),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(vehicle.displayName, style: textTheme.titleSmall),
-                Text(
-                  vehicle.licensePlate,
-                  style: FactoryTypography.mono(size: 13, color: colors.textTertiary),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            tooltip: l10n.deleteVehicleButton,
-            onPressed: onDelete,
-          ),
-        ],
+    return FactorySelectableTile(
+      title: vehicle.displayName,
+      subtitle: Text(vehicle.licensePlate, style: FactoryTypography.mono(size: 13, color: colors.textTertiary)),
+      leading: Icon(Icons.directions_car_rounded, color: colors.textSecondary),
+      trailing: IconButton(
+        icon: const Icon(Icons.delete_outline),
+        tooltip: l10n.deleteVehicleButton,
+        onPressed: onDelete,
       ),
     );
   }

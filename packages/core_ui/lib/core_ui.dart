@@ -33,6 +33,7 @@ export 'src/widgets/factory_price_text.dart';
 export 'src/widgets/factory_rating_label.dart';
 export 'src/widgets/factory_search_field.dart';
 export 'src/widgets/factory_section_header.dart';
+export 'src/widgets/factory_selectable_tile.dart';
 export 'src/widgets/factory_service_card.dart';
 export 'src/widgets/factory_skeleton.dart';
 export 'src/widgets/factory_text_field.dart';
