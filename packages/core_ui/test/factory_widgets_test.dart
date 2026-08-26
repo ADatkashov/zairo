@@ -282,6 +282,21 @@ void main() {
     expect(find.text('Invalid code'), findsOneWidget);
   });
 
+  testWidgets('FactoryTextField participates in Form validation via validator', (tester) async {
+    final formKey = GlobalKey<FormState>();
+    await tester.pumpWidget(_wrap(Form(
+      key: formKey,
+      child: FactoryTextField(
+        label: 'Email',
+        validator: (value) => (value == null || !value.contains('@')) ? 'Invalid email' : null,
+      ),
+    )));
+
+    expect(formKey.currentState!.validate(), isFalse);
+    await tester.pump();
+    expect(find.text('Invalid email'), findsOneWidget);
+  });
+
   testWidgets('FactorySearchField shows a filter action only when onFilterTap is given', (tester) async {
     var filterTapped = false;
     await tester.pumpWidget(_wrap(FactorySearchField(hint: 'Search salons', onFilterTap: () => filterTapped = true)));
