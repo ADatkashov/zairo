@@ -71,6 +71,12 @@
   "errorHomeFeedLoadFailed": "Ленталы жүктеу мүмкін болмады.",
   "homeTopRatedTitle": "Сізге жақын үздіктер",
   "homeAvailabilityHero": "{count, plural, other{Сізге жақын жерде {count} провайдерде бүгін бос уақыт бар}}",
+  "homeGreeting": "Сәлем, {name}",
+  "homeGreetingGuest": "Қош келдіңіз",
+  "homeLocationUnknown": "Сіздің орналасқан жеріңіз",
+  "homeSeeAll": "Барлығын көру",
+  "discoveryVerticalBeauty": "Сұлулық",
+  "discoveryVerticalAuto": "Авто",
 
   "searchHint": "Қызметтерді немесе провайдерлерді іздеу",
   "searchEmptyTitle": "Қызметті іздеңіз",

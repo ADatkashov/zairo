@@ -234,8 +234,8 @@ class _FilterDialogState extends State<_FilterDialog> {
               runSpacing: FactorySpacing.space2,
               children: [
                 _verticalChip(l10n.searchFilterCategoryAll, null),
-                _verticalChip('Beauty', 'beauty'),
-                _verticalChip('Auto', 'auto'),
+                _verticalChip(l10n.discoveryVerticalBeauty, 'beauty'),
+                _verticalChip(l10n.discoveryVerticalAuto, 'auto'),
               ],
             ),
             const SizedBox(height: FactorySpacing.space4),

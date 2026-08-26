@@ -17,6 +17,6 @@ abstract class LocationService {
 class MockLocationService implements LocationService {
   @override
   Future<GeoPoint> getCurrentLocation() async {
-    return const GeoPoint(latitude: 43.2389, longitude: 76.8897);
+    return const GeoPoint(latitude: 43.2389, longitude: 76.8897, label: 'Almaty');
   }
 }
