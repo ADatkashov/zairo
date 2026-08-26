@@ -12,7 +12,13 @@ class FactoryElevation {
   const FactoryElevation._();
 
   static List<BoxShadow> resolve(FactoryElevationLevel level, Brightness brightness) {
-    final base = brightness == Brightness.light ? const Color(0xFF1B1917) : Colors.black;
+    // The artifact's own shadow-rgb is pure black for dark mode — on a
+    // near-black background (FactoryColors.dark.bg is 0x0F0E0C) a black
+    // shadow at any of these alphas is functionally invisible, since
+    // there's almost no luminance left to subtract. A light "glow" reads
+    // instead: same alpha steps, warm near-white base (dark theme's own
+    // `text` color) rather than black.
+    final base = brightness == Brightness.light ? const Color(0xFF1B1917) : const Color(0xFFF2F0EA);
     switch (level) {
       case FactoryElevationLevel.none:
         return const [];

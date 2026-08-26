@@ -45,4 +45,24 @@ void main() {
 
     expect(find.text('primary:${const Color(0xFF1B5C52).toARGB32()}'), findsOneWidget);
   });
+
+  test('light.warning is the WCAG-fixed shade, not the artifact\'s original 2.98:1 gold', () {
+    // #B9862E (the design system artifact's literal value) reads 2.98:1 on
+    // `bg` — below the 3:1 floor for large text/UI components, let alone
+    // 4.5:1 for body text. #906824 (same hue/saturation, darker) reads
+    // 4.64:1. Locks the fix in place against an accidental revert.
+    expect(FactoryColors.light.warning, const Color(0xFF906824));
+  });
+
+  test('dark-mode elevation shadows are a light glow, not an invisible black-on-black shadow', () {
+    final darkShadow = FactoryElevation.resolve(FactoryElevationLevel.lg, Brightness.dark).first;
+    final lightShadow = FactoryElevation.resolve(FactoryElevationLevel.lg, Brightness.light).first;
+
+    // A shadow tinted toward FactoryColors.dark.text (warm near-white)
+    // is visible against the near-black dark bg; a black shadow at the
+    // same alpha would blend into it instead.
+    expect(darkShadow.color.r, greaterThan(lightShadow.color.r));
+    expect(darkShadow.color.g, greaterThan(lightShadow.color.g));
+    expect(darkShadow.color.b, greaterThan(lightShadow.color.b));
+  });
 }
