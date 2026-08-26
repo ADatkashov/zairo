@@ -430,6 +430,17 @@ void main() {
     expect(tapped, isTrue);
   });
 
+  testWidgets('FactoryStatTile renders a value over a label', (tester) async {
+    await tester.pumpWidget(_wrap(const FactoryStatTile(
+      value: '12',
+      label: 'Bookings',
+      icon: Icons.event_note_outlined,
+    )));
+
+    expect(find.text('12'), findsOneWidget);
+    expect(find.text('Bookings'), findsOneWidget);
+  });
+
   testWidgets('FactorySelectableTile shows a check icon and reports selected state to semantics', (tester) async {
     var tapped = false;
     await tester.pumpWidget(_wrap(FactorySelectableTile(
