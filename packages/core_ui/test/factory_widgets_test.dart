@@ -369,6 +369,36 @@ void main() {
     expect(find.text('Cancel booking?'), findsNothing);
   });
 
+  testWidgets('FactorySelectableTile shows a check icon and reports selected state to semantics', (tester) async {
+    var tapped = false;
+    await tester.pumpWidget(_wrap(FactorySelectableTile(
+      title: 'Aigerim K.',
+      selected: true,
+      onTap: () => tapped = true,
+    )));
+
+    expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+    final semantics = tester.getSemantics(find.byType(FactorySelectableTile));
+    expect(semantics.flagsCollection.isSelected.toBoolOrNull(), isTrue);
+
+    await tester.tap(find.byType(FactorySelectableTile));
+    expect(tapped, isTrue);
+  });
+
+  testWidgets('FactorySelectableTile renders leading, subtitle and trailing widgets', (tester) async {
+    await tester.pumpWidget(_wrap(const FactorySelectableTile(
+      title: 'Toyota Camry',
+      subtitle: Text('A123BC 02'),
+      leading: Icon(Icons.directions_car_rounded),
+      trailing: Icon(Icons.delete_outline),
+    )));
+
+    expect(find.text('Toyota Camry'), findsOneWidget);
+    expect(find.text('A123BC 02'), findsOneWidget);
+    expect(find.byIcon(Icons.directions_car_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+  });
+
   testWidgets('showFactoryBottomSheet renders its content with a drag handle', (tester) async {
     await tester.pumpWidget(MaterialApp(
       theme: factoryLightTheme(),

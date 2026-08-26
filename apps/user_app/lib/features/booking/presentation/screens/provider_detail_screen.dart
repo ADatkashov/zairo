@@ -397,62 +397,32 @@ class _MasterOption extends StatelessWidget {
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
-    return Semantics(
-      button: true,
-      selected: selected,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: FactoryRadius.mdRadius,
-        child: Container(
-          padding: const EdgeInsets.all(FactorySpacing.space3),
-          decoration: BoxDecoration(
-            color: selected ? colors.primaryTint : colors.surface,
-            borderRadius: FactoryRadius.mdRadius,
-            border: Border.all(color: selected ? colors.primary : colors.border, width: selected ? 1.5 : 1),
-          ),
-          child: Row(
-            children: [
-              FactoryAvatar(
-                initials: _initialsFor(master.displayName),
-                image: master.photoUrl != null ? NetworkImage(master.photoUrl!) : null,
-              ),
-              const SizedBox(width: FactorySpacing.space3),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(master.displayName, style: textTheme.titleSmall),
-                    if (master.bio != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        master.bio!,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              if (selected) ...[
-                Icon(Icons.check_circle_rounded, size: 20, color: colors.primary),
-                const SizedBox(width: FactorySpacing.space1),
-              ],
-              IconButton(
-                icon: const Icon(Icons.photo_library_outlined),
-                tooltip: l10n.viewPortfolioTooltip,
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  side: BorderSide.none,
-                  foregroundColor: colors.textSecondary,
-                ),
-                onPressed: onViewPortfolio,
-              ),
-            ],
-          ),
-        ),
+    return FactorySelectableTile(
+      title: master.displayName,
+      subtitle: master.bio != null
+          ? Text(
+              master.bio!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+            )
+          : null,
+      leading: FactoryAvatar(
+        initials: _initialsFor(master.displayName),
+        image: master.photoUrl != null ? NetworkImage(master.photoUrl!) : null,
       ),
+      trailing: IconButton(
+        icon: const Icon(Icons.photo_library_outlined),
+        tooltip: l10n.viewPortfolioTooltip,
+        style: IconButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          side: BorderSide.none,
+          foregroundColor: colors.textSecondary,
+        ),
+        onPressed: onViewPortfolio,
+      ),
+      selected: selected,
+      onTap: onTap,
     );
   }
 }
@@ -473,49 +443,22 @@ class _MechanicOption extends StatelessWidget {
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
-    return Semantics(
-      button: true,
-      selected: selected,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: FactoryRadius.mdRadius,
-        child: Container(
-          padding: const EdgeInsets.all(FactorySpacing.space3),
-          decoration: BoxDecoration(
-            color: selected ? colors.primaryTint : colors.surface,
-            borderRadius: FactoryRadius.mdRadius,
-            border: Border.all(color: selected ? colors.primary : colors.border, width: selected ? 1.5 : 1),
-          ),
-          child: Row(
-            children: [
-              FactoryAvatar(
-                initials: _initialsFor(mechanic.displayName),
-                image: mechanic.photoUrl != null ? NetworkImage(mechanic.photoUrl!) : null,
-              ),
-              const SizedBox(width: FactorySpacing.space3),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(mechanic.displayName, style: textTheme.titleSmall),
-                    if (mechanic.bio != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        mechanic.bio!,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              if (selected) Icon(Icons.check_circle_rounded, size: 20, color: colors.primary),
-            ],
-          ),
-        ),
+    return FactorySelectableTile(
+      title: mechanic.displayName,
+      subtitle: mechanic.bio != null
+          ? Text(
+              mechanic.bio!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+            )
+          : null,
+      leading: FactoryAvatar(
+        initials: _initialsFor(mechanic.displayName),
+        image: mechanic.photoUrl != null ? NetworkImage(mechanic.photoUrl!) : null,
       ),
+      selected: selected,
+      onTap: onTap,
     );
   }
 }
@@ -534,43 +477,13 @@ class _VehicleOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.factoryColors;
-    final textTheme = Theme.of(context).textTheme;
 
-    return Semantics(
-      button: true,
+    return FactorySelectableTile(
+      title: vehicle.displayName,
+      subtitle: Text(vehicle.licensePlate, style: FactoryTypography.mono(size: 13, color: colors.textTertiary)),
+      leading: Icon(Icons.directions_car_rounded, color: colors.textSecondary),
       selected: selected,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: FactoryRadius.mdRadius,
-        child: Container(
-          padding: const EdgeInsets.all(FactorySpacing.space3),
-          decoration: BoxDecoration(
-            color: selected ? colors.primaryTint : colors.surface,
-            borderRadius: FactoryRadius.mdRadius,
-            border: Border.all(color: selected ? colors.primary : colors.border, width: selected ? 1.5 : 1),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.directions_car_rounded, color: colors.textSecondary),
-              const SizedBox(width: FactorySpacing.space3),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(vehicle.displayName, style: textTheme.titleSmall),
-                    Text(
-                      vehicle.licensePlate,
-                      style: FactoryTypography.mono(size: 13, color: colors.textTertiary),
-                    ),
-                  ],
-                ),
-              ),
-              if (selected) Icon(Icons.check_circle_rounded, size: 20, color: colors.primary),
-            ],
-          ),
-        ),
-      ),
+      onTap: onTap,
     );
   }
 }
