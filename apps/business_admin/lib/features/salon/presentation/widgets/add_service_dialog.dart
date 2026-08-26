@@ -41,27 +41,29 @@ class _AddServiceDialogState extends ConsumerState<AddServiceDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return AlertDialog(
-      title: Text(_isEditing ? l10n.editServiceDialogTitle : l10n.addServiceDialogTitle),
+    return FactoryDialog(
+      title: _isEditing ? l10n.editServiceDialogTitle : l10n.addServiceDialogTitle,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextField(
+          FactoryTextField(
             controller: _titleController,
             enabled: !_isSubmitting,
-            decoration: InputDecoration(labelText: l10n.titleLabel),
+            label: l10n.titleLabel,
           ),
-          TextField(
+          const SizedBox(height: FactorySpacing.space3),
+          FactoryTextField(
             controller: _durationController,
             enabled: !_isSubmitting,
             keyboardType: TextInputType.number,
-            decoration: InputDecoration(labelText: l10n.durationMinutesLabel),
+            label: l10n.durationMinutesLabel,
           ),
-          TextField(
+          const SizedBox(height: FactorySpacing.space3),
+          FactoryTextField(
             controller: _priceController,
             enabled: !_isSubmitting,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(labelText: l10n.priceUsdLabel),
+            label: l10n.priceUsdLabel,
           ),
           if (_error != null)
             Padding(
@@ -71,15 +73,15 @@ class _AddServiceDialogState extends ConsumerState<AddServiceDialog> {
         ],
       ),
       actions: [
-        TextButton(
+        FactoryButton(
+          label: l10n.cancelButton,
+          variant: FactoryButtonVariant.text,
           onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
-          child: Text(l10n.cancelButton),
         ),
-        FilledButton(
+        FactoryButton(
+          label: _isEditing ? l10n.saveButton : l10n.addButton,
+          isLoading: _isSubmitting,
           onPressed: _isSubmitting ? null : _submit,
-          child: _isSubmitting
-              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-              : Text(_isEditing ? l10n.saveButton : l10n.addButton),
         ),
       ],
     );

@@ -24,8 +24,8 @@ class VehiclesScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: colors.bg,
-      appBar: AppBar(
-        title: Text(l10n.vehiclesScreenTitle),
+      appBar: FactoryAppBar(
+        title: l10n.vehiclesScreenTitle,
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -84,16 +84,18 @@ class VehiclesScreen extends ConsumerWidget {
 
   Future<void> _deleteVehicle(BuildContext context, WidgetRef ref, Vehicle vehicle) async {
     final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showFactoryDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(l10n.deleteVehicleConfirmTitle),
-        content: Text(l10n.deleteVehicleConfirmMessage(vehicle.displayName)),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.addVehicleCancelButton)),
-          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: Text(l10n.deleteVehicleButton)),
-        ],
-      ),
+      title: l10n.deleteVehicleConfirmTitle,
+      message: l10n.deleteVehicleConfirmMessage(vehicle.displayName),
+      actions: [
+        FactoryButton(
+          label: l10n.addVehicleCancelButton,
+          variant: FactoryButtonVariant.text,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        FactoryButton(label: l10n.deleteVehicleButton, onPressed: () => Navigator.of(context).pop(true)),
+      ],
     );
     if (confirmed != true) return;
     await ref.read(autoApiProvider).deleteVehicle(vehicle.id);
@@ -111,38 +113,15 @@ class _VehicleTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
-    final textTheme = Theme.of(context).textTheme;
 
-    return Container(
-      padding: const EdgeInsets.all(FactorySpacing.space3),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: FactoryRadius.mdRadius,
-        border: Border.all(color: colors.border),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.directions_car_rounded, color: colors.textSecondary),
-          const SizedBox(width: FactorySpacing.space3),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(vehicle.displayName, style: textTheme.titleSmall),
-                Text(
-                  vehicle.licensePlate,
-                  style: FactoryTypography.mono(size: 13, color: colors.textTertiary),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            tooltip: l10n.deleteVehicleButton,
-            onPressed: onDelete,
-          ),
-        ],
+    return FactorySelectableTile(
+      title: vehicle.displayName,
+      subtitle: Text(vehicle.licensePlate, style: FactoryTypography.mono(size: 13, color: colors.textTertiary)),
+      leading: Icon(Icons.directions_car_rounded, color: colors.textSecondary),
+      trailing: IconButton(
+        icon: const Icon(Icons.delete_outline),
+        tooltip: l10n.deleteVehicleButton,
+        onPressed: onDelete,
       ),
     );
   }

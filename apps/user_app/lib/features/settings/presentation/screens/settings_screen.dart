@@ -1,3 +1,4 @@
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,9 +16,7 @@ class SettingsScreen extends ConsumerWidget {
     final locale = ref.watch(localeControllerProvider).value;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.settingsTitle),
-      ),
+      appBar: FactoryAppBar(title: l10n.settingsTitle),
       body: ListView(
         children: [
           SwitchListTile(

@@ -45,42 +45,42 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     });
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.registerAppBarTitle)),
+      appBar: FactoryAppBar(title: l10n.registerAppBarTitle),
       body: Padding(
         padding: const EdgeInsets.all(FactorySpacing.space4),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
-              TextFormField(
+              FactoryTextField(
                 controller: _displayNameController,
-                decoration: InputDecoration(labelText: l10n.nameLabel),
+                label: l10n.nameLabel,
                 validator: (value) => (value == null || value.isEmpty) ? l10n.validationNameRequired : null,
               ),
-              const SizedBox(height: 12),
-              TextFormField(
+              const SizedBox(height: FactorySpacing.space3),
+              FactoryTextField(
                 controller: _emailController,
+                label: l10n.emailLabel,
                 keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(labelText: l10n.emailLabel),
                 validator: (value) =>
                     (value == null || !value.contains('@')) ? l10n.validationEmailInvalid : null,
               ),
-              const SizedBox(height: 12),
-              TextFormField(
+              const SizedBox(height: FactorySpacing.space3),
+              FactoryTextField(
                 controller: _phoneController,
+                label: l10n.phoneLabel,
                 keyboardType: TextInputType.phone,
-                decoration: InputDecoration(labelText: l10n.phoneLabel),
                 validator: (value) => (value == null || value.isEmpty) ? l10n.validationPhoneRequired : null,
               ),
-              const SizedBox(height: 12),
-              TextFormField(
+              const SizedBox(height: FactorySpacing.space3),
+              FactoryTextField(
                 controller: _passwordController,
+                label: l10n.passwordLabel,
                 obscureText: true,
-                decoration: InputDecoration(labelText: l10n.passwordLabel),
                 validator: (value) =>
                     (value == null || value.length < 8) ? l10n.validationPasswordMinLength : null,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: FactorySpacing.space5),
               if (authState.hasError)
                 Padding(
                   padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
@@ -89,15 +89,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     style: TextStyle(color: Theme.of(context).colorScheme.error),
                   ),
                 ),
-              FilledButton(
+              FactoryButton(
+                label: l10n.registerSubmit,
+                isLoading: isLoading,
                 onPressed: isLoading ? null : _submit,
-                child: isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(l10n.registerSubmit),
               ),
             ],
           ),
