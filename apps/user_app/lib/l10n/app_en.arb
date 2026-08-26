@@ -227,6 +227,9 @@
   "discoveryVerticalAuto": "Auto",
   "@discoveryVerticalAuto": {"description": "Vertical filter chip label for the auto vertical."},
 
+  "homeCategoriesTitle": "Categories",
+  "@homeCategoriesTitle": {"description": "Home screen section header above the vertical category row."},
+
   "searchHint": "Search services or providers",
   "@searchHint": {"description": "Search screen text field hint."},
 
