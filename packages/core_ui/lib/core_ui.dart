@@ -38,6 +38,7 @@ export 'src/widgets/factory_section_header.dart';
 export 'src/widgets/factory_selectable_tile.dart';
 export 'src/widgets/factory_service_card.dart';
 export 'src/widgets/factory_skeleton.dart';
+export 'src/widgets/factory_stat_tile.dart';
 export 'src/widgets/factory_text_field.dart';
 export 'src/widgets/factory_time_slot.dart';
 export 'src/widgets/provider_card.dart';

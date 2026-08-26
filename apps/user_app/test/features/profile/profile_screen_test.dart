@@ -1,9 +1,17 @@
+import 'package:core_network/core_network.dart';
 import 'package:core_ui/core_ui.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zairo/features/auth/data/models/user_summary.dart';
 import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
+import 'package:zairo/features/booking/data/booking_api.dart';
+import 'package:zairo/features/booking/data/models/booking.dart';
+import 'package:zairo/features/booking/presentation/providers/booking_providers.dart';
+import 'package:zairo/features/favorites/data/favorites_api.dart';
+import 'package:zairo/features/favorites/data/models/favorite_provider.dart';
+import 'package:zairo/features/favorites/presentation/providers/favorites_providers.dart';
 import 'package:zairo/features/profile/presentation/screens/profile_screen.dart';
 import 'package:zairo/l10n/app_localizations.dart';
 
@@ -19,8 +27,26 @@ class _LoggedOutAuthController extends AuthController {
   Future<UserSummary?> build() async => null;
 }
 
-Widget _wrap(AuthController controller) => ProviderScope(
-      overrides: [authControllerProvider.overrideWith(() => controller)],
+class _FakeBookingApi extends BookingApi {
+  _FakeBookingApi(this._bookings) : super(DioClient(Dio()));
+
+  final List<Booking> _bookings;
+
+  @override
+  Future<List<Booking>> listMyBookings(String userId) async => _bookings;
+}
+
+class _FakeFavoritesApi extends FavoritesApi {
+  _FakeFavoritesApi(this._favorites) : super(DioClient(Dio()));
+
+  final List<FavoriteProvider> _favorites;
+
+  @override
+  Future<List<FavoriteProvider>> listFavorites(String userId) async => _favorites;
+}
+
+Widget _wrap(AuthController controller, {List<Override> extraOverrides = const []}) => ProviderScope(
+      overrides: [authControllerProvider.overrideWith(() => controller), ...extraOverrides],
       child: MaterialApp(
         theme: factoryLightTheme(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -48,5 +74,39 @@ void main() {
     expect(find.text('aigerim@example.com'), findsOneWidget);
     expect(find.text('My vehicles'), findsOneWidget);
     expect(find.text('Log out'), findsOneWidget);
+  });
+
+  testWidgets('shows booking and favorite counts in the stat row', (tester) async {
+    final booking = Booking(
+      id: 'booking-1',
+      userId: 'user-1',
+      serviceId: 'service-1',
+      availabilitySlotId: 'slot-1',
+      status: 'CONFIRMED',
+      totalPrice: 30,
+      createdAt: DateTime(2026, 1, 1),
+    );
+    final favorite = FavoriteProvider(
+      id: 'provider-1',
+      name: 'Salon',
+      vertical: 'beauty',
+      status: 'ACTIVE',
+      hasOpenAvailability: true,
+      services: const [],
+      favoritedAt: DateTime(2026, 1, 1),
+    );
+
+    await tester.pumpWidget(_wrap(
+      _LoggedInAuthController(),
+      extraOverrides: [
+        bookingApiProvider.overrideWithValue(_FakeBookingApi([booking])),
+        favoritesApiProvider.overrideWithValue(_FakeFavoritesApi([favorite])),
+      ],
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('1'), findsNWidgets(2));
+    expect(find.text('My bookings'), findsOneWidget);
+    expect(find.text('My favorites'), findsOneWidget);
   });
 }
