@@ -246,3 +246,22 @@ building this, not guessed at:
    reviewer, once there's an actual place each of those points at. This
    is where the target pipeline's bottom three boxes become real —
    deliberately not built now, per §8.
+
+## 10. Postman collection (dev tool, not CI)
+
+Not a workflow, not something CI touches — noted here since it's the
+same "don't hand-maintain what's already generated" spirit as §9.1.
+`scripts/sync-postman.sh` regenerates a Postman collection from the
+backend's live OpenAPI spec (`GET /v3/api-docs`) via Postman's own
+`openapi-to-postmanv2` converter, run through `npx` (needs Node.js
+locally; nothing installs globally). Requires the backend running
+(`cd backend && ./gradlew bootRun`), then:
+
+```
+./scripts/sync-postman.sh
+```
+
+Writes to `docs/local/` — gitignored on purpose, so the collection
+never goes stale in git the way a committed export would. Re-run it
+whenever the API changes and you want a fresh import for manual
+testing in Postman.
