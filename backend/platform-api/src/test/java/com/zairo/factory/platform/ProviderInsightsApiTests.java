@@ -91,6 +91,77 @@ class ProviderInsightsApiTests {
         assertThat(ownResponse.getBody()).isEmpty();
     }
 
+    @Test
+    void computesDashboardMetricsFromRealBookingsAndPayments() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "dash-owner-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Dashboard Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Manicure " + runId, new BigDecimal("40.00"));
+
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        Registered completedCustomer = TestAuth.registerCustomer(restTemplate,
+                "dash-completed-" + runId + "@example.com");
+        UUID completedSlot = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+        UUID completedBookingId = book(completedCustomer, serviceId, completedSlot, new BigDecimal("40.00"));
+        restTemplate.postForEntity("/api/v1/bookings/" + completedBookingId + "/complete", null, Map.class);
+        restTemplate.postForEntity("/api/v1/bookings/" + completedBookingId + "/payments", null, Map.class);
+
+        Registered cancelledCustomer = TestAuth.registerCustomer(restTemplate,
+                "dash-cancelled-" + runId + "@example.com");
+        UUID cancelledSlot = createSlot(owner, providerId, start.plus(1, ChronoUnit.HOURS),
+                start.plus(90, ChronoUnit.MINUTES));
+        UUID cancelledBookingId = book(cancelledCustomer, serviceId, cancelledSlot, new BigDecimal("40.00"));
+        restTemplate.exchange("/api/v1/bookings/" + cancelledBookingId + "/cancel", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(cancelledCustomer.accessToken())), Map.class);
+
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers/" + providerId + "/dashboard",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        Map<?, ?> metrics = response.getBody();
+        assertThat(metrics.get("totalBookings")).isEqualTo(2);
+        assertThat(metrics.get("completedBookings")).isEqualTo(1);
+        assertThat(metrics.get("cancelledBookings")).isEqualTo(1);
+        assertThat(((Number) metrics.get("cancellationRate")).doubleValue()).isEqualTo(0.5);
+        assertThat(metrics.get("totalCustomers")).isEqualTo(2);
+        assertThat(((Number) metrics.get("totalRevenue")).doubleValue()).isEqualTo(40.00);
+        assertThat(((Number) metrics.get("averageCheck")).doubleValue()).isEqualTo(40.00);
+        assertThat(metrics.get("currency")).isEqualTo("USD");
+        List<?> topServices = (List<?>) metrics.get("topServices");
+        assertThat(topServices).hasSize(1);
+        Map<?, ?> topService = (Map<?, ?>) topServices.get(0);
+        assertThat(topService.get("title")).isEqualTo("Manicure " + runId);
+        assertThat(topService.get("bookingCount")).isEqualTo(2);
+    }
+
+    @Test
+    void onlyTheOwnerCanReadDashboardMetricsAndAFreshProviderIsAllZero() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "dash-owner2-" + runId + "@example.com");
+        Registered otherOwner = TestAuth.registerOwner(restTemplate, "dash-other-owner-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Empty Dashboard Salon " + runId);
+
+        ResponseEntity<Map> forbidden = restTemplate.exchange("/api/v1/providers/" + providerId + "/dashboard",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(otherOwner.accessToken())), Map.class);
+        assertThat(forbidden.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        ResponseEntity<Map> ownResponse = restTemplate.exchange("/api/v1/providers/" + providerId + "/dashboard",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(ownResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        Map<?, ?> metrics = ownResponse.getBody();
+        assertThat(metrics.get("totalBookings")).isEqualTo(0);
+        assertThat(((Number) metrics.get("cancellationRate")).doubleValue()).isEqualTo(0.0);
+        assertThat(metrics.get("averageCheck")).isNull();
+        assertThat(metrics.get("currency")).isNull();
+        assertThat((List<?>) metrics.get("topServices")).isEmpty();
+    }
+
+    private UUID book(Registered customer, UUID serviceId, UUID slotId, BigDecimal price) {
+        var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, price);
+        Map<?, ?> booking = restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
+                new HttpEntity<>(bookingRequest, TestAuth.authHeaders(customer.accessToken())), Map.class).getBody();
+        return UUID.fromString(booking.get("id").toString());
+    }
+
     private UUID createProvider(Registered owner, String name) {
         var request = new CreateProviderRequest(owner.userId(), name, "beauty");
         ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,

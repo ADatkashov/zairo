@@ -2,6 +2,7 @@ package com.zairo.factory.providerinsights;
 
 import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.providerinsights.ProviderInsightsDtos.CustomerSummary;
+import com.zairo.factory.providerinsights.ProviderInsightsDtos.DashboardMetrics;
 import com.zairo.factory.providers.ProviderOwnership;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -44,5 +45,22 @@ public class ProviderInsightsController {
             HttpServletRequest httpRequest) {
         providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         return providerInsightsService.customerHistory(providerId);
+    }
+
+    @Operation(summary = "This provider's dashboard metrics", description = """
+            Owner-only. Booking mix (total/completed/cancelled, cancellation rate), distinct customer \
+            count, revenue and average check (from SUCCEEDED payments only), and the top 5 services by \
+            booking count. Computed fresh on every call, same as customer history.""")
+    @ApiResponse(responseCode = "200", description = "Dashboard metrics, all-zero if this provider has no bookings yet")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/providers/{providerId}/dashboard")
+    public DashboardMetrics dashboardMetrics(
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
+            HttpServletRequest httpRequest) {
+        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
+        return providerInsightsService.dashboardMetrics(providerId);
     }
 }

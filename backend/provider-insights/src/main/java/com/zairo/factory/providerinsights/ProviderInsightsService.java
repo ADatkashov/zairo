@@ -9,11 +9,14 @@ import com.zairo.factory.payments.Payment;
 import com.zairo.factory.payments.PaymentRepository;
 import com.zairo.factory.payments.PaymentStatus;
 import com.zairo.factory.providerinsights.ProviderInsightsDtos.CustomerSummary;
+import com.zairo.factory.providerinsights.ProviderInsightsDtos.DashboardMetrics;
+import com.zairo.factory.providerinsights.ProviderInsightsDtos.DashboardMetrics.TopService;
 import com.zairo.factory.services.ServiceOffering;
 import com.zairo.factory.services.ServiceOfferingRepository;
 import com.zairo.factory.users.User;
 import com.zairo.factory.users.UserRepository;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -40,6 +43,8 @@ public class ProviderInsightsService {
     private final PaymentRepository paymentRepository;
     private final ServiceOfferingRepository serviceOfferingRepository;
     private final UserRepository userRepository;
+
+    private static final int MAX_TOP_SERVICES = 5;
 
     public ProviderInsightsService(BookingRepository bookingRepository,
             AvailabilitySlotRepository availabilitySlotRepository, PaymentRepository paymentRepository,
@@ -80,6 +85,39 @@ public class ProviderInsightsService {
                         succeededPaymentByBookingId, serviceTitleByServiceId, userById))
                 .sorted(Comparator.comparing(CustomerSummary::lastVisitAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
+    }
+
+    /** Revenue/booking-mix/top-services snapshot for this provider's admin dashboard. */
+    public DashboardMetrics dashboardMetrics(UUID providerId) {
+        List<Booking> bookings = bookingRepository.findByProviderId(providerId);
+
+        long totalBookings = bookings.size();
+        long completedBookings = bookings.stream().filter(b -> b.getStatus() == BookingStatus.COMPLETED).count();
+        long cancelledBookings = bookings.stream().filter(b -> b.getStatus() == BookingStatus.CANCELLED).count();
+        double cancellationRate = totalBookings == 0 ? 0.0 : (double) cancelledBookings / totalBookings;
+        long totalCustomers = bookings.stream().map(Booking::getUserId).distinct().count();
+
+        List<Payment> succeededPayments = bookings.isEmpty() ? List.of()
+                : paymentRepository.findByBookingIdInAndStatus(bookings.stream().map(Booking::getId).toList(),
+                        PaymentStatus.SUCCEEDED);
+        BigDecimal totalRevenue = succeededPayments.stream().map(Payment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        String currency = succeededPayments.isEmpty() ? null : succeededPayments.get(0).getCurrency();
+        BigDecimal averageCheck = succeededPayments.isEmpty() ? null
+                : totalRevenue.divide(BigDecimal.valueOf(succeededPayments.size()), 2, RoundingMode.HALF_UP);
+
+        Map<UUID, String> serviceTitleByServiceId = serviceOfferingRepository
+                .findAllById(bookings.stream().map(Booking::getServiceId).distinct().toList()).stream()
+                .collect(Collectors.toMap(ServiceOffering::getId, ServiceOffering::getTitle));
+        List<TopService> topServices = bookings.stream()
+                .collect(Collectors.groupingBy(Booking::getServiceId, Collectors.counting())).entrySet().stream()
+                .sorted(Map.Entry.<UUID, Long>comparingByValue().reversed())
+                .limit(MAX_TOP_SERVICES)
+                .map(entry -> new TopService(entry.getKey(), serviceTitleByServiceId.get(entry.getKey()), entry.getValue()))
+                .toList();
+
+        return new DashboardMetrics(providerId, totalBookings, completedBookings, cancelledBookings, cancellationRate,
+                totalCustomers, totalRevenue, averageCheck, currency, topServices);
     }
 
     private CustomerSummary summarize(UUID userId, List<Booking> userBookings, Map<UUID, Instant> slotStartsAtBySlotId,
