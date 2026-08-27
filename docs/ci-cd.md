@@ -1,5 +1,9 @@
 # CI/CD (GitHub Actions)
 
+<!-- ci-trial: one-line change to open a throwaway PR and confirm
+     flutter-ci.yml / backend-ci.yml actually trigger and pass on a real
+     GitHub-hosted runner. This PR is meant to be closed, not merged. -->
+
 This documents what `.github/workflows/` actually does in this repo — not
 a generic GitHub Actions primer. It reflects the repo's real structure at
 the time it was written (2026-08): a Flutter workspace (`apps/*`,
