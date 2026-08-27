@@ -22,6 +22,7 @@ import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -42,14 +43,16 @@ public class ProviderController {
     private final SubscriptionLimitService subscriptionLimitService;
     private final CategoryRepository categoryRepository;
     private final BusinessTypeRepository businessTypeRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ProviderController(ProviderRepository providerRepository,
             SubscriptionLimitService subscriptionLimitService, CategoryRepository categoryRepository,
-            BusinessTypeRepository businessTypeRepository) {
+            BusinessTypeRepository businessTypeRepository, ApplicationEventPublisher eventPublisher) {
         this.providerRepository = providerRepository;
         this.subscriptionLimitService = subscriptionLimitService;
         this.categoryRepository = categoryRepository;
         this.businessTypeRepository = businessTypeRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Operation(summary = "Create a provider (salon)", description = "Owner-only: the caller must be "
@@ -116,9 +119,16 @@ public class ProviderController {
     @ApiResponse(responseCode = "200", description = "The provider")
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @GetMapping("/api/v1/providers/{id}")
-    public ProviderResponse getById(@Parameter(description = "The provider's id.") @PathVariable UUID id) {
-        return providerRepository.findById(id).map(ProviderResponse::from)
+    public ProviderResponse getById(@Parameter(description = "The provider's id.") @PathVariable UUID id,
+            HttpServletRequest httpRequest) {
+        Provider provider = providerRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Provider not found: " + id));
+        // No-op today (nothing listens yet) — see the discovery ADR's
+        // analytics-hooks section. viewerUserId is null for an anonymous
+        // caller, not omitted — this endpoint doesn't require auth.
+        eventPublisher.publishEvent(
+                new ProviderViewedEvent(id, CurrentUser.optionalUserId(httpRequest).orElse(null)));
+        return ProviderResponse.from(provider);
     }
 
     @Operation(summary = "Update a provider's name/location", description = "Owner-only. Name and location "

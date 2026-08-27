@@ -52,6 +52,8 @@ public class BookingService {
                         "Availability slot not found: " + availabilitySlotId));
 
         if (slot.getStatus() != AvailabilityStatus.OPEN) {
+            eventPublisher.publishEvent(new BookingAttemptedEvent(userId, serviceId, slot.getProviderId(), false,
+                    "SLOT_NOT_OPEN"));
             throw new SlotNotAvailableException("Availability slot is not open: " + availabilitySlotId);
         }
 
@@ -69,6 +71,8 @@ public class BookingService {
             slot.markBooked();
             availabilitySlotRepository.saveAndFlush(slot);
         } catch (OptimisticLockingFailureException e) {
+            eventPublisher.publishEvent(new BookingAttemptedEvent(userId, serviceId, slot.getProviderId(), false,
+                    "SLOT_CLAIMED_CONCURRENTLY"));
             throw new SlotNotAvailableException("Availability slot was just booked by someone else: "
                     + availabilitySlotId);
         }
@@ -82,6 +86,7 @@ public class BookingService {
         booking = bookingRepository.save(booking);
 
         eventPublisher.publishEvent(new BookingConfirmedEvent(booking.getId(), userId, slot.getProviderId()));
+        eventPublisher.publishEvent(new BookingAttemptedEvent(userId, serviceId, slot.getProviderId(), true, null));
         return booking;
     }
 
