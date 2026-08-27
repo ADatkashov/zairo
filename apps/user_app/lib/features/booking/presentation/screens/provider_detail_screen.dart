@@ -78,6 +78,26 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
         child: ListView(
           padding: const EdgeInsets.all(FactorySpacing.space4),
           children: [
+            Container(
+              height: 140,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: FactoryRadius.lgRadius,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [colors.primaryTint, colors.surfaceAlt],
+                ),
+              ),
+              child: Center(
+                child: Icon(
+                  widget.provider.vertical == 'auto' ? Icons.directions_car_filled_rounded : Icons.content_cut_rounded,
+                  size: 48,
+                  color: colors.primaryStrong.withValues(alpha: 0.5),
+                ),
+              ),
+            ),
+            const SizedBox(height: FactorySpacing.space4),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -238,25 +258,18 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               ),
             ),
             const SizedBox(height: FactorySpacing.space6),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: (_selectedServiceId != null &&
-                        _selectedSlotId != null &&
-                        (masters.isEmpty || _selectedMasterId != null) &&
-                        (mechanics.isEmpty || _selectedMechanicId != null) &&
-                        (!requiresVehicleSelection || _selectedVehicleId != null) &&
-                        !_isBooking)
-                    ? _book
-                    : null,
-                child: _isBooking
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(l10n.bookButton),
-              ),
+            FactoryButton(
+              label: l10n.bookButton,
+              expand: true,
+              isLoading: _isBooking,
+              onPressed: (_selectedServiceId != null &&
+                      _selectedSlotId != null &&
+                      (masters.isEmpty || _selectedMasterId != null) &&
+                      (mechanics.isEmpty || _selectedMechanicId != null) &&
+                      (!requiresVehicleSelection || _selectedVehicleId != null) &&
+                      !_isBooking)
+                  ? _book
+                  : null,
             ),
           ],
         ),

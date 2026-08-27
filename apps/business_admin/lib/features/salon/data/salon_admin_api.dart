@@ -6,6 +6,7 @@ import 'models/admin_booking.dart';
 import 'models/admin_provider.dart';
 import 'models/admin_service.dart';
 import 'models/admin_slot.dart';
+import 'models/dashboard_metrics.dart';
 import 'models/recurring_schedule_result.dart';
 
 /// Wraps Core's providers/services/booking REST endpoints from the owner's
@@ -239,5 +240,10 @@ class SalonAdminApi {
   Future<AdminBooking> completeBooking(String bookingId) async {
     final response = await _dioClient.post('/bookings/$bookingId/complete');
     return AdminBooking.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<DashboardMetrics> fetchDashboardMetrics(String providerId) async {
+    final response = await _dioClient.get('/providers/$providerId/dashboard');
+    return DashboardMetrics.fromJson(response.data as Map<String, dynamic>);
   }
 }
