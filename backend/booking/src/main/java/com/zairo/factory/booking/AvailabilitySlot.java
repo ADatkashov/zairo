@@ -36,6 +36,20 @@ public class AvailabilitySlot {
     @Column(nullable = false)
     private AvailabilityStatus status;
 
+    /**
+     * Nullable, opaque — this row's owner (a vertical-beauty {@code Master}
+     * id, a vertical-auto {@code Mechanic} id, ...) if the provider chose to
+     * generate slots per-employee; null means "shared across the whole
+     * provider," today's exact behavior. Core stores this as a bare id and
+     * never validates it — no FK, no coupling to any vertical's employee
+     * table, same convention as every other cross-module reference in this
+     * codebase. Two rows with different non-null {@code employeeId} for the
+     * same time window are two independently bookable slots, not a
+     * conflict — the concurrency guarantee below is per-row regardless.
+     */
+    @Column(name = "employee_id")
+    private UUID employeeId;
+
     @Version
     private long version;
 
@@ -44,11 +58,17 @@ public class AvailabilitySlot {
 
     public AvailabilitySlot(UUID id, UUID providerId, Instant startsAt, Instant endsAt,
             AvailabilityStatus status) {
+        this(id, providerId, startsAt, endsAt, status, null);
+    }
+
+    public AvailabilitySlot(UUID id, UUID providerId, Instant startsAt, Instant endsAt, AvailabilityStatus status,
+            UUID employeeId) {
         this.id = id;
         this.providerId = providerId;
         this.startsAt = startsAt;
         this.endsAt = endsAt;
         this.status = status;
+        this.employeeId = employeeId;
     }
 
     public UUID getId() {
@@ -69,6 +89,10 @@ public class AvailabilitySlot {
 
     public AvailabilityStatus getStatus() {
         return status;
+    }
+
+    public UUID getEmployeeId() {
+        return employeeId;
     }
 
     void markBooked() {

@@ -78,11 +78,14 @@
   "discoveryVerticalBeauty": "Красота",
   "discoveryVerticalAuto": "Авто",
   "homeCategoriesTitle": "Категории",
+  "homeBookAgainTitle": "Повторить запись",
 
   "searchHint": "Поиск услуг или провайдеров",
   "searchEmptyTitle": "Найдите услугу",
   "searchEmptyTitleQuery": "Ничего не найдено по запросу «{query}»",
   "searchEmptyMessageDefault": "Попробуйте «стрижка», «маникюр» или название провайдера.",
+  "serviceCompareEmptyTitle": "Пока нет бизнесов",
+  "serviceCompareEmptyMessage": "Эту услугу пока никто не предлагает — загляните позже.",
   "searchEmptyMessageQuery": "Попробуйте другой запрос.",
   "errorSearchLoadFailed": "Не удалось загрузить провайдеров.",
   "searchFiltersButton": "Фильтры",
@@ -107,6 +110,8 @@
   "searchFilterApplyButton": "Применить",
 
   "availableTodayLabel": "Есть сегодня",
+  "nextAvailableTodayLabel": "Сегодня {time}",
+  "nextAvailableTomorrowLabel": "Завтра {time}",
   "cardDistanceAndVertical": "{distanceKm} км · {vertical}",
   "providerDistanceAway": "{distanceKm} км от вас",
   "mapDistanceFromYou": "{distanceKm} км от вас",
