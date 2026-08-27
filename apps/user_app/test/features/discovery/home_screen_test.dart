@@ -4,6 +4,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zairo/features/catalog/data/catalog_api.dart';
+import 'package:zairo/features/catalog/data/models/category.dart';
+import 'package:zairo/features/catalog/presentation/providers/catalog_providers.dart';
 import 'package:zairo/features/discovery/data/discovery_api.dart';
 import 'package:zairo/features/discovery/data/models/provider_search_result.dart';
 import 'package:zairo/features/discovery/presentation/providers/discovery_providers.dart';
@@ -14,6 +17,7 @@ class _FakeDiscoveryApi extends DiscoveryApi {
   _FakeDiscoveryApi(this._results) : super(DioClient(Dio()));
 
   final List<ProviderSearchResult> _results;
+  String? lastVertical;
 
   @override
   Future<List<ProviderSearchResult>> searchProviders({
@@ -28,8 +32,18 @@ class _FakeDiscoveryApi extends DiscoveryApi {
     bool availableOnly = false,
     String? sort,
   }) async {
+    lastVertical = vertical;
     return _results;
   }
+}
+
+class _FakeCatalogApi extends CatalogApi {
+  _FakeCatalogApi(this._categories) : super(DioClient(Dio()));
+
+  final List<Category> _categories;
+
+  @override
+  Future<List<Category>> listCategories() async => _categories;
 }
 
 const _open = ProviderSearchResult(
@@ -114,5 +128,37 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('No providers yet'), findsOneWidget);
+  });
+
+  testWidgets('category tiles come from the catalog API, not a hardcoded literal', (tester) async {
+    final fakeDiscoveryApi = _FakeDiscoveryApi([_open, _closed]);
+    final fakeCatalogApi = _FakeCatalogApi(const [
+      Category(id: 'cat-1', code: 'beauty', nameKk: 'Сұлулық', nameRu: 'Красота', nameEn: 'Beauty', sortOrder: 1),
+      Category(id: 'cat-2', code: 'auto', nameKk: 'Авто', nameRu: 'Авто', nameEn: 'Auto', sortOrder: 2),
+    ]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          discoveryApiProvider.overrideWithValue(fakeDiscoveryApi),
+          catalogApiProvider.overrideWithValue(fakeCatalogApi),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const HomeScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Beauty'), findsOneWidget);
+    expect(find.text('Auto'), findsOneWidget);
+
+    await tester.tap(find.text('Beauty'));
+    await tester.pumpAndSettle();
+
+    expect(fakeDiscoveryApi.lastVertical, 'beauty');
   });
 }
