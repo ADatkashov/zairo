@@ -1,0 +1,91 @@
+name: Backend CI
+
+# Builds and tests the Spring Boot modular monolith in backend/. Postgres
+# is provisioned per test run by Testcontainers itself (see
+# platform-api's TestcontainersConfiguration) — no Postgres service
+# needed here. MinIO is NOT Testcontainerized (see StorageApiTests'
+# javadoc), so it's started manually below with the same image/creds
+# infrastructure/docker-compose.yml uses for local dev.
+on:
+  pull_request:
+    branches: [develop, test, master]
+  push:
+    branches: [develop, test, master]
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: backend (build + test)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Matches subprojects { java { toolchain { languageVersion = 21 } } }
+      # in backend/build.gradle.kts.
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # Caches the Gradle wrapper distribution, dependencies, and build
+      # cache; also validates the wrapper jar's checksum against Gradle's
+      # published values.
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Same image, port mapping, and dev-only credentials as
+      # infrastructure/docker-compose.yml's minio service — StorageApiTests
+      # talks to these exact values via application.yml's app.storage.*
+      # defaults (http://localhost:9000 / app_factory / app_factory_secret).
+      # Started with `docker run` rather than a `services:` container
+      # because the official minio/minio image has no default CMD — it
+      # requires an explicit `server /data` argument, which the `services:`
+      # block has no field for.
+      - name: Start MinIO
+        run: |
+          docker run -d --name minio \
+            -p 9000:9000 -p 9001:9001 \
+            -e MINIO_ROOT_USER=app_factory \
+            -e MINIO_ROOT_PASSWORD=app_factory_secret \
+            minio/minio:latest server /data --console-address ":9001"
+
+      - name: Wait for MinIO to be ready
+        run: |
+          for _ in $(seq 1 30); do
+            if curl -sf http://localhost:9000/minio/health/live > /dev/null; then
+              echo "MinIO is up"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::MinIO did not become ready in time"
+          docker logs minio
+          exit 1
+
+      # backend/gradlew is committed without the executable bit (this repo
+      # is developed on Windows, where that bit doesn't really exist) —
+      # every Linux checkout needs this before `./gradlew` will run.
+      - name: Make gradlew executable
+        working-directory: backend
+        run: chmod +x gradlew
+
+      - name: Build and test (./gradlew build)
+        working-directory: backend
+        run: ./gradlew build
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-reports
+          path: backend/**/build/reports/tests/**
+          retention-days: 14
+          if-no-files-found: ignore
