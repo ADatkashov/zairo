@@ -307,6 +307,83 @@ class SearchApiTests {
         assertThat(results).extracting(r -> r.get("id")).contains(providerId.toString());
     }
 
+    @Test
+    void nextAvailableSlotIsTheEarliestOpenOne() {
+        String runId = UUID.randomUUID().toString();
+        String vertical = "beauty-next-" + runId;
+        Registered owner = TestAuth.registerOwner(restTemplate, "next-owner-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Next Slot Salon " + runId, vertical);
+        createService(owner, providerId, "Cut", new BigDecimal("10.00"));
+        approve(providerId);
+
+        Instant later = Instant.now().plus(3, ChronoUnit.DAYS);
+        Instant sooner = Instant.now().plus(1, ChronoUnit.DAYS);
+        createSlot(owner, providerId, later, later.plus(30, ChronoUnit.MINUTES));
+        createSlot(owner, providerId, sooner, sooner.plus(30, ChronoUnit.MINUTES));
+
+        List<Map> results = search(vertical, null);
+        assertThat(results).hasSize(1);
+        String nextAvailableSlot = (String) results.get(0).get("nextAvailableSlot");
+        assertThat(Instant.parse(nextAvailableSlot)).isCloseTo(sooner, org.assertj.core.api.Assertions
+                .within(1, ChronoUnit.SECONDS));
+    }
+
+    @Test
+    void filtersByCatalogServiceId() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "catfilter-owner-" + runId + "@example.com");
+        // Two providers under one owner needs PRO — same reasoning as every
+        // other multi-provider search test in this file.
+        TestAuth.upgradeToPro(restTemplate, owner);
+        TestPlatformAuth.Registered admin = TestPlatformAuth.registerPlatformAdmin(restTemplate,
+                platformAdminAccountRepository, "catfilter-admin-" + runId + "@factory.internal",
+                PlatformRole.PLATFORM_ADMIN);
+        UUID catalogServiceId = createCatalogService(admin, runId, "Filterable Service " + runId);
+
+        UUID linkedProvider = createProvider(owner, "Linked Provider " + runId, "beauty-cf-" + runId);
+        UUID linkedService = createServiceReturningId(owner, linkedProvider, "Something " + runId,
+                new BigDecimal("10.00"));
+        approve(linkedProvider);
+        restTemplate.exchange("/api/v1/services/" + linkedService + "/catalog-link", HttpMethod.PATCH,
+                new HttpEntity<>(new LinkCatalogServiceRequest(catalogServiceId),
+                        TestAuth.authHeaders(owner.accessToken())), Map.class);
+
+        UUID unlinkedProvider = createProvider(owner, "Unlinked Provider " + runId, "beauty-cf-" + runId);
+        createService(owner, unlinkedProvider, "Something Else " + runId, new BigDecimal("10.00"));
+        approve(unlinkedProvider);
+
+        List<Map> results = search(new SearchParams(null).catalogServiceId(catalogServiceId));
+        assertThat(results).extracting(r -> r.get("id")).contains(linkedProvider.toString())
+                .doesNotContain(unlinkedProvider.toString());
+    }
+
+    @Test
+    void paginatesResultsAndExposesTotalCountHeader() {
+        String runId = UUID.randomUUID().toString();
+        String vertical = "beauty-page-" + runId;
+        Registered owner = TestAuth.registerOwner(restTemplate, "page-owner-" + runId + "@example.com");
+        TestAuth.upgradeToPro(restTemplate, owner);
+
+        UUID providerA = createProvider(owner, "Page A " + runId, vertical);
+        createService(owner, providerA, "Cut", new BigDecimal("10.00"));
+        approve(providerA);
+        UUID providerB = createProvider(owner, "Page B " + runId, vertical);
+        createService(owner, providerB, "Cut", new BigDecimal("10.00"));
+        approve(providerB);
+        UUID providerC = createProvider(owner, "Page C " + runId, vertical);
+        createService(owner, providerC, "Cut", new BigDecimal("10.00"));
+        approve(providerC);
+
+        ResponseEntity<Map[]> firstPage = searchResponse(new SearchParams(vertical).page(0).size(2));
+        assertThat(firstPage.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(firstPage.getBody()).hasSize(2);
+        assertThat(firstPage.getHeaders().getFirst("X-Total-Count")).isEqualTo("3");
+
+        ResponseEntity<Map[]> secondPage = searchResponse(new SearchParams(vertical).page(1).size(2));
+        assertThat(secondPage.getBody()).hasSize(1);
+        assertThat(secondPage.getHeaders().getFirst("X-Total-Count")).isEqualTo("3");
+    }
+
     /** Category -> BusinessType -> CatalogService, all fresh for this run, PLATFORM_ADMIN-created. */
     private UUID createCatalogService(TestPlatformAuth.Registered admin, String runId, String catalogServiceName) {
         String suffix = runId.replace("-", "");
@@ -363,6 +440,7 @@ class SearchApiTests {
     private static final class SearchParams {
         private final String vertical;
         private UUID businessTypeId;
+        private UUID catalogServiceId;
         private String q;
         private Double lat;
         private Double lng;
@@ -372,6 +450,8 @@ class SearchApiTests {
         private Double minRating;
         private boolean availableOnly;
         private SearchSort sort;
+        private Integer page;
+        private Integer size;
 
         SearchParams(String vertical) {
             this.vertical = vertical;
@@ -426,6 +506,21 @@ class SearchApiTests {
             this.sort = sort;
             return this;
         }
+
+        SearchParams catalogServiceId(UUID catalogServiceId) {
+            this.catalogServiceId = catalogServiceId;
+            return this;
+        }
+
+        SearchParams page(int page) {
+            this.page = page;
+            return this;
+        }
+
+        SearchParams size(int size) {
+            this.size = size;
+            return this;
+        }
     }
 
     private List<Map> search(SearchParams params) {
@@ -435,6 +530,9 @@ class SearchApiTests {
         }
         if (params.businessTypeId != null) {
             url.append("businessTypeId=").append(params.businessTypeId).append("&");
+        }
+        if (params.catalogServiceId != null) {
+            url.append("catalogServiceId=").append(params.catalogServiceId).append("&");
         }
         if (params.q != null) {
             url.append("q=").append(params.q).append("&");
@@ -460,9 +558,29 @@ class SearchApiTests {
         if (params.sort != null) {
             url.append("sort=").append(params.sort).append("&");
         }
+        if (params.page != null) {
+            url.append("page=").append(params.page).append("&");
+        }
+        if (params.size != null) {
+            url.append("size=").append(params.size).append("&");
+        }
         ResponseEntity<Map[]> response = restTemplate.getForEntity(url.toString(), Map[].class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         return List.of(response.getBody());
+    }
+
+    private ResponseEntity<Map[]> searchResponse(SearchParams params) {
+        StringBuilder url = new StringBuilder("/api/v1/search/providers?");
+        if (params.vertical != null) {
+            url.append("vertical=").append(params.vertical).append("&");
+        }
+        if (params.page != null) {
+            url.append("page=").append(params.page).append("&");
+        }
+        if (params.size != null) {
+            url.append("size=").append(params.size).append("&");
+        }
+        return restTemplate.getForEntity(url.toString(), Map[].class);
     }
 
     private UUID createProvider(Registered owner, String name, String vertical) {
