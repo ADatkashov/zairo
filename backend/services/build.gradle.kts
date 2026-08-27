@@ -14,4 +14,8 @@ dependencies {
     implementation(project(":providers"))
     implementation(project(":auth"))
     implementation(project(":money"))
+
+    // Validating a catalog-link target actually exists — see
+    // ServiceOfferingController.linkCatalogService.
+    implementation(project(":catalog"))
 }

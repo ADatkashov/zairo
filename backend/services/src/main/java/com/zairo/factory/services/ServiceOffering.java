@@ -48,6 +48,17 @@ public class ServiceOffering {
     @Column(name = "is_active", nullable = false)
     private boolean active;
 
+    /**
+     * References {@code catalog.CatalogService} by bare id — null on every
+     * row created before Phase 2 of the master catalog (deliberately not
+     * backfilled, see V25__create_catalog_tables.sql: free-text titles are
+     * too varied to auto-match safely). Set post-creation via
+     * {@link #linkCatalogService}, not the constructor — linking is always
+     * a deliberate owner action, not part of adding a service.
+     */
+    @Column(name = "catalog_service_id")
+    private UUID catalogServiceId;
+
     protected ServiceOffering() {
     }
 
@@ -88,6 +99,15 @@ public class ServiceOffering {
 
     public boolean isActive() {
         return active;
+    }
+
+    public UUID getCatalogServiceId() {
+        return catalogServiceId;
+    }
+
+    /** Nullable on purpose — passing null unlinks, matching how a "clear this field" action reads elsewhere. */
+    void linkCatalogService(UUID catalogServiceId) {
+        this.catalogServiceId = catalogServiceId;
     }
 
     void update(String title, int durationMinutes, BigDecimal price, String currency) {

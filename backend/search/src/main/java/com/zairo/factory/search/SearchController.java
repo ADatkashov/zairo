@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,7 +34,13 @@ public class SearchController {
     public List<ProviderSearchResult> search(
             @Parameter(description = "Exact match on vertical, e.g. \"beauty\".", example = "beauty")
             @RequestParam(required = false) String vertical,
-            @Parameter(description = "Free-text match against provider/service names.", example = "manicure")
+            @Parameter(description = "Filter to providers of this catalog.BusinessType — a more specific "
+                    + "alternative to `vertical` (see GET /categories/{id}/business-types). Combines with "
+                    + "`vertical` if both are given.")
+            @RequestParam(required = false) UUID businessTypeId,
+            @Parameter(description = "Free-text match against provider/service names — also matches a "
+                    + "service's linked master-catalog name in any of its languages, see PATCH "
+                    + "/services/{id}/catalog-link.", example = "manicure")
             @RequestParam(required = false) String q,
             @Parameter(description = "Caller's latitude — required together with `lng` to get `distanceKm` "
                     + "in results or to use `maxDistanceKm`.", example = "43.238293")
@@ -52,7 +59,7 @@ public class SearchController {
             @RequestParam(required = false, defaultValue = "false") boolean availableOnly,
             @Parameter(description = "Ranking order — defaults to RECOMMENDED (a blended score) if omitted.")
             @RequestParam(required = false) SearchSort sort) {
-        return searchService.search(vertical, q, lat, lng, minPrice, maxPrice, maxDistanceKm, minRating,
-                availableOnly, sort);
+        return searchService.search(vertical, businessTypeId, q, lat, lng, minPrice, maxPrice, maxDistanceKm,
+                minRating, availableOnly, sort);
     }
 }
