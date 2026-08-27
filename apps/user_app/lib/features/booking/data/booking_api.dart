@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 
 import 'booking_exception.dart';
 import 'models/availability_slot.dart';
+import 'models/book_again_suggestion.dart';
 import 'models/booking.dart';
 
 /// Not final: tests substitute a subclass overriding these methods instead
@@ -47,6 +48,14 @@ class BookingApi {
     final response = await _dioClient.get('/users/$userId/bookings');
     final data = response.data as List<dynamic>;
     return data.map((e) => Booking.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// "Repeat your last appointment" — one suggestion per distinct service
+  /// the customer has a completed booking for, newest visit first.
+  Future<List<BookAgainSuggestion>> listBookAgainSuggestions(String userId) async {
+    final response = await _dioClient.get('/users/$userId/book-again');
+    final data = response.data as List<dynamic>;
+    return data.map((e) => BookAgainSuggestion.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   /// Customer-initiated cancellation — backend enforces ownership (403 if

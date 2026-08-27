@@ -1,6 +1,7 @@
 import 'package:core_ui/core_ui.dart' as core_ui;
 import 'package:flutter/material.dart';
 
+import '../../../../core/formatting/next_available.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../data/models/provider_search_result.dart';
 
@@ -44,7 +45,14 @@ class ProviderCard extends StatelessWidget {
           : (result.reviewCount == null
               ? l10n.ratingSemanticLabel(result.averageRating!.toStringAsFixed(1))
               : l10n.ratingSemanticLabelWithReviews(result.averageRating!.toStringAsFixed(1), result.reviewCount!)),
-      availabilityLabel: result.hasOpenAvailability ? l10n.availableTodayLabel : null,
+      // The precise "Today 18:30" reading when we know the actual next
+      // slot; falls back to the generic "Available today" badge for a
+      // result that predates this field (or, in principle, has open
+      // availability without a resolvable next slot — shouldn't happen,
+      // but a badge is still more honest than nothing).
+      availabilityLabel: result.nextAvailableSlot != null
+          ? formatNextAvailable(l10n, result.nextAvailableSlot!.toLocal())
+          : (result.hasOpenAvailability ? l10n.availableTodayLabel : null),
       onTap: onTap,
       layout: layout,
       width: width,

@@ -23,4 +23,9 @@ dependencies {
     // linked catalog entry's multilingual name, not just a provider's own
     // service titles — see SearchService.search.
     implementation(project(":catalog"))
+
+    // Self-service check on BookAgainController.bookAgain needs auth's
+    // real identity (CurrentUser) — same reasoning as every other
+    // self-service-only endpoint in this codebase.
+    implementation(project(":auth"))
 }

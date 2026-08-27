@@ -16,6 +16,7 @@ class ProviderSearchResult {
   final double? longitude;
   final double? averageRating;
   final int? reviewCount;
+  final DateTime? nextAvailableSlot;
 
   const ProviderSearchResult({
     required this.id,
@@ -30,6 +31,7 @@ class ProviderSearchResult {
     this.longitude,
     this.averageRating,
     this.reviewCount,
+    this.nextAvailableSlot,
   });
 
   factory ProviderSearchResult.fromJson(Map<String, dynamic> json) {
@@ -56,6 +58,9 @@ class ProviderSearchResult {
       reviewCount: json['reviewCount'] == null
           ? null
           : (json['reviewCount'] as num).toInt(),
+      nextAvailableSlot: json['nextAvailableSlot'] == null
+          ? null
+          : DateTime.parse(json['nextAvailableSlot'] as String),
     );
   }
 }

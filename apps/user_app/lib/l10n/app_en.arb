@@ -230,6 +230,9 @@
   "homeCategoriesTitle": "Categories",
   "@homeCategoriesTitle": {"description": "Home screen section header above the vertical category row."},
 
+  "homeBookAgainTitle": "Book again",
+  "@homeBookAgainTitle": {"description": "Home screen section header above the repeat-your-last-appointment row."},
+
   "searchHint": "Search services or providers",
   "@searchHint": {"description": "Search screen text field hint."},
 
@@ -245,6 +248,12 @@
   },
 
   "searchEmptyMessageDefault": "Try \"haircut\", \"manicure,\" or a provider name.",
+
+  "serviceCompareEmptyTitle": "No businesses yet",
+  "@serviceCompareEmptyTitle": {"description": "Service Compare screen empty state — nobody offers this catalog service yet."},
+
+  "serviceCompareEmptyMessage": "No business offers this exact service yet — check back soon.",
+  "@serviceCompareEmptyMessage": {"description": "Service Compare screen empty state message."},
   "@searchEmptyMessageDefault": {"description": "Search screen empty state message before the first search."},
 
   "searchEmptyMessageQuery": "Try a different search term.",
@@ -325,6 +334,18 @@
 
   "availableTodayLabel": "Available today",
   "@availableTodayLabel": {"description": "Badge shown on a provider card/detail screen with open availability today."},
+
+  "nextAvailableTodayLabel": "Today {time}",
+  "@nextAvailableTodayLabel": {
+    "description": "Provider card badge showing the soonest open slot, when it falls today.",
+    "placeholders": {"time": {"type": "String", "example": "18:30"}}
+  },
+
+  "nextAvailableTomorrowLabel": "Tomorrow {time}",
+  "@nextAvailableTomorrowLabel": {
+    "description": "Provider card badge showing the soonest open slot, when it falls tomorrow.",
+    "placeholders": {"time": {"type": "String", "example": "10:00"}}
+  },
 
   "cardDistanceAndVertical": "{distanceKm} km · {vertical}",
   "@cardDistanceAndVertical": {
