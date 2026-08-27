@@ -26,4 +26,5 @@ include(
     "money",
     "payment-provider",
     "subscriptions",
+    "platform-admin",
 )
