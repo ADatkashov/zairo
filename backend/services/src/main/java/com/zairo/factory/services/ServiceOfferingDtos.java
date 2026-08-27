@@ -41,10 +41,20 @@ public final class ServiceOfferingDtos {
             @Schema(example = "25.00") BigDecimal price,
             @Schema(example = "USD") String currency,
             @Schema(description = "False once deactivated (soft-delete) — see DELETE /services/{id}.")
-            boolean active) {
+            boolean active,
+            @Schema(description = "The catalog.CatalogService this offering is linked to, if any — see "
+                    + "PATCH /services/{id}/catalog-link.", example = "550e8400-e29b-41d4-a716-446655440000")
+            UUID catalogServiceId) {
         static ServiceResponse from(ServiceOffering service) {
             return new ServiceResponse(service.getId(), service.getProviderId(), service.getTitle(),
-                    service.getDurationMinutes(), service.getPrice(), service.getCurrency(), service.isActive());
+                    service.getDurationMinutes(), service.getPrice(), service.getCurrency(), service.isActive(),
+                    service.getCatalogServiceId());
         }
+    }
+
+    public record LinkCatalogServiceRequest(
+            @Schema(description = "The catalog service to link this offering to, or null to unlink.",
+                    example = "550e8400-e29b-41d4-a716-446655440000")
+            UUID catalogServiceId) {
     }
 }

@@ -2,6 +2,8 @@ package com.zairo.factory.search;
 
 import com.zairo.factory.booking.AvailabilityStatus;
 import com.zairo.factory.booking.AvailabilitySlotRepository;
+import com.zairo.factory.catalog.CatalogService;
+import com.zairo.factory.catalog.CatalogServiceRepository;
 import com.zairo.factory.providers.Provider;
 import com.zairo.factory.providers.ProviderRepository;
 import com.zairo.factory.providers.ProviderStatus;
@@ -13,6 +15,7 @@ import com.zairo.factory.services.ServiceOffering;
 import com.zairo.factory.services.ServiceOfferingRepository;
 import java.math.BigDecimal;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,13 +49,16 @@ public class SearchService {
     private final ServiceOfferingRepository serviceOfferingRepository;
     private final AvailabilitySlotRepository availabilitySlotRepository;
     private final ReviewSummaryService reviewSummaryService;
+    private final CatalogServiceRepository catalogServiceRepository;
 
     public SearchService(ProviderRepository providerRepository, ServiceOfferingRepository serviceOfferingRepository,
-            AvailabilitySlotRepository availabilitySlotRepository, ReviewSummaryService reviewSummaryService) {
+            AvailabilitySlotRepository availabilitySlotRepository, ReviewSummaryService reviewSummaryService,
+            CatalogServiceRepository catalogServiceRepository) {
         this.providerRepository = providerRepository;
         this.serviceOfferingRepository = serviceOfferingRepository;
         this.availabilitySlotRepository = availabilitySlotRepository;
         this.reviewSummaryService = reviewSummaryService;
+        this.catalogServiceRepository = catalogServiceRepository;
     }
 
     /**
@@ -68,23 +74,48 @@ public class SearchService {
      * providers with no reviews yet, same reasoning. {@code availableOnly}
      * filters to {@code hasOpenAvailability}.
      */
-    public List<ProviderSearchResult> search(String vertical, String query, Double originLat, Double originLng,
-            BigDecimal minPrice, BigDecimal maxPrice, Double maxDistanceKm, Double minRating, boolean availableOnly,
-            SearchSort sort) {
+    public List<ProviderSearchResult> search(String vertical, UUID businessTypeId, String query, Double originLat,
+            Double originLng, BigDecimal minPrice, BigDecimal maxPrice, Double maxDistanceKm, Double minRating,
+            boolean availableOnly, SearchSort sort) {
         // Only ACTIVE providers are ever discoverable through search — a
         // PENDING (not yet moderated) or SUSPENDED provider still exists and
         // can be fetched directly by id, it's just invisible to browsing.
         // See ProviderController.updateStatus for the only way in/out of
         // ACTIVE.
-        List<Provider> providers = vertical == null || vertical.isBlank()
-                ? providerRepository.findByStatus(ProviderStatus.ACTIVE)
-                : providerRepository.findByVerticalAndStatus(vertical, ProviderStatus.ACTIVE);
+        //
+        // businessTypeId is the more specific filter when both are given
+        // (vertical is the coarser Category-level signal it's gradually
+        // superseding — see catalog's ADR) — fetched via its own indexed
+        // query rather than combined into one derived method for every
+        // combination, then vertical (if also given) narrows it further.
+        List<Provider> providers;
+        if (businessTypeId != null) {
+            providers = providerRepository.findByBusinessTypeIdAndStatus(businessTypeId, ProviderStatus.ACTIVE);
+            if (vertical != null && !vertical.isBlank()) {
+                providers = providers.stream().filter(p -> vertical.equals(p.getVertical())).toList();
+            }
+        } else if (vertical != null && !vertical.isBlank()) {
+            providers = providerRepository.findByVerticalAndStatus(vertical, ProviderStatus.ACTIVE);
+        } else {
+            providers = providerRepository.findByStatus(ProviderStatus.ACTIVE);
+        }
 
         if (query != null && !query.isBlank()) {
             String needle = query.toLowerCase();
-            Set<UUID> providerIdsWithMatchingService = serviceOfferingRepository
+            Set<UUID> providerIdsWithMatchingService = new HashSet<>(serviceOfferingRepository
                     .findByTitleContainingIgnoreCaseAndActiveTrue(query).stream().map(ServiceOffering::getProviderId)
-                    .collect(Collectors.toSet());
+                    .collect(Collectors.toSet()));
+            // Also match a linked catalog entry's multilingual name — the
+            // one addition that makes "маникюр"/"manicure" find the same
+            // offering regardless of which language its own title happens
+            // to be written in, without touching the title-match path
+            // above at all (see the catalog ADR's search section).
+            List<UUID> matchingCatalogServiceIds = catalogServiceRepository.findByAnyNameContainingIgnoreCase(query)
+                    .stream().map(CatalogService::getId).toList();
+            if (!matchingCatalogServiceIds.isEmpty()) {
+                serviceOfferingRepository.findByCatalogServiceIdInAndActiveTrue(matchingCatalogServiceIds).stream()
+                        .map(ServiceOffering::getProviderId).forEach(providerIdsWithMatchingService::add);
+            }
             providers = providers.stream()
                     .filter(p -> p.getName().toLowerCase().contains(needle)
                             || providerIdsWithMatchingService.contains(p.getId()))

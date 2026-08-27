@@ -9,6 +9,7 @@ import com.zairo.factory.providers.ProviderDtos.UpdateProviderRequest;
 import com.zairo.factory.providers.ProviderDtos.UpdateProviderStatusRequest;
 import com.zairo.factory.providers.ProviderStatus;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
+import com.zairo.factory.services.ServiceOfferingDtos.LinkCatalogServiceRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.UpdateServiceRequest;
 import com.zairo.factory.users.UserRepository;
 import java.math.BigDecimal;
@@ -133,6 +134,27 @@ class ProviderApiTests {
         assertThat(reactivateResponse.getBody().get("active")).isEqualTo(true);
         assertThat(getServiceList(providerId, false)).extracting(s -> s.get("id")).containsExactly(
                 serviceId.toString());
+    }
+
+    @Test
+    void catalogLinkRequiresOwnershipAndARealCatalogServiceId() {
+        Registered owner = TestAuth.registerOwner(restTemplate, "catalog-link-owner@example.com");
+        UUID providerId = createProvider(owner, "Catalog Link Salon");
+        UUID serviceId = createService(owner, providerId, "Haircut", new BigDecimal("25.00"));
+
+        // A different owner can't link it — 403.
+        Registered otherOwner = TestAuth.registerOwner(restTemplate, "catalog-link-other-owner@example.com");
+        ResponseEntity<java.util.Map> forbidden = restTemplate.exchange("/api/v1/services/" + serviceId
+                + "/catalog-link", HttpMethod.PATCH, new HttpEntity<>(new LinkCatalogServiceRequest(null),
+                TestAuth.authHeaders(otherOwner.accessToken())), java.util.Map.class);
+        assertThat(forbidden.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        // A non-existent catalog service id is rejected, not silently accepted.
+        ResponseEntity<java.util.Map> notFound = restTemplate.exchange("/api/v1/services/" + serviceId
+                + "/catalog-link", HttpMethod.PATCH, new HttpEntity<>(
+                new LinkCatalogServiceRequest(UUID.randomUUID()), TestAuth.authHeaders(owner.accessToken())),
+                java.util.Map.class);
+        assertThat(notFound.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test

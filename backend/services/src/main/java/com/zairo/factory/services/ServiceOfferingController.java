@@ -1,8 +1,10 @@
 package com.zairo.factory.services;
 
 import com.zairo.factory.auth.CurrentUser;
+import com.zairo.factory.catalog.CatalogServiceRepository;
 import com.zairo.factory.providers.ProviderOwnership;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
+import com.zairo.factory.services.ServiceOfferingDtos.LinkCatalogServiceRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.ServiceResponse;
 import com.zairo.factory.services.ServiceOfferingDtos.UpdateServiceRequest;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +19,7 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -32,11 +35,13 @@ public class ServiceOfferingController {
 
     private final ServiceOfferingRepository serviceOfferingRepository;
     private final ProviderOwnership providerOwnership;
+    private final CatalogServiceRepository catalogServiceRepository;
 
     public ServiceOfferingController(ServiceOfferingRepository serviceOfferingRepository,
-            ProviderOwnership providerOwnership) {
+            ProviderOwnership providerOwnership, CatalogServiceRepository catalogServiceRepository) {
         this.serviceOfferingRepository = serviceOfferingRepository;
         this.providerOwnership = providerOwnership;
+        this.catalogServiceRepository = catalogServiceRepository;
     }
 
     @Operation(summary = "Add a service to a provider", description = "Owner-only. Created active by default.")
@@ -128,6 +133,31 @@ public class ServiceOfferingController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found: " + id));
         providerOwnership.requireOwner(service.getProviderId(), CurrentUser.requireUserId(httpRequest));
         service.reactivate();
+        return ServiceResponse.from(serviceOfferingRepository.save(service));
+    }
+
+    @Operation(summary = "Link (or unlink) this service to a master catalog entry", description = """
+            Owner-only. Pass a real catalog.CatalogService id to link, or null to unlink — deliberate and \
+            post-creation, never automatic (free-text titles are too varied to auto-match safely, see the \
+            master catalog ADR). Linking lets Search match this offering against the catalog entry's \
+            multilingual name, not just this offering's own title.""")
+    @ApiResponse(responseCode = "200", description = "Link updated")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", description = "The service, or the given catalog service id, doesn't exist.",
+            ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
+    @PatchMapping("/api/v1/services/{id}/catalog-link")
+    public ServiceResponse linkCatalogService(@Parameter(description = "The service's id.") @PathVariable UUID id,
+            @Valid @RequestBody LinkCatalogServiceRequest request, HttpServletRequest httpRequest) {
+        ServiceOffering service = serviceOfferingRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found: " + id));
+        providerOwnership.requireOwner(service.getProviderId(), CurrentUser.requireUserId(httpRequest));
+        if (request.catalogServiceId() != null && !catalogServiceRepository.existsById(request.catalogServiceId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Catalog service not found: " + request.catalogServiceId());
+        }
+        service.linkCatalogService(request.catalogServiceId());
         return ServiceResponse.from(serviceOfferingRepository.save(service));
     }
 }
