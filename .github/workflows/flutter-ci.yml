@@ -83,6 +83,29 @@ jobs:
         continue-on-error: true
         run: dart format --output=none --set-exit-if-changed .
 
+      # packages/core_network and packages/core_storage each have an empty
+      # test/ directory — no *_test.dart files, so nothing is tracked by
+      # git there at all (git doesn't track empty directories). A bare
+      # `flutter test` errors on "Test directory not found" for those two
+      # rather than reporting "0 tests", so this checks first and skips
+      # with a loud warning instead of failing the whole job — same
+      # tolerance melos.yaml's own `--dir-exists=test` gives this locally,
+      # but checked more precisely (actual test files, not just directory
+      # presence, since that directory existing-but-empty is exactly what
+      # caused the confusion here). The warning is intentional: this
+      # should stay visible, not silently green, until it's addressed.
+      - name: Check for test files
+        id: has_tests
+        working-directory: ${{ matrix.package }}
+        run: |
+          if find test -name '*_test.dart' -type f 2>/dev/null | grep -q .; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::${{ matrix.package }} has no *_test.dart files — flutter test skipped, zero test coverage for this package."
+          fi
+
       - name: flutter test
+        if: steps.has_tests.outputs.found == 'true'
         working-directory: ${{ matrix.package }}
         run: flutter test
