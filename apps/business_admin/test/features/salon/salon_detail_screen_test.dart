@@ -14,6 +14,7 @@ import 'package:business_admin/features/salon/data/models/admin_booking.dart';
 import 'package:business_admin/features/salon/data/models/admin_provider.dart';
 import 'package:business_admin/features/salon/data/models/admin_service.dart';
 import 'package:business_admin/features/salon/data/models/admin_slot.dart';
+import 'package:business_admin/features/salon/data/models/dashboard_metrics.dart';
 import 'package:business_admin/features/salon/data/models/recurring_schedule_result.dart';
 import 'package:business_admin/features/salon/data/salon_admin_api.dart';
 import 'package:business_admin/features/salon/presentation/providers/salon_providers.dart';
@@ -217,6 +218,19 @@ class _FakeSalonAdminApi extends SalonAdminApi {
 
   @override
   Future<List<AdminBooking>> listBookings(String providerId) async => _bookings;
+
+  @override
+  Future<DashboardMetrics> fetchDashboardMetrics(String providerId) async {
+    return const DashboardMetrics(
+      totalBookings: 0,
+      completedBookings: 0,
+      cancelledBookings: 0,
+      cancellationRate: 0,
+      totalCustomers: 0,
+      totalRevenue: 0,
+      topServices: [],
+    );
+  }
 
   @override
   Future<AdminBooking> completeBooking(String bookingId) async {
@@ -745,4 +759,74 @@ void main() {
     expect(find.text('Yerlan Mechanic'), findsOneWidget);
     expect(find.text('Reactivate'), findsNothing);
   });
+
+  testWidgets('shows dashboard metrics stats and top services once there is booking history', (tester) async {
+    final fakeApi = _FakeSalonAdminApiWithDashboardMetrics(
+      const DashboardMetrics(
+        totalBookings: 10,
+        completedBookings: 7,
+        cancelledBookings: 3,
+        cancellationRate: 0.3,
+        totalCustomers: 5,
+        totalRevenue: 200,
+        averageCheck: 40,
+        currency: 'USD',
+        topServices: [DashboardTopService(serviceId: 's1', title: 'Haircut', bookingCount: 6)],
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(fakeApi),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SalonDetailScreen(provider: _provider),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Overview'), findsOneWidget);
+    expect(find.text('10'), findsOneWidget);
+    expect(find.text('7'), findsOneWidget);
+    expect(find.text('30%'), findsOneWidget);
+    expect(find.text('Top services'), findsOneWidget);
+    expect(find.text('Haircut'), findsOneWidget);
+  });
+
+  testWidgets('shows the dashboard empty state when there is no booking history yet', (tester) async {
+    final fakeApi = _FakeSalonAdminApi();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(fakeApi),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SalonDetailScreen(provider: _provider),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Metrics will appear once this business gets its first booking.'), findsOneWidget);
+  });
+}
+
+class _FakeSalonAdminApiWithDashboardMetrics extends _FakeSalonAdminApi {
+  _FakeSalonAdminApiWithDashboardMetrics(this._metrics);
+
+  final DashboardMetrics _metrics;
+
+  @override
+  Future<DashboardMetrics> fetchDashboardMetrics(String providerId) async => _metrics;
 }
