@@ -28,4 +28,5 @@ include(
     "subscriptions",
     "platform-admin",
     "catalog",
+    "provider-insights",
 )
