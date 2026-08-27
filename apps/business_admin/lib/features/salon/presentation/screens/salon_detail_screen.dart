@@ -75,6 +75,8 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
             ],
           ),
           const SizedBox(height: FactorySpacing.space6),
+          _DashboardMetricsSection(providerId: _provider.id),
+          const SizedBox(height: FactorySpacing.space6),
           _ServicesSection(providerId: _provider.id),
           const SizedBox(height: FactorySpacing.space6),
           _AvailabilitySection(providerId: _provider.id),
@@ -219,6 +221,114 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
         _isSubmitting = false;
       });
     }
+  }
+}
+
+class _DashboardMetricsSection extends ConsumerWidget {
+  final String providerId;
+
+  const _DashboardMetricsSection({required this.providerId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final metricsAsync = ref.watch(providerDashboardMetricsProvider(providerId));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        FactorySectionHeader(title: l10n.dashboardMetricsSectionTitle),
+        metricsAsync.when(
+          data: (metrics) {
+            if (metrics.totalBookings == 0) {
+              return Text(
+                l10n.dashboardNoDataYet,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+              );
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: FactorySpacing.space3,
+                  runSpacing: FactorySpacing.space3,
+                  children: [
+                    _StatTile(
+                      label: l10n.dashboardTotalRevenueLabel,
+                      value: FactoryPriceText(amount: metrics.totalRevenue, fontSize: 18),
+                    ),
+                    _StatTile(label: l10n.dashboardTotalBookingsLabel, value: Text('${metrics.totalBookings}')),
+                    _StatTile(label: l10n.dashboardCompletedBookingsLabel, value: Text('${metrics.completedBookings}')),
+                    _StatTile(label: l10n.dashboardCancelledBookingsLabel, value: Text('${metrics.cancelledBookings}')),
+                    _StatTile(
+                      label: l10n.dashboardCancellationRateLabel,
+                      value: Text('${(metrics.cancellationRate * 100).round()}%'),
+                    ),
+                    _StatTile(label: l10n.dashboardTotalCustomersLabel, value: Text('${metrics.totalCustomers}')),
+                    if (metrics.averageCheck != null)
+                      _StatTile(
+                        label: l10n.dashboardAverageCheckLabel,
+                        value: FactoryPriceText(amount: metrics.averageCheck!, fontSize: 18),
+                      ),
+                  ],
+                ),
+                if (metrics.topServices.isNotEmpty) ...[
+                  const SizedBox(height: FactorySpacing.space4),
+                  Text(l10n.dashboardTopServicesTitle, style: Theme.of(context).textTheme.titleSmall),
+                  const SizedBox(height: FactorySpacing.space2),
+                  ...metrics.topServices.map(
+                    (s) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          Expanded(child: Text(s.title ?? '—')),
+                          Text('${s.bookingCount}', style: TextStyle(color: colors.textTertiary)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            );
+          },
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
+            child: LinearProgressIndicator(),
+          ),
+          error: (error, stackTrace) => Text(l10n.errorDashboardLoadFailed(error.toString())),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatTile extends StatelessWidget {
+  final String label;
+  final Widget value;
+
+  const _StatTile({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    return FactoryCard(
+      padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space3, vertical: FactorySpacing.space2),
+      child: SizedBox(
+        width: 130,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
+            const SizedBox(height: 4),
+            DefaultTextStyle(
+              style: Theme.of(context).textTheme.titleMedium ?? const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              child: value,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

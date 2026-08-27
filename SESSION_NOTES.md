@@ -4783,3 +4783,65 @@ Register.
 ### Текущий статус
 Закоммичено 5 отдельными коммитами, запушено в `develop`
 (`eacc70e` … `9d53a72`), без подтверждений — по тому же правилу.
+
+## Marketplace Core, Phase 2 — пункты 1-2, затем новый бриф "Phase 2:
+## Marketplace Discovery & Customer Experience" (2026-08-26/27)
+
+После завершения raw-Material миграции продолжили согласованный
+6-пунктовый список Phase 2 (лучший поиск, история клиента, дашборд
+бизнеса, employee-scoped availability, cancellation/no-show, better
+availability):
+
+- **Пункт 1** (`39ab45e`) — поиск стал taxonomy-aware
+  (`businessTypeId`/сопоставление по catalog service).
+- **Пункт 2** (`283ab32`) — новый read-composition модуль
+  `provider-insights`: `customerHistory(providerId)` — история клиентов
+  бизнеса (визиты, spend, любимая услуга), считается на лету из
+  Booking/Payment/ServiceOffering/User, без отдельной CRM-таблицы.
+
+Дальше пользователь прислал отдельный развёрнутый бриф (27 разделов) —
+"FACTORY — PHASE 2: MARKETPLACE DISCOVERY & CUSTOMER EXPERIENCE" — с
+явным требованием сначала показать Discovery+Implementation Plan и не
+начинать реализацию. План был согласован (артефакт "Marketplace
+Discovery") и переформулирован как **Phase 2.1-2.4**, поглотив
+оставшиеся пункты исходного списка:
+
+- **Phase 2.1** (`1924077`) — полировка Discovery: пагинация поиска
+  (`page`/`size`, `X-Total-Count` в заголовке, тело ответа не менялось),
+  `nextAvailableSlot` в результатах поиска (одним доп. запросом на
+  провайдера), no-op analytics-хуки (`SearchPerformedEvent`,
+  `ProviderViewedEvent`, `BookingAttemptedEvent`) для будущих метрик
+  конверсии.
+- **Phase 2.2** (`70bef48`) — employee-scoped availability:
+  `availability_slot.employee_id` (nullable, без FK — та же конвенция
+  межмодульных ссылок), конфликт-чек в `RecurringScheduleService` стал
+  employee-aware, бронирование отклоняется (409), если слот привязан к
+  другому мастеру/механику.
+- **Phase 2.3** (`a86e350`) — Book Again + Service Compare: новый
+  `BookAgainService` в `search` (по одному предложению на услугу с
+  завершённой бронью, самый свежий визит первым, до 5 штук), карточка
+  "Book again" на Home для залогиненных, `ServiceCompareScreen`
+  (список провайдеров по `catalogServiceId`), `ProviderCard` теперь
+  показывает конкретное следующее окно ("сегодня в HH:mm"/"завтра") вместо
+  общего "Available today".
+- **Phase 2.4** (`bbd7ace`) — Business Dashboard: второй метод в
+  `provider-insights` — `dashboardMetrics(providerId)` (выручка, состав
+  броней, cancellation rate, кол-во клиентов, средний чек, топ-5 услуг),
+  тот же принцип "считать на лету, не хранить". Секция "Overview" на
+  `SalonDetailScreen` в business_admin, над Services. Сознательно не
+  включили "топ сотрудников" — `employeeId` не резолвится в имя без
+  импорта vertical-beauty/vertical-auto в vertical-agnostic модуль, это
+  сломало бы границу контекста, которую весь остальной код держит чистой.
+
+Все четыре фазы шли автономно, без промежуточных вопросов
+(`"продолжай дальше не спрашивай меня разрешение даю полную права"`),
+с полным прогоном тестов и коммитом/пушем после каждой.
+
+### Текущий статус
+Backend suite и полные Flutter suite'ы (`user_app` 67/67, `business_admin`
+34/34) зелёные после каждой фазы. Всё запушено в `develop`. Из исходного
+6-пунктового списка Phase 2 формально не закрыты только cancellation/
+no-show поля на Booking и дальнейшее расширение Availability — оба
+явно поглощены/переоценены новым Discovery-планом и не были в его
+scope (P0-P3 приоритеты брифа сфокусированы на discovery/customer
+experience, не на operational booking fields).

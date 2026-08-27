@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -58,7 +59,7 @@ public class AvailabilitySlotController {
             @Valid @RequestBody CreateAvailabilitySlotRequest request, HttpServletRequest httpRequest) {
         providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         AvailabilitySlot slot = new AvailabilitySlot(UUID.randomUUID(), providerId, request.startsAt(),
-                request.endsAt(), AvailabilityStatus.OPEN);
+                request.endsAt(), AvailabilityStatus.OPEN, request.employeeId());
         return AvailabilitySlotResponse.from(availabilitySlotRepository.save(slot));
     }
 
@@ -91,13 +92,17 @@ public class AvailabilitySlotController {
     }
 
     @Operation(summary = "List a provider's availability slots", description = "Every slot regardless of "
-            + "status (OPEN/HELD/BOOKED). No authentication required.")
+            + "status (OPEN/HELD/BOOKED). Optionally narrowed to one employee's own slots. No authentication "
+            + "required.")
     @ApiResponse(responseCode = "200", description = "The provider's slots")
     @GetMapping("/api/v1/providers/{providerId}/availability-slots")
     public List<AvailabilitySlotResponse> listByProvider(
-            @Parameter(description = "The provider's id.") @PathVariable UUID providerId) {
-        return availabilitySlotRepository.findByProviderId(providerId).stream()
-                .map(AvailabilitySlotResponse::from).toList();
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
+            @Parameter(description = "Only this employee's own slots — omit for every slot regardless of "
+                    + "whether it's employee-scoped.") @RequestParam(required = false) UUID employeeId) {
+        List<AvailabilitySlot> slots = employeeId == null ? availabilitySlotRepository.findByProviderId(providerId)
+                : availabilitySlotRepository.findByProviderIdAndEmployeeId(providerId, employeeId);
+        return slots.stream().map(AvailabilitySlotResponse::from).toList();
     }
 
     @Operation(summary = "Remove an availability slot", description = "Owner-only. Only an OPEN slot can be "

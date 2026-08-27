@@ -206,5 +206,16 @@
   "billingFeatureRequiresPro": "Только PRO",
   "billingUpgradeButtonLabel": "Перейти на PRO",
   "billingDowngradeButtonLabel": "Перейти на FREE",
-  "errorBillingUpgradeFailed": "Не удалось перейти на PRO — попробуйте ещё раз."
+  "errorBillingUpgradeFailed": "Не удалось перейти на PRO — попробуйте ещё раз.",
+  "dashboardMetricsSectionTitle": "Обзор",
+  "dashboardTotalRevenueLabel": "Выручка",
+  "dashboardTotalBookingsLabel": "Бронирования",
+  "dashboardCompletedBookingsLabel": "Завершено",
+  "dashboardCancelledBookingsLabel": "Отменено",
+  "dashboardCancellationRateLabel": "Доля отмен",
+  "dashboardTotalCustomersLabel": "Клиенты",
+  "dashboardAverageCheckLabel": "Средний чек",
+  "dashboardTopServicesTitle": "Популярные услуги",
+  "dashboardNoDataYet": "Метрики появятся после первого бронирования.",
+  "errorDashboardLoadFailed": "Не удалось загрузить показатели: {error}"
 }

@@ -34,6 +34,15 @@ app:
     secret: "Jc65IChbJdrOLj/C4rT+OCdPEdvzosIIpIG0xYM9dJ1Eflr/QDsOg+hLKOdX8k1B"
     access-token-ttl-minutes: 30
     refresh-token-ttl-days: 30
+    # A second, independent secret for platform-admin tokens (see
+    # platformadmin.PlatformAdminJwtService) — deliberately not the same
+    # value as app.jwt.secret above. A customer/business access token must
+    # fail signature verification here, not merely fail a role check; two
+    # different keys is what makes that a structural guarantee instead of a
+    # convention someone could get wrong later. Same dev-only-secret caveat
+    # as above applies.
+    platform-admin-secret: "R2v8QnZmU4hLxE0pTsYkD9bWcAoFj3GiN6uHrMz1XqCvS7eKtY5wPd2LbNhOaIu"
+    platform-admin-access-token-ttl-minutes: 30
   auth:
     # Short-lived on purpose — a reset code is meant to be used within
     # minutes of requesting it, not carried around like a refresh token.

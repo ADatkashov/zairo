@@ -8,6 +8,8 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../auth/presentation/screens/register_screen.dart';
 import '../../../auto/presentation/screens/vehicles_screen.dart';
+import '../../../booking/presentation/providers/booking_providers.dart';
+import '../../../favorites/presentation/providers/favorites_providers.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -95,6 +97,8 @@ class _LoggedInView extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
+    final bookingsCount = ref.watch(myBookingsProvider(userId)).valueOrNull?.length;
+    final favoritesCount = ref.watch(myFavoritesProvider(userId)).valueOrNull?.length;
 
     return ListView(
       padding: const EdgeInsets.all(FactorySpacing.space4),
@@ -109,7 +113,29 @@ class _LoggedInView extends ConsumerWidget {
         Center(
           child: Text(email, style: textTheme.bodyMedium?.copyWith(color: colors.textTertiary)),
         ),
-        const SizedBox(height: FactorySpacing.space8),
+        const SizedBox(height: FactorySpacing.space6),
+        FactoryCard(
+          child: Row(
+            children: [
+              Expanded(
+                child: FactoryStatTile(
+                  value: bookingsCount?.toString() ?? '—',
+                  label: l10n.myBookingsTitle,
+                  icon: Icons.event_note_outlined,
+                ),
+              ),
+              Container(width: 1, height: 36, color: colors.border),
+              Expanded(
+                child: FactoryStatTile(
+                  value: favoritesCount?.toString() ?? '—',
+                  label: l10n.myFavoritesTitle,
+                  icon: Icons.favorite_border_rounded,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: FactorySpacing.space6),
         FactorySelectableTile(
           title: l10n.myVehiclesButton,
           leading: Icon(Icons.directions_car_outlined, color: colors.textSecondary),

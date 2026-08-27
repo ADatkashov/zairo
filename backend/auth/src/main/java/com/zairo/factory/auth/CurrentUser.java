@@ -2,6 +2,7 @@ package com.zairo.factory.auth;
 
 import com.zairo.factory.users.UserRole;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -43,5 +44,16 @@ public final class CurrentUser {
         if (!UserRole.ADMIN.name().equals(requireRole(request))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");
         }
+    }
+
+    /**
+     * Empty, never a 401 — for endpoints that don't require auth but still
+     * want to know who's asking when a valid token happens to be present
+     * (e.g. an anonymous-friendly view event). Endpoints that must be
+     * authenticated should keep using {@link #requireUserId}.
+     */
+    public static Optional<UUID> optionalUserId(HttpServletRequest request) {
+        Object value = request.getAttribute(JwtAuthFilter.USER_ID_ATTRIBUTE);
+        return value instanceof UUID userId ? Optional.of(userId) : Optional.empty();
     }
 }

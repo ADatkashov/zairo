@@ -206,5 +206,16 @@
   "billingFeatureRequiresPro": "Тек PRO",
   "billingUpgradeButtonLabel": "PRO тарифіне көшу",
   "billingDowngradeButtonLabel": "FREE тарифіне көшу",
-  "errorBillingUpgradeFailed": "PRO тарифіне көшу мүмкін болмады — қайталап көріңіз."
+  "errorBillingUpgradeFailed": "PRO тарифіне көшу мүмкін болмады — қайталап көріңіз.",
+  "dashboardMetricsSectionTitle": "Шолу",
+  "dashboardTotalRevenueLabel": "Табыс",
+  "dashboardTotalBookingsLabel": "Брондаулар",
+  "dashboardCompletedBookingsLabel": "Аяқталды",
+  "dashboardCancelledBookingsLabel": "Бас тартылды",
+  "dashboardCancellationRateLabel": "Бас тарту үлесі",
+  "dashboardTotalCustomersLabel": "Клиенттер",
+  "dashboardAverageCheckLabel": "Орташа чек",
+  "dashboardTopServicesTitle": "Танымал қызметтер",
+  "dashboardNoDataYet": "Көрсеткіштер алғашқы брондаудан кейін пайда болады.",
+  "errorDashboardLoadFailed": "Көрсеткіштерді жүктеу мүмкін болмады: {error}"
 }
