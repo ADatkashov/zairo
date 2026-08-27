@@ -19,7 +19,18 @@ public final class AvailabilitySlotDtos {
     // startsAt is actually before endsAt here today — not invented.
     public record CreateAvailabilitySlotRequest(
             @NotNull @Schema(example = "2026-09-01T10:00:00Z") Instant startsAt,
-            @NotNull @Schema(example = "2026-09-01T10:30:00Z") Instant endsAt) {
+            @NotNull @Schema(example = "2026-09-01T10:30:00Z") Instant endsAt,
+            @Schema(description = "Opaque vertical-employee id (a beauty Master or auto Mechanic id) if this "
+                    + "slot belongs to one specific employee rather than the whole provider. Omit for today's "
+                    + "shared-pool behavior.", example = "550e8400-e29b-41d4-a716-446655440000")
+            UUID employeeId) {
+        // Convenience constructor for callers that don't set an employee —
+        // keeps every pre-existing 2-arg call site (mostly tests) compiling
+        // without a mechanical find-and-replace, same precedent as
+        // providers.ProviderDtos.CreateProviderRequest's own 3-arg overload.
+        public CreateAvailabilitySlotRequest(Instant startsAt, Instant endsAt) {
+            this(startsAt, endsAt, null);
+        }
     }
 
     public record AvailabilitySlotResponse(
@@ -27,10 +38,13 @@ public final class AvailabilitySlotDtos {
             @Schema(example = "550e8400-e29b-41d4-a716-446655440000") UUID providerId,
             @Schema(example = "2026-09-01T10:00:00Z") Instant startsAt,
             @Schema(example = "2026-09-01T10:30:00Z") Instant endsAt,
-            AvailabilityStatus status) {
+            AvailabilityStatus status,
+            @Schema(description = "Null if this slot is shared across the whole provider.",
+                    example = "550e8400-e29b-41d4-a716-446655440000")
+            UUID employeeId) {
         static AvailabilitySlotResponse from(AvailabilitySlot slot) {
             return new AvailabilitySlotResponse(slot.getId(), slot.getProviderId(), slot.getStartsAt(),
-                    slot.getEndsAt(), slot.getStatus());
+                    slot.getEndsAt(), slot.getStatus(), slot.getEmployeeId());
         }
     }
 
@@ -58,7 +72,19 @@ public final class AvailabilitySlotDtos {
             @Schema(description = "Dates to skip entirely, even on a selected day of week. May be empty.",
                     example = "[\"2026-09-07\"]") List<LocalDate> holidays,
             @Schema(description = "IANA zone id — Provider has no timezone field of its own, so this is "
-                    + "required explicitly rather than assumed.", example = "Asia/Almaty") String zoneId) {
+                    + "required explicitly rather than assumed.", example = "Asia/Almaty") String zoneId,
+            @Schema(description = "Opaque vertical-employee id — every generated slot belongs to this one "
+                    + "employee rather than the shared provider pool. Omit for today's shared-pool behavior.",
+                    example = "550e8400-e29b-41d4-a716-446655440000")
+            UUID employeeId) {
+        // Convenience constructor for pre-existing 8-arg call sites — same
+        // precedent as CreateAvailabilitySlotRequest's own overload above.
+        public RecurringScheduleRequest(List<DayOfWeek> daysOfWeek, LocalTime startTime, LocalTime endTime,
+                int slotDurationMinutes, int breakMinutes, LocalDate rangeStart, LocalDate rangeEnd,
+                List<LocalDate> holidays, String zoneId) {
+            this(daysOfWeek, startTime, endTime, slotDurationMinutes, breakMinutes, rangeStart, rangeEnd, holidays,
+                    zoneId, null);
+        }
     }
 
     public record RecurringScheduleResult(

@@ -1,8 +1,11 @@
 package com.zairo.factory.vertical.beauty;
 
+import com.zairo.factory.booking.AvailabilitySlot;
+import com.zairo.factory.booking.AvailabilitySlotRepository;
 import com.zairo.factory.booking.Booking;
 import com.zairo.factory.booking.BookingRepository;
 import com.zairo.factory.booking.BookingService;
+import com.zairo.factory.booking.SlotNotAvailableException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
@@ -25,15 +28,18 @@ public class BeautyBookingService {
     private final MasterBookingRepository masterBookingRepository;
     private final BookingService bookingService;
     private final BookingRepository bookingRepository;
+    private final AvailabilitySlotRepository availabilitySlotRepository;
 
     public BeautyBookingService(MasterRepository masterRepository,
             MasterServiceLinkRepository masterServiceLinkRepository, MasterBookingRepository masterBookingRepository,
-            BookingService bookingService, BookingRepository bookingRepository) {
+            BookingService bookingService, BookingRepository bookingRepository,
+            AvailabilitySlotRepository availabilitySlotRepository) {
         this.masterRepository = masterRepository;
         this.masterServiceLinkRepository = masterServiceLinkRepository;
         this.masterBookingRepository = masterBookingRepository;
         this.bookingService = bookingService;
         this.bookingRepository = bookingRepository;
+        this.availabilitySlotRepository = availabilitySlotRepository;
     }
 
     @Transactional
@@ -45,6 +51,17 @@ public class BeautyBookingService {
         if (!masterServiceLinkRepository.existsByMasterIdAndServiceId(masterId, serviceId)) {
             throw new MasterDoesNotOfferServiceException("Master " + masterId + " does not offer service "
                     + serviceId);
+        }
+        // A slot generated for one specific master can't be claimed under a
+        // different master's name — null employeeId (the shared-pool case,
+        // still the default) imposes no such restriction. See
+        // AvailabilitySlot's own doc comment.
+        AvailabilitySlot slot = availabilitySlotRepository.findById(availabilitySlotId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
+                        + availabilitySlotId));
+        if (slot.getEmployeeId() != null && !slot.getEmployeeId().equals(masterId)) {
+            throw new SlotNotAvailableException(
+                    "Availability slot " + availabilitySlotId + " belongs to a different master");
         }
 
         Booking booking = bookingService.createBooking(userId, serviceId, availabilitySlotId, totalPrice);

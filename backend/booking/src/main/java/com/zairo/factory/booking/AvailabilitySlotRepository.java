@@ -10,6 +10,8 @@ public interface AvailabilitySlotRepository extends JpaRepository<AvailabilitySl
 
     List<AvailabilitySlot> findByProviderId(UUID providerId);
 
+    List<AvailabilitySlot> findByProviderIdAndEmployeeId(UUID providerId, UUID employeeId);
+
     boolean existsByProviderIdAndStatus(UUID providerId, AvailabilityStatus status);
 
     /** The soonest OPEN slot, if any — presence/absence also answers "does this provider have open availability". */
