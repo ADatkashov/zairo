@@ -4,6 +4,11 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zairo/features/auth/data/models/user_summary.dart';
+import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
+import 'package:zairo/features/booking/data/booking_api.dart';
+import 'package:zairo/features/booking/data/models/book_again_suggestion.dart';
+import 'package:zairo/features/booking/presentation/providers/booking_providers.dart';
 import 'package:zairo/features/catalog/data/catalog_api.dart';
 import 'package:zairo/features/catalog/data/models/category.dart';
 import 'package:zairo/features/catalog/presentation/providers/catalog_providers.dart';
@@ -22,6 +27,8 @@ class _FakeDiscoveryApi extends DiscoveryApi {
   @override
   Future<List<ProviderSearchResult>> searchProviders({
     String? vertical,
+    String? businessTypeId,
+    String? catalogServiceId,
     String? query,
     double? lat,
     double? lng,
@@ -44,6 +51,22 @@ class _FakeCatalogApi extends CatalogApi {
 
   @override
   Future<List<Category>> listCategories() async => _categories;
+}
+
+class _LoggedInAuthController extends AuthController {
+  @override
+  Future<UserSummary?> build() async {
+    return const UserSummary(id: 'user-1', email: 'aigerim@example.com', displayName: 'Aigerim K.', role: 'CUSTOMER');
+  }
+}
+
+class _FakeBookingApiWithSuggestions extends BookingApi {
+  _FakeBookingApiWithSuggestions(this._suggestions) : super(DioClient(Dio()));
+
+  final List<BookAgainSuggestion> _suggestions;
+
+  @override
+  Future<List<BookAgainSuggestion>> listBookAgainSuggestions(String userId) async => _suggestions;
 }
 
 const _open = ProviderSearchResult(
@@ -160,5 +183,43 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(fakeDiscoveryApi.lastVertical, 'beauty');
+  });
+
+  testWidgets('shows a Book Again card for a logged-in user with a completed booking', (tester) async {
+    final fakeDiscoveryApi = _FakeDiscoveryApi(const []);
+    final fakeBookingApi = _FakeBookingApiWithSuggestions([
+      BookAgainSuggestion(
+        providerId: 'p1',
+        providerName: 'Aigerim Beauty Studio',
+        vertical: 'beauty',
+        serviceId: 's1',
+        serviceTitle: 'Haircut',
+        durationMinutes: 30,
+        price: 25.0,
+        currency: 'USD',
+        lastVisitAt: DateTime.now().subtract(const Duration(days: 14)),
+      ),
+    ]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          discoveryApiProvider.overrideWithValue(fakeDiscoveryApi),
+          bookingApiProvider.overrideWithValue(fakeBookingApi),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const HomeScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Book again'), findsOneWidget);
+    expect(find.text('Aigerim Beauty Studio'), findsOneWidget);
+    expect(find.text('Haircut'), findsOneWidget);
   });
 }

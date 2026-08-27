@@ -19,6 +19,8 @@ class _FakeDiscoveryApi extends DiscoveryApi {
   @override
   Future<List<ProviderSearchResult>> searchProviders({
     String? vertical,
+    String? businessTypeId,
+    String? catalogServiceId,
     String? query,
     double? lat,
     double? lng,
@@ -44,6 +46,8 @@ class _RecordingDiscoveryApi extends DiscoveryApi {
   @override
   Future<List<ProviderSearchResult>> searchProviders({
     String? vertical,
+    String? businessTypeId,
+    String? catalogServiceId,
     String? query,
     double? lat,
     double? lng,

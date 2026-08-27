@@ -5,9 +5,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../booking/data/models/book_again_suggestion.dart';
+import '../../../booking/presentation/providers/booking_providers.dart';
 import '../../../booking/presentation/screens/provider_detail_screen.dart';
 import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../../maps/presentation/providers/maps_providers.dart';
+import '../../data/models/provider_search_result.dart';
+import '../../data/models/service_summary.dart';
 import '../providers/discovery_providers.dart';
 import '../widgets/provider_card.dart';
 
@@ -85,6 +89,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   if (openCount > 0) ...[
                     const SizedBox(height: FactorySpacing.space5),
                     _AvailabilityHero(count: openCount),
+                  ],
+                  if (user != null) ...[
+                    const SizedBox(height: FactorySpacing.space6),
+                    _BookAgainSection(userId: user.id),
                   ],
                   const SizedBox(height: FactorySpacing.space6),
                   FactorySectionHeader(
@@ -238,6 +246,123 @@ class _CategoryRow extends ConsumerWidget {
             onTap: () => onSelect(null),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _BookAgainSection extends ConsumerWidget {
+  const _BookAgainSection({required this.userId});
+
+  final String userId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final suggestionsAsync = ref.watch(bookAgainSuggestionsProvider(userId));
+
+    // Best-effort: no section at all while loading, on error, or when the
+    // customer has no completed bookings yet — this is a bonus shortcut on
+    // top of the main discovery feed, not something worth a loading
+    // skeleton or error state of its own.
+    final suggestions = suggestionsAsync.valueOrNull ?? const [];
+    if (suggestions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.homeBookAgainTitle, style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: FactorySpacing.space3),
+        SizedBox(
+          height: 96,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: suggestions.length,
+            separatorBuilder: (_, _) => const SizedBox(width: FactorySpacing.space3),
+            itemBuilder: (context, index) {
+              final suggestion = suggestions[index];
+              return _BookAgainCard(
+                suggestion: suggestion,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ProviderDetailScreen(
+                      provider: ProviderSearchResult(
+                        id: suggestion.providerId,
+                        name: suggestion.providerName,
+                        vertical: suggestion.vertical,
+                        status: 'ACTIVE',
+                        hasOpenAvailability: true,
+                        minPrice: suggestion.price,
+                        services: [
+                          ServiceSummary(
+                            id: suggestion.serviceId,
+                            title: suggestion.serviceTitle,
+                            durationMinutes: suggestion.durationMinutes,
+                            price: suggestion.price,
+                            currency: suggestion.currency,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BookAgainCard extends StatelessWidget {
+  const _BookAgainCard({required this.suggestion, required this.onTap});
+
+  final BookAgainSuggestion suggestion;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: FactoryRadius.mdRadius,
+        onTap: onTap,
+        child: Container(
+          width: 200,
+          padding: const EdgeInsets.all(FactorySpacing.space3),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: FactoryRadius.mdRadius,
+            border: Border.all(color: colors.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                suggestion.providerName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(color: colors.text),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                suggestion.serviceTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+              ),
+              const Spacer(),
+              FactoryPriceText(amount: suggestion.price, currencySymbol: suggestion.currency),
+            ],
+          ),
+        ),
       ),
     );
   }

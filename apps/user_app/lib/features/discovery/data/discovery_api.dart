@@ -13,6 +13,8 @@ class DiscoveryApi {
 
   Future<List<ProviderSearchResult>> searchProviders({
     String? vertical,
+    String? businessTypeId,
+    String? catalogServiceId,
     String? query,
     double? lat,
     double? lng,
@@ -27,6 +29,8 @@ class DiscoveryApi {
       '/search/providers',
       queryParameters: {
         if (vertical != null && vertical.isNotEmpty) 'vertical': vertical,
+        if (businessTypeId != null) 'businessTypeId': businessTypeId,
+        if (catalogServiceId != null) 'catalogServiceId': catalogServiceId,
         if (query != null && query.isNotEmpty) 'q': query,
         if (lat != null && lng != null) 'lat': lat,
         if (lat != null && lng != null) 'lng': lng,
