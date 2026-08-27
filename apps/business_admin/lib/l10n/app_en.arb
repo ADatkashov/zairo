@@ -188,6 +188,44 @@
     }
   },
 
+  "dashboardMetricsSectionTitle": "Overview",
+  "@dashboardMetricsSectionTitle": {"description": "Salon detail screen's dashboard-metrics section header."},
+
+  "dashboardTotalRevenueLabel": "Revenue",
+  "@dashboardTotalRevenueLabel": {"description": "Dashboard stat: sum of succeeded payments."},
+
+  "dashboardTotalBookingsLabel": "Bookings",
+  "@dashboardTotalBookingsLabel": {"description": "Dashboard stat: total booking count, any status."},
+
+  "dashboardCompletedBookingsLabel": "Completed",
+  "@dashboardCompletedBookingsLabel": {"description": "Dashboard stat: completed booking count."},
+
+  "dashboardCancelledBookingsLabel": "Cancelled",
+  "@dashboardCancelledBookingsLabel": {"description": "Dashboard stat: cancelled booking count."},
+
+  "dashboardCancellationRateLabel": "Cancellation rate",
+  "@dashboardCancellationRateLabel": {"description": "Dashboard stat: cancelled / total bookings, shown as a percentage."},
+
+  "dashboardTotalCustomersLabel": "Customers",
+  "@dashboardTotalCustomersLabel": {"description": "Dashboard stat: distinct customers who have ever booked."},
+
+  "dashboardAverageCheckLabel": "Average check",
+  "@dashboardAverageCheckLabel": {"description": "Dashboard stat: revenue divided by number of succeeded payments."},
+
+  "dashboardTopServicesTitle": "Top services",
+  "@dashboardTopServicesTitle": {"description": "Dashboard sub-section listing the most-booked services."},
+
+  "dashboardNoDataYet": "Metrics will appear once this business gets its first booking.",
+  "@dashboardNoDataYet": {"description": "Dashboard empty state, shown when totalBookings is 0."},
+
+  "errorDashboardLoadFailed": "Failed to load dashboard: {error}",
+  "@errorDashboardLoadFailed": {
+    "description": "Dashboard section's error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
   "servicesSectionTitle": "Services",
   "@servicesSectionTitle": {"description": "Salon detail screen's services section header."},
 

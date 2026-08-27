@@ -106,6 +106,18 @@ class DiscoveryQuery {
   );
 }
 
+/// One catalog service's providers, for the Service Compare screen — a
+/// separate small provider rather than folding catalogServiceId into
+/// [DiscoveryQuery] (whose every other field is customer-typed filters, not
+/// a fixed browse target chosen by tapping a catalog entry).
+final serviceCompareResultsProvider = FutureProvider.autoDispose
+    .family<List<ProviderSearchResult>, String>((ref, catalogServiceId) {
+  return ref.watch(discoveryApiProvider).searchProviders(
+    catalogServiceId: catalogServiceId,
+    sort: DiscoverySort.recommended.wireValue,
+  );
+});
+
 final searchResultsProvider = FutureProvider.autoDispose
     .family<List<ProviderSearchResult>, DiscoveryQuery>((ref, params) async {
   final api = ref.watch(discoveryApiProvider);

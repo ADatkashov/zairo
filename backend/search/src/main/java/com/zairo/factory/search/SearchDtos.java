@@ -3,6 +3,7 @@ package com.zairo.factory.search;
 import com.zairo.factory.providers.ProviderStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,6 +36,13 @@ public final class SearchDtos {
             @Schema(example = "76.945465") Double longitude,
             @Schema(description = "Null if the provider has no reviews yet (absent, not zero).", example = "4.5")
             Double averageRating,
-            @Schema(example = "12") Long reviewCount) {
+            @Schema(example = "12") Long reviewCount,
+            @Schema(description = "The starts_at of the soonest OPEN slot — same source as hasOpenAvailability, "
+                    + "null exactly when that's false.", example = "2026-08-28T13:30:00Z")
+            Instant nextAvailableSlot) {
+    }
+
+    /** {@code totalCount} is every match, not just what fits in this page — see SearchController's paging params. */
+    public record SearchResults(List<ProviderSearchResult> content, long totalCount) {
     }
 }

@@ -6,12 +6,15 @@ import com.zairo.factory.auth.CredentialRepository;
 import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequest;
 import com.zairo.factory.booking.BookingDtos.CreateBookingRequest;
 import com.zairo.factory.platform.TestAuth.Registered;
+import com.zairo.factory.platformadmin.PlatformAdminAccountRepository;
+import com.zairo.factory.platformadmin.PlatformRole;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.providers.ProviderDtos.UpdateProviderStatusRequest;
 import com.zairo.factory.providers.ProviderStatus;
 import com.zairo.factory.reviews.ReviewDtos.CreateReviewRequest;
 import com.zairo.factory.search.SearchSort;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
+import com.zairo.factory.services.ServiceOfferingDtos.LinkCatalogServiceRequest;
 import com.zairo.factory.users.UserRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -57,6 +60,9 @@ class SearchApiTests {
 
     @Autowired
     private CredentialRepository credentialRepository;
+
+    @Autowired
+    private PlatformAdminAccountRepository platformAdminAccountRepository;
 
     @Test
     void pendingProvidersAreInvisibleToSearchUntilAnAdminApprovesThem() {
@@ -252,6 +258,155 @@ class SearchApiTests {
         assertThat(minRatingFiltered).extracting(r -> r.get("id")).containsExactly(wellRated.toString());
     }
 
+    @Test
+    void filtersByBusinessTypeIdMoreSpecificallyThanVertical() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "btype-owner-" + runId + "@example.com");
+        // A literal "beauty" vertical (not a randomized one) so provider
+        // creation resolves a real businessTypeId from the V25 seed — see
+        // ProviderController.create.
+        UUID providerId = createProvider(owner, "BType Salon " + runId, "beauty");
+        createService(owner, providerId, "Cut", new BigDecimal("10.00"));
+        approve(providerId);
+
+        ResponseEntity<Map> providerResponse = restTemplate.getForEntity("/api/v1/providers/" + providerId,
+                Map.class);
+        UUID businessTypeId = UUID.fromString((String) providerResponse.getBody().get("businessTypeId"));
+
+        List<Map> results = search(new SearchParams(null).businessTypeId(businessTypeId));
+        assertThat(results).extracting(r -> r.get("id")).contains(providerId.toString());
+    }
+
+    @Test
+    void findsAProviderByALinkedCatalogServicesNameInAnotherLanguage() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "catq-owner-" + runId + "@example.com");
+        TestPlatformAuth.Registered admin = TestPlatformAuth.registerPlatformAdmin(restTemplate,
+                platformAdminAccountRepository, "catq-admin-" + runId + "@factory.internal",
+                PlatformRole.PLATFORM_ADMIN);
+
+        UUID catalogServiceId = createCatalogService(admin, runId, "Distinctive Wax Treatment " + runId);
+
+        UUID providerId = createProvider(owner, "Unrelated Salon Name " + runId, "beauty-catq-" + runId);
+        UUID serviceId = createServiceReturningId(owner, providerId, "Обычный маникюр " + runId,
+                new BigDecimal("15.00"));
+        approve(providerId);
+
+        // Not findable by the catalog name before linking.
+        assertThat(search(new SearchParams(null).q("Distinctive Wax Treatment " + runId)))
+                .extracting(r -> r.get("id")).doesNotContain(providerId.toString());
+
+        ResponseEntity<Map> linkResponse = restTemplate.exchange("/api/v1/services/" + serviceId + "/catalog-link",
+                HttpMethod.PATCH, new HttpEntity<>(new LinkCatalogServiceRequest(catalogServiceId),
+                        TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(linkResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // Findable by the catalog entry's name, even though it shares no
+        // words with the offering's own Russian title.
+        List<Map> results = search(new SearchParams(null).q("Distinctive Wax Treatment " + runId));
+        assertThat(results).extracting(r -> r.get("id")).contains(providerId.toString());
+    }
+
+    @Test
+    void nextAvailableSlotIsTheEarliestOpenOne() {
+        String runId = UUID.randomUUID().toString();
+        String vertical = "beauty-next-" + runId;
+        Registered owner = TestAuth.registerOwner(restTemplate, "next-owner-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Next Slot Salon " + runId, vertical);
+        createService(owner, providerId, "Cut", new BigDecimal("10.00"));
+        approve(providerId);
+
+        Instant later = Instant.now().plus(3, ChronoUnit.DAYS);
+        Instant sooner = Instant.now().plus(1, ChronoUnit.DAYS);
+        createSlot(owner, providerId, later, later.plus(30, ChronoUnit.MINUTES));
+        createSlot(owner, providerId, sooner, sooner.plus(30, ChronoUnit.MINUTES));
+
+        List<Map> results = search(vertical, null);
+        assertThat(results).hasSize(1);
+        String nextAvailableSlot = (String) results.get(0).get("nextAvailableSlot");
+        assertThat(Instant.parse(nextAvailableSlot)).isCloseTo(sooner, org.assertj.core.api.Assertions
+                .within(1, ChronoUnit.SECONDS));
+    }
+
+    @Test
+    void filtersByCatalogServiceId() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "catfilter-owner-" + runId + "@example.com");
+        // Two providers under one owner needs PRO — same reasoning as every
+        // other multi-provider search test in this file.
+        TestAuth.upgradeToPro(restTemplate, owner);
+        TestPlatformAuth.Registered admin = TestPlatformAuth.registerPlatformAdmin(restTemplate,
+                platformAdminAccountRepository, "catfilter-admin-" + runId + "@factory.internal",
+                PlatformRole.PLATFORM_ADMIN);
+        UUID catalogServiceId = createCatalogService(admin, runId, "Filterable Service " + runId);
+
+        UUID linkedProvider = createProvider(owner, "Linked Provider " + runId, "beauty-cf-" + runId);
+        UUID linkedService = createServiceReturningId(owner, linkedProvider, "Something " + runId,
+                new BigDecimal("10.00"));
+        approve(linkedProvider);
+        restTemplate.exchange("/api/v1/services/" + linkedService + "/catalog-link", HttpMethod.PATCH,
+                new HttpEntity<>(new LinkCatalogServiceRequest(catalogServiceId),
+                        TestAuth.authHeaders(owner.accessToken())), Map.class);
+
+        UUID unlinkedProvider = createProvider(owner, "Unlinked Provider " + runId, "beauty-cf-" + runId);
+        createService(owner, unlinkedProvider, "Something Else " + runId, new BigDecimal("10.00"));
+        approve(unlinkedProvider);
+
+        List<Map> results = search(new SearchParams(null).catalogServiceId(catalogServiceId));
+        assertThat(results).extracting(r -> r.get("id")).contains(linkedProvider.toString())
+                .doesNotContain(unlinkedProvider.toString());
+    }
+
+    @Test
+    void paginatesResultsAndExposesTotalCountHeader() {
+        String runId = UUID.randomUUID().toString();
+        String vertical = "beauty-page-" + runId;
+        Registered owner = TestAuth.registerOwner(restTemplate, "page-owner-" + runId + "@example.com");
+        TestAuth.upgradeToPro(restTemplate, owner);
+
+        UUID providerA = createProvider(owner, "Page A " + runId, vertical);
+        createService(owner, providerA, "Cut", new BigDecimal("10.00"));
+        approve(providerA);
+        UUID providerB = createProvider(owner, "Page B " + runId, vertical);
+        createService(owner, providerB, "Cut", new BigDecimal("10.00"));
+        approve(providerB);
+        UUID providerC = createProvider(owner, "Page C " + runId, vertical);
+        createService(owner, providerC, "Cut", new BigDecimal("10.00"));
+        approve(providerC);
+
+        ResponseEntity<Map[]> firstPage = searchResponse(new SearchParams(vertical).page(0).size(2));
+        assertThat(firstPage.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(firstPage.getBody()).hasSize(2);
+        assertThat(firstPage.getHeaders().getFirst("X-Total-Count")).isEqualTo("3");
+
+        ResponseEntity<Map[]> secondPage = searchResponse(new SearchParams(vertical).page(1).size(2));
+        assertThat(secondPage.getBody()).hasSize(1);
+        assertThat(secondPage.getHeaders().getFirst("X-Total-Count")).isEqualTo("3");
+    }
+
+    /** Category -> BusinessType -> CatalogService, all fresh for this run, PLATFORM_ADMIN-created. */
+    private UUID createCatalogService(TestPlatformAuth.Registered admin, String runId, String catalogServiceName) {
+        String suffix = runId.replace("-", "");
+        Map<String, Object> categoryRequest = Map.of("code", "catq_cat_" + suffix, "nameKk", "Т", "nameRu", "Т",
+                "nameEn", "T", "sortOrder", 1);
+        Map<?, ?> category = restTemplate.exchange("/api/v1/platform/categories", HttpMethod.POST,
+                new HttpEntity<>(categoryRequest, TestPlatformAuth.authHeaders(admin.accessToken())), Map.class)
+                .getBody();
+
+        Map<String, Object> businessTypeRequest = Map.of("categoryId", category.get("id"), "code",
+                "catq_bt_" + suffix, "nameKk", "Т", "nameRu", "Т", "nameEn", "T", "sortOrder", 1);
+        Map<?, ?> businessType = restTemplate.exchange("/api/v1/platform/business-types", HttpMethod.POST,
+                new HttpEntity<>(businessTypeRequest, TestPlatformAuth.authHeaders(admin.accessToken())), Map.class)
+                .getBody();
+
+        Map<String, Object> serviceRequest = Map.of("businessTypeId", businessType.get("id"), "nameKk",
+                catalogServiceName, "nameRu", catalogServiceName, "nameEn", catalogServiceName, "sortOrder", 1);
+        Map<?, ?> catalogService = restTemplate.exchange("/api/v1/platform/services", HttpMethod.POST,
+                new HttpEntity<>(serviceRequest, TestPlatformAuth.authHeaders(admin.accessToken())), Map.class)
+                .getBody();
+        return UUID.fromString((String) catalogService.get("id"));
+    }
+
     /** Books, completes, and leaves a review for a fresh customer against the given provider's one service. */
     private void reviewProviderWithBooking(Registered owner, UUID providerId, int rating) {
         Registered customer = TestAuth.registerCustomer(restTemplate,
@@ -284,6 +439,8 @@ class SearchApiTests {
     /** Mutable query-param builder — the search endpoint has too many optional filters for positional args. */
     private static final class SearchParams {
         private final String vertical;
+        private UUID businessTypeId;
+        private UUID catalogServiceId;
         private String q;
         private Double lat;
         private Double lng;
@@ -293,6 +450,8 @@ class SearchApiTests {
         private Double minRating;
         private boolean availableOnly;
         private SearchSort sort;
+        private Integer page;
+        private Integer size;
 
         SearchParams(String vertical) {
             this.vertical = vertical;
@@ -300,6 +459,11 @@ class SearchApiTests {
 
         SearchParams q(String q) {
             this.q = q;
+            return this;
+        }
+
+        SearchParams businessTypeId(UUID businessTypeId) {
+            this.businessTypeId = businessTypeId;
             return this;
         }
 
@@ -342,12 +506,33 @@ class SearchApiTests {
             this.sort = sort;
             return this;
         }
+
+        SearchParams catalogServiceId(UUID catalogServiceId) {
+            this.catalogServiceId = catalogServiceId;
+            return this;
+        }
+
+        SearchParams page(int page) {
+            this.page = page;
+            return this;
+        }
+
+        SearchParams size(int size) {
+            this.size = size;
+            return this;
+        }
     }
 
     private List<Map> search(SearchParams params) {
         StringBuilder url = new StringBuilder("/api/v1/search/providers?");
         if (params.vertical != null) {
             url.append("vertical=").append(params.vertical).append("&");
+        }
+        if (params.businessTypeId != null) {
+            url.append("businessTypeId=").append(params.businessTypeId).append("&");
+        }
+        if (params.catalogServiceId != null) {
+            url.append("catalogServiceId=").append(params.catalogServiceId).append("&");
         }
         if (params.q != null) {
             url.append("q=").append(params.q).append("&");
@@ -373,9 +558,29 @@ class SearchApiTests {
         if (params.sort != null) {
             url.append("sort=").append(params.sort).append("&");
         }
+        if (params.page != null) {
+            url.append("page=").append(params.page).append("&");
+        }
+        if (params.size != null) {
+            url.append("size=").append(params.size).append("&");
+        }
         ResponseEntity<Map[]> response = restTemplate.getForEntity(url.toString(), Map[].class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         return List.of(response.getBody());
+    }
+
+    private ResponseEntity<Map[]> searchResponse(SearchParams params) {
+        StringBuilder url = new StringBuilder("/api/v1/search/providers?");
+        if (params.vertical != null) {
+            url.append("vertical=").append(params.vertical).append("&");
+        }
+        if (params.page != null) {
+            url.append("page=").append(params.page).append("&");
+        }
+        if (params.size != null) {
+            url.append("size=").append(params.size).append("&");
+        }
+        return restTemplate.getForEntity(url.toString(), Map[].class);
     }
 
     private UUID createProvider(Registered owner, String name, String vertical) {
@@ -395,10 +600,15 @@ class SearchApiTests {
     }
 
     private void createService(Registered owner, UUID providerId, String title, BigDecimal price) {
+        createServiceReturningId(owner, providerId, title, price);
+    }
+
+    private UUID createServiceReturningId(Registered owner, UUID providerId, String title, BigDecimal price) {
         var request = new CreateServiceRequest(title, 30, price, "USD");
         ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers/" + providerId + "/services",
                 HttpMethod.POST, new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        return UUID.fromString(response.getBody().get("id").toString());
     }
 
     /** Search only ever surfaces ACTIVE providers — every provider a test wants findable must go through this. */

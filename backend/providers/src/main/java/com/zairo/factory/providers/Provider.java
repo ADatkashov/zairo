@@ -50,16 +50,33 @@ public class Provider {
     @Column
     private Double longitude;
 
+    /**
+     * References {@code catalog.BusinessType} by bare id — nullable because
+     * existing rows predate the master catalog (backfilled once, see
+     * V25__create_catalog_tables.sql) and, in principle, {@code vertical}
+     * strings that don't map to a seeded BusinessType code could still leave
+     * this unset. {@code vertical} remains the field every existing call
+     * site reads; this is additive, not a replacement, until those call
+     * sites migrate deliberately.
+     */
+    @Column(name = "business_type_id")
+    private UUID businessTypeId;
+
     protected Provider() {
     }
 
     public Provider(UUID id, UUID ownerUserId, String name, String vertical, ProviderStatus status,
             Instant createdAt) {
-        this(id, ownerUserId, name, vertical, status, createdAt, null, null);
+        this(id, ownerUserId, name, vertical, status, createdAt, null, null, null);
     }
 
     public Provider(UUID id, UUID ownerUserId, String name, String vertical, ProviderStatus status,
             Instant createdAt, Double latitude, Double longitude) {
+        this(id, ownerUserId, name, vertical, status, createdAt, latitude, longitude, null);
+    }
+
+    public Provider(UUID id, UUID ownerUserId, String name, String vertical, ProviderStatus status,
+            Instant createdAt, Double latitude, Double longitude, UUID businessTypeId) {
         this.id = id;
         this.ownerUserId = ownerUserId;
         this.name = name;
@@ -68,6 +85,7 @@ public class Provider {
         this.createdAt = createdAt;
         this.latitude = latitude;
         this.longitude = longitude;
+        this.businessTypeId = businessTypeId;
     }
 
     public UUID getId() {
@@ -100,6 +118,10 @@ public class Provider {
 
     public Double getLongitude() {
         return longitude;
+    }
+
+    public UUID getBusinessTypeId() {
+        return businessTypeId;
     }
 
     /**

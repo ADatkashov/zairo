@@ -199,6 +199,57 @@ class BeautyApiTests {
         return UUID.fromString(response.getBody().get("id").toString());
     }
 
+    @Test
+    void employeeScopedSlotsAreIndependentlyBookableAndCantBeClaimedByADifferentMaster() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "emp-slot-owner-" + runId + "@example.com");
+        Registered customerA = TestAuth.registerCustomer(restTemplate, "emp-slot-cust-a-" + runId + "@example.com");
+        Registered customerB = TestAuth.registerCustomer(restTemplate, "emp-slot-cust-b-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Multi Master Salon " + runId, "beauty");
+        UUID serviceId = createService(owner, providerId, "Cut", new BigDecimal("20.00"));
+
+        UUID masterA = createMaster(owner, providerId, "Master A");
+        UUID masterB = createMaster(owner, providerId, "Master B");
+        restTemplate.exchange("/api/v1/beauty/masters/" + masterA + "/services/" + serviceId, HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+        restTemplate.exchange("/api/v1/beauty/masters/" + masterB + "/services/" + serviceId, HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+
+        // Same exact time window, one slot per master — this is the whole
+        // point: two employees, two independently bookable slots.
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        UUID slotA = createEmployeeSlot(owner, providerId, masterA, start, start.plus(60, ChronoUnit.MINUTES));
+        UUID slotB = createEmployeeSlot(owner, providerId, masterB, start, start.plus(60, ChronoUnit.MINUTES));
+
+        // Master A's slot can't be claimed under Master B's name.
+        ResponseEntity<Map> mismatched = restTemplate.exchange("/api/v1/beauty/bookings", HttpMethod.POST,
+                new HttpEntity<>(new CreateBeautyBookingRequest(customerA.userId(), masterB, serviceId, slotA,
+                        new BigDecimal("20.00")), TestAuth.authHeaders(customerA.accessToken())), Map.class);
+        assertThat(mismatched.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+
+        // Both customers book the same time window, one with each master —
+        // both succeed, because they claimed two different slot rows.
+        ResponseEntity<Map> bookedA = restTemplate.exchange("/api/v1/beauty/bookings", HttpMethod.POST,
+                new HttpEntity<>(new CreateBeautyBookingRequest(customerA.userId(), masterA, serviceId, slotA,
+                        new BigDecimal("20.00")), TestAuth.authHeaders(customerA.accessToken())), Map.class);
+        assertThat(bookedA.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+        ResponseEntity<Map> bookedB = restTemplate.exchange("/api/v1/beauty/bookings", HttpMethod.POST,
+                new HttpEntity<>(new CreateBeautyBookingRequest(customerB.userId(), masterB, serviceId, slotB,
+                        new BigDecimal("20.00")), TestAuth.authHeaders(customerB.accessToken())), Map.class);
+        assertThat(bookedB.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+    }
+
+    private UUID createEmployeeSlot(Registered owner, UUID providerId, UUID employeeId, Instant startsAt,
+            Instant endsAt) {
+        var request = new CreateAvailabilitySlotRequest(startsAt, endsAt, employeeId);
+        ResponseEntity<Map> response = restTemplate.exchange(
+                "/api/v1/providers/" + providerId + "/availability-slots", HttpMethod.POST,
+                new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        return UUID.fromString(response.getBody().get("id").toString());
+    }
+
     private UUID createProvider(Registered owner, String name, String vertical) {
         var request = new CreateProviderRequest(owner.userId(), name, vertical);
         ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,

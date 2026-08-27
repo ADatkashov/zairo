@@ -50,11 +50,15 @@ public final class ProviderDtos {
             ProviderStatus status,
             Instant createdAt,
             @Schema(example = "43.238293") Double latitude,
-            @Schema(example = "76.945465") Double longitude) {
+            @Schema(example = "76.945465") Double longitude,
+            @Schema(description = "The catalog.BusinessType this provider was resolved to at creation time, from "
+                    + "its vertical — null for providers created before the master catalog existed.",
+                    example = "550e8400-e29b-41d4-a716-446655440000")
+            UUID businessTypeId) {
         static ProviderResponse from(Provider provider) {
             return new ProviderResponse(provider.getId(), provider.getOwnerUserId(), provider.getName(),
                     provider.getVertical(), provider.getStatus(), provider.getCreatedAt(), provider.getLatitude(),
-                    provider.getLongitude());
+                    provider.getLongitude(), provider.getBusinessTypeId());
         }
     }
 }

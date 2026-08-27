@@ -5,6 +5,7 @@ import '../../data/models/admin_booking.dart';
 import '../../data/models/admin_provider.dart';
 import '../../data/models/admin_service.dart';
 import '../../data/models/admin_slot.dart';
+import '../../data/models/dashboard_metrics.dart';
 import '../../data/salon_admin_api.dart';
 
 final salonAdminApiProvider = Provider<SalonAdminApi>((ref) {
@@ -31,4 +32,9 @@ final providerSlotsProvider = FutureProvider.autoDispose.family<List<AdminSlot>,
 
 final providerBookingsProvider = FutureProvider.autoDispose.family<List<AdminBooking>, String>((ref, providerId) {
   return ref.watch(salonAdminApiProvider).listBookings(providerId);
+});
+
+final providerDashboardMetricsProvider =
+    FutureProvider.autoDispose.family<DashboardMetrics, String>((ref, providerId) {
+  return ref.watch(salonAdminApiProvider).fetchDashboardMetrics(providerId);
 });

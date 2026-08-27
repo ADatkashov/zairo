@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/booking_api.dart';
 import '../../data/models/availability_slot.dart';
+import '../../data/models/book_again_suggestion.dart';
 import '../../data/models/booking.dart';
 
 final bookingApiProvider = Provider<BookingApi>((ref) {
@@ -16,4 +17,9 @@ final availabilitySlotsProvider = FutureProvider.autoDispose
 
 final myBookingsProvider = FutureProvider.autoDispose.family<List<Booking>, String>((ref, userId) {
   return ref.watch(bookingApiProvider).listMyBookings(userId);
+});
+
+final bookAgainSuggestionsProvider =
+    FutureProvider.autoDispose.family<List<BookAgainSuggestion>, String>((ref, userId) {
+  return ref.watch(bookingApiProvider).listBookAgainSuggestions(userId);
 });
