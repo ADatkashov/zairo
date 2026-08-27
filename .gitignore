@@ -24,3 +24,8 @@
 
 # Local machine configuration — never commit
 **/local.properties
+
+# Scratch space for local-only artifacts not ready/meant for git yet
+# (e.g. a hand-exported Postman collection) — see docs/ci-cd.md's note
+# on generating one from OpenAPI instead of hand-maintaining an export.
+docs/local/
