@@ -14,6 +14,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -76,13 +77,18 @@ public class RecurringScheduleService {
         for (Instant[] candidate : candidates) {
             Instant start = candidate[0];
             Instant end = candidate[1];
-            boolean conflicts = existing.stream()
-                    .anyMatch(slot -> slot.getStartsAt().isBefore(end) && slot.getEndsAt().isAfter(start));
+            // Time-overlap AND same employeeId (both null counts as "same"
+            // — today's shared-pool behavior, unchanged): two different
+            // employees' slots are allowed to overlap in time, that's the
+            // whole point of scoping a slot to one employee.
+            boolean conflicts = existing.stream().anyMatch(slot -> slot.getStartsAt().isBefore(end)
+                    && slot.getEndsAt().isAfter(start) && Objects.equals(slot.getEmployeeId(), request.employeeId()));
             if (conflicts) {
                 skipped++;
                 continue;
             }
-            toSave.add(new AvailabilitySlot(UUID.randomUUID(), providerId, start, end, AvailabilityStatus.OPEN));
+            toSave.add(new AvailabilitySlot(UUID.randomUUID(), providerId, start, end, AvailabilityStatus.OPEN,
+                    request.employeeId()));
         }
 
         List<AvailabilitySlot> saved = availabilitySlotRepository.saveAll(toSave);

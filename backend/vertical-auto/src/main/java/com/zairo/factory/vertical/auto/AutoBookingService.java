@@ -1,8 +1,11 @@
 package com.zairo.factory.vertical.auto;
 
+import com.zairo.factory.booking.AvailabilitySlot;
+import com.zairo.factory.booking.AvailabilitySlotRepository;
 import com.zairo.factory.booking.Booking;
 import com.zairo.factory.booking.BookingRepository;
 import com.zairo.factory.booking.BookingService;
+import com.zairo.factory.booking.SlotNotAvailableException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
@@ -27,17 +30,19 @@ public class AutoBookingService {
     private final AutoBookingRepository autoBookingRepository;
     private final BookingService bookingService;
     private final BookingRepository bookingRepository;
+    private final AvailabilitySlotRepository availabilitySlotRepository;
 
     public AutoBookingService(MechanicRepository mechanicRepository,
             MechanicServiceLinkRepository mechanicServiceLinkRepository, VehicleRepository vehicleRepository,
             AutoBookingRepository autoBookingRepository, BookingService bookingService,
-            BookingRepository bookingRepository) {
+            BookingRepository bookingRepository, AvailabilitySlotRepository availabilitySlotRepository) {
         this.mechanicRepository = mechanicRepository;
         this.mechanicServiceLinkRepository = mechanicServiceLinkRepository;
         this.vehicleRepository = vehicleRepository;
         this.autoBookingRepository = autoBookingRepository;
         this.bookingService = bookingService;
         this.bookingRepository = bookingRepository;
+        this.availabilitySlotRepository = availabilitySlotRepository;
     }
 
     @Transactional
@@ -55,6 +60,16 @@ public class AutoBookingService {
         if (!mechanicServiceLinkRepository.existsByMechanicIdAndServiceId(mechanicId, serviceId)) {
             throw new MechanicDoesNotOfferServiceException("Mechanic " + mechanicId + " does not offer service "
                     + serviceId);
+        }
+        // A slot generated for one specific mechanic can't be claimed under
+        // a different mechanic's name — same rule as vertical-beauty's own
+        // master check, see AvailabilitySlot's doc comment.
+        AvailabilitySlot slot = availabilitySlotRepository.findById(availabilitySlotId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
+                        + availabilitySlotId));
+        if (slot.getEmployeeId() != null && !slot.getEmployeeId().equals(mechanicId)) {
+            throw new SlotNotAvailableException(
+                    "Availability slot " + availabilitySlotId + " belongs to a different mechanic");
         }
 
         Booking booking = bookingService.createBooking(userId, serviceId, availabilitySlotId, totalPrice);
