@@ -1,0 +1,88 @@
+name: Flutter CI
+
+# Validates every Flutter package in the workspace (apps/user_app,
+# apps/business_admin, packages/core_network, packages/core_region,
+# packages/core_storage, packages/core_ui). Each one resolves its
+# path: dependencies via plain `flutter pub get` (see README.md's
+# "Flutter workspace" section) — melos is a convenience for local dev,
+# not required for CI, so it's deliberately not installed here.
+on:
+  pull_request:
+    branches: [develop, test, master]
+  push:
+    branches: [develop, test, master]
+
+# Cancel a stale run on the same branch/PR when new commits land.
+concurrency:
+  group: flutter-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Matches the Flutter SDK this repo is developed against (see
+  # `flutter --version` / the `sdk: ^3.13.0` constraint shared by every
+  # pubspec.yaml in apps/ and packages/). Pinned rather than "stable" so
+  # CI doesn't silently shift under an unrelated PR when a new Flutter
+  # release ships.
+  FLUTTER_VERSION: "3.47.0"
+
+jobs:
+  flutter:
+    name: flutter (${{ matrix.package }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - apps/user_app
+          - apps/business_admin
+          - packages/core_network
+          - packages/core_region
+          - packages/core_storage
+          - packages/core_ui
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      # pubspec.lock is committed for every package in this workspace,
+      # so the hash is a reliable, reproducible cache key.
+      - name: Cache pub packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            pub-${{ runner.os }}-
+
+      - name: flutter pub get
+        working-directory: ${{ matrix.package }}
+        run: flutter pub get
+
+      - name: flutter analyze
+        working-directory: ${{ matrix.package }}
+        run: flutter analyze
+
+      # Non-blocking on purpose: a from-scratch `dart format` pass across
+      # the whole workspace currently reformats 115/191 files (nothing to
+      # do with correctness — no shared formatting habit was ever
+      # enforced). Failing every PR on pre-existing drift isn't a useful
+      # gate. This step still surfaces the diff in the log so it isn't
+      # invisible. See docs/ci-cd.md for the plan to turn this into a
+      # real gate once a one-time repo-wide `dart format .` PR lands.
+      - name: dart format (report only, non-blocking)
+        working-directory: ${{ matrix.package }}
+        continue-on-error: true
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: flutter test
+        working-directory: ${{ matrix.package }}
+        run: flutter test
