@@ -180,14 +180,33 @@ also appears here, but only on a `backend-ci.yml` run that failed.
 - **No integration/E2E tests.** There is no `integration_test/`
   directory in either app today — only unit/widget tests under each
   package's `test/`. Nothing was skipped; there's nothing there to run.
-- **No required branch-protection rules configured.** GitHub Actions
-  workflows only *run* checks — turning any of them into a merge
-  requirement is a repository Settings change, out of scope for a code
-  change. Recommendation, once you're ready to turn this on: require
-  `backend (build + test)` and every `flutter (<package>)` matrix job
+- **No required branch-protection rules configured — and currently
+  can't be, from this account.** Attempted via the API (2026-08-28):
+  `GET/PUT /repos/.../branches/{branch}/protection` returns 403 —
+  `"Upgrade to GitHub Pro or make this repository public to enable
+  this feature."` Branch protection on a *private* repo needs GitHub
+  Pro/Team/Enterprise; this repo is private on a plan that doesn't
+  include it. Two ways past this, both a deliberate choice for
+  whoever owns the account, not a code change: upgrade the account to
+  Pro, or make the repo public. Until one of those happens, CI still
+  runs and reports status on every PR/push exactly as documented above
+  — nothing merges without a human choosing to click merge on a red
+  check, but nothing *blocks* them either.
+
+  Once branch protection is available, the required checks should be:
+  `backend (build + test)` and every `flutter (<package>)` matrix job,
   on PRs targeting `develop`, `test`, and `master`. Do **not** require
   `build-artifacts.yml` — it never runs on a PR, so requiring it would
-  leave every PR's checks stuck pending forever.
+  leave every PR's checks stuck pending forever. Use
+  `required_status_checks.contexts` (or the newer `checks` array) with
+  `strict: false` — `strict: true` would force a `develop`→`test` PR to
+  re-run CI every time someone pushes to `develop` again before it
+  merges, which doesn't fit this repo's fast-moving-`develop` workflow.
+  Leave `required_pull_request_reviews` and `restrictions` unset: this
+  repo's convention is direct pushes to `develop` with no PR (see
+  `CLAUDE.md`) — required status checks alone don't block that (they
+  only gate the PR merge button/API), but requiring reviews or
+  restricting who can push would.
 - **No Redis usage in CI (or in the app).** `infrastructure/docker-compose.yml`
   provisions a Redis container for local dev, but nothing in
   `backend/` actually connects to Redis yet — grepping the whole
