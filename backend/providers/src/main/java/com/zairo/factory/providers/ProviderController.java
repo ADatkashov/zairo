@@ -1,6 +1,10 @@
 package com.zairo.factory.providers;
 
 import com.zairo.factory.auth.CurrentUser;
+import com.zairo.factory.catalog.BusinessType;
+import com.zairo.factory.catalog.BusinessTypeRepository;
+import com.zairo.factory.catalog.CategoryRepository;
+import com.zairo.factory.catalog.TaxonomyStatus;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.providers.ProviderDtos.ProviderResponse;
 import com.zairo.factory.providers.ProviderDtos.UpdateProviderRequest;
@@ -36,11 +40,16 @@ public class ProviderController {
 
     private final ProviderRepository providerRepository;
     private final SubscriptionLimitService subscriptionLimitService;
+    private final CategoryRepository categoryRepository;
+    private final BusinessTypeRepository businessTypeRepository;
 
     public ProviderController(ProviderRepository providerRepository,
-            SubscriptionLimitService subscriptionLimitService) {
+            SubscriptionLimitService subscriptionLimitService, CategoryRepository categoryRepository,
+            BusinessTypeRepository businessTypeRepository) {
         this.providerRepository = providerRepository;
         this.subscriptionLimitService = subscriptionLimitService;
+        this.categoryRepository = categoryRepository;
+        this.businessTypeRepository = businessTypeRepository;
     }
 
     @Operation(summary = "Create a provider (salon)", description = "Owner-only: the caller must be "
@@ -67,9 +76,24 @@ public class ProviderController {
         }
         subscriptionLimitService.checkCanCreateProvider(currentUserId,
                 (int) providerRepository.countByOwnerUserId(currentUserId));
+        // vertical historically maps to a Category (see the V25 seed:
+        // Category.code = "beauty"/"auto", one level coarser than
+        // BusinessType.code = "beauty_salon"/"auto_service"). Best-effort:
+        // resolve via the category, then its lowest-sortOrder active
+        // business type — exactly right while each category has exactly
+        // one (today), a documented approximation once a category has
+        // several. A vertical with no matching Category leaves
+        // businessTypeId null rather than rejecting the request — vertical
+        // remains the field every existing call site actually depends on.
+        UUID businessTypeId = categoryRepository.findByCode(request.vertical())
+                .flatMap(category -> businessTypeRepository
+                        .findByCategoryIdAndStatusOrderBySortOrderAsc(category.getId(), TaxonomyStatus.ACTIVE)
+                        .stream().findFirst())
+                .map(BusinessType::getId)
+                .orElse(null);
         Provider provider = new Provider(UUID.randomUUID(), request.ownerUserId(), request.name(),
                 request.vertical(), ProviderStatus.PENDING, Instant.now(), request.latitude(),
-                request.longitude());
+                request.longitude(), businessTypeId);
         return ProviderResponse.from(providerRepository.save(provider));
     }
 

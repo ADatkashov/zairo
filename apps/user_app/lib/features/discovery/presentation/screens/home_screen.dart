@@ -6,9 +6,20 @@ import 'package:go_router/go_router.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../booking/presentation/screens/provider_detail_screen.dart';
+import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../../maps/presentation/providers/maps_providers.dart';
 import '../providers/discovery_providers.dart';
 import '../widgets/provider_card.dart';
+
+/// Icons aren't part of the master catalog (a presentation detail, not
+/// taxonomy) — this is a small, forward-compatible local lookup, not a
+/// hardcoded `if (category == "beauty")` business-logic branch: unknown
+/// codes still render, just with a generic icon, instead of failing.
+IconData _iconForCategory(String code) => switch (code) {
+  'beauty' => Icons.content_cut_rounded,
+  'auto' => Icons.directions_car_filled_rounded,
+  _ => Icons.storefront_outlined,
+};
 
 /// The Home tab: curated discovery, not a search box with results glued
 /// underneath (that's the Search tab). Tapping the search field switches to
@@ -22,9 +33,10 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  /// null = every vertical. Only two real values exist today (`beauty`,
-  /// `auto`) — this mirrors Search's own filter sheet rather than inventing
-  /// a category taxonomy the backend doesn't have.
+  /// null = every vertical. Set to a Category's `code` (see
+  /// catalog_providers.dart) — the search endpoint's `vertical` filter is
+  /// unchanged, this just sources the value from the master catalog instead
+  /// of a literal string.
   String? _vertical;
 
   @override
@@ -66,29 +78,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(height: FactorySpacing.space4),
                   Text(l10n.homeCategoriesTitle, style: textTheme.titleSmall),
                   const SizedBox(height: FactorySpacing.space3),
-                  Row(
-                    children: [
-                      FactoryCategoryTile(
-                        icon: Icons.apps_rounded,
-                        label: l10n.searchFilterCategoryAll,
-                        selected: _vertical == null,
-                        onTap: () => setState(() => _vertical = null),
-                      ),
-                      const SizedBox(width: FactorySpacing.space3),
-                      FactoryCategoryTile(
-                        icon: Icons.content_cut_rounded,
-                        label: l10n.discoveryVerticalBeauty,
-                        selected: _vertical == 'beauty',
-                        onTap: () => setState(() => _vertical = 'beauty'),
-                      ),
-                      const SizedBox(width: FactorySpacing.space3),
-                      FactoryCategoryTile(
-                        icon: Icons.directions_car_filled_rounded,
-                        label: l10n.discoveryVerticalAuto,
-                        selected: _vertical == 'auto',
-                        onTap: () => setState(() => _vertical = 'auto'),
-                      ),
-                    ],
+                  _CategoryRow(
+                    selectedCode: _vertical,
+                    onSelect: (code) => setState(() => _vertical = code),
                   ),
                   if (openCount > 0) ...[
                     const SizedBox(height: FactorySpacing.space5),
@@ -183,6 +175,69 @@ class _SearchEntry extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _CategoryRow extends ConsumerWidget {
+  const _CategoryRow({required this.selectedCode, required this.onSelect});
+
+  final String? selectedCode;
+  final ValueChanged<String?> onSelect;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final categoriesAsync = ref.watch(categoriesProvider);
+    final languageCode = Localizations.localeOf(context).languageCode;
+
+    return categoriesAsync.when(
+      data: (categories) => Row(
+        children: [
+          FactoryCategoryTile(
+            icon: Icons.apps_rounded,
+            label: l10n.searchFilterCategoryAll,
+            selected: selectedCode == null,
+            onTap: () => onSelect(null),
+          ),
+          for (final category in categories) ...[
+            const SizedBox(width: FactorySpacing.space3),
+            FactoryCategoryTile(
+              icon: _iconForCategory(category.code),
+              label: category.nameFor(languageCode),
+              selected: selectedCode == category.code,
+              onTap: () => onSelect(category.code),
+            ),
+          ],
+        ],
+      ),
+      // Best-effort: while loading or on error, still show the "All" tile
+      // (search already works with vertical: null) rather than blocking
+      // the whole Home screen on the catalog request.
+      loading: () => Row(
+        children: [
+          FactoryCategoryTile(
+            icon: Icons.apps_rounded,
+            label: l10n.searchFilterCategoryAll,
+            selected: selectedCode == null,
+            onTap: () => onSelect(null),
+          ),
+          const SizedBox(width: FactorySpacing.space3),
+          const FactorySkeleton(width: 64, height: 84, borderRadius: BorderRadius.all(Radius.circular(12))),
+          const SizedBox(width: FactorySpacing.space3),
+          const FactorySkeleton(width: 64, height: 84, borderRadius: BorderRadius.all(Radius.circular(12))),
+        ],
+      ),
+      error: (error, stackTrace) => Row(
+        children: [
+          FactoryCategoryTile(
+            icon: Icons.apps_rounded,
+            label: l10n.searchFilterCategoryAll,
+            selected: selectedCode == null,
+            onTap: () => onSelect(null),
+          ),
+        ],
       ),
     );
   }

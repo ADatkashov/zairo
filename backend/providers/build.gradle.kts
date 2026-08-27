@@ -15,4 +15,8 @@ dependencies {
     // Creating a provider is gated by the owner's subscription plan's
     // provider-count limit — see SubscriptionLimitService.
     implementation(project(":subscriptions"))
+
+    // Resolving a new provider's businessTypeId from its vertical string at
+    // creation time — see ProviderController.create.
+    implementation(project(":catalog"))
 }
