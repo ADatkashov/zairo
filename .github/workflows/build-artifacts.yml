@@ -1,0 +1,129 @@
+name: Build Artifacts
+
+# Runs after code has already landed on a tracked branch (develop, test,
+# or master) — i.e. after flutter-ci.yml / backend-ci.yml have already
+# validated it via the PR that got it there. This workflow doesn't
+# re-validate anything; it only assembles installable/runnable outputs
+# and attaches them to the workflow run for manual download.
+#
+# Nothing here is published anywhere public, and nothing deploys.
+on:
+  push:
+    branches: [develop, test, master]
+
+concurrency:
+  group: build-artifacts-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: "3.47.0"
+
+jobs:
+  android-apk:
+    name: android-apk (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [user_app, business_admin]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # AGP 9.1.0 / Kotlin 2.4.0 (apps/*/android/settings.gradle.kts) need
+      # a modern JDK to build with; 21 matches what Android Studio's
+      # bundled JBR uses for this project locally and what the backend
+      # already standardizes on.
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: flutter pub get
+        working-directory: apps/${{ matrix.app }}
+        run: flutter pub get
+
+      # NOTE: apps/${{ matrix.app }}/android/app/build.gradle.kts points
+      # the `release` build type at `signingConfigs.getByName("debug")` —
+      # there is no release keystore in this repo yet. This APK is
+      # therefore debug-signed: fine for internal install/QA, not for
+      # any app-store submission. See docs/ci-cd.md for what a real
+      # release signing setup would need (a keystore + 3
+      # secrets.ANDROID_* values, none of which exist today).
+      #
+      # MAPS_API_KEY (secrets.MAPS_API_KEY, only relevant for user_app —
+      # business_admin has no maps feature and simply ignores it) has to
+      # reach the build twice: as a plain env var for
+      # android/app/build.gradle.kts's native manifest placeholder (see
+      # that file's own comment — it already prefers System.getenv over
+      # local.properties), and as --dart-define for
+      # maps_providers.dart's mapRendererProvider, which is what actually
+      # selects GoogleMapsRenderer over the MockMapRenderer placeholder.
+      # An unset secret leaves both empty, which is a safe default (see
+      # both call sites), not a broken build.
+      - name: flutter build apk --release
+        working-directory: apps/${{ matrix.app }}
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+        run: flutter build apk --release --dart-define=MAPS_API_KEY="$MAPS_API_KEY"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.app }}-apk-debug-signed
+          path: apps/${{ matrix.app }}/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 14
+
+  backend-jar:
+    name: backend-jar
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # See backend-ci.yml's identical step — backend/gradlew is committed
+      # without the executable bit.
+      - name: Make gradlew executable
+        working-directory: backend
+        run: chmod +x gradlew
+
+      # platform-api is the only runnable module (application { mainClass
+      # = PlatformApiApplication } in its build.gradle.kts) — it pulls
+      # every bounded-context module in as a dependency, so its bootJar
+      # is the one deployable artifact for the whole backend.
+      - name: Build bootJar
+        working-directory: backend
+        run: ./gradlew :platform-api:bootJar
+
+      # Spring Boot's Gradle plugin produces two jars here: the real
+      # executable bootJar (platform-api-<version>.jar) and a
+      # classes-only "-plain" jar it keeps for library consumers. Only
+      # the former is useful as a runnable artifact.
+      - name: Upload bootJar
+        uses: actions/upload-artifact@v4
+        with:
+          name: platform-api-bootjar
+          path: |
+            backend/platform-api/build/libs/*.jar
+            !backend/platform-api/build/libs/*-plain.jar
+          retention-days: 14

@@ -21,14 +21,23 @@ public final class SubscriptionDtos {
             @Schema(description = "Only set while status is PAST_DUE.")
             Instant gracePeriodEndsAt,
             @Schema(description = "True if a self-service downgrade to FREE is scheduled for currentPeriodEnd.")
-            boolean cancelAtPeriodEnd) {
+            boolean cancelAtPeriodEnd,
+            @Schema(description = "Set only right after an upgrade under a real (non-mock) payment provider: "
+                    + "redirect the customer here to complete the charge. The plan/status fields above are still "
+                    + "the pre-upgrade values in that case — the subscription becomes PRO only once the provider's "
+                    + "webhook confirms the payment, not when this response is returned.")
+            String checkoutUrl) {
 
         static SubscriptionResponse from(Subscription subscription) {
+            return from(subscription, null);
+        }
+
+        static SubscriptionResponse from(Subscription subscription, String checkoutUrl) {
             SubscriptionPlan plan = subscription.getPlan();
             return new SubscriptionResponse(subscription.getId(), subscription.getOwnerUserId(), plan,
                     subscription.getStatus(), PlanLimits.from(plan), subscription.getCurrentPeriodStart(),
                     subscription.getCurrentPeriodEnd(), subscription.getGracePeriodEndsAt(),
-                    subscription.isCancelAtPeriodEnd());
+                    subscription.isCancelAtPeriodEnd(), checkoutUrl);
         }
     }
 

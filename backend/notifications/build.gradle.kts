@@ -21,4 +21,8 @@ dependencies {
     // types — same one-directional "listen for the event" reasoning as the
     // booking/auth dependencies above.
     implementation(project(":subscriptions"))
+
+    // Only for PaymentRefundedEvent's type — same one-directional "listen
+    // for the event" reasoning as the dependencies above.
+    implementation(project(":payments"))
 }

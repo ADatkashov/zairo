@@ -125,7 +125,8 @@ class AutoApiTests {
         String bookingId = created.getBody().get("bookingId").toString();
         assertThat(created.getBody().get("mechanicId")).isEqualTo(mechanicId.toString());
         assertThat(created.getBody().get("vehicleId")).isEqualTo(vehicleId.toString());
-        assertThat(created.getBody().get("status")).isEqualTo("CONFIRMED");
+        // Not CONFIRMED yet — a booking starts PENDING_PAYMENT until its payment succeeds (ADR-0006).
+        assertThat(created.getBody().get("status")).isEqualTo("PENDING_PAYMENT");
 
         // Fetching it back through the auto endpoint returns the same links.
         Map<?, ?> fetched = restTemplate.getForEntity("/api/v1/auto/bookings/" + bookingId, Map.class).getBody();

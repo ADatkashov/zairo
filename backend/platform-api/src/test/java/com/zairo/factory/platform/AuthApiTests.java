@@ -161,6 +161,28 @@ class AuthApiTests {
     }
 
     @Test
+    void locksLoginOutAfterFiveConsecutiveFailuresEvenWithTheCorrectPasswordAfterward() {
+        String runId = UUID.randomUUID().toString();
+        String email = "lockout-" + runId + "@example.com";
+        String password = "correct horse battery staple";
+        restTemplate.postForEntity("/api/v1/auth/register",
+                new RegisterRequest(email, password, "Lockout Test User", "+1000000009", UserRole.CUSTOMER),
+                Map.class);
+
+        var badLogin = new LoginRequest(email, "wrong password");
+        for (int i = 0; i < 5; i++) {
+            ResponseEntity<Map> attempt = restTemplate.postForEntity("/api/v1/auth/login", badLogin, Map.class);
+            assertThat(attempt.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        }
+
+        // The account is now locked — even the correct password is rejected
+        // (as 429, not 401) until the lockout window passes.
+        ResponseEntity<Map> lockedOut = restTemplate.postForEntity("/api/v1/auth/login",
+                new LoginRequest(email, password), Map.class);
+        assertThat(lockedOut.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    @Test
     void resetPasswordRejectsAGarbageToken() {
         ResponseEntity<Void> response = restTemplate.postForEntity("/api/v1/auth/reset-password",
                 new ResetPasswordRequest("not-a-real-token", "some password"), Void.class);
