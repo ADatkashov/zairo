@@ -62,6 +62,10 @@ public class Booking {
     @Column(name = "cancellation_reason")
     private String cancellationReason;
 
+    /** Set once {@link BookingReminderJob} has sent the "your booking is in an hour" reminder — guards against sending it twice. */
+    @Column(name = "reminder_sent_at")
+    private Instant reminderSentAt;
+
     /**
      * Optimistic lock — same reasoning as {@code AvailabilitySlot}/{@code
      * payments.Payment}: guards against {@link
@@ -123,6 +127,14 @@ public class Booking {
 
     public String getCancellationReason() {
         return cancellationReason;
+    }
+
+    public Instant getReminderSentAt() {
+        return reminderSentAt;
+    }
+
+    void markReminderSent(Instant now) {
+        this.reminderSentAt = now;
     }
 
     /** Payment succeeded — PENDING_PAYMENT is the only status this is ever called from, see BookingService. */

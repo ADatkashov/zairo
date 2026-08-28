@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequest;
 import com.zairo.factory.booking.BookingDtos.CancelBookingRequest;
 import com.zairo.factory.booking.BookingDtos.CreateBookingRequest;
+import com.zairo.factory.booking.BookingService;
 import com.zairo.factory.platform.TestAuth.Registered;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
@@ -40,6 +41,9 @@ class BookingApiTests {
 
     @Autowired
     private TestNotifications.CapturedEmails capturedEmails;
+
+    @Autowired
+    private BookingService bookingService;
 
     @Test
     void booksAnOpenSlotThenRejectsASecondBookingForTheSameSlot() {
@@ -170,6 +174,35 @@ class BookingApiTests {
             assertThat(email.subject()).isEqualTo("New booking received");
             assertThat(email.body()).contains(bookingId.toString());
         });
+    }
+
+    @Test
+    void sendsABookingReminderOnceAndOnlyOnceForASlotStartingWithinTheWindow() {
+        String runId = UUID.randomUUID().toString();
+        String customerEmail = "reminder-customer-" + runId + "@example.com";
+        Registered customer = TestAuth.registerCustomer(restTemplate, customerEmail);
+        Registered owner = TestAuth.registerOwner(restTemplate, "reminder-owner-" + runId + "@example.com");
+
+        UUID providerId = createProvider(owner, "Reminder Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Reminder Service", new BigDecimal("25.00"));
+        Instant start = Instant.now().plus(30, ChronoUnit.MINUTES);
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+
+        var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("25.00"));
+        UUID bookingId = UUID.fromString(createBooking(customer, bookingRequest).getBody().get("id").toString());
+        payForBooking(bookingId);
+
+        Instant now = Instant.now();
+        bookingService.sendDueReminders(now, now.plus(1, ChronoUnit.HOURS));
+        assertThat(capturedEmails.sent).anySatisfy(email -> {
+            assertThat(email.toEmail()).isEqualTo(customerEmail);
+            assertThat(email.subject()).isEqualTo("Upcoming booking reminder");
+            assertThat(email.body()).contains(bookingId.toString());
+        });
+
+        int sentAfterFirstRun = capturedEmails.sent.size();
+        bookingService.sendDueReminders(now, now.plus(1, ChronoUnit.HOURS));
+        assertThat(capturedEmails.sent).hasSize(sentAfterFirstRun);
     }
 
     @Test

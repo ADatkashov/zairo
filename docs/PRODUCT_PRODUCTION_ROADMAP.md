@@ -534,7 +534,7 @@ Lightweight production security review — код-проверено, не че�
 Делает пилот приятным и заслуживающим доверия, не только функциональным.
 
 - **Real map rendering** — если не попало в Phase 0 по срокам.
-- **Booking-reminder уведомление** (за час до брони) + payment-success/refund-уведомления клиенту (сегодня есть только для booking confirm/cancel и subscription fail).
+- ~~**Booking-reminder уведомление** (за час до брони) + refund-уведомление клиенту~~ — ✅ **Сделано (2026-08-28)**: `BookingReminderJob` (каждые 5 минут, `Booking.reminderSentAt` защищает от повторной отправки), `PaymentRefundedEvent` → email клиенту при успешном возврате. **Payment-success уведомление сознательно не добавлено отдельно** — оно было бы дублем уже существующего "Booking confirmed" (тот же триггер: подтверждение оплаты и есть подтверждение брони), а не отдельным событием.
 - ~~**Ответ бизнеса на отзыв**~~ — ✅ **Сделано (2026-08-28)**: `POST /api/v1/reviews/{id}/reply`, только владелец отзываемого провайдера (403 иначе), повторный ответ перезаписывает прежний.
 - **Platform Dashboard v1** — Users/Businesses/Subscriptions/Bookings/Payments/Revenue-MRR, всё live-query (раздел 9), без новой модели данных.
 - ~~**Failed-refund видимость для админа**~~ — ✅ **Сделано (2026-08-28)**: `GET /api/v1/platform/payments/failed-refunds` (PLATFORM_ADMIN/PLATFORM_SUPPORT, read-only), список `Payment` в статусе `REFUND_FAILED` — то, что раньше было видно только в логе.

@@ -259,4 +259,24 @@ public class BookingService {
         booking.markNoShow();
         return bookingRepository.save(booking);
     }
+
+    /**
+     * {@link BookingReminderJob}'s one call — marks each qualifying booking
+     * reminded and publishes {@link BookingReminderDueEvent} for
+     * notifications to actually email, in the same transaction as the
+     * write (so a crash between marking and publishing can't happen: both
+     * commit together, or neither does). Public (not package-private, like
+     * the job itself) so tests can drive it deterministically instead of
+     * waiting on the real 5-minute cadence — same reasoning as {@code
+     * SubscriptionRenewalService.renewDueSubscriptions} being public.
+     */
+    @Transactional
+    public void sendDueReminders(Instant now, Instant reminderCutoff) {
+        for (Booking booking : bookingRepository.findConfirmedBookingsStartingBeforeAndNotYetReminded(now,
+                reminderCutoff)) {
+            booking.markReminderSent(now);
+            bookingRepository.save(booking);
+            eventPublisher.publishEvent(new BookingReminderDueEvent(booking.getId(), booking.getUserId()));
+        }
+    }
 }

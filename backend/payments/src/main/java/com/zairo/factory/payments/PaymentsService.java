@@ -9,6 +9,7 @@ import com.zairo.factory.paymentprovider.PaymentProviderName;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,12 +23,13 @@ public class PaymentsService {
     private final BookingService bookingService;
     private final PaymentProvider paymentProvider;
     private final PaymentProviderName providerName;
+    private final ApplicationEventPublisher eventPublisher;
     private final String successUrl;
     private final String failureUrl;
 
     public PaymentsService(PaymentRepository paymentRepository, BookingRepository bookingRepository,
             BookingService bookingService, PaymentProvider paymentProvider,
-            @Value("${payment.provider:mock}") String providerName,
+            @Value("${payment.provider:mock}") String providerName, ApplicationEventPublisher eventPublisher,
             @Value("${payment.return.success-url:}") String successUrl,
             @Value("${payment.return.failure-url:}") String failureUrl) {
         this.paymentRepository = paymentRepository;
@@ -35,6 +37,7 @@ public class PaymentsService {
         this.bookingService = bookingService;
         this.paymentProvider = paymentProvider;
         this.providerName = PaymentProviderName.valueOf(providerName.toUpperCase());
+        this.eventPublisher = eventPublisher;
         this.successUrl = successUrl;
         this.failureUrl = failureUrl;
     }
@@ -147,6 +150,9 @@ public class PaymentsService {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Refund failed: " + result.failureReason());
         }
         payment.markRefunded(Instant.now());
-        return paymentRepository.save(payment);
+        Payment refunded = paymentRepository.save(payment);
+        eventPublisher.publishEvent(new PaymentRefundedEvent(refunded.getId(), refunded.getBookingId(),
+                refunded.getAmount(), refunded.getCurrency()));
+        return refunded;
     }
 }
