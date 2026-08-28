@@ -39,7 +39,7 @@ jobs:
       # cache; also validates the wrapper jar's checksum against Gradle's
       # published values.
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       # Same image, port mapping, and dev-only credentials as
       # infrastructure/docker-compose.yml's minio service — StorageApiTests
