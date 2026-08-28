@@ -29,4 +29,8 @@ public interface SubscriptionChargeRepository extends JpaRepository<Subscription
      */
     Optional<SubscriptionCharge> findFirstBySubscriptionIdAndRecurringProfileIdIsNotNullOrderByCreatedAtDesc(
             UUID subscriptionId);
+
+    /** MRR's source data — see platforminsights.PlatformInsightsService. */
+    List<SubscriptionCharge> findByStatusAndCreatedAtBetween(SubscriptionChargeStatus status, Instant start,
+            Instant end);
 }

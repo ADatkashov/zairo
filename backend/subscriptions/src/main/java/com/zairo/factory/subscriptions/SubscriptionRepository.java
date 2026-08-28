@@ -15,4 +15,9 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, UUID
             SubscriptionStatus status, Instant before);
 
     List<Subscription> findByStatusAndGracePeriodEndsAtBefore(SubscriptionStatus status, Instant before);
+
+    /** The platform dashboard's plan/status breakdown — see platforminsights.PlatformInsightsService. */
+    long countByPlan(SubscriptionPlan plan);
+
+    long countByStatus(SubscriptionStatus status);
 }

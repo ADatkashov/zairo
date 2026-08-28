@@ -14,4 +14,7 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
 
     /** The platform admin's failed-refund visibility list — see PaymentAdminController. */
     List<Payment> findByStatusOrderByCreatedAtDesc(PaymentStatus status);
+
+    /** The platform dashboard's payment-status breakdown — see platforminsights.PlatformInsightsService. */
+    long countByStatus(PaymentStatus status);
 }
