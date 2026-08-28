@@ -1,6 +1,7 @@
 package com.zairo.factory.subscriptions;
 
 import com.zairo.factory.paymentprovider.PaymentProvider;
+import com.zairo.factory.paymentprovider.PaymentProviderName;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -34,17 +35,19 @@ public class SubscriptionRenewalService {
     private final SubscriptionRepository subscriptionRepository;
     private final SubscriptionChargeRepository subscriptionChargeRepository;
     private final PaymentProvider paymentProvider;
+    private final PaymentProviderName providerName;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
     private final String defaultCurrency;
 
     public SubscriptionRenewalService(SubscriptionRepository subscriptionRepository,
             SubscriptionChargeRepository subscriptionChargeRepository, PaymentProvider paymentProvider,
-            ApplicationEventPublisher eventPublisher, Clock clock,
-            @Value("${app.platform.default-currency:USD}") String defaultCurrency) {
+            @Value("${payment.provider:mock}") String providerName, ApplicationEventPublisher eventPublisher,
+            Clock clock, @Value("${app.platform.default-currency:USD}") String defaultCurrency) {
         this.subscriptionRepository = subscriptionRepository;
         this.subscriptionChargeRepository = subscriptionChargeRepository;
         this.paymentProvider = paymentProvider;
+        this.providerName = PaymentProviderName.valueOf(providerName.toUpperCase());
         this.eventPublisher = eventPublisher;
         this.clock = clock;
         this.defaultCurrency = defaultCurrency;
@@ -107,17 +110,20 @@ public class SubscriptionRenewalService {
     private void chargeForRenewal(Subscription subscription) {
         SubscriptionPlan plan = subscription.getPlan();
         Instant now = clock.instant();
+        String recurringProfileId = recurringProfileIdFor(subscription);
 
         SubscriptionCharge charge = subscriptionChargeRepository
                 .findFirstBySubscriptionIdAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(subscription.getId(),
                         subscription.getCurrentPeriodStart())
                 .filter(existing -> existing.getStatus() == SubscriptionChargeStatus.FAILED)
                 .orElseGet(() -> subscriptionChargeRepository.save(new SubscriptionCharge(UUID.randomUUID(),
-                        subscription.getId(), plan.monthlyPrice, defaultCurrency, now)));
+                        subscription.getId(), plan.monthlyPrice, defaultCurrency, providerName, recurringProfileId,
+                        now)));
 
         PaymentProvider.ChargeResult result;
         try {
-            result = paymentProvider.charge(charge.getId(), charge.getAmount(), charge.getCurrency());
+            result = paymentProvider.chargeRecurring(recurringProfileId, charge.getId(), charge.getAmount(),
+                    charge.getCurrency());
         } catch (RuntimeException e) {
             charge.markFailed("Payment provider error: " + e.getMessage(), now);
             subscriptionChargeRepository.save(charge);
@@ -137,6 +143,20 @@ public class SubscriptionRenewalService {
             subscriptionChargeRepository.save(charge);
             markPastDue(subscription, now);
         }
+    }
+
+    /**
+     * Freedom Pay only hands back {@code pg_recurring_profile_id} on the
+     * upgrade charge that first created it (see {@code SubscriptionCharge}'s
+     * doc comment) — every renewal after that looks back for the most
+     * recent charge that carried one, rather than assuming the current
+     * period's own (possibly not-yet-created) charge row has it.
+     */
+    private String recurringProfileIdFor(Subscription subscription) {
+        return subscriptionChargeRepository
+                .findFirstBySubscriptionIdAndRecurringProfileIdIsNotNullOrderByCreatedAtDesc(subscription.getId())
+                .map(SubscriptionCharge::getRecurringProfileId)
+                .orElse(null);
     }
 
     private void markPastDue(Subscription subscription, Instant now) {

@@ -1,5 +1,6 @@
 package com.zairo.factory.notifications;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 
@@ -58,5 +59,16 @@ public class NotificationService {
     public void sendSubscriptionDowngradedEmail(String toEmail) {
         emailProvider.send(toEmail, "Subscription downgraded to FREE",
                 "Your subscription has been downgraded to the FREE plan. You can upgrade again at any time.");
+    }
+
+    public void sendBookingReminderEmail(String toEmail, UUID bookingId) {
+        emailProvider.send(toEmail, "Upcoming booking reminder",
+                "Your booking (" + bookingId + ") is coming up in about an hour. See you soon!");
+    }
+
+    public void sendPaymentRefundedEmail(String toEmail, UUID bookingId, BigDecimal amount, String currency) {
+        emailProvider.send(toEmail, "Refund processed",
+                "Your refund of " + amount + " " + currency + " for booking (" + bookingId
+                        + ") has been processed.");
     }
 }

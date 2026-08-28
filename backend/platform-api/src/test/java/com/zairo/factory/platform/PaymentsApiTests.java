@@ -31,7 +31,7 @@ import org.springframework.http.ResponseEntity;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
-@Import({TestcontainersConfiguration.class, TestPayments.class})
+@Import({TestcontainersConfiguration.class, TestPayments.class, TestNotifications.class})
 class PaymentsApiTests {
 
     @Autowired
@@ -39,6 +39,9 @@ class PaymentsApiTests {
 
     @Autowired
     private TestPayments.FailureController failureController;
+
+    @Autowired
+    private TestNotifications.CapturedEmails capturedEmails;
 
     @Test
     void paysForABookingThenRefundsIt() {
@@ -92,6 +95,12 @@ class PaymentsApiTests {
                 "/api/v1/payments/" + paymentId + "/refund", null, Map.class);
         assertThat(refundResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(refundResponse.getBody().get("status")).isEqualTo("REFUNDED");
+
+        // The customer is notified once the refund actually succeeds.
+        assertThat(capturedEmails.sent).anySatisfy(email -> {
+            assertThat(email.subject()).isEqualTo("Refund processed");
+            assertThat(email.body()).contains(bookingId.toString());
+        });
 
         // A second refund attempt is rejected — already refunded, not SUCCEEDED.
         ResponseEntity<Map> duplicateRefund = restTemplate.postForEntity(
@@ -172,6 +181,37 @@ class PaymentsApiTests {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody().get("status")).isEqualTo("FAILED");
+    }
+
+    @Test
+    void aFailedRefundIsRecordedOnThePaymentInsteadOfOnlyBeingLogged() {
+        UUID bookingId = createBookingForPayment("refund-outage-", new BigDecimal("22.00"));
+        UUID paymentId = UUID.fromString(restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments",
+                null, Map.class).getBody().get("id").toString());
+
+        failureController.failNextRefund = true;
+        ResponseEntity<Map> refundResponse = restTemplate.postForEntity(
+                "/api/v1/payments/" + paymentId + "/refund", null, Map.class);
+        assertThat(refundResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY);
+
+        // The failure survived the exception — not rolled back with it (see
+        // PaymentsService.refundPayment's noRollbackFor) — and status moves
+        // to REFUND_FAILED, not REFUNDED: the money was never actually
+        // returned, so the payment can't claim it was.
+        ResponseEntity<Map> check = restTemplate.getForEntity("/api/v1/bookings/" + bookingId + "/payments",
+                Map.class);
+        assertThat(check.getBody().get("status")).isEqualTo("REFUND_FAILED");
+        assertThat(check.getBody().get("refundFailureReason")).isEqualTo("simulated refund outage");
+        assertThat(check.getBody().get("refundAttempts")).isEqualTo(1);
+
+        // Retrying (the mock provider succeeds by default now that the
+        // one-shot failure flag has been consumed) clears the failure and
+        // actually refunds it.
+        ResponseEntity<Map> retry = restTemplate.postForEntity("/api/v1/payments/" + paymentId + "/refund", null,
+                Map.class);
+        assertThat(retry.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(retry.getBody().get("status")).isEqualTo("REFUNDED");
+        assertThat(retry.getBody().get("refundFailureReason")).isNull();
     }
 
     private UUID createBookingForPayment(String prefix, BigDecimal price) {

@@ -1,6 +1,7 @@
 package com.zairo.factory.booking;
 
 import com.zairo.factory.providers.Provider;
+import com.zairo.factory.providers.ProviderOwnership;
 import com.zairo.factory.providers.ProviderRepository;
 import com.zairo.factory.subscriptions.SubscriptionLimitService;
 import java.math.BigDecimal;
@@ -22,28 +23,39 @@ public class BookingService {
     private final AvailabilitySlotRepository availabilitySlotRepository;
     private final BookingRepository bookingRepository;
     private final ProviderRepository providerRepository;
+    private final ProviderOwnership providerOwnership;
     private final SubscriptionLimitService subscriptionLimitService;
     private final ApplicationEventPublisher eventPublisher;
     private final String defaultCurrency;
 
     public BookingService(AvailabilitySlotRepository availabilitySlotRepository, BookingRepository bookingRepository,
-            ProviderRepository providerRepository, SubscriptionLimitService subscriptionLimitService,
-            ApplicationEventPublisher eventPublisher,
+            ProviderRepository providerRepository, ProviderOwnership providerOwnership,
+            SubscriptionLimitService subscriptionLimitService, ApplicationEventPublisher eventPublisher,
             @Value("${app.platform.default-currency:USD}") String defaultCurrency) {
         this.availabilitySlotRepository = availabilitySlotRepository;
         this.bookingRepository = bookingRepository;
         this.providerRepository = providerRepository;
+        this.providerOwnership = providerOwnership;
         this.subscriptionLimitService = subscriptionLimitService;
         this.eventPublisher = eventPublisher;
         this.defaultCurrency = defaultCurrency;
     }
 
     /**
-     * Atomically claims the slot (OPEN -> BOOKED) and creates a confirmed
-     * booking in one transaction. {@code @Version} on AvailabilitySlot means
-     * a concurrent request for the same slot fails with
+     * Atomically claims the slot (OPEN -> BOOKED) and creates a booking in
+     * one transaction — starting at {@link BookingStatus#PENDING_PAYMENT},
+     * <b>not</b> CONFIRMED (see ADR-0006: a booking is never confirmed
+     * without a successful payment). {@code @Version} on AvailabilitySlot
+     * means a concurrent request for the same slot fails with
      * OptimisticLockingFailureException, which we turn into 409 — the slot
      * can't be double-booked even under concurrent requests.
+     *
+     * <p>Confirmation happens later, via {@link #confirmAfterPayment} —
+     * called by {@code payments.PaymentsService} once a charge actually
+     * succeeds (synchronously for the mock provider; via a verified
+     * webhook for a real one). No {@link BookingConfirmedEvent} is
+     * published here anymore — it moves to that method, so notifications
+     * ("your booking is confirmed") never fire before payment does.
      */
     @Transactional
     public Booking createBooking(UUID userId, UUID serviceId, UUID availabilitySlotId, BigDecimal totalPrice) {
@@ -82,12 +94,75 @@ public class BookingService {
         // assumption Payment used to make independently, now one config
         // value instead of two that happened to agree.
         Booking booking = new Booking(UUID.randomUUID(), userId, serviceId, availabilitySlotId,
-                BookingStatus.CONFIRMED, totalPrice, defaultCurrency, Instant.now());
+                BookingStatus.PENDING_PAYMENT, totalPrice, defaultCurrency, Instant.now());
         booking = bookingRepository.save(booking);
 
-        eventPublisher.publishEvent(new BookingConfirmedEvent(booking.getId(), userId, slot.getProviderId()));
         eventPublisher.publishEvent(new BookingAttemptedEvent(userId, serviceId, slot.getProviderId(), true, null));
         return booking;
+    }
+
+    /**
+     * Called by {@code payments.PaymentsService} once a charge for this
+     * booking actually succeeds. Idempotent by design: a booking that's
+     * already past PENDING_PAYMENT (e.g. a duplicate webhook delivery, or
+     * the sweep job and a late webhook racing) is returned as-is rather
+     * than re-transitioned or erroring — see ADR-0006's Webhook
+     * Architecture for why "already resolved" is a safe no-op here, not a
+     * conflict.
+     */
+    @Transactional
+    public Booking confirmAfterPayment(UUID bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
+                        + bookingId));
+
+        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            return booking;
+        }
+
+        booking.markConfirmed();
+        Booking confirmed = bookingRepository.save(booking);
+
+        AvailabilitySlot slot = availabilitySlotRepository.findById(confirmed.getAvailabilitySlotId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
+                        + confirmed.getAvailabilitySlotId()));
+        eventPublisher.publishEvent(new BookingConfirmedEvent(confirmed.getId(), confirmed.getUserId(),
+                slot.getProviderId()));
+        return confirmed;
+    }
+
+    /**
+     * Called by {@link BookingPaymentTimeoutJob} for a booking that's simply
+     * timed out unpaid — releases the slot the same way a customer
+     * cancellation does. <b>Not</b> called by {@code payments.PaymentsService}
+     * on a synchronous FAILED charge result — that's deliberately retriable
+     * (see {@code PaymentsService.createPayment}'s reuse-the-FAILED-row
+     * path): the booking stays PENDING_PAYMENT so a retried charge can still
+     * confirm it, and only actually expires once the timeout elapses without
+     * a successful retry. No {@link BookingCancelledEvent} here: unlike a
+     * customer cancelling a CONFIRMED (paid) booking, there is by definition
+     * nothing to refund — publishing the event would just be a guaranteed
+     * no-op every time. Idempotent — already-resolved is a safe no-op, same
+     * reasoning as {@link #confirmAfterPayment}.
+     */
+    @Transactional
+    public Booking cancelUnpaidBooking(UUID bookingId, String reason) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
+                        + bookingId));
+
+        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            return booking;
+        }
+
+        AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
+                        + booking.getAvailabilitySlotId()));
+        slot.markOpen();
+        availabilitySlotRepository.save(slot);
+
+        booking.markCancelled(reason);
+        return bookingRepository.save(booking);
     }
 
     /**
@@ -111,13 +186,15 @@ public class BookingService {
     }
 
     /**
-     * Customer-initiated cancellation. Only a CONFIRMED booking can be
-     * cancelled (not PENDING/COMPLETED/already-CANCELLED) — mirrors
-     * completeBooking's status guard. Releases the slot back to OPEN so
-     * someone else can book it, and publishes {@link BookingCancelledEvent}
-     * so payments (refund) and notifications can react without booking
-     * depending on either — same ADR-0002 pattern as
-     * {@link BookingConfirmedEvent}.
+     * Customer-initiated cancellation. A CONFIRMED (paid) or PENDING_PAYMENT
+     * (not yet paid) booking can be cancelled — not PENDING/COMPLETED/
+     * already-CANCELLED/NO_SHOW — mirrors completeBooking's status guard.
+     * Releases the slot back to OPEN so someone else can book it, and
+     * publishes {@link BookingCancelledEvent} so payments (refund) and
+     * notifications can react without booking depending on either — same
+     * ADR-0002 pattern as {@link BookingConfirmedEvent}. Cancelling from
+     * PENDING_PAYMENT publishes the same event; the refund listener simply
+     * finds no SUCCEEDED payment and no-ops — nothing was ever charged.
      *
      * <p>Deliberately no {@code @Version}-style optimistic locking here
      * (unlike the slot's OPEN->BOOKED claim): two different customers can
@@ -127,7 +204,7 @@ public class BookingService {
      * the second call once the first has committed.
      */
     @Transactional
-    public Booking cancelBooking(UUID bookingId, UUID callerId) {
+    public Booking cancelBooking(UUID bookingId, UUID callerId, String reason) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
                         + bookingId));
@@ -136,7 +213,7 @@ public class BookingService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not own this booking: " + bookingId);
         }
 
-        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+        if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
             throw new InvalidBookingStateException("Booking is not in a cancellable state: " + bookingId
                     + " (status=" + booking.getStatus() + ")");
         }
@@ -147,10 +224,59 @@ public class BookingService {
         slot.markOpen();
         availabilitySlotRepository.save(slot);
 
-        booking.markCancelled();
+        booking.markCancelled(reason);
         Booking cancelled = bookingRepository.save(booking);
 
         eventPublisher.publishEvent(new BookingCancelledEvent(cancelled.getId(), callerId, slot.getProviderId()));
         return cancelled;
+    }
+
+    /**
+     * Provider-owner-initiated — the customer didn't show up for a
+     * CONFIRMED slot. Same status guard as {@link #completeBooking}
+     * (mutually exclusive terminal outcomes for a kept vs. missed
+     * appointment), but ownership runs through the slot's provider
+     * instead of the booking's own customer, mirroring how
+     * {@code BookingController.listByProvider} resolves a provider from
+     * a booking (Booking has no providerId of its own).
+     */
+    @Transactional
+    public Booking markNoShow(UUID bookingId, UUID callerId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
+                        + bookingId));
+
+        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new InvalidBookingStateException("Booking is not in a no-show-able state: " + bookingId
+                    + " (status=" + booking.getStatus() + ")");
+        }
+
+        AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
+                        + booking.getAvailabilitySlotId()));
+        providerOwnership.requireOwner(slot.getProviderId(), callerId);
+
+        booking.markNoShow();
+        return bookingRepository.save(booking);
+    }
+
+    /**
+     * {@link BookingReminderJob}'s one call — marks each qualifying booking
+     * reminded and publishes {@link BookingReminderDueEvent} for
+     * notifications to actually email, in the same transaction as the
+     * write (so a crash between marking and publishing can't happen: both
+     * commit together, or neither does). Public (not package-private, like
+     * the job itself) so tests can drive it deterministically instead of
+     * waiting on the real 5-minute cadence — same reasoning as {@code
+     * SubscriptionRenewalService.renewDueSubscriptions} being public.
+     */
+    @Transactional
+    public void sendDueReminders(Instant now, Instant reminderCutoff) {
+        for (Booking booking : bookingRepository.findConfirmedBookingsStartingBeforeAndNotYetReminded(now,
+                reminderCutoff)) {
+            booking.markReminderSent(now);
+            bookingRepository.save(booking);
+            eventPublisher.publishEvent(new BookingReminderDueEvent(booking.getId(), booking.getUserId()));
+        }
     }
 }

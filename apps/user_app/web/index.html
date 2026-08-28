@@ -31,6 +31,19 @@
 
   <title>zairo</title>
   <link rel="manifest" href="manifest.json">
+
+  <!--
+    google_maps_flutter_web needs the JS Maps SDK loaded with a real key —
+    unlike Android/iOS, there's no build tool that substitutes this
+    automatically today. GOOGLE_MAPS_JS_API_KEY_PLACEHOLDER must be
+    replaced with a real key (e.g. via `sed` in the build/deploy step,
+    the same way `--base-href` is substituted) before this script tag does
+    anything real; with the placeholder still in place the JS SDK simply
+    fails to load, which only matters if GoogleMapsRenderer is actually
+    selected (see maps_providers.dart — it isn't, without a matching
+    --dart-define=MAPS_API_KEY on the Dart build).
+  -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=GOOGLE_MAPS_JS_API_KEY_PLACEHOLDER" async></script>
 </head>
 <body>
   <!--

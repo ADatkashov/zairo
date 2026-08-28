@@ -3,7 +3,9 @@ package com.zairo.factory.platform;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequest;
+import com.zairo.factory.booking.BookingDtos.CancelBookingRequest;
 import com.zairo.factory.booking.BookingDtos.CreateBookingRequest;
+import com.zairo.factory.booking.BookingService;
 import com.zairo.factory.platform.TestAuth.Registered;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
@@ -40,6 +42,9 @@ class BookingApiTests {
     @Autowired
     private TestNotifications.CapturedEmails capturedEmails;
 
+    @Autowired
+    private BookingService bookingService;
+
     @Test
     void booksAnOpenSlotThenRejectsASecondBookingForTheSameSlot() {
         Registered owner = TestAuth.registerOwner(restTemplate, "owner2@example.com");
@@ -55,7 +60,11 @@ class BookingApiTests {
         var bookingRequest = new CreateBookingRequest(customerId, serviceId, slotId, new BigDecimal("20.00"));
         ResponseEntity<Map> firstBooking = createBooking(customer, bookingRequest);
         assertThat(firstBooking.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(firstBooking.getBody().get("status")).isEqualTo("CONFIRMED");
+        // Not CONFIRMED yet — a booking starts PENDING_PAYMENT and only
+        // confirms once its payment succeeds (see ADR-0006). The slot is
+        // already claimed at this point though, which is what this test is
+        // actually about — see the rejected second booking below.
+        assertThat(firstBooking.getBody().get("status")).isEqualTo("PENDING_PAYMENT");
 
         ResponseEntity<Map> secondBooking = createBooking(customer, bookingRequest);
         assertThat(secondBooking.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
@@ -123,6 +132,9 @@ class BookingApiTests {
                 null, Map.class);
         assertThat(unauthenticated.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
 
+        // Completing requires CONFIRMED first, which requires payment.
+        payForBooking(bookingId);
+
         // A completed booking can no longer be cancelled.
         restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/complete", null, Map.class);
         ResponseEntity<Map> cancelCompleted = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/cancel",
@@ -148,6 +160,10 @@ class BookingApiTests {
         assertThat(bookingResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         UUID bookingId = UUID.fromString(bookingResponse.getBody().get("id").toString());
 
+        // Confirmation (and its notifications) now happens on successful
+        // payment, not on booking creation — see ADR-0006.
+        payForBooking(bookingId);
+
         assertThat(capturedEmails.sent).anySatisfy(email -> {
             assertThat(email.toEmail()).isEqualTo(customerEmail);
             assertThat(email.subject()).isEqualTo("Booking confirmed");
@@ -158,6 +174,35 @@ class BookingApiTests {
             assertThat(email.subject()).isEqualTo("New booking received");
             assertThat(email.body()).contains(bookingId.toString());
         });
+    }
+
+    @Test
+    void sendsABookingReminderOnceAndOnlyOnceForASlotStartingWithinTheWindow() {
+        String runId = UUID.randomUUID().toString();
+        String customerEmail = "reminder-customer-" + runId + "@example.com";
+        Registered customer = TestAuth.registerCustomer(restTemplate, customerEmail);
+        Registered owner = TestAuth.registerOwner(restTemplate, "reminder-owner-" + runId + "@example.com");
+
+        UUID providerId = createProvider(owner, "Reminder Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Reminder Service", new BigDecimal("25.00"));
+        Instant start = Instant.now().plus(30, ChronoUnit.MINUTES);
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+
+        var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("25.00"));
+        UUID bookingId = UUID.fromString(createBooking(customer, bookingRequest).getBody().get("id").toString());
+        payForBooking(bookingId);
+
+        Instant now = Instant.now();
+        bookingService.sendDueReminders(now, now.plus(1, ChronoUnit.HOURS));
+        assertThat(capturedEmails.sent).anySatisfy(email -> {
+            assertThat(email.toEmail()).isEqualTo(customerEmail);
+            assertThat(email.subject()).isEqualTo("Upcoming booking reminder");
+            assertThat(email.body()).contains(bookingId.toString());
+        });
+
+        int sentAfterFirstRun = capturedEmails.sent.size();
+        bookingService.sendDueReminders(now, now.plus(1, ChronoUnit.HOURS));
+        assertThat(capturedEmails.sent).hasSize(sentAfterFirstRun);
     }
 
     @Test
@@ -219,6 +264,70 @@ class BookingApiTests {
         assertThat(deleteBooked.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
     }
 
+    @Test
+    void cancellingWithAReasonPersistsItAndCancellingWithoutOneLeavesItNull() {
+        String runId = UUID.randomUUID().toString();
+        Registered customer = TestAuth.registerCustomer(restTemplate, "cancel-reason-customer-" + runId + "@example.com");
+        Registered owner = TestAuth.registerOwner(restTemplate, "cancel-reason-owner-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Cancel Reason Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Service", new BigDecimal("20.00"));
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+
+        // With a reason.
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+        UUID bookingId = UUID.fromString(createBooking(customer,
+                new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("20.00")))
+                .getBody().get("id").toString());
+        ResponseEntity<Map> withReason = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/cancel",
+                HttpMethod.POST, new HttpEntity<>(new CancelBookingRequest("Change of plans"),
+                        TestAuth.authHeaders(customer.accessToken())),
+                Map.class);
+        assertThat(withReason.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(withReason.getBody().get("cancellationReason")).isEqualTo("Change of plans");
+
+        // No body at all (existing clients) — still works, reason stays null.
+        UUID slotId2 = createSlot(owner, providerId, start.plus(1, ChronoUnit.HOURS), start.plus(90, ChronoUnit.MINUTES));
+        UUID bookingId2 = UUID.fromString(createBooking(customer,
+                new CreateBookingRequest(customer.userId(), serviceId, slotId2, new BigDecimal("20.00")))
+                .getBody().get("id").toString());
+        ResponseEntity<Map> noReason = restTemplate.exchange("/api/v1/bookings/" + bookingId2 + "/cancel",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(noReason.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(noReason.getBody().get("cancellationReason")).isNull();
+    }
+
+    @Test
+    void providerOwnerMarksANoShowButNotSomeoneElsesProviderOrANonConfirmedBooking() {
+        String runId = UUID.randomUUID().toString();
+        Registered customer = TestAuth.registerCustomer(restTemplate, "noshow-customer-" + runId + "@example.com");
+        Registered owner = TestAuth.registerOwner(restTemplate, "noshow-owner-" + runId + "@example.com");
+        Registered otherOwner = TestAuth.registerOwner(restTemplate, "noshow-other-owner-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "No-show Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Service", new BigDecimal("20.00"));
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+        UUID bookingId = UUID.fromString(createBooking(customer,
+                new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("20.00")))
+                .getBody().get("id").toString());
+        payForBooking(bookingId);
+
+        // A different business owner can't mark it.
+        ResponseEntity<Map> forbidden = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/no-show",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(otherOwner.accessToken())), Map.class);
+        assertThat(forbidden.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        // The real owner can.
+        ResponseEntity<Map> marked = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/no-show",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(marked.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(marked.getBody().get("status")).isEqualTo("NO_SHOW");
+
+        // Already NO_SHOW (not CONFIRMED anymore) -> rejected.
+        ResponseEntity<Map> again = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/no-show",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(again.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
     private UUID createProvider(Registered owner, String name) {
         var request = new CreateProviderRequest(owner.userId(), name, "beauty");
         ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
@@ -247,5 +356,10 @@ class BookingApiTests {
     private ResponseEntity<Map> createBooking(Registered customer, CreateBookingRequest request) {
         return restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
                 new HttpEntity<>(request, TestAuth.authHeaders(customer.accessToken())), Map.class);
+    }
+
+    /** Confirms a PENDING_PAYMENT booking — the mock provider always succeeds synchronously. */
+    private ResponseEntity<Map> payForBooking(UUID bookingId) {
+        return restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments", null, Map.class);
     }
 }

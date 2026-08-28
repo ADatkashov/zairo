@@ -72,6 +72,8 @@ class ReviewApiTests {
                 reviewRequest, Map.class);
         assertThat(tooEarly.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
 
+        // Completing requires CONFIRMED first, which requires payment (ADR-0006).
+        restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments", null, Map.class);
         ResponseEntity<Map> completed = restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/complete",
                 null, Map.class);
         assertThat(completed.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -95,5 +97,68 @@ class ReviewApiTests {
                 Map.class);
         assertThat(fetched.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(fetched.getBody().get("comment")).isEqualTo("Great massage!");
+    }
+
+    @Test
+    void onlyTheReviewedProvidersOwnerCanReplyAndReplyingAgainOverwrites() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "reply-owner-" + runId + "@example.com");
+        Registered otherOwner = TestAuth.registerOwner(restTemplate, "reply-other-owner-" + runId + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "reply-customer-" + runId + "@example.com");
+
+        var providerRequest = new CreateProviderRequest(owner.userId(), "Reply Salon " + runId, "beauty");
+        UUID providerId = UUID.fromString(restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
+                new HttpEntity<>(providerRequest, TestAuth.authHeaders(owner.accessToken())), Map.class).getBody()
+                .get("id").toString());
+
+        var serviceRequest = new CreateServiceRequest("Reply Service", 30, new BigDecimal("20.00"), "USD");
+        UUID serviceId = UUID.fromString(restTemplate.exchange("/api/v1/providers/" + providerId + "/services",
+                HttpMethod.POST, new HttpEntity<>(serviceRequest, TestAuth.authHeaders(owner.accessToken())),
+                Map.class).getBody().get("id").toString());
+
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        var slotRequest = new CreateAvailabilitySlotRequest(start, start.plus(30, ChronoUnit.MINUTES));
+        UUID slotId = UUID.fromString(restTemplate.exchange("/api/v1/providers/" + providerId
+                + "/availability-slots", HttpMethod.POST,
+                new HttpEntity<>(slotRequest, TestAuth.authHeaders(owner.accessToken())), Map.class).getBody()
+                .get("id").toString());
+
+        var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("20.00"));
+        UUID bookingId = UUID.fromString(restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
+                new HttpEntity<>(bookingRequest, TestAuth.authHeaders(customer.accessToken())), Map.class).getBody()
+                .get("id").toString());
+        restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments", null, Map.class);
+        restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/complete", null, Map.class);
+        UUID reviewId = UUID.fromString(restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/reviews",
+                new CreateReviewRequest(4, "Good, could be faster"), Map.class).getBody().get("id").toString());
+
+        var replyRequest = Map.of("reply", "Thanks for the feedback!");
+
+        // No token -> 401.
+        ResponseEntity<Map> unauthenticated = restTemplate.postForEntity("/api/v1/reviews/" + reviewId + "/reply",
+                replyRequest, Map.class);
+        assertThat(unauthenticated.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        // A different business owner can't reply.
+        ResponseEntity<Map> forbidden = restTemplate.exchange("/api/v1/reviews/" + reviewId + "/reply",
+                HttpMethod.POST, new HttpEntity<>(replyRequest, TestAuth.authHeaders(otherOwner.accessToken())),
+                Map.class);
+        assertThat(forbidden.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        // The real owner can.
+        ResponseEntity<Map> replied = restTemplate.exchange("/api/v1/reviews/" + reviewId + "/reply",
+                HttpMethod.POST, new HttpEntity<>(replyRequest, TestAuth.authHeaders(owner.accessToken())),
+                Map.class);
+        assertThat(replied.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(replied.getBody().get("businessReply")).isEqualTo("Thanks for the feedback!");
+        assertThat(replied.getBody().get("businessReplyAt")).isNotNull();
+
+        // Replying again overwrites, not rejected as a duplicate.
+        var secondReplyRequest = Map.of("reply", "Update: we fixed our scheduling!");
+        ResponseEntity<Map> repliedAgain = restTemplate.exchange("/api/v1/reviews/" + reviewId + "/reply",
+                HttpMethod.POST, new HttpEntity<>(secondReplyRequest, TestAuth.authHeaders(owner.accessToken())),
+                Map.class);
+        assertThat(repliedAgain.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(repliedAgain.getBody().get("businessReply")).isEqualTo("Update: we fixed our scheduling!");
     }
 }

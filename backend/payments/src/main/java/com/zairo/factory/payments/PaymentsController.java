@@ -29,16 +29,18 @@ public class PaymentsController {
     }
 
     @Operation(summary = "Charge a booking", description = """
-            Charges the booking's total price through the (mock, local-dev) payment provider. \
-            **A declined charge is still a 201** — check the response body's `status` field \
-            (SUCCEEDED/FAILED), not just the HTTP status: a card decline is a normal business outcome, \
-            not a server error. Retrying after a FAILED charge reuses the same Payment row (and the same \
-            `id` as the idempotency key sent to the provider) rather than creating a new one — safe to \
-            retry the exact same request.
+            Charges the booking's total price through the configured payment provider. \
+            **A declined/pending charge is still a 201** — check the response body's `status` field, not just \
+            the HTTP status: SUCCEEDED (mock, or a real provider confirming instantly) confirms the booking \
+            right away; PENDING (a real, redirect-based provider) means nothing is confirmed yet — redirect the \
+            customer to `checkoutUrl` and wait for the webhook; FAILED is a normal business outcome (declined \
+            card), not a server error, and the booking stays open for a retry. Retrying after a FAILED charge \
+            reuses the same Payment row (and the same `id` as the idempotency key sent to the provider) rather \
+            than creating a new one — safe to retry the exact same request.
 
             **Workflow**: `Create booking -> Charge -> ...` — the booking must exist first.""")
-    @ApiResponse(responseCode = "201", description = "Charge attempted — see `status` in the body for the "
-            + "real outcome")
+    @ApiResponse(responseCode = "201", description = "Charge attempted — see `status` (and `checkoutUrl` if "
+            + "PENDING) in the body for the real outcome")
     @ApiResponse(responseCode = "404", ref = "NotFound", description = "The booking doesn't exist.")
     @ApiResponse(responseCode = "409", description = "This booking already has a payment that isn't FAILED "
             + "(so there's nothing to retry).",

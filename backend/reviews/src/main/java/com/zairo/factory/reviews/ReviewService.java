@@ -1,8 +1,11 @@
 package com.zairo.factory.reviews;
 
+import com.zairo.factory.booking.AvailabilitySlot;
+import com.zairo.factory.booking.AvailabilitySlotRepository;
 import com.zairo.factory.booking.Booking;
 import com.zairo.factory.booking.BookingRepository;
 import com.zairo.factory.booking.BookingStatus;
+import com.zairo.factory.providers.ProviderOwnership;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -15,10 +18,15 @@ public class ReviewService {
 
     private final ReviewRepository reviewRepository;
     private final BookingRepository bookingRepository;
+    private final AvailabilitySlotRepository availabilitySlotRepository;
+    private final ProviderOwnership providerOwnership;
 
-    public ReviewService(ReviewRepository reviewRepository, BookingRepository bookingRepository) {
+    public ReviewService(ReviewRepository reviewRepository, BookingRepository bookingRepository,
+            AvailabilitySlotRepository availabilitySlotRepository, ProviderOwnership providerOwnership) {
         this.reviewRepository = reviewRepository;
         this.bookingRepository = bookingRepository;
+        this.availabilitySlotRepository = availabilitySlotRepository;
+        this.providerOwnership = providerOwnership;
     }
 
     @Transactional
@@ -41,6 +49,31 @@ public class ReviewService {
         }
 
         Review review = new Review(UUID.randomUUID(), bookingId, rating, comment, Instant.now());
+        return reviewRepository.save(review);
+    }
+
+    /**
+     * Only the reviewed booking's provider owner may reply — resolved the
+     * same way {@code BookingService.markNoShow} resolves it (booking ->
+     * availability slot -> provider), since a review has no direct
+     * providerId of its own (same bounded-context boundary reasoning as
+     * booking's own doc comment).
+     */
+    @Transactional
+    public Review replyToReview(UUID reviewId, UUID callerId, String reply) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Review not found: "
+                        + reviewId));
+
+        Booking booking = bookingRepository.findById(review.getBookingId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
+                        + review.getBookingId()));
+        AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
+                        + booking.getAvailabilitySlotId()));
+        providerOwnership.requireOwner(slot.getProviderId(), callerId);
+
+        review.addBusinessReply(reply, Instant.now());
         return reviewRepository.save(review);
     }
 }

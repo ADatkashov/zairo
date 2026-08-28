@@ -13,4 +13,11 @@ dependencies {
     // repository rather than trusting client-supplied state. One-directional
     // (reviews -> booking), no cycle.
     implementation(project(":booking"))
+
+    // Replying to a review needs "does this caller own the reviewed
+    // booking's provider" (ProviderOwnership) and "who is this caller"
+    // (CurrentUser) — same two dependencies booking itself already takes
+    // for its own owner-only endpoints (markNoShow, etc.), same reasoning.
+    implementation(project(":providers"))
+    implementation(project(":auth"))
 }
