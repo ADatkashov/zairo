@@ -4,6 +4,15 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- Required by the geolocator plugin (DeviceLocationService) before it
+	     may request location permission at all — iOS silently refuses the
+	     permission prompt without this. -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Factory uses your location to show nearby businesses and distances to them.</string>
+	<!-- Sourced from the MAPS_API_KEY build setting (see Debug/Release.xcconfig)
+	     — never hardcoded, empty by default. Read in AppDelegate.swift. -->
+	<key>MAPS_API_KEY</key>
+	<string>$(MAPS_API_KEY)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

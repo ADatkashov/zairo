@@ -28,6 +28,13 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // Fills the com.google.android.geo.API_KEY manifest placeholder
+        // (see AndroidManifest.xml) — env var only, never committed. Empty
+        // by default: GoogleMapsRenderer is never selected on the Dart
+        // side without a matching --dart-define=MAPS_API_KEY, so an empty
+        // native key here is a safe default, not a broken build.
+        manifestPlaceholders["mapsApiKey"] = System.getenv("MAPS_API_KEY") ?: ""
     }
 
     buildTypes {
