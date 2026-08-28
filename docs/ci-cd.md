@@ -151,6 +151,21 @@ workflow run's summary page, the **Artifacts** section lists:
 - `business_admin-apk-debug-signed`
 - `platform-api-bootjar`
 
+**`MAPS_API_KEY` secret (optional)** — if set (**GitHub → Settings →
+Secrets and variables → Actions → New repository secret**, name
+`MAPS_API_KEY`, value a real Google Maps API key restricted to
+`com.zairo` — see `docs/PRODUCT_PRODUCTION_ROADMAP.md` section 13, 0.5),
+`user_app`'s APK renders a real Google Map instead of the placeholder
+(`GoogleMapsRenderer` vs `MockMapRenderer`, see
+`apps/user_app/lib/features/maps/presentation/providers/maps_providers.dart`).
+Unset is a safe default, not a broken build — the APK still builds and
+just keeps showing the placeholder. Restricting the key by SHA-1
+fingerprint matters here specifically: this workflow's `flutter build apk
+--release` is still debug-signed (see the note above), so the fingerprint
+to register in Google Cloud Console is the standard Android debug
+keystore's — regenerate/re-register it once real release signing (§9.4)
+replaces debug signing.
+
 each downloadable as a zip, retained 14 days. `backend-test-reports`
 also appears here, but only on a `backend-ci.yml` run that failed.
 
