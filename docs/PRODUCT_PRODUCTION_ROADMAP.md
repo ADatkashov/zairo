@@ -535,7 +535,7 @@ Lightweight production security review — код-проверено, не че�
 
 - **Real map rendering** — если не попало в Phase 0 по срокам.
 - **Booking-reminder уведомление** (за час до брони) + payment-success/refund-уведомления клиенту (сегодня есть только для booking confirm/cancel и subscription fail).
-- **Ответ бизнеса на отзыв** — управление репутацией сейчас невозможно в принципе.
+- ~~**Ответ бизнеса на отзыв**~~ — ✅ **Сделано (2026-08-28)**: `POST /api/v1/reviews/{id}/reply`, только владелец отзываемого провайдера (403 иначе), повторный ответ перезаписывает прежний.
 - **Platform Dashboard v1** — Users/Businesses/Subscriptions/Bookings/Payments/Revenue-MRR, всё live-query (раздел 9), без новой модели данных.
 - ~~**Failed-refund видимость для админа**~~ — ✅ **Сделано (2026-08-28)**: `GET /api/v1/platform/payments/failed-refunds` (PLATFORM_ADMIN/PLATFORM_SUPPORT, read-only), список `Payment` в статусе `REFUND_FAILED` — то, что раньше было видно только в логе.
 - ~~**Базовый 1:1 текстовый чат бизнес↔клиент**~~ — **решено: включить в Phase 1** (2026-08-28), не откладывать в Can Wait. Только текстовые сообщения, без вложений/групп/read receipts — это остаётся Can Wait.

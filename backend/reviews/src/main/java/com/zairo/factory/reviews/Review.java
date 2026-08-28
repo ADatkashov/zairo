@@ -25,6 +25,13 @@ public class Review {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    /** The reviewed business's own reply — set by the provider owner (see ReviewService.replyToReview), never the reviewer. */
+    @Column(name = "business_reply")
+    private String businessReply;
+
+    @Column(name = "business_reply_at")
+    private Instant businessReplyAt;
+
     protected Review() {
     }
 
@@ -54,5 +61,19 @@ public class Review {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public String getBusinessReply() {
+        return businessReply;
+    }
+
+    public Instant getBusinessReplyAt() {
+        return businessReplyAt;
+    }
+
+    /** Overwrites any earlier reply — a business editing its own reply is a normal case, not an error. */
+    void addBusinessReply(String reply, Instant now) {
+        this.businessReply = reply;
+        this.businessReplyAt = now;
     }
 }
