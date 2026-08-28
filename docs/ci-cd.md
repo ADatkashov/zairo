@@ -88,9 +88,9 @@ did that for whatever got merged); it only builds outputs.
   apk --release`, uploads `app-release.apk` as
   `<app>-apk-debug-signed`. That name is accurate, not decorative: both
   apps' `android/app/build.gradle.kts` point the `release` build type at
-  `signingConfigs.getByName("debug")` — there is no release keystore in
-  this repo. The APK is real and installable, but it is **debug-signed**,
-  not something to hand to the Play Store. See §9.
+  `signingConfigs.getByName("debug")`. The APK is real and installable,
+  but it is **debug-signed** — fine for internal QA, not something to hand
+  to the Play Store. For a real release-signed APK/AAB, see §10.
 - `backend-jar` — `./gradlew :platform-api:bootJar`, uploads the
   resulting executable jar (excluding the `-plain.jar` Spring Boot's
   plugin also leaves in `build/libs/`, which is classes-only and not
@@ -121,19 +121,21 @@ downloadable from there" is the whole distribution mechanism today.
 
 ## 6. Where secrets should live
 
-**None exist yet, and none were added by this change.** Every credential
-these workflows currently touch (the JWT secrets and MinIO credentials
-in `backend/platform-api/src/main/resources/application.yml`) is already
-a dev-only value committed in plaintext, by this repo's own explicit
-design — see that file's comments ("dev-only secret, fine to commit —
-must move to an env var / secrets manager before any real deployment").
-CI reuses those same dev values; nothing new needed hardcoding.
+The Android release-signing keystore and its passwords (§10) are the
+first real secrets this repo's CI uses — six of them, in **GitHub →
+Settings → Secrets and variables → Actions**, referenced as
+`${{ secrets.NAME }}` and never in a workflow file, a `.env`, or source.
+Everything else these workflows touch (the JWT secrets and MinIO
+credentials in `backend/platform-api/src/main/resources/application.yml`)
+is still a dev-only value committed in plaintext, by this repo's own
+explicit design — see that file's comments ("dev-only secret, fine to
+commit — must move to an env var / secrets manager before any real
+deployment"). CI reuses those same dev values; nothing new needed
+hardcoding there.
 
-When real secrets do show up (a release-signing keystore, a production
-JWT secret, a container registry token, a deploy credential), they
-belong in **GitHub → Settings → Secrets and variables → Actions**,
-referenced as `${{ secrets.NAME }}` — never in a workflow file, a
-`.env`, or source. Once real `test`/`staging`/`production` targets
+When the next real secret shows up (a production JWT secret, a container
+registry token, a deploy credential), it belongs in the same place. Once
+real `test`/`staging`/`production` targets
 exist, prefer **GitHub Environments** (Settings → Environments) over
 repository-wide secrets: each environment gets its own secret values
 (so a `staging` deploy job physically cannot read a `production`
@@ -181,10 +183,11 @@ also appears here, but only on a `backend-ci.yml` run that failed.
   (Cloud Native Buildpacks — no Dockerfile needed), so adding a
   container image is a smaller lift than "write a Dockerfile from
   scratch" whenever it's actually needed.
-- **No release-signed Android build / no AAB.** Play Store submission
-  needs a real upload keystore and `signingConfigs.release`, neither of
-  which exists. Today's APKs are debug-signed, install-only artifacts
-  (see `build-artifacts.yml`'s description above).
+- ~~No release-signed Android build / no AAB.~~ **Done — see §10.**
+  `android-release.yml` produces a real release-signed APK and AAB on
+  manual dispatch. `build-artifacts.yml`'s automatic per-push APK stays
+  debug-signed on purpose (see its own description above) — that one is
+  for quick internal QA, not something to hand to the Play Store.
 - **No iOS build.** Both apps have an `ios/` directory, but iOS builds
   require a macOS runner (`macos-latest`) and code signing
   (Apple Developer certificate + provisioning profile) — neither is set
@@ -248,21 +251,139 @@ building this, not guessed at:
    for everything below the "Docker Image" box in the target pipeline —
    right now there is nothing to deploy *to* a `test` environment even
    if one existed.
-4. **Android release signing** — generate an upload keystore, store it
-   (base64) plus its passwords as repo/environment secrets
-   (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
-   `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` are the conventional
-   names), wire `signingConfigs.release` in both apps'
-   `android/app/build.gradle.kts`. Only after that does an AAB build
-   (for Play Store) become meaningful — building one today would still
-   just be debug-signed, same as the current APK.
+4. ~~**Android release signing**~~ **Done — see §10.**
 5. **GitHub Environments for `test` → `staging` → `production`**, each
    with its own secrets and (for `staging`/`production`) a required
    reviewer, once there's an actual place each of those points at. This
    is where the target pipeline's bottom three boxes become real —
    deliberately not built now, per §8.
 
-## 10. Postman collection (dev tool, not CI)
+## 10. Android release signing
+
+A real, Play-Store-eligible release build now exists, kept deliberately
+separate from the always-on `build-artifacts.yml` pipeline (see §8's
+note): `android-release.yml`, triggered manually
+(**Actions → Android Release → Run workflow**, pick `both` or one app).
+It produces a **release-signed APK and AAB** and publishes both as a
+**GitHub Release** — a permanent page with a stable download link,
+openable straight from a phone browser (repo → **Releases** tab, or the
+link the workflow run prints). Unlike `build-artifacts.yml`'s workflow-run
+artifacts, a GitHub Release never expires and isn't zipped.
+
+### How it works
+
+`apps/*/android/app/build.gradle.kts` reads `android/key.properties` (one
+level up from `app/`) if it exists, and builds a real
+`signingConfigs.release` from it. If that file is **absent**, the build
+falls back to the debug keystore exactly as before — a checkout with no
+`key.properties` still builds `flutter build apk --release` /
+`flutter run --release` unchanged, so nothing about local dev or the
+existing `build-artifacts.yml` job changed.
+
+`key.properties` is never committed (`.gitignore` excludes it, plus every
+`*.jks`/`*.keystore` file) — it's either hand-created locally by a dev
+(see below), or written by `android-release.yml` itself from GitHub
+Secrets, immediately before the build and deleted again immediately after
+(its `Remove decoded keystore and key.properties` step, `if: always()`).
+
+**One shared keystore, two key aliases** — one `ANDROID_KEYSTORE_BASE64`
+secret covers both apps; `user_app` and `business_admin` each sign with
+their own alias inside it, so a compromised/rotated alias for one app
+doesn't require touching the other's.
+
+### Required GitHub Secrets
+
+Add these under **repo → Settings → Secrets and variables → Actions → New
+repository secret**. All six are required before `android-release.yml`
+can succeed — it checks for them explicitly and fails with a clear
+`::error::` naming whichever are missing, rather than an opaque Gradle
+signing failure.
+
+| Secret name | Value |
+|---|---|
+| `ANDROID_KEYSTORE_BASE64` | The keystore file, base64-encoded, as one line |
+| `ANDROID_KEYSTORE_PASSWORD` | The keystore's store password (shared by both aliases) |
+| `ANDROID_KEY_ALIAS_USER_APP` | Key alias for `user_app` inside the keystore |
+| `ANDROID_KEY_PASSWORD_USER_APP` | That alias's key password |
+| `ANDROID_KEY_ALIAS_BUSINESS_ADMIN` | Key alias for `business_admin` inside the keystore |
+| `ANDROID_KEY_PASSWORD_BUSINESS_ADMIN` | That alias's key password |
+
+### Generating a keystore from scratch
+
+Only needed once (or if the keystore is ever lost/rotated — see the
+warning below). Requires a JDK (`keytool` ships with it). One keystore,
+two aliases:
+
+```bash
+keytool -genkeypair -v \
+  -keystore zairo-release-upload.jks \
+  -storetype JKS \
+  -alias user_app_upload \
+  -keyalg RSA -keysize 2048 -validity 10000 \
+  -dname "CN=Zairo User App, OU=Factory, O=Zairo, L=Almaty, ST=Almaty, C=KZ"
+
+keytool -genkeypair -v \
+  -keystore zairo-release-upload.jks \
+  -storetype JKS \
+  -alias business_admin_upload \
+  -keyalg RSA -keysize 2048 -validity 10000 \
+  -dname "CN=Zairo Business Admin, OU=Factory, O=Zairo, L=Almaty, ST=Almaty, C=KZ"
+```
+
+(`-validity 10000` ≈ 27 years — Google requires an upload key's
+certificate to stay valid well past 2033; the `-dname` values are cosmetic
+certificate metadata, not app-facing, safe to customize or leave as-is.)
+Both commands prompt for a store password on first use, then a key
+password per alias — pick strong, distinct values and record them; they
+become `ANDROID_KEYSTORE_PASSWORD` and the two `ANDROID_KEY_PASSWORD_*`
+secrets above.
+
+Then base64-encode it for the `ANDROID_KEYSTORE_BASE64` secret:
+
+```bash
+base64 -w0 zairo-release-upload.jks > zairo-release-upload.jks.base64
+```
+
+Paste the resulting single-line file's contents as the secret value.
+
+**⚠️ Back this keystore up somewhere durable outside GitHub (a password
+manager, encrypted storage) the moment it's created.** If it's lost, there
+is no way to publish an *update* to an app already on the Play Store under
+the same listing — Google ties every release of a given `applicationId` to
+its original upload key. GitHub Secrets are write-only (nothing, including
+this workflow, can ever read one back out to display it) — they are not a
+backup.
+
+### Building a signed release locally (optional)
+
+A developer can build a real release-signed APK/AAB on their own machine
+without touching CI or any secret above: create
+`apps/<app>/android/key.properties` (gitignored) pointing at their own
+copy of the keystore:
+
+```properties
+storeFile=/absolute/or/relative/path/to/zairo-release-upload.jks
+storePassword=...
+keyAlias=user_app_upload
+keyPassword=...
+```
+
+then `flutter build apk --release` / `flutter build appbundle --release`
+as usual — no other setup needed, since `build.gradle.kts` reads this file
+exactly the same way CI does.
+
+### Getting the APK onto a phone
+
+1. **Actions** tab → **Android Release** (left sidebar) → **Run workflow**
+   → pick the branch and which app(s) → **Run workflow**.
+2. Once it finishes, open the repo's **Releases** page (or the direct link
+   printed at the end of the `Publish GitHub Release` step) on the phone.
+3. Tap the `.apk` asset to download it, then open the downloaded file to
+   install (Android will prompt to allow installs from that source the
+   first time). The `.aab` asset isn't installable directly — it's for
+   uploading to Google Play Console.
+
+## 11. Postman collection (dev tool, not CI)
 
 Not a workflow, not something CI touches — noted here since it's the
 same "don't hand-maintain what's already generated" spirit as §9.1.
