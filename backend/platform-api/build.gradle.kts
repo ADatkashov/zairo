@@ -38,6 +38,7 @@ dependencies {
     implementation(project(":catalog"))
     implementation(project(":provider-insights"))
     implementation(project(":platform-insights"))
+    implementation(project(":messaging"))
 
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.0")
     implementation("org.springframework.boot:spring-boot-starter-web")
