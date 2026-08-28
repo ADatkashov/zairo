@@ -31,6 +31,11 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     List<Booking> findConfirmedBookingsStartingBeforeAndNotYetReminded(@Param("now") Instant now,
             @Param("reminderCutoff") Instant reminderCutoff);
 
+    /** The platform dashboard's today/week/month and status-breakdown tiles — see platforminsights.PlatformInsightsService. */
+    long countByCreatedAtBetween(Instant start, Instant end);
+
+    long countByStatus(BookingStatus status);
+
     /**
      * Every booking ever made against this provider, regardless of status —
      * same join shape as {@link #countByProviderIdAndCreatedAtBetween},
