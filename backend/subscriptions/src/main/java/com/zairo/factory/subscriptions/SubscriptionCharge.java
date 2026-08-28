@@ -1,6 +1,7 @@
 package com.zairo.factory.subscriptions;
 
 import com.zairo.factory.money.Money;
+import com.zairo.factory.paymentprovider.PaymentProviderName;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
@@ -16,12 +17,12 @@ import java.util.UUID;
 
 /**
  * One row per billing-period charge attempt — this entity's id is the
- * idempotency key handed to {@code PaymentProvider.charge(...)}, exactly the
- * same guarantee {@code payments.Payment} already relies on (see
- * {@code PaymentProvider}'s own doc comment). Not a reuse of {@code Payment}
- * itself: that entity's {@code bookingId} column is {@code not null unique}
- * — structurally 1:1 with a booking, not reusable for a recurring
- * subscription charge.
+ * idempotency key handed to {@code PaymentProvider.createRecurringPayment}/
+ * {@code chargeRecurring}, exactly the same guarantee {@code
+ * payments.Payment} already relies on (see {@code PaymentProvider}'s own
+ * doc comment). Not a reuse of {@code Payment} itself: that entity's
+ * {@code bookingId} column is {@code not null unique} — structurally 1:1
+ * with a booking, not reusable for a recurring subscription charge.
  */
 @Entity
 @Table(name = "subscription_charge")
@@ -44,6 +45,22 @@ public class SubscriptionCharge {
     @Column(nullable = false)
     private SubscriptionChargeStatus status;
 
+    /** Which PaymentProvider implementation handled this charge — see payments.Payment's identical field. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PaymentProviderName provider;
+
+    /**
+     * Freedom Pay's {@code pg_recurring_profile_id} — returned only on the
+     * <em>first</em> (upgrade) charge's webhook, once a recurring profile
+     * exists (see {@code SubscriptionService.upgradeToPro}). Carried
+     * forward onto every later renewal charge row so {@code
+     * SubscriptionRenewalService.chargeForRenewal} knows which profile to
+     * charge — see ADR-0006's Subscription Architecture.
+     */
+    @Column(name = "recurring_profile_id")
+    private String recurringProfileId;
+
     @Column(name = "provider_reference")
     private String providerReference;
 
@@ -59,11 +76,14 @@ public class SubscriptionCharge {
     protected SubscriptionCharge() {
     }
 
-    public SubscriptionCharge(UUID id, UUID subscriptionId, BigDecimal amount, String currency, Instant createdAt) {
+    public SubscriptionCharge(UUID id, UUID subscriptionId, BigDecimal amount, String currency,
+            PaymentProviderName provider, String recurringProfileId, Instant createdAt) {
         this.id = id;
         this.subscriptionId = subscriptionId;
         this.amount = new Money(amount, currency);
         this.status = SubscriptionChargeStatus.PENDING;
+        this.provider = provider;
+        this.recurringProfileId = recurringProfileId;
         this.createdAt = createdAt;
         this.updatedAt = createdAt;
     }
@@ -88,6 +108,18 @@ public class SubscriptionCharge {
         return status;
     }
 
+    public PaymentProviderName getProvider() {
+        return provider;
+    }
+
+    public String getRecurringProfileId() {
+        return recurringProfileId;
+    }
+
+    public String getProviderReference() {
+        return providerReference;
+    }
+
     public String getFailureReason() {
         return failureReason;
     }
@@ -101,6 +133,12 @@ public class SubscriptionCharge {
     void markFailed(String failureReason, Instant now) {
         this.status = SubscriptionChargeStatus.FAILED;
         this.failureReason = failureReason;
+        this.updatedAt = now;
+    }
+
+    /** Set once a webhook confirms the recurring profile Freedom Pay created for this (first, upgrade) charge. */
+    void assignRecurringProfileId(String recurringProfileId, Instant now) {
+        this.recurringProfileId = recurringProfileId;
         this.updatedAt = now;
     }
 }

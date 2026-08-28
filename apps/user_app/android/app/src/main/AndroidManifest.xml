@@ -1,8 +1,19 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Needed by DeviceLocationService (geolocator) — "coarse" alone is
+         enough for city-level search ranking, "fine" is what a real map
+         screen's blue dot needs (see GoogleMapsRenderer's myLocationEnabled). -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <application
         android:label="zairo"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
+        <!-- Real key comes from the MAPS_API_KEY env var, read by
+             android/app/build.gradle.kts into this manifest placeholder —
+             never hardcoded here. Empty/missing means GoogleMapsRenderer
+             is never selected anyway (see maps_providers.dart), so an
+             empty key here is a safe default, not a broken one. -->
+        <meta-data android:name="com.google.android.geo.API_KEY" android:value="${mapsApiKey}"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"

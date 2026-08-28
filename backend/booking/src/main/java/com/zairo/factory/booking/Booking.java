@@ -10,6 +10,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
@@ -57,6 +58,27 @@ public class Booking {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    /** Only ever set by {@link #markCancelled(String)} — null for every other status, including a reasonless cancel. */
+    @Column(name = "cancellation_reason")
+    private String cancellationReason;
+
+    /** Set once {@link BookingReminderJob} has sent the "your booking is in an hour" reminder — guards against sending it twice. */
+    @Column(name = "reminder_sent_at")
+    private Instant reminderSentAt;
+
+    /**
+     * Optimistic lock — same reasoning as {@code AvailabilitySlot}/{@code
+     * payments.Payment}: guards against {@link
+     * com.zairo.factory.booking.BookingService#confirmAfterPayment} and
+     * {@link com.zairo.factory.booking.BookingService#cancelUnpaidBooking}
+     * racing each other (a late webhook confirming a booking the sweep job
+     * is simultaneously timing out, or vice versa) under concurrent
+     * transactions — without this, both could read PENDING_PAYMENT before
+     * either commits and silently double-process it.
+     */
+    @Version
+    private int version;
+
     protected Booking() {
     }
 
@@ -103,11 +125,33 @@ public class Booking {
         return createdAt;
     }
 
+    public String getCancellationReason() {
+        return cancellationReason;
+    }
+
+    public Instant getReminderSentAt() {
+        return reminderSentAt;
+    }
+
+    void markReminderSent(Instant now) {
+        this.reminderSentAt = now;
+    }
+
+    /** Payment succeeded — PENDING_PAYMENT is the only status this is ever called from, see BookingService. */
+    void markConfirmed() {
+        this.status = BookingStatus.CONFIRMED;
+    }
+
     void markCompleted() {
         this.status = BookingStatus.COMPLETED;
     }
 
-    void markCancelled() {
+    void markCancelled(String reason) {
         this.status = BookingStatus.CANCELLED;
+        this.cancellationReason = reason;
+    }
+
+    void markNoShow() {
+        this.status = BookingStatus.NO_SHOW;
     }
 }

@@ -1,0 +1,73 @@
+version: 2
+
+# Conservative on purpose: weekly, low PR limits, and every update PRs
+# against `develop` — this repo's active branch (see CLAUDE.md). `test`
+# and `master` only ever receive changes via a manually-created,
+# manually-merged PR from the branch below it — Dependabot must not be
+# the one opening those.
+updates:
+  # Keeps the actions pinned in .github/workflows/*.yml (checkout,
+  # setup-java, subosito/flutter-action, setup-gradle, upload-artifact,
+  # cache) patched — the one ecosystem here with essentially no risk of
+  # a breaking update landing unnoticed, since CI itself would catch it.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: develop
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # backend/ — one Gradle multi-module build, one lockfile-equivalent
+  # (backend/gradle/wrapper + each module's build.gradle.kts).
+  - package-ecosystem: "gradle"
+    directory: "/backend"
+    target-branch: develop
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # One entry per Flutter package/app — each has its own pubspec.yaml
+  # and committed pubspec.lock (see the "Flutter workspace" section of
+  # the root README), so they're independent Dependabot targets, not
+  # one workspace-wide update.
+  - package-ecosystem: "pub"
+    directory: "/apps/user_app"
+    target-branch: develop
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+
+  - package-ecosystem: "pub"
+    directory: "/apps/business_admin"
+    target-branch: develop
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+
+  - package-ecosystem: "pub"
+    directory: "/packages/core_network"
+    target-branch: develop
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 2
+
+  - package-ecosystem: "pub"
+    directory: "/packages/core_region"
+    target-branch: develop
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 2
+
+  - package-ecosystem: "pub"
+    directory: "/packages/core_storage"
+    target-branch: develop
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 2
+
+  - package-ecosystem: "pub"
+    directory: "/packages/core_ui"
+    target-branch: develop
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 2
