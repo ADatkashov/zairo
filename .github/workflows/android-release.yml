@@ -41,18 +41,43 @@ env:
   FLUTTER_VERSION: "3.47.0"
 
 jobs:
+  # A job's `if:` cannot see the `matrix` context (a documented GitHub
+  # Actions limitation — matrix is only visible inside a matrix job's own
+  # name/steps/env, not in its own `if:`), so filtering "only build the
+  # app(s) the user picked" can't be a job-level `if: matrix.app == ...`.
+  # This job computes the filtered matrix as JSON instead; `release` below
+  # consumes it via `fromJSON`, with no `if:` needed at all.
+  plan:
+    name: plan
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.compute.outputs.matrix }}
+    steps:
+      - name: Compute matrix from the app input
+        id: compute
+        env:
+          APP: ${{ inputs.app }}
+        run: |
+          case "$APP" in
+            user_app)
+              matrix='{"include":[{"app":"user_app","secret_suffix":"USER_APP"}]}'
+              ;;
+            business_admin)
+              matrix='{"include":[{"app":"business_admin","secret_suffix":"BUSINESS_ADMIN"}]}'
+              ;;
+            *)
+              matrix='{"include":[{"app":"user_app","secret_suffix":"USER_APP"},{"app":"business_admin","secret_suffix":"BUSINESS_ADMIN"}]}'
+              ;;
+          esac
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
   release:
     name: release (${{ matrix.app }})
+    needs: plan
     runs-on: ubuntu-latest
-    if: ${{ inputs.app == 'both' || inputs.app == matrix.app }}
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - app: user_app
-            secret_suffix: USER_APP
-          - app: business_admin
-            secret_suffix: BUSINESS_ADMIN
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
