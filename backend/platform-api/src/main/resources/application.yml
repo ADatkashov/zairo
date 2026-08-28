@@ -60,6 +60,9 @@ app:
     # Short-lived on purpose — a reset code is meant to be used within
     # minutes of requesting it, not carried around like a refresh token.
     password-reset-token-ttl-minutes: 60
+    # Brute-force protection on /auth/login — see LoginAttemptLimiter.
+    login-attempt-limit: 5
+    login-lockout-minutes: 15
   platform:
     # Single-market MVP assumption (Factory Blueprint §6) — no per-service
     # currency lookup yet. Booking is the one place this is read (Payment
