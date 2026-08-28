@@ -25,6 +25,13 @@
 # Local machine configuration — never commit
 **/local.properties
 
+# Android release signing — the keystore and its passwords never belong in
+# git, whether created locally by a dev or decoded from a GitHub Secret in
+# CI (see docs/ci-cd.md's "Android release signing" section).
+**/android/key.properties
+**/*.jks
+**/*.keystore
+
 # Scratch space for local-only artifacts not ready/meant for git yet
 # (e.g. a hand-exported Postman collection) — see docs/ci-cd.md's note
 # on generating one from OpenAPI instead of hand-maintaining an export.
