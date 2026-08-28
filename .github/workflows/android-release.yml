@@ -16,6 +16,18 @@ on:
         type: choice
         options: [both, user_app, business_admin]
         default: both
+      api_base_url:
+        description: >-
+          Backend URL to bake in (optional). Needed to test on a physical
+          device over Wi-Fi — a real phone can't reach `localhost` or the
+          Android-emulator-only `10.0.2.2`. Point it at your computer's LAN
+          IP where the backend is running, e.g.
+          http://192.168.1.23:8080/api/v1 (include the /api/v1 suffix).
+          Leave blank to keep the app's normal auto-detected default (fine
+          for an emulator, not for a physical device).
+        required: false
+        type: string
+        default: ""
 
 # To create a GitHub Release and attach files to it. Every other workflow
 # in this repo stays on the default `contents: read` — this is the one
@@ -119,22 +131,34 @@ jobs:
           version_name=$(grep '^version:' pubspec.yaml | sed 's/version: *//' | cut -d'+' -f1 | tr -d '[:space:]')
           echo "name=$version_name" >> "$GITHUB_OUTPUT"
 
-      # Same MAPS_API_KEY wiring as build-artifacts.yml's android-apk job
+      # MAPS_API_KEY: same wiring as build-artifacts.yml's android-apk job
       # (see that file's comment) — has to reach the build both as a plain
       # env var (build.gradle.kts's native manifest placeholder) and as
       # --dart-define (maps_providers.dart's renderer selection). Only
       # relevant for user_app; business_admin ignores it harmlessly.
+      #
+      # API_BASE_URL: from this workflow's own `api_base_url` input (see
+      # environment.dart in both apps) — empty by default, which keeps the
+      # app's normal auto-detected localhost/10.0.2.2 behavior unchanged.
       - name: flutter build apk --release
         working-directory: apps/${{ matrix.app }}
         env:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
-        run: flutter build apk --release --dart-define=MAPS_API_KEY="$MAPS_API_KEY"
+          API_BASE_URL: ${{ inputs.api_base_url }}
+        run: >
+          flutter build apk --release
+          --dart-define=MAPS_API_KEY="$MAPS_API_KEY"
+          --dart-define=API_BASE_URL="$API_BASE_URL"
 
       - name: flutter build appbundle --release
         working-directory: apps/${{ matrix.app }}
         env:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
-        run: flutter build appbundle --release --dart-define=MAPS_API_KEY="$MAPS_API_KEY"
+          API_BASE_URL: ${{ inputs.api_base_url }}
+        run: >
+          flutter build appbundle --release
+          --dart-define=MAPS_API_KEY="$MAPS_API_KEY"
+          --dart-define=API_BASE_URL="$API_BASE_URL"
 
       - name: Rename outputs for clarity
         run: |
@@ -163,6 +187,7 @@ jobs:
 
             - **APK** — install directly on an Android device.
             - **AAB** — upload to Google Play Console.
+            - **Backend URL baked in:** `${{ inputs.api_base_url != '' && inputs.api_base_url || 'default (auto-detected localhost / 10.0.2.2 — emulator only, will not work on a physical device)' }}`
 
       # Runs last, unconditionally — the decoded keystore and plaintext
       # key.properties should not linger on the runner (or in a later
