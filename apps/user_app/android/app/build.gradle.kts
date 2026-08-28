@@ -1,8 +1,22 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+// MAPS_API_KEY — env var (CI/CD) takes priority; local.properties (already
+// gitignored, same file that already holds sdk.dir) is the convenient local
+// dev fallback so a developer doesn't have to export an env var in every
+// new shell. Never committed either way.
+val localPropertiesFile = rootProject.file("local.properties")
+val localProperties = Properties()
+if (localPropertiesFile.exists()) {
+    FileInputStream(localPropertiesFile).use { stream -> localProperties.load(stream) }
+}
+val mapsApiKey: String = System.getenv("MAPS_API_KEY") ?: localProperties.getProperty("MAPS_API_KEY") ?: ""
 
 android {
     namespace = "com.zairo"
@@ -30,11 +44,11 @@ android {
         versionName = flutter.versionName
 
         // Fills the com.google.android.geo.API_KEY manifest placeholder
-        // (see AndroidManifest.xml) — env var only, never committed. Empty
-        // by default: GoogleMapsRenderer is never selected on the Dart
-        // side without a matching --dart-define=MAPS_API_KEY, so an empty
+        // (see AndroidManifest.xml) — see mapsApiKey above. Empty by
+        // default: GoogleMapsRenderer is never selected on the Dart side
+        // without a matching --dart-define=MAPS_API_KEY, so an empty
         // native key here is a safe default, not a broken build.
-        manifestPlaceholders["mapsApiKey"] = System.getenv("MAPS_API_KEY") ?: ""
+        manifestPlaceholders["mapsApiKey"] = mapsApiKey
     }
 
     buildTypes {
