@@ -30,4 +30,5 @@ include(
     "catalog",
     "provider-insights",
     "platform-insights",
+    "messaging",
 )
