@@ -1,6 +1,7 @@
 package com.zairo.factory.booking;
 
 import com.zairo.factory.providers.Provider;
+import com.zairo.factory.providers.ProviderOwnership;
 import com.zairo.factory.providers.ProviderRepository;
 import com.zairo.factory.subscriptions.SubscriptionLimitService;
 import java.math.BigDecimal;
@@ -22,17 +23,19 @@ public class BookingService {
     private final AvailabilitySlotRepository availabilitySlotRepository;
     private final BookingRepository bookingRepository;
     private final ProviderRepository providerRepository;
+    private final ProviderOwnership providerOwnership;
     private final SubscriptionLimitService subscriptionLimitService;
     private final ApplicationEventPublisher eventPublisher;
     private final String defaultCurrency;
 
     public BookingService(AvailabilitySlotRepository availabilitySlotRepository, BookingRepository bookingRepository,
-            ProviderRepository providerRepository, SubscriptionLimitService subscriptionLimitService,
-            ApplicationEventPublisher eventPublisher,
+            ProviderRepository providerRepository, ProviderOwnership providerOwnership,
+            SubscriptionLimitService subscriptionLimitService, ApplicationEventPublisher eventPublisher,
             @Value("${app.platform.default-currency:USD}") String defaultCurrency) {
         this.availabilitySlotRepository = availabilitySlotRepository;
         this.bookingRepository = bookingRepository;
         this.providerRepository = providerRepository;
+        this.providerOwnership = providerOwnership;
         this.subscriptionLimitService = subscriptionLimitService;
         this.eventPublisher = eventPublisher;
         this.defaultCurrency = defaultCurrency;
@@ -127,7 +130,7 @@ public class BookingService {
      * the second call once the first has committed.
      */
     @Transactional
-    public Booking cancelBooking(UUID bookingId, UUID callerId) {
+    public Booking cancelBooking(UUID bookingId, UUID callerId, String reason) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
                         + bookingId));
@@ -147,10 +150,39 @@ public class BookingService {
         slot.markOpen();
         availabilitySlotRepository.save(slot);
 
-        booking.markCancelled();
+        booking.markCancelled(reason);
         Booking cancelled = bookingRepository.save(booking);
 
         eventPublisher.publishEvent(new BookingCancelledEvent(cancelled.getId(), callerId, slot.getProviderId()));
         return cancelled;
+    }
+
+    /**
+     * Provider-owner-initiated — the customer didn't show up for a
+     * CONFIRMED slot. Same status guard as {@link #completeBooking}
+     * (mutually exclusive terminal outcomes for a kept vs. missed
+     * appointment), but ownership runs through the slot's provider
+     * instead of the booking's own customer, mirroring how
+     * {@code BookingController.listByProvider} resolves a provider from
+     * a booking (Booking has no providerId of its own).
+     */
+    @Transactional
+    public Booking markNoShow(UUID bookingId, UUID callerId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
+                        + bookingId));
+
+        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new InvalidBookingStateException("Booking is not in a no-show-able state: " + bookingId
+                    + " (status=" + booking.getStatus() + ")");
+        }
+
+        AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
+                        + booking.getAvailabilitySlotId()));
+        providerOwnership.requireOwner(slot.getProviderId(), callerId);
+
+        booking.markNoShow();
+        return bookingRepository.save(booking);
     }
 }

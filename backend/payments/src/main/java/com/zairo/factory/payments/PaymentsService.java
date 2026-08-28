@@ -87,7 +87,12 @@ public class PaymentsService {
         }
     }
 
-    @Transactional
+    // noRollbackFor: the BAD_GATEWAY branch below deliberately persists the
+    // refund-failure fact on the payment row before throwing — a bare
+    // @Transactional would roll that write back along with the exception
+    // (ResponseStatusException is unchecked), silently undoing the whole
+    // point of recording it.
+    @Transactional(noRollbackFor = ResponseStatusException.class)
     public Payment refundPayment(UUID paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Payment not found: "
@@ -101,6 +106,14 @@ public class PaymentsService {
         PaymentProvider.RefundResult result = paymentProvider.refund(payment.getId(), payment.getProviderReference(),
                 payment.getAmount());
         if (!result.succeeded()) {
+            // Recorded on the row before throwing — a failed refund used to
+            // be visible only in whatever caller's log line happened to
+            // catch this exception (see BookingCancelledPaymentListener).
+            // Now it's a durable, queryable fact on the payment itself:
+            // still SUCCEEDED with a non-null refundFailureReason means
+            // "money owed back, not yet returned."
+            payment.markRefundFailed(result.failureReason(), Instant.now());
+            paymentRepository.save(payment);
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Refund failed: " + result.failureReason());
         }
         payment.markRefunded(Instant.now());

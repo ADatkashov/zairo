@@ -11,9 +11,16 @@ spring:
     locale: en
     locale-resolver: fixed
   datasource:
-    url: jdbc:postgresql://localhost:5432/app_factory
-    username: app_factory
-    password: app_factory
+    # ${VAR:dev-default} on every line below on purpose (see app.jwt.secret's
+    # comment for why) — Spring already lets an OS env var override any of
+    # these without this syntax, but leaving them as bare literals makes it
+    # invisible that a real deployment MUST override them: forget to set
+    # DB_PASSWORD/JWT_SECRET/etc. and production silently runs on the exact
+    # dev-only values already sitting in this file's git history. The
+    # placeholder makes "override this" explicit and greppable instead.
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/app_factory}
+    username: ${DB_USERNAME:app_factory}
+    password: ${DB_PASSWORD:app_factory}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -24,14 +31,20 @@ spring:
       max-request-size: 10MB
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 app:
+  cors:
+    # See WebConfig's doc comment — comma-separated, no code change needed
+    # to add a real deployed frontend's origin later.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:*}
   jwt:
-    # Dev-only secret, fine to commit — must move to an env var / secrets
-    # manager before any real deployment (Phase 7 Production per the
-    # Factory Blueprint roadmap, §13).
-    secret: "Jc65IChbJdrOLj/C4rT+OCdPEdvzosIIpIG0xYM9dJ1Eflr/QDsOg+hLKOdX8k1B"
+    # Dev-only secret, fine to commit for local/test — but now behind
+    # ${JWT_SECRET:...} so a real deployment can (and must) override it via
+    # env var. Whoever sets up staging/production: this specific value has
+    # been public in git history since early in the project — treat it as
+    # burned, generate a fresh one, never reuse it for anything real.
+    secret: ${JWT_SECRET:Jc65IChbJdrOLj/C4rT+OCdPEdvzosIIpIG0xYM9dJ1Eflr/QDsOg+hLKOdX8k1B}
     access-token-ttl-minutes: 30
     refresh-token-ttl-days: 30
     # A second, independent secret for platform-admin tokens (see
@@ -39,9 +52,9 @@ app:
     # value as app.jwt.secret above. A customer/business access token must
     # fail signature verification here, not merely fail a role check; two
     # different keys is what makes that a structural guarantee instead of a
-    # convention someone could get wrong later. Same dev-only-secret caveat
-    # as above applies.
-    platform-admin-secret: "R2v8QnZmU4hLxE0pTsYkD9bWcAoFj3GiN6uHrMz1XqCvS7eKtY5wPd2LbNhOaIu"
+    # convention someone could get wrong later. Same burned-once-public,
+    # override-before-real-deployment caveat as above applies.
+    platform-admin-secret: ${PLATFORM_ADMIN_JWT_SECRET:R2v8QnZmU4hLxE0pTsYkD9bWcAoFj3GiN6uHrMz1XqCvS7eKtY5wPd2LbNhOaIu}
     platform-admin-access-token-ttl-minutes: 30
   auth:
     # Short-lived on purpose — a reset code is meant to be used within
@@ -54,13 +67,15 @@ app:
     # copy of this value — see the Money migration in SESSION_NOTES.md).
     default-currency: USD
   storage:
-    # MinIO from infrastructure/docker-compose.yml. Dev-only credentials,
-    # same "fine to commit, move to secrets before real deployment" status
-    # as the JWT secret above.
-    endpoint: http://localhost:9000
-    access-key: app_factory
-    secret-key: app_factory_secret
-    bucket: factory-media
+    # MinIO from infrastructure/docker-compose.yml locally; a real
+    # deployment overrides these to point at either a real MinIO/S3
+    # instance or a managed object-storage bucket. Same
+    # committed-dev-defaults-are-not-secrets-once-in-git-history status as
+    # the JWT secrets above.
+    endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+    access-key: ${MINIO_ACCESS_KEY:app_factory}
+    secret-key: ${MINIO_SECRET_KEY:app_factory_secret}
+    bucket: ${MINIO_BUCKET:factory-media}
   openapi:
     # Swagger UI's environment picker (see OpenApiConfig) — add a Test/
     # Production entry here once one is actually deployed. Never hardcode

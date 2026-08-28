@@ -53,6 +53,10 @@ public class Payment {
     @Column(name = "failure_reason")
     private String failureReason;
 
+    /** Set only when a refund attempt fails; cleared on a subsequent success — see {@link #markRefundFailed}. */
+    @Column(name = "refund_failure_reason")
+    private String refundFailureReason;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -99,6 +103,10 @@ public class Payment {
         return failureReason;
     }
 
+    public String getRefundFailureReason() {
+        return refundFailureReason;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
@@ -117,6 +125,13 @@ public class Payment {
 
     void markRefunded(Instant now) {
         this.status = PaymentStatus.REFUNDED;
+        this.refundFailureReason = null;
+        this.updatedAt = now;
+    }
+
+    /** Status stays SUCCEEDED — a failed refund attempt didn't undo the original charge, just failed to reverse it. */
+    void markRefundFailed(String reason, Instant now) {
+        this.refundFailureReason = reason;
         this.updatedAt = now;
     }
 }

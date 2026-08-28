@@ -174,6 +174,36 @@ class PaymentsApiTests {
         assertThat(response.getBody().get("status")).isEqualTo("FAILED");
     }
 
+    @Test
+    void aFailedRefundIsRecordedOnThePaymentInsteadOfOnlyBeingLogged() {
+        UUID bookingId = createBookingForPayment("refund-outage-", new BigDecimal("22.00"));
+        UUID paymentId = UUID.fromString(restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments",
+                null, Map.class).getBody().get("id").toString());
+
+        failureController.failNextRefund = true;
+        ResponseEntity<Map> refundResponse = restTemplate.postForEntity(
+                "/api/v1/payments/" + paymentId + "/refund", null, Map.class);
+        assertThat(refundResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY);
+
+        // The failure survived the exception — not rolled back with it (see
+        // PaymentsService.refundPayment's noRollbackFor) — and status is
+        // still SUCCEEDED, not REFUNDED: the money was never actually
+        // returned, so the payment can't claim it was.
+        ResponseEntity<Map> check = restTemplate.getForEntity("/api/v1/bookings/" + bookingId + "/payments",
+                Map.class);
+        assertThat(check.getBody().get("status")).isEqualTo("SUCCEEDED");
+        assertThat(check.getBody().get("refundFailureReason")).isEqualTo("simulated refund outage");
+
+        // Retrying (the mock provider succeeds by default now that the
+        // one-shot failure flag has been consumed) clears the failure and
+        // actually refunds it.
+        ResponseEntity<Map> retry = restTemplate.postForEntity("/api/v1/payments/" + paymentId + "/refund", null,
+                Map.class);
+        assertThat(retry.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(retry.getBody().get("status")).isEqualTo("REFUNDED");
+        assertThat(retry.getBody().get("refundFailureReason")).isNull();
+    }
+
     private UUID createBookingForPayment(String prefix, BigDecimal price) {
         String runId = UUID.randomUUID().toString();
         Registered customer = TestAuth.registerCustomer(restTemplate, prefix + "customer-" + runId + "@example.com");

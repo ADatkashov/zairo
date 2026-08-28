@@ -37,6 +37,10 @@ class TestPayments {
 
             @Override
             public RefundResult refund(UUID paymentId, String providerReference, BigDecimal amount) {
+                if (failureController.failNextRefund) {
+                    failureController.failNextRefund = false;
+                    return new RefundResult(false, "simulated refund outage");
+                }
                 return new RefundResult(true, null);
             }
         };
@@ -51,5 +55,6 @@ class TestPayments {
     static class FailureController {
         volatile boolean failNextCharge;
         volatile boolean throwOnNextCharge;
+        volatile boolean failNextRefund;
     }
 }

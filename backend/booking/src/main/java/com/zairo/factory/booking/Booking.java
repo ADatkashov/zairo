@@ -57,6 +57,10 @@ public class Booking {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    /** Only ever set by {@link #markCancelled(String)} — null for every other status, including a reasonless cancel. */
+    @Column(name = "cancellation_reason")
+    private String cancellationReason;
+
     protected Booking() {
     }
 
@@ -103,11 +107,20 @@ public class Booking {
         return createdAt;
     }
 
+    public String getCancellationReason() {
+        return cancellationReason;
+    }
+
     void markCompleted() {
         this.status = BookingStatus.COMPLETED;
     }
 
-    void markCancelled() {
+    void markCancelled(String reason) {
         this.status = BookingStatus.CANCELLED;
+        this.cancellationReason = reason;
+    }
+
+    void markNoShow() {
+        this.status = BookingStatus.NO_SHOW;
     }
 }

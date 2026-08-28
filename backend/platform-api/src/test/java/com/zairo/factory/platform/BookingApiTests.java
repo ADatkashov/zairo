@@ -3,6 +3,7 @@ package com.zairo.factory.platform;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequest;
+import com.zairo.factory.booking.BookingDtos.CancelBookingRequest;
 import com.zairo.factory.booking.BookingDtos.CreateBookingRequest;
 import com.zairo.factory.platform.TestAuth.Registered;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
@@ -217,6 +218,69 @@ class BookingApiTests {
         ResponseEntity<Map> deleteBooked = restTemplate.exchange("/api/v1/availability-slots/" + bookedSlotId,
                 HttpMethod.DELETE, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
         assertThat(deleteBooked.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    void cancellingWithAReasonPersistsItAndCancellingWithoutOneLeavesItNull() {
+        String runId = UUID.randomUUID().toString();
+        Registered customer = TestAuth.registerCustomer(restTemplate, "cancel-reason-customer-" + runId + "@example.com");
+        Registered owner = TestAuth.registerOwner(restTemplate, "cancel-reason-owner-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Cancel Reason Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Service", new BigDecimal("20.00"));
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+
+        // With a reason.
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+        UUID bookingId = UUID.fromString(createBooking(customer,
+                new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("20.00")))
+                .getBody().get("id").toString());
+        ResponseEntity<Map> withReason = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/cancel",
+                HttpMethod.POST, new HttpEntity<>(new CancelBookingRequest("Change of plans"),
+                        TestAuth.authHeaders(customer.accessToken())),
+                Map.class);
+        assertThat(withReason.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(withReason.getBody().get("cancellationReason")).isEqualTo("Change of plans");
+
+        // No body at all (existing clients) — still works, reason stays null.
+        UUID slotId2 = createSlot(owner, providerId, start.plus(1, ChronoUnit.HOURS), start.plus(90, ChronoUnit.MINUTES));
+        UUID bookingId2 = UUID.fromString(createBooking(customer,
+                new CreateBookingRequest(customer.userId(), serviceId, slotId2, new BigDecimal("20.00")))
+                .getBody().get("id").toString());
+        ResponseEntity<Map> noReason = restTemplate.exchange("/api/v1/bookings/" + bookingId2 + "/cancel",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(noReason.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(noReason.getBody().get("cancellationReason")).isNull();
+    }
+
+    @Test
+    void providerOwnerMarksANoShowButNotSomeoneElsesProviderOrANonConfirmedBooking() {
+        String runId = UUID.randomUUID().toString();
+        Registered customer = TestAuth.registerCustomer(restTemplate, "noshow-customer-" + runId + "@example.com");
+        Registered owner = TestAuth.registerOwner(restTemplate, "noshow-owner-" + runId + "@example.com");
+        Registered otherOwner = TestAuth.registerOwner(restTemplate, "noshow-other-owner-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "No-show Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Service", new BigDecimal("20.00"));
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+        UUID bookingId = UUID.fromString(createBooking(customer,
+                new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("20.00")))
+                .getBody().get("id").toString());
+
+        // A different business owner can't mark it.
+        ResponseEntity<Map> forbidden = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/no-show",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(otherOwner.accessToken())), Map.class);
+        assertThat(forbidden.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        // The real owner can.
+        ResponseEntity<Map> marked = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/no-show",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(marked.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(marked.getBody().get("status")).isEqualTo("NO_SHOW");
+
+        // Already NO_SHOW (not CONFIRMED anymore) -> rejected.
+        ResponseEntity<Map> again = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/no-show",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(again.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
     }
 
     private UUID createProvider(Registered owner, String name) {
