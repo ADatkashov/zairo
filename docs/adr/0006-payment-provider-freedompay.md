@@ -2,8 +2,51 @@
 
 ## Статус
 
-Принято (discovery + design) — 2026-08-28. **Код не менялся** — это архитектурный
-документ по явному запросу; реализация — отдельный проход после этого ADR.
+Принято (discovery + design) — 2026-08-28. Реализовано (booking-платежи,
+webhook, sweep-job, refund, каркас подписки) — тот же день, отдельный проход
+после этого ADR. См. "Implementation Status" ниже — что реализовано как
+спроектировано, что отличается, что всё ещё заблокировано.
+
+## Implementation Status (2026-08-28)
+
+Реализовано в этом проходе: `payment-provider`-модуль (`PaymentProviderName`,
+переработанный `PaymentProvider`-порт, `MockPaymentProvider`, весь
+`freedompay`-subpackage — `FreedomPayProperties`/`Config`/`Signature`/
+`HttpClient`/`WebhookVerifier`/`Provider`/`OrderIds`), `Payment`/`PaymentStatus`
+с новыми полями (`provider`, `idempotencyKey`, `providerStatus`, `checkoutUrl`,
+`refundAttempts`, `@Version`), `Booking`/`BookingStatus.PENDING_PAYMENT` +
+`BookingService.confirmAfterPayment`/`cancelUnpaidBooking`, `BookingPaymentTimeoutJob`
+(sweep, каждую минуту), `PaymentWebhookController` + `PaymentWebhookProcessor`
++ `PaymentWebhookEventRecorder` + таблица `payment_webhook_event` (миграции
+V29–V32), `SubscriptionCharge`/`SubscriptionService`/`SubscriptionRenewalService`
+переведены на `createRecurringPayment`/`chargeRecurring`. Полностью зелёный
+`./gradlew test` (mock-провайдер, весь существующий + новый test suite).
+
+Отличия от того, что спроектировано выше:
+
+- **`payment_webhook_event` — создана сейчас**, не просто обоснована. В
+  discovery-фазе этого ADR было явно решено не создавать таблицу; отдельная
+  задача на реализацию явно потребовала создать её сразу, с
+  `unique (provider, event_id)`.
+- **`@Version` добавлен и на `Booking`**, не только на `Payment` — "Webhook
+  Architecture" выше называл только `Payment`. Понадобился отдельно для гонки
+  webhook против `BookingPaymentTimeoutJob` (оба потенциально переводят один
+  и тот же `Booking` из `PENDING_PAYMENT`).
+- **Ответ на Result notify — без `pg_sig`**, хотя диаграмма выше рисует
+  `<pg_sig>` в ответе. Точная семантика подписи ответа (а не только
+  запроса) не подтверждена документацией — оставлено `TODO` в
+  `PaymentWebhookController`, см. "Remaining Provider Questions".
+- **Новый case, не предусмотренный таблицей переходов Booking**: успешный
+  webhook приходит на уже `CANCELLED` бронь (sweep-job или клиент отменили
+  раньше, чем пришло Result notify — "race F" из задачи на реализацию).
+  Решение: `PaymentWebhookProcessor` автоматически вызывает
+  `PaymentsService.refundPayment` вместо попытки подтвердить бронь — деньги
+  списаны, подтверждать уже нечего (слот мог уйти другому клиенту).
+- **`successUrl`/`failureUrl` — не в `payment.freedompay.*`**, а в общем
+  `payment.return.*` — они не специфичны для Freedom Pay (Stripe потребовал
+  бы того же), поэтому вынесены на уровень, который `payments`/`subscriptions`
+  читают напрямую, не зная о Freedom Pay вообще (сохраняет границу
+  "Booking/Subscription не знают деталей Freedom Pay" буквально).
 
 ## Context
 
@@ -492,3 +535,86 @@ webhook-обработчика, `PaymentProvider`-порт остаётся пр
 "Booking Payment Architecture" не зависит ни от одного из этих пунктов) —
 блокирует только: полноценный дизайн 0.7 (recurring), финальный выбор
 refund-endpoint'а, и подтверждение sandbox-стратегии для E2E-тестов.
+
+## Known Provider Limitations
+
+Подтверждено кодом этого прохода, не только документацией:
+
+- **`chargeRecurring` не реализован** — `FreedomPayProvider.chargeRecurring`
+  всегда бросает `UnsupportedRecurringChargeException` (см. "Open Questions"
+  п.1). `SubscriptionRenewalService` уже ловит это как обычный
+  `RuntimeException` и переводит подписку в `PAST_DUE` — деградация
+  предсказуема, не крэш, но повторное списание business-подписки **не
+  работает** ни в staging, ни в production до подтверждения реального
+  запроса от Freedom Pay.
+- **Refund без фискальных позиций чека** — `FreedomPayProvider.refund`
+  отправляет `pg_payment_id`/`pg_refund_amount`, не отправляет
+  `pg_receipt_positions[...]`. Если реальный API их требует, refund будет
+  честно приходить `RefundResult(false, ...)` → `Payment.REFUND_FAILED`
+  (видимо для admin, не тихая потеря), но не будет работать до данных.
+- **Endpoint возврата не подтверждён окончательно** — используется
+  `/revoke.php` (единственный документированный вариант, который нашло
+  исследование); альтернативный `/g2g/refund` не проверен и не
+  реализован. Если `/revoke.php` окажется неверным для реального
+  мерчант-аккаунта, refund будет предсказуемо и видимо проваливаться
+  (`REFUND_FAILED`), не притворяться успешным.
+- **Result URL** — предполагается статически настроенным в мерчант-кабинете
+  (`payment.freedompay.result-notify-script-name`, по умолчанию
+  `result.php`), не передаётся per-request в `init_payment`. Если Freedom
+  Pay на самом деле поддерживает per-request result URL, а мерчант-кабинет
+  настроен на другой script name — подпись входящего webhook'а не совпадёт
+  (см. `FreedomPayWebhookVerifier`'s TODO), и легитимные webhook'и будут
+  отклоняться до исправления конфигурации (не кода).
+
+## Sandbox Configuration
+
+Не подтверждено — нет доступа к мерчант-кабинету Freedom Pay в этой сессии.
+Когда доступ появится, staging переключается без изменения кода, только
+конфигурацией (env vars, ADR-0006's "Environment Strategy" уже это
+предполагал):
+
+```
+PAYMENT_PROVIDER=freedompay
+FREEDOMPAY_API_URL=<хост из мерчант-кабинета — sandbox или pg_testing_mode>
+FREEDOMPAY_MERCHANT_ID=<sandbox merchant id>
+FREEDOMPAY_SECRET_KEY=<sandbox secret key>
+FREEDOMPAY_RESULT_NOTIFY_SCRIPT_NAME=<script name, настроенный в кабинете>
+PAYMENT_SUCCESS_URL=<staging URL, куда возвращается браузер>
+PAYMENT_FAILURE_URL=<staging URL>
+```
+
+Ни одно значение не имеет hardcoded default (специально, см.
+`FreedomPayProperties`) — `FreedomPayProvider` фейлится при старте
+приложения, если `FREEDOMPAY_API_URL` пуст, а `payment.provider=freedompay`
+(fail fast, не тихий вызов в никуда).
+
+## Production Configuration
+
+Тот же набор переменных, что и Sandbox, со значениями продакшен
+мерчант-аккаунта — `PAYMENT_PROVIDER=freedompay` в обоих случаях (staging и
+production отличаются только *значениями* секретов/хоста, не кодом и не
+веткой конфигурации). Секреты — только через переменные окружения/secrets
+manager хостинга; ни один git-отслеживаемый файл (`application.yml`, тесты,
+Flutter-код) не содержит реального `FREEDOMPAY_SECRET_KEY`/`MERCHANT_ID` —
+проверено: единственные значения в репозитории — тестовые/примерные.
+
+## Remaining Provider Questions
+
+Статус исходных "Open Questions" после этого прохода реализации — ни один не
+решился (нет доступа к мерчант-кабинету/поддержке), но теперь у каждого есть
+конкретный код, который он блокирует:
+
+1. Запрос повторного списания — блокирует `chargeRecurring`
+   (`UnsupportedRecurringChargeException` пока).
+2. Sandbox-хост/`pg_testing_mode` — блокирует Sandbox E2E, см. выше.
+3. `/revoke` vs `/g2g/refund` — реализовано на `/revoke.php`, риск см. "Known
+   Provider Limitations".
+4. Фискальные позиции чека — не отправляются, риск см. выше.
+5. `pg_idempotency_key`'s retry-семантика — не проверено вживую (нет sandbox
+   доступа), дедуп webhook'а полагается на `Payment`-статус, не на это поле,
+   так что риск ограничен дублирующимся списанием при клиентском ретрае
+   после сетевой ошибки, не потерей дедупликации webhook'а.
+6. **Новый вопрос, не в исходном списке**: подписывается ли ответ на Result
+   notify (`pg_sig` в ответе, как рисует диаграмма "Webhook Architecture"
+   выше), или `pg_status=ok` без подписи достаточно останавливает ретраи?
+   Реализовано без подписи ответа — `PaymentWebhookController`'s TODO.

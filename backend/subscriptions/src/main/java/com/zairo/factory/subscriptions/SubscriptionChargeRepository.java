@@ -19,4 +19,14 @@ public interface SubscriptionChargeRepository extends JpaRepository<Subscription
      */
     Optional<SubscriptionCharge> findFirstBySubscriptionIdAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(
             UUID subscriptionId, Instant periodStart);
+
+    /**
+     * The renewal job's source of the recurring profile to charge — Freedom
+     * Pay only returns {@code pg_recurring_profile_id} on the upgrade charge
+     * that created it, so every later renewal has to look back for the most
+     * recent charge that carried one (see {@code SubscriptionCharge}'s own
+     * doc comment).
+     */
+    Optional<SubscriptionCharge> findFirstBySubscriptionIdAndRecurringProfileIdIsNotNullOrderByCreatedAtDesc(
+            UUID subscriptionId);
 }

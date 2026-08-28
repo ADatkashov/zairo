@@ -84,6 +84,40 @@ app:
       - url: http://localhost:8080
         description: Local
 
+# See ADR-0006 (docs/adr/0006-payment-provider-freedompay.md) for the full
+# design behind this block. Every field here is real (docs.freedompay.kz),
+# not a generic payment-gateway template — no webhook-secret field, because
+# Freedom Pay doesn't have a separate one (see FreedomPayProperties).
+payment:
+  # mock (local/test, default) | freedompay (staging/production).
+  provider: ${PAYMENT_PROVIDER:mock}
+  # Where the customer's browser lands after hosted checkout — generic to
+  # any redirect-based provider (not Freedom-Pay-specific: Stripe Checkout
+  # would need the exact same pair), which is why this sits under `payment`
+  # and not `payment.freedompay`. payments.PaymentsService and
+  # subscriptions.SubscriptionService read these directly; the provider
+  # adapters only forward whatever they're given.
+  return:
+    success-url: ${PAYMENT_SUCCESS_URL:}
+    failure-url: ${PAYMENT_FAILURE_URL:}
+  freedompay:
+    # No hardcoded default for either environment on purpose — there's no
+    # confirmed separate sandbox host (ADR-0006, Open Questions #2), so
+    # staging and production both set this explicitly rather than
+    # inheriting a guessed value.
+    api-url: ${FREEDOMPAY_API_URL:}
+    merchant-id: ${FREEDOMPAY_MERCHANT_ID:}
+    secret-key: ${FREEDOMPAY_SECRET_KEY:}
+    # Unconfirmed (ADR-0006, Open Questions #6) — see
+    # FreedomPayWebhookVerifier's own TODO before relying on this in
+    # production.
+    result-notify-script-name: ${FREEDOMPAY_RESULT_NOTIFY_SCRIPT_NAME:result.php}
+
+booking:
+  # How long a booking can sit in PENDING_PAYMENT before the sweep job
+  # cancels it and releases the slot — see booking.BookingPaymentTimeoutJob.
+  payment-timeout-minutes: ${BOOKING_PAYMENT_TIMEOUT_MINUTES:15}
+
 management:
   endpoints:
     web:

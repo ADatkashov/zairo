@@ -72,6 +72,8 @@ class ReviewApiTests {
                 reviewRequest, Map.class);
         assertThat(tooEarly.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
 
+        // Completing requires CONFIRMED first, which requires payment (ADR-0006).
+        restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments", null, Map.class);
         ResponseEntity<Map> completed = restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/complete",
                 null, Map.class);
         assertThat(completed.getStatusCode()).isEqualTo(HttpStatus.OK);

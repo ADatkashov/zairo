@@ -43,7 +43,8 @@ public class SubscriptionController {
     @PostMapping("/api/v1/subscriptions/upgrade")
     public SubscriptionResponse upgrade(HttpServletRequest httpRequest) {
         UUID ownerUserId = CurrentUser.requireUserId(httpRequest);
-        return SubscriptionResponse.from(subscriptionService.upgradeToPro(ownerUserId));
+        SubscriptionService.SubscriptionUpgradeResult result = subscriptionService.upgradeToPro(ownerUserId);
+        return SubscriptionResponse.from(result.subscription(), result.checkoutUrl());
     }
 
     @Operation(summary = "Downgrade to FREE", description = "Self-service, takes effect at the end of the "

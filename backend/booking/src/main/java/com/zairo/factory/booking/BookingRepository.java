@@ -13,6 +13,9 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
     List<Booking> findByAvailabilitySlotIdIn(List<UUID> availabilitySlotIds);
 
+    /** BookingPaymentTimeoutJob's sweep target — a booking that's sat unpaid past the configured timeout. */
+    List<Booking> findByStatusAndCreatedAtBefore(BookingStatus status, Instant cutoff);
+
     /**
      * Every booking ever made against this provider, regardless of status —
      * same join shape as {@link #countByProviderIdAndCreatedAtBetween},

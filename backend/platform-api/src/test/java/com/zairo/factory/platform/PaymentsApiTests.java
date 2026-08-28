@@ -186,13 +186,14 @@ class PaymentsApiTests {
         assertThat(refundResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY);
 
         // The failure survived the exception — not rolled back with it (see
-        // PaymentsService.refundPayment's noRollbackFor) — and status is
-        // still SUCCEEDED, not REFUNDED: the money was never actually
+        // PaymentsService.refundPayment's noRollbackFor) — and status moves
+        // to REFUND_FAILED, not REFUNDED: the money was never actually
         // returned, so the payment can't claim it was.
         ResponseEntity<Map> check = restTemplate.getForEntity("/api/v1/bookings/" + bookingId + "/payments",
                 Map.class);
-        assertThat(check.getBody().get("status")).isEqualTo("SUCCEEDED");
+        assertThat(check.getBody().get("status")).isEqualTo("REFUND_FAILED");
         assertThat(check.getBody().get("refundFailureReason")).isEqualTo("simulated refund outage");
+        assertThat(check.getBody().get("refundAttempts")).isEqualTo(1);
 
         // Retrying (the mock provider succeeds by default now that the
         // one-shot failure flag has been consumed) clears the failure and
