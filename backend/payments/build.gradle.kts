@@ -14,4 +14,10 @@ dependencies {
     // module — see payment-provider/build.gradle.kts for why (subscriptions
     // needed the same port without a Gradle cycle).
     implementation(project(":payment-provider"))
+
+    // The failed-refund admin visibility endpoint (PaymentAdminController)
+    // reuses platform-admin's caller resolution wholesale instead of a
+    // second admin auth system — same directed dependency shape as
+    // catalog -> platform-admin.
+    implementation(project(":platform-admin"))
 }
