@@ -21,11 +21,14 @@ public final class PaymentDtos {
             String providerReference,
             @Schema(description = "Only set when status is FAILED.", example = "Card declined")
             String failureReason,
+            @Schema(description = "Set when a refund attempt failed. Status stays SUCCEEDED in that case — "
+                    + "this is money still owed back to the customer, not yet returned.", example = "Provider timeout")
+            String refundFailureReason,
             Instant createdAt) {
         static PaymentResponse from(Payment payment) {
             return new PaymentResponse(payment.getId(), payment.getBookingId(), payment.getAmount(),
                     payment.getCurrency(), payment.getStatus(), payment.getProviderReference(),
-                    payment.getFailureReason(), payment.getCreatedAt());
+                    payment.getFailureReason(), payment.getRefundFailureReason(), payment.getCreatedAt());
         }
     }
 }

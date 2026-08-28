@@ -2,6 +2,7 @@ package com.zairo.factory.booking;
 
 import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.booking.BookingDtos.BookingResponse;
+import com.zairo.factory.booking.BookingDtos.CancelBookingRequest;
 import com.zairo.factory.booking.BookingDtos.CreateBookingRequest;
 import com.zairo.factory.providers.ProviderOwnership;
 import io.swagger.v3.oas.annotations.Operation;
@@ -112,9 +113,28 @@ public class BookingController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/bookings/{id}/cancel")
     public BookingResponse cancel(@Parameter(description = "The booking's id.") @PathVariable UUID id,
+            @RequestBody(required = false) CancelBookingRequest request, HttpServletRequest httpRequest) {
+        UUID callerId = CurrentUser.requireUserId(httpRequest);
+        String reason = request == null ? null : request.reason();
+        return BookingResponse.from(bookingService.cancelBooking(id, callerId, reason));
+    }
+
+    @Operation(summary = "Mark a booking as a no-show", description = "Provider-owner-only — the caller must "
+            + "own the provider the booking's slot belongs to. Only a CONFIRMED booking can be marked; this "
+            + "and completing a booking are mutually exclusive outcomes for the same appointment.")
+    @ApiResponse(responseCode = "200", description = "Booking marked NO_SHOW")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @ApiResponse(responseCode = "409", description = "The booking isn't in a no-show-able state (not "
+            + "CONFIRMED).",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/api/v1/bookings/{id}/no-show")
+    public BookingResponse markNoShow(@Parameter(description = "The booking's id.") @PathVariable UUID id,
             HttpServletRequest httpRequest) {
         UUID callerId = CurrentUser.requireUserId(httpRequest);
-        return BookingResponse.from(bookingService.cancelBooking(id, callerId));
+        return BookingResponse.from(bookingService.markNoShow(id, callerId));
     }
 
     @Operation(summary = "List a user's bookings", description = "Owner-only: the caller must be the exact "
