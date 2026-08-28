@@ -90,6 +90,8 @@ CI/CD — реальный, построен в этой сессии (`.github/
 
 Легенда Priority: **P0** — блокирует пилот с реальными деньгами · **P1** — нужно для доверия/удобства пилота · **P2** — рост после пилота · **P3** — масштаб. Effort: **S/M/L/XL** — относительный размер, не календарная оценка (см. раздел 18 — почему я не даю фейковых дней).
 
+**Снимок на 2026-08-28.** С этой даты выполнено (детали и даты — в соответствующих нарративных разделах, здесь таблица намеренно не переписана построчно, чтобы не расходиться с ними): cancellation reason + no-show (раздел 7), refund-failure видимость (разделы 5/12), Docker-образ + внешние секреты + настраиваемый CORS (раздел 11), payment provider + pilot country решены (раздел 19).
+
 ### Payments
 
 | Area | Current State | Production Gap | Priority | Dependencies | Effort | Acceptance Criteria |
@@ -327,10 +329,13 @@ Backend: изменений не требуется. Геокодировани�
 - Double-booking невозможен — двойная защита: optimistic lock (`@Version` на `AvailabilitySlot`) ловит гонку в приложении, `UNIQUE INDEX` на `availability_slot_id` в таблице `booking` — backstop на уровне БД, даже если бы приложенческая защита была обойдена.
 - Отмена брони архитектурно decoupled от возврата денег через `ApplicationEventPublisher` (ADR-0002) — надёжный, проверенный паттерн, уже используется для notifications тем же способом.
 
+**Сделано (2026-08-28)**:
+- ✅ **Cancellation reason** — `Booking.cancellationReason` (V27), опциональное поле в `POST /bookings/{id}/cancel`. Не обязательное на уровне API (см. `CancelBookingRequest`'s doc comment — все существующие клиенты вызывают cancel без тела вообще; сделать его обязательным — отдельное продуктовое решение, не техническое).
+- ✅ **No-show** — новый `BookingStatus.NO_SHOW`, `POST /bookings/{id}/no-show`, owner-only (через `ProviderOwnership`, тот же паттерн, что и остальные provider-scoped мутации).
+- ✅ **Refund-failure видимость** (из раздела 5/12) — `Payment.refundFailureReason` (V28), сохраняется на строке до того, как `refundPayment` бросит исключение (`noRollbackFor`, иначе транзакция откатила бы именно эту запись). Факт больше не теряется только в логе.
+
 **Требует работы (Phase 0)**:
-- **Cancellation reason** — новое поле на `Booking`, обязательное при отмене.
-- **No-show** — новый статус или булево поле + эндпоинт для владельца пометить неявку постфактум (после `startsAt` слота).
-- **Booking↔Payment консистентность** — см. раздел 5 (`PENDING_PAYMENT` + sweep job). Это самый весомый пробел в booking-надёжности сегодня: технически бронь может быть «подтверждена» без единого успешного платежа, если между двумя раздельными запросами что-то пошло не так, и ничего в системе этого не заметит.
+- **Booking↔Payment консистентность** — см. раздел 5 (`PENDING_PAYMENT` + sweep job). Это самый весомый оставшийся пробел в booking-надёжности: технически бронь может быть «подтверждена» без единого успешного платежа, если между двумя раздельными запросами что-то пошло не так, и ничего в системе этого не заметит. Сознательно не делалось в этом заходе вместе с cancellation reason/no-show — требует всей webhook-цепочки (0.2–0.4) целиком, не по частям (см. исправленную заметку в разделе 20).
 
 ---
 
@@ -417,12 +422,14 @@ Phase 1 (раздел 14): Users/Businesses/Subscriptions/Bookings/Payments/Reve
 
 **Уже готово**: CI/CD (`flutter-ci.yml`, `backend-ci.yml`, `build-artifacts.yml`) — реально проверен на живых прогонах GitHub Actions, включая сборку Android APK и backend bootJar. Flyway-миграции чистые, без пропущенных constraint'ов на денежно-критичных таблицах.
 
+**Сделано (2026-08-28)**:
+- ✅ **Docker-образ** — `./gradlew :platform-api:bootBuildImage`, без единого Dockerfile (Cloud Native Buildpacks). Реально запущен `docker run` с переменными окружения против существующих Postgres/MinIO-контейнеров из `infrastructure/docker-compose.yml` — Flyway применил миграции, `/actuator/health` ответил `{"status":"UP"}`. Acceptance criteria из раздела 3 подтверждён живым прогоном, не только сборкой.
+- ✅ **Внешняя конфигурация секретов** — `DB_URL`/`DB_USERNAME`/`DB_PASSWORD`/`JWT_SECRET`/`PLATFORM_ADMIN_JWT_SECRET`/`MINIO_ENDPOINT`/`MINIO_ACCESS_KEY`/`MINIO_SECRET_KEY`/`MINIO_BUCKET`/`SERVER_PORT`/`CORS_ALLOWED_ORIGINS` — каждый теперь `${ENV_VAR:dev-default}` в `application.yml`. Поведение не изменилось (Spring и раньше разрешал override через env var без этого синтаксиса), но теперь это явно и грепается — раньше был риск тихо не переопределить что-то важное при первом деплое.
+- ✅ **CORS готов к реальному origin** — `WebConfig` читает `app.cors.allowed-origins` (env var `CORS_ALLOWED_ORIGINS`, дефолт не изменился — `http://localhost:*`), добавить реальный домен теперь не требует правки Java-кода.
+
 **Required before pilot**:
-- Docker-образ `platform-api` — дешевле всего через встроенный `bootBuildImage` Gradle-таска (Cloud Native Buildpacks, Dockerfile не нужен вообще).
 - Одно staging-окружение (любой managed host — решение по бюджету, раздел 19).
 - Managed Postgres на staging/production (не self-hosted в контейнере рядом с приложением).
-- Полная внешняя конфигурация секретов (`${DB_PASSWORD}`, `${JWT_SECRET}`, `${MINIO_SECRET_KEY}`, будущий `${PAYMENT_PROVIDER_KEY}` и т.д.) — сегодня буквально всё захардкожено в `application.yml`, ноль `${...}`-плейсхолдеров.
-- Реальный CORS-origin (сейчас `localhost:*`-only — это правильно для дева, но физически не пропустит задеплоенный фронтенд).
 - Бэкапы БД (хотя бы cron `pg_dump` + off-site хранение, необязательно сразу managed-решение).
 - Базовый uptime-мониторинг + алерт на падение `/actuator/health`.
 
@@ -440,9 +447,9 @@ Lightweight production security review — код-проверено, не че�
 | Risk | Severity | Current State | Recommendation | Must Fix Before Pilot? |
 |---|---|---|---|---|
 | Нет rate limiting на login/register | High | Полностью отсутствует | Простой in-memory лимитер (или bucket4j) на auth-эндпоинты | **Да** |
-| Все секреты в git (JWT, DB, MinIO) | High | 100% литералы в `application.yml` | Внешние `${ENV_VAR}` перед любым деплоем | **Да** |
-| CORS = localhost-only | Medium (функциональный блокер, не уязвимость) | Осознанно узко для дева | Добавить реальный prod-origin при деплое | **Да** (иначе фронт не будет работать, не «уязвимость» в строгом смысле) |
-| Refund failure только логируется | Medium (финансовый риск) | `log.error`, без retry/видимости | Поле на Payment + admin-view (раздел 9) | **Да** |
+| ~~Все секреты в git (JWT, DB, MinIO)~~ | High | ✅ **Сделано 2026-08-28** — все теперь `${ENV_VAR:dev-default}`, значения по умолчанию не изменились (Spring и так разрешал override), но теперь явно и грепается. JWT-секреты по-прежнему публично в истории git — сгенерировать новые перед реальным деплоем, не переиспользовать | — | Готово |
+| ~~CORS = localhost-only~~ | Medium | ✅ **Сделано 2026-08-28** — `app.cors.allowed-origins`/`CORS_ALLOWED_ORIGINS`, дефолт не менялся. Добавить реальный домен теперь одна переменная окружения, не правка кода | — | Готово |
+| ~~Refund failure только логируется~~ | Medium (финансовый риск) | ✅ **Сделано 2026-08-28** — `Payment.refundFailureReason`, персистится до throw (`noRollbackFor`). Видно через `GET /bookings/{id}/payments`; отдельный admin-list всех проблемных refund'ов — по-прежнему часть Platform Dashboard (раздел 9, Phase 1), не сделано в этом заходе | Admin-list — Phase 1 | Ядро готово, обзор — нет |
 | File upload без content-type валидации | Medium | Принимает любой файл, ключ — UUID (не угадать) | Ограничить allow-list по MIME/расширению для фото | Рекомендовано, не жёсткий блокер для малого доверенного пилота |
 | Модерация бизнеса не в audit log | Low-Medium | Только catalog-действия и создание platform-admin логируются | Добавить `auditLogService.record` в `ProviderController.updateStatus` | Желательно, не блокер |
 | Два параллельных admin-контура (обычный ADMIN vs platform-admin) | Low-Medium (архитектурная путаница, не найдена прямая дыра) | Оба по отдельности корректно проверены | Прояснить границу или объединить в будущем | Нет, technical debt (раздел 17) |
@@ -608,8 +615,8 @@ Lightweight production security review — код-проверено, не че�
 
 1. **Payment provider (Kaspi Pay) и pilot country (Казахстан) уже решены** — открывает путь к 0.2/0.7. Остаётся решение 2 (карты) — до него 0.5 не может начаться конкретно, но остальной Phase 0 уже разблокирован.
 2. **Верифицировать recurring-биллинг через Kaspi Pay — первый шаг перед 0.2**, не после. Если окажется, что Kaspi не поддерживает удобный recurring для подписки — это меняет форму 0.7 (см. п.1 раздела 19), лучше узнать это до, а не в процессе интеграции.
-3. **0.1 (payment domain hardening) и 0.6 (no-show/cancellation) — можно начинать уже сейчас**, они не зависят от выбора провайдера вообще (чисто доменная модель).
-4. **0.8 (Docker) и часть 0.9 (secrets externalization) — тоже можно начинать параллельно**, не зависят от платёжного решения.
+3. ~~**0.6 (no-show/cancellation)**~~ — ✅ **сделано 2026-08-28**: cancellation reason + `NO_SHOW`-статус, с тестами (см. раздел 7). Обратите внимание: полноценный **0.1 (payment domain hardening = `PENDING_PAYMENT`)** сюда НЕ входит и намеренно отложен — его нельзя делать изолированно (см. правку выше в разделе 7): без всей webhook-цепочки (0.2–0.4) каждая бронь зависла бы в `PENDING_PAYMENT` навсегда, ничего её не подтверждало бы. Только refund-failure видимость (тоже часть 0.1) сделана отдельно — она аддитивна и безопасна сама по себе.
+4. ~~**0.8 (Docker) и часть 0.9 (secrets externalization)**~~ — ✅ **сделано 2026-08-28**, включая живую проверку `docker run` против реальных Postgres/MinIO (раздел 11). Оставшаяся часть 0.9 (managed Postgres, реальный staging-хостинг) всё ещё ждёт — это уже не код, а инфраструктурная закупка.
 5. **0.2 → 0.3 → 0.4 (Kaspi Pay → webhook → state machine) — строго последовательно**, самая рискованная и самая долгая цепочка, теперь разблокирована решением 1.
 6. **0.5 (maps) — параллельно с 0.2–0.4**, независимая ветка работы, начинается сразу после решения 2.
 7. **0.7 (subscription billing) — почти бесплатно после 0.2**, буквально то же интеграционное усилие, другая точка вызова (с оговоркой п.2 выше про recurring).
