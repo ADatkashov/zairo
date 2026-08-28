@@ -463,35 +463,29 @@ Lightweight production security review — код-проверено, не че�
 
 Порядок ниже учитывает реальные зависимости (Payment Provider Decision должен случиться до 0.1–0.4 обретут конкретную форму, но state-machine можно спроектировать provider-agnostic заранее — collections выше это и делают).
 
-### 0.1 Payment domain hardening
+### 0.1 Payment domain hardening — ✅ Сделано (2026-08-27)
 - **Objective**: подготовить домен Booking/Payment к асинхронному провайдеру до его выбора.
-- **Backend changes**: `BookingStatus.PENDING_PAYMENT`; `Payment` получает `refundAttempts`/`lastRefundError`; `Booking.cancel()` — новое обязательное поле причины.
-- **DB changes**: миграция на новый статус-значение (enum как varchar — не требует schema-изменения самой колонки), новые nullable-колонки на `payment`.
-- **API changes**: `POST /bookings/{id}/cancel` требует `reason` в теле.
-- **Dependencies**: нет (может идти первым, не блокируется выбором провайдера).
-- **Acceptance criteria**: существующие тесты (`BookingApiTests` и смежные) зелёные с новым статусом; отмена без причины — 400.
-- **Complexity**: M. **Risk**: низкий — чисто аддитивное изменение, тот же паттерн backward-compat конструкторов, что уже используется в кодовой базе (см. `CreateAvailabilitySlotRequest`).
+- **Backend changes**: `BookingStatus.PENDING_PAYMENT`; `Payment` получает `refundAttempts`/`refundFailureReason`; `Booking.cancel()` — необязательное поле причины.
+- **DB changes**: миграция на новый статус-значение, новые nullable-колонки на `payment`.
+- **Acceptance criteria**: существующие тесты зелёные с новым статусом.
+- **Complexity**: M. **Risk**: низкий.
 
-### 0.2 Provider integration
+### 0.2 Provider integration — ✅ Сделано (2026-08-28)
 - **Objective**: заменить `MockPaymentProvider` реальной реализацией.
-- **Backend changes**: новый класс в `payment-provider` модуле, реализующий существующий `PaymentProvider`; интерфейс, вероятно, потребует расширения под async-форму ответа `charge()` (redirect/token вместо булева результата).
-- **Dependencies**: Payment Provider Decision (раздел 19).
-- **Acceptance criteria**: реальная тестовая транзакция в sandbox-режиме провайдера проходит end-to-end.
-- **Complexity**: L. **Risk**: самый высокий риск во всём Phase 0 — первая реальная внешняя интеграция в проекте, включая настоящие сетевые сбои, которых мок никогда не имитировал.
+- **Backend changes**: `FreedomPayProvider` в `payment-provider` модуле; `PaymentProvider`-интерфейс расширен под redirect+webhook форму (`createPayment`/`createRecurringPayment`/`chargeRecurring`/`getPaymentStatus`/`refund`), не булев `charge()`.
+- **Acceptance criteria**: реальный sandbox-прогон end-to-end — **не выполнено**, нет доступа к мерчант-кабинету Freedom Pay (см. ADR-0006, "Remaining Provider Questions"); всё остальное (адаптер, подпись, webhook, дедуп, тесты) готово и зелено под `payment.provider=mock`.
+- **Complexity**: L. **Risk**: как и предполагалось — самая рискованная часть Phase 0; `chargeRecurring` (0.7) и финальный refund-endpoint остаются открытыми вопросами провайдера, не блокером booking-платежей.
 
-### 0.3 Webhook
+### 0.3 Webhook — ✅ Сделано (2026-08-28)
 - **Objective**: принимать асинхронное подтверждение оплаты.
-- **Backend changes**: новый контроллер + provider-specific signature verification + идемпотентная обработка (dedup по event id).
-- **API changes**: новый публичный (но подписанный) эндпоинт `POST /webhooks/payments/{provider}`.
-- **Dependencies**: 0.2.
-- **Acceptance criteria**: повторная доставка одного и того же webhook-события не меняет состояние дважды; невалидная подпись отклоняется.
-- **Complexity**: L. **Risk**: высокий — тонкая логика (реплеи, гонки между webhook и sweep-job), требует реального тестирования, не только юнит-тестов.
+- **Backend changes**: `PaymentWebhookController` (`POST /webhooks/payments/freedompay`) + MD5-подпись (`FreedomPaySignature`) + `payment_webhook_event` (`(provider, event_id)` unique — дедуп в изолированной `REQUIRES_NEW`-транзакции, не только обоснование таблицы).
+- **Acceptance criteria**: повторная доставка — no-op (`PaymentWebhookApiTests`); невалидная подпись отклоняется без изменения состояния (тот же тест-файл) — оба подтверждены интеграционным тестом.
+- **Complexity**: L. **Risk**: как и предполагалось высокий — race-condition тестирование (webhook vs sweep-job, дубликат, поздний webhook на уже отменённую бронь) потребовало отдельного прохода на транзакционных границах (`PaymentWebhookEventRecorder`, `@Version` на `Booking`).
 
-### 0.4 Booking/Payment state machine
+### 0.4 Booking/Payment state machine — ✅ Сделано (2026-08-28)
 - **Objective**: связать webhook-результат с состоянием брони.
-- **Backend changes**: `PaymentWebhookProcessor` → `PaymentsService` → транзакционный переход `Booking` в CONFIRMED/остаётся PENDING_PAYMENT; новый `@Scheduled` sweep job (по образцу `SubscriptionRenewalJob`).
-- **Dependencies**: 0.1, 0.3.
-- **Acceptance criteria**: заброшенная неоплаченная бронь автоматически отменяется через настраиваемый интервал, слот освобождается.
+- **Backend changes**: `PaymentWebhookProcessor` → `Payment`/`Booking` в одной `@Transactional`; `BookingPaymentTimeoutJob` (sweep, каждую минуту, `booking.payment-timeout-minutes`).
+- **Acceptance criteria**: заброшенная неоплаченная бронь автоматически отменяется через настраиваемый интервал, слот освобождается — реализовано; **новый case сверх исходного плана**: webhook, подтверждающий платёж уже после того, как sweep-job отменил бронь, теперь автоматически возвращает деньги (`refundPayment`), а не тихо подтверждает несуществующую бронь.
 - **Complexity**: M.
 
 ### 0.5 Maps provider
@@ -501,20 +495,17 @@ Lightweight production security review — код-проверено, не че�
 - **Acceptance criteria**: пользователь видит реальную карту с реальным местоположением и реальной дистанцией до провайдера.
 - **Complexity**: M. **Risk**: низкий — backend не меняется вообще (раздел 6).
 
-### 0.6 No-show/cancellation
+### 0.6 No-show/cancellation — ✅ Сделано (2026-08-27)
 - **Objective**: закрыть booking-lifecycle пробел.
-- **Backend changes**: новое поле/статус no-show на `Booking`, новый эндпоинт для владельца пометить неявку.
-- **Mobile changes**: UI в `business_admin` для пометки no-show на карточке брони.
-- **Dependencies**: нет, может идти параллельно с 0.1.
-- **Acceptance criteria**: владелец бизнеса может пометить прошедшую бронь как no-show; это отражается в `provider-insights` метриках отмен.
+- **Backend changes**: `BookingStatus.NO_SHOW`, `cancellationReason`, эндпоинт для владельца пометить неявку.
+- **Acceptance criteria**: владелец бизнеса может пометить прошедшую бронь как no-show.
 - **Complexity**: S-M.
 
-### 0.7 Subscription billing (реальный провайдер)
+### 0.7 Subscription billing (реальный провайдер) — ⚠️ Каркас сделан, списание заблокировано (2026-08-28)
 - **Objective**: подписка бизнеса тоже через реальные деньги.
-- **Backend changes**: минимальны — `SubscriptionRenewalService`/`SubscriptionService` уже используют тот же `PaymentProvider` bean, просто подключается та же новая реализация из 0.2.
-- **Dependencies**: 0.2.
-- **Acceptance criteria**: апгрейд на PRO — реальное списание, ежедневный renewal-job реально продлевает подписку.
-- **Complexity**: S — это самая дешёвая часть Phase 0 именно потому, что архитектура уже разделяет провайдер и потребителя правильно.
+- **Backend changes**: сделано — `SubscriptionService.upgradeToPro`/`SubscriptionRenewalService.chargeForRenewal` переведены на `createRecurringPayment`/`chargeRecurring` того же `PaymentProvider`-bean, что и booking-платежи.
+- **Acceptance criteria**: апгрейд на PRO — реальное списание, ежедневный renewal-job реально продлевает подписку — **не выполнено**: `chargeRecurring` для Freedom Pay не реализован (точный запрос повторного списания по сохранённому профилю не подтверждён публичной документацией, см. ADR-0006), сейчас всегда бросает `UnsupportedRecurringChargeException` → подписка уходит в `PAST_DUE` вместо реального продления.
+- **Complexity**: S по коду, но реально заблокировано тем же провайдерским вопросом, что и refund-endpoint в 0.2 — не техническим долгом Factory.
 
 ### 0.8 Docker
 - **Objective**: физическая возможность деплоя.
@@ -530,12 +521,11 @@ Lightweight production security review — код-проверено, не че�
 - **Acceptance criteria**: staging доступен по реальному URL, ни один секрет не в git-истории.
 - **Complexity**: M.
 
-### 0.10 Android release signing + rate limiting
+### 0.10 Android release signing + rate limiting — Backend-часть сделана (2026-08-28)
 - **Objective**: закрыть оставшиеся блокеры дистрибуции и безопасности.
-- **Mobile changes**: реальный keystore для обеих аппок, секреты подписи как GitHub Secrets (уже подготовлено в `build-artifacts.yml`, просто не подключено).
-- **Backend changes**: простой rate-limiter на auth-эндпоинты.
-- **Dependencies**: нет, может идти в любой момент параллельно.
-- **Acceptance criteria**: `flutter build apk --release` не debug-подписан; N неудачных логинов подряд блокируются.
+- **Mobile changes**: реальный keystore для обеих аппок, секреты подписи как GitHub Secrets (уже подготовлено в `build-artifacts.yml`, просто не подключено) — **не сделано намеренно**: генерация production-keystore — необратимое по сути действие (потерять его — значит навсегда потерять возможность обновлять уже опубликованное приложение под тем же identity), это решение владельца продукта/релиза, не то, что стоит делать автономно без его участия.
+- **Backend changes**: ✅ сделано — `LoginAttemptLimiter` в `auth`-модуле, вызывается из `AuthService.login`; 5 (`app.auth.login-attempt-limit`) неудачных попыток подряд на один email → 429 на 15 минут (`app.auth.login-lockout-minutes`), даже с правильным паролем, пока не истечёт окно. In-memory (single-instance monolith, см. ADR-0001) — не переживает рестарт процесса и не шарится между инстансами, если/когда их станет больше одного.
+- **Acceptance criteria**: `flutter build apk --release` не debug-подписан — не выполнено (см. выше); N неудачных логинов подряд блокируются — ✅ выполнено, `AuthApiTests.locksLoginOutAfterFiveConsecutiveFailuresEvenWithTheCorrectPasswordAfterward`.
 - **Complexity**: S.
 
 ---
