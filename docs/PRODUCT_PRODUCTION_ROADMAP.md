@@ -537,8 +537,8 @@ Lightweight production security review — код-проверено, не че�
 - **Booking-reminder уведомление** (за час до брони) + payment-success/refund-уведомления клиенту (сегодня есть только для booking confirm/cancel и subscription fail).
 - **Ответ бизнеса на отзыв** — управление репутацией сейчас невозможно в принципе.
 - **Platform Dashboard v1** — Users/Businesses/Subscriptions/Bookings/Payments/Revenue-MRR, всё live-query (раздел 9), без новой модели данных.
-- **Failed-refund видимость для админа** — финансовый риск, логичнее не откладывать глубоко в Phase 1, но технически не блокирует первую транзакцию.
-- **Базовый 1:1 текстовый чат бизнес↔клиент** — пограничный случай между Phase 1 и Can Wait; «расширенный» (медиа, групповые треды) — точно Can Wait, но простое текстовое сообщение — самый заметный ежедневный gap удобства из всех найденных, стоит явного решения продукт-овнера, не default в Can Wait.
+- ~~**Failed-refund видимость для админа**~~ — ✅ **Сделано (2026-08-28)**: `GET /api/v1/platform/payments/failed-refunds` (PLATFORM_ADMIN/PLATFORM_SUPPORT, read-only), список `Payment` в статусе `REFUND_FAILED` — то, что раньше было видно только в логе.
+- ~~**Базовый 1:1 текстовый чат бизнес↔клиент**~~ — **решено: включить в Phase 1** (2026-08-28), не откладывать в Can Wait. Только текстовые сообщения, без вложений/групп/read receipts — это остаётся Can Wait.
 
 ---
 

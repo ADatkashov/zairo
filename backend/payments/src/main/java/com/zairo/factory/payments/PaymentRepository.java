@@ -11,4 +11,7 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     Optional<Payment> findByBookingId(UUID bookingId);
 
     List<Payment> findByBookingIdInAndStatus(Collection<UUID> bookingIds, PaymentStatus status);
+
+    /** The platform admin's failed-refund visibility list — see PaymentAdminController. */
+    List<Payment> findByStatusOrderByCreatedAtDesc(PaymentStatus status);
 }
