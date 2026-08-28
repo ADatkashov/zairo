@@ -119,13 +119,22 @@ jobs:
           version_name=$(grep '^version:' pubspec.yaml | sed 's/version: *//' | cut -d'+' -f1 | tr -d '[:space:]')
           echo "name=$version_name" >> "$GITHUB_OUTPUT"
 
+      # Same MAPS_API_KEY wiring as build-artifacts.yml's android-apk job
+      # (see that file's comment) — has to reach the build both as a plain
+      # env var (build.gradle.kts's native manifest placeholder) and as
+      # --dart-define (maps_providers.dart's renderer selection). Only
+      # relevant for user_app; business_admin ignores it harmlessly.
       - name: flutter build apk --release
         working-directory: apps/${{ matrix.app }}
-        run: flutter build apk --release
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+        run: flutter build apk --release --dart-define=MAPS_API_KEY="$MAPS_API_KEY"
 
       - name: flutter build appbundle --release
         working-directory: apps/${{ matrix.app }}
-        run: flutter build appbundle --release
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+        run: flutter build appbundle --release --dart-define=MAPS_API_KEY="$MAPS_API_KEY"
 
       - name: Rename outputs for clarity
         run: |

@@ -165,8 +165,10 @@ just keeps showing the placeholder. Restricting the key by SHA-1
 fingerprint matters here specifically: this workflow's `flutter build apk
 --release` is still debug-signed (see the note above), so the fingerprint
 to register in Google Cloud Console is the standard Android debug
-keystore's — regenerate/re-register it once real release signing (§9.4)
-replaces debug signing.
+keystore's — register a second fingerprint (or a second, unrestricted-by-
+fingerprint key) for the real release-signed build from `android-release.yml`
+(§10), which wires the same `MAPS_API_KEY` secret the same way and is
+signed with the real upload keystore's certificate instead.
 
 each downloadable as a zip, retained 14 days. `backend-test-reports`
 also appears here, but only on a `backend-ci.yml` run that failed.
@@ -269,6 +271,11 @@ It produces a **release-signed APK and AAB** and publishes both as a
 openable straight from a phone browser (repo → **Releases** tab, or the
 link the workflow run prints). Unlike `build-artifacts.yml`'s workflow-run
 artifacts, a GitHub Release never expires and isn't zipped.
+
+It also wires the optional `secrets.MAPS_API_KEY` the same way
+`build-artifacts.yml` does (see §7) — if that secret is set, `user_app`'s
+release build renders a real Google Map instead of the placeholder;
+unset, it's a safe default, not a broken build.
 
 ### How it works
 
