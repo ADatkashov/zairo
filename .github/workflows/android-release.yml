@@ -150,7 +150,7 @@ jobs:
       # run (the tag includes both the app name and the run number, so
       # repeated manual dispatches never collide).
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ matrix.app }}-v${{ steps.version.outputs.name }}-${{ github.run_number }}
           name: "${{ matrix.app }} v${{ steps.version.outputs.name }} (build ${{ github.run_number }})"
