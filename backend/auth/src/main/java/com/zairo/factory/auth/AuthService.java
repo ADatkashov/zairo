@@ -22,17 +22,20 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService;
     private final PasswordResetTokenService passwordResetTokenService;
     private final ApplicationEventPublisher eventPublisher;
+    private final LoginAttemptLimiter loginAttemptLimiter;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public AuthService(UserRepository userRepository, CredentialRepository credentialRepository,
             JwtService jwtService, RefreshTokenService refreshTokenService,
-            PasswordResetTokenService passwordResetTokenService, ApplicationEventPublisher eventPublisher) {
+            PasswordResetTokenService passwordResetTokenService, ApplicationEventPublisher eventPublisher,
+            LoginAttemptLimiter loginAttemptLimiter) {
         this.userRepository = userRepository;
         this.credentialRepository = credentialRepository;
         this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
         this.passwordResetTokenService = passwordResetTokenService;
         this.eventPublisher = eventPublisher;
+        this.loginAttemptLimiter = loginAttemptLimiter;
     }
 
     @Transactional
@@ -60,15 +63,16 @@ public class AuthService {
 
     @Transactional
     public TokenResponse login(String email, String rawPassword) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
-        Credential credential = credentialRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
+        loginAttemptLimiter.checkNotLockedOut(email);
 
-        if (!passwordEncoder.matches(rawPassword, credential.getPasswordHash())) {
+        User user = userRepository.findByEmail(email).orElse(null);
+        Credential credential = user == null ? null : credentialRepository.findByUserId(user.getId()).orElse(null);
+        if (user == null || credential == null || !passwordEncoder.matches(rawPassword, credential.getPasswordHash())) {
+            loginAttemptLimiter.recordFailure(email);
             throw new InvalidCredentialsException("Invalid email or password");
         }
 
+        loginAttemptLimiter.recordSuccess(email);
         return issueTokens(user);
     }
 

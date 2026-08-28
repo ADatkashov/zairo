@@ -1,6 +1,9 @@
 package com.zairo.factory.subscriptions;
 
 import com.zairo.factory.paymentprovider.PaymentProvider;
+import com.zairo.factory.paymentprovider.PaymentProvider.InitiationStatus;
+import com.zairo.factory.paymentprovider.PaymentProvider.PaymentInitiation;
+import com.zairo.factory.paymentprovider.PaymentProviderName;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,15 +21,24 @@ public class SubscriptionService {
     private final SubscriptionRepository subscriptionRepository;
     private final SubscriptionChargeRepository subscriptionChargeRepository;
     private final PaymentProvider paymentProvider;
+    private final PaymentProviderName providerName;
     private final String defaultCurrency;
+    private final String successUrl;
+    private final String failureUrl;
 
     public SubscriptionService(SubscriptionRepository subscriptionRepository,
             SubscriptionChargeRepository subscriptionChargeRepository, PaymentProvider paymentProvider,
-            @Value("${app.platform.default-currency:USD}") String defaultCurrency) {
+            @Value("${payment.provider:mock}") String providerName,
+            @Value("${app.platform.default-currency:USD}") String defaultCurrency,
+            @Value("${payment.return.success-url:}") String successUrl,
+            @Value("${payment.return.failure-url:}") String failureUrl) {
         this.subscriptionRepository = subscriptionRepository;
         this.subscriptionChargeRepository = subscriptionChargeRepository;
         this.paymentProvider = paymentProvider;
+        this.providerName = PaymentProviderName.valueOf(providerName.toUpperCase());
         this.defaultCurrency = defaultCurrency;
+        this.successUrl = successUrl;
+        this.failureUrl = failureUrl;
     }
 
     @Transactional
@@ -41,35 +53,61 @@ public class SubscriptionService {
      * re-charge) rather than an error — the natural action for someone who
      * clicks Upgrade again after having clicked Downgrade earlier in the
      * same period.
+     *
+     * <p>Under the mock provider this resolves synchronously and {@code
+     * checkoutUrl} on the result is always null, exactly matching this
+     * codebase's pre-Freedom-Pay behavior. Under a real redirect-based
+     * provider the subscription is <b>not</b> upgraded yet when this
+     * returns — the caller must send the customer to {@code checkoutUrl}
+     * and the actual upgrade happens once the provider's webhook confirms
+     * the charge (see the webhook processor) — same "frontend redirect is
+     * not the source of truth" rule as booking payments (ADR-0006).
      */
     @Transactional
-    public Subscription upgradeToPro(UUID ownerUserId) {
+    public SubscriptionUpgradeResult upgradeToPro(UUID ownerUserId) {
         Subscription subscription = getOrCreate(ownerUserId);
         if (subscription.getPlan() == SubscriptionPlan.PRO) {
             subscription.clearDowngradeRequest(Instant.now());
-            return subscriptionRepository.save(subscription);
+            return new SubscriptionUpgradeResult(subscriptionRepository.save(subscription), null);
         }
 
         SubscriptionCharge charge = subscriptionChargeRepository.save(new SubscriptionCharge(UUID.randomUUID(),
-                subscription.getId(), SubscriptionPlan.PRO.monthlyPrice, defaultCurrency, Instant.now()));
-        PaymentProvider.ChargeResult result;
+                subscription.getId(), SubscriptionPlan.PRO.monthlyPrice, defaultCurrency, providerName, null,
+                Instant.now()));
+
+        PaymentInitiation result;
         try {
-            result = paymentProvider.charge(charge.getId(), charge.getAmount(), charge.getCurrency());
+            result = paymentProvider.createRecurringPayment(charge.getId(), charge.getAmount(), charge.getCurrency(),
+                    "Factory PRO subscription", successUrl, failureUrl);
         } catch (RuntimeException e) {
             charge.markFailed("Payment provider error: " + e.getMessage(), Instant.now());
             subscriptionChargeRepository.save(charge);
             throw new SubscriptionUpgradeFailedException("Could not charge for the PRO plan: " + e.getMessage());
         }
-        if (!result.succeeded()) {
+
+        if (result.recurringProfileId() != null) {
+            charge.assignRecurringProfileId(result.recurringProfileId(), Instant.now());
+        }
+
+        if (result.status() == InitiationStatus.FAILED) {
             charge.markFailed(result.failureReason(), Instant.now());
             subscriptionChargeRepository.save(charge);
             throw new SubscriptionUpgradeFailedException("Payment declined: " + result.failureReason());
         }
-        charge.markSucceeded(result.providerReference(), Instant.now());
-        subscriptionChargeRepository.save(charge);
 
+        if (result.status() == InitiationStatus.PENDING) {
+            subscriptionChargeRepository.save(charge);
+            return new SubscriptionUpgradeResult(subscription, result.checkoutUrl());
+        }
+
+        charge.markSucceeded(result.providerPaymentId(), Instant.now());
+        subscriptionChargeRepository.save(charge);
         subscription.markUpgradedToPro(Instant.now());
-        return subscriptionRepository.save(subscription);
+        return new SubscriptionUpgradeResult(subscriptionRepository.save(subscription), null);
+    }
+
+    /** {@code checkoutUrl} is non-null only when a real provider left the charge PENDING — see {@link #upgradeToPro}. */
+    public record SubscriptionUpgradeResult(Subscription subscription, String checkoutUrl) {
     }
 
     /**

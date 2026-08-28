@@ -2,4 +2,7 @@ description = "Port to an external payment provider (charge/refund by idempotenc
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter")
+
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }

@@ -23,7 +23,8 @@ verticals/       исторический маркер (см. verticals/README.m
                  vertical-код живёт в backend/vertical-*/ и apps/*/lib/features/*/
 backend/         Spring Boot, modular monolith; vertical-beauty/vertical-auto —
                  отдельные Gradle-подпроекты, зависят от Core, не наоборот
-infrastructure/  docker-compose, CI
+infrastructure/  docker-compose (локальный Postgres/Redis/MinIO)
+.github/         GitHub Actions CI — см. docs/ci-cd.md
 docs/adr/        architecture decision records
 ```
 
@@ -40,6 +41,14 @@ melos bootstrap
 melos run analyze
 melos run test
 ```
+
+## CI
+
+Каждый PR и пуш в `develop`/`test`/`master` автоматически проверяются
+GitHub Actions: `flutter analyze` + `flutter test` по каждому Flutter-
+пакету и `./gradlew build` для backend. Подробности — какие workflow'ы
+есть, что именно они проверяют, куда класть секреты и что сознательно
+ещё не автоматизировано — в [`docs/ci-cd.md`](docs/ci-cd.md).
 
 ## Текущее состояние
 

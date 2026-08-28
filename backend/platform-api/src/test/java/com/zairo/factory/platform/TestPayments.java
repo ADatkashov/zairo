@@ -23,7 +23,20 @@ class TestPayments {
     PaymentProvider testPaymentProvider(FailureController failureController) {
         return new PaymentProvider() {
             @Override
-            public ChargeResult charge(UUID paymentId, BigDecimal amount, String currency) {
+            public PaymentInitiation createPayment(UUID paymentId, BigDecimal amount, String currency,
+                    String description, String successUrl, String failureUrl) {
+                return initiate(paymentId, null);
+            }
+
+            @Override
+            public PaymentInitiation createRecurringPayment(UUID paymentId, BigDecimal amount, String currency,
+                    String description, String successUrl, String failureUrl) {
+                return initiate(paymentId, "mock_recurring_" + paymentId);
+            }
+
+            @Override
+            public ChargeResult chargeRecurring(String recurringProfileId, UUID paymentId, BigDecimal amount,
+                    String currency) {
                 if (failureController.failNextCharge) {
                     failureController.failNextCharge = false;
                     if (failureController.throwOnNextCharge) {
@@ -36,8 +49,32 @@ class TestPayments {
             }
 
             @Override
+            public PaymentStatusResult getPaymentStatus(UUID paymentId, String providerPaymentId) {
+                return new PaymentStatusResult(InitiationStatus.SUCCEEDED, providerPaymentId);
+            }
+
+            @Override
             public RefundResult refund(UUID paymentId, String providerReference, BigDecimal amount) {
+                if (failureController.failNextRefund) {
+                    failureController.failNextRefund = false;
+                    return new RefundResult(false, "simulated refund outage");
+                }
                 return new RefundResult(true, null);
+            }
+
+            /** Shared by createPayment/createRecurringPayment — same failNextCharge/throwOnNextCharge flags chargeRecurring honors. */
+            private PaymentInitiation initiate(UUID paymentId, String recurringProfileId) {
+                if (failureController.failNextCharge) {
+                    failureController.failNextCharge = false;
+                    if (failureController.throwOnNextCharge) {
+                        failureController.throwOnNextCharge = false;
+                        throw new RuntimeException("simulated provider outage");
+                    }
+                    return new PaymentInitiation(null, null, null, InitiationStatus.FAILED,
+                            "simulated card decline");
+                }
+                return new PaymentInitiation("mock_pi_" + paymentId, null, recurringProfileId,
+                        InitiationStatus.SUCCEEDED, null);
             }
         };
     }
@@ -51,5 +88,6 @@ class TestPayments {
     static class FailureController {
         volatile boolean failNextCharge;
         volatile boolean throwOnNextCharge;
+        volatile boolean failNextRefund;
     }
 }

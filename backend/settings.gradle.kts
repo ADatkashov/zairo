@@ -29,4 +29,6 @@ include(
     "platform-admin",
     "catalog",
     "provider-insights",
+    "platform-insights",
+    "messaging",
 )

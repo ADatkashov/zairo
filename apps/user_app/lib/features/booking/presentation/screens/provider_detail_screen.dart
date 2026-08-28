@@ -18,7 +18,7 @@ import '../../../beauty/presentation/providers/beauty_providers.dart';
 import '../../../beauty/presentation/screens/master_portfolio_screen.dart';
 import '../../../discovery/data/models/provider_search_result.dart';
 import '../../../favorites/presentation/widgets/favorite_button.dart';
-import '../../../maps/presentation/screens/mock_map_screen.dart';
+import '../../../maps/presentation/screens/provider_map_screen.dart';
 import '../../../payments/data/payment_exception.dart';
 import '../../../payments/presentation/providers/payments_providers.dart';
 import '../../data/booking_exception.dart';
@@ -131,7 +131,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                   label: Text(l10n.viewOnMapButton),
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => MockMapScreen(
+                      builder: (_) => ProviderMapScreen(
                         providerName: widget.provider.name,
                         latitude: widget.provider.latitude!,
                         longitude: widget.provider.longitude!,

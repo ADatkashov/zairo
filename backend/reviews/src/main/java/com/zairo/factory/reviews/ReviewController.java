@@ -1,13 +1,17 @@
 package com.zairo.factory.reviews;
 
+import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.reviews.ReviewDtos.CreateReviewRequest;
+import com.zairo.factory.reviews.ReviewDtos.ReplyToReviewRequest;
 import com.zairo.factory.reviews.ReviewDtos.ReviewResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -59,5 +63,22 @@ public class ReviewController {
         return reviewRepository.findByBookingId(bookingId).map(ReviewResponse::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "No review for booking: " + bookingId));
+    }
+
+    @Operation(summary = "Reply to a review", description = """
+            Only the reviewed booking's provider owner may reply. Posting again overwrites the earlier \
+            reply — editing your own reply is a normal case, not an error.""")
+    @ApiResponse(responseCode = "200", description = "Reply saved")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "The caller doesn't own this review's provider.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/api/v1/reviews/{reviewId}/reply")
+    public ReviewResponse reply(@Parameter(description = "The review's id.") @PathVariable UUID reviewId,
+            @Valid @RequestBody ReplyToReviewRequest request, HttpServletRequest httpRequest) {
+        UUID callerId = CurrentUser.requireUserId(httpRequest);
+        Review review = reviewService.replyToReview(reviewId, callerId, request.reply());
+        return ReviewResponse.from(review);
     }
 }

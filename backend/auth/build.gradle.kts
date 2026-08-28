@@ -35,4 +35,7 @@ dependencies {
     // needs a dependency on auth (for this event's type) and on booking
     // (for booking's own events), and booking already depends on auth.
     // See PasswordResetRequestedEvent's doc comment.
+
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
