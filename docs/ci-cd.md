@@ -379,10 +379,40 @@ then `flutter build apk --release` / `flutter build appbundle --release`
 as usual — no other setup needed, since `build.gradle.kts` reads this file
 exactly the same way CI does.
 
+### Pointing the app at a backend (`api_base_url` input)
+
+Neither app has a deployed backend to talk to (see §1/§8) — every APK's
+`baseUrl` is either an auto-detected default (`apps/*/lib/core/constants/
+environment.dart`: `localhost` on web/desktop/iOS simulator, the
+Android-emulator-only alias `10.0.2.2` on an emulator) or the value baked
+in via `--dart-define=API_BASE_URL=...`. A **physical phone can reach
+neither auto-detected default** — it needs your computer's real LAN IP.
+
+To test a release build on a real device over the same Wi-Fi network as
+your computer:
+
+1. Start the backend on your computer: `cd infrastructure && docker
+   compose up -d` (Postgres/Redis/MinIO), then `cd ../backend && ./gradlew
+   :platform-api:bootRun`.
+2. Find your computer's LAN IP (**not** `localhost`/`127.0.0.1`) —
+   `ipconfig` (Windows, look for `IPv4 Address`) or `ifconfig`/`ip addr`
+   (macOS/Linux). It looks like `192.168.x.x`.
+3. Allow inbound connections to port 8080 in your computer's firewall
+   (Windows Defender Firewall blocks this by default).
+4. When running **Android Release** (below), set the `api_base_url` input
+   to `http://<that IP>:8080/api/v1` — include the `/api/v1` suffix.
+
+The GitHub Release's notes record which backend URL got baked into that
+particular build, so it's never a guess later which APK talks to what.
+
+Once a real deployed backend exists, this same input takes its public
+URL instead — nothing about the mechanism changes.
+
 ### Getting the APK onto a phone
 
 1. **Actions** tab → **Android Release** (left sidebar) → **Run workflow**
-   → pick the branch and which app(s) → **Run workflow**.
+   → pick the branch, which app(s), and optionally `api_base_url` (see
+   above) → **Run workflow**.
 2. Once it finishes, open the repo's **Releases** page (or the direct link
    printed at the end of the `Publish GitHub Release` step) on the phone.
 3. Tap the `.apk` asset to download it, then open the downloaded file to
