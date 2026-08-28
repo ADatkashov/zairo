@@ -17,6 +17,21 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     List<Booking> findByStatusAndCreatedAtBefore(BookingStatus status, Instant cutoff);
 
     /**
+     * BookingReminderJob's target — a CONFIRMED booking whose slot starts
+     * within the given window and hasn't been reminded about yet. A native
+     * join because, like {@link #findByProviderId}, the slot's own
+     * {@code starts_at} isn't a column on {@code booking} itself.
+     */
+    @Query(value = """
+            select b.* from booking b
+            join availability_slot s on s.id = b.availability_slot_id
+            where b.status = 'CONFIRMED' and b.reminder_sent_at is null
+              and s.starts_at > :now and s.starts_at <= :reminderCutoff
+            """, nativeQuery = true)
+    List<Booking> findConfirmedBookingsStartingBeforeAndNotYetReminded(@Param("now") Instant now,
+            @Param("reminderCutoff") Instant reminderCutoff);
+
+    /**
      * Every booking ever made against this provider, regardless of status —
      * same join shape as {@link #countByProviderIdAndCreatedAtBetween},
      * reused here to list rather than just count (see
