@@ -129,7 +129,8 @@ class BeautyApiTests {
         assertThat(created.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         String bookingId = created.getBody().get("bookingId").toString();
         assertThat(created.getBody().get("masterId")).isEqualTo(masterId.toString());
-        assertThat(created.getBody().get("status")).isEqualTo("CONFIRMED");
+        // Not CONFIRMED yet — a booking starts PENDING_PAYMENT until its payment succeeds (ADR-0006).
+        assertThat(created.getBody().get("status")).isEqualTo("PENDING_PAYMENT");
 
         // Fetching it back through the beauty endpoint returns the same master link.
         Map<?, ?> fetched = restTemplate.getForEntity("/api/v1/beauty/bookings/" + bookingId, Map.class).getBody();

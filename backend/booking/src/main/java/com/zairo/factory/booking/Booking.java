@@ -10,6 +10,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
@@ -61,6 +62,19 @@ public class Booking {
     @Column(name = "cancellation_reason")
     private String cancellationReason;
 
+    /**
+     * Optimistic lock — same reasoning as {@code AvailabilitySlot}/{@code
+     * payments.Payment}: guards against {@link
+     * com.zairo.factory.booking.BookingService#confirmAfterPayment} and
+     * {@link com.zairo.factory.booking.BookingService#cancelUnpaidBooking}
+     * racing each other (a late webhook confirming a booking the sweep job
+     * is simultaneously timing out, or vice versa) under concurrent
+     * transactions — without this, both could read PENDING_PAYMENT before
+     * either commits and silently double-process it.
+     */
+    @Version
+    private int version;
+
     protected Booking() {
     }
 
@@ -109,6 +123,11 @@ public class Booking {
 
     public String getCancellationReason() {
         return cancellationReason;
+    }
+
+    /** Payment succeeded — PENDING_PAYMENT is the only status this is ever called from, see BookingService. */
+    void markConfirmed() {
+        this.status = BookingStatus.CONFIRMED;
     }
 
     void markCompleted() {

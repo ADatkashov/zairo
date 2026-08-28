@@ -54,10 +54,11 @@ class ProviderInsightsApiTests {
                 new HttpEntity<>(bookingRequest, TestAuth.authHeaders(customer.accessToken())), Map.class).getBody();
         UUID bookingId = UUID.fromString(booking.get("id").toString());
 
-        restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/complete", null, Map.class);
+        // Completing requires CONFIRMED first, which requires payment (ADR-0006).
         ResponseEntity<Map> payment = restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments", null,
                 Map.class);
         assertThat(payment.getBody().get("status")).isEqualTo("SUCCEEDED");
+        restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/complete", null, Map.class);
 
         ResponseEntity<List> response = restTemplate.exchange("/api/v1/providers/" + providerId + "/customers",
                 HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), List.class);
@@ -103,8 +104,9 @@ class ProviderInsightsApiTests {
                 "dash-completed-" + runId + "@example.com");
         UUID completedSlot = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
         UUID completedBookingId = book(completedCustomer, serviceId, completedSlot, new BigDecimal("40.00"));
-        restTemplate.postForEntity("/api/v1/bookings/" + completedBookingId + "/complete", null, Map.class);
+        // Completing requires CONFIRMED first, which requires payment (ADR-0006).
         restTemplate.postForEntity("/api/v1/bookings/" + completedBookingId + "/payments", null, Map.class);
+        restTemplate.postForEntity("/api/v1/bookings/" + completedBookingId + "/complete", null, Map.class);
 
         Registered cancelledCustomer = TestAuth.registerCustomer(restTemplate,
                 "dash-cancelled-" + runId + "@example.com");
