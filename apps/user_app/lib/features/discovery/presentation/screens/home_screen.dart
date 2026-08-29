@@ -22,6 +22,7 @@ import '../widgets/provider_card.dart';
 IconData _iconForCategory(String code) => switch (code) {
   'beauty' => Icons.content_cut_rounded,
   'auto' => Icons.directions_car_filled_rounded,
+  'cleaning' => Icons.cleaning_services_rounded,
   _ => Icons.storefront_outlined,
 };
 

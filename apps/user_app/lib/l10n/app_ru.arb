@@ -77,6 +77,7 @@
   "homeSeeAll": "Смотреть все",
   "discoveryVerticalBeauty": "Красота",
   "discoveryVerticalAuto": "Авто",
+  "discoveryVerticalCleaning": "Уборка",
   "homeCategoriesTitle": "Категории",
   "homeBookAgainTitle": "Повторить запись",
 
@@ -172,6 +173,7 @@
   "bookButton": "Забронировать",
   "viewPortfolioTooltip": "Смотреть портфолио",
   "mechanicsSectionTitle": "Механики",
+  "cleanersSectionTitle": "Клинеры",
   "vehiclesSectionTitle": "Ваш автомобиль",
   "vehiclesEmptyTitle": "Пока нет автомобилей",
   "vehiclesEmptyMessage": "Добавьте автомобиль, чтобы записаться на автосервис.",
@@ -191,6 +193,7 @@
   "deleteVehicleConfirmMessage": "Автомобиль {vehicle} будет удалён из списка.",
   "myVehiclesButton": "Мои автомобили",
   "errorAutoBookingFailed": "Не удалось завершить бронирование — возможно, механик не предоставляет эту услугу, либо время только что было занято. Попробуйте ещё раз.",
+  "errorCleaningBookingFailed": "Не удалось завершить бронирование — возможно, клинер не предоставляет эту услугу, либо время только что было занято. Попробуйте ещё раз.",
   "serviceDurationMinutes": "{minutes} мин",
 
   "monthJan": "янв",
