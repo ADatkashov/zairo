@@ -80,12 +80,12 @@ jobs:
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # AGP/Kotlin toolchain — same version as build-artifacts.yml's
       # android-apk job.
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "21"
@@ -199,7 +199,7 @@ jobs:
       # run (the tag includes both the app name and the run number, so
       # repeated manual dispatches never collide).
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ matrix.app }}-v${{ steps.version.outputs.name }}-${{ github.run_number }}
           name: "${{ matrix.app }} v${{ steps.version.outputs.name }} (build ${{ github.run_number }})"

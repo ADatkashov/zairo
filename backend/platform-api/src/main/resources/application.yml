@@ -31,7 +31,12 @@ spring:
       max-request-size: 10MB
 
 server:
-  port: ${SERVER_PORT:8080}
+  # Falls back to PORT (Render/Heroku-style platforms set this, not
+  # SERVER_PORT, and require the app to actually bind to it to route
+  # traffic in) before the local dev default — SERVER_PORT still wins if
+  # both happen to be set, so nothing changes for an existing deployment
+  # that already sets SERVER_PORT explicitly.
+  port: ${SERVER_PORT:${PORT:8080}}
 
 app:
   cors:
