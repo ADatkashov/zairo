@@ -17,9 +17,10 @@ backend. On top of that, pushes to those same three branches also
 assemble installable artifacts (Android APKs, the backend's bootJar) and
 attach them to the workflow run.
 
-It does **not** deploy anything, build a Docker image, or touch any of
-`test`/`staging`/`production` as real environments — none of those exist
-yet in a form CI could safely target. See §8.
+GitHub Actions itself still does **not** deploy anything or touch any of
+`test`/`staging`/`production` as real environments — those don't exist as
+CI targets yet. §12 covers a real (manually set up, not CI-triggered)
+cloud deployment of the backend that now exists alongside this.
 
 ## 2–4. Workflows: what exists, when they run, what they check
 
@@ -175,16 +176,16 @@ also appears here, but only on a `backend-ci.yml` run that failed.
 
 ## 8. What is intentionally NOT automated yet
 
-- **No deployment of any kind.** There is no existing deploy mechanism
-  (no Dockerfile, no Kubernetes manifests, no cloud provider config, no
-  prior `.github/` at all before this change) for CI to hook into, and
-  the task this was built from was explicit: don't invent one.
-- **No Docker image build.** No `Dockerfile` exists anywhere in the
-  repo. Note for later: `platform-api` already gets a `bootBuildImage`
-  Gradle task for free from the `org.springframework.boot` plugin
-  (Cloud Native Buildpacks — no Dockerfile needed), so adding a
-  container image is a smaller lift than "write a Dockerfile from
-  scratch" whenever it's actually needed.
+- ~~No deployment of any kind.~~ **Partially done — see §12.** A real,
+  free-tier cloud deployment path exists now (Neon Postgres + a
+  Docker-based host + S3-compatible object storage) — CI itself still
+  doesn't auto-deploy anywhere (§12's Render setup is manual, and
+  `main`/`test`/`master` pushes don't trigger it), but there's finally
+  somewhere to point one at, if that's ever added.
+- ~~No Docker image build.~~ **Done — `backend/Dockerfile`** (a plain
+  multi-stage Dockerfile, not `bootBuildImage`'s Cloud Native Buildpacks —
+  see §12 for why: a Docker-runtime image is what every free-tier host in
+  §12 actually expects to build from a repo).
 - ~~No release-signed Android build / no AAB.~~ **Done — see §10.**
   `android-release.yml` produces a real release-signed APK and AAB on
   manual dispatch. `build-artifacts.yml`'s automatic per-push APK stays
@@ -247,18 +248,16 @@ building this, not guessed at:
    `develop`, `test`, and `master`, per the exact list in §8 — this is
    the actual "PR CI" enforcement; right now these workflows run and
    report but nothing stops a merge if they're red.
-3. **A real Docker image for `platform-api`**, most cheaply via the
-   Spring Boot Gradle plugin's built-in `bootBuildImage` task (see §8) —
-   no Dockerfile needed to get started. This is the actual prerequisite
-   for everything below the "Docker Image" box in the target pipeline —
-   right now there is nothing to deploy *to* a `test` environment even
-   if one existed.
+3. ~~**A real Docker image for `platform-api`**~~ **Done — see §12**
+   (`backend/Dockerfile`).
 4. ~~**Android release signing**~~ **Done — see §10.**
 5. **GitHub Environments for `test` → `staging` → `production`**, each
    with its own secrets and (for `staging`/`production`) a required
-   reviewer, once there's an actual place each of those points at. This
-   is where the target pipeline's bottom three boxes become real —
-   deliberately not built now, per §8.
+   reviewer, once there's an actual place each of those points at. §12's
+   Render deployment is that place today, created manually — wiring an
+   actual auto-deploy-on-push GitHub Actions job to it (rather than
+   Render's own auto-deploy-on-push, which is what's configured now) is
+   what this item would still add.
 
 ## 10. Android release signing
 
@@ -438,3 +437,108 @@ Writes to `docs/local/` — gitignored on purpose, so the collection
 never goes stale in git the way a committed export would. Re-run it
 whenever the API changes and you want a fresh import for manual
 testing in Postman.
+
+## 12. Running the backend in the cloud (no local machine required)
+
+The goal here: nobody's own computer needs to be running Postgres/MinIO/
+the backend for the app to work — everything lives in managed, mostly
+free-tier cloud services instead. Three pieces, each independently
+swappable (the backend reads all of them from plain environment
+variables — see `application.yml`, none of this needed a code change
+except the `Dockerfile` itself and the `PORT` fallback below):
+
+| Piece | Service (free tier) | Env vars it fills |
+|---|---|---|
+| Postgres | **Neon** | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` |
+| Object storage (replaces local MinIO) | **Cloudflare R2** (or any S3-compatible provider — `StorageConfig` uses the plain `io.minio` SDK, which speaks the S3 API generically) | `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET` |
+| The backend itself | **Render** (or Cloud Run/Fly.io — anything that builds `backend/Dockerfile`) | everything else below |
+
+Redis is deliberately not in this list — nothing in `backend/` connects
+to it (see §8's original note); `infrastructure/docker-compose.yml`
+provisioning one is for local dev only and has no cloud equivalent to
+set up.
+
+### Postgres — Neon
+
+A project already exists (created via the Neon MCP integration): project
+`zairo`, database `app_factory`, region `aws-us-east-2`. Its `DB_URL` /
+`DB_USERNAME` / `DB_PASSWORD` values were handed to the project owner
+directly (not committed here — see the note on secrets below) the same
+way the Android keystore was in §10. To create a fresh one instead:
+[console.neon.tech](https://console.neon.tech) → New Project → note the
+connection string it gives you (use the **non-pooled** host — no
+`-pooler` suffix — Flyway's own migration lock doesn't play well with
+PgBouncer transaction pooling; Hikari already does the app's own
+connection pooling, so Neon's pooler adds nothing here anyway) → append
+`?sslmode=require` if it isn't already there.
+
+### Object storage — Cloudflare R2
+
+No MCP/API integration for this in the session that set it up — needs a
+few manual clicks in the Cloudflare dashboard:
+
+1. [dash.cloudflare.com](https://dash.cloudflare.com) → sign up/in (free,
+   no card required for R2's free tier: 10 GB storage, no egress fees).
+2. **R2 Object Storage** (left sidebar) → **Create bucket** → name it
+   (e.g. `zairo-media`) → this becomes `MINIO_BUCKET`.
+3. **Manage R2 API Tokens** → **Create API Token** → permissions
+   **Object Read & Write**, scoped to that one bucket → copy the
+   **Access Key ID** (`MINIO_ACCESS_KEY`) and **Secret Access Key**
+   (`MINIO_SECRET_KEY`) — the secret is shown once, save it immediately.
+4. The bucket's **S3 API** endpoint (shown on the bucket's page) is
+   `MINIO_ENDPOINT` — looks like
+   `https://<account-id>.r2.cloudflarestorage.com`.
+
+### The backend — Render
+
+Render's MCP tool for creating a web service explicitly only supports
+Node/Python/Go/Rust/Ruby/Elixir buildpacks, **not Docker** — and a JVM
+app has no non-Docker option there, so this one step is manual (the
+dashboard itself has no such limitation):
+
+1. [dashboard.render.com](https://dashboard.render.com) → **New** →
+   **Web Service** → connect the `adatkashov/zairo` GitHub repo.
+2. **Root Directory**: `backend` (so Render finds `Dockerfile` and the
+   build gets the whole Gradle multi-module tree it needs — see the
+   Dockerfile's own comment on why).
+3. **Runtime/Environment**: **Docker** (Render then just builds
+   `backend/Dockerfile` — no other field needed; leave Build/Start
+   Command blank, the `Dockerfile` already has both).
+4. **Instance Type**: **Free**.
+5. **Environment** tab → add every variable from the table above, plus
+   `PAYMENT_PROVIDER=mock` (no real Freedom Pay credentials exist yet —
+   see ADR-0006). Do **not** set `SERVER_PORT` — Render injects its own
+   `PORT`, and `application.yml`'s `server.port: ${SERVER_PORT:${PORT:8080}}`
+   already falls back to it.
+6. **Create Web Service.** First build takes a few minutes (full Gradle
+   build from scratch, no cache yet). Render gives the service a public
+   URL like `https://zairo-backend.onrender.com` once it's live —
+   `https://<that-url>/actuator/health` should return `{"status":"UP"}`.
+
+Free-tier caveat: the service **sleeps after 15 minutes idle**, and the
+first request after that takes 30–60 seconds to wake it (subsequent
+requests are normal speed). Fine for personal use/testing; not
+acceptable for a real product with users who'd hit that cold start.
+
+### Pointing the app at it
+
+Same mechanism as physical-device Wi-Fi testing (§10's `api_base_url`
+input) — once Render's URL is live, use it instead of a LAN IP:
+
+```
+https://<your-service>.onrender.com/api/v1
+```
+
+No code change either way — this was already how the app picks its
+backend URL at build time.
+
+### Where the real values live
+
+The actual `DB_PASSWORD`, R2 keys, and freshly generated `JWT_SECRET`/
+`PLATFORM_ADMIN_JWT_SECRET` (**not** the ones committed in
+`application.yml` — those have been public in git history since early in
+the project; see that file's own comment) are never committed here, the
+same policy as §10's keystore passwords. They were handed to the
+project owner directly when this section was written. Rotate any of
+them by generating a new value and updating the one Render env var —
+nothing else references them.
