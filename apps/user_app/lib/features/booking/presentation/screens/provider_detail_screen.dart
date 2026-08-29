@@ -16,6 +16,9 @@ import '../../../beauty/data/beauty_exception.dart';
 import '../../../beauty/data/models/master.dart';
 import '../../../beauty/presentation/providers/beauty_providers.dart';
 import '../../../beauty/presentation/screens/master_portfolio_screen.dart';
+import '../../../cleaning/data/cleaning_exception.dart';
+import '../../../cleaning/data/models/cleaner.dart';
+import '../../../cleaning/presentation/providers/cleaning_providers.dart';
 import '../../../discovery/data/models/provider_search_result.dart';
 import '../../../favorites/presentation/widgets/favorite_button.dart';
 import '../../../maps/presentation/screens/provider_map_screen.dart';
@@ -40,6 +43,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
   String? _selectedMasterId;
   String? _selectedMechanicId;
   String? _selectedVehicleId;
+  String? _selectedCleanerId;
   bool _isBooking = false;
 
   @override
@@ -67,6 +71,11 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
         : const AsyncValue.data(<Vehicle>[]);
     final vehicles = vehiclesAsync.value ?? const <Vehicle>[];
     final requiresVehicleSelection = mechanics.isNotEmpty && currentUser != null;
+    // Same reasoning as masters/mechanics, for the cleaning vertical's cleaners.
+    final cleanersAsync = widget.provider.vertical == 'cleaning'
+        ? ref.watch(cleanersProvider(widget.provider.id))
+        : const AsyncValue.data(<Cleaner>[]);
+    final cleaners = cleanersAsync.value ?? const <Cleaner>[];
 
     return Scaffold(
       backgroundColor: colors.bg,
@@ -91,7 +100,11 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               ),
               child: Center(
                 child: Icon(
-                  widget.provider.vertical == 'auto' ? Icons.directions_car_filled_rounded : Icons.content_cut_rounded,
+                  switch (widget.provider.vertical) {
+                    'auto' => Icons.directions_car_filled_rounded,
+                    'cleaning' => Icons.cleaning_services_rounded,
+                    _ => Icons.content_cut_rounded,
+                  },
                   size: 48,
                   color: colors.primaryStrong.withValues(alpha: 0.5),
                 ),
@@ -176,6 +189,21 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                     mechanic: mechanic,
                     selected: _selectedMechanicId == mechanic.id,
                     onTap: () => setState(() => _selectedMechanicId = mechanic.id),
+                  ),
+                ),
+              ),
+            ],
+            if (cleaners.isNotEmpty) ...[
+              const SizedBox(height: FactorySpacing.space6),
+              Text(l10n.cleanersSectionTitle, style: textTheme.titleMedium),
+              const SizedBox(height: FactorySpacing.space3),
+              ...cleaners.map(
+                (cleaner) => Padding(
+                  padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
+                  child: _CleanerOption(
+                    cleaner: cleaner,
+                    selected: _selectedCleanerId == cleaner.id,
+                    onTap: () => setState(() => _selectedCleanerId = cleaner.id),
                   ),
                 ),
               ),
@@ -267,6 +295,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                       (masters.isEmpty || _selectedMasterId != null) &&
                       (mechanics.isEmpty || _selectedMechanicId != null) &&
                       (!requiresVehicleSelection || _selectedVehicleId != null) &&
+                      (cleaners.isEmpty || _selectedCleanerId != null) &&
                       !_isBooking)
                   ? _book
                   : null,
@@ -311,8 +340,8 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     final l10n = AppLocalizations.of(context)!;
     final service = widget.provider.services.firstWhere((s) => s.id == _selectedServiceId);
     try {
-      // A master/mechanic was selected only when this provider has a
-      // beauty/auto staff directory (see the Book button's enable
+      // A master/mechanic/cleaner was selected only when this provider has a
+      // beauty/auto/cleaning staff directory (see the Book button's enable
       // condition above) — route through the matching vertical booking
       // endpoint so its own rules are enforced server-side; otherwise use
       // Core's plain booking flow, unchanged from before verticals existed.
@@ -330,6 +359,14 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
         booking = await ref.read(beautyApiProvider).createBeautyBooking(
               userId: currentUser.id,
               masterId: _selectedMasterId!,
+              serviceId: service.id,
+              availabilitySlotId: _selectedSlotId!,
+              totalPrice: service.price,
+            );
+      } else if (_selectedCleanerId != null) {
+        booking = await ref.read(cleaningApiProvider).createCleaningBooking(
+              userId: currentUser.id,
+              cleanerId: _selectedCleanerId!,
               serviceId: service.id,
               availabilitySlotId: _selectedSlotId!,
               totalPrice: service.price,
@@ -377,6 +414,14 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
         _isBooking = false;
       });
     } on AutoException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
+      ref.invalidate(availabilitySlotsProvider(widget.provider.id));
+      setState(() {
+        _selectedSlotId = null;
+        _isBooking = false;
+      });
+    } on CleaningException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
       ref.invalidate(availabilitySlotsProvider(widget.provider.id));
@@ -470,6 +515,42 @@ class _MechanicOption extends StatelessWidget {
       leading: FactoryAvatar(
         initials: initialsFor(mechanic.displayName),
         image: mechanic.photoUrl != null ? NetworkImage(mechanic.photoUrl!) : null,
+      ),
+      selected: selected,
+      onTap: onTap,
+    );
+  }
+}
+
+class _CleanerOption extends StatelessWidget {
+  const _CleanerOption({
+    required this.cleaner,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final Cleaner cleaner;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return FactorySelectableTile(
+      title: cleaner.displayName,
+      subtitle: cleaner.bio != null
+          ? Text(
+              cleaner.bio!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+            )
+          : null,
+      leading: FactoryAvatar(
+        initials: initialsFor(cleaner.displayName),
+        image: cleaner.photoUrl != null ? NetworkImage(cleaner.photoUrl!) : null,
       ),
       selected: selected,
       onTap: onTap,

@@ -13,6 +13,10 @@ import '../../../beauty/presentation/providers/beauty_admin_providers.dart';
 import '../../../beauty/presentation/widgets/add_master_dialog.dart';
 import '../../../beauty/presentation/widgets/add_portfolio_item_dialog.dart';
 import '../../../beauty/presentation/widgets/manage_master_services_dialog.dart';
+import '../../../cleaning/data/models/admin_cleaner.dart';
+import '../../../cleaning/presentation/providers/cleaning_admin_providers.dart';
+import '../../../cleaning/presentation/widgets/add_cleaner_dialog.dart';
+import '../../../cleaning/presentation/widgets/manage_cleaner_services_dialog.dart';
 import '../../data/models/admin_booking.dart';
 import '../../data/models/admin_provider.dart';
 import '../../data/models/admin_service.dart';
@@ -87,6 +91,10 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
           if (_provider.vertical == 'auto') ...[
             const SizedBox(height: FactorySpacing.space6),
             _MechanicsSection(providerId: _provider.id),
+          ],
+          if (_provider.vertical == 'cleaning') ...[
+            const SizedBox(height: FactorySpacing.space6),
+            _CleanersSection(providerId: _provider.id),
           ],
           const SizedBox(height: FactorySpacing.space6),
           _BookingsSection(providerId: _provider.id),
@@ -854,6 +862,151 @@ class _MechanicAdminRow extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.person_remove_outlined),
                   tooltip: l10n.removeMechanicTooltip,
+                  onPressed: onRemove,
+                ),
+              ],
+            )
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FactoryBadge(label: l10n.removedBadge),
+                const SizedBox(width: FactorySpacing.space2),
+                FactoryButton(label: l10n.reactivateButton, variant: FactoryButtonVariant.text, onPressed: onReactivate),
+              ],
+            ),
+    );
+  }
+}
+
+class _CleanersSection extends ConsumerWidget {
+  final String providerId;
+
+  const _CleanersSection({required this.providerId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final showInactive = ref.watch(showInactiveCleanersProvider(providerId));
+    final cleanersAsync = ref.watch(adminCleanersProvider((providerId, showInactive)));
+    void refresh() => ref.invalidate(adminCleanersProvider((providerId, showInactive)));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        FactorySectionHeader(
+          title: l10n.cleanersSectionTitle,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FactoryButton(
+                label: showInactive ? l10n.hideRemovedButton : l10n.showRemovedButton,
+                variant: FactoryButtonVariant.text,
+                onPressed: () =>
+                    ref.read(showInactiveCleanersProvider(providerId).notifier).state = !showInactive,
+              ),
+              FactoryButton(
+                icon: Icons.add,
+                label: l10n.addButton,
+                variant: FactoryButtonVariant.text,
+                onPressed: () async {
+                  final added = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => AddCleanerDialog(providerId: providerId),
+                  );
+                  if (added == true) refresh();
+                },
+              ),
+            ],
+          ),
+        ),
+        cleanersAsync.when(
+          data: (cleaners) {
+            if (cleaners.isEmpty) {
+              return Text(
+                showInactive ? l10n.noCleanersYet : l10n.noActiveCleaners,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+              );
+            }
+            return Column(
+              children: cleaners
+                  .map((c) => Padding(
+                        padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
+                        child: _CleanerAdminRow(
+                          cleaner: c,
+                          onManageServices: () => showDialog(
+                            context: context,
+                            builder: (_) => ManageCleanerServicesDialog(providerId: providerId, cleanerId: c.id),
+                          ),
+                          onRemove: () async {
+                            await ref.read(cleaningAdminApiProvider).deactivateCleaner(c.id);
+                            refresh();
+                          },
+                          onReactivate: () async {
+                            await ref.read(cleaningAdminApiProvider).reactivateCleaner(c.id);
+                            refresh();
+                          },
+                        ),
+                      ))
+                  .toList(),
+            );
+          },
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
+            child: LinearProgressIndicator(),
+          ),
+          error: (error, stackTrace) => Text(l10n.errorCleanersLoadFailed(error.toString())),
+        ),
+      ],
+    );
+  }
+}
+
+class _CleanerAdminRow extends StatelessWidget {
+  const _CleanerAdminRow({
+    required this.cleaner,
+    required this.onManageServices,
+    required this.onRemove,
+    required this.onReactivate,
+  });
+
+  final AdminCleaner cleaner;
+  final VoidCallback onManageServices;
+  final VoidCallback onRemove;
+  final VoidCallback onReactivate;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return FactorySelectableTile(
+      leading: FactoryAvatar(
+        initials: _initialsFor(cleaner.displayName),
+        image: cleaner.photoUrl != null ? NetworkImage(cleaner.photoUrl!) : null,
+      ),
+      title: cleaner.displayName,
+      titleColor: cleaner.active ? null : colors.textTertiary,
+      subtitle: cleaner.bio != null
+          ? Text(
+              cleaner.bio!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+            )
+          : null,
+      trailing: cleaner.active
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.design_services_outlined),
+                  tooltip: l10n.manageCleanerServicesTooltip,
+                  onPressed: onManageServices,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.person_remove_outlined),
+                  tooltip: l10n.removeCleanerTooltip,
                   onPressed: onRemove,
                 ),
               ],

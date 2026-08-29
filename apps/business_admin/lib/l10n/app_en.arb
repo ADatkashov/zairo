@@ -127,6 +127,9 @@
   "verticalAutoLabel": "Auto",
   "@verticalAutoLabel": {"description": "Vertical picker segment label when creating a provider."},
 
+  "verticalCleaningLabel": "Cleaning",
+  "@verticalCleaningLabel": {"description": "Vertical picker segment label when creating a provider."},
+
   "createButton": "Create",
   "@createButton": {"description": "Add-a-salon dialog's submit button."},
 
@@ -326,6 +329,32 @@
 
   "manageMechanicServicesDialogTitle": "Services this mechanic offers",
   "@manageMechanicServicesDialogTitle": {"description": "Manage-mechanic-services dialog title (same text as the row's tooltip)."},
+
+  "cleanersSectionTitle": "Cleaners",
+  "@cleanersSectionTitle": {"description": "Salon detail screen's cleaners section header (cleaning vertical)."},
+
+  "noCleanersYet": "No cleaners yet.",
+  "@noCleanersYet": {"description": "Cleaners section empty state including inactive ones."},
+
+  "noActiveCleaners": "No active cleaners.",
+  "@noActiveCleaners": {"description": "Cleaners section empty state, active only."},
+
+  "errorCleanersLoadFailed": "Failed to load cleaners: {error}",
+  "@errorCleanersLoadFailed": {
+    "description": "Cleaners section error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "removeCleanerTooltip": "Remove cleaner",
+  "@removeCleanerTooltip": {"description": "Cleaner row's remove icon button tooltip."},
+
+  "manageCleanerServicesTooltip": "Services this cleaner offers",
+  "@manageCleanerServicesTooltip": {"description": "Cleaner row's manage-services icon button tooltip and dialog title."},
+
+  "manageCleanerServicesDialogTitle": "Services this cleaner offers",
+  "@manageCleanerServicesDialogTitle": {"description": "Manage-cleaner-services dialog title (same text as the row's tooltip)."},
 
   "bookingsSectionTitle": "Bookings",
   "@bookingsSectionTitle": {"description": "Salon detail screen's bookings section header."},
@@ -527,6 +556,23 @@
   "errorAddMechanicFailed": "Failed to add mechanic: {error}",
   "@errorAddMechanicFailed": {
     "description": "Add-mechanic dialog's error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "addCleanerDialogTitle": "Add a cleaner",
+  "@addCleanerDialogTitle": {"description": "Add-cleaner dialog title."},
+
+  "cleanerNameLabel": "Name",
+  "@cleanerNameLabel": {"description": "Add-cleaner dialog's name field label."},
+
+  "validationCleanerNameRequired": "Enter a name",
+  "@validationCleanerNameRequired": {"description": "Add-cleaner dialog's validation error."},
+
+  "errorAddCleanerFailed": "Failed to add cleaner: {error}",
+  "@errorAddCleanerFailed": {
+    "description": "Add-cleaner dialog's error state.",
     "placeholders": {
       "error": {"type": "String"}
     }
