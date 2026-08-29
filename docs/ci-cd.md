@@ -440,6 +440,13 @@ testing in Postman.
 
 ## 12. Running the backend in the cloud (no local machine required)
 
+**Current status: deployed and live.** The setup below is running for
+real at `https://zairo-backend.onrender.com` (Neon + Cloudflare R2 +
+Render, wired exactly as described in this section) — `/actuator/health`
+returns `UP`. What follows is both the record of that setup and the
+instructions to redo it (a new environment, a different provider, a
+rotated credential).
+
 The goal here: nobody's own computer needs to be running Postgres/MinIO/
 the backend for the app to work — everything lives in managed, mostly
 free-tier cloud services instead. Three pieces, each independently
@@ -480,7 +487,7 @@ few manual clicks in the Cloudflare dashboard:
 1. [dash.cloudflare.com](https://dash.cloudflare.com) → sign up/in (free,
    no card required for R2's free tier: 10 GB storage, no egress fees).
 2. **R2 Object Storage** (left sidebar) → **Create bucket** → name it
-   (e.g. `zairo-media`) → this becomes `MINIO_BUCKET`.
+   (the live deployment uses `zairo-media`) → this becomes `MINIO_BUCKET`.
 3. **Manage R2 API Tokens** → **Create API Token** → permissions
    **Object Read & Write**, scoped to that one bucket → copy the
    **Access Key ID** (`MINIO_ACCESS_KEY`) and **Secret Access Key**
@@ -526,7 +533,7 @@ Same mechanism as physical-device Wi-Fi testing (§10's `api_base_url`
 input) — once Render's URL is live, use it instead of a LAN IP:
 
 ```
-https://<your-service>.onrender.com/api/v1
+https://zairo-backend.onrender.com/api/v1
 ```
 
 No code change either way — this was already how the app picks its
