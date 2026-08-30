@@ -227,6 +227,9 @@
   "discoveryVerticalAuto": "Auto",
   "@discoveryVerticalAuto": {"description": "Vertical filter chip label for the auto vertical."},
 
+  "discoveryVerticalCleaning": "Cleaning",
+  "@discoveryVerticalCleaning": {"description": "Vertical filter chip label for the cleaning vertical."},
+
   "homeCategoriesTitle": "Categories",
   "@homeCategoriesTitle": {"description": "Home screen section header above the vertical category row."},
 
@@ -569,6 +572,9 @@
   "mechanicsSectionTitle": "Mechanics",
   "@mechanicsSectionTitle": {"description": "Provider detail screen's mechanics section header (auto vertical)."},
 
+  "cleanersSectionTitle": "Cleaners",
+  "@cleanersSectionTitle": {"description": "Provider detail screen's cleaners section header (cleaning vertical)."},
+
   "vehiclesSectionTitle": "Your vehicle",
   "@vehiclesSectionTitle": {"description": "Provider detail screen's vehicle-selection section header (auto vertical)."},
 
@@ -630,6 +636,9 @@
 
   "errorAutoBookingFailed": "Couldn't complete this booking — the mechanic may not offer this service, or the time slot was just taken. Please try again.",
   "@errorAutoBookingFailed": {"description": "409 from POST .../auto/bookings — covers two distinct backend rejections the response body doesn't distinguish."},
+
+  "errorCleaningBookingFailed": "Couldn't complete this booking — the cleaner may not offer this service, or the time slot was just taken. Please try again.",
+  "@errorCleaningBookingFailed": {"description": "409 from POST .../cleaning/bookings — covers two distinct backend rejections the response body doesn't distinguish."},
 
   "serviceDurationMinutes": "{minutes} min",
   "@serviceDurationMinutes": {
