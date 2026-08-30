@@ -21,6 +21,7 @@ include(
     "favorites",
     "vertical-beauty",
     "vertical-auto",
+    "vertical-cleaning",
     "storage",
     "country",
     "money",

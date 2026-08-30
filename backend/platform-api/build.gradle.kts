@@ -29,6 +29,7 @@ dependencies {
     implementation(project(":favorites"))
     implementation(project(":vertical-beauty"))
     implementation(project(":vertical-auto"))
+    implementation(project(":vertical-cleaning"))
     implementation(project(":storage"))
     implementation(project(":country"))
     implementation(project(":money"))

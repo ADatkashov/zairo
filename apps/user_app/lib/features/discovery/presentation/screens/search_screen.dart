@@ -251,6 +251,7 @@ class _FilterSheetState extends State<_FilterSheet> {
               _verticalChip(l10n.searchFilterCategoryAll, null),
               _verticalChip(l10n.discoveryVerticalBeauty, 'beauty'),
               _verticalChip(l10n.discoveryVerticalAuto, 'auto'),
+              _verticalChip(l10n.discoveryVerticalCleaning, 'cleaning'),
             ],
           ),
           const SizedBox(height: FactorySpacing.space4),
