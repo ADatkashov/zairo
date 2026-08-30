@@ -65,10 +65,10 @@ class OpenApiConfig {
                                 REST API for Factory — a multi-vertical marketplace platform. \
                                 "Factory" is a working codename, not a final product name.
 
-                                Two verticals are live so far — Beauty (salons, masters, beauty bookings) and \
-                                Auto (workshops, mechanics, vehicle bookings) — both built on top of a \
-                                vertical-agnostic Core (providers, services, generic bookings, payments, \
-                                reviews, favorites, search).
+                                Three verticals are live so far — Beauty (salons, masters, beauty bookings), \
+                                Auto (workshops, mechanics, vehicle bookings), and Cleaning (cleaning companies, \
+                                cleaners, cleaning bookings) — all built on top of a vertical-agnostic Core \
+                                (providers, services, generic bookings, payments, reviews, favorites, search).
 
                                 Authentication is a custom JWT bearer scheme (not Spring Security) — obtain a \
                                 token from **POST /api/v1/auth/login** or **/api/v1/auth/register**, then use \
@@ -220,7 +220,13 @@ class OpenApiConfig {
                 new Tag().name("Auto — Bookings").description(
                         "Auto-vertical booking: like a generic Booking, but also names which Mechanic performs "
                                 + "it and which Vehicle it's for, and enforces that the mechanic actually offers "
-                                + "the requested Service and the vehicle belongs to the booking's own user."));
+                                + "the requested Service and the vehicle belongs to the booking's own user."),
+                new Tag().name("Cleaning — Cleaners").description(
+                        "Cleaning-vertical staff directory: cleaners and which Services each one performs."),
+                new Tag().name("Cleaning — Bookings").description(
+                        "Cleaning-vertical booking: like a generic Booking, but also names which Cleaner "
+                                + "performs it, and enforces that the cleaner actually offers the requested "
+                                + "Service."));
         // Actuator (health/info, GET /actuator/health) is deliberately not
         // listed here or exposed through Swagger — springdoc.show-actuator
         // is off (see application.yml). It's a platform/ops endpoint, not
