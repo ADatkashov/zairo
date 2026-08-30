@@ -3,6 +3,7 @@ package com.zairo.factory.catalog;
 import com.zairo.factory.catalog.CatalogDtos.BusinessTypeResponse;
 import com.zairo.factory.catalog.CatalogDtos.CatalogServiceResponse;
 import com.zairo.factory.catalog.CatalogDtos.CategoryResponse;
+import com.zairo.factory.catalog.CatalogDtos.SubsphereResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -26,12 +27,14 @@ public class CatalogController {
 
     private final CategoryRepository categoryRepository;
     private final BusinessTypeRepository businessTypeRepository;
+    private final SubsphereRepository subsphereRepository;
     private final CatalogServiceRepository catalogServiceRepository;
 
     public CatalogController(CategoryRepository categoryRepository, BusinessTypeRepository businessTypeRepository,
-            CatalogServiceRepository catalogServiceRepository) {
+            SubsphereRepository subsphereRepository, CatalogServiceRepository catalogServiceRepository) {
         this.categoryRepository = categoryRepository;
         this.businessTypeRepository = businessTypeRepository;
+        this.subsphereRepository = subsphereRepository;
         this.catalogServiceRepository = catalogServiceRepository;
     }
 
@@ -53,12 +56,33 @@ public class CatalogController {
                 .stream().map(BusinessTypeResponse::from).toList();
     }
 
-    @Operation(summary = "List a business type's active catalog services")
+    @Operation(summary = "List a business type's active subspheres", description = "Optional 4th catalog "
+            + "level — may be empty for a business type with no further breakdown yet.")
+    @ApiResponse(responseCode = "200", description = "Active subspheres under this business type")
+    @GetMapping("/api/v1/business-types/{id}/subspheres")
+    public List<SubsphereResponse> listSubspheres(
+            @Parameter(description = "The business type's id.") @PathVariable UUID id) {
+        return subsphereRepository.findByBusinessTypeIdAndStatusOrderBySortOrderAsc(id, TaxonomyStatus.ACTIVE)
+                .stream().map(SubsphereResponse::from).toList();
+    }
+
+    @Operation(summary = "List a business type's active catalog services", description = "Only services "
+            + "attached directly under the business type — see GET /subspheres/{id}/services for services "
+            + "scoped to a more specific subsphere.")
     @ApiResponse(responseCode = "200", description = "Active catalog services under this business type")
     @GetMapping("/api/v1/business-types/{id}/services")
     public List<CatalogServiceResponse> listCatalogServices(
             @Parameter(description = "The business type's id.") @PathVariable UUID id) {
         return catalogServiceRepository.findByBusinessTypeIdAndStatusOrderBySortOrderAsc(id, TaxonomyStatus.ACTIVE)
+                .stream().map(CatalogServiceResponse::from).toList();
+    }
+
+    @Operation(summary = "List a subsphere's active catalog services")
+    @ApiResponse(responseCode = "200", description = "Active catalog services under this subsphere")
+    @GetMapping("/api/v1/subspheres/{id}/services")
+    public List<CatalogServiceResponse> listCatalogServicesBySubsphere(
+            @Parameter(description = "The subsphere's id.") @PathVariable UUID id) {
+        return catalogServiceRepository.findBySubsphereIdAndStatusOrderBySortOrderAsc(id, TaxonomyStatus.ACTIVE)
                 .stream().map(CatalogServiceResponse::from).toList();
     }
 }

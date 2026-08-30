@@ -6,10 +6,13 @@ import com.zairo.factory.catalog.CatalogDtos.CategoryResponse;
 import com.zairo.factory.catalog.CatalogDtos.CreateBusinessTypeRequest;
 import com.zairo.factory.catalog.CatalogDtos.CreateCatalogServiceRequest;
 import com.zairo.factory.catalog.CatalogDtos.CreateCategoryRequest;
+import com.zairo.factory.catalog.CatalogDtos.CreateSubsphereRequest;
 import com.zairo.factory.catalog.CatalogDtos.SetStatusRequest;
+import com.zairo.factory.catalog.CatalogDtos.SubsphereResponse;
 import com.zairo.factory.catalog.CatalogDtos.UpdateBusinessTypeRequest;
 import com.zairo.factory.catalog.CatalogDtos.UpdateCatalogServiceRequest;
 import com.zairo.factory.catalog.CatalogDtos.UpdateCategoryRequest;
+import com.zairo.factory.catalog.CatalogDtos.UpdateSubsphereRequest;
 import com.zairo.factory.platformadmin.PlatformAdminService;
 import com.zairo.factory.platformadmin.PlatformCurrentAdmin;
 import io.swagger.v3.oas.annotations.Operation;
@@ -128,6 +131,49 @@ public class CatalogAdminController {
     public BusinessTypeResponse setBusinessTypeStatus(@PathVariable UUID id,
             @Valid @RequestBody SetStatusRequest request, HttpServletRequest httpRequest) {
         return catalogAdminService.setBusinessTypeStatus(actorId(httpRequest), actorEmail(httpRequest), id, request);
+    }
+
+    // ---- Subsphere -------------------------------------------------------
+
+    @Operation(summary = "Create a subsphere")
+    @ApiResponse(responseCode = "201", description = "Subsphere created")
+    @ApiResponse(responseCode = "404", description = "The parent business type doesn't exist.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @ApiResponse(responseCode = "409", description = "This code is already registered.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "The caller is authenticated but isn't PLATFORM_ADMIN.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/api/v1/platform/subspheres")
+    @ResponseStatus(HttpStatus.CREATED)
+    public SubsphereResponse createSubsphere(@Valid @RequestBody CreateSubsphereRequest request,
+            HttpServletRequest httpRequest) {
+        return catalogAdminService.createSubsphere(actorId(httpRequest), actorEmail(httpRequest), request);
+    }
+
+    @Operation(summary = "Update a subsphere's names/sort order")
+    @ApiResponse(responseCode = "200", description = "Subsphere updated")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "The caller is authenticated but isn't PLATFORM_ADMIN.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @SecurityRequirement(name = "bearerAuth")
+    @PatchMapping("/api/v1/platform/subspheres/{id}")
+    public SubsphereResponse updateSubsphere(@PathVariable UUID id, @Valid @RequestBody UpdateSubsphereRequest request,
+            HttpServletRequest httpRequest) {
+        return catalogAdminService.updateSubsphere(actorId(httpRequest), actorEmail(httpRequest), id, request);
+    }
+
+    @Operation(summary = "Activate, deactivate, or archive a subsphere")
+    @ApiResponse(responseCode = "200", description = "Status updated")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "The caller is authenticated but isn't PLATFORM_ADMIN.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @SecurityRequirement(name = "bearerAuth")
+    @PatchMapping("/api/v1/platform/subspheres/{id}/status")
+    public SubsphereResponse setSubsphereStatus(@PathVariable UUID id, @Valid @RequestBody SetStatusRequest request,
+            HttpServletRequest httpRequest) {
+        return catalogAdminService.setSubsphereStatus(actorId(httpRequest), actorEmail(httpRequest), id, request);
     }
 
     // ---- CatalogService --------------------------------------------------

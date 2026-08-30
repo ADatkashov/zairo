@@ -65,10 +65,13 @@ class OpenApiConfig {
                                 REST API for Factory — a multi-vertical marketplace platform. \
                                 "Factory" is a working codename, not a final product name.
 
-                                Three verticals are live so far — Beauty (salons, masters, beauty bookings), \
-                                Auto (workshops, mechanics, vehicle bookings), and Cleaning (cleaning companies, \
-                                cleaners, cleaning bookings) — all built on top of a vertical-agnostic Core \
-                                (providers, services, generic bookings, payments, reviews, favorites, search).
+                                Three hardcoded verticals are live so far — Beauty (salons, masters, beauty \
+                                bookings), Auto (workshops, mechanics, vehicle bookings), and Cleaning (cleaning \
+                                companies, cleaners, cleaning bookings) — plus a generic Staff module usable by a \
+                                provider in any category, all built on top of a vertical-agnostic Core (providers, \
+                                services, generic bookings, payments, reviews, favorites, search). The category/ \
+                                sphere/service taxonomy itself (see the Platform Admin catalog endpoints) is \
+                                fully data-driven — new categories don't require a new release.
 
                                 Authentication is a custom JWT bearer scheme (not Spring Security) — obtain a \
                                 token from **POST /api/v1/auth/login** or **/api/v1/auth/register**, then use \
@@ -226,6 +229,14 @@ class OpenApiConfig {
                 new Tag().name("Cleaning — Bookings").description(
                         "Cleaning-vertical booking: like a generic Booking, but also names which Cleaner "
                                 + "performs it, and enforces that the cleaner actually offers the requested "
+                                + "Service."),
+                new Tag().name("Staff").description(
+                        "Generic, category-agnostic staff directory: works for a provider in any category, "
+                                + "not just Beauty/Auto/Cleaning — the platform's path away from hardcoding a "
+                                + "new module per vertical."),
+                new Tag().name("Staff — Bookings").description(
+                        "Staff booking: like a generic Booking, but also names which Staff member performs "
+                                + "it, and enforces that the staff member actually offers the requested "
                                 + "Service."));
         // Actuator (health/info, GET /actuator/health) is deliberately not
         // listed here or exposed through Swagger — springdoc.show-actuator

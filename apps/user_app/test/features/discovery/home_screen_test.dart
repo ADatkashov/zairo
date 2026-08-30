@@ -10,6 +10,7 @@ import 'package:zairo/features/booking/data/booking_api.dart';
 import 'package:zairo/features/booking/data/models/book_again_suggestion.dart';
 import 'package:zairo/features/booking/presentation/providers/booking_providers.dart';
 import 'package:zairo/features/catalog/data/catalog_api.dart';
+import 'package:zairo/features/catalog/data/models/business_type.dart';
 import 'package:zairo/features/catalog/data/models/category.dart';
 import 'package:zairo/features/catalog/presentation/providers/catalog_providers.dart';
 import 'package:zairo/features/discovery/data/discovery_api.dart';
@@ -51,6 +52,9 @@ class _FakeCatalogApi extends CatalogApi {
 
   @override
   Future<List<Category>> listCategories() async => _categories;
+
+  @override
+  Future<List<BusinessType>> listBusinessTypes(String categoryId) async => const [];
 }
 
 class _LoggedInAuthController extends AuthController {
@@ -156,8 +160,26 @@ void main() {
   testWidgets('category tiles come from the catalog API, not a hardcoded literal', (tester) async {
     final fakeDiscoveryApi = _FakeDiscoveryApi([_open, _closed]);
     final fakeCatalogApi = _FakeCatalogApi(const [
-      Category(id: 'cat-1', code: 'beauty', nameKk: 'Сұлулық', nameRu: 'Красота', nameEn: 'Beauty', sortOrder: 1),
-      Category(id: 'cat-2', code: 'auto', nameKk: 'Авто', nameRu: 'Авто', nameEn: 'Auto', sortOrder: 2),
+      Category(
+        id: 'cat-1',
+        code: 'beauty',
+        nameKk: 'Сұлулық',
+        nameRu: 'Красота',
+        nameEn: 'Beauty',
+        icon: '💇',
+        sortOrder: 1,
+        status: 'ACTIVE',
+      ),
+      Category(
+        id: 'cat-2',
+        code: 'auto',
+        nameKk: 'Авто',
+        nameRu: 'Авто',
+        nameEn: 'Auto',
+        icon: '🚗',
+        sortOrder: 2,
+        status: 'ACTIVE',
+      ),
     ]);
 
     await tester.pumpWidget(

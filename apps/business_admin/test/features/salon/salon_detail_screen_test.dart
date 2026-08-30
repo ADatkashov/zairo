@@ -19,6 +19,9 @@ import 'package:business_admin/features/salon/data/models/recurring_schedule_res
 import 'package:business_admin/features/salon/data/salon_admin_api.dart';
 import 'package:business_admin/features/salon/presentation/providers/salon_providers.dart';
 import 'package:business_admin/features/salon/presentation/screens/salon_detail_screen.dart';
+import 'package:business_admin/features/staff/data/models/admin_staff.dart';
+import 'package:business_admin/features/staff/data/staff_admin_api.dart';
+import 'package:business_admin/features/staff/presentation/providers/staff_admin_providers.dart';
 import 'package:business_admin/l10n/app_localizations.dart';
 
 const _provider = AdminProvider(
@@ -34,6 +37,16 @@ const _autoProvider = AdminProvider(
   ownerUserId: 'owner-1',
   name: 'Speedy Workshop',
   vertical: 'auto',
+  status: 'ACTIVE',
+);
+
+// A category with no dedicated staff module (unlike beauty/auto/cleaning) —
+// exercises SalonDetailScreen's fallback to the generic staff module.
+const _medicineProvider = AdminProvider(
+  id: 'p3',
+  ownerUserId: 'owner-1',
+  name: 'Downtown Clinic',
+  vertical: 'medicine',
   status: 'ACTIVE',
 );
 
@@ -349,6 +362,64 @@ class _FakeAutoAdminApi extends AutoAdminApi {
       active: true,
     );
     _mechanics[index] = reactivated;
+    return reactivated;
+  }
+}
+
+class _FakeStaffAdminApi extends StaffAdminApi {
+  _FakeStaffAdminApi([List<AdminStaff>? staff])
+      : _staff = staff ?? [],
+        super(DioClient(Dio()));
+
+  final List<AdminStaff> _staff;
+  Map<String, dynamic>? lastCreateStaffCall;
+  String? lastDeactivatedStaffId;
+  String? lastReactivatedStaffId;
+
+  @override
+  Future<List<AdminStaff>> listStaff(String providerId, {bool includeInactive = false}) async {
+    return includeInactive ? _staff : _staff.where((s) => s.active).toList();
+  }
+
+  @override
+  Future<AdminStaff> createStaff({
+    required String providerId,
+    required String displayName,
+    String? bio,
+  }) async {
+    lastCreateStaffCall = {'providerId': providerId, 'displayName': displayName, 'bio': bio};
+    final created = AdminStaff(id: 'staff-new', providerId: providerId, displayName: displayName, bio: bio, active: true);
+    _staff.add(created);
+    return created;
+  }
+
+  @override
+  Future<void> deactivateStaff(String staffId) async {
+    lastDeactivatedStaffId = staffId;
+    final index = _staff.indexWhere((s) => s.id == staffId);
+    _staff[index] = AdminStaff(
+      id: _staff[index].id,
+      providerId: _staff[index].providerId,
+      displayName: _staff[index].displayName,
+      bio: _staff[index].bio,
+      photoUrl: _staff[index].photoUrl,
+      active: false,
+    );
+  }
+
+  @override
+  Future<AdminStaff> reactivateStaff(String staffId) async {
+    lastReactivatedStaffId = staffId;
+    final index = _staff.indexWhere((s) => s.id == staffId);
+    final reactivated = AdminStaff(
+      id: _staff[index].id,
+      providerId: _staff[index].providerId,
+      displayName: _staff[index].displayName,
+      bio: _staff[index].bio,
+      photoUrl: _staff[index].photoUrl,
+      active: true,
+    );
+    _staff[index] = reactivated;
     return reactivated;
   }
 }
@@ -757,6 +828,90 @@ void main() {
 
     expect(fakeAutoApi.lastReactivatedMechanicId, 'm1');
     expect(find.text('Yerlan Mechanic'), findsOneWidget);
+    expect(find.text('Reactivate'), findsNothing);
+  });
+
+  testWidgets(
+      'shows the generic staff section for a category with no dedicated staff module, '
+      'and adding one calls the API and refreshes the list', (tester) async {
+    final fakeApi = _FakeSalonAdminApi();
+    final fakeStaffApi = _FakeStaffAdminApi();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(fakeApi),
+          staffAdminApiProvider.overrideWithValue(fakeStaffApi),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SalonDetailScreen(provider: _medicineProvider),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // No Masters/Mechanics/Cleaners section for a category without its own
+    // dedicated staff module — it falls back to the generic Staff section.
+    expect(find.text('Masters'), findsNothing);
+    expect(find.text('Mechanics'), findsNothing);
+    expect(find.text('Cleaners'), findsNothing);
+    expect(find.text('No active staff.'), findsOneWidget);
+
+    // .last: Services and Availability each render their own "Add" button
+    // first — the Staff section's is the last one in the tree.
+    await tester.tap(find.widgetWithText(TextButton, 'Add').last);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.widgetWithText(TextField, 'Name'), 'Dr. Aliya');
+    await tester.tap(find.widgetWithText(FilledButton, 'Add'));
+    await tester.pumpAndSettle();
+
+    expect(fakeStaffApi.lastCreateStaffCall, {
+      'providerId': 'p3',
+      'displayName': 'Dr. Aliya',
+      'bio': null,
+    });
+    expect(find.text('Dr. Aliya'), findsOneWidget);
+  });
+
+  testWidgets('a deactivated staff member is hidden by default and reactivating it brings it back', (tester) async {
+    final fakeApi = _FakeSalonAdminApi();
+    final fakeStaffApi = _FakeStaffAdminApi([
+      const AdminStaff(id: 's1', providerId: 'p3', displayName: 'Dr. Aliya', active: false),
+    ]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(fakeApi),
+          staffAdminApiProvider.overrideWithValue(fakeStaffApi),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SalonDetailScreen(provider: _medicineProvider),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('No active staff.'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(TextButton, 'Show removed').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Dr. Aliya'), findsOneWidget);
+    expect(find.text('Reactivate'), findsOneWidget);
+
+    await tester.tap(find.text('Reactivate'));
+    await tester.pumpAndSettle();
+
+    expect(fakeStaffApi.lastReactivatedStaffId, 's1');
+    expect(find.text('Dr. Aliya'), findsOneWidget);
     expect(find.text('Reactivate'), findsNothing);
   });
 
