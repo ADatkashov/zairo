@@ -44,6 +44,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// of a literal string.
   String? _vertical;
 
+  /// The selected category's id, purely to fetch its spheres for the
+  /// drill-down row below the grid — search filtering itself stays on
+  /// [_vertical] (the category `code`), sphere selection isn't a search
+  /// filter yet.
+  String? _selectedCategoryId;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -83,10 +89,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(height: FactorySpacing.space4),
                   Text(l10n.homeCategoriesTitle, style: textTheme.titleSmall),
                   const SizedBox(height: FactorySpacing.space3),
-                  _CategoryRow(
+                  _CategoryGrid(
                     selectedCode: _vertical,
-                    onSelect: (code) => setState(() => _vertical = code),
+                    onSelect: (code, categoryId) => setState(() {
+                      _vertical = code;
+                      _selectedCategoryId = categoryId;
+                    }),
                   ),
+                  if (_vertical != null && _selectedCategoryId != null) ...[
+                    const SizedBox(height: FactorySpacing.space3),
+                    _SphereRow(categoryId: _selectedCategoryId!),
+                  ],
                   if (openCount > 0) ...[
                     const SizedBox(height: FactorySpacing.space5),
                     _AvailabilityHero(count: openCount),
@@ -189,11 +202,17 @@ class _SearchEntry extends StatelessWidget {
   }
 }
 
-class _CategoryRow extends ConsumerWidget {
-  const _CategoryRow({required this.selectedCode, required this.onSelect});
+/// The category grid — a [Wrap], not a fixed [Row], because the master
+/// catalog is admin-managed and can grow well past a handful of entries (20
+/// categories at last count, headed toward more) without this app being
+/// released again. `onSelect` carries both the category's `code` (the
+/// existing search-filter value) and its `id` (only used to fetch spheres
+/// for [_SphereRow] below).
+class _CategoryGrid extends ConsumerWidget {
+  const _CategoryGrid({required this.selectedCode, required this.onSelect});
 
   final String? selectedCode;
-  final ValueChanged<String?> onSelect;
+  final void Function(String? code, String? categoryId) onSelect;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -201,53 +220,91 @@ class _CategoryRow extends ConsumerWidget {
     final categoriesAsync = ref.watch(categoriesProvider);
     final languageCode = Localizations.localeOf(context).languageCode;
 
+    final allTile = FactoryCategoryTile(
+      icon: Icons.apps_rounded,
+      label: l10n.searchFilterCategoryAll,
+      selected: selectedCode == null,
+      onTap: () => onSelect(null, null),
+    );
+
     return categoriesAsync.when(
-      data: (categories) => Row(
+      data: (categories) => Wrap(
+        spacing: FactorySpacing.space3,
+        runSpacing: FactorySpacing.space2,
         children: [
-          FactoryCategoryTile(
-            icon: Icons.apps_rounded,
-            label: l10n.searchFilterCategoryAll,
-            selected: selectedCode == null,
-            onTap: () => onSelect(null),
-          ),
-          for (final category in categories) ...[
-            const SizedBox(width: FactorySpacing.space3),
+          allTile,
+          for (final category in categories)
             FactoryCategoryTile(
               icon: _iconForCategory(category.code),
+              emoji: category.icon,
               label: category.nameFor(languageCode),
               selected: selectedCode == category.code,
-              onTap: () => onSelect(category.code),
+              onTap: () => onSelect(category.code, category.id),
             ),
-          ],
         ],
       ),
       // Best-effort: while loading or on error, still show the "All" tile
       // (search already works with vertical: null) rather than blocking
       // the whole Home screen on the catalog request.
-      loading: () => Row(
+      loading: () => Wrap(
+        spacing: FactorySpacing.space3,
+        runSpacing: FactorySpacing.space2,
         children: [
-          FactoryCategoryTile(
-            icon: Icons.apps_rounded,
-            label: l10n.searchFilterCategoryAll,
-            selected: selectedCode == null,
-            onTap: () => onSelect(null),
-          ),
-          const SizedBox(width: FactorySpacing.space3),
+          allTile,
           const FactorySkeleton(width: 64, height: 84, borderRadius: BorderRadius.all(Radius.circular(12))),
-          const SizedBox(width: FactorySpacing.space3),
           const FactorySkeleton(width: 64, height: 84, borderRadius: BorderRadius.all(Radius.circular(12))),
         ],
       ),
-      error: (error, stackTrace) => Row(
-        children: [
-          FactoryCategoryTile(
-            icon: Icons.apps_rounded,
-            label: l10n.searchFilterCategoryAll,
-            selected: selectedCode == null,
-            onTap: () => onSelect(null),
+      error: (error, stackTrace) => Wrap(children: [allTile]),
+    );
+  }
+}
+
+/// A category's spheres, shown as a scrollable row of chips once a category
+/// is selected on Home — purely informational (see [_HomeScreenState]'s own
+/// doc comment: sphere selection doesn't filter search yet), but it's the
+/// visible "Category -> Sphere" drill-down the catalog now supports.
+class _SphereRow extends ConsumerWidget {
+  const _SphereRow({required this.categoryId});
+
+  final String categoryId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final businessTypesAsync = ref.watch(businessTypesProvider(categoryId));
+    final languageCode = Localizations.localeOf(context).languageCode;
+    final colors = context.factoryColors;
+
+    return businessTypesAsync.when(
+      data: (businessTypes) {
+        if (businessTypes.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        return SizedBox(
+          height: 32,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: businessTypes.length,
+            separatorBuilder: (_, _) => const SizedBox(width: FactorySpacing.space2),
+            itemBuilder: (context, index) {
+              final businessType = businessTypes[index];
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space3, vertical: 6),
+                decoration: BoxDecoration(
+                  color: colors.surfaceAlt,
+                  borderRadius: FactoryRadius.mdRadius,
+                ),
+                child: Text(
+                  businessType.nameFor(languageCode),
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(color: colors.textSecondary),
+                ),
+              );
+            },
           ),
-        ],
-      ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (error, stackTrace) => const SizedBox.shrink(),
     );
   }
 }
