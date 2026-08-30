@@ -34,6 +34,11 @@ public class Category {
     @Column(name = "name_en", nullable = false)
     private String nameEn;
 
+    // A single emoji (or null) rendered next to this category in the
+    // discovery UI's category grid — nullable, older categories predate it.
+    @Column
+    private String icon;
+
     @Column(name = "sort_order", nullable = false)
     private int sortOrder;
 
@@ -52,11 +57,17 @@ public class Category {
 
     public Category(UUID id, String code, String nameKk, String nameRu, String nameEn, int sortOrder,
             TaxonomyStatus status, Instant now) {
+        this(id, code, nameKk, nameRu, nameEn, null, sortOrder, status, now);
+    }
+
+    public Category(UUID id, String code, String nameKk, String nameRu, String nameEn, String icon, int sortOrder,
+            TaxonomyStatus status, Instant now) {
         this.id = id;
         this.code = code;
         this.nameKk = nameKk;
         this.nameRu = nameRu;
         this.nameEn = nameEn;
+        this.icon = icon;
         this.sortOrder = sortOrder;
         this.status = status;
         this.createdAt = now;
@@ -83,6 +94,10 @@ public class Category {
         return nameEn;
     }
 
+    public String getIcon() {
+        return icon;
+    }
+
     public int getSortOrder() {
         return sortOrder;
     }
@@ -95,10 +110,11 @@ public class Category {
         return createdAt;
     }
 
-    void update(String nameKk, String nameRu, String nameEn, int sortOrder, Instant now) {
+    void update(String nameKk, String nameRu, String nameEn, String icon, int sortOrder, Instant now) {
         this.nameKk = nameKk;
         this.nameRu = nameRu;
         this.nameEn = nameEn;
+        this.icon = icon;
         this.sortOrder = sortOrder;
         this.updatedAt = now;
     }

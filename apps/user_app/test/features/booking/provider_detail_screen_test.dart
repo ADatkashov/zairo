@@ -23,6 +23,9 @@ import 'package:zairo/features/discovery/data/models/service_summary.dart';
 import 'package:zairo/features/payments/data/models/payment.dart';
 import 'package:zairo/features/payments/data/payments_api.dart';
 import 'package:zairo/features/payments/presentation/providers/payments_providers.dart';
+import 'package:zairo/features/staff/data/models/staff.dart';
+import 'package:zairo/features/staff/data/staff_api.dart';
+import 'package:zairo/features/staff/presentation/providers/staff_providers.dart';
 import 'package:zairo/l10n/app_localizations.dart';
 
 class _FakeBookingApi extends BookingApi {
@@ -146,6 +149,42 @@ class _FakeAutoApi extends AutoApi {
     };
     return Booking(
       id: 'auto-booking-1',
+      userId: userId,
+      serviceId: serviceId,
+      availabilitySlotId: availabilitySlotId,
+      status: 'CONFIRMED',
+      totalPrice: totalPrice,
+      createdAt: DateTime.now(),
+    );
+  }
+}
+
+class _FakeStaffApi extends StaffApi {
+  _FakeStaffApi([this._staff = const []]) : super(DioClient(Dio()));
+
+  final List<Staff> _staff;
+  Map<String, dynamic>? lastStaffBookingCall;
+
+  @override
+  Future<List<Staff>> listStaff(String providerId) async => _staff;
+
+  @override
+  Future<Booking> createStaffBooking({
+    required String userId,
+    required String staffId,
+    required String serviceId,
+    required String availabilitySlotId,
+    required double totalPrice,
+  }) async {
+    lastStaffBookingCall = {
+      'userId': userId,
+      'staffId': staffId,
+      'serviceId': serviceId,
+      'availabilitySlotId': availabilitySlotId,
+      'totalPrice': totalPrice,
+    };
+    return Booking(
+      id: 'staff-booking-1',
       userId: userId,
       serviceId: serviceId,
       availabilitySlotId: availabilitySlotId,
@@ -398,6 +437,82 @@ void main() {
     });
     expect(fakeBookingApi.lastBookingCall, isNull);
     expect(fakePaymentsApi.lastChargedBookingId, 'auto-booking-1');
+  });
+
+  testWidgets(
+      'a provider in a category with no dedicated staff module requires picking a staff member and books '
+      'through the generic staff endpoint', (tester) async {
+    final slot = AvailabilitySlot(
+      id: 'slot-1',
+      providerId: 'provider-5',
+      startsAt: DateTime(2026, 1, 1, 10, 0),
+      endsAt: DateTime(2026, 1, 1, 10, 30),
+      status: 'OPEN',
+    );
+    final fakeBookingApi = _FakeBookingApi([slot]);
+    final fakeStaffApi = _FakeStaffApi(const [
+      Staff(id: 'staff-1', providerId: 'provider-5', displayName: 'Dr. Aliya', active: true),
+    ]);
+    final fakePaymentsApi = _FakePaymentsApi();
+    const provider = ProviderSearchResult(
+      id: 'provider-5',
+      name: 'Downtown Clinic',
+      vertical: 'medicine',
+      status: 'ACTIVE',
+      hasOpenAvailability: true,
+      minPrice: 40,
+      services: [
+        ServiceSummary(id: 'service-1', title: 'Checkup', durationMinutes: 30, price: 40, currency: 'USD'),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(fakeBookingApi),
+          paymentsApiProvider.overrideWithValue(fakePaymentsApi),
+          staffApiProvider.overrideWithValue(fakeStaffApi),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ProviderDetailScreen(provider: provider),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Dr. Aliya'), findsOneWidget);
+
+    final bookButtonFinder = find.widgetWithText(FilledButton, 'Book');
+    await tester.tap(find.text('Checkup'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Jan 1, 10:00'));
+    await tester.pumpAndSettle();
+
+    // Service + slot picked, but no staff member yet -> still disabled.
+    await tester.scrollUntilVisible(bookButtonFinder, 200);
+    expect(tester.widget<FilledButton>(bookButtonFinder).onPressed, isNull);
+
+    await tester.tap(find.text('Dr. Aliya'));
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<FilledButton>(bookButtonFinder).onPressed, isNotNull);
+
+    await tester.tap(bookButtonFinder);
+    await tester.pumpAndSettle();
+
+    expect(fakeStaffApi.lastStaffBookingCall, {
+      'userId': 'user-1',
+      'staffId': 'staff-1',
+      'serviceId': 'service-1',
+      'availabilitySlotId': 'slot-1',
+      'totalPrice': 40.0,
+    });
+    expect(fakeBookingApi.lastBookingCall, isNull);
+    expect(fakePaymentsApi.lastChargedBookingId, 'staff-booking-1');
   });
 
   testWidgets('shows a message when there are no open slots', (tester) async {

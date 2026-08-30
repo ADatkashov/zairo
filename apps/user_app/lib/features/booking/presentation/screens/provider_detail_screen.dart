@@ -24,9 +24,18 @@ import '../../../favorites/presentation/widgets/favorite_button.dart';
 import '../../../maps/presentation/screens/provider_map_screen.dart';
 import '../../../payments/data/payment_exception.dart';
 import '../../../payments/presentation/providers/payments_providers.dart';
+import '../../../staff/data/models/staff.dart';
+import '../../../staff/data/staff_exception.dart';
+import '../../../staff/presentation/providers/staff_providers.dart';
 import '../../data/booking_exception.dart';
 import '../../data/models/booking.dart';
 import '../providers/booking_providers.dart';
+
+/// Categories with their own hardcoded staff module (Master/Mechanic/
+/// Cleaner) — every other category falls back to the generic `staff`
+/// module below, so a platform admin's brand-new category is bookable
+/// with a specific staff member immediately, with no app release.
+const _verticalsWithDedicatedStaffModule = {'beauty', 'auto', 'cleaning'};
 
 class ProviderDetailScreen extends ConsumerStatefulWidget {
   final ProviderSearchResult provider;
@@ -44,6 +53,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
   String? _selectedMechanicId;
   String? _selectedVehicleId;
   String? _selectedCleanerId;
+  String? _selectedStaffId;
   bool _isBooking = false;
 
   @override
@@ -76,6 +86,12 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
         ? ref.watch(cleanersProvider(widget.provider.id))
         : const AsyncValue.data(<Cleaner>[]);
     final cleaners = cleanersAsync.value ?? const <Cleaner>[];
+    // Any category without its own dedicated staff module falls back to
+    // the generic `staff` module — see _verticalsWithDedicatedStaffModule.
+    final staffAsync = !_verticalsWithDedicatedStaffModule.contains(widget.provider.vertical)
+        ? ref.watch(staffProvider(widget.provider.id))
+        : const AsyncValue.data(<Staff>[]);
+    final staffMembers = staffAsync.value ?? const <Staff>[];
 
     return Scaffold(
       backgroundColor: colors.bg,
@@ -208,6 +224,21 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                 ),
               ),
             ],
+            if (staffMembers.isNotEmpty) ...[
+              const SizedBox(height: FactorySpacing.space6),
+              Text(l10n.staffSectionTitle, style: textTheme.titleMedium),
+              const SizedBox(height: FactorySpacing.space3),
+              ...staffMembers.map(
+                (staff) => Padding(
+                  padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
+                  child: _StaffOption(
+                    staff: staff,
+                    selected: _selectedStaffId == staff.id,
+                    onTap: () => setState(() => _selectedStaffId = staff.id),
+                  ),
+                ),
+              ),
+            ],
             if (widget.provider.vertical == 'auto' && currentUser != null) ...[
               const SizedBox(height: FactorySpacing.space6),
               Text(l10n.vehiclesSectionTitle, style: textTheme.titleMedium),
@@ -296,6 +327,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                       (mechanics.isEmpty || _selectedMechanicId != null) &&
                       (!requiresVehicleSelection || _selectedVehicleId != null) &&
                       (cleaners.isEmpty || _selectedCleanerId != null) &&
+                      (staffMembers.isEmpty || _selectedStaffId != null) &&
                       !_isBooking)
                   ? _book
                   : null,
@@ -371,6 +403,14 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               availabilitySlotId: _selectedSlotId!,
               totalPrice: service.price,
             );
+      } else if (_selectedStaffId != null) {
+        booking = await ref.read(staffApiProvider).createStaffBooking(
+              userId: currentUser.id,
+              staffId: _selectedStaffId!,
+              serviceId: service.id,
+              availabilitySlotId: _selectedSlotId!,
+              totalPrice: service.price,
+            );
       } else {
         booking = await ref.read(bookingApiProvider).createBooking(
               userId: currentUser.id,
@@ -422,6 +462,14 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
         _isBooking = false;
       });
     } on CleaningException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
+      ref.invalidate(availabilitySlotsProvider(widget.provider.id));
+      setState(() {
+        _selectedSlotId = null;
+        _isBooking = false;
+      });
+    } on StaffException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
       ref.invalidate(availabilitySlotsProvider(widget.provider.id));
@@ -551,6 +599,42 @@ class _CleanerOption extends StatelessWidget {
       leading: FactoryAvatar(
         initials: initialsFor(cleaner.displayName),
         image: cleaner.photoUrl != null ? NetworkImage(cleaner.photoUrl!) : null,
+      ),
+      selected: selected,
+      onTap: onTap,
+    );
+  }
+}
+
+class _StaffOption extends StatelessWidget {
+  const _StaffOption({
+    required this.staff,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final Staff staff;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return FactorySelectableTile(
+      title: staff.displayName,
+      subtitle: staff.bio != null
+          ? Text(
+              staff.bio!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+            )
+          : null,
+      leading: FactoryAvatar(
+        initials: initialsFor(staff.displayName),
+        image: staff.photoUrl != null ? NetworkImage(staff.photoUrl!) : null,
       ),
       selected: selected,
       onTap: onTap,
