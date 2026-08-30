@@ -13,11 +13,12 @@ import '../../../salon/presentation/providers/salon_providers.dart';
 import '../../../salon/presentation/screens/salon_detail_screen.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
 
-/// Shown by AuthGate once logged in. Lists the salons/workshops this owner
-/// manages (usually one, but nothing stops an owner running several) and
-/// lets them create a new one, picking which vertical (beauty/auto) it
-/// belongs to — Core's Provider.vertical is opaque free text, but these are
-/// the only two verticals with real admin screens built so far.
+/// Shown by AuthGate once logged in. Lists the salons/workshops/cleaning
+/// companies this owner manages (usually one, but nothing stops an owner
+/// running several) and lets them create a new one, picking which vertical
+/// (beauty/auto/cleaning) it belongs to — Core's Provider.vertical is
+/// opaque free text, but these are the only verticals with real admin
+/// screens built so far.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -172,6 +173,7 @@ class _VerticalPicker extends StatelessWidget {
       segments: [
         ButtonSegment(value: 'beauty', label: Text(l10n.verticalBeautyLabel)),
         ButtonSegment(value: 'auto', label: Text(l10n.verticalAutoLabel)),
+        ButtonSegment(value: 'cleaning', label: Text(l10n.verticalCleaningLabel)),
       ],
       selected: {value},
       onSelectionChanged: (selection) => onChanged(selection.first),
