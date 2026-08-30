@@ -8,6 +8,7 @@ import '../../../billing/data/billing_exception.dart';
 import '../../../billing/data/models/subscription.dart';
 import '../../../billing/presentation/providers/billing_providers.dart';
 import '../../../billing/presentation/screens/billing_screen.dart';
+import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../../salon/data/models/admin_provider.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
 import '../../../salon/presentation/screens/salon_detail_screen.dart';
@@ -15,10 +16,12 @@ import '../../../settings/presentation/screens/settings_screen.dart';
 
 /// Shown by AuthGate once logged in. Lists the salons/workshops/cleaning
 /// companies this owner manages (usually one, but nothing stops an owner
-/// running several) and lets them create a new one, picking which vertical
-/// (beauty/auto/cleaning) it belongs to — Core's Provider.vertical is
-/// opaque free text, but these are the only verticals with real admin
-/// screens built so far.
+/// running several) and lets them create a new one, picking which category
+/// it belongs to — Core's Provider.vertical is opaque free text, and the
+/// picker itself is sourced from the master catalog (see catalog_providers)
+/// so a platform admin adding a new category shows up here immediately,
+/// with no app release. Beauty/auto/cleaning remain the only categories
+/// with real staff-management screens built so far (see SalonDetailScreen).
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -118,7 +121,7 @@ class DashboardScreen extends ConsumerWidget {
               label: l10n.businessNameLabel,
             ),
             const SizedBox(height: FactorySpacing.space3),
-            _VerticalPicker(
+            _CategoryPicker(
               value: vertical,
               onChanged: (v) => setDialogState(() => vertical = v),
             ),
@@ -160,23 +163,43 @@ class DashboardScreen extends ConsumerWidget {
   }
 }
 
-class _VerticalPicker extends StatelessWidget {
+/// Replaces the old 3-option `SegmentedButton` (beauty/auto/cleaning) with a
+/// dropdown sourced from the master catalog — a `SegmentedButton` doesn't
+/// scale to 20+ admin-managed categories, a dropdown does. `value`/`onChanged`
+/// carry the category's `code` (unchanged contract: still what's sent as
+/// `Provider.vertical`).
+class _CategoryPicker extends ConsumerWidget {
   final String value;
   final ValueChanged<String> onChanged;
 
-  const _VerticalPicker({required this.value, required this.onChanged});
+  const _CategoryPicker({required this.value, required this.onChanged});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    return SegmentedButton<String>(
-      segments: [
-        ButtonSegment(value: 'beauty', label: Text(l10n.verticalBeautyLabel)),
-        ButtonSegment(value: 'auto', label: Text(l10n.verticalAutoLabel)),
-        ButtonSegment(value: 'cleaning', label: Text(l10n.verticalCleaningLabel)),
-      ],
-      selected: {value},
-      onSelectionChanged: (selection) => onChanged(selection.first),
+    final categoriesAsync = ref.watch(categoriesProvider);
+    final languageCode = Localizations.localeOf(context).languageCode;
+
+    return categoriesAsync.when(
+      data: (categories) {
+        // Fall back to a plain text field if a caller's `value` (e.g. the
+        // '"beauty"' default) isn't in the fetched list for some reason,
+        // rather than crashing DropdownButtonFormField on an unmatched value.
+        final hasValue = categories.any((c) => c.code == value);
+        return DropdownButtonFormField<String>(
+          initialValue: hasValue ? value : null,
+          decoration: InputDecoration(labelText: l10n.businessCategoryLabel),
+          items: [
+            for (final category in categories)
+              DropdownMenuItem(value: category.code, child: Text(category.nameFor(languageCode))),
+          ],
+          onChanged: (code) {
+            if (code != null) onChanged(code);
+          },
+        );
+      },
+      loading: () => const LinearProgressIndicator(),
+      error: (error, stackTrace) => Text(l10n.errorBusinessesLoadFailed),
     );
   }
 }
@@ -317,7 +340,7 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
               label: l10n.businessNameLabel,
             ),
             const SizedBox(height: FactorySpacing.space3),
-            _VerticalPicker(
+            _CategoryPicker(
               value: _vertical,
               onChanged: _isSubmitting ? (_) {} : (v) => setState(() => _vertical = v),
             ),

@@ -121,6 +121,15 @@
   "businessNameLabel": "Business name",
   "@businessNameLabel": {"description": "Business name text field label — used on create and edit."},
 
+  "businessCategoryLabel": "Category",
+  "@businessCategoryLabel": {"description": "Label for the category dropdown when creating a business."},
+
+  "platformAdminEntryButton": "Platform Admin",
+  "@platformAdminEntryButton": {"description": "Text button on the login screen leading to the platform-staff login."},
+
+  "platformAdminLoginTitle": "Platform Admin Login",
+  "@platformAdminLoginTitle": {"description": "AppBar title for the platform-staff login screen."},
+
   "verticalBeautyLabel": "Beauty",
   "@verticalBeautyLabel": {"description": "Vertical picker segment label when creating a provider."},
 
