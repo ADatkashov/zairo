@@ -11,7 +11,13 @@ class Category {
   final String nameKk;
   final String nameRu;
   final String nameEn;
+
+  /// A single emoji, admin-set per category — lets a brand-new category
+  /// render a sensible icon without this app shipping a Material icon for
+  /// it. Null for rows created before this field existed.
+  final String? icon;
   final int sortOrder;
+  final String status;
 
   const Category({
     required this.id,
@@ -19,7 +25,9 @@ class Category {
     required this.nameKk,
     required this.nameRu,
     required this.nameEn,
+    required this.icon,
     required this.sortOrder,
+    required this.status,
   });
 
   factory Category.fromJson(Map<String, dynamic> json) {
@@ -29,7 +37,9 @@ class Category {
       nameKk: json['nameKk'] as String,
       nameRu: json['nameRu'] as String,
       nameEn: json['nameEn'] as String,
+      icon: json['icon'] as String?,
       sortOrder: json['sortOrder'] as int,
+      status: json['status'] as String,
     );
   }
 

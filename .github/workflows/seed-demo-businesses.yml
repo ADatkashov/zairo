@@ -2,13 +2,23 @@ name: Seed Demo Businesses
 
 # One-shot (or re-runnable) helper that populates the live backend with a
 # handful of real demo businesses — one owner account, a couple of
-# services, a couple of staff (masters/mechanics/cleaners) each linked to
-# every service, and a few open availability slots per staff member — so
-# the apps have something real to browse/book against instead of an empty
-# database. Runs entirely over the public API (register -> login ->
-# create provider -> create services -> create staff -> link services ->
-# create slots), the same way any real business owner would set up their
-# account; it does not touch the database directly.
+# services, a couple of staff each linked to every service, and a few open
+# availability slots per staff member — so the apps have something real to
+# browse/book against instead of an empty database. Runs entirely over the
+# public API (register -> login -> create provider -> create services ->
+# create staff -> link services -> create slots), the same way any real
+# business owner would set up their account; it does not touch the
+# database directly.
+#
+# Staff creation branches on vertical: beauty/auto/cleaning still have
+# their own hardcoded staff module (masters/mechanics/cleaners), so those
+# three use their dedicated endpoints; every other vertical — including
+# any category a platform admin creates later purely through the catalog
+# API, with no app release — falls through to the generic `staff` module
+# (POST /providers/{id}/staff). The medicine/sport_fitness businesses
+# below exist specifically to exercise that generic path end-to-end
+# against the live backend, mirroring _verticalsWithDedicatedStaffModule
+# in both Flutter apps.
 #
 # New provider accounts always start PENDING (see ProviderController) —
 # invisible to Search until an ADMIN approves them. This workflow does not
@@ -81,11 +91,12 @@ jobs:
               -H "Content-Type: application/json" -H "Authorization: Bearer $access_token" \
               -d "{\"title\":\"$svc2_title\",\"durationMinutes\":$svc2_dur,\"price\":$svc2_price,\"currency\":\"KZT\"}" | jq -r '.id')
 
-            local staff_path staff_field
+            local staff_path
             case "$vertical" in
               beauty) staff_path="beauty/providers/$provider_id/masters" ;;
               auto) staff_path="auto/providers/$provider_id/mechanics" ;;
               cleaning) staff_path="cleaning/providers/$provider_id/cleaners" ;;
+              *) staff_path="providers/$provider_id/staff" ;;
             esac
 
             staff1_id=$(curl -sS --max-time 60 -X POST "$BASE_URL/$staff_path" \
@@ -100,6 +111,7 @@ jobs:
               beauty) link_prefix="beauty/masters" ;;
               auto) link_prefix="auto/mechanics" ;;
               cleaning) link_prefix="cleaning/cleaners" ;;
+              *) link_prefix="staff" ;;
             esac
             for staff_id in "$staff1_id" "$staff2_id"; do
               curl -sS --max-time 60 -X POST "$BASE_URL/$link_prefix/$staff_id/services/$svc1_id" \
@@ -139,6 +151,16 @@ jobs:
 
           create_business "cleaning" "Bright Clean Almaty" "Bakyt Clean" "cleaning.company2@zairo-demo.test" 43.230 76.870 \
             "Мытьё окон" 60 4000 "Уборка после ремонта" 300 24000 "Бакыт Клинер" "Салтанат Клинер"
+
+          # Categories added purely through the catalog (no vertical module
+          # of their own) — these two prove the generic `staff` module
+          # works end-to-end against the live backend, the same way
+          # beauty/auto/cleaning prove their own dedicated modules do.
+          create_business "medicine" "Almaty Dental Studio" "Aliya Dent" "medicine.clinic1@zairo-demo.test" 43.235 76.909 \
+            "Консультация стоматолога" 30 5000 "Чистка зубов" 45 12000 "Др. Алия Нурланова" "Др. Ержан Касымов"
+
+          create_business "sport_fitness" "FitZone Almaty" "Timur Fit" "sport.fitness1@zairo-demo.test" 43.220 76.890 \
+            "Персональная тренировка" 60 8000 "Групповое занятие" 45 3000 "Тренер Асхат" "Тренер Дана"
 
           echo ""
           echo "Provider ids created (still PENDING, need admin approval to appear in Search):"
