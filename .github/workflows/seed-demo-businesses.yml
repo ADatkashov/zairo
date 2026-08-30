@@ -1,0 +1,145 @@
+name: Seed Demo Businesses
+
+# One-shot (or re-runnable) helper that populates the live backend with a
+# handful of real demo businesses — one owner account, a couple of
+# services, a couple of staff (masters/mechanics/cleaners) each linked to
+# every service, and a few open availability slots per staff member — so
+# the apps have something real to browse/book against instead of an empty
+# database. Runs entirely over the public API (register -> login ->
+# create provider -> create services -> create staff -> link services ->
+# create slots), the same way any real business owner would set up their
+# account; it does not touch the database directly.
+#
+# New provider accounts always start PENDING (see ProviderController) —
+# invisible to Search until an ADMIN approves them. This workflow does not
+# have admin credentials, so the created providers still need a manual
+# `update provider set status = 'ACTIVE' where id = ...` (or the platform
+# admin UI) afterward — see docs/ci-cd.md.
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Backend base URL (include /api/v1)"
+        required: false
+        default: "https://zairo-backend.onrender.com/api/v1"
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Seed demo businesses
+        env:
+          BASE_URL: ${{ inputs.base_url }}
+        run: |
+          set -euo pipefail
+
+          echo "## Demo business accounts" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Business | Vertical | Owner email | Password |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|---|---|" >> "$GITHUB_STEP_SUMMARY"
+
+          # Free-tier Render services sleep after 15 min idle — the first
+          # request can take 30-60s to wake the instance, so warm it up
+          # with a generous timeout before the real work starts.
+          echo "Warming up $BASE_URL ..."
+          curl -sS --max-time 90 -o /dev/null "$BASE_URL/../actuator/health" || true
+
+          PROVIDER_IDS=()
+
+          create_business() {
+            local vertical="$1" business_name="$2" owner_name="$3" email="$4" lat="$5" lon="$6"
+            local svc1_title="$7" svc1_dur="$8" svc1_price="$9" svc2_title="${10}" svc2_dur="${11}" svc2_price="${12}"
+            local staff1_name="${13}" staff2_name="${14}"
+
+            local password
+            password="Demo$(openssl rand -hex 4)!"
+
+            echo "=== $business_name ($vertical) ==="
+
+            register_resp=$(curl -sS --max-time 60 -X POST "$BASE_URL/auth/register" \
+              -H "Content-Type: application/json" \
+              -d "{\"email\":\"$email\",\"password\":\"$password\",\"displayName\":\"$owner_name\",\"role\":\"PROVIDER_OWNER\"}")
+            access_token=$(echo "$register_resp" | jq -r '.accessToken')
+            owner_id=$(echo "$register_resp" | jq -r '.user.id')
+            if [ "$access_token" = "null" ] || [ -z "$access_token" ]; then
+              echo "Register failed: $register_resp"; exit 1
+            fi
+
+            provider_resp=$(curl -sS --max-time 60 -X POST "$BASE_URL/providers" \
+              -H "Content-Type: application/json" -H "Authorization: Bearer $access_token" \
+              -d "{\"ownerUserId\":\"$owner_id\",\"name\":\"$business_name\",\"vertical\":\"$vertical\",\"latitude\":$lat,\"longitude\":$lon}")
+            provider_id=$(echo "$provider_resp" | jq -r '.id')
+            if [ "$provider_id" = "null" ] || [ -z "$provider_id" ]; then
+              echo "Create provider failed: $provider_resp"; exit 1
+            fi
+            PROVIDER_IDS+=("$provider_id")
+
+            svc1_id=$(curl -sS --max-time 60 -X POST "$BASE_URL/providers/$provider_id/services" \
+              -H "Content-Type: application/json" -H "Authorization: Bearer $access_token" \
+              -d "{\"title\":\"$svc1_title\",\"durationMinutes\":$svc1_dur,\"price\":$svc1_price,\"currency\":\"KZT\"}" | jq -r '.id')
+            svc2_id=$(curl -sS --max-time 60 -X POST "$BASE_URL/providers/$provider_id/services" \
+              -H "Content-Type: application/json" -H "Authorization: Bearer $access_token" \
+              -d "{\"title\":\"$svc2_title\",\"durationMinutes\":$svc2_dur,\"price\":$svc2_price,\"currency\":\"KZT\"}" | jq -r '.id')
+
+            local staff_path staff_field
+            case "$vertical" in
+              beauty) staff_path="beauty/providers/$provider_id/masters" ;;
+              auto) staff_path="auto/providers/$provider_id/mechanics" ;;
+              cleaning) staff_path="cleaning/providers/$provider_id/cleaners" ;;
+            esac
+
+            staff1_id=$(curl -sS --max-time 60 -X POST "$BASE_URL/$staff_path" \
+              -H "Content-Type: application/json" -H "Authorization: Bearer $access_token" \
+              -d "{\"displayName\":\"$staff1_name\",\"bio\":null,\"photoUrl\":null}" | jq -r '.id')
+            staff2_id=$(curl -sS --max-time 60 -X POST "$BASE_URL/$staff_path" \
+              -H "Content-Type: application/json" -H "Authorization: Bearer $access_token" \
+              -d "{\"displayName\":\"$staff2_name\",\"bio\":null,\"photoUrl\":null}" | jq -r '.id')
+
+            local link_prefix
+            case "$vertical" in
+              beauty) link_prefix="beauty/masters" ;;
+              auto) link_prefix="auto/mechanics" ;;
+              cleaning) link_prefix="cleaning/cleaners" ;;
+            esac
+            for staff_id in "$staff1_id" "$staff2_id"; do
+              curl -sS --max-time 60 -X POST "$BASE_URL/$link_prefix/$staff_id/services/$svc1_id" \
+                -H "Authorization: Bearer $access_token" -o /dev/null
+              curl -sS --max-time 60 -X POST "$BASE_URL/$link_prefix/$staff_id/services/$svc2_id" \
+                -H "Authorization: Bearer $access_token" -o /dev/null
+            done
+
+            for staff_id in "$staff1_id" "$staff2_id"; do
+              for day_offset in 1 2 3; do
+                starts_at=$(date -u -d "+${day_offset} day 10:00" +%Y-%m-%dT%H:%M:%SZ)
+                ends_at=$(date -u -d "+${day_offset} day 10:30" +%Y-%m-%dT%H:%M:%SZ)
+                curl -sS --max-time 60 -X POST "$BASE_URL/providers/$provider_id/availability-slots" \
+                  -H "Content-Type: application/json" -H "Authorization: Bearer $access_token" \
+                  -d "{\"startsAt\":\"$starts_at\",\"endsAt\":\"$ends_at\",\"employeeId\":\"$staff_id\"}" -o /dev/null
+              done
+            done
+
+            echo "$business_name -> provider $provider_id, owner $email / $password"
+            echo "| $business_name | $vertical | $email | $password |" >> "$GITHUB_STEP_SUMMARY"
+          }
+
+          create_business "beauty" "Almaty Beauty Studio" "Aigerim Salon" "salon.almaty1@zairo-demo.test" 43.238293 76.945465 \
+            "Стрижка" 60 5000 "Окрашивание" 120 15000 "Айгуль Стилист" "Динара Стилист"
+
+          create_business "beauty" "Glam Studio Almaty" "Madina Glam" "salon.almaty2@zairo-demo.test" 43.242 76.912 \
+            "Маникюр" 60 4000 "Педикюр" 75 6000 "Асель Мастер" "Гульнара Мастер"
+
+          create_business "auto" "AutoFix Almaty" "Yerlan Auto" "auto.workshop1@zairo-demo.test" 43.222 76.851 \
+            "Замена масла" 45 8000 "Диагностика" 30 5000 "Ерлан Механик" "Даулет Механик"
+
+          create_business "auto" "Speed Service Almaty" "Nurlan Speed" "auto.workshop2@zairo-demo.test" 43.201 76.933 \
+            "Шиномонтаж" 40 6000 "Развал-схождение" 60 12000 "Нурлан Механик" "Тимур Механик"
+
+          create_business "cleaning" "ChistoDom" "Aigul Cleaning" "cleaning.company1@zairo-demo.test" 43.249 76.905 \
+            "Регулярная уборка" 90 6000 "Генеральная уборка" 240 18000 "Айгуль Клинер" "Мадина Клинер"
+
+          create_business "cleaning" "Bright Clean Almaty" "Bakyt Clean" "cleaning.company2@zairo-demo.test" 43.230 76.870 \
+            "Мытьё окон" 60 4000 "Уборка после ремонта" 300 24000 "Бакыт Клинер" "Салтанат Клинер"
+
+          echo ""
+          echo "Provider ids created (still PENDING, need admin approval to appear in Search):"
+          printf '%s\n' "${PROVIDER_IDS[@]}"
