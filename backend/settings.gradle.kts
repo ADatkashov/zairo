@@ -22,6 +22,7 @@ include(
     "vertical-beauty",
     "vertical-auto",
     "vertical-cleaning",
+    "staff",
     "storage",
     "country",
     "money",
