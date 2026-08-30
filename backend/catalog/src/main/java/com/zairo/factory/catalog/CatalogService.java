@@ -29,6 +29,12 @@ public class CatalogService {
     @Column(name = "business_type_id", nullable = false)
     private UUID businessTypeId;
 
+    // Optional — a service can attach directly under its business type
+    // (every pre-4th-level row does, and still may) or, once one exists,
+    // under a more specific Subsphere. See Subsphere's own doc comment.
+    @Column(name = "subsphere_id")
+    private UUID subsphereId;
+
     @Column(name = "name_kk", nullable = false)
     private String nameKk;
 
@@ -56,8 +62,14 @@ public class CatalogService {
 
     public CatalogService(UUID id, UUID businessTypeId, String nameKk, String nameRu, String nameEn, int sortOrder,
             TaxonomyStatus status, Instant now) {
+        this(id, businessTypeId, null, nameKk, nameRu, nameEn, sortOrder, status, now);
+    }
+
+    public CatalogService(UUID id, UUID businessTypeId, UUID subsphereId, String nameKk, String nameRu, String nameEn,
+            int sortOrder, TaxonomyStatus status, Instant now) {
         this.id = id;
         this.businessTypeId = businessTypeId;
+        this.subsphereId = subsphereId;
         this.nameKk = nameKk;
         this.nameRu = nameRu;
         this.nameEn = nameEn;
@@ -73,6 +85,10 @@ public class CatalogService {
 
     public UUID getBusinessTypeId() {
         return businessTypeId;
+    }
+
+    public UUID getSubsphereId() {
+        return subsphereId;
     }
 
     public String getNameKk() {
