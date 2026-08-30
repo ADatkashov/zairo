@@ -575,6 +575,9 @@
   "cleanersSectionTitle": "Cleaners",
   "@cleanersSectionTitle": {"description": "Provider detail screen's cleaners section header (cleaning vertical)."},
 
+  "staffSectionTitle": "Staff",
+  "@staffSectionTitle": {"description": "Provider detail screen's generic staff section header, shown for categories with no dedicated staff module."},
+
   "vehiclesSectionTitle": "Your vehicle",
   "@vehiclesSectionTitle": {"description": "Provider detail screen's vehicle-selection section header (auto vertical)."},
 
@@ -639,6 +642,9 @@
 
   "errorCleaningBookingFailed": "Couldn't complete this booking — the cleaner may not offer this service, or the time slot was just taken. Please try again.",
   "@errorCleaningBookingFailed": {"description": "409 from POST .../cleaning/bookings — covers two distinct backend rejections the response body doesn't distinguish."},
+
+  "errorStaffBookingFailed": "Couldn't complete this booking — the staff member may not offer this service, or the time slot was just taken. Please try again.",
+  "@errorStaffBookingFailed": {"description": "409 from POST .../staff/bookings — covers two distinct backend rejections the response body doesn't distinguish."},
 
   "serviceDurationMinutes": "{minutes} min",
   "@serviceDurationMinutes": {

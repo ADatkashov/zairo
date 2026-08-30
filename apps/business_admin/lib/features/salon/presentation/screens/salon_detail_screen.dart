@@ -17,6 +17,10 @@ import '../../../cleaning/data/models/admin_cleaner.dart';
 import '../../../cleaning/presentation/providers/cleaning_admin_providers.dart';
 import '../../../cleaning/presentation/widgets/add_cleaner_dialog.dart';
 import '../../../cleaning/presentation/widgets/manage_cleaner_services_dialog.dart';
+import '../../../staff/data/models/admin_staff.dart';
+import '../../../staff/presentation/providers/staff_admin_providers.dart';
+import '../../../staff/presentation/widgets/add_staff_dialog.dart';
+import '../../../staff/presentation/widgets/manage_staff_services_dialog.dart';
 import '../../data/models/admin_booking.dart';
 import '../../data/models/admin_provider.dart';
 import '../../data/models/admin_service.dart';
@@ -24,6 +28,12 @@ import '../providers/salon_providers.dart';
 import '../widgets/add_service_dialog.dart';
 import '../widgets/add_slot_dialog.dart';
 import '../widgets/recurring_schedule_dialog.dart';
+
+/// Categories with their own hardcoded staff module (Master/Mechanic/
+/// Cleaner) — every other category falls back to the generic `staff`
+/// module below, so a platform admin's brand-new category gets a working
+/// staff section immediately, with no app release.
+const _verticalsWithDedicatedStaffModule = {'beauty', 'auto', 'cleaning'};
 
 class SalonDetailScreen extends ConsumerStatefulWidget {
   final AdminProvider provider;
@@ -95,6 +105,10 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
           if (_provider.vertical == 'cleaning') ...[
             const SizedBox(height: FactorySpacing.space6),
             _CleanersSection(providerId: _provider.id),
+          ],
+          if (!_verticalsWithDedicatedStaffModule.contains(_provider.vertical)) ...[
+            const SizedBox(height: FactorySpacing.space6),
+            _StaffSection(providerId: _provider.id),
           ],
           const SizedBox(height: FactorySpacing.space6),
           _BookingsSection(providerId: _provider.id),
@@ -1007,6 +1021,151 @@ class _CleanerAdminRow extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.person_remove_outlined),
                   tooltip: l10n.removeCleanerTooltip,
+                  onPressed: onRemove,
+                ),
+              ],
+            )
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FactoryBadge(label: l10n.removedBadge),
+                const SizedBox(width: FactorySpacing.space2),
+                FactoryButton(label: l10n.reactivateButton, variant: FactoryButtonVariant.text, onPressed: onReactivate),
+              ],
+            ),
+    );
+  }
+}
+
+class _StaffSection extends ConsumerWidget {
+  final String providerId;
+
+  const _StaffSection({required this.providerId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final showInactive = ref.watch(showInactiveStaffProvider(providerId));
+    final staffAsync = ref.watch(adminStaffProvider((providerId, showInactive)));
+    void refresh() => ref.invalidate(adminStaffProvider((providerId, showInactive)));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        FactorySectionHeader(
+          title: l10n.staffSectionTitle,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FactoryButton(
+                label: showInactive ? l10n.hideRemovedButton : l10n.showRemovedButton,
+                variant: FactoryButtonVariant.text,
+                onPressed: () =>
+                    ref.read(showInactiveStaffProvider(providerId).notifier).state = !showInactive,
+              ),
+              FactoryButton(
+                icon: Icons.add,
+                label: l10n.addButton,
+                variant: FactoryButtonVariant.text,
+                onPressed: () async {
+                  final added = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => AddStaffDialog(providerId: providerId),
+                  );
+                  if (added == true) refresh();
+                },
+              ),
+            ],
+          ),
+        ),
+        staffAsync.when(
+          data: (staff) {
+            if (staff.isEmpty) {
+              return Text(
+                showInactive ? l10n.noStaffYet : l10n.noActiveStaff,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+              );
+            }
+            return Column(
+              children: staff
+                  .map((s) => Padding(
+                        padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
+                        child: _StaffAdminRow(
+                          staff: s,
+                          onManageServices: () => showDialog(
+                            context: context,
+                            builder: (_) => ManageStaffServicesDialog(providerId: providerId, staffId: s.id),
+                          ),
+                          onRemove: () async {
+                            await ref.read(staffAdminApiProvider).deactivateStaff(s.id);
+                            refresh();
+                          },
+                          onReactivate: () async {
+                            await ref.read(staffAdminApiProvider).reactivateStaff(s.id);
+                            refresh();
+                          },
+                        ),
+                      ))
+                  .toList(),
+            );
+          },
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
+            child: LinearProgressIndicator(),
+          ),
+          error: (error, stackTrace) => Text(l10n.errorStaffLoadFailed(error.toString())),
+        ),
+      ],
+    );
+  }
+}
+
+class _StaffAdminRow extends StatelessWidget {
+  const _StaffAdminRow({
+    required this.staff,
+    required this.onManageServices,
+    required this.onRemove,
+    required this.onReactivate,
+  });
+
+  final AdminStaff staff;
+  final VoidCallback onManageServices;
+  final VoidCallback onRemove;
+  final VoidCallback onReactivate;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return FactorySelectableTile(
+      leading: FactoryAvatar(
+        initials: _initialsFor(staff.displayName),
+        image: staff.photoUrl != null ? NetworkImage(staff.photoUrl!) : null,
+      ),
+      title: staff.displayName,
+      titleColor: staff.active ? null : colors.textTertiary,
+      subtitle: staff.bio != null
+          ? Text(
+              staff.bio!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+            )
+          : null,
+      trailing: staff.active
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.design_services_outlined),
+                  tooltip: l10n.manageStaffServicesTooltip,
+                  onPressed: onManageServices,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.person_remove_outlined),
+                  tooltip: l10n.removeStaffTooltip,
                   onPressed: onRemove,
                 ),
               ],
