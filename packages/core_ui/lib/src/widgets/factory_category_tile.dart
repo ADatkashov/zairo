@@ -15,12 +15,19 @@ class FactoryCategoryTile extends StatelessWidget {
     super.key,
     required this.icon,
     required this.label,
+    this.emoji,
     this.selected = false,
     this.onTap,
   });
 
   final IconData icon;
   final String label;
+
+  /// When set, rendered instead of [icon] — the master catalog stores an
+  /// emoji per category/sphere so a platform admin can add a brand-new one
+  /// without a Material icon existing for it in this app's code. [icon]
+  /// stays required as the fallback for rows that predate that field.
+  final String? emoji;
   final bool selected;
   final VoidCallback? onTap;
 
@@ -47,7 +54,9 @@ class FactoryCategoryTile extends StatelessWidget {
                   color: selected ? colors.primary : colors.surfaceAlt,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, size: FactoryIconSize.md, color: selected ? colors.onPrimary : colors.textSecondary),
+                child: emoji != null
+                    ? Text(emoji!, style: const TextStyle(fontSize: FactoryIconSize.md))
+                    : Icon(icon, size: FactoryIconSize.md, color: selected ? colors.onPrimary : colors.textSecondary),
               ),
               const SizedBox(height: FactorySpacing.space2),
               SizedBox(
