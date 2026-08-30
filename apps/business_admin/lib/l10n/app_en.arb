@@ -365,6 +365,32 @@
   "manageCleanerServicesDialogTitle": "Services this cleaner offers",
   "@manageCleanerServicesDialogTitle": {"description": "Manage-cleaner-services dialog title (same text as the row's tooltip)."},
 
+  "staffSectionTitle": "Staff",
+  "@staffSectionTitle": {"description": "Salon detail screen's generic staff section header, shown for categories with no dedicated staff module."},
+
+  "noStaffYet": "No staff yet.",
+  "@noStaffYet": {"description": "Staff section empty state including inactive ones."},
+
+  "noActiveStaff": "No active staff.",
+  "@noActiveStaff": {"description": "Staff section empty state, active only."},
+
+  "errorStaffLoadFailed": "Failed to load staff: {error}",
+  "@errorStaffLoadFailed": {
+    "description": "Staff section error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "removeStaffTooltip": "Remove staff member",
+  "@removeStaffTooltip": {"description": "Staff row's remove icon button tooltip."},
+
+  "manageStaffServicesTooltip": "Services this staff member offers",
+  "@manageStaffServicesTooltip": {"description": "Staff row's manage-services icon button tooltip and dialog title."},
+
+  "manageStaffServicesDialogTitle": "Services this staff member offers",
+  "@manageStaffServicesDialogTitle": {"description": "Manage-staff-services dialog title (same text as the row's tooltip)."},
+
   "bookingsSectionTitle": "Bookings",
   "@bookingsSectionTitle": {"description": "Salon detail screen's bookings section header."},
 
@@ -582,6 +608,23 @@
   "errorAddCleanerFailed": "Failed to add cleaner: {error}",
   "@errorAddCleanerFailed": {
     "description": "Add-cleaner dialog's error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "addStaffDialogTitle": "Add a staff member",
+  "@addStaffDialogTitle": {"description": "Add-staff dialog title."},
+
+  "staffNameLabel": "Name",
+  "@staffNameLabel": {"description": "Add-staff dialog's name field label."},
+
+  "validationStaffNameRequired": "Enter a name",
+  "@validationStaffNameRequired": {"description": "Add-staff dialog's validation error."},
+
+  "errorAddStaffFailed": "Failed to add staff member: {error}",
+  "@errorAddStaffFailed": {
+    "description": "Add-staff dialog's error state.",
     "placeholders": {
       "error": {"type": "String"}
     }
