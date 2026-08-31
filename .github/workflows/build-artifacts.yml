@@ -89,7 +89,7 @@ jobs:
             --dart-define=API_BASE_URL="$API_BASE_URL"
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.app }}-apk-debug-signed
           path: apps/${{ matrix.app }}/build/app/outputs/flutter-apk/app-release.apk
@@ -130,7 +130,7 @@ jobs:
       # classes-only "-plain" jar it keeps for library consumers. Only
       # the former is useful as a runnable artifact.
       - name: Upload bootJar
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: platform-api-bootjar
           path: |
