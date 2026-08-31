@@ -10,6 +10,7 @@ import '../../../auth/presentation/screens/register_screen.dart';
 import '../../../auto/presentation/screens/vehicles_screen.dart';
 import '../../../booking/presentation/providers/booking_providers.dart';
 import '../../../favorites/presentation/providers/favorites_providers.dart';
+import '../../../favorites/presentation/screens/favorites_screen.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -126,10 +127,19 @@ class _LoggedInView extends ConsumerWidget {
               ),
               Container(width: 1, height: 36, color: colors.border),
               Expanded(
-                child: FactoryStatTile(
-                  value: favoritesCount?.toString() ?? '—',
-                  label: l10n.myFavoritesTitle,
-                  icon: Icons.favorite_border_rounded,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: FactoryRadius.mdRadius,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const FavoritesScreen()),
+                    ),
+                    child: FactoryStatTile(
+                      value: favoritesCount?.toString() ?? '—',
+                      label: l10n.myFavoritesTitle,
+                      icon: Icons.favorite_border_rounded,
+                    ),
+                  ),
                 ),
               ),
             ],
