@@ -1,8 +1,10 @@
 import 'package:core_network/core_network.dart';
+import 'package:core_storage/core_storage.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zairo/features/discovery/data/discovery_api.dart';
 import 'package:zairo/features/discovery/data/models/provider_search_result.dart';
@@ -10,6 +12,24 @@ import 'package:zairo/features/discovery/data/models/service_summary.dart';
 import 'package:zairo/features/discovery/presentation/providers/discovery_providers.dart';
 import 'package:zairo/features/discovery/presentation/screens/search_screen.dart';
 import 'package:zairo/l10n/app_localizations.dart';
+
+/// In-memory stand-in — RecentSearchesController persists through
+/// SecureStorageService, and this app's tests never talk to the real
+/// flutter_secure_storage plugin (no platform channel in a widget test).
+class _FakeSecureStorageService extends SecureStorageService {
+  _FakeSecureStorageService() : super(const FlutterSecureStorage());
+
+  final Map<String, String> _values = {};
+
+  @override
+  Future<void> write(String key, String value) async => _values[key] = value;
+
+  @override
+  Future<String?> read(String key) async => _values[key];
+
+  @override
+  Future<void> delete(String key) async => _values.remove(key);
+}
 
 class _FakeDiscoveryApi extends DiscoveryApi {
   _FakeDiscoveryApi(this._results) : super(DioClient(Dio()));
@@ -190,7 +210,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('shows a prompt before the first search', (tester) async {
+  testWidgets('shows popular searches (not results) before the first search', (tester) async {
     final fakeApi = _FakeDiscoveryApi(const []);
 
     await tester.pumpWidget(
@@ -207,7 +227,71 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Search for a service'), findsOneWidget);
+    expect(find.text('Popular searches'), findsOneWidget);
+    expect(find.text('Haircut'), findsOneWidget);
+    expect(find.text('Search for a service'), findsNothing);
+  });
+
+  testWidgets('tapping a popular search query runs that search', (tester) async {
+    final fakeApi = _RecordingDiscoveryApi();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [discoveryApiProvider.overrideWithValue(fakeApi)],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SearchScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Massage'));
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(TextField, 'Massage'), findsOneWidget);
+    expect(find.text('No results for "Massage"'), findsOneWidget);
+  });
+
+  testWidgets('a submitted search is saved to recent searches and can be cleared', (tester) async {
+    final fakeApi = _RecordingDiscoveryApi();
+    final fakeStorage = _FakeSecureStorageService();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          discoveryApiProvider.overrideWithValue(fakeApi),
+          secureStorageServiceProvider.overrideWithValue(fakeStorage),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SearchScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'sauna');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+
+    // Back to the pristine screen (clearing the field re-enters it) to see
+    // the search just made show up as a recent one.
+    await tester.enterText(find.byType(TextField), '');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Recent searches'), findsOneWidget);
+    expect(find.text('sauna'), findsOneWidget);
+
+    await tester.tap(find.text('Clear'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Recent searches'), findsNothing);
   });
 
   testWidgets('shows a "no results" state that names the query', (tester) async {
