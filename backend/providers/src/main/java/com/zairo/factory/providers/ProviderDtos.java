@@ -36,7 +36,16 @@ public final class ProviderDtos {
     public record UpdateProviderRequest(
             @NotBlank @Size(max = 255) @Schema(example = "Aigerim Beauty Studio") String name,
             @Schema(example = "43.238293") Double latitude,
-            @Schema(example = "76.945465") Double longitude) {
+            @Schema(example = "76.945465") Double longitude,
+            @Size(max = 2048) @Schema(description = "URL returned by POST /uploads. Null clears it.",
+                    example = "http://localhost:8080/api/v1/uploads/a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d.jpg")
+            String coverPhotoUrl) {
+        // Convenience constructor for existing callers (tests) that predate
+        // coverPhotoUrl — same back-compat pattern as CreateProviderRequest
+        // above.
+        public UpdateProviderRequest(String name, Double latitude, Double longitude) {
+            this(name, latitude, longitude, null);
+        }
     }
 
     public record UpdateProviderStatusRequest(@NotNull ProviderStatus status) {
@@ -54,11 +63,14 @@ public final class ProviderDtos {
             @Schema(description = "The catalog.BusinessType this provider was resolved to at creation time, from "
                     + "its vertical — null for providers created before the master catalog existed.",
                     example = "550e8400-e29b-41d4-a716-446655440000")
-            UUID businessTypeId) {
+            UUID businessTypeId,
+            @Schema(description = "Null until the owner sets one via PUT /providers/{id}.",
+                    example = "http://localhost:8080/api/v1/uploads/a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d.jpg")
+            String coverPhotoUrl) {
         static ProviderResponse from(Provider provider) {
             return new ProviderResponse(provider.getId(), provider.getOwnerUserId(), provider.getName(),
                     provider.getVertical(), provider.getStatus(), provider.getCreatedAt(), provider.getLatitude(),
-                    provider.getLongitude(), provider.getBusinessTypeId());
+                    provider.getLongitude(), provider.getBusinessTypeId(), provider.getCoverPhotoUrl());
         }
     }
 }
