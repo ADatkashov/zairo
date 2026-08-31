@@ -49,7 +49,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   void _runSearch(String value) {
     final trimmed = value.trim();
     _searchController.text = trimmed;
-    setState(() => _query = _query.copyWith(query: trimmed.isEmpty ? null : trimmed));
+    setState(
+      () => _query = trimmed.isEmpty
+          ? _query.copyWith(clearQuery: true)
+          : _query.copyWith(query: trimmed),
+    );
     if (trimmed.isNotEmpty) {
       ref.read(recentSearchesProvider.notifier).addSearch(trimmed);
     }
@@ -97,10 +101,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   },
                 ),
               ),
+              if (isPristine) _RecentAndPopularSearches(onQuerySelected: _runSearch),
               Expanded(
-                child: isPristine
-                    ? _RecentAndPopularSearches(onQuerySelected: _runSearch)
-                    : resultsAsync.when(
+                child: resultsAsync.when(
                   data: (results) {
                     if (results.isEmpty) {
                       return Center(
@@ -198,13 +201,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 }
 
-/// Shown instead of results while the search field is empty and no filter
-/// is applied — recent searches (if any) plus a fixed popular-queries
-/// shortlist, so Search opens with something to tap rather than either a
-/// blank prompt or an unfiltered provider directory. Recent searches are
-/// best-effort: SecureStorageService failing to load them (or simply not
-/// being overridden, e.g. in a widget test) just means an empty list, not
-/// an error state — the popular section alone is still a complete screen.
+/// A compact strip above the results — not instead of them: this screen has
+/// always shown whatever matches the current (possibly empty) filters
+/// immediately, and that stays true. This only adds recent searches (if
+/// any) plus a fixed popular-queries shortlist above that, while the field
+/// is empty and no filter is applied, so Search opens with something to
+/// tap on top of what it already showed. Recent searches are best-effort:
+/// SecureStorageService failing to load them (or simply not being
+/// overridden, e.g. in a widget test) just means an empty list, not an
+/// error state — the popular row alone is still a complete strip.
 class _RecentAndPopularSearches extends ConsumerWidget {
   const _RecentAndPopularSearches({required this.onQuerySelected});
 
@@ -213,12 +218,19 @@ class _RecentAndPopularSearches extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
     final recent = ref.watch(recentSearchesProvider).valueOrNull ?? const [];
 
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4),
-      children: [
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        FactorySpacing.space4,
+        0,
+        FactorySpacing.space4,
+        FactorySpacing.space3,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
         if (recent.isNotEmpty) ...[
           FactorySectionHeader(
             title: l10n.searchRecentTitle,
@@ -250,7 +262,8 @@ class _RecentAndPopularSearches extends ConsumerWidget {
               ),
           ],
         ),
-      ],
+        ],
+      ),
     );
   }
 }
