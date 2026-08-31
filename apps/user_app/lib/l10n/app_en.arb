@@ -13,9 +13,6 @@
   "navBookings": "Bookings",
   "@navBookings": {"description": "Bottom navigation label for the Bookings tab."},
 
-  "navFavorites": "Favorites",
-  "@navFavorites": {"description": "Bottom navigation label for the Favorites tab."},
-
   "settingsTitle": "Settings",
   "@settingsTitle": {"description": "Settings screen app bar title."},
 
