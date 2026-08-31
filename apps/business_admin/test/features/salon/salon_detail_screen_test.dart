@@ -83,12 +83,14 @@ class _FakeSalonAdminApi extends SalonAdminApi {
     required String name,
     double? latitude,
     double? longitude,
+    String? coverPhotoUrl,
   }) async {
     lastUpdateProviderCall = {
       'providerId': providerId,
       'name': name,
       'latitude': latitude,
       'longitude': longitude,
+      'coverPhotoUrl': coverPhotoUrl,
     };
     return AdminProvider(
       id: providerId,
@@ -98,6 +100,7 @@ class _FakeSalonAdminApi extends SalonAdminApi {
       status: _provider.status,
       latitude: latitude,
       longitude: longitude,
+      coverPhotoUrl: coverPhotoUrl,
     );
   }
 
@@ -627,6 +630,7 @@ void main() {
       'name': 'Renamed Salon',
       'latitude': 43.25,
       'longitude': 76.90,
+      'coverPhotoUrl': null,
     });
     expect(find.text('Renamed Salon'), findsOneWidget);
   });
