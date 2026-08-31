@@ -62,17 +62,20 @@ class SalonAdminApi {
     return AdminProvider.fromJson(response.data as Map<String, dynamic>);
   }
 
-  /// Owner-only (see backend's ProviderController.update()). Name and
-  /// location only — vertical and status aren't owner-editable.
+  /// Owner-only (see backend's ProviderController.update()). Name,
+  /// location, and cover photo only — vertical and status aren't
+  /// owner-editable. [coverPhotoUrl] is the URL StorageApi.uploadBytes
+  /// already returned, not a file — this call never uploads bytes itself.
   Future<AdminProvider> updateProvider({
     required String providerId,
     required String name,
     double? latitude,
     double? longitude,
+    String? coverPhotoUrl,
   }) async {
     final response = await _dioClient.put(
       '/providers/$providerId',
-      data: {'name': name, 'latitude': latitude, 'longitude': longitude},
+      data: {'name': name, 'latitude': latitude, 'longitude': longitude, 'coverPhotoUrl': coverPhotoUrl},
     );
     return AdminProvider.fromJson(response.data as Map<String, dynamic>);
   }

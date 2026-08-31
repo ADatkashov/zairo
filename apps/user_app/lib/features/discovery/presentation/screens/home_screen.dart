@@ -8,23 +8,14 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../booking/data/models/book_again_suggestion.dart';
 import '../../../booking/presentation/providers/booking_providers.dart';
 import '../../../booking/presentation/screens/provider_detail_screen.dart';
+import '../../../catalog/presentation/category_icon.dart';
 import '../../../catalog/presentation/providers/catalog_providers.dart';
+import '../../../catalog/presentation/screens/all_categories_screen.dart';
 import '../../../maps/presentation/providers/maps_providers.dart';
 import '../../data/models/provider_search_result.dart';
 import '../../data/models/service_summary.dart';
 import '../providers/discovery_providers.dart';
 import '../widgets/provider_card.dart';
-
-/// Icons aren't part of the master catalog (a presentation detail, not
-/// taxonomy) — this is a small, forward-compatible local lookup, not a
-/// hardcoded `if (category == "beauty")` business-logic branch: unknown
-/// codes still render, just with a generic icon, instead of failing.
-IconData _iconForCategory(String code) => switch (code) {
-  'beauty' => Icons.content_cut_rounded,
-  'auto' => Icons.directions_car_filled_rounded,
-  'cleaning' => Icons.cleaning_services_rounded,
-  _ => Icons.storefront_outlined,
-};
 
 /// The Home tab: curated discovery, not a search box with results glued
 /// underneath (that's the Search tab). Tapping the search field switches to
@@ -43,12 +34,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// unchanged, this just sources the value from the master catalog instead
   /// of a literal string.
   String? _vertical;
-
-  /// The selected category's id, purely to fetch its spheres for the
-  /// drill-down row below the grid — search filtering itself stays on
-  /// [_vertical] (the category `code`), sphere selection isn't a search
-  /// filter yet.
-  String? _selectedCategoryId;
 
   @override
   Widget build(BuildContext context) {
@@ -91,15 +76,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(height: FactorySpacing.space3),
                   _CategoryGrid(
                     selectedCode: _vertical,
-                    onSelect: (code, categoryId) => setState(() {
-                      _vertical = code;
-                      _selectedCategoryId = categoryId;
-                    }),
+                    onSelect: (code) => setState(() => _vertical = code),
                   ),
-                  if (_vertical != null && _selectedCategoryId != null) ...[
-                    const SizedBox(height: FactorySpacing.space3),
-                    _SphereRow(categoryId: _selectedCategoryId!),
-                  ],
                   if (openCount > 0) ...[
                     const SizedBox(height: FactorySpacing.space5),
                     _AvailabilityHero(count: openCount),
@@ -202,17 +180,41 @@ class _SearchEntry extends StatelessWidget {
   }
 }
 
-/// The category grid — a [Wrap], not a fixed [Row], because the master
-/// catalog is admin-managed and can grow well past a handful of entries (20
-/// categories at last count, headed toward more) without this app being
-/// released again. `onSelect` carries both the category's `code` (the
-/// existing search-filter value) and its `id` (only used to fetch spheres
-/// for [_SphereRow] below).
+/// The Home tab's "Популярное" row — a short, curated shortlist, not the
+/// master catalog: at most [_popularCount] categories (the catalog's own
+/// `sortOrder`, admin-curated, decides which), plus a trailing tile that
+/// opens [AllCategoriesScreen] for the other ~14+. Deliberately never grows
+/// with the catalog — that was the previous version's actual problem (a
+/// wrapping grid of all 20 ran to 4-5 rows and pushed every other Home
+/// section below the fold), and Home showing every category is exactly
+/// what turns a discovery screen into a category catalog.
+///
+/// Tapping a shown category toggles the search-vertical filter (tap again
+/// to clear); tapping the trailing tile pushes [AllCategoriesScreen] and,
+/// if the user picks something there, applies its category `code` here the
+/// same way.
 class _CategoryGrid extends ConsumerWidget {
   const _CategoryGrid({required this.selectedCode, required this.onSelect});
 
   final String? selectedCode;
-  final void Function(String? code, String? categoryId) onSelect;
+  final ValueChanged<String?> onSelect;
+
+  static const _popularCount = 6;
+
+  // FactoryCategoryTile's own content is 88px tall (4px padding + 56px icon
+  // circle + 8px gap + one label line + 4px padding) — a plain Wrap never
+  // exposed this since it sizes each child to its natural height, but a
+  // horizontal ListView hard-constrains the cross axis to whatever this is,
+  // so it has to be at least that. A few extra px of headroom over the
+  // exact figure absorbs minor text-scale/locale line-height variance.
+  static const _tileHeight = 96.0;
+
+  Future<void> _openAllCategories(BuildContext context) async {
+    final code = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const AllCategoriesScreen()),
+    );
+    if (code != null) onSelect(code);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -220,91 +222,50 @@ class _CategoryGrid extends ConsumerWidget {
     final categoriesAsync = ref.watch(categoriesProvider);
     final languageCode = Localizations.localeOf(context).languageCode;
 
-    final allTile = FactoryCategoryTile(
+    final allCategoriesTile = FactoryCategoryTile(
       icon: Icons.apps_rounded,
-      label: l10n.searchFilterCategoryAll,
-      selected: selectedCode == null,
-      onTap: () => onSelect(null, null),
+      label: l10n.allCategoriesTitle,
+      onTap: () => _openAllCategories(context),
     );
 
-    return categoriesAsync.when(
-      data: (categories) => Wrap(
-        spacing: FactorySpacing.space3,
-        runSpacing: FactorySpacing.space2,
-        children: [
-          allTile,
-          for (final category in categories)
-            FactoryCategoryTile(
-              icon: _iconForCategory(category.code),
-              emoji: category.icon,
-              label: category.nameFor(languageCode),
-              selected: selectedCode == category.code,
-              onTap: () => onSelect(category.code, category.id),
-            ),
-        ],
-      ),
-      // Best-effort: while loading or on error, still show the "All" tile
-      // (search already works with vertical: null) rather than blocking
-      // the whole Home screen on the catalog request.
-      loading: () => Wrap(
-        spacing: FactorySpacing.space3,
-        runSpacing: FactorySpacing.space2,
-        children: [
-          allTile,
-          const FactorySkeleton(width: 64, height: 84, borderRadius: BorderRadius.all(Radius.circular(12))),
-          const FactorySkeleton(width: 64, height: 84, borderRadius: BorderRadius.all(Radius.circular(12))),
-        ],
-      ),
-      error: (error, stackTrace) => Wrap(children: [allTile]),
-    );
-  }
-}
-
-/// A category's spheres, shown as a scrollable row of chips once a category
-/// is selected on Home — purely informational (see [_HomeScreenState]'s own
-/// doc comment: sphere selection doesn't filter search yet), but it's the
-/// visible "Category -> Sphere" drill-down the catalog now supports.
-class _SphereRow extends ConsumerWidget {
-  const _SphereRow({required this.categoryId});
-
-  final String categoryId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final businessTypesAsync = ref.watch(businessTypesProvider(categoryId));
-    final languageCode = Localizations.localeOf(context).languageCode;
-    final colors = context.factoryColors;
-
-    return businessTypesAsync.when(
-      data: (businessTypes) {
-        if (businessTypes.isEmpty) {
-          return const SizedBox.shrink();
-        }
-        return SizedBox(
-          height: 32,
-          child: ListView.separated(
+    return SizedBox(
+      height: _tileHeight,
+      child: categoriesAsync.when(
+        data: (categories) {
+          final popular = categories.take(_popularCount).toList();
+          return ListView.separated(
             scrollDirection: Axis.horizontal,
-            itemCount: businessTypes.length,
-            separatorBuilder: (_, _) => const SizedBox(width: FactorySpacing.space2),
+            itemCount: popular.length + 1,
+            separatorBuilder: (_, _) => const SizedBox(width: FactorySpacing.space3),
             itemBuilder: (context, index) {
-              final businessType = businessTypes[index];
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space3, vertical: 6),
-                decoration: BoxDecoration(
-                  color: colors.surfaceAlt,
-                  borderRadius: FactoryRadius.mdRadius,
-                ),
-                child: Text(
-                  businessType.nameFor(languageCode),
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(color: colors.textSecondary),
-                ),
+              if (index == popular.length) return allCategoriesTile;
+              final category = popular[index];
+              final selected = selectedCode == category.code;
+              return FactoryCategoryTile(
+                icon: iconForCategory(category.code),
+                emoji: category.icon,
+                label: category.nameFor(languageCode),
+                selected: selected,
+                onTap: () => onSelect(selected ? null : category.code),
               );
             },
-          ),
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (error, stackTrace) => const SizedBox.shrink(),
+          );
+        },
+        // Best-effort: while loading or on error, still show the trailing
+        // tile (it doesn't depend on this request) rather than blocking the
+        // whole Home screen on the catalog request.
+        loading: () => ListView(
+          scrollDirection: Axis.horizontal,
+          children: [
+            const FactorySkeleton(width: 64, height: _tileHeight, borderRadius: BorderRadius.all(Radius.circular(12))),
+            const SizedBox(width: FactorySpacing.space3),
+            const FactorySkeleton(width: 64, height: _tileHeight, borderRadius: BorderRadius.all(Radius.circular(12))),
+            const SizedBox(width: FactorySpacing.space3),
+            allCategoriesTile,
+          ],
+        ),
+        error: (error, stackTrace) => ListView(scrollDirection: Axis.horizontal, children: [allCategoriesTile]),
+      ),
     );
   }
 }

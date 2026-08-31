@@ -17,6 +17,7 @@ class ProviderSearchResult {
   final double? averageRating;
   final int? reviewCount;
   final DateTime? nextAvailableSlot;
+  final String? coverPhotoUrl;
 
   const ProviderSearchResult({
     required this.id,
@@ -32,6 +33,7 @@ class ProviderSearchResult {
     this.averageRating,
     this.reviewCount,
     this.nextAvailableSlot,
+    this.coverPhotoUrl,
   });
 
   factory ProviderSearchResult.fromJson(Map<String, dynamic> json) {
@@ -61,6 +63,7 @@ class ProviderSearchResult {
       nextAvailableSlot: json['nextAvailableSlot'] == null
           ? null
           : DateTime.parse(json['nextAvailableSlot'] as String),
+      coverPhotoUrl: json['coverPhotoUrl'] as String?,
     );
   }
 }
