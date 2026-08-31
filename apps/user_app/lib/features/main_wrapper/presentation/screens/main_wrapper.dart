@@ -34,11 +34,6 @@ class MainWrapper extends StatelessWidget {
             selectedIcon: Icons.event_note,
             label: l10n.navBookings,
           ),
-          FactoryNavDestination(
-            icon: Icons.favorite_border_rounded,
-            selectedIcon: Icons.favorite_rounded,
-            label: l10n.navFavorites,
-          ),
           FactoryNavDestination(icon: Icons.person_outline, selectedIcon: Icons.person, label: l10n.navProfile),
         ],
       ),

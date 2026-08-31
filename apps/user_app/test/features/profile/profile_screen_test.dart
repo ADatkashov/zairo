@@ -109,4 +109,28 @@ void main() {
     expect(find.text('My bookings'), findsOneWidget);
     expect(find.text('My favorites'), findsOneWidget);
   });
+
+  testWidgets('tapping the favorites stat tile opens the favorites list (no longer a bottom-nav tab)',
+      (tester) async {
+    final favorite = FavoriteProvider(
+      id: 'provider-1',
+      name: 'Salon',
+      vertical: 'beauty',
+      status: 'ACTIVE',
+      hasOpenAvailability: true,
+      services: const [],
+      favoritedAt: DateTime(2026, 1, 1),
+    );
+
+    await tester.pumpWidget(_wrap(
+      _LoggedInAuthController(),
+      extraOverrides: [favoritesApiProvider.overrideWithValue(_FakeFavoritesApi([favorite]))],
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('My favorites'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Salon'), findsOneWidget);
+  });
 }
