@@ -78,7 +78,10 @@
   "discoveryVerticalBeauty": "Красота",
   "discoveryVerticalAuto": "Авто",
   "discoveryVerticalCleaning": "Уборка",
-  "homeCategoriesTitle": "Категории",
+  "homeCategoriesTitle": "Популярное",
+  "allCategoriesTitle": "Все категории",
+  "allCategoriesShowAllServicesLabel": "Все услуги",
+  "errorCategoriesLoadFailed": "Не удалось загрузить категории.",
   "homeBookAgainTitle": "Повторить запись",
 
   "searchHint": "Поиск услуг или провайдеров",

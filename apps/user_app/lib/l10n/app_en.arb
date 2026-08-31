@@ -230,8 +230,17 @@
   "discoveryVerticalCleaning": "Cleaning",
   "@discoveryVerticalCleaning": {"description": "Vertical filter chip label for the cleaning vertical."},
 
-  "homeCategoriesTitle": "Categories",
-  "@homeCategoriesTitle": {"description": "Home screen section header above the vertical category row."},
+  "homeCategoriesTitle": "Popular",
+  "@homeCategoriesTitle": {"description": "Home screen section header above the short popular-categories row (a curated shortlist, not the full catalog — see AllCategoriesScreen for that)."},
+
+  "allCategoriesTitle": "All categories",
+  "@allCategoriesTitle": {"description": "Label of the trailing tile in Home's popular-categories row that opens AllCategoriesScreen, and that screen's own AppBar title."},
+
+  "allCategoriesShowAllServicesLabel": "All services",
+  "@allCategoriesShowAllServicesLabel": {"description": "AllCategoriesScreen's first row under an expanded category, above its list of spheres — picks the category itself rather than a specific sphere."},
+
+  "errorCategoriesLoadFailed": "Couldn't load categories.",
+  "@errorCategoriesLoadFailed": {"description": "AllCategoriesScreen error state when the catalog fails to load."},
 
   "homeBookAgainTitle": "Book again",
   "@homeBookAgainTitle": {"description": "Home screen section header above the repeat-your-last-appointment row."},
