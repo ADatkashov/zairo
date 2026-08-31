@@ -341,6 +341,33 @@
   "searchFilterApplyButton": "Apply",
   "@searchFilterApplyButton": {"description": "Search filters dialog button that applies the chosen filters."},
 
+  "searchRecentTitle": "Recent searches",
+  "@searchRecentTitle": {"description": "Search screen section header for the user's own recent search queries, shown before the first search of the session."},
+
+  "searchRecentClearButton": "Clear",
+  "@searchRecentClearButton": {"description": "Search screen's recent-searches section header action — wipes the saved history."},
+
+  "searchPopularTitle": "Popular searches",
+  "@searchPopularTitle": {"description": "Search screen section header for the fixed popular-queries shortlist, shown before the first search of the session."},
+
+  "searchPopularQueryHaircut": "Haircut",
+  "@searchPopularQueryHaircut": {"description": "One entry in Search screen's fixed popular-queries shortlist."},
+
+  "searchPopularQueryManicure": "Manicure",
+  "@searchPopularQueryManicure": {"description": "One entry in Search screen's fixed popular-queries shortlist."},
+
+  "searchPopularQueryMassage": "Massage",
+  "@searchPopularQueryMassage": {"description": "One entry in Search screen's fixed popular-queries shortlist."},
+
+  "searchPopularQueryOilChange": "Oil change",
+  "@searchPopularQueryOilChange": {"description": "One entry in Search screen's fixed popular-queries shortlist."},
+
+  "searchPopularQueryTireFitting": "Tire fitting",
+  "@searchPopularQueryTireFitting": {"description": "One entry in Search screen's fixed popular-queries shortlist."},
+
+  "searchPopularQueryHomeCleaning": "Home cleaning",
+  "@searchPopularQueryHomeCleaning": {"description": "One entry in Search screen's fixed popular-queries shortlist."},
+
   "availableTodayLabel": "Available today",
   "@availableTodayLabel": {"description": "Badge shown on a provider card/detail screen with open availability today."},
 

@@ -6,7 +6,20 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../booking/presentation/screens/provider_detail_screen.dart';
 import '../../data/models/provider_search_result.dart';
 import '../providers/discovery_providers.dart';
+import '../providers/recent_searches_provider.dart';
 import '../widgets/provider_card.dart';
+
+/// A small, fixed shortlist — not sourced from the catalog or any
+/// "trending now" telemetry (neither exists yet), just common queries
+/// spanning more than one vertical so it doesn't read as beauty-only.
+List<String> _popularSearches(AppLocalizations l10n) => [
+  l10n.searchPopularQueryHaircut,
+  l10n.searchPopularQueryManicure,
+  l10n.searchPopularQueryMassage,
+  l10n.searchPopularQueryOilChange,
+  l10n.searchPopularQueryTireFitting,
+  l10n.searchPopularQueryHomeCleaning,
+];
 
 /// The Search tab — GET /api/v1/search/providers.
 class SearchScreen extends ConsumerStatefulWidget {
@@ -26,11 +39,34 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     super.dispose();
   }
 
+  bool get _filterActive =>
+      _query.hasActiveFilters || _query.sort != DiscoverySort.recommended;
+
+  /// Shared by the search field's onSubmitted and every recent/popular
+  /// query chip — typing "massage" and tapping the "Massage" chip both end
+  /// up in the same place: the field reflects it, the search runs, and it
+  /// (re)joins recent searches at the top.
+  void _runSearch(String value) {
+    final trimmed = value.trim();
+    _searchController.text = trimmed;
+    setState(() => _query = _query.copyWith(query: trimmed.isEmpty ? null : trimmed));
+    if (trimmed.isNotEmpty) {
+      ref.read(recentSearchesProvider.notifier).addSearch(trimmed);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final query = _query;
+    // Pristine: nothing typed yet and no filter/sort applied. Watching
+    // searchResultsProvider unconditionally below still fires the same
+    // "everything" request this screen has always made on open — this only
+    // changes what's *shown* while that's pristine, swapping the results
+    // list for recent/popular search shortcuts instead of an unfiltered
+    // provider directory.
+    final isPristine = query.query == null && !_filterActive;
     final resultsAsync = ref.watch(searchResultsProvider(query));
 
     return Scaffold(
@@ -45,18 +81,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   controller: _searchController,
                   hint: l10n.searchHint,
                   autofocus: true,
-                  onSubmitted: (value) {
-                    final trimmed = value.trim();
-                    setState(
-                      () => _query = _query.copyWith(
-                        query: trimmed.isEmpty ? null : trimmed,
-                      ),
-                    );
-                  },
+                  onSubmitted: _runSearch,
                   filterSemanticLabel: l10n.searchFiltersButton,
-                  filterActive:
-                      query.hasActiveFilters ||
-                      query.sort != DiscoverySort.recommended,
+                  filterActive: _filterActive,
                   onFilterTap: () async {
                     final updated =
                         await showFactoryBottomSheet<DiscoveryQuery>(
@@ -71,7 +98,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 ),
               ),
               Expanded(
-                child: resultsAsync.when(
+                child: isPristine
+                    ? _RecentAndPopularSearches(onQuerySelected: _runSearch)
+                    : resultsAsync.when(
                   data: (results) {
                     if (results.isEmpty) {
                       return Center(
@@ -165,6 +194,63 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Shown instead of results while the search field is empty and no filter
+/// is applied — recent searches (if any) plus a fixed popular-queries
+/// shortlist, so Search opens with something to tap rather than either a
+/// blank prompt or an unfiltered provider directory. Recent searches are
+/// best-effort: SecureStorageService failing to load them (or simply not
+/// being overridden, e.g. in a widget test) just means an empty list, not
+/// an error state — the popular section alone is still a complete screen.
+class _RecentAndPopularSearches extends ConsumerWidget {
+  const _RecentAndPopularSearches({required this.onQuerySelected});
+
+  final ValueChanged<String> onQuerySelected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final recent = ref.watch(recentSearchesProvider).valueOrNull ?? const [];
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4),
+      children: [
+        if (recent.isNotEmpty) ...[
+          FactorySectionHeader(
+            title: l10n.searchRecentTitle,
+            actionLabel: l10n.searchRecentClearButton,
+            onActionTap: () => ref.read(recentSearchesProvider.notifier).clear(),
+          ),
+          const SizedBox(height: FactorySpacing.space2),
+          Wrap(
+            spacing: FactorySpacing.space2,
+            runSpacing: FactorySpacing.space2,
+            children: [
+              for (final query in recent)
+                FactoryChip(label: query, onTap: () => onQuerySelected(query)),
+            ],
+          ),
+          const SizedBox(height: FactorySpacing.space5),
+        ],
+        Text(l10n.searchPopularTitle, style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: FactorySpacing.space2),
+        Wrap(
+          spacing: FactorySpacing.space2,
+          runSpacing: FactorySpacing.space2,
+          children: [
+            for (final query in _popularSearches(l10n))
+              FactoryChip(
+                label: query,
+                icon: Icons.trending_up_rounded,
+                onTap: () => onQuerySelected(query),
+              ),
+          ],
+        ),
+      ],
     );
   }
 }
