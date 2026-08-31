@@ -20,6 +20,13 @@ permissions:
 
 env:
   FLUTTER_VERSION: "3.47.0"
+  # The live backend (see infra/render setup) — without this, a release
+  # APK falls back to environment.dart's local-dev default
+  # (http://10.0.2.2:8080/api/v1, the Android-emulator-only loopback
+  # alias), which is unreachable from a real phone and makes every
+  # network call — including login — fail silently against a dead
+  # address rather than the real backend.
+  API_BASE_URL: "https://zairo-backend.onrender.com/api/v1"
 
 jobs:
   android-apk:
@@ -76,7 +83,10 @@ jobs:
         working-directory: apps/${{ matrix.app }}
         env:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
-        run: flutter build apk --release --dart-define=MAPS_API_KEY="$MAPS_API_KEY"
+        run: |
+          flutter build apk --release \
+            --dart-define=MAPS_API_KEY="$MAPS_API_KEY" \
+            --dart-define=API_BASE_URL="$API_BASE_URL"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
