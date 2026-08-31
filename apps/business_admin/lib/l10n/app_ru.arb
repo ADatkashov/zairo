@@ -195,6 +195,7 @@
 
   "addPortfolioDialogTitle": "Добавить фото в портфолио",
   "choosePhotoLabel": "Выбрать фото",
+  "coverPhotoLabel": "Обложка",
   "captionOptionalLabel": "Подпись (необязательно)",
   "validationChoosePhoto": "Сначала выберите фото",
   "errorReadFileFailed": "Не удалось прочитать файл: {error}",

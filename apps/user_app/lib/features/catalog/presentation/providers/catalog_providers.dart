@@ -17,9 +17,10 @@ final categoriesProvider = FutureProvider.autoDispose<List<Category>>((ref) {
   return ref.watch(catalogApiProvider).listCategories();
 });
 
-/// A category's spheres, for the drill-down sheet opened from the category
-/// grid. Keyed by categoryId so each category's spheres are fetched (and
-/// cached) independently.
+/// A category's spheres, shown when a category is expanded on
+/// AllCategoriesScreen. Keyed by categoryId so each category's spheres are
+/// fetched (and cached) independently, and only once that category is
+/// actually expanded — not eagerly for all 20 on screen open.
 final businessTypesProvider = FutureProvider.autoDispose.family<List<BusinessType>, String>((ref, categoryId) {
   return ref.watch(catalogApiProvider).listBusinessTypes(categoryId);
 });

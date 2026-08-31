@@ -78,7 +78,10 @@
   "discoveryVerticalBeauty": "Сұлулық",
   "discoveryVerticalAuto": "Авто",
   "discoveryVerticalCleaning": "Тазалау",
-  "homeCategoriesTitle": "Санаттар",
+  "homeCategoriesTitle": "Танымал",
+  "allCategoriesTitle": "Барлық санаттар",
+  "allCategoriesShowAllServicesLabel": "Барлық қызметтер",
+  "errorCategoriesLoadFailed": "Санаттарды жүктеу мүмкін болмады.",
   "homeBookAgainTitle": "Қайта брондау",
 
   "searchHint": "Қызметтерді немесе провайдерлерді іздеу",
