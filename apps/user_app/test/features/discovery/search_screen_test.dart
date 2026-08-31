@@ -210,8 +210,17 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('shows popular searches (not results) before the first search', (tester) async {
-    final fakeApi = _FakeDiscoveryApi(const []);
+  testWidgets('shows popular searches above the results, not instead of them', (tester) async {
+    final fakeApi = _FakeDiscoveryApi([
+      const ProviderSearchResult(
+        id: 'p1',
+        name: 'Hair Studio',
+        vertical: 'beauty',
+        status: 'ACTIVE',
+        hasOpenAvailability: true,
+        services: [],
+      ),
+    ]);
 
     await tester.pumpWidget(
       ProviderScope(
@@ -229,7 +238,8 @@ void main() {
 
     expect(find.text('Popular searches'), findsOneWidget);
     expect(find.text('Haircut'), findsOneWidget);
-    expect(find.text('Search for a service'), findsNothing);
+    // Still there, unchanged from before this feature existed.
+    expect(find.text('Hair Studio'), findsOneWidget);
   });
 
   testWidgets('tapping a popular search query runs that search', (tester) async {

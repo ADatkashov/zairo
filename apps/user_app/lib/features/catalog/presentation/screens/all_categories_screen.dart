@@ -66,7 +66,7 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen> {
                   child: FactoryTextField(
                     controller: _searchController,
                     label: l10n.allCategoriesSearchLabel,
-                    prefixIcon: Icons.search_rounded,
+                    prefixIcon: const Icon(Icons.search_rounded),
                     onChanged: (value) => setState(() => _filter = value),
                   ),
                 ),
