@@ -236,6 +236,20 @@
   "allCategoriesShowAllServicesLabel": "All services",
   "@allCategoriesShowAllServicesLabel": {"description": "AllCategoriesScreen's first row under an expanded category, above its list of spheres — picks the category itself rather than a specific sphere."},
 
+  "allCategoriesSearchLabel": "Find a category",
+  "@allCategoriesSearchLabel": {"description": "AllCategoriesScreen's own search field label — filters the 20-category list client-side."},
+
+  "allCategoriesSearchEmptyTitle": "No matching categories",
+  "@allCategoriesSearchEmptyTitle": {"description": "AllCategoriesScreen empty state when the search filter matches nothing."},
+
+  "allCategoriesSearchEmptyMessage": "Nothing matches \"{query}\". Try a different word.",
+  "@allCategoriesSearchEmptyMessage": {
+    "description": "AllCategoriesScreen empty state message when the search filter matches nothing.",
+    "placeholders": {
+      "query": {"type": "String"}
+    }
+  },
+
   "errorCategoriesLoadFailed": "Couldn't load categories.",
   "@errorCategoriesLoadFailed": {"description": "AllCategoriesScreen error state when the catalog fails to load."},
 
