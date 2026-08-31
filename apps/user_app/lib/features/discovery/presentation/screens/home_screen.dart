@@ -217,7 +217,13 @@ class _CategoryGrid extends ConsumerWidget {
   final String? selectedCode;
   final void Function(String? code, String? categoryId) onSelect;
 
-  static const _tileHeight = 84.0;
+  // FactoryCategoryTile's own content is 88px tall (4px padding + 56px icon
+  // circle + 8px gap + one label line + 4px padding) — a plain Wrap never
+  // exposed this since it sizes each child to its natural height, but a
+  // horizontal ListView hard-constrains the cross axis to whatever this is,
+  // so it has to be at least that. A few extra px of headroom over the
+  // exact figure absorbs minor text-scale/locale line-height variance.
+  static const _tileHeight = 96.0;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
