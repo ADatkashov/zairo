@@ -202,17 +202,22 @@ class _SearchEntry extends StatelessWidget {
   }
 }
 
-/// The category grid — a [Wrap], not a fixed [Row], because the master
-/// catalog is admin-managed and can grow well past a handful of entries (20
-/// categories at last count, headed toward more) without this app being
-/// released again. `onSelect` carries both the category's `code` (the
-/// existing search-filter value) and its `id` (only used to fetch spheres
-/// for [_SphereRow] below).
+/// The category row — a single horizontally-scrolling line, not a [Wrap],
+/// because the master catalog is admin-managed and can grow well past a
+/// handful of entries (20 categories at last count, headed toward more)
+/// without this app being released again. A wrapping grid of that many
+/// tiles ran to 4-5 rows and pushed every other Home section below the
+/// fold; a scrolling row costs one fixed height regardless of catalog size.
+/// `onSelect` carries both the category's `code` (the existing
+/// search-filter value) and its `id` (only used to fetch spheres for
+/// [_SphereRow] below).
 class _CategoryGrid extends ConsumerWidget {
   const _CategoryGrid({required this.selectedCode, required this.onSelect});
 
   final String? selectedCode;
   final void Function(String? code, String? categoryId) onSelect;
+
+  static const _tileHeight = 84.0;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -227,35 +232,40 @@ class _CategoryGrid extends ConsumerWidget {
       onTap: () => onSelect(null, null),
     );
 
-    return categoriesAsync.when(
-      data: (categories) => Wrap(
-        spacing: FactorySpacing.space3,
-        runSpacing: FactorySpacing.space2,
-        children: [
-          allTile,
-          for (final category in categories)
-            FactoryCategoryTile(
+    return SizedBox(
+      height: _tileHeight,
+      child: categoriesAsync.when(
+        data: (categories) => ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: categories.length + 1,
+          separatorBuilder: (_, _) => const SizedBox(width: FactorySpacing.space3),
+          itemBuilder: (context, index) {
+            if (index == 0) return allTile;
+            final category = categories[index - 1];
+            return FactoryCategoryTile(
               icon: _iconForCategory(category.code),
               emoji: category.icon,
               label: category.nameFor(languageCode),
               selected: selectedCode == category.code,
               onTap: () => onSelect(category.code, category.id),
-            ),
-        ],
+            );
+          },
+        ),
+        // Best-effort: while loading or on error, still show the "All" tile
+        // (search already works with vertical: null) rather than blocking
+        // the whole Home screen on the catalog request.
+        loading: () => ListView(
+          scrollDirection: Axis.horizontal,
+          children: [
+            allTile,
+            const SizedBox(width: FactorySpacing.space3),
+            const FactorySkeleton(width: 64, height: _tileHeight, borderRadius: BorderRadius.all(Radius.circular(12))),
+            const SizedBox(width: FactorySpacing.space3),
+            const FactorySkeleton(width: 64, height: _tileHeight, borderRadius: BorderRadius.all(Radius.circular(12))),
+          ],
+        ),
+        error: (error, stackTrace) => ListView(scrollDirection: Axis.horizontal, children: [allTile]),
       ),
-      // Best-effort: while loading or on error, still show the "All" tile
-      // (search already works with vertical: null) rather than blocking
-      // the whole Home screen on the catalog request.
-      loading: () => Wrap(
-        spacing: FactorySpacing.space3,
-        runSpacing: FactorySpacing.space2,
-        children: [
-          allTile,
-          const FactorySkeleton(width: 64, height: 84, borderRadius: BorderRadius.all(Radius.circular(12))),
-          const FactorySkeleton(width: 64, height: 84, borderRadius: BorderRadius.all(Radius.circular(12))),
-        ],
-      ),
-      error: (error, stackTrace) => Wrap(children: [allTile]),
     );
   }
 }
