@@ -62,6 +62,16 @@ public class Provider {
     @Column(name = "business_type_id")
     private UUID businessTypeId;
 
+    /**
+     * Nullable — no photo until the owner uploads one via the generic
+     * storage module (backend/storage) and PUTs the returned URL through
+     * here. Same "renders a gradient placeholder instead" story on the
+     * client as staff/master/mechanic/cleaner photoUrl (see V42) had before
+     * this column existed for the provider itself.
+     */
+    @Column(name = "cover_photo_url")
+    private String coverPhotoUrl;
+
     protected Provider() {
     }
 
@@ -124,6 +134,10 @@ public class Provider {
         return businessTypeId;
     }
 
+    public String getCoverPhotoUrl() {
+        return coverPhotoUrl;
+    }
+
     /**
      * Owner-editable fields only — {@code vertical} isn't here on purpose
      * (changing it would orphan vertical-specific data like beauty
@@ -131,10 +145,11 @@ public class Provider {
      * field, not something the owner self-toggles — no admin console
      * exists yet to drive it either, so it stays PENDING/whatever it was).
      */
-    void update(String name, Double latitude, Double longitude) {
+    void update(String name, Double latitude, Double longitude, String coverPhotoUrl) {
         this.name = name;
         this.latitude = latitude;
         this.longitude = longitude;
+        this.coverPhotoUrl = coverPhotoUrl;
     }
 
     /** Admin-only moderation action — see ProviderController's status endpoint. */

@@ -131,9 +131,9 @@ public class ProviderController {
         return ProviderResponse.from(provider);
     }
 
-    @Operation(summary = "Update a provider's name/location", description = "Owner-only. Name and location "
-            + "only — status is changed exclusively via PATCH /providers/{id}/status, vertical is immutable "
-            + "after creation.")
+    @Operation(summary = "Update a provider's name/location/cover photo", description = "Owner-only. Name, "
+            + "location, and cover photo only — status is changed exclusively via PATCH /providers/{id}/status, "
+            + "vertical is immutable after creation.")
     @ApiResponse(responseCode = "200", description = "Provider updated")
     @ApiResponse(responseCode = "400", ref = "BadRequest")
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
@@ -150,7 +150,7 @@ public class ProviderController {
         if (!provider.getOwnerUserId().equals(currentUserId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not own this provider: " + id);
         }
-        provider.update(request.name(), request.latitude(), request.longitude());
+        provider.update(request.name(), request.latitude(), request.longitude(), request.coverPhotoUrl());
         return ProviderResponse.from(providerRepository.save(provider));
     }
 

@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:core_ui/core_ui.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -21,6 +24,7 @@ import '../../../staff/data/models/admin_staff.dart';
 import '../../../staff/presentation/providers/staff_admin_providers.dart';
 import '../../../staff/presentation/widgets/add_staff_dialog.dart';
 import '../../../staff/presentation/widgets/manage_staff_services_dialog.dart';
+import '../../../storage/presentation/providers/storage_providers.dart';
 import '../../data/models/admin_booking.dart';
 import '../../data/models/admin_provider.dart';
 import '../../data/models/admin_service.dart';
@@ -152,6 +156,14 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
   bool _isSubmitting = false;
   String? _error;
 
+  /// Local pick, not yet uploaded — the upload only happens on submit
+  /// (mirrors AddPortfolioItemDialog), so a cancelled dialog never leaves
+  /// an orphaned file in storage. Null means "keep whatever
+  /// widget.provider.coverPhotoUrl already is", not "remove the photo" —
+  /// this dialog has no explicit "remove photo" affordance yet.
+  Uint8List? _pickedPhotoBytes;
+  String? _pickedPhotoName;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -167,6 +179,7 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
       title: l10n.editBusinessTooltip,
       content: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           FactoryTextField(
             controller: _nameController,
@@ -186,6 +199,15 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
             enabled: !_isSubmitting,
             keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
             label: l10n.longitudeOptionalLabel,
+          ),
+          const SizedBox(height: FactorySpacing.space3),
+          Text(l10n.coverPhotoLabel, style: Theme.of(context).textTheme.labelMedium),
+          const SizedBox(height: FactorySpacing.space2),
+          FactoryButton(
+            icon: Icons.image_outlined,
+            label: _pickedPhotoName ?? l10n.choosePhotoLabel,
+            variant: FactoryButtonVariant.secondary,
+            onPressed: _isSubmitting ? null : _pickPhoto,
           ),
           if (_error != null)
             Padding(
@@ -209,6 +231,22 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
     );
   }
 
+  Future<void> _pickPhoto() async {
+    try {
+      final result = await FilePicker.pickFiles(type: FileType.image, withData: true);
+      final file = result?.files.singleOrNull;
+      if (file?.bytes == null) return;
+      setState(() {
+        _pickedPhotoBytes = file!.bytes;
+        _pickedPhotoName = file.name;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = AppLocalizations.of(context)!.errorReadFileFailed(e.toString()));
+    }
+  }
+
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context)!;
     final name = _nameController.text.trim();
@@ -229,11 +267,23 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
       _error = null;
     });
     try {
+      // Only upload if the owner picked a new photo this session — PUT is
+      // a full overwrite (Provider.update sets whatever's sent), so an
+      // unchanged pick must still resend the existing coverPhotoUrl rather
+      // than sending null and clearing it.
+      String? coverPhotoUrl = widget.provider.coverPhotoUrl;
+      final bytes = _pickedPhotoBytes;
+      final name0 = _pickedPhotoName;
+      if (bytes != null && name0 != null) {
+        final uploaded = await ref.read(storageApiProvider).uploadBytes(bytes, name0);
+        coverPhotoUrl = uploaded.url;
+      }
       final updated = await ref.read(salonAdminApiProvider).updateProvider(
             providerId: widget.provider.id,
             name: name,
             latitude: lat,
             longitude: lng,
+            coverPhotoUrl: coverPhotoUrl,
           );
       if (!mounted) return;
       Navigator.of(context).pop(updated);
