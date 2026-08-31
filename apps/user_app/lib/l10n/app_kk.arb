@@ -80,6 +80,9 @@
   "homeCategoriesTitle": "Танымал",
   "allCategoriesTitle": "Барлық санаттар",
   "allCategoriesShowAllServicesLabel": "Барлық қызметтер",
+  "allCategoriesSearchLabel": "Санатты табу",
+  "allCategoriesSearchEmptyTitle": "Ештеңе табылмады",
+  "allCategoriesSearchEmptyMessage": "«{query}» бойынша ештеңе табылмады. Басқа сөзді байқап көріңіз.",
   "errorCategoriesLoadFailed": "Санаттарды жүктеу мүмкін болмады.",
   "homeBookAgainTitle": "Қайта брондау",
 

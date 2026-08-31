@@ -20,13 +20,28 @@ import '../providers/catalog_providers.dart';
 /// doc comment), so a sphere resolves to its parent category, same as
 /// selecting the category itself — honest about what the backend can
 /// actually narrow down today, not a dead end either.
-class AllCategoriesScreen extends ConsumerWidget {
+class AllCategoriesScreen extends ConsumerStatefulWidget {
   const AllCategoriesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AllCategoriesScreen> createState() => _AllCategoriesScreenState();
+}
+
+class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen> {
+  final _searchController = TextEditingController();
+  String _filter = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
+    final languageCode = Localizations.localeOf(context).languageCode;
     final categoriesAsync = ref.watch(categoriesProvider);
 
     return Scaffold(
@@ -34,12 +49,49 @@ class AllCategoriesScreen extends ConsumerWidget {
       appBar: AppBar(title: Text(l10n.allCategoriesTitle)),
       body: SafeArea(
         child: categoriesAsync.when(
-          data: (categories) => ListView.separated(
-            padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space2),
-            itemCount: categories.length,
-            separatorBuilder: (_, _) => Divider(height: 1, color: colors.border),
-            itemBuilder: (context, index) => _CategoryExpansionTile(category: categories[index]),
-          ),
+          data: (categories) {
+            final query = _filter.trim().toLowerCase();
+            final filtered = query.isEmpty
+                ? categories
+                : categories.where((c) => c.nameFor(languageCode).toLowerCase().contains(query)).toList();
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    FactorySpacing.space4,
+                    FactorySpacing.space3,
+                    FactorySpacing.space4,
+                    FactorySpacing.space2,
+                  ),
+                  child: FactoryTextField(
+                    controller: _searchController,
+                    label: l10n.allCategoriesSearchLabel,
+                    prefixIcon: Icons.search_rounded,
+                    onChanged: (value) => setState(() => _filter = value),
+                  ),
+                ),
+                Expanded(
+                  child: filtered.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(FactorySpacing.space4),
+                            child: FactoryEmptyState(
+                              icon: Icons.search_off_rounded,
+                              title: l10n.allCategoriesSearchEmptyTitle,
+                              message: l10n.allCategoriesSearchEmptyMessage(_filter.trim()),
+                            ),
+                          ),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space2),
+                          itemCount: filtered.length,
+                          separatorBuilder: (_, _) => Divider(height: 1, color: colors.border),
+                          itemBuilder: (context, index) => _CategoryExpansionTile(category: filtered[index]),
+                        ),
+                ),
+              ],
+            );
+          },
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, stackTrace) => Center(
             child: Padding(

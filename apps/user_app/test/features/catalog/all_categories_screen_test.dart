@@ -102,6 +102,33 @@ void main() {
     expect(find.text('Haircuts'), findsOneWidget);
   });
 
+  testWidgets('typing in the search field filters the category list', (tester) async {
+    final fakeApi = _FakeCatalogApi(const [_beauty, _auto], const {});
+
+    await _pump(tester, fakeApi);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'bea');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Beauty'), findsOneWidget);
+    expect(find.text('Auto'), findsNothing);
+  });
+
+  testWidgets('shows an empty state when the search filter matches nothing', (tester) async {
+    final fakeApi = _FakeCatalogApi(const [_beauty, _auto], const {});
+
+    await _pump(tester, fakeApi);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'zzz');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Beauty'), findsNothing);
+    expect(find.text('Auto'), findsNothing);
+    expect(find.text('No matching categories'), findsOneWidget);
+  });
+
   testWidgets('picking a sphere pops the screen with its parent category\'s code', (tester) async {
     final fakeApi = _FakeCatalogApi(const [_beauty], {
       'cat-beauty': [_haircuts],

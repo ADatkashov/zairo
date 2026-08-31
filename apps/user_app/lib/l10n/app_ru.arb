@@ -80,6 +80,9 @@
   "homeCategoriesTitle": "Популярное",
   "allCategoriesTitle": "Все категории",
   "allCategoriesShowAllServicesLabel": "Все услуги",
+  "allCategoriesSearchLabel": "Найти категорию",
+  "allCategoriesSearchEmptyTitle": "Ничего не найдено",
+  "allCategoriesSearchEmptyMessage": "Ничего не найдено по запросу «{query}». Попробуйте другое слово.",
   "errorCategoriesLoadFailed": "Не удалось загрузить категории.",
   "homeBookAgainTitle": "Повторить запись",
 
