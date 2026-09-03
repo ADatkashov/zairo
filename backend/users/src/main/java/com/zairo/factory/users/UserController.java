@@ -73,11 +73,18 @@ public class UserController {
         return userRepository.findAll().stream().map(UserResponse::from).toList();
     }
 
-    @Operation(summary = "Get a user by id")
+    @Operation(summary = "Get a user by id", description = "Admin-only — returns another user's email/phone/"
+            + "role, which nothing outside admin tooling needs. Callers that want their own account should "
+            + "use GET /auth/me instead.")
     @ApiResponse(responseCode = "200", description = "The user")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "The caller is authenticated but isn't ADMIN.")
     @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/users/{id}")
-    public UserResponse getById(@Parameter(description = "The user's id.") @PathVariable UUID id) {
+    public UserResponse getById(@Parameter(description = "The user's id.") @PathVariable UUID id,
+            HttpServletRequest httpRequest) {
+        requireAdmin(httpRequest);
         return userRepository.findById(id).map(UserResponse::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found: " + id));
     }
