@@ -56,7 +56,7 @@ jobs:
       # pubspec.lock is committed for every package in this workspace,
       # so the hash is a reliable, reproducible cache key.
       - name: Cache pub packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
