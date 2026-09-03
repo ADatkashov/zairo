@@ -8,4 +8,7 @@ dependencies {
     // Upload requires a valid access token (any authenticated caller) —
     // needs auth's real identity (CurrentUser).
     implementation(project(":auth"))
+
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
