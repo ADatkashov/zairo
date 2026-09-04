@@ -425,8 +425,10 @@ class SearchApiTests {
 
         // Completing requires CONFIRMED first, which requires payment (ADR-0006).
         restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments", null, Map.class);
-        restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/complete", null, Map.class);
-        restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/reviews", new CreateReviewRequest(rating, null),
+        restTemplate.exchange("/api/v1/bookings/" + bookingId + "/complete", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        restTemplate.exchange("/api/v1/bookings/" + bookingId + "/reviews", HttpMethod.POST,
+                new HttpEntity<>(new CreateReviewRequest(rating, null), TestAuth.authHeaders(customer.accessToken())),
                 Map.class);
     }
 

@@ -28,8 +28,12 @@ import org.springframework.http.ResponseEntity;
  * End-to-end: owner -> provider -> service -> slot -> booking -> complete ->
  * review, against a real Postgres (Testcontainers). Also proves the "no
  * review without a verified visit" rule from the reviews module's
- * package-info: no review before completion, no duplicate review, and
- * rating validation.
+ * package-info: no review before completion, no duplicate review, rating
+ * validation, and — since both POST /bookings/{id}/complete and
+ * POST /bookings/{id}/reviews used to accept calls from anyone at all, with
+ * no ownership check — that each is now restricted to the party the
+ * workflow actually intends (provider owner for complete, the booking's own
+ * customer for reviews).
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
@@ -68,35 +72,84 @@ class ReviewApiTests {
         UUID bookingId = UUID.fromString(booking.get("id").toString());
 
         var reviewRequest = new CreateReviewRequest(5, "Great massage!");
-        ResponseEntity<Map> tooEarly = restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/reviews",
-                reviewRequest, Map.class);
+        ResponseEntity<Map> tooEarly = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/reviews",
+                HttpMethod.POST, new HttpEntity<>(reviewRequest, TestAuth.authHeaders(customer.accessToken())),
+                Map.class);
         assertThat(tooEarly.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
 
         // Completing requires CONFIRMED first, which requires payment (ADR-0006).
         restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments", null, Map.class);
-        ResponseEntity<Map> completed = restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/complete",
-                null, Map.class);
+        ResponseEntity<Map> completed = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/complete",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
         assertThat(completed.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(completed.getBody().get("status")).isEqualTo("COMPLETED");
 
         var invalidRating = new CreateReviewRequest(6, "oops");
-        ResponseEntity<Map> badRating = restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/reviews",
-                invalidRating, Map.class);
+        ResponseEntity<Map> badRating = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/reviews",
+                HttpMethod.POST, new HttpEntity<>(invalidRating, TestAuth.authHeaders(customer.accessToken())),
+                Map.class);
         assertThat(badRating.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 
-        ResponseEntity<Map> firstReview = restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/reviews",
-                reviewRequest, Map.class);
+        ResponseEntity<Map> firstReview = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/reviews",
+                HttpMethod.POST, new HttpEntity<>(reviewRequest, TestAuth.authHeaders(customer.accessToken())),
+                Map.class);
         assertThat(firstReview.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(firstReview.getBody().get("rating")).isEqualTo(5);
 
-        ResponseEntity<Map> secondReview = restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/reviews",
-                reviewRequest, Map.class);
+        ResponseEntity<Map> secondReview = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/reviews",
+                HttpMethod.POST, new HttpEntity<>(reviewRequest, TestAuth.authHeaders(customer.accessToken())),
+                Map.class);
         assertThat(secondReview.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
 
         ResponseEntity<Map> fetched = restTemplate.getForEntity("/api/v1/bookings/" + bookingId + "/reviews",
                 Map.class);
         assertThat(fetched.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(fetched.getBody().get("comment")).isEqualTo("Great massage!");
+    }
+
+    @Test
+    void reviewCreationWithoutATokenIs401() {
+        BookingContext ctx = createConfirmedBooking("review-no-token");
+
+        ResponseEntity<Map> response = restTemplate.postForEntity("/api/v1/bookings/" + ctx.bookingId()
+                + "/reviews", new CreateReviewRequest(5, "Great!"), Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void reviewCreationByAnyoneOtherThanTheBookingsOwnCustomerIs403() {
+        BookingContext ctx = createConfirmedBooking("review-wrong-customer");
+        Registered stranger = TestAuth.registerCustomer(restTemplate, "review-stranger-" + UUID.randomUUID()
+                + "@example.com");
+
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/bookings/" + ctx.bookingId() + "/reviews",
+                HttpMethod.POST, new HttpEntity<>(new CreateReviewRequest(5, "Not my booking!"),
+                        TestAuth.authHeaders(stranger.accessToken())), Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void completingABookingWithoutATokenIs401() {
+        BookingContext ctx = createConfirmedBooking("complete-no-token");
+
+        ResponseEntity<Map> response = restTemplate.postForEntity("/api/v1/bookings/" + ctx.bookingId()
+                + "/complete", null, Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void completingABookingByAnyoneOtherThanItsProvidersOwnerIs403() {
+        BookingContext ctx = createConfirmedBooking("complete-wrong-owner");
+        Registered otherOwner = TestAuth.registerOwner(restTemplate, "complete-other-owner-" + UUID.randomUUID()
+                + "@example.com");
+
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/bookings/" + ctx.bookingId() + "/complete",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(otherOwner.accessToken())), Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
     @Test
@@ -128,9 +181,11 @@ class ReviewApiTests {
                 new HttpEntity<>(bookingRequest, TestAuth.authHeaders(customer.accessToken())), Map.class).getBody()
                 .get("id").toString());
         restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments", null, Map.class);
-        restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/complete", null, Map.class);
-        UUID reviewId = UUID.fromString(restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/reviews",
-                new CreateReviewRequest(4, "Good, could be faster"), Map.class).getBody().get("id").toString());
+        restTemplate.exchange("/api/v1/bookings/" + bookingId + "/complete", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        UUID reviewId = UUID.fromString(restTemplate.exchange("/api/v1/bookings/" + bookingId + "/reviews",
+                HttpMethod.POST, new HttpEntity<>(new CreateReviewRequest(4, "Good, could be faster"),
+                        TestAuth.authHeaders(customer.accessToken())), Map.class).getBody().get("id").toString());
 
         var replyRequest = Map.of("reply", "Thanks for the feedback!");
 
@@ -160,5 +215,46 @@ class ReviewApiTests {
                 Map.class);
         assertThat(repliedAgain.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(repliedAgain.getBody().get("businessReply")).isEqualTo("Update: we fixed our scheduling!");
+    }
+
+    private record BookingContext(Registered owner, Registered customer, UUID bookingId) {
+    }
+
+    /** Owner -> provider -> service -> slot -> booking -> paid (CONFIRMED, not yet completed) — the shared
+     * setup the 401/403 tests below need, none of which care about the booking's downstream review.
+     * Registration emails stay short (just a fixed prefix + UUID, no seed) — RFC 5321's 64-character
+     * local-part limit is real here: the seed-qualified version of this email tipped over it and made
+     * every /auth/register call 400 with no "user" in the body, which surfaced downstream as a confusing
+     * NPE rather than a clear validation failure. */
+    private BookingContext createConfirmedBooking(String seed) {
+        Registered owner = TestAuth.registerOwner(restTemplate, "rev-owner-" + UUID.randomUUID()
+                + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "rev-cust-" + UUID.randomUUID()
+                + "@example.com");
+
+        var providerRequest = new CreateProviderRequest(owner.userId(), "Salon " + seed, "beauty");
+        UUID providerId = UUID.fromString(restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
+                new HttpEntity<>(providerRequest, TestAuth.authHeaders(owner.accessToken())), Map.class).getBody()
+                .get("id").toString());
+
+        var serviceRequest = new CreateServiceRequest("Service " + seed, 30, new BigDecimal("20.00"), "USD");
+        UUID serviceId = UUID.fromString(restTemplate.exchange("/api/v1/providers/" + providerId + "/services",
+                HttpMethod.POST, new HttpEntity<>(serviceRequest, TestAuth.authHeaders(owner.accessToken())),
+                Map.class).getBody().get("id").toString());
+
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        var slotRequest = new CreateAvailabilitySlotRequest(start, start.plus(30, ChronoUnit.MINUTES));
+        UUID slotId = UUID.fromString(restTemplate.exchange("/api/v1/providers/" + providerId
+                + "/availability-slots", HttpMethod.POST,
+                new HttpEntity<>(slotRequest, TestAuth.authHeaders(owner.accessToken())), Map.class).getBody()
+                .get("id").toString());
+
+        var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("20.00"));
+        UUID bookingId = UUID.fromString(restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
+                new HttpEntity<>(bookingRequest, TestAuth.authHeaders(customer.accessToken())), Map.class).getBody()
+                .get("id").toString());
+        restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments", null, Map.class);
+
+        return new BookingContext(owner, customer, bookingId);
     }
 }
