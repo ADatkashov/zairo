@@ -46,14 +46,16 @@ public class StorageController {
             String url) {
     }
 
-    @Operation(summary = "Upload a file", description = "Stores any file in MinIO (S3-compatible) and returns "
+    @Operation(summary = "Upload a file", description = "Stores an image in MinIO (S3-compatible) and returns "
             + "a key you can pass to GET /uploads/{key} or embed as a photo URL elsewhere (e.g. a master's "
-            + "portfolio). No MIME-type restriction — max size is 10MB (`spring.servlet.multipart.max-file-size`). "
-            + "Requires a valid access token — any authenticated user, no ownership check against the file "
-            + "itself (it isn't tied to a resource until you pass its key/URL somewhere else, e.g. a "
-            + "portfolio item, which is checked there).")
+            + "portfolio). Only JPEG, PNG, and WebP images are accepted, verified from the file's own bytes — "
+            + "not the filename or the Content-Type the client sends, neither of which is trusted. Max size is "
+            + "10MB (`spring.servlet.multipart.max-file-size`). Requires a valid access token — any "
+            + "authenticated user, no ownership check against the file itself (it isn't tied to a resource "
+            + "until you pass its key/URL somewhere else, e.g. a portfolio item, which is checked there).")
     @ApiResponse(responseCode = "201", description = "Uploaded")
-    @ApiResponse(responseCode = "400", description = "The file field is missing or empty.",
+    @ApiResponse(responseCode = "400", description = "The file field is missing/empty, or the file isn't a "
+            + "recognized JPEG/PNG/WebP image.",
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true,
@@ -73,9 +75,10 @@ public class StorageController {
         return new UploadResponse(key, baseUrl + "/api/v1/uploads/" + key);
     }
 
-    @Operation(summary = "Download a file", description = "Streams the raw file bytes back with its original "
-            + "Content-Type — this is what a photo URL returned elsewhere in the API (e.g. a portfolio "
-            + "item's imageUrl) ultimately points at.")
+    @Operation(summary = "Download a file", description = "Streams the raw file bytes back with a "
+            + "server-validated Content-Type (image/jpeg, image/png, or image/webp) — never whatever the "
+            + "uploader originally claimed. This is what a photo URL returned elsewhere in the API (e.g. a "
+            + "portfolio item's imageUrl) ultimately points at.")
     @ApiResponse(responseCode = "200", description = "The file's raw bytes",
             content = @Content(mediaType = "application/octet-stream",
                     schema = @Schema(type = "string", format = "binary")))
@@ -87,6 +90,9 @@ public class StorageController {
         StorageService.DownloadedFile file = storageService.download(key);
         MediaType mediaType = file.contentType() != null ? MediaType.parseMediaType(file.contentType())
                 : MediaType.APPLICATION_OCTET_STREAM;
-        return ResponseEntity.ok().contentType(mediaType).body(new InputStreamResource(file.content()));
+        // Belt-and-suspenders alongside the server-side Content-Type validation above: even a correctly
+        // declared image/* type shouldn't be re-sniffed/reinterpreted by the browser as something else.
+        return ResponseEntity.ok().contentType(mediaType).header("X-Content-Type-Options", "nosniff")
+                .body(new InputStreamResource(file.content()));
     }
 }

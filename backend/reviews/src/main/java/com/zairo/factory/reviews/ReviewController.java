@@ -37,21 +37,26 @@ public class ReviewController {
 
     @Operation(summary = "Leave a review for a booking", description = """
             No review without a verified visit: the booking must be COMPLETED, and can only be reviewed \
-            once. No authentication is required by this endpoint itself.
+            once. Customer-only — the caller must be the booking's own user.
 
             **Workflow**: `Create booking -> Mark complete -> Leave a review` — the booking has to reach \
             COMPLETED first (see POST /bookings/{id}/complete).""")
     @ApiResponse(responseCode = "201", description = "Review created")
     @ApiResponse(responseCode = "400", ref = "BadRequest")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "The caller doesn't own this booking.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @ApiResponse(responseCode = "404", ref = "NotFound", description = "The booking doesn't exist.")
     @ApiResponse(responseCode = "409", description = "The booking isn't COMPLETED yet, or already has a "
             + "review.",
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/bookings/{bookingId}/reviews")
     @ResponseStatus(HttpStatus.CREATED)
     public ReviewResponse create(@Parameter(description = "The booking's id.") @PathVariable UUID bookingId,
-            @Valid @RequestBody CreateReviewRequest request) {
-        Review review = reviewService.createReview(bookingId, request.rating(), request.comment());
+            @Valid @RequestBody CreateReviewRequest request, HttpServletRequest httpRequest) {
+        UUID callerId = CurrentUser.requireUserId(httpRequest);
+        Review review = reviewService.createReview(bookingId, callerId, request.rating(), request.comment());
         return ReviewResponse.from(review);
     }
 

@@ -207,6 +207,55 @@ void main() {
     expect(fakeDiscoveryApi.lastVertical, 'beauty');
   });
 
+  testWidgets(
+      'Home shows only the first 6 categories plus an "All categories" tile, not the whole catalog',
+      (tester) async {
+    final fakeDiscoveryApi = _FakeDiscoveryApi([_open, _closed]);
+    final fakeCatalogApi = _FakeCatalogApi([
+      for (var i = 1; i <= 8; i++)
+        Category(
+          id: 'cat-$i',
+          code: 'category-$i',
+          nameKk: 'Санат $i',
+          nameRu: 'Категория $i',
+          nameEn: 'Category $i',
+          icon: '🔧',
+          sortOrder: i,
+          status: 'ACTIVE',
+        ),
+    ]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          discoveryApiProvider.overrideWithValue(fakeDiscoveryApi),
+          catalogApiProvider.overrideWithValue(fakeCatalogApi),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const HomeScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    for (var i = 1; i <= 6; i++) {
+      expect(find.text('Category $i'), findsOneWidget);
+    }
+    expect(find.text('Category 7'), findsNothing);
+    expect(find.text('Category 8'), findsNothing);
+    expect(find.text('All categories'), findsOneWidget);
+
+    await tester.tap(find.text('All categories'));
+    await tester.pumpAndSettle();
+
+    // AllCategoriesScreen: the whole catalog, including what Home cut off.
+    expect(find.text('Category 7'), findsOneWidget);
+    expect(find.text('Category 8'), findsOneWidget);
+  });
+
   testWidgets('shows a Book Again card for a logged-in user with a completed booking', (tester) async {
     final fakeDiscoveryApi = _FakeDiscoveryApi(const []);
     final fakeBookingApi = _FakeBookingApiWithSuggestions([

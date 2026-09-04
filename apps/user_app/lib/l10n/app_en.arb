@@ -13,9 +13,6 @@
   "navBookings": "Bookings",
   "@navBookings": {"description": "Bottom navigation label for the Bookings tab."},
 
-  "navFavorites": "Favorites",
-  "@navFavorites": {"description": "Bottom navigation label for the Favorites tab."},
-
   "settingsTitle": "Settings",
   "@settingsTitle": {"description": "Settings screen app bar title."},
 
@@ -230,8 +227,31 @@
   "discoveryVerticalCleaning": "Cleaning",
   "@discoveryVerticalCleaning": {"description": "Vertical filter chip label for the cleaning vertical."},
 
-  "homeCategoriesTitle": "Categories",
-  "@homeCategoriesTitle": {"description": "Home screen section header above the vertical category row."},
+  "homeCategoriesTitle": "Popular",
+  "@homeCategoriesTitle": {"description": "Home screen section header above the short popular-categories row (a curated shortlist, not the full catalog — see AllCategoriesScreen for that)."},
+
+  "allCategoriesTitle": "All categories",
+  "@allCategoriesTitle": {"description": "Label of the trailing tile in Home's popular-categories row that opens AllCategoriesScreen, and that screen's own AppBar title."},
+
+  "allCategoriesShowAllServicesLabel": "All services",
+  "@allCategoriesShowAllServicesLabel": {"description": "AllCategoriesScreen's first row under an expanded category, above its list of spheres — picks the category itself rather than a specific sphere."},
+
+  "allCategoriesSearchLabel": "Find a category",
+  "@allCategoriesSearchLabel": {"description": "AllCategoriesScreen's own search field label — filters the 20-category list client-side."},
+
+  "allCategoriesSearchEmptyTitle": "No matching categories",
+  "@allCategoriesSearchEmptyTitle": {"description": "AllCategoriesScreen empty state when the search filter matches nothing."},
+
+  "allCategoriesSearchEmptyMessage": "Nothing matches \"{query}\". Try a different word.",
+  "@allCategoriesSearchEmptyMessage": {
+    "description": "AllCategoriesScreen empty state message when the search filter matches nothing.",
+    "placeholders": {
+      "query": {"type": "String"}
+    }
+  },
+
+  "errorCategoriesLoadFailed": "Couldn't load categories.",
+  "@errorCategoriesLoadFailed": {"description": "AllCategoriesScreen error state when the catalog fails to load."},
 
   "homeBookAgainTitle": "Book again",
   "@homeBookAgainTitle": {"description": "Home screen section header above the repeat-your-last-appointment row."},
@@ -334,6 +354,33 @@
 
   "searchFilterApplyButton": "Apply",
   "@searchFilterApplyButton": {"description": "Search filters dialog button that applies the chosen filters."},
+
+  "searchRecentTitle": "Recent searches",
+  "@searchRecentTitle": {"description": "Search screen section header for the user's own recent search queries, shown before the first search of the session."},
+
+  "searchRecentClearButton": "Clear",
+  "@searchRecentClearButton": {"description": "Search screen's recent-searches section header action — wipes the saved history."},
+
+  "searchPopularTitle": "Popular searches",
+  "@searchPopularTitle": {"description": "Search screen section header for the fixed popular-queries shortlist, shown before the first search of the session."},
+
+  "searchPopularQueryHaircut": "Haircut",
+  "@searchPopularQueryHaircut": {"description": "One entry in Search screen's fixed popular-queries shortlist."},
+
+  "searchPopularQueryManicure": "Manicure",
+  "@searchPopularQueryManicure": {"description": "One entry in Search screen's fixed popular-queries shortlist."},
+
+  "searchPopularQueryMassage": "Massage",
+  "@searchPopularQueryMassage": {"description": "One entry in Search screen's fixed popular-queries shortlist."},
+
+  "searchPopularQueryOilChange": "Oil change",
+  "@searchPopularQueryOilChange": {"description": "One entry in Search screen's fixed popular-queries shortlist."},
+
+  "searchPopularQueryTireFitting": "Tire fitting",
+  "@searchPopularQueryTireFitting": {"description": "One entry in Search screen's fixed popular-queries shortlist."},
+
+  "searchPopularQueryHomeCleaning": "Home cleaning",
+  "@searchPopularQueryHomeCleaning": {"description": "One entry in Search screen's fixed popular-queries shortlist."},
 
   "availableTodayLabel": "Available today",
   "@availableTodayLabel": {"description": "Badge shown on a provider card/detail screen with open availability today."},
