@@ -136,7 +136,8 @@ class BookingApiTests {
         payForBooking(bookingId);
 
         // A completed booking can no longer be cancelled.
-        restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/complete", null, Map.class);
+        restTemplate.exchange("/api/v1/bookings/" + bookingId + "/complete", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
         ResponseEntity<Map> cancelCompleted = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/cancel",
                 HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
         assertThat(cancelCompleted.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);

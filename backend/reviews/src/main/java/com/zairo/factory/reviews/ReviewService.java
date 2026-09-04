@@ -30,7 +30,7 @@ public class ReviewService {
     }
 
     @Transactional
-    public Review createReview(UUID bookingId, int rating, String comment) {
+    public Review createReview(UUID bookingId, UUID callerId, int rating, String comment) {
         if (rating < 1 || rating > 5) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "rating must be between 1 and 5: " + rating);
         }
@@ -38,6 +38,10 @@ public class ReviewService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
                         + bookingId));
+
+        if (!booking.getUserId().equals(callerId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not own this booking: " + bookingId);
+        }
 
         if (booking.getStatus() != BookingStatus.COMPLETED) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Booking is not completed yet: " + bookingId
