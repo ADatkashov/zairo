@@ -32,8 +32,27 @@ class ProviderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
     return core_ui.FactoryProviderCard(
       title: result.name,
+      image: result.coverPhotoUrl == null
+          ? null
+          : Image.network(
+              result.coverPhotoUrl!,
+              fit: BoxFit.cover,
+              // A broken/expired URL renders the same tinted fill
+              // FactoryProviderCard itself uses when `image` is null,
+              // instead of Flutter's default red-box error widget.
+              errorBuilder: (context, error, stackTrace) => DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [colors.primaryTint, colors.surfaceAlt],
+                  ),
+                ),
+              ),
+            ),
       metaText: result.distanceKm != null
           ? l10n.cardDistanceAndVertical(result.distanceKm!.toStringAsFixed(1), result.vertical)
           : result.vertical,

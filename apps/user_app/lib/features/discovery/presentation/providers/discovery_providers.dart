@@ -63,6 +63,7 @@ class DiscoveryQuery {
     double? minRating,
     bool? availableOnly,
     DiscoverySort? sort,
+    bool clearQuery = false,
     bool clearVertical = false,
     bool clearPriceRange = false,
     bool clearMaxDistance = false,
@@ -70,7 +71,7 @@ class DiscoveryQuery {
   }) {
     return DiscoveryQuery(
       vertical: clearVertical ? null : (vertical ?? this.vertical),
-      query: query ?? this.query,
+      query: clearQuery ? null : (query ?? this.query),
       minPrice: clearPriceRange ? null : (minPrice ?? this.minPrice),
       maxPrice: clearPriceRange ? null : (maxPrice ?? this.maxPrice),
       maxDistanceKm: clearMaxDistance ? null : (maxDistanceKm ?? this.maxDistanceKm),

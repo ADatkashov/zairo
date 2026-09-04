@@ -5,7 +5,6 @@
   "navSearch": "Поиск",
   "navProfile": "Профиль",
   "navBookings": "Брони",
-  "navFavorites": "Избранное",
 
   "settingsTitle": "Настройки",
 
@@ -78,7 +77,13 @@
   "discoveryVerticalBeauty": "Красота",
   "discoveryVerticalAuto": "Авто",
   "discoveryVerticalCleaning": "Уборка",
-  "homeCategoriesTitle": "Категории",
+  "homeCategoriesTitle": "Популярное",
+  "allCategoriesTitle": "Все категории",
+  "allCategoriesShowAllServicesLabel": "Все услуги",
+  "allCategoriesSearchLabel": "Найти категорию",
+  "allCategoriesSearchEmptyTitle": "Ничего не найдено",
+  "allCategoriesSearchEmptyMessage": "Ничего не найдено по запросу «{query}». Попробуйте другое слово.",
+  "errorCategoriesLoadFailed": "Не удалось загрузить категории.",
   "homeBookAgainTitle": "Повторить запись",
 
   "searchHint": "Поиск услуг или провайдеров",
@@ -109,6 +114,15 @@
   "searchFilterMinRatingValue": "От {rating} звёзд",
   "searchFilterClearButton": "Сбросить",
   "searchFilterApplyButton": "Применить",
+  "searchRecentTitle": "Недавние поиски",
+  "searchRecentClearButton": "Очистить",
+  "searchPopularTitle": "Популярные запросы",
+  "searchPopularQueryHaircut": "Стрижка",
+  "searchPopularQueryManicure": "Маникюр",
+  "searchPopularQueryMassage": "Массаж",
+  "searchPopularQueryOilChange": "Замена масла",
+  "searchPopularQueryTireFitting": "Шиномонтаж",
+  "searchPopularQueryHomeCleaning": "Уборка квартиры",
 
   "availableTodayLabel": "Есть сегодня",
   "nextAvailableTodayLabel": "Сегодня {time}",
