@@ -3,14 +3,14 @@ import 'dart:io' show Platform;
 import 'package:core_network/core_network.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
-/// Same local backend as apps/user_app — there's no deployed environment
-/// yet. See apps/user_app/lib/core/constants/environment.dart for the
-/// identical reasoning (including the Android-emulator `10.0.2.2` host
-/// swap and the `--dart-define=API_BASE_URL=...` override for testing a
-/// release build on a physical device); kept as a separate constant per
-/// app rather than shared, so each app's environment can diverge
-/// independently later (e.g. Business Admin pointed at a staging API
-/// before the consumer app).
+/// Same local backend as apps/user_app by default. See
+/// apps/user_app/lib/core/constants/environment.dart for the identical
+/// reasoning (including the Android-emulator `10.0.2.2` host swap, the
+/// `--dart-define=API_BASE_URL=...` override, and build-artifacts.yml
+/// passing the live backend's URL into release APK builds); kept as a
+/// separate constant per app rather than shared, so each app's
+/// environment can diverge independently later (e.g. Business Admin
+/// pointed at a staging API before the consumer app).
 const String _apiBaseUrlOverride = String.fromEnvironment('API_BASE_URL');
 
 String get _localBackendHost {

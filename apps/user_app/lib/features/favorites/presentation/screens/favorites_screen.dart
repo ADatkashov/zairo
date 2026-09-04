@@ -10,10 +10,11 @@ import '../../../discovery/data/models/provider_search_result.dart';
 import '../../../discovery/presentation/widgets/provider_card.dart';
 import '../providers/favorites_providers.dart';
 
-/// Reached directly from the bottom nav (a peer tab to Home/Search/
-/// Bookings/Profile, not only pushed after already being logged in), so it
-/// resolves the current user itself instead of requiring a caller to pass
-/// one — see LoggedOutGate for the logged-out path.
+/// Pushed from Profile's favorites stat tile, not its own bottom-nav tab
+/// (see app_router.dart's doc comment on why). Resolves the current user
+/// itself via [authControllerProvider] rather than taking a userId
+/// constructor param — same as before this moved off the tab bar, and
+/// still needed for [LoggedOutGate]'s path regardless of caller.
 class FavoritesScreen extends ConsumerWidget {
   const FavoritesScreen({super.key});
 

@@ -634,7 +634,10 @@
   "@addPortfolioDialogTitle": {"description": "Add-portfolio-item dialog title."},
 
   "choosePhotoLabel": "Choose photo",
-  "@choosePhotoLabel": {"description": "Add-portfolio-item dialog's file picker button default label."},
+  "@choosePhotoLabel": {"description": "File picker button default label — add-portfolio-item and edit-business (cover photo) dialogs."},
+
+  "coverPhotoLabel": "Cover photo",
+  "@coverPhotoLabel": {"description": "Edit-business dialog's cover photo field label."},
 
   "captionOptionalLabel": "Caption (optional)",
   "@captionOptionalLabel": {"description": "Add-portfolio-item dialog's caption field label."},
