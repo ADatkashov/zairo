@@ -221,12 +221,16 @@ class ReviewApiTests {
     }
 
     /** Owner -> provider -> service -> slot -> booking -> paid (CONFIRMED, not yet completed) — the shared
-     * setup the 401/403 tests below need, none of which care about the booking's downstream review. */
+     * setup the 401/403 tests below need, none of which care about the booking's downstream review.
+     * Registration emails stay short (just a fixed prefix + UUID, no seed) — RFC 5321's 64-character
+     * local-part limit is real here: the seed-qualified version of this email tipped over it and made
+     * every /auth/register call 400 with no "user" in the body, which surfaced downstream as a confusing
+     * NPE rather than a clear validation failure. */
     private BookingContext createConfirmedBooking(String seed) {
-        Registered owner = TestAuth.registerOwner(restTemplate, "review-setup-owner-" + seed + "-"
-                + UUID.randomUUID() + "@example.com");
-        Registered customer = TestAuth.registerCustomer(restTemplate, "review-setup-customer-" + seed + "-"
-                + UUID.randomUUID() + "@example.com");
+        Registered owner = TestAuth.registerOwner(restTemplate, "rev-owner-" + UUID.randomUUID()
+                + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "rev-cust-" + UUID.randomUUID()
+                + "@example.com");
 
         var providerRequest = new CreateProviderRequest(owner.userId(), "Salon " + seed, "beauty");
         UUID providerId = UUID.fromString(restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
