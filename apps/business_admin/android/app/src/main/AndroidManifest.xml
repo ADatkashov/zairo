@@ -1,4 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Every real network call (backend API) needs this — the debug-only
+         overlay at src/debug/AndroidManifest.xml grants it for
+         `flutter run`, but that overlay never applies to a release build,
+         so without it here a release APK build produces a package that
+         cannot make a single network request, regardless of baseUrl. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="business_admin"
         android:name="${applicationName}"
