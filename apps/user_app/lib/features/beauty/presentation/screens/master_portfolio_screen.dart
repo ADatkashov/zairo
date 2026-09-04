@@ -94,7 +94,7 @@ class MasterPortfolioScreen extends ConsumerWidget {
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const FactoryLoadingState(),
         error: (error, stackTrace) => Center(
           child: FactoryErrorState(
             message: l10n.errorPortfolioLoadFailed(error.toString()),

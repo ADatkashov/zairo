@@ -46,7 +46,7 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen> {
 
     return Scaffold(
       backgroundColor: colors.bg,
-      appBar: AppBar(title: Text(l10n.allCategoriesTitle)),
+      appBar: FactoryAppBar(title: l10n.allCategoriesTitle),
       body: SafeArea(
         child: categoriesAsync.when(
           data: (categories) {
@@ -92,7 +92,7 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen> {
               ],
             );
           },
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const FactoryLoadingState(),
           error: (error, stackTrace) => Center(
             child: Padding(
               padding: const EdgeInsets.all(FactorySpacing.space4),
