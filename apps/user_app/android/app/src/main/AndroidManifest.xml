@@ -1,4 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Every real network call (backend API, Maps tiles) needs this — the
+         debug-only overlay at src/debug/AndroidManifest.xml grants it for
+         `flutter run`, but that overlay never applies to a release build,
+         so without it here a release APK build produces a package that
+         cannot make a single network request, regardless of baseUrl. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Needed by DeviceLocationService (geolocator) — "coarse" alone is
          enough for city-level search ranking, "fine" is what a real map
          screen's blue dot needs (see GoogleMapsRenderer's myLocationEnabled). -->

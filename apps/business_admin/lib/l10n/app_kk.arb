@@ -195,6 +195,7 @@
 
   "addPortfolioDialogTitle": "Портфолиоға фото қосу",
   "choosePhotoLabel": "Фото таңдау",
+  "coverPhotoLabel": "Мұқаба фото",
   "captionOptionalLabel": "Жазба (міндетті емес)",
   "validationChoosePhoto": "Алдымен фото таңдаңыз",
   "errorReadFileFailed": "Файлды оқу мүмкін болмады: {error}",

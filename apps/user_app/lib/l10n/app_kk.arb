@@ -5,7 +5,6 @@
   "navSearch": "Іздеу",
   "navProfile": "Профиль",
   "navBookings": "Брондар",
-  "navFavorites": "Таңдаулылар",
 
   "settingsTitle": "Баптаулар",
 
@@ -78,7 +77,13 @@
   "discoveryVerticalBeauty": "Сұлулық",
   "discoveryVerticalAuto": "Авто",
   "discoveryVerticalCleaning": "Тазалау",
-  "homeCategoriesTitle": "Санаттар",
+  "homeCategoriesTitle": "Танымал",
+  "allCategoriesTitle": "Барлық санаттар",
+  "allCategoriesShowAllServicesLabel": "Барлық қызметтер",
+  "allCategoriesSearchLabel": "Санатты табу",
+  "allCategoriesSearchEmptyTitle": "Ештеңе табылмады",
+  "allCategoriesSearchEmptyMessage": "«{query}» бойынша ештеңе табылмады. Басқа сөзді байқап көріңіз.",
+  "errorCategoriesLoadFailed": "Санаттарды жүктеу мүмкін болмады.",
   "homeBookAgainTitle": "Қайта брондау",
 
   "searchHint": "Қызметтерді немесе провайдерлерді іздеу",
@@ -109,6 +114,15 @@
   "searchFilterMinRatingValue": "{rating} жұлдыздан бастап",
   "searchFilterClearButton": "Тазарту",
   "searchFilterApplyButton": "Қолдану",
+  "searchRecentTitle": "Соңғы іздеулер",
+  "searchRecentClearButton": "Тазалау",
+  "searchPopularTitle": "Танымал сұраулар",
+  "searchPopularQueryHaircut": "Шаш қию",
+  "searchPopularQueryManicure": "Маникюр",
+  "searchPopularQueryMassage": "Массаж",
+  "searchPopularQueryOilChange": "Май ауыстыру",
+  "searchPopularQueryTireFitting": "Шина орнату",
+  "searchPopularQueryHomeCleaning": "Пәтерді тазалау",
 
   "availableTodayLabel": "Бүгін бар",
   "nextAvailableTodayLabel": "Бүгін {time}",

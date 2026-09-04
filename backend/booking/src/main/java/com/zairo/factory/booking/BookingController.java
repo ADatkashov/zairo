@@ -87,15 +87,21 @@ public class BookingController {
 
     @Operation(summary = "Mark a booking complete", description = "Only a CONFIRMED booking can be completed "
             + "— this is the gate Reviews checks before allowing a review (no review without a verified "
-            + "visit). No authentication is required by this endpoint itself.")
+            + "visit). Provider-owner-only — the caller must own the provider the booking's slot belongs to, "
+            + "same authorization as POST /bookings/{id}/no-show.")
     @ApiResponse(responseCode = "200", description = "Booking marked COMPLETED")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @ApiResponse(responseCode = "409", description = "The booking isn't in a completable state (not "
             + "CONFIRMED).",
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/bookings/{id}/complete")
-    public BookingResponse complete(@Parameter(description = "The booking's id.") @PathVariable UUID id) {
-        return BookingResponse.from(bookingService.completeBooking(id));
+    public BookingResponse complete(@Parameter(description = "The booking's id.") @PathVariable UUID id,
+            HttpServletRequest httpRequest) {
+        UUID callerId = CurrentUser.requireUserId(httpRequest);
+        return BookingResponse.from(bookingService.completeBooking(id, callerId));
     }
 
     @Operation(summary = "Cancel a booking", description = "Customer-only — the caller must be the booking's "

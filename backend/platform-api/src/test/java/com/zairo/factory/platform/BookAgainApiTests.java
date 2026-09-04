@@ -52,7 +52,8 @@ class BookAgainApiTests {
         UUID bookingId = UUID.fromString(booking.get("id").toString());
         // Completing requires CONFIRMED first, which requires payment (ADR-0006).
         restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments", null, Map.class);
-        restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/complete", null, Map.class);
+        restTemplate.exchange("/api/v1/bookings/" + bookingId + "/complete", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
 
         ResponseEntity<Map> forbidden = restTemplate.exchange(
                 "/api/v1/users/" + customer.userId() + "/book-again", HttpMethod.GET,
