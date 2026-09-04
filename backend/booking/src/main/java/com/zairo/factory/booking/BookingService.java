@@ -171,10 +171,15 @@ public class BookingService {
      * review without a verified visit").
      */
     @Transactional
-    public Booking completeBooking(UUID bookingId) {
+    public Booking completeBooking(UUID bookingId, UUID callerId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
                         + bookingId));
+
+        AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
+                        + booking.getAvailabilitySlotId()));
+        providerOwnership.requireOwner(slot.getProviderId(), callerId);
 
         if (booking.getStatus() != BookingStatus.CONFIRMED) {
             throw new InvalidBookingStateException("Booking is not in a completable state: " + bookingId
