@@ -155,9 +155,10 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               const SizedBox(height: FactorySpacing.space3),
               Align(
                 alignment: Alignment.centerLeft,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.map_outlined, size: 18),
-                  label: Text(l10n.viewOnMapButton),
+                child: FactoryButton(
+                  variant: FactoryButtonVariant.secondary,
+                  icon: Icons.map_outlined,
+                  label: l10n.viewOnMapButton,
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => ProviderMapScreen(
@@ -262,9 +263,10 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                 ),
               Align(
                 alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  icon: const Icon(Icons.add, size: 18),
-                  label: Text(l10n.addVehicleButton),
+                child: FactoryButton(
+                  variant: FactoryButtonVariant.text,
+                  icon: Icons.add,
+                  label: l10n.addVehicleButton,
                   onPressed: () => _addVehicle(currentUser.id),
                 ),
               ),
@@ -310,7 +312,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                       .toList(),
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const FactoryLoadingState(),
               error: (error, stackTrace) => FactoryErrorState(
                 message: l10n.errorAvailabilityLoadFailed,
                 onRetry: () => ref.invalidate(availabilitySlotsProvider(widget.provider.id)),

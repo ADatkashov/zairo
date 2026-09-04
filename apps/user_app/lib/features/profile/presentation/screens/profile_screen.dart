@@ -38,7 +38,7 @@ class ProfileScreen extends ConsumerWidget {
         data: (user) => user == null
             ? const _LoggedOutView()
             : _LoggedInView(userId: user.id, displayName: user.displayName, email: user.email),
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const FactoryLoadingState(),
         error: (error, stackTrace) => Center(
           child: Padding(
             padding: const EdgeInsets.all(FactorySpacing.space4),

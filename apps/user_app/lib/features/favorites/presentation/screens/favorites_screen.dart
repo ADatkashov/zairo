@@ -31,7 +31,7 @@ class FavoritesScreen extends ConsumerWidget {
         data: (user) => user == null
             ? LoggedOutGate(icon: Icons.favorite_border_rounded, message: l10n.favoritesLoggedOutPrompt)
             : _FavoritesList(userId: user.id),
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const FactoryLoadingState(),
         error: (error, stackTrace) => Center(
           child: Padding(
             padding: const EdgeInsets.all(FactorySpacing.space4),
@@ -96,7 +96,7 @@ class _FavoritesList extends ConsumerWidget {
           },
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const FactoryLoadingState(),
       error: (error, stackTrace) => Center(
         child: Padding(
           padding: const EdgeInsets.all(FactorySpacing.space4),
