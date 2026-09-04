@@ -33,7 +33,7 @@ class MyBookingsScreen extends ConsumerWidget {
         data: (user) => user == null
             ? LoggedOutGate(icon: Icons.event_note_outlined, message: l10n.bookingsLoggedOutPrompt)
             : _BookingsList(userId: user.id),
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const FactoryLoadingState(),
         error: (error, stackTrace) => Center(
           child: Padding(
             padding: const EdgeInsets.all(FactorySpacing.space4),
@@ -77,7 +77,7 @@ class _BookingsList extends ConsumerWidget {
           itemBuilder: (context, index) => _BookingCard(booking: sorted[index], userId: userId),
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const FactoryLoadingState(),
       error: (error, stackTrace) => Center(
         child: Padding(
           padding: const EdgeInsets.all(FactorySpacing.space4),
