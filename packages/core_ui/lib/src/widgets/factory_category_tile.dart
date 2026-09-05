@@ -18,6 +18,8 @@ class FactoryCategoryTile extends StatelessWidget {
     this.emoji,
     this.selected = false,
     this.onTap,
+    this.accentColor,
+    this.accentTint,
   });
 
   final IconData icon;
@@ -31,17 +33,40 @@ class FactoryCategoryTile extends StatelessWidget {
   final bool selected;
   final VoidCallback? onTap;
 
+  /// Per-category brand chrome (Customer App Redesign board, 2026-09-05) —
+  /// e.g. coral for Beauty, lavender for Auto. Both null (the default, and
+  /// the only option a category with no mapped accent has — see
+  /// `colorForCategory` in user_app) falls back to the original neutral
+  /// primary/surfaceAlt treatment, so this stays forward-compatible with
+  /// any catalog code that isn't one of the small set of known verticals.
+  final Color? accentColor;
+  final Color? accentTint;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
+    final hasAccent = accentColor != null && accentTint != null;
+
+    final Color fill;
+    final Color iconColor;
+    if (selected) {
+      fill = accentColor ?? colors.primary;
+      iconColor = colors.onPrimary;
+    } else if (hasAccent) {
+      fill = accentTint!;
+      iconColor = accentColor!;
+    } else {
+      fill = colors.surfaceAlt;
+      iconColor = colors.textSecondary;
+    }
 
     return Semantics(
       button: onTap != null,
       selected: selected,
       child: InkWell(
         onTap: onTap,
-        borderRadius: FactoryRadius.mdRadius,
+        borderRadius: FactoryRadius.lgRadius,
         child: Padding(
           padding: const EdgeInsets.all(FactorySpacing.space1),
           child: Column(
@@ -50,13 +75,10 @@ class FactoryCategoryTile extends StatelessWidget {
               Container(
                 width: 56,
                 height: 56,
-                decoration: BoxDecoration(
-                  color: selected ? colors.primary : colors.surfaceAlt,
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: fill, borderRadius: FactoryRadius.lgRadius),
                 child: emoji != null
                     ? Text(emoji!, style: const TextStyle(fontSize: FactoryIconSize.md))
-                    : Icon(icon, size: FactoryIconSize.md, color: selected ? colors.onPrimary : colors.textSecondary),
+                    : Icon(icon, size: FactoryIconSize.md, color: iconColor),
               ),
               const SizedBox(height: FactorySpacing.space2),
               SizedBox(
