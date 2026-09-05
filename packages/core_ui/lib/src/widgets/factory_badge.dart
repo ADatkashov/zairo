@@ -13,22 +13,38 @@ import '../theme/factory_spacing.dart';
 enum FactoryBadgeVariant { verified, available, limited, error, neutral }
 
 class FactoryBadge extends StatelessWidget {
-  const FactoryBadge({super.key, required this.label, this.variant = FactoryBadgeVariant.neutral, this.icon});
+  const FactoryBadge({
+    super.key,
+    required this.label,
+    this.variant = FactoryBadgeVariant.neutral,
+    this.icon,
+    this.backgroundColor,
+    this.foregroundColor,
+  });
 
   final String label;
   final FactoryBadgeVariant variant;
   final IconData? icon;
 
+  /// Overrides [variant]'s color pair — for chrome that isn't a
+  /// verified/available/limited/error trust signal at all, but a category
+  /// identity (e.g. Beauty/Auto/Cleaning on a provider card). Both null
+  /// (the default) keeps the original variant-driven behavior.
+  final Color? backgroundColor;
+  final Color? foregroundColor;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.factoryColors;
-    final (Color bg, Color fg) = switch (variant) {
+    final (Color variantBg, Color variantFg) = switch (variant) {
       FactoryBadgeVariant.verified => (colors.primaryTint, colors.primaryStrong),
       FactoryBadgeVariant.available => (Color.alphaBlend(colors.success.withValues(alpha: 0.14), colors.surface), colors.success),
       FactoryBadgeVariant.limited => (Color.alphaBlend(colors.warning.withValues(alpha: 0.16), colors.surface), colors.warning),
       FactoryBadgeVariant.error => (Color.alphaBlend(colors.error.withValues(alpha: 0.14), colors.surface), colors.error),
       FactoryBadgeVariant.neutral => (colors.surfaceAlt, colors.textSecondary),
     };
+    final bg = backgroundColor ?? variantBg;
+    final fg = foregroundColor ?? variantFg;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space2, vertical: 3),
