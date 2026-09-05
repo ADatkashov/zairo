@@ -74,8 +74,10 @@ void main() {
     await tester.pumpWidget(_wrap());
     await tester.pumpAndSettle();
 
-    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.byType(AdminSidebar), findsOneWidget);
     expect(find.text('You have no businesses yet'), findsOneWidget);
+    expect(find.text('Jamie Owner'), findsOneWidget);
+    expect(find.text('Owner'), findsOneWidget);
 
     await tester.tap(find.text('Subscription'));
     await tester.pumpAndSettle();
@@ -92,7 +94,7 @@ void main() {
     await tester.pumpWidget(_wrap());
     await tester.pumpAndSettle();
 
-    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.byType(AdminSidebar), findsNothing);
     expect(find.text('You have no businesses yet'), findsOneWidget);
   });
 }

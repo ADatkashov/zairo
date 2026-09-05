@@ -27,6 +27,7 @@
 
   "settingsButtonTooltip": "Настройки",
   "navDashboard": "Дашборд",
+  "ownerRoleLabel": "Владелец",
   "settingsTitle": "Настройки",
   "darkModeTitle": "Тёмная тема",
   "darkModeSubtitle": "Текущая тема: {mode}",
