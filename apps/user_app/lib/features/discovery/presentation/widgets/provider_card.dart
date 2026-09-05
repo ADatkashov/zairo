@@ -3,7 +3,20 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/formatting/next_available.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../catalog/presentation/category_icon.dart';
 import '../../data/models/provider_search_result.dart';
+
+/// The three known verticals' display label, mirroring the filter chips in
+/// search_screen.dart — `result.vertical` is the same raw backend code
+/// ('beauty'/'auto'/'cleaning') those chips filter by. An unrecognized
+/// vertical (a future one the app hasn't shipped copy for yet) falls back
+/// to the raw code rather than crashing on a missing case.
+String _verticalLabel(AppLocalizations l10n, String vertical) => switch (vertical) {
+  'beauty' => l10n.discoveryVerticalBeauty,
+  'auto' => l10n.discoveryVerticalAuto,
+  'cleaning' => l10n.discoveryVerticalCleaning,
+  _ => vertical,
+};
 
 /// Adapts a backend search result to Factory's shared
 /// `core_ui.FactoryProviderCard` — kept as this app's own thin wrapper
@@ -33,8 +46,12 @@ class ProviderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
+    final accent = colorForCategory(context, result.vertical);
     return core_ui.FactoryProviderCard(
       title: result.name,
+      categoryLabel: _verticalLabel(l10n, result.vertical),
+      categoryColor: accent?.color,
+      categoryTint: accent?.tint,
       image: result.coverPhotoUrl == null
           ? null
           : Image.network(

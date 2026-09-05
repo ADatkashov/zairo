@@ -31,6 +31,9 @@ class FactoryProviderCard extends StatelessWidget {
     this.priceFrom,
     this.currencySymbol,
     this.availabilityLabel,
+    this.categoryLabel,
+    this.categoryColor,
+    this.categoryTint,
     this.image,
     this.isFavorite = false,
     this.onFavoriteToggle,
@@ -63,6 +66,13 @@ class FactoryProviderCard extends StatelessWidget {
   /// so it reads as state rather than a caption.
   final String? availabilityLabel;
 
+  /// A top-left category chip over the photo (e.g. "Beauty") — Customer
+  /// App Redesign board, 2026-09-05. All three null (the default) renders
+  /// no badge at all, matching every call site that predates this field.
+  final String? categoryLabel;
+  final Color? categoryColor;
+  final Color? categoryTint;
+
   final Widget? image;
   final bool isFavorite;
   final ValueChanged<bool>? onFavoriteToggle;
@@ -92,8 +102,8 @@ class FactoryProviderCard extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: layout == FactoryProviderCardLayout.horizontal
-                ? const BorderRadius.horizontal(left: Radius.circular(FactoryRadius.lg))
-                : const BorderRadius.vertical(top: Radius.circular(FactoryRadius.lg)),
+                ? const BorderRadius.horizontal(left: Radius.circular(FactoryRadius.xl))
+                : const BorderRadius.vertical(top: Radius.circular(FactoryRadius.xl)),
             child: image ??
                 DecoratedBox(
                   decoration: BoxDecoration(
@@ -105,6 +115,12 @@ class FactoryProviderCard extends StatelessWidget {
                   ),
                 ),
           ),
+          if (categoryLabel != null && categoryColor != null && categoryTint != null)
+            Positioned(
+              top: 8,
+              left: 8,
+              child: FactoryBadge(label: categoryLabel!, backgroundColor: categoryTint, foregroundColor: categoryColor),
+            ),
           if (onFavoriteToggle != null)
             Positioned(
               top: 8,
@@ -184,7 +200,7 @@ class FactoryProviderCard extends StatelessWidget {
     final card = DecoratedBox(
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: FactoryRadius.lgRadius,
+        borderRadius: FactoryRadius.xlRadius,
         border: Border.all(color: colors.border),
       ),
       child: layout == FactoryProviderCardLayout.horizontal
@@ -198,7 +214,7 @@ class FactoryProviderCard extends StatelessWidget {
     );
 
     final tappable = ClipRRect(
-      borderRadius: FactoryRadius.lgRadius,
+      borderRadius: FactoryRadius.xlRadius,
       child: Material(
         color: Colors.transparent,
         child: InkWell(onTap: onTap, child: card),

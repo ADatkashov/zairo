@@ -70,6 +70,7 @@
   "errorHomeFeedLoadFailed": "Не удалось загрузить ленту.",
   "homeTopRatedTitle": "Лучшие рядом с вами",
   "homeAvailabilityHero": "{count, plural, one{Рядом с вами {count} провайдер со свободными окнами сегодня} few{Рядом с вами {count} провайдера со свободными окнами сегодня} many{Рядом с вами {count} провайдеров со свободными окнами сегодня} other{Рядом с вами {count} провайдера со свободными окнами сегодня}}",
+  "homeAvailabilityEyebrow": "Сегодня рядом",
   "homeGreeting": "Привет, {name}",
   "homeGreetingGuest": "Добро пожаловать",
   "homeLocationUnknown": "Ваше местоположение",
