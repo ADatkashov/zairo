@@ -80,7 +80,7 @@ jobs:
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       # AGP/Kotlin toolchain — same version as build-artifacts.yml's
       # android-apk job.
