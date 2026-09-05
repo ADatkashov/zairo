@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../theme/factory_colors.dart';
+import '../theme/factory_control_size.dart';
+import '../theme/factory_radius.dart';
+
 /// Which of the Component Library's button roles this is — drives color
 /// only; height/radius/padding all come from the theme's
 /// `FilledButton`/`OutlinedButton`/`TextButton` styles (`factory_theme.dart`)
@@ -8,7 +12,14 @@ import 'package:flutter/material.dart';
 /// dialog's final button); [textDanger] is the low-emphasis inline one (a
 /// "Cancel booking" link sitting on a card among several) — same red,
 /// different weight, same distinction [primary]/[text] already draw.
-enum FactoryButtonVariant { primary, secondary, text, danger, textDanger }
+///
+/// [gradient] is the one deliberate exception to "every Factory button
+/// shares one shape": the Customer App Redesign board's sticky booking CTA
+/// (`primaryStrong` → `mint`, pill radius, a soft colored shadow) — reach
+/// for it only on the one or two screens with a money-moving bottom action
+/// (booking confirm, provider profile's "Book"), not as a general
+/// alternative to [primary].
+enum FactoryButtonVariant { primary, secondary, text, danger, textDanger, gradient }
 
 /// The screen's primary or secondary action — "Book", "Cancel", "Delete
 /// account". Wraps Flutter's own button widgets rather than reinventing
@@ -76,14 +87,73 @@ class FactoryButton extends StatelessWidget {
           onPressed: pressHandler,
           child: child,
         ),
+      FactoryButtonVariant.gradient => _GradientButton(onPressed: pressHandler, child: child),
     };
 
     return expand ? SizedBox(width: double.infinity, child: button) : button;
   }
 
   Color _spinnerColor(BuildContext context) => switch (variant) {
-        FactoryButtonVariant.primary || FactoryButtonVariant.danger => Theme.of(context).colorScheme.onPrimary,
+        FactoryButtonVariant.primary ||
+        FactoryButtonVariant.danger ||
+        FactoryButtonVariant.gradient =>
+          Theme.of(context).colorScheme.onPrimary,
         FactoryButtonVariant.secondary || FactoryButtonVariant.text => Theme.of(context).colorScheme.primary,
         FactoryButtonVariant.textDanger => Theme.of(context).colorScheme.error,
       };
+}
+
+/// The Customer App Redesign board's one gradient CTA — `primaryStrong` →
+/// `mint` diagonal, pill radius, a soft colored shadow. Built as a plain
+/// `Material`/`InkWell` rather than a themed `FilledButton` because
+/// `ButtonStyle` has no gradient-background slot.
+class _GradientButton extends StatelessWidget {
+  const _GradientButton({required this.onPressed, required this.child});
+
+  final VoidCallback? onPressed;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final disabled = onPressed == null;
+
+    return Material(
+      color: Colors.transparent,
+      shape: FactoryRadius.pill,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onPressed,
+        child: AnimatedOpacity(
+          opacity: disabled ? 0.5 : 1,
+          duration: const Duration(milliseconds: 120),
+          child: Container(
+            height: FactoryButtonHeight.md,
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [colors.primaryStrong, colors.mint],
+              ),
+              boxShadow: disabled
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: colors.primaryStrong.withValues(alpha: 0.3),
+                        offset: const Offset(0, 10),
+                        blurRadius: 24,
+                      ),
+                    ],
+            ),
+            child: DefaultTextStyle.merge(
+              style: TextStyle(color: colors.onPrimary, fontWeight: FontWeight.w700),
+              child: IconTheme.merge(data: IconThemeData(color: colors.onPrimary), child: child),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

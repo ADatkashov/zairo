@@ -70,6 +70,7 @@
   "errorHomeFeedLoadFailed": "Ленталы жүктеу мүмкін болмады.",
   "homeTopRatedTitle": "Сізге жақын үздіктер",
   "homeAvailabilityHero": "{count, plural, other{Сізге жақын жерде {count} провайдерде бүгін бос уақыт бар}}",
+  "homeAvailabilityEyebrow": "Бүгін жақын жерде",
   "homeGreeting": "Сәлем, {name}",
   "homeGreetingGuest": "Қош келдіңіз",
   "homeLocationUnknown": "Сіздің орналасқан жеріңіз",

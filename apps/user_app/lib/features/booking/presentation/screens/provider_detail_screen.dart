@@ -20,6 +20,7 @@ import '../../../cleaning/data/cleaning_exception.dart';
 import '../../../cleaning/data/models/cleaner.dart';
 import '../../../cleaning/presentation/providers/cleaning_providers.dart';
 import '../../../discovery/data/models/provider_search_result.dart';
+import '../../../discovery/data/models/service_summary.dart';
 import '../../../favorites/presentation/widgets/favorite_button.dart';
 import '../../../maps/presentation/screens/provider_map_screen.dart';
 import '../../../payments/data/payment_exception.dart';
@@ -100,14 +101,17 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
         actions: [FavoriteButton(providerId: widget.provider.id)],
       ),
       body: SafeArea(
-        child: ListView(
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
           padding: const EdgeInsets.all(FactorySpacing.space4),
           children: [
             Container(
               height: 140,
               width: double.infinity,
               decoration: BoxDecoration(
-                borderRadius: FactoryRadius.lgRadius,
+                borderRadius: FactoryRadius.xlRadius,
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -318,10 +322,11 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                 onRetry: () => ref.invalidate(availabilitySlotsProvider(widget.provider.id)),
               ),
             ),
-            const SizedBox(height: FactorySpacing.space6),
-            FactoryButton(
-              label: l10n.bookButton,
-              expand: true,
+          ],
+              ),
+            ),
+            _BookingCta(
+              selectedService: _selectedService(),
               isLoading: _isBooking,
               onPressed: (_selectedServiceId != null &&
                       _selectedSlotId != null &&
@@ -338,6 +343,13 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
         ),
       ),
     );
+  }
+
+  ServiceSummary? _selectedService() {
+    for (final service in widget.provider.services) {
+      if (service.id == _selectedServiceId) return service;
+    }
+    return null;
   }
 
   Future<void> _addVehicle(String userId) async {
@@ -484,6 +496,85 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.errorBookingGeneric(e.toString()))));
       setState(() => _isBooking = false);
     }
+  }
+}
+
+/// The sticky bottom booking bar — Customer App Redesign board
+/// (2026-09-05): a gradient CTA pinned below the scroll, with the selected
+/// service's price alongside it, rather than an inline full-width button at
+/// the end of the form. Purely a layout/visual change: the underlying
+/// selection state and the multi-vertical `_book()` logic above are
+/// untouched — a full step-by-step wizard (as the design board's simpler
+/// generic mock-up implies) was deliberately not attempted here. This
+/// screen's real flow branches across four separate vertical-specific
+/// booking APIs (beauty/auto/cleaning/generic staff) with its own staff/
+/// vehicle selection per vertical, none of which the board's mock-up (a
+/// single generic service->date->time->confirm flow) accounts for — a
+/// previous session explicitly deferred that exact restructuring as too
+/// risky for a real-money flow, and that reasoning still holds.
+class _BookingCta extends StatelessWidget {
+  const _BookingCta({required this.selectedService, required this.isLoading, required this.onPressed});
+
+  final ServiceSummary? selectedService;
+  final bool isLoading;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        FactorySpacing.space4,
+        FactorySpacing.space3,
+        FactorySpacing.space4,
+        FactorySpacing.space4,
+      ),
+      decoration: BoxDecoration(border: Border(top: BorderSide(color: colors.border))),
+      child: Row(
+        children: [
+          if (selectedService != null) ...[
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    selectedService!.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+                  ),
+                  FactoryPriceText(
+                    amount: selectedService!.price,
+                    currencySymbol: selectedService!.currency,
+                    fontSize: 16,
+                    color: colors.text,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: FactorySpacing.space3),
+            FactoryButton(
+              label: l10n.bookButton,
+              variant: FactoryButtonVariant.gradient,
+              isLoading: isLoading,
+              onPressed: onPressed,
+            ),
+          ] else
+            Expanded(
+              child: FactoryButton(
+                label: l10n.bookButton,
+                variant: FactoryButtonVariant.gradient,
+                expand: true,
+                isLoading: isLoading,
+                onPressed: onPressed,
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 

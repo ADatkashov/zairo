@@ -67,10 +67,18 @@ class _FavoritesList extends ConsumerWidget {
             ),
           );
         }
-        return ListView.separated(
+        // A 2-column grid of vertical cards (Customer App Redesign board,
+        // 2026-09-05) — Favorites is a saved-items gallery, not a results
+        // list, so it reads better as a grid than Search's photo-left rows.
+        return GridView.builder(
           padding: const EdgeInsets.all(FactorySpacing.space4),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: FactorySpacing.space3,
+            crossAxisSpacing: FactorySpacing.space3,
+            childAspectRatio: 0.78,
+          ),
           itemCount: favorites.length,
-          separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
           itemBuilder: (context, index) {
             final favorite = favorites[index];
             // ProviderCard expects a ProviderSearchResult — same shape,
@@ -89,6 +97,7 @@ class _FavoritesList extends ConsumerWidget {
             );
             return ProviderCard(
               result: asSearchResult,
+              layout: FactoryProviderCardLayout.vertical,
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => ProviderDetailScreen(provider: asSearchResult)),
               ),

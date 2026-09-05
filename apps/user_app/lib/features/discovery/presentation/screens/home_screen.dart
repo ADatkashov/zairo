@@ -80,7 +80,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   if (openCount > 0) ...[
                     const SizedBox(height: FactorySpacing.space5),
-                    _AvailabilityHero(count: openCount),
+                    _AvailabilityHero(count: openCount, onViewAll: () => context.go('/search')),
                   ],
                   if (user != null) ...[
                     const SizedBox(height: FactorySpacing.space6),
@@ -155,23 +155,29 @@ class _SearchEntry extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: FactoryRadius.mdRadius,
+        borderRadius: FactoryRadius.xlRadius,
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space3, vertical: FactorySpacing.space3),
+          padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4, vertical: FactorySpacing.space3),
           decoration: BoxDecoration(
             color: colors.surface,
-            borderRadius: FactoryRadius.mdRadius,
+            borderRadius: FactoryRadius.xlRadius,
             border: Border.all(color: colors.border, width: 1.5),
+            boxShadow: [
+              BoxShadow(color: colors.text.withValues(alpha: 0.05), offset: const Offset(0, 2), blurRadius: 8),
+            ],
           ),
           child: Row(
             children: [
-              Icon(Icons.search, size: 18, color: colors.textTertiary),
+              Icon(Icons.search, size: 20, color: colors.textTertiary),
               const SizedBox(width: 10),
-              Text(
-                l10n.homeSearchPrompt,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
+              Expanded(
+                child: Text(
+                  l10n.homeSearchPrompt,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
+                ),
               ),
+              Icon(Icons.tune_rounded, size: 18, color: colors.primary),
             ],
           ),
         ),
@@ -241,11 +247,14 @@ class _CategoryGrid extends ConsumerWidget {
               if (index == popular.length) return allCategoriesTile;
               final category = popular[index];
               final selected = selectedCode == category.code;
+              final accent = colorForCategory(context, category.code);
               return FactoryCategoryTile(
                 icon: iconForCategory(category.code),
                 emoji: category.icon,
                 label: category.nameFor(languageCode),
                 selected: selected,
+                accentColor: accent?.color,
+                accentTint: accent?.tint,
                 onTap: () => onSelect(selected ? null : category.code),
               );
             },
@@ -387,29 +396,99 @@ class _BookAgainCard extends StatelessWidget {
   }
 }
 
+/// The design system's one deliberate gradient case (`primaryStrong` →
+/// `mint` diagonal, two soft translucent circles) — everywhere else in
+/// Factory is flat color. Customer App Redesign board, 2026-09-05.
 class _AvailabilityHero extends StatelessWidget {
-  const _AvailabilityHero({required this.count});
+  const _AvailabilityHero({required this.count, required this.onViewAll});
 
   final int count;
+  final VoidCallback onViewAll;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(FactorySpacing.space4),
+      clipBehavior: Clip.antiAlias,
+      padding: const EdgeInsets.all(FactorySpacing.space5),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [colors.primaryStrong, colors.primary],
+          colors: [colors.primaryStrong, colors.mint],
         ),
-        borderRadius: FactoryRadius.lgRadius,
+        borderRadius: FactoryRadius.xxlRadius,
+        boxShadow: [
+          BoxShadow(color: colors.primaryStrong.withValues(alpha: 0.28), offset: const Offset(0, 16), blurRadius: 32),
+        ],
       ),
-      child: Text(
-        AppLocalizations.of(context)!.homeAvailabilityHero(count),
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(color: colors.onPrimary),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            top: -30,
+            right: -30,
+            child: _HeroCircle(size: 140, opacity: 0.12),
+          ),
+          Positioned(
+            bottom: -40,
+            right: 40,
+            child: _HeroCircle(size: 90, opacity: 0.1),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.homeAvailabilityEyebrow.toUpperCase(),
+                style: Theme.of(
+                  context,
+                ).textTheme.labelSmall?.copyWith(color: Colors.white.withValues(alpha: 0.85)),
+              ),
+              const SizedBox(height: FactorySpacing.space2),
+              Text(
+                l10n.homeAvailabilityHero(count),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(color: colors.onPrimary),
+              ),
+              const SizedBox(height: FactorySpacing.space3),
+              Material(
+                color: Colors.white,
+                shape: FactoryRadius.pill,
+                child: InkWell(
+                  onTap: onViewAll,
+                  customBorder: FactoryRadius.pill,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
+                    child: Text(
+                      l10n.homeSeeAll,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.labelLarge?.copyWith(color: colors.primaryStrong),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
+    );
+  }
+}
+
+class _HeroCircle extends StatelessWidget {
+  const _HeroCircle({required this.size, required this.opacity});
+
+  final double size;
+  final double opacity;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: opacity)),
     );
   }
 }
