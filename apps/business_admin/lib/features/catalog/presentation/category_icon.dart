@@ -15,13 +15,14 @@ IconData iconForCategory(String code) => switch (code) {
 
 /// The (icon color, chip background) pair Business Admin tags a business's
 /// category with — beauty/auto/cleaning each get one of the design
-/// system's category accents (see `FactoryColors.categoryCoral` and
-/// friends) so a mixed list of businesses reads at a glance. Anything else
-/// falls back to the shared `accent`/`accentTint` roles rather than
-/// inventing a fourth accent per unknown code.
+/// system's category accents (see `FactoryColors.coral` and friends, added
+/// for the customer app's category chips/badges) so a mixed list of
+/// businesses reads at a glance. Anything else falls back to the shared
+/// `accent`/`accentTint` roles rather than inventing a fourth accent per
+/// unknown code.
 (Color, Color) categoryAccentFor(FactoryColors colors, String code) => switch (code) {
-      'beauty' => (colors.categoryCoral, colors.categoryCoralTint),
-      'auto' => (colors.categoryLavender, colors.categoryLavenderTint),
-      'cleaning' => (colors.categoryMint, colors.categoryMintTint),
+      'beauty' => (colors.coral, colors.coralTint),
+      'auto' => (colors.lavender, colors.lavenderTint),
+      'cleaning' => (colors.mint, colors.mintTint),
       _ => (colors.accent, colors.accentTint),
     };

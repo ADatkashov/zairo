@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/factory_colors.dart';
+import '../theme/factory_radius.dart';
 import 'factory_icon_button.dart';
 
 /// The entry point into Search & Discovery — distinct from
@@ -43,24 +44,54 @@ class FactorySearchField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.factoryColors;
+    final baseTheme = Theme.of(context);
 
-    return TextField(
-      controller: controller,
-      autofocus: autofocus,
-      textInputAction: TextInputAction.search,
-      onChanged: onChanged,
-      onSubmitted: onSubmitted,
-      decoration: InputDecoration(
-        hintText: hint,
-        prefixIcon: Icon(Icons.search_rounded, color: colors.textTertiary),
-        suffixIcon: onFilterTap != null
-            ? FactoryIconButton(
-                icon: Icons.tune_rounded,
-                onPressed: onFilterTap,
-                semanticLabel: filterSemanticLabel,
-                isActive: filterActive,
-              )
-            : null,
+    // A locally bigger radius + soft shadow (Customer App Redesign board,
+    // 2026-09-05) — scoped to this one widget via a Theme override rather
+    // than raising `factory_theme.dart`'s shared InputDecorationTheme,
+    // which every other text field in the app (login, forms, filter
+    // sheet) also draws from.
+    return Theme(
+      data: baseTheme.copyWith(
+        inputDecorationTheme: baseTheme.inputDecorationTheme.copyWith(
+          border: OutlineInputBorder(
+            borderRadius: FactoryRadius.xlRadius,
+            borderSide: BorderSide(color: colors.border, width: 1.5),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: FactoryRadius.xlRadius,
+            borderSide: BorderSide(color: colors.border, width: 1.5),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: FactoryRadius.xlRadius,
+            borderSide: BorderSide(color: colors.primary, width: 2),
+          ),
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: FactoryRadius.xlRadius,
+        shadowColor: colors.text.withValues(alpha: 0.08),
+        elevation: 2,
+        child: TextField(
+          controller: controller,
+          autofocus: autofocus,
+          textInputAction: TextInputAction.search,
+          onChanged: onChanged,
+          onSubmitted: onSubmitted,
+          decoration: InputDecoration(
+            hintText: hint,
+            prefixIcon: Icon(Icons.search_rounded, color: colors.textTertiary),
+            suffixIcon: onFilterTap != null
+                ? FactoryIconButton(
+                    icon: Icons.tune_rounded,
+                    onPressed: onFilterTap,
+                    semanticLabel: filterSemanticLabel,
+                    isActive: filterActive,
+                  )
+                : null,
+          ),
+        ),
       ),
     );
   }
