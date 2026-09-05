@@ -29,6 +29,12 @@ class FactoryColors extends ThemeExtension<FactoryColors> {
     required this.warning,
     required this.error,
     required this.info,
+    required this.categoryCoral,
+    required this.categoryCoralTint,
+    required this.categoryLavender,
+    required this.categoryLavenderTint,
+    required this.categoryMint,
+    required this.categoryMintTint,
   });
 
   final Color bg;
@@ -49,6 +55,19 @@ class FactoryColors extends ThemeExtension<FactoryColors> {
   final Color warning;
   final Color error;
   final Color info;
+
+  /// Category-tag accents — Business Admin colors each vertical's icon
+  /// chip with one of these (beauty→coral, auto→lavender, cleaning→mint)
+  /// so a mixed list of businesses reads at a glance, the way the
+  /// customer app's category icons already do. Not part of the semantic
+  /// status roles above (success/warning/error/info stay reserved for
+  /// state, not category identity).
+  final Color categoryCoral;
+  final Color categoryCoralTint;
+  final Color categoryLavender;
+  final Color categoryLavenderTint;
+  final Color categoryMint;
+  final Color categoryMintTint;
 
   static const light = FactoryColors(
     bg: Color(0xFFF7F6F3),
@@ -72,6 +91,12 @@ class FactoryColors extends ThemeExtension<FactoryColors> {
     warning: Color(0xFF906824),
     error: Color(0xFFB5453B),
     info: Color(0xFF3E6E93),
+    categoryCoral: Color(0xFFFF6A54),
+    categoryCoralTint: Color(0xFFFFE6E0),
+    categoryLavender: Color(0xFF7B68F0),
+    categoryLavenderTint: Color(0xFFEBE6FE),
+    categoryMint: Color(0xFF17C99B),
+    categoryMintTint: Color(0xFFDFF6EE),
   );
 
   static const dark = FactoryColors(
@@ -93,6 +118,12 @@ class FactoryColors extends ThemeExtension<FactoryColors> {
     warning: Color(0xFFE0A94A),
     error: Color(0xFFE07A6E),
     info: Color(0xFF78A8CC),
+    categoryCoral: Color(0xFFFF8A72),
+    categoryCoralTint: Color(0xFF3A201C),
+    categoryLavender: Color(0xFF9C8FFF),
+    categoryLavenderTint: Color(0xFF2A2450),
+    categoryMint: Color(0xFF3DE0B0),
+    categoryMintTint: Color(0xFF163B30),
   );
 
   @override
@@ -115,6 +146,12 @@ class FactoryColors extends ThemeExtension<FactoryColors> {
     Color? warning,
     Color? error,
     Color? info,
+    Color? categoryCoral,
+    Color? categoryCoralTint,
+    Color? categoryLavender,
+    Color? categoryLavenderTint,
+    Color? categoryMint,
+    Color? categoryMintTint,
   }) {
     return FactoryColors(
       bg: bg ?? this.bg,
@@ -135,6 +172,12 @@ class FactoryColors extends ThemeExtension<FactoryColors> {
       warning: warning ?? this.warning,
       error: error ?? this.error,
       info: info ?? this.info,
+      categoryCoral: categoryCoral ?? this.categoryCoral,
+      categoryCoralTint: categoryCoralTint ?? this.categoryCoralTint,
+      categoryLavender: categoryLavender ?? this.categoryLavender,
+      categoryLavenderTint: categoryLavenderTint ?? this.categoryLavenderTint,
+      categoryMint: categoryMint ?? this.categoryMint,
+      categoryMintTint: categoryMintTint ?? this.categoryMintTint,
     );
   }
 
@@ -160,6 +203,12 @@ class FactoryColors extends ThemeExtension<FactoryColors> {
       warning: Color.lerp(warning, other.warning, t)!,
       error: Color.lerp(error, other.error, t)!,
       info: Color.lerp(info, other.info, t)!,
+      categoryCoral: Color.lerp(categoryCoral, other.categoryCoral, t)!,
+      categoryCoralTint: Color.lerp(categoryCoralTint, other.categoryCoralTint, t)!,
+      categoryLavender: Color.lerp(categoryLavender, other.categoryLavender, t)!,
+      categoryLavenderTint: Color.lerp(categoryLavenderTint, other.categoryLavenderTint, t)!,
+      categoryMint: Color.lerp(categoryMint, other.categoryMint, t)!,
+      categoryMintTint: Color.lerp(categoryMintTint, other.categoryMintTint, t)!,
     );
   }
 }
