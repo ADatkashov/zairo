@@ -66,6 +66,9 @@
   "navDashboard": "Dashboard",
   "@navDashboard": {"description": "Desktop sidebar nav label for the salon dashboard destination."},
 
+  "ownerRoleLabel": "Owner",
+  "@ownerRoleLabel": {"description": "Role caption under the signed-in owner's name in the desktop sidebar footer."},
+
   "settingsTitle": "Settings",
   "@settingsTitle": {"description": "Settings screen app bar title."},
 

@@ -8,6 +8,7 @@ import '../../../billing/data/billing_exception.dart';
 import '../../../billing/data/models/subscription.dart';
 import '../../../billing/presentation/providers/billing_providers.dart';
 import '../../../billing/presentation/screens/billing_screen.dart';
+import '../../../catalog/presentation/category_icon.dart';
 import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../../salon/data/models/admin_provider.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
@@ -252,10 +253,19 @@ class _SalonCard extends StatelessWidget {
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
+    final (categoryColor, categoryTint) = categoryAccentFor(colors, provider.vertical);
+
     return FactoryCard(
       onTap: onTap,
       child: Row(
         children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(color: categoryTint, borderRadius: FactoryRadius.mdRadius),
+            child: Icon(iconForCategory(provider.vertical), size: 20, color: categoryColor),
+          ),
+          const SizedBox(width: FactorySpacing.space3),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
