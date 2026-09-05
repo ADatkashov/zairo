@@ -252,15 +252,15 @@ void main() {
     expect(find.text('4.2'), findsOneWidget);
     expect(find.text('(55)'), findsOneWidget);
 
-    final bookButtonFinder = find.widgetWithText(FilledButton, 'Book');
-    expect(tester.widget<FilledButton>(bookButtonFinder).onPressed, isNull);
+    final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');
+    expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNull);
 
     await tester.tap(find.text('Haircut'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Jan 1, 10:00'));
     await tester.pumpAndSettle();
 
-    expect(tester.widget<FilledButton>(bookButtonFinder).onPressed, isNotNull);
+    expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNotNull);
 
     await tester.tap(bookButtonFinder);
     await tester.pumpAndSettle();
@@ -321,20 +321,20 @@ void main() {
 
     expect(find.text('Jamie Stylist'), findsOneWidget);
 
-    final bookButtonFinder = find.widgetWithText(FilledButton, 'Book');
+    final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');
     await tester.tap(find.text('Haircut'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Jan 1, 10:00'), 200);
     await tester.tap(find.text('Jan 1, 10:00'));
     await tester.pumpAndSettle();
 
     // Service + slot picked, but no master yet -> still disabled.
-    await tester.scrollUntilVisible(bookButtonFinder, 200);
-    expect(tester.widget<FilledButton>(bookButtonFinder).onPressed, isNull);
+    expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNull);
 
     await tester.tap(find.text('Jamie Stylist'));
     await tester.pumpAndSettle();
 
-    expect(tester.widget<FilledButton>(bookButtonFinder).onPressed, isNotNull);
+    expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNotNull);
 
     await tester.tap(bookButtonFinder);
     await tester.pumpAndSettle();
@@ -403,7 +403,7 @@ void main() {
     expect(find.text('Yerlan Mechanic'), findsOneWidget);
     expect(find.text('Toyota Camry (2019)'), findsOneWidget);
 
-    final bookButtonFinder = find.widgetWithText(FilledButton, 'Book');
+    final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');
     await tester.tap(find.text('Yerlan Mechanic'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Toyota Camry (2019)'));
@@ -414,16 +414,14 @@ void main() {
     await tester.pumpAndSettle();
 
     // Mechanic + vehicle + service picked, but no slot yet -> still disabled.
-    await tester.scrollUntilVisible(bookButtonFinder, 200);
-    expect(tester.widget<FilledButton>(bookButtonFinder).onPressed, isNull);
+    expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNull);
 
     await tester.scrollUntilVisible(find.text('Jan 1, 10:00'), 200);
     await tester.tap(find.text('Jan 1, 10:00'));
     await tester.pumpAndSettle();
 
-    expect(tester.widget<FilledButton>(bookButtonFinder).onPressed, isNotNull);
+    expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNotNull);
 
-    await tester.scrollUntilVisible(bookButtonFinder, 200);
     await tester.tap(bookButtonFinder);
     await tester.pumpAndSettle();
 
@@ -486,20 +484,20 @@ void main() {
 
     expect(find.text('Dr. Aliya'), findsOneWidget);
 
-    final bookButtonFinder = find.widgetWithText(FilledButton, 'Book');
+    final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');
     await tester.tap(find.text('Checkup'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Jan 1, 10:00'), 200);
     await tester.tap(find.text('Jan 1, 10:00'));
     await tester.pumpAndSettle();
 
     // Service + slot picked, but no staff member yet -> still disabled.
-    await tester.scrollUntilVisible(bookButtonFinder, 200);
-    expect(tester.widget<FilledButton>(bookButtonFinder).onPressed, isNull);
+    expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNull);
 
     await tester.tap(find.text('Dr. Aliya'));
     await tester.pumpAndSettle();
 
-    expect(tester.widget<FilledButton>(bookButtonFinder).onPressed, isNotNull);
+    expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNotNull);
 
     await tester.tap(bookButtonFinder);
     await tester.pumpAndSettle();
