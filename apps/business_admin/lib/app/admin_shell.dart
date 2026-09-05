@@ -1,6 +1,8 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../features/auth/presentation/providers/auth_providers.dart';
 import '../features/billing/presentation/screens/billing_screen.dart';
 import '../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
@@ -33,31 +35,23 @@ class _AdminShellState extends State<AdminShell> {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
 
+    final destinations = [
+      AdminSidebarDestination(icon: Icons.dashboard_outlined, selectedIcon: Icons.dashboard_rounded, label: l10n.navDashboard),
+      AdminSidebarDestination(
+        icon: Icons.receipt_long_outlined,
+        selectedIcon: Icons.receipt_long_rounded,
+        label: l10n.billingScreenTitle,
+      ),
+      AdminSidebarDestination(icon: Icons.settings_outlined, selectedIcon: Icons.settings_rounded, label: l10n.settingsButtonTooltip),
+    ];
+
     return Scaffold(
       body: Row(
         children: [
-          NavigationRail(
+          AdminSidebar(
+            destinations: destinations,
             selectedIndex: _selectedIndex,
-            onDestinationSelected: (index) => setState(() => _selectedIndex = index),
-            labelType: NavigationRailLabelType.all,
-            backgroundColor: colors.surface,
-            destinations: [
-              NavigationRailDestination(
-                icon: const Icon(Icons.storefront_outlined),
-                selectedIcon: const Icon(Icons.storefront_rounded),
-                label: Text(l10n.navDashboard),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.receipt_long_outlined),
-                selectedIcon: const Icon(Icons.receipt_long_rounded),
-                label: Text(l10n.billingScreenTitle),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.settings_outlined),
-                selectedIcon: const Icon(Icons.settings_rounded),
-                label: Text(l10n.settingsButtonTooltip),
-              ),
-            ],
+            onSelect: (index) => setState(() => _selectedIndex = index),
           ),
           VerticalDivider(width: 1, color: colors.border),
           Expanded(
@@ -70,6 +64,138 @@ class _AdminShellState extends State<AdminShell> {
       ),
     );
   }
+}
+
+class AdminSidebarDestination {
+  const AdminSidebarDestination({required this.icon, required this.selectedIcon, required this.label});
+
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
+}
+
+/// The branded 220px-wide sidebar: the Factory wordmark, the nav list with
+/// a rounded active pill (the same visual language as the redesigned
+/// customer app, carried into the owner's tool — see the Business Admin
+/// artifact), and a footer identifying who's signed in. Kept as its own
+/// widget (rather than inlined into [AdminShell]) so it stays a pure
+/// presentation component, easy to find in the widget tree from tests.
+class AdminSidebar extends ConsumerWidget {
+  const AdminSidebar({super.key, required this.destinations, required this.selectedIndex, required this.onSelect});
+
+  final List<AdminSidebarDestination> destinations;
+  final int selectedIndex;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    final user = ref.watch(authControllerProvider).value;
+
+    return Container(
+      width: 220,
+      color: colors.surface,
+      padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space3, vertical: FactorySpacing.space5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, FactorySpacing.space5),
+            child: Row(
+              children: [
+                const FactoryLogomark(size: 26),
+                const SizedBox(width: FactorySpacing.space2),
+                Text(
+                  'Factory',
+                  style: textTheme.headlineSmall?.copyWith(fontSize: 16, fontWeight: FontWeight.w700, color: colors.text),
+                ),
+              ],
+            ),
+          ),
+          for (var i = 0; i < destinations.length; i++) ...[
+            if (i > 0) const SizedBox(height: 2),
+            _SidebarNavItem(
+              destination: destinations[i],
+              selected: i == selectedIndex,
+              onTap: () => onSelect(i),
+            ),
+          ],
+          const Spacer(),
+          if (user != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: FactorySpacing.space2),
+              decoration: BoxDecoration(border: Border(top: BorderSide(color: colors.border))),
+              child: Row(
+                children: [
+                  FactoryAvatar(initials: _initialsFor(user.displayName), size: 34),
+                  const SizedBox(width: FactorySpacing.space2),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          user.displayName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: textTheme.labelLarge,
+                        ),
+                        Text(l10n.ownerRoleLabel, style: textTheme.labelSmall?.copyWith(color: colors.textTertiary)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SidebarNavItem extends StatelessWidget {
+  const _SidebarNavItem({required this.destination, required this.selected, required this.onTap});
+
+  final AdminSidebarDestination destination;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    final color = selected ? colors.primary : colors.textSecondary;
+
+    return Material(
+      color: selected ? colors.primaryTint : Colors.transparent,
+      borderRadius: FactoryRadius.mdRadius,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: FactoryRadius.mdRadius,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space3, vertical: 11),
+          child: Row(
+            children: [
+              Icon(selected ? destination.selectedIcon : destination.icon, size: 20, color: color),
+              const SizedBox(width: FactorySpacing.space3),
+              Text(destination.label, style: textTheme.labelLarge?.copyWith(color: color)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _initialsFor(String name) {
+  final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+  if (parts.isEmpty) return '?';
+  if (parts.length == 1) {
+    return parts.first.substring(0, parts.first.length >= 2 ? 2 : 1).toUpperCase();
+  }
+  return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
 /// Picks [AdminShell] at desktop width, [DashboardScreen] below it —
