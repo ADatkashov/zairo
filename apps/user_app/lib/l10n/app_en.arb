@@ -201,6 +201,9 @@
     }
   },
 
+  "homeAvailabilityEyebrow": "Today nearby",
+  "@homeAvailabilityEyebrow": {"description": "Small uppercase label above the availability hero banner's headline."},
+
   "homeGreeting": "Hi, {name}",
   "@homeGreeting": {
     "description": "Home screen greeting for a logged-in user.",

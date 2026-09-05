@@ -198,10 +198,14 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Beauty'), findsOneWidget);
-    expect(find.text('Auto'), findsOneWidget);
+    // find.text('Beauty') alone would also match the category badge that
+    // now renders on every "Beauty"-vertical provider card in the Top rated
+    // rail below (Customer App Redesign board, 2026-09-05) — scope to the
+    // category tile itself, which is what this test is actually about.
+    expect(find.widgetWithText(FactoryCategoryTile, 'Beauty'), findsOneWidget);
+    expect(find.widgetWithText(FactoryCategoryTile, 'Auto'), findsOneWidget);
 
-    await tester.tap(find.text('Beauty'));
+    await tester.tap(find.widgetWithText(FactoryCategoryTile, 'Beauty'));
     await tester.pumpAndSettle();
 
     expect(fakeDiscoveryApi.lastVertical, 'beauty');
