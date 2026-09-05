@@ -180,7 +180,14 @@ class _SidebarNavItem extends StatelessWidget {
             children: [
               Icon(selected ? destination.selectedIcon : destination.icon, size: 20, color: color),
               const SizedBox(width: FactorySpacing.space3),
-              Text(destination.label, style: textTheme.labelLarge?.copyWith(color: color)),
+              Expanded(
+                child: Text(
+                  destination.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.labelLarge?.copyWith(color: color),
+                ),
+              ),
             ],
           ),
         ),
