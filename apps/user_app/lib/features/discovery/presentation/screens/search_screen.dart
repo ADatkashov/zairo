@@ -217,7 +217,7 @@ class _RecentAndPopularSearches extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final recent = ref.watch(recentSearchesProvider).valueOrNull ?? const [];
+    final recent = ref.watch(recentSearchesProvider).value ?? const [];
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(

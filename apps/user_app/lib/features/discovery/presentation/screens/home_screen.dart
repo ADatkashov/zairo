@@ -41,7 +41,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final query = DiscoveryQuery(vertical: _vertical);
     final resultsAsync = ref.watch(searchResultsProvider(query));
     final locationAsync = ref.watch(currentLocationProvider);
-    final user = ref.watch(authControllerProvider).valueOrNull;
+    final user = ref.watch(authControllerProvider).value;
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
@@ -61,7 +61,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     children: [
                       Icon(Icons.location_on_outlined, size: 16, color: colors.primary),
                       const SizedBox(width: 4),
-                      Text(locationAsync.valueOrNull?.label ?? l10n.homeLocationUnknown, style: textTheme.titleSmall),
+                      Text(locationAsync.value?.label ?? l10n.homeLocationUnknown, style: textTheme.titleSmall),
                     ],
                   ),
                   const SizedBox(height: FactorySpacing.space1),
@@ -293,7 +293,7 @@ class _BookAgainSection extends ConsumerWidget {
     // customer has no completed bookings yet — this is a bonus shortcut on
     // top of the main discovery feed, not something worth a loading
     // skeleton or error state of its own.
-    final suggestions = suggestionsAsync.valueOrNull ?? const [];
+    final suggestions = suggestionsAsync.value ?? const [];
     if (suggestions.isEmpty) {
       return const SizedBox.shrink();
     }
