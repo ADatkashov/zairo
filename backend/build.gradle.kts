@@ -40,7 +40,7 @@ subprojects {
     // explicitly here for every subproject to get managed versions.
     configure<io.spring.gradle.dependencymanagement.dsl.DependencyManagementExtension> {
         imports {
-            mavenBom("org.springframework.boot:spring-boot-dependencies:4.1.0")
+            mavenBom("org.springframework.boot:spring-boot-dependencies:4.1.1")
         }
     }
 
