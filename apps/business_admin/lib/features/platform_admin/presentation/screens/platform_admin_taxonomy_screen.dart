@@ -21,7 +21,7 @@ class PlatformAdminTaxonomyScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final session = ref.watch(platformAdminControllerProvider).valueOrNull;
+    final session = ref.watch(platformAdminControllerProvider).value;
     if (session == null) {
       // Logged out mid-session (e.g. a second browser tab) — nothing
       // useful to show; the login screen is one pop away.
@@ -164,7 +164,7 @@ class _SpheresTabState extends ConsumerState<_SpheresTab> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => Center(child: Text('$error')),
       ),
-      floatingActionButton: (_selectedCategory ?? categoriesAsync.valueOrNull?.firstOrNull) == null
+      floatingActionButton: (_selectedCategory ?? categoriesAsync.value?.firstOrNull) == null
           ? null
           : FloatingActionButton(
               onPressed: () async {

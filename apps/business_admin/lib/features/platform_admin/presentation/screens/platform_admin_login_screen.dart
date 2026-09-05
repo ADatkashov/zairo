@@ -38,8 +38,8 @@ class _PlatformAdminLoginScreenState extends ConsumerState<PlatformAdminLoginScr
     final isLoading = sessionState.isLoading;
 
     ref.listen(platformAdminControllerProvider, (previous, next) {
-      final session = next.valueOrNull;
-      if (session != null && (previous?.valueOrNull == null)) {
+      final session = next.value;
+      if (session != null && (previous?.value == null)) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const PlatformAdminTaxonomyScreen()),
         );

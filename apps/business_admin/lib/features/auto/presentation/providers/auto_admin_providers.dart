@@ -1,5 +1,6 @@
 import 'package:core_network/core_network.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../../data/auto_admin_api.dart';
 import '../../data/models/admin_mechanic.dart';

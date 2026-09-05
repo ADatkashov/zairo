@@ -1,5 +1,6 @@
 import 'package:core_network/core_network.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../../data/models/admin_booking.dart';
 import '../../data/models/admin_provider.dart';

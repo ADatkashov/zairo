@@ -98,8 +98,8 @@ class _LoggedInView extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
-    final bookingsCount = ref.watch(myBookingsProvider(userId)).valueOrNull?.length;
-    final favoritesCount = ref.watch(myFavoritesProvider(userId)).valueOrNull?.length;
+    final bookingsCount = ref.watch(myBookingsProvider(userId)).value?.length;
+    final favoritesCount = ref.watch(myFavoritesProvider(userId)).value?.length;
 
     return ListView(
       padding: const EdgeInsets.all(FactorySpacing.space4),
