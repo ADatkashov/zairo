@@ -30,6 +30,11 @@ dependencies:
   intl: ^0.20.3
   google_maps_flutter: ^2.18.0
   geolocator: ^14.0.3
+  # Profile > About: reads the real running app version/build number
+  # rather than a hardcoded string that drifts from pubspec.yaml.
+  package_info_plus: ^10.2.1
+  # Profile > Support: opens the support Telegram link.
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:

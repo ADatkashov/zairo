@@ -12,6 +12,8 @@ import '../../../booking/presentation/providers/booking_providers.dart';
 import '../../../favorites/presentation/providers/favorites_providers.dart';
 import '../../../favorites/presentation/screens/favorites_screen.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
+import 'about_screen.dart';
+import 'support_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -28,16 +30,20 @@ class ProfileScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             tooltip: l10n.settingsButtonTooltip,
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
-            ),
+            onPressed: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
           ),
         ],
       ),
       body: authState.when(
         data: (user) => user == null
             ? const _LoggedOutView()
-            : _LoggedInView(userId: user.id, displayName: user.displayName, email: user.email),
+            : _LoggedInView(
+                userId: user.id,
+                displayName: user.displayName,
+                email: user.email,
+              ),
         loading: () => const FactoryLoadingState(),
         error: (error, stackTrace) => Center(
           child: Padding(
@@ -70,14 +76,15 @@ class _LoggedOutView extends StatelessWidget {
               title: l10n.profileLoggedOutTitle,
               message: l10n.profileLoggedOutPrompt,
               actionLabel: l10n.loginTitle,
-              onAction: () =>
-                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginScreen())),
+              onAction: () => Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (_) => const LoginScreen())),
             ),
             FactoryButton(
               label: l10n.profileCreateAccount,
               variant: FactoryButtonVariant.text,
-              onPressed: () =>
-                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RegisterScreen())),
+              onPressed: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const RegisterScreen())),
             ),
           ],
         ),
@@ -91,7 +98,11 @@ class _LoggedInView extends ConsumerWidget {
   final String displayName;
   final String email;
 
-  const _LoggedInView({required this.userId, required this.displayName, required this.email});
+  const _LoggedInView({
+    required this.userId,
+    required this.displayName,
+    required this.email,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -106,13 +117,25 @@ class _LoggedInView extends ConsumerWidget {
       children: [
         const SizedBox(height: FactorySpacing.space4),
         Center(
-          child: FactoryAvatar(initials: initialsFor(displayName), size: FactoryAvatarSize.xl),
+          child: FactoryAvatar(
+            initials: initialsFor(displayName),
+            size: FactoryAvatarSize.xl,
+          ),
         ),
         const SizedBox(height: FactorySpacing.space3),
-        Center(child: Text(displayName, style: textTheme.headlineSmall, textAlign: TextAlign.center)),
+        Center(
+          child: Text(
+            displayName,
+            style: textTheme.headlineSmall,
+            textAlign: TextAlign.center,
+          ),
+        ),
         const SizedBox(height: FactorySpacing.space1),
         Center(
-          child: Text(email, style: textTheme.bodyMedium?.copyWith(color: colors.textTertiary)),
+          child: Text(
+            email,
+            style: textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
+          ),
         ),
         const SizedBox(height: FactorySpacing.space6),
         FactoryCard(
@@ -132,7 +155,9 @@ class _LoggedInView extends ConsumerWidget {
                   child: InkWell(
                     borderRadius: FactoryRadius.mdRadius,
                     onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const FavoritesScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const FavoritesScreen(),
+                      ),
                     ),
                     child: FactoryStatTile(
                       value: favoritesCount?.toString() ?? '—',
@@ -148,20 +173,93 @@ class _LoggedInView extends ConsumerWidget {
         const SizedBox(height: FactorySpacing.space6),
         FactorySelectableTile(
           title: l10n.myVehiclesButton,
-          leading: Icon(Icons.directions_car_outlined, color: colors.textSecondary),
-          trailing: Icon(Icons.chevron_right_rounded, color: colors.textTertiary),
+          leading: Icon(
+            Icons.directions_car_outlined,
+            color: colors.textSecondary,
+          ),
+          trailing: Icon(
+            Icons.chevron_right_rounded,
+            color: colors.textTertiary,
+          ),
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => VehiclesScreen(userId: userId)),
           ),
         ),
+        const SizedBox(height: FactorySpacing.space2),
+        FactorySelectableTile(
+          title: l10n.supportTitle,
+          leading: Icon(
+            Icons.support_agent_outlined,
+            color: colors.textSecondary,
+          ),
+          trailing: Icon(
+            Icons.chevron_right_rounded,
+            color: colors.textTertiary,
+          ),
+          onTap: () => Navigator.of(context)
+              .push(MaterialPageRoute(builder: (_) => const SupportScreen())),
+        ),
+        const SizedBox(height: FactorySpacing.space2),
+        FactorySelectableTile(
+          title: l10n.aboutTitle,
+          leading: Icon(Icons.info_outline, color: colors.textSecondary),
+          trailing: Icon(
+            Icons.chevron_right_rounded,
+            color: colors.textTertiary,
+          ),
+          onTap: () =>
+              Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (_) => const AboutScreen())),
+        ),
         const SizedBox(height: FactorySpacing.space6),
-        FactoryButton(
-          label: l10n.profileLogOut,
-          variant: FactoryButtonVariant.secondary,
-          expand: true,
+        _LogOutButton(
           onPressed: () => ref.read(authControllerProvider.notifier).logout(),
         ),
       ],
+    );
+  }
+}
+
+/// The Customer App Redesign board's tinted-pill log-out action — coral
+/// text/icon on a coral-tint fill, distinct from every other Factory
+/// button variant (which are all neutral or primary-colored), so this is
+/// its own small widget rather than a new [FactoryButtonVariant].
+class _LogOutButton extends StatelessWidget {
+  const _LogOutButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+
+    return SizedBox(
+      width: double.infinity,
+      child: Material(
+        color: colors.coralTint,
+        shape: FactoryRadius.pill,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onPressed,
+          child: Container(
+            height: FactoryButtonHeight.md,
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.logout_rounded, size: 18, color: colors.coral),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.profileLogOut,
+                  style: Theme.of(context).textTheme.labelLarge
+                      ?.copyWith(color: colors.coral),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

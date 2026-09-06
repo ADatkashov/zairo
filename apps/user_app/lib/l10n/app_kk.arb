@@ -221,6 +221,13 @@
   "deleteVehicleConfirmTitle": "Бұл көлікті жою керек пе?",
   "deleteVehicleConfirmMessage": "{vehicle} көліктер тізімінен жойылады.",
   "myVehiclesButton": "Менің көліктерім",
+
+  "supportTitle": "Қолдау қызметі",
+  "supportIntro": "Сұрағыңыз бар ма немесе бір нәрсе дұрыс жұмыс істемей тұр ма? Бізге тікелей жазыңыз.",
+  "supportTelegramLabel": "Telegram",
+  "aboutTitle": "Қолданба туралы",
+  "aboutVersionLoading": "Нұсқа жүктелуде…",
+  "aboutVersionLabel": "Нұсқа {version} ({buildNumber})",
   "errorAutoBookingFailed": "Брондауды аяқтау мүмкін болмады — механик бұл қызметті ұсынбауы мүмкін, немесе уақыт жаңа ғана иеленген. Қайта көріңіз.",
   "errorCleaningBookingFailed": "Брондауды аяқтау мүмкін болмады — тазалаушы бұл қызметті ұсынбауы мүмкін, немесе уақыт жаңа ғана иеленген. Қайта көріңіз.",
   "errorStaffBookingFailed": "Брондауды аяқтау мүмкін болмады — қызметкер бұл қызметті ұсынбауы мүмкін, немесе уақыт жаңа ғана иеленген. Қайта көріңіз.",

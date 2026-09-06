@@ -723,6 +723,30 @@
   "myVehiclesButton": "My vehicles",
   "@myVehiclesButton": {"description": "Profile screen's button opening the My Vehicles screen."},
 
+  "supportTitle": "Support",
+  "@supportTitle": {"description": "Profile screen's button opening Support, and that screen's app bar title."},
+
+  "supportIntro": "Have a question or ran into a problem? Message us directly.",
+  "@supportIntro": {"description": "Support screen's intro text above the contact row."},
+
+  "supportTelegramLabel": "Telegram",
+  "@supportTelegramLabel": {"description": "Support screen's Telegram contact row title."},
+
+  "aboutTitle": "About",
+  "@aboutTitle": {"description": "Profile screen's button opening About, and that screen's app bar title."},
+
+  "aboutVersionLoading": "Loading version…",
+  "@aboutVersionLoading": {"description": "About screen's version line while PackageInfo is still loading."},
+
+  "aboutVersionLabel": "Version {version} ({buildNumber})",
+  "@aboutVersionLabel": {
+    "description": "About screen's version line.",
+    "placeholders": {
+      "version": {"type": "String", "example": "1.0.0"},
+      "buildNumber": {"type": "String", "example": "1"}
+    }
+  },
+
   "errorAutoBookingFailed": "Couldn't complete this booking — the mechanic may not offer this service, or the time slot was just taken. Please try again.",
   "@errorAutoBookingFailed": {"description": "409 from POST .../auto/bookings — covers two distinct backend rejections the response body doesn't distinguish."},
 
