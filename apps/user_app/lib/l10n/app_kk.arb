@@ -141,6 +141,10 @@
   "bookingStatusCompleted": "Аяқталды",
   "bookingStatusCancelled": "Бас тартылды",
 
+  "bookingsTabUpcoming": "Жақында",
+  "bookingsTabCompleted": "Аяқталды",
+  "bookingsTabCancelled": "Бас тартылды",
+
   "myFavoritesTitle": "Таңдаулылар",
   "favoritesEmptyTitle": "Әзірге таңдаулылар жоқ",
   "favoritesEmptyMessage": "Таңдаулыға қосқан провайдерлер осында пайда болады.",

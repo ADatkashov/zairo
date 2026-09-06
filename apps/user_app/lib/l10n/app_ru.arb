@@ -141,6 +141,10 @@
   "bookingStatusCompleted": "Завершено",
   "bookingStatusCancelled": "Отменено",
 
+  "bookingsTabUpcoming": "Скоро",
+  "bookingsTabCompleted": "Завершено",
+  "bookingsTabCancelled": "Отменено",
+
   "myFavoritesTitle": "Избранное",
   "favoritesEmptyTitle": "Пока нет избранного",
   "favoritesEmptyMessage": "Провайдеры, которых вы добавите в избранное, появятся здесь.",

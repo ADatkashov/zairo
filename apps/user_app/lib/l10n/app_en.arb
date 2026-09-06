@@ -454,6 +454,15 @@
   "bookingStatusCancelled": "Cancelled",
   "@bookingStatusCancelled": {"description": "Booking status badge label for CANCELLED."},
 
+  "bookingsTabUpcoming": "Upcoming",
+  "@bookingsTabUpcoming": {"description": "My Bookings segmented tab: confirmed bookings not yet completed or cancelled."},
+
+  "bookingsTabCompleted": "Completed",
+  "@bookingsTabCompleted": {"description": "My Bookings segmented tab: completed bookings."},
+
+  "bookingsTabCancelled": "Cancelled",
+  "@bookingsTabCancelled": {"description": "My Bookings segmented tab: cancelled bookings."},
+
   "myFavoritesTitle": "My favorites",
   "@myFavoritesTitle": {"description": "Favorites screen app bar title, also used as the Profile screen's button label."},
 
