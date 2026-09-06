@@ -259,6 +259,9 @@
   "homeBookAgainTitle": "Book again",
   "@homeBookAgainTitle": {"description": "Home screen section header above the repeat-your-last-appointment row."},
 
+  "homeRecommendedTitle": "Recommended for you",
+  "@homeRecommendedTitle": {"description": "Home screen section header above the top-rated-providers row."},
+
   "searchHint": "Search services or providers",
   "@searchHint": {"description": "Search screen text field hint."},
 
@@ -409,6 +412,12 @@
     }
   },
 
+  "distanceKmShort": "{distanceKm} km",
+  "@distanceKmShort": {
+    "description": "A bare distance value, no surrounding sentence — Home's Recommended row.",
+    "placeholders": {"distanceKm": {"type": "String", "example": "3.7"}}
+  },
+
   "providerDistanceAway": "{distanceKm} km away",
   "@providerDistanceAway": {
     "description": "Provider detail screen's distance badge.",
@@ -474,6 +483,24 @@
 
   "errorFavoritesLoadFailed": "Couldn't load your favorites.",
   "@errorFavoritesLoadFailed": {"description": "Favorites screen error state."},
+
+  "notificationsTitle": "Notifications",
+  "@notificationsTitle": {"description": "Notifications screen app bar title."},
+
+  "notificationsEmptyTitle": "No notifications yet",
+  "@notificationsEmptyTitle": {"description": "Notifications screen empty state title."},
+
+  "notificationsEmptyMessage": "Booking updates and reminders will show up here.",
+  "@notificationsEmptyMessage": {"description": "Notifications screen empty state message."},
+
+  "errorNotificationsLoadFailed": "Couldn't load your notifications.",
+  "@errorNotificationsLoadFailed": {"description": "Notifications screen error state."},
+
+  "notificationsMarkAllReadButton": "Mark all read",
+  "@notificationsMarkAllReadButton": {"description": "Notifications screen action clearing every unread notification."},
+
+  "notificationBellTooltip": "Notifications",
+  "@notificationBellTooltip": {"description": "Home screen's notification bell icon button tooltip/semantic label."},
 
   "favoriteAddTooltip": "Add to favorites",
   "@favoriteAddTooltip": {"description": "Screen-reader/tooltip label for the favorite-toggle button when not yet favorited."},
@@ -747,6 +774,9 @@
   "favoritesLoggedOutPrompt": "Log in to see your favorites",
   "@favoritesLoggedOutPrompt": {"description": "Shown on the Favorites tab when reached while logged out."},
 
+  "notificationsLoggedOutPrompt": "Log in to see your notifications",
+  "@notificationsLoggedOutPrompt": {"description": "Shown on the Notifications screen when reached while logged out."},
+
   "settingsButtonTooltip": "Settings",
   "@settingsButtonTooltip": {"description": "Profile screen's AppBar action opening Settings."},
 
@@ -770,6 +800,18 @@
 
   "cancelBookingConfirmButton": "Cancel booking",
   "@cancelBookingConfirmButton": {"description": "Cancel-booking confirmation dialog's confirm action."},
+
+  "favoritesClearAllButton": "Clear all",
+  "@favoritesClearAllButton": {"description": "Favorites screen action removing every favorite."},
+
+  "favoritesClearAllConfirmTitle": "Clear all favorites?",
+  "@favoritesClearAllConfirmTitle": {"description": "Clear-all-favorites confirmation dialog title."},
+
+  "favoritesClearAllConfirmMessage": "This removes every provider from your favorites. This can't be undone.",
+  "@favoritesClearAllConfirmMessage": {"description": "Clear-all-favorites confirmation dialog body."},
+
+  "favoritesClearAllKeepButton": "Keep favorites",
+  "@favoritesClearAllKeepButton": {"description": "Clear-all-favorites confirmation dialog's dismiss action."},
 
   "bookingCancelledMessage": "Booking cancelled.",
   "@bookingCancelledMessage": {"description": "Snackbar shown after a successful cancellation."},

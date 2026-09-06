@@ -40,8 +40,8 @@ class BookingNotificationListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     void onBookingConfirmed(BookingConfirmedEvent event) {
         userRepository.findById(event.userId())
-                .ifPresent(customer -> notificationService.sendBookingConfirmedEmail(customer.getEmail(),
-                        event.bookingId()));
+                .ifPresent(customer -> notificationService.sendBookingConfirmedEmail(customer.getId(),
+                        customer.getEmail(), event.bookingId()));
         ownerEmailFor(event.providerId())
                 .ifPresent(ownerEmail -> notificationService.sendNewBookingReceivedEmail(ownerEmail,
                         event.bookingId()));
@@ -50,8 +50,8 @@ class BookingNotificationListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     void onBookingCancelled(BookingCancelledEvent event) {
         userRepository.findById(event.userId())
-                .ifPresent(customer -> notificationService.sendBookingCancelledEmail(customer.getEmail(),
-                        event.bookingId()));
+                .ifPresent(customer -> notificationService.sendBookingCancelledEmail(customer.getId(),
+                        customer.getEmail(), event.bookingId()));
         ownerEmailFor(event.providerId())
                 .ifPresent(ownerEmail -> notificationService.sendProviderBookingCancelledEmail(ownerEmail,
                         event.bookingId()));
@@ -60,8 +60,8 @@ class BookingNotificationListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     void onBookingReminderDue(BookingReminderDueEvent event) {
         userRepository.findById(event.userId())
-                .ifPresent(customer -> notificationService.sendBookingReminderEmail(customer.getEmail(),
-                        event.bookingId()));
+                .ifPresent(customer -> notificationService.sendBookingReminderEmail(customer.getId(),
+                        customer.getEmail(), event.bookingId()));
     }
 
     private Optional<String> ownerEmailFor(UUID providerId) {
