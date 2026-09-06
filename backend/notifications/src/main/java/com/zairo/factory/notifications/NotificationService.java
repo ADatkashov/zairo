@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
@@ -44,6 +46,15 @@ public class NotificationService {
         emailProvider.send(toEmail, subject, body);
     }
 
+    /**
+     * {@code REQUIRES_NEW}: every caller of this method is a
+     * {@code @TransactionalEventListener(phase = AFTER_COMMIT)} — see
+     * {@code BookingCancelledPaymentListener}'s doc comment for why a write
+     * made from inside that post-commit callback needs a genuinely new,
+     * independent transaction to actually persist, rather than silently
+     * appearing to succeed while joining an already-completed one.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void sendBookingConfirmedEmail(UUID recipientUserId, String toEmail, UUID bookingId) {
         String title = "Booking confirmed";
         String body = "Your booking (" + bookingId + ") is confirmed. We'll see you there!";
@@ -51,6 +62,7 @@ public class NotificationService {
         recordInApp(recipientUserId, InAppNotificationType.BOOKING_CONFIRMED, title, body);
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void sendBookingCancelledEmail(UUID recipientUserId, String toEmail, UUID bookingId) {
         String title = "Booking cancelled";
         String body = "Your booking (" + bookingId + ") has been cancelled.";
@@ -79,6 +91,7 @@ public class NotificationService {
                 "Your subscription has been downgraded to the FREE plan. You can upgrade again at any time.");
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void sendBookingReminderEmail(UUID recipientUserId, String toEmail, UUID bookingId) {
         String title = "Upcoming booking reminder";
         String body = "Your booking (" + bookingId + ") is coming up in about an hour. See you soon!";
@@ -86,6 +99,7 @@ public class NotificationService {
         recordInApp(recipientUserId, InAppNotificationType.BOOKING_REMINDER, title, body);
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void sendPaymentRefundedEmail(UUID recipientUserId, String toEmail, UUID bookingId, BigDecimal amount,
             String currency) {
         String title = "Refund processed";
