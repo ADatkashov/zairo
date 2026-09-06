@@ -3,7 +3,6 @@ package com.zairo.factory.notifications;
 import com.zairo.factory.booking.Booking;
 import com.zairo.factory.booking.BookingRepository;
 import com.zairo.factory.payments.PaymentRefundedEvent;
-import com.zairo.factory.users.User;
 import com.zairo.factory.users.UserRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -35,8 +34,7 @@ class PaymentNotificationListener {
         bookingRepository.findById(event.bookingId())
                 .map(Booking::getUserId)
                 .flatMap(userRepository::findById)
-                .map(User::getEmail)
-                .ifPresent(email -> notificationService.sendPaymentRefundedEmail(email, event.bookingId(),
-                        event.amount(), event.currency()));
+                .ifPresent(customer -> notificationService.sendPaymentRefundedEmail(customer.getId(),
+                        customer.getEmail(), event.bookingId(), event.amount(), event.currency()));
     }
 }

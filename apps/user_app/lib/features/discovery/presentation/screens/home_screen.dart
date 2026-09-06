@@ -13,6 +13,8 @@ import '../../../catalog/presentation/category_icon.dart';
 import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../../catalog/presentation/screens/all_categories_screen.dart';
 import '../../../maps/presentation/providers/maps_providers.dart';
+import '../../../notifications/presentation/providers/notifications_providers.dart';
+import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../data/models/provider_search_result.dart';
 import '../../data/models/service_summary.dart';
 import '../providers/discovery_providers.dart';
@@ -82,6 +84,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ],
                         ),
                       ),
+                      if (user != null) const _NotificationBellButton(),
                     ],
                   ),
                   const SizedBox(height: FactorySpacing.space4),
@@ -138,6 +141,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         },
                       ),
                     ),
+                  const SizedBox(height: FactorySpacing.space6),
+                  _RecommendedSection(results: results, excluding: topRated),
                 ],
               ),
             );
@@ -154,6 +159,55 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// A bell button with an unread-count badge (Customer App Redesign board,
+/// 2026-09-05) — pushes [NotificationsScreen] rather than something inline,
+/// same reasoning as Profile's favorites stat tile pushing [FavoritesScreen].
+class _NotificationBellButton extends ConsumerWidget {
+  const _NotificationBellButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final userId = ref.watch(authControllerProvider).value?.id;
+    final unreadCount = userId == null ? 0 : ref.watch(unreadNotificationsCountProvider(userId)).value ?? 0;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: FactoryRadius.lgRadius,
+            border: Border.all(color: colors.border),
+          ),
+          child: IconButton(
+            icon: Icon(Icons.notifications_outlined, color: colors.text),
+            tooltip: l10n.notificationBellTooltip,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+            ),
+          ),
+        ),
+        if (unreadCount > 0)
+          Positioned(
+            top: 4,
+            right: 4,
+            child: IgnorePointer(
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(color: colors.coral, shape: BoxShape.circle, border: Border.all(color: colors.surface, width: 1.5)),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -406,6 +460,116 @@ class _BookAgainCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// "Recommended for you" (Customer App Redesign board, 2026-09-05) — the
+/// simple heuristic behind it: highest-rated providers in this search
+/// result, [excluding] whatever the Top Rated carousel above already shows
+/// so the two sections don't just repeat each other. No personalization
+/// beyond that exists yet (no purchase-history/collaborative-filtering
+/// signal to draw on) — a provider with no reviews yet never appears here,
+/// same "absent, not zero" reasoning as everywhere else rating is shown.
+class _RecommendedSection extends StatelessWidget {
+  const _RecommendedSection({required this.results, required this.excluding});
+
+  final List<ProviderSearchResult> results;
+  final List<ProviderSearchResult> excluding;
+
+  static const _maxCount = 5;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final excludedIds = excluding.map((r) => r.id).toSet();
+    final recommended = results.where((r) => r.averageRating != null && !excludedIds.contains(r.id)).toList()
+      ..sort((a, b) => b.averageRating!.compareTo(a.averageRating!));
+    if (recommended.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.homeRecommendedTitle, style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: FactorySpacing.space3),
+        for (final result in recommended.take(_maxCount))
+          Padding(
+            padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
+            child: _RecommendedRow(
+              result: result,
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => ProviderDetailScreen(provider: result)),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _RecommendedRow extends StatelessWidget {
+  const _RecommendedRow({required this.result, required this.onTap});
+
+  final ProviderSearchResult result;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return FactoryCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(FactorySpacing.space2),
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(color: colors.surfaceAlt, borderRadius: FactoryRadius.mdRadius),
+            child: Icon(iconForCategory(result.vertical), color: colors.textSecondary),
+          ),
+          const SizedBox(width: FactorySpacing.space3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  result.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Icon(Icons.star_rounded, size: 14, color: colors.accent),
+                    const SizedBox(width: 2),
+                    Text(
+                      result.averageRating!.toStringAsFixed(1),
+                      style: textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                    ),
+                    if (result.distanceKm != null) ...[
+                      Text(' · ', style: textTheme.bodySmall?.copyWith(color: colors.textSecondary)),
+                      Text(
+                        l10n.distanceKmShort(result.distanceKm!.toStringAsFixed(1)),
+                        style: textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (result.minPrice != null)
+            FactoryPriceText(
+              amount: result.minPrice!,
+              currencySymbol: result.services.isNotEmpty ? result.services.first.currency : '',
+              fontSize: 13,
+            ),
+        ],
       ),
     );
   }

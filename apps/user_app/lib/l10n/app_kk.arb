@@ -86,6 +86,7 @@
   "allCategoriesSearchEmptyMessage": "«{query}» бойынша ештеңе табылмады. Басқа сөзді байқап көріңіз.",
   "errorCategoriesLoadFailed": "Санаттарды жүктеу мүмкін болмады.",
   "homeBookAgainTitle": "Қайта брондау",
+  "homeRecommendedTitle": "Сізге ұсынамыз",
 
   "searchHint": "Қызметтерді немесе провайдерлерді іздеу",
   "searchEmptyTitle": "Қызметті іздеңіз",
@@ -129,6 +130,7 @@
   "nextAvailableTodayLabel": "Бүгін {time}",
   "nextAvailableTomorrowLabel": "Ертең {time}",
   "cardDistanceAndVertical": "{distanceKm} км · {vertical}",
+  "distanceKmShort": "{distanceKm} км",
   "providerDistanceAway": "{distanceKm} км қашықтықта",
   "mapDistanceFromYou": "Сізден {distanceKm} км қашықтықта",
 
@@ -149,6 +151,13 @@
   "favoritesEmptyTitle": "Әзірге таңдаулылар жоқ",
   "favoritesEmptyMessage": "Таңдаулыға қосқан провайдерлер осында пайда болады.",
   "errorFavoritesLoadFailed": "Таңдаулыларды жүктеу мүмкін болмады.",
+
+  "notificationsTitle": "Хабарландырулар",
+  "notificationsEmptyTitle": "Әзірге хабарландыру жоқ",
+  "notificationsEmptyMessage": "Бронь жаңартулары мен еске салулар осында пайда болады.",
+  "errorNotificationsLoadFailed": "Хабарландыруларды жүктеу мүмкін болмады.",
+  "notificationsMarkAllReadButton": "Барлығын оқылды деп белгілеу",
+  "notificationBellTooltip": "Хабарландырулар",
   "favoriteAddTooltip": "Таңдаулыларға қосу",
   "favoriteRemoveTooltip": "Таңдаулылардан алып тастау",
   "ratingSemanticLabel": "5-тен {rating}",
@@ -236,6 +245,7 @@
 
   "bookingsLoggedOutPrompt": "Брондарыңызды көру үшін кіріңіз",
   "favoritesLoggedOutPrompt": "Таңдаулыларды көру үшін кіріңіз",
+  "notificationsLoggedOutPrompt": "Хабарландыруларды көру үшін кіріңіз",
   "settingsButtonTooltip": "Баптаулар",
 
   "errorBookingNotCancellable": "Бұл брондауды енді бас тартуға болмайды.",
@@ -245,6 +255,11 @@
   "cancelBookingConfirmMessage": "Егер төлеген болсаңыз, ақша автоматты түрде қайтарылады.",
   "cancelBookingKeepButton": "Брондауды сақтау",
   "cancelBookingConfirmButton": "Брондаудан бас тарту",
+
+  "favoritesClearAllButton": "Барлығын тазарту",
+  "favoritesClearAllConfirmTitle": "Барлық таңдаулыларды тазарту керек пе?",
+  "favoritesClearAllConfirmMessage": "Барлық провайдерлер таңдаулылардан жойылады. Бұл әрекетті болдырмауға болмайды.",
+  "favoritesClearAllKeepButton": "Тазартпау",
   "bookingCancelledMessage": "Брондаудан бас тартылды.",
   "paymentStatusRefunded": "Қайтарылды"
 }
