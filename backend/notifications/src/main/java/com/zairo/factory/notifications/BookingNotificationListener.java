@@ -18,10 +18,11 @@ import org.springframework.transaction.event.TransactionalEventListener;
  * of the booking — the customer, and the salon owner — matching this
  * project's established "listen for the event, don't have the publisher
  * depend on you" pattern (same as payments' BookingCancelledPaymentListener
- * for refunds). Only reads (resolving a userId/providerId to an email
- * address), never writes, so unlike that refund listener this doesn't need
- * {@code @Transactional(propagation = REQUIRES_NEW)} — there's nothing here
- * that could be silently lost by "joining" an already-committed transaction.
+ * for refunds). This listener itself only reads (resolving a userId/
+ * providerId to an email address); the in-app notification writes the
+ * customer-facing {@link NotificationService} methods make are each their
+ * own {@code REQUIRES_NEW} transaction (see their doc comments), so nothing
+ * extra is needed here.
  */
 @Component
 class BookingNotificationListener {

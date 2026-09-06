@@ -12,8 +12,11 @@ import org.springframework.transaction.event.TransactionalEventListener;
  * Reacts to payments' domain events (see ADR-0002) by emailing the
  * customer — same "listen for the event, don't have the publisher depend
  * on you" pattern as {@link BookingNotificationListener}/{@link
- * SubscriptionNotificationListener}. Only reads (resolving bookingId ->
- * userId -> email), never writes, so no {@code REQUIRES_NEW} is needed.
+ * SubscriptionNotificationListener}. This listener itself only reads
+ * (resolving bookingId -> userId -> email); the in-app notification write
+ * {@link NotificationService#sendPaymentRefundedEmail} makes is its own
+ * {@code REQUIRES_NEW} transaction (see that method's doc comment), so
+ * nothing extra is needed here.
  */
 @Component
 class PaymentNotificationListener {
