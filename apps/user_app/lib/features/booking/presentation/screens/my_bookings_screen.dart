@@ -48,15 +48,35 @@ class MyBookingsScreen extends ConsumerWidget {
   }
 }
 
-class _BookingsList extends ConsumerWidget {
+enum _BookingsTab { upcoming, completed, cancelled }
+
+extension on _BookingsTab {
+  /// The single status each tab filters to — this screen only ever shows
+  /// CONFIRMED/COMPLETED/CANCELLED bookings (see [Booking.status]), so a
+  /// direct 1:1 mapping is enough; no tab needs to match more than one status.
+  String get status => switch (this) {
+        _BookingsTab.upcoming => 'CONFIRMED',
+        _BookingsTab.completed => 'COMPLETED',
+        _BookingsTab.cancelled => 'CANCELLED',
+      };
+}
+
+class _BookingsList extends ConsumerStatefulWidget {
   final String userId;
 
   const _BookingsList({required this.userId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_BookingsList> createState() => _BookingsListState();
+}
+
+class _BookingsListState extends ConsumerState<_BookingsList> {
+  _BookingsTab _tab = _BookingsTab.upcoming;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final bookingsAsync = ref.watch(myBookingsProvider(userId));
+    final bookingsAsync = ref.watch(myBookingsProvider(widget.userId));
 
     return bookingsAsync.when(
       data: (bookings) {
@@ -70,11 +90,42 @@ class _BookingsList extends ConsumerWidget {
           );
         }
         final sorted = [...bookings]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        return ListView.separated(
-          padding: const EdgeInsets.all(FactorySpacing.space4),
-          itemCount: sorted.length,
-          separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
-          itemBuilder: (context, index) => _BookingCard(booking: sorted[index], userId: userId),
+        final filtered = sorted.where((b) => b.status == _tab.status).toList();
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                FactorySpacing.space4,
+                FactorySpacing.space4,
+                FactorySpacing.space4,
+                0,
+              ),
+              child: _BookingsTabBar(selected: _tab, onSelect: (tab) => setState(() => _tab = tab)),
+            ),
+            Expanded(
+              child: filtered.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(FactorySpacing.space4),
+                        child: Text(
+                          l10n.bookingsEmptyMessage,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(color: context.factoryColors.textTertiary),
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.all(FactorySpacing.space4),
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
+                      itemBuilder: (context, index) =>
+                          _BookingCard(booking: filtered[index], userId: widget.userId),
+                    ),
+            ),
+          ],
         );
       },
       loading: () => const FactoryLoadingState(),
@@ -83,7 +134,76 @@ class _BookingsList extends ConsumerWidget {
           padding: const EdgeInsets.all(FactorySpacing.space4),
           child: FactoryErrorState(
             message: l10n.errorBookingsLoadFailed,
-            onRetry: () => ref.invalidate(myBookingsProvider(userId)),
+            onRetry: () => ref.invalidate(myBookingsProvider(widget.userId)),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A pill-style segmented control (Customer App Redesign board,
+/// 2026-09-05) — filters the already-fetched bookings list client-side by
+/// status rather than issuing a new request per tab.
+class _BookingsTabBar extends StatelessWidget {
+  const _BookingsTabBar({required this.selected, required this.onSelect});
+
+  final _BookingsTab selected;
+  final ValueChanged<_BookingsTab> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final tabs = {
+      _BookingsTab.upcoming: l10n.bookingsTabUpcoming,
+      _BookingsTab.completed: l10n.bookingsTabCompleted,
+      _BookingsTab.cancelled: l10n.bookingsTabCancelled,
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(color: colors.surfaceAlt, borderRadius: FactoryRadius.lgRadius),
+      child: Row(
+        children: [
+          for (final entry in tabs.entries)
+            Expanded(
+              child: _BookingsTabButton(
+                label: entry.value,
+                isSelected: entry.key == selected,
+                onTap: () => onSelect(entry.key),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BookingsTabButton extends StatelessWidget {
+  const _BookingsTabButton({required this.label, required this.isSelected, required this.onTap});
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    return Material(
+      color: isSelected ? colors.primary : Colors.transparent,
+      borderRadius: FactoryRadius.mdRadius,
+      child: InkWell(
+        borderRadius: FactoryRadius.mdRadius,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 9),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: isSelected ? colors.onPrimary : colors.textSecondary,
+                ),
           ),
         ),
       ),

@@ -183,6 +183,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Completed'));
+    await tester.pumpAndSettle();
 
     expect(find.text('Leave a review'), findsOneWidget);
   });
@@ -273,7 +275,12 @@ void main() {
 
     expect(fakeApi.lastCancelledBookingId, 'booking-1');
     expect(find.text('Booking cancelled.'), findsOneWidget);
-    expect(find.text('Cancelled'), findsOneWidget);
+
+    // The booking left the Upcoming tab now that it's CANCELLED — it only
+    // shows up under the Cancelled tab.
+    await tester.tap(find.text('Cancelled').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Cancelled'), findsWidgets);
   });
 
   testWidgets('shows a readable error when cancellation fails', (tester) async {

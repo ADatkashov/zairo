@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/formatting/initials.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../booking/data/models/book_again_suggestion.dart';
@@ -58,16 +59,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 padding: const EdgeInsets.all(FactorySpacing.space4),
                 children: [
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Icon(Icons.location_on_outlined, size: 16, color: colors.primary),
-                      const SizedBox(width: 4),
-                      Text(locationAsync.value?.label ?? l10n.homeLocationUnknown, style: textTheme.titleSmall),
+                      FactoryAvatar(initials: user != null ? initialsFor(user.displayName) : '?'),
+                      const SizedBox(width: FactorySpacing.space3),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.location_on_outlined, size: 16, color: colors.primary),
+                                const SizedBox(width: 4),
+                                Text(locationAsync.value?.label ?? l10n.homeLocationUnknown, style: textTheme.titleSmall),
+                              ],
+                            ),
+                            const SizedBox(height: FactorySpacing.space1),
+                            Text(
+                              user != null ? l10n.homeGreeting(user.displayName) : l10n.homeGreetingGuest,
+                              style: textTheme.headlineSmall?.copyWith(color: colors.text),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
-                  ),
-                  const SizedBox(height: FactorySpacing.space1),
-                  Text(
-                    user != null ? l10n.homeGreeting(user.displayName) : l10n.homeGreetingGuest,
-                    style: textTheme.headlineSmall?.copyWith(color: colors.text),
                   ),
                   const SizedBox(height: FactorySpacing.space4),
                   _SearchEntry(onTap: () => context.go('/search')),
