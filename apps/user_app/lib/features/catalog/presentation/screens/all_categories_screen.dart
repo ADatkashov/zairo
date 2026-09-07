@@ -24,7 +24,8 @@ class AllCategoriesScreen extends ConsumerStatefulWidget {
   const AllCategoriesScreen({super.key});
 
   @override
-  ConsumerState<AllCategoriesScreen> createState() => _AllCategoriesScreenState();
+  ConsumerState<AllCategoriesScreen> createState() =>
+      _AllCategoriesScreenState();
 }
 
 class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen> {
@@ -53,7 +54,14 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen> {
             final query = _filter.trim().toLowerCase();
             final filtered = query.isEmpty
                 ? categories
-                : categories.where((c) => c.nameFor(languageCode).toLowerCase().contains(query)).toList();
+                : categories
+                      .where(
+                        (c) => c
+                            .nameFor(languageCode)
+                            .toLowerCase()
+                            .contains(query),
+                      )
+                      .toList();
             return Column(
               children: [
                 Padding(
@@ -74,19 +82,27 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen> {
                   child: filtered.isEmpty
                       ? Center(
                           child: Padding(
-                            padding: const EdgeInsets.all(FactorySpacing.space4),
+                            padding: const EdgeInsets.all(
+                              FactorySpacing.space4,
+                            ),
                             child: FactoryEmptyState(
                               icon: Icons.search_off_rounded,
                               title: l10n.allCategoriesSearchEmptyTitle,
-                              message: l10n.allCategoriesSearchEmptyMessage(_filter.trim()),
+                              message: l10n.allCategoriesSearchEmptyMessage(
+                                _filter.trim(),
+                              ),
                             ),
                           ),
                         )
                       : ListView.separated(
-                          padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space2),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: FactorySpacing.space2,
+                          ),
                           itemCount: filtered.length,
-                          separatorBuilder: (_, _) => Divider(height: 1, color: colors.border),
-                          itemBuilder: (context, index) => _CategoryExpansionTile(category: filtered[index]),
+                          separatorBuilder: (_, _) =>
+                              Divider(height: 1, color: colors.border),
+                          itemBuilder: (context, index) =>
+                              _CategoryExpansionTile(category: filtered[index]),
                         ),
                 ),
               ],
@@ -131,6 +147,7 @@ class _CategoryExpansionTileState extends State<_CategoryExpansionTile> {
     final colors = context.factoryColors;
     final languageCode = Localizations.localeOf(context).languageCode;
     final category = widget.category;
+    final accent = colorForCategory(context, category.code);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -140,27 +157,46 @@ class _CategoryExpansionTileState extends State<_CategoryExpansionTile> {
           child: InkWell(
             onTap: () => setState(() => _expanded = !_expanded),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4, vertical: FactorySpacing.space3),
+              padding: const EdgeInsets.symmetric(
+                horizontal: FactorySpacing.space4,
+                vertical: FactorySpacing.space3,
+              ),
               child: Row(
                 children: [
-                  SizedBox(
+                  Container(
                     width: 40,
                     height: 40,
+                    decoration: BoxDecoration(
+                      color: accent?.tint ?? colors.surfaceAlt,
+                      shape: BoxShape.circle,
+                    ),
                     child: Center(
                       child: category.icon != null
-                          ? Text(category.icon!, style: const TextStyle(fontSize: FactoryIconSize.md))
-                          : Icon(iconForCategory(category.code), size: FactoryIconSize.md, color: colors.textSecondary),
+                          ? Text(
+                              category.icon!,
+                              style: const TextStyle(
+                                fontSize: FactoryIconSize.md,
+                              ),
+                            )
+                          : Icon(
+                              iconForCategory(category.code),
+                              size: FactoryIconSize.md,
+                              color: accent?.color ?? colors.textSecondary,
+                            ),
                     ),
                   ),
                   const SizedBox(width: FactorySpacing.space3),
                   Expanded(
                     child: Text(
                       category.nameFor(languageCode),
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(color: colors.text),
+                      style: Theme.of(context).textTheme.titleSmall
+                          ?.copyWith(color: colors.text),
                     ),
                   ),
                   Icon(
-                    _expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                    _expanded
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
                     color: colors.textTertiary,
                   ),
                 ],
@@ -187,7 +223,11 @@ class _SphereList extends ConsumerWidget {
     final businessTypesAsync = ref.watch(businessTypesProvider(category.id));
 
     return Padding(
-      padding: const EdgeInsets.only(left: FactorySpacing.space10, right: FactorySpacing.space4, bottom: FactorySpacing.space2),
+      padding: const EdgeInsets.only(
+        left: FactorySpacing.space10,
+        right: FactorySpacing.space4,
+        bottom: FactorySpacing.space2,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -208,11 +248,16 @@ class _SphereList extends ConsumerWidget {
               ],
             ),
             loading: () => Padding(
-              padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space2),
+              padding: const EdgeInsets.symmetric(
+                vertical: FactorySpacing.space2,
+              ),
               child: SizedBox(
                 height: 16,
                 width: 16,
-                child: CircularProgressIndicator(strokeWidth: 2, color: colors.textTertiary),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: colors.textTertiary,
+                ),
               ),
             ),
             // Best-effort: the "all services" row above still works even if
@@ -226,7 +271,11 @@ class _SphereList extends ConsumerWidget {
 }
 
 class _SphereRow extends StatelessWidget {
-  const _SphereRow({required this.label, required this.onTap, this.emphasized = false});
+  const _SphereRow({
+    required this.label,
+    required this.onTap,
+    this.emphasized = false,
+  });
 
   final String label;
   final VoidCallback onTap;
