@@ -17,18 +17,35 @@ import 'package:business_admin/features/salon/data/models/admin_booking.dart';
 import 'package:business_admin/features/salon/data/models/admin_provider.dart';
 import 'package:business_admin/features/salon/data/models/admin_service.dart';
 import 'package:business_admin/features/salon/data/models/admin_slot.dart';
+import 'package:business_admin/features/salon/data/models/dashboard_metrics.dart';
 import 'package:business_admin/features/salon/data/salon_admin_api.dart';
 import 'package:business_admin/features/salon/presentation/providers/salon_providers.dart';
 import 'package:business_admin/l10n/app_localizations.dart';
 
 class _FakeSalonAdminApi extends SalonAdminApi {
-  _FakeSalonAdminApi(this._providers) : super(DioClient(Dio()));
+  _FakeSalonAdminApi(this._providers, {Map<String, DashboardMetrics>? metricsByProviderId})
+      : _metricsByProviderId = metricsByProviderId ?? const {},
+        super(DioClient(Dio()));
 
   final List<AdminProvider> _providers;
+  final Map<String, DashboardMetrics> _metricsByProviderId;
   Map<String, dynamic>? lastCreateCall;
 
   @override
   Future<List<AdminProvider>> listMyProviders(String ownerUserId) async => _providers;
+
+  @override
+  Future<DashboardMetrics> fetchDashboardMetrics(String providerId) async =>
+      _metricsByProviderId[providerId] ??
+      const DashboardMetrics(
+        totalBookings: 0,
+        completedBookings: 0,
+        cancelledBookings: 0,
+        cancellationRate: 0,
+        totalCustomers: 0,
+        totalRevenue: 0,
+        topServices: [],
+      );
 
   @override
   Future<AdminProvider> createProvider({
@@ -190,5 +207,59 @@ void main() {
 
     expect(find.text('Subscription'), findsOneWidget);
     expect(find.text('FREE plan'), findsOneWidget);
+  });
+
+  testWidgets('overview hero sums dashboard metrics across every business the owner manages', (tester) async {
+    final fakeApi = _FakeSalonAdminApi(
+      [
+        const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE'),
+        const AdminProvider(id: 'p2', ownerUserId: 'owner-1', name: 'Central Garage', vertical: 'auto', status: 'ACTIVE'),
+      ],
+      metricsByProviderId: {
+        'p1': const DashboardMetrics(
+          totalBookings: 5,
+          completedBookings: 4,
+          cancelledBookings: 1,
+          cancellationRate: 0.2,
+          totalCustomers: 3,
+          totalRevenue: 15000,
+          topServices: [],
+        ),
+        'p2': const DashboardMetrics(
+          totalBookings: 2,
+          completedBookings: 2,
+          cancelledBookings: 0,
+          cancellationRate: 0,
+          totalCustomers: 2,
+          totalRevenue: 9000,
+          topServices: [],
+        ),
+      },
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(fakeApi),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+          billingApiProvider.overrideWithValue(_FakeBillingApi()),
+          authControllerProvider.overrideWith(_LoggedInOwnerController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const DashboardScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 2 businesses, 7 bookings, 5 customers, 24 000 ₸ revenue — summed
+    // across both providers, not just the first.
+    expect(find.text('2'), findsOneWidget);
+    expect(find.text('7'), findsOneWidget);
+    expect(find.text('5'), findsOneWidget);
+    expect(find.textContaining('24'), findsWidgets);
   });
 }

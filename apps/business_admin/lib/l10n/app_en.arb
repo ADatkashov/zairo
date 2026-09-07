@@ -233,6 +233,9 @@
   "dashboardNoDataYet": "Metrics will appear once this business gets its first booking.",
   "@dashboardNoDataYet": {"description": "Dashboard empty state, shown when totalBookings is 0."},
 
+  "dashboardBusinessesCountLabel": "Businesses",
+  "@dashboardBusinessesCountLabel": {"description": "Owner overview hero stat: number of businesses this owner manages."},
+
   "errorDashboardLoadFailed": "Failed to load dashboard: {error}",
   "@errorDashboardLoadFailed": {
     "description": "Dashboard section's error state.",
