@@ -1,5 +1,6 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// Icons aren't part of the master catalog (a presentation detail, not
 /// taxonomy) — this is a small, forward-compatible local lookup, not a
@@ -8,32 +9,43 @@ import 'package:flutter/material.dart';
 /// between Home's popular-categories row, the full category browser, and
 /// provider cards' category badge so none of the three drift.
 ///
+/// Uses `material_symbols_icons`' `Symbols.*_rounded` set rather than
+/// Flutter's own bundled `Icons.*_rounded` — the Customer App Redesign
+/// board's `.dc.html` renders every icon via `<span
+/// class="material-symbols-rounded">content_cut</span>` (Google's Material
+/// Symbols Rounded font), which is a visually distinct glyph set from
+/// Flutter's classic Material Icons font even for an icon with the same
+/// name (heavier, more rounded strokes) — `beauty`/`auto`/`cleaning` below
+/// use the board's own icon names (`content_cut`, `directions_car_filled`,
+/// `cleaning_services`) verbatim so these three render pixel-equivalent to
+/// the mockup, not just semantically equivalent.
+///
 /// Covers all 21 codes the platform's top-level taxonomy actually seeds
 /// (V41__seed_category_taxonomy.sql) — every real category gets its own
 /// icon here, not just the original beauty/auto/cleaning three.
 IconData iconForCategory(String code) => switch (code) {
-  'beauty' => Icons.content_cut_rounded,
-  'medicine' => Icons.medical_services_rounded,
-  'auto' => Icons.directions_car_filled_rounded,
-  'home_repair' => Icons.handyman_rounded,
-  'sport_fitness' => Icons.fitness_center_rounded,
-  'education' => Icons.school_rounded,
-  'kids' => Icons.child_care_rounded,
-  'animals' => Icons.pets_rounded,
-  'photo_video' => Icons.camera_alt_rounded,
-  'weddings' => Icons.favorite_rounded,
-  'legal' => Icons.gavel_rounded,
-  'it_digital' => Icons.computer_rounded,
-  'food' => Icons.restaurant_rounded,
-  'fashion' => Icons.checkroom_rounded,
-  'real_estate' => Icons.home_work_rounded,
-  'tourism' => Icons.flight_rounded,
-  'household_services' => Icons.cleaning_services_rounded,
-  'entertainment' => Icons.sports_esports_rounded,
-  'business_services' => Icons.business_center_rounded,
-  'events' => Icons.celebration_rounded,
-  'cleaning' => Icons.cleaning_services_rounded,
-  _ => Icons.storefront_outlined,
+  'beauty' => Symbols.content_cut_rounded,
+  'medicine' => Symbols.medical_services_rounded,
+  'auto' => Symbols.directions_car_filled_rounded,
+  'home_repair' => Symbols.handyman_rounded,
+  'sport_fitness' => Symbols.fitness_center_rounded,
+  'education' => Symbols.school_rounded,
+  'kids' => Symbols.child_care_rounded,
+  'animals' => Symbols.pets_rounded,
+  'photo_video' => Symbols.photo_camera_rounded,
+  'weddings' => Symbols.favorite_rounded,
+  'legal' => Symbols.gavel_rounded,
+  'it_digital' => Symbols.computer_rounded,
+  'food' => Symbols.restaurant_rounded,
+  'fashion' => Symbols.checkroom_rounded,
+  'real_estate' => Symbols.home_work_rounded,
+  'tourism' => Symbols.flight_rounded,
+  'household_services' => Symbols.room_service_rounded,
+  'entertainment' => Symbols.sports_esports_rounded,
+  'business_services' => Symbols.business_center_rounded,
+  'events' => Symbols.celebration_rounded,
+  'cleaning' => Symbols.cleaning_services_rounded,
+  _ => Symbols.storefront_rounded,
 };
 
 /// Every category beyond the original beauty/auto/cleaning three, in the

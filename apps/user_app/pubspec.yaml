@@ -35,6 +35,12 @@ dependencies:
   package_info_plus: ^10.2.1
   # Profile > Support: opens the support Telegram link.
   url_launcher: ^6.3.0
+  # The Customer App Redesign board renders every icon via Google's Material
+  # Symbols Rounded font, not Flutter's bundled classic Material Icons font —
+  # visually distinct glyphs even for an icon with the same name. Used by
+  # category_icon.dart so category icons render pixel-equivalent to the
+  # mockup rather than just semantically equivalent.
+  material_symbols_icons: ^4.2960.0
 
 dev_dependencies:
   flutter_test:
