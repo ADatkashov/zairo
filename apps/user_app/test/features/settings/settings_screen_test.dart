@@ -45,32 +45,37 @@ class _TestApp extends ConsumerWidget {
 }
 
 void main() {
-  testWidgets('defaults to system language and switches to Kazakh, persisting the choice', (tester) async {
-    final storage = _InMemorySecureStorageService();
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [secureStorageServiceProvider.overrideWithValue(storage)],
-        child: const _TestApp(),
-      ),
-    );
-    await tester.pumpAndSettle();
+  testWidgets(
+    'defaults to system language and switches to Kazakh, persisting the choice',
+    (tester) async {
+      final storage = _InMemorySecureStorageService();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [secureStorageServiceProvider.overrideWithValue(storage)],
+          child: const _TestApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    // No override stored yet -> follows the test environment's locale (en).
-    expect(find.text('Settings'), findsOneWidget);
-    expect(find.text('System default'), findsOneWidget);
+      // No override stored yet -> follows the test environment's locale (en).
+      expect(find.text('Settings'), findsOneWidget);
+      expect(find.text('System default'), findsOneWidget);
 
-    await tester.tap(find.text('Language'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Қазақша'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Language'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Қазақша'));
+      await tester.pumpAndSettle();
 
-    // The whole app re-renders in Kazakh, not just the picker's own subtitle.
-    expect(find.text('Баптаулар'), findsOneWidget);
-    expect(find.text('Қазақша'), findsOneWidget);
-    expect(await storage.read('locale_code'), 'kk');
-  });
+      // The whole app re-renders in Kazakh, not just the picker's own subtitle.
+      expect(find.text('Баптаулар'), findsOneWidget);
+      expect(find.text('Қазақша'), findsOneWidget);
+      expect(await storage.read('locale_code'), 'kk');
+    },
+  );
 
-  testWidgets('picking "System default" clears a previously stored override', (tester) async {
+  testWidgets('picking "System default" clears a previously stored override', (
+    tester,
+  ) async {
     final storage = _InMemorySecureStorageService();
     await storage.write('locale_code', 'ru');
 
@@ -92,4 +97,40 @@ void main() {
     expect(find.text('Settings'), findsOneWidget);
     expect(await storage.read('locale_code'), isNull);
   });
+
+  testWidgets(
+    'switching to dark mode persists it, and a fresh app instance restores it',
+    (tester) async {
+      final storage = _InMemorySecureStorageService();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [secureStorageServiceProvider.overrideWithValue(storage)],
+          child: const _TestApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // No override stored yet -> the provider's own ThemeMode.system default.
+      expect(find.text('Current theme: System'), findsOneWidget);
+
+      await tester.tap(find.byType(SwitchListTile));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Current theme: Dark'), findsOneWidget);
+      expect(await storage.read('theme_mode'), 'dark');
+
+      // A fresh ProviderScope simulates a cold app restart against the same
+      // backing storage — the whole point of persisting the choice.
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [secureStorageServiceProvider.overrideWithValue(storage)],
+          child: const _TestApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Current theme: Dark'), findsOneWidget);
+    },
+  );
 }
