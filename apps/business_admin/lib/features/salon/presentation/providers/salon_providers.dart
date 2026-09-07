@@ -7,6 +7,7 @@ import '../../data/models/admin_provider.dart';
 import '../../data/models/admin_service.dart';
 import '../../data/models/admin_slot.dart';
 import '../../data/models/dashboard_metrics.dart';
+import '../../data/models/owner_overview.dart';
 import '../../data/salon_admin_api.dart';
 
 final salonAdminApiProvider = Provider<SalonAdminApi>((ref) {
@@ -38,4 +39,30 @@ final providerBookingsProvider = FutureProvider.autoDispose.family<List<AdminBoo
 final providerDashboardMetricsProvider =
     FutureProvider.autoDispose.family<DashboardMetrics, String>((ref, providerId) {
   return ref.watch(salonAdminApiProvider).fetchDashboardMetrics(providerId);
+});
+
+/// Sums [DashboardMetrics] across every business [ownerUserId] manages, for
+/// the Dashboard's overview hero. Reuses [myProvidersProvider]'s cached list
+/// rather than re-fetching it.
+final ownerOverviewProvider = FutureProvider.autoDispose.family<OwnerOverview, String>((ref, ownerUserId) async {
+  final api = ref.watch(salonAdminApiProvider);
+  final providers = await ref.watch(myProvidersProvider(ownerUserId).future);
+  final metrics = await Future.wait(providers.map((p) => api.fetchDashboardMetrics(p.id)));
+  double totalRevenue = 0;
+  int totalBookings = 0;
+  int totalCustomers = 0;
+  String? currency;
+  for (final m in metrics) {
+    totalRevenue += m.totalRevenue;
+    totalBookings += m.totalBookings;
+    totalCustomers += m.totalCustomers;
+    currency ??= m.currency;
+  }
+  return OwnerOverview(
+    totalRevenue: totalRevenue,
+    totalBookings: totalBookings,
+    totalCustomers: totalCustomers,
+    businessCount: providers.length,
+    currency: currency,
+  );
 });

@@ -245,5 +245,6 @@
   "dashboardAverageCheckLabel": "Орташа чек",
   "dashboardTopServicesTitle": "Танымал қызметтер",
   "dashboardNoDataYet": "Көрсеткіштер алғашқы брондаудан кейін пайда болады.",
+  "dashboardBusinessesCountLabel": "Бизнестер",
   "errorDashboardLoadFailed": "Көрсеткіштерді жүктеу мүмкін болмады: {error}"
 }
