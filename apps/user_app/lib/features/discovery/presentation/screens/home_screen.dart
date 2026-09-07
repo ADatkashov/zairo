@@ -674,9 +674,10 @@ class _RecommendedRow extends StatelessWidget {
   }
 }
 
-/// The design system's one deliberate gradient case (`primaryStrong` →
-/// `mint` diagonal, two soft translucent circles) — everywhere else in
-/// Factory is flat color. Customer App Redesign board, 2026-09-05.
+/// A deliberate gradient case (`primaryStrong` → `mint` diagonal, two soft
+/// translucent circles) — everywhere else in Factory is flat color, this
+/// pattern reserved for one hero moment per app (business_admin's Dashboard
+/// overview hero is the other). Customer App Redesign board, 2026-09-05.
 class _AvailabilityHero extends StatelessWidget {
   const _AvailabilityHero({required this.count, required this.onViewAll});
 
