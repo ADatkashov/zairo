@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../core/constants/app_config.dart';
 import '../l10n/app_localizations.dart';
 import 'locale/locale_controller.dart';
@@ -13,7 +14,7 @@ class ZairoApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
-    final themeMode = ref.watch(themeModeProvider);
+    final themeMode = ref.watch(themeModeControllerProvider).value;
     final locale = ref.watch(localeControllerProvider).value;
 
     return MaterialApp.router(
