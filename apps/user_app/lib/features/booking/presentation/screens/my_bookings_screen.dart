@@ -1,6 +1,7 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../core/formatting/month_day_time.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -31,7 +32,10 @@ class MyBookingsScreen extends ConsumerWidget {
       appBar: FactoryAppBar(title: l10n.myBookingsTitle),
       body: authState.when(
         data: (user) => user == null
-            ? LoggedOutGate(icon: Icons.event_note_outlined, message: l10n.bookingsLoggedOutPrompt)
+            ? LoggedOutGate(
+                icon: Symbols.calendar_month_rounded,
+                message: l10n.bookingsLoggedOutPrompt,
+              )
             : _BookingsList(userId: user.id),
         loading: () => const FactoryLoadingState(),
         error: (error, stackTrace) => Center(
@@ -55,10 +59,10 @@ extension on _BookingsTab {
   /// CONFIRMED/COMPLETED/CANCELLED bookings (see [Booking.status]), so a
   /// direct 1:1 mapping is enough; no tab needs to match more than one status.
   String get status => switch (this) {
-        _BookingsTab.upcoming => 'CONFIRMED',
-        _BookingsTab.completed => 'COMPLETED',
-        _BookingsTab.cancelled => 'CANCELLED',
-      };
+    _BookingsTab.upcoming => 'CONFIRMED',
+    _BookingsTab.completed => 'COMPLETED',
+    _BookingsTab.cancelled => 'CANCELLED',
+  };
 }
 
 class _BookingsList extends ConsumerStatefulWidget {
@@ -83,13 +87,14 @@ class _BookingsListState extends ConsumerState<_BookingsList> {
         if (bookings.isEmpty) {
           return Center(
             child: FactoryEmptyState(
-              icon: Icons.event_note_outlined,
+              icon: Symbols.calendar_month_rounded,
               title: l10n.bookingsEmptyTitle,
               message: l10n.bookingsEmptyMessage,
             ),
           );
         }
-        final sorted = [...bookings]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        final sorted = [...bookings]
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
         final filtered = sorted.where((b) => b.status == _tab.status).toList();
         return Column(
           children: [
@@ -100,7 +105,10 @@ class _BookingsListState extends ConsumerState<_BookingsList> {
                 FactorySpacing.space4,
                 0,
               ),
-              child: _BookingsTabBar(selected: _tab, onSelect: (tab) => setState(() => _tab = tab)),
+              child: _BookingsTabBar(
+                selected: _tab,
+                onSelect: (tab) => setState(() => _tab = tab),
+              ),
             ),
             Expanded(
               child: filtered.isEmpty
@@ -110,19 +118,22 @@ class _BookingsListState extends ConsumerState<_BookingsList> {
                         child: Text(
                           l10n.bookingsEmptyMessage,
                           textAlign: TextAlign.center,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(color: context.factoryColors.textTertiary),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: context.factoryColors.textTertiary,
+                              ),
                         ),
                       ),
                     )
                   : ListView.separated(
                       padding: const EdgeInsets.all(FactorySpacing.space4),
                       itemCount: filtered.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
-                      itemBuilder: (context, index) =>
-                          _BookingCard(booking: filtered[index], userId: widget.userId),
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(height: FactorySpacing.space3),
+                      itemBuilder: (context, index) => _BookingCard(
+                        booking: filtered[index],
+                        userId: widget.userId,
+                      ),
                     ),
             ),
           ],
@@ -163,7 +174,10 @@ class _BookingsTabBar extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(color: colors.surfaceAlt, borderRadius: FactoryRadius.lgRadius),
+      decoration: BoxDecoration(
+        color: colors.surfaceAlt,
+        borderRadius: FactoryRadius.lgRadius,
+      ),
       child: Row(
         children: [
           for (final entry in tabs.entries)
@@ -181,7 +195,11 @@ class _BookingsTabBar extends StatelessWidget {
 }
 
 class _BookingsTabButton extends StatelessWidget {
-  const _BookingsTabButton({required this.label, required this.isSelected, required this.onTap});
+  const _BookingsTabButton({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
 
   final String label;
   final bool isSelected;
@@ -202,8 +220,8 @@ class _BookingsTabButton extends StatelessWidget {
             label,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: isSelected ? colors.onPrimary : colors.textSecondary,
-                ),
+              color: isSelected ? colors.onPrimary : colors.textSecondary,
+            ),
           ),
         ),
       ),
@@ -237,18 +255,29 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              FactoryPriceText(amount: booking.totalPrice, fontSize: 16, weight: FontWeight.w700),
-              FactoryBadge(label: _statusLabel(l10n, booking.status), variant: _statusVariant(booking.status)),
+              FactoryPriceText(
+                amount: booking.totalPrice,
+                fontSize: 16,
+                weight: FontWeight.w700,
+              ),
+              FactoryBadge(
+                label: _statusLabel(l10n, booking.status),
+                variant: _statusVariant(booking.status),
+              ),
             ],
           ),
           const SizedBox(height: FactorySpacing.space1),
           Text(
-            l10n.bookedOnLabel(formatMonthDayTime(l10n, booking.createdAt.toLocal())),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+            l10n.bookedOnLabel(
+              formatMonthDayTime(l10n, booking.createdAt.toLocal()),
+            ),
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: colors.textTertiary),
           ),
           const SizedBox(height: FactorySpacing.space2),
           PaymentStatusChip(bookingId: booking.id),
-          if (booking.status == 'COMPLETED') ReviewSection(bookingId: booking.id),
+          if (booking.status == 'COMPLETED')
+            ReviewSection(bookingId: booking.id),
           if (booking.status == 'CONFIRMED') ...[
             const SizedBox(height: FactorySpacing.space2),
             Align(
@@ -301,26 +330,32 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
           .showSnackBar(SnackBar(content: Text(l10n.bookingCancelledMessage)));
     } on BookingException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
       setState(() => _isCancelling = false);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.errorBookingGeneric(e.toString()))));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.errorBookingGeneric(e.toString()))),
+      );
       setState(() => _isCancelling = false);
     }
   }
 }
 
 String _statusLabel(AppLocalizations l10n, String status) => switch (status) {
-      'CONFIRMED' => l10n.bookingStatusConfirmed,
-      'COMPLETED' => l10n.bookingStatusCompleted,
-      'CANCELLED' => l10n.bookingStatusCancelled,
-      _ => status.isEmpty ? status : '${status[0]}${status.substring(1).toLowerCase()}',
-    };
+  'CONFIRMED' => l10n.bookingStatusConfirmed,
+  'COMPLETED' => l10n.bookingStatusCompleted,
+  'CANCELLED' => l10n.bookingStatusCancelled,
+  _ =>
+    status.isEmpty
+        ? status
+        : '${status[0]}${status.substring(1).toLowerCase()}',
+};
 
 FactoryBadgeVariant _statusVariant(String status) => switch (status) {
-      'CONFIRMED' => FactoryBadgeVariant.available,
-      'COMPLETED' => FactoryBadgeVariant.verified,
-      'CANCELLED' => FactoryBadgeVariant.error,
-      _ => FactoryBadgeVariant.neutral,
-    };
+  'CONFIRMED' => FactoryBadgeVariant.available,
+  'COMPLETED' => FactoryBadgeVariant.verified,
+  'CANCELLED' => FactoryBadgeVariant.error,
+  _ => FactoryBadgeVariant.neutral,
+};

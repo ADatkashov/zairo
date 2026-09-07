@@ -1,6 +1,7 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../data/models/category.dart';
@@ -74,7 +75,7 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen> {
                   child: FactoryTextField(
                     controller: _searchController,
                     label: l10n.allCategoriesSearchLabel,
-                    prefixIcon: const Icon(Icons.search_rounded),
+                    prefixIcon: const Icon(Symbols.search_rounded),
                     onChanged: (value) => setState(() => _filter = value),
                   ),
                 ),
@@ -86,7 +87,7 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen> {
                               FactorySpacing.space4,
                             ),
                             child: FactoryEmptyState(
-                              icon: Icons.search_off_rounded,
+                              icon: Symbols.search_off_rounded,
                               title: l10n.allCategoriesSearchEmptyTitle,
                               message: l10n.allCategoriesSearchEmptyMessage(
                                 _filter.trim(),
@@ -195,8 +196,8 @@ class _CategoryExpansionTileState extends State<_CategoryExpansionTile> {
                   ),
                   Icon(
                     _expanded
-                        ? Icons.expand_less_rounded
-                        : Icons.expand_more_rounded,
+                        ? Symbols.expand_less_rounded
+                        : Symbols.expand_more_rounded,
                     color: colors.textTertiary,
                   ),
                 ],

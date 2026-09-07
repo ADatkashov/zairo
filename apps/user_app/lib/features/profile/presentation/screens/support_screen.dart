@@ -1,5 +1,6 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../l10n/app_localizations.dart';
@@ -40,9 +41,9 @@ class SupportScreen extends StatelessWidget {
                     color: colors.textSecondary,
                   ),
                 ),
-                leading: Icon(Icons.send_rounded, color: colors.primary),
+                leading: Icon(Symbols.send_rounded, color: colors.primary),
                 trailing: Icon(
-                  Icons.chevron_right_rounded,
+                  Symbols.chevron_right_rounded,
                   color: colors.textTertiary,
                 ),
                 onTap: () => launchUrl(

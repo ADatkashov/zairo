@@ -4,12 +4,16 @@ import '../theme/factory_colors.dart';
 import '../theme/factory_elevation.dart';
 import '../theme/factory_motion.dart';
 
-/// One tab of a [FactoryBottomNavigation] bar.
+/// One tab of a [FactoryBottomNavigation] bar. A single [icon] rather than
+/// a separate selected/unselected pair — the Customer App Redesign board's
+/// own `BottomNav.dc.html` renders one Material Symbols glyph per tab and
+/// toggles solid-vs-outline via `font-variation-settings: 'FILL' <0|1>`
+/// keyed off `isActive`, not two different icon glyphs ([_NavItem] applies
+/// that same fill toggle below).
 class FactoryNavDestination {
-  const FactoryNavDestination({required this.icon, required this.selectedIcon, required this.label});
+  const FactoryNavDestination({required this.icon, required this.label});
 
   final IconData icon;
-  final IconData selectedIcon;
   final String label;
 }
 
@@ -69,7 +73,11 @@ class FactoryBottomNavigation extends StatelessWidget {
 }
 
 class _NavItem extends StatelessWidget {
-  const _NavItem({required this.destination, required this.isSelected, required this.onTap});
+  const _NavItem({
+    required this.destination,
+    required this.isSelected,
+    required this.onTap,
+  });
 
   final FactoryNavDestination destination;
   final bool isSelected;
@@ -102,11 +110,17 @@ class _NavItem extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(isSelected ? destination.selectedIcon : destination.icon, size: 22, color: color),
+                  Icon(
+                    destination.icon,
+                    fill: isSelected ? 1 : 0,
+                    size: 22,
+                    color: color,
+                  ),
                   const SizedBox(height: 2),
                   Text(
                     destination.label,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10, color: color),
+                    style: Theme.of(context).textTheme.labelSmall
+                        ?.copyWith(fontSize: 10, color: color),
                   ),
                 ],
               ),

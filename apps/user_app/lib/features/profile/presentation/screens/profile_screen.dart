@@ -1,6 +1,7 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../core/formatting/initials.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -28,7 +29,7 @@ class ProfileScreen extends ConsumerWidget {
         title: l10n.profileTitle,
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings_outlined),
+            icon: const Icon(Symbols.settings_rounded),
             tooltip: l10n.settingsButtonTooltip,
             onPressed: () => Navigator.of(
               context,
@@ -72,7 +73,7 @@ class _LoggedOutView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             FactoryEmptyState(
-              icon: Icons.person_outline,
+              icon: Symbols.person_rounded,
               title: l10n.profileLoggedOutTitle,
               message: l10n.profileLoggedOutPrompt,
               actionLabel: l10n.loginTitle,
@@ -145,7 +146,7 @@ class _LoggedInView extends ConsumerWidget {
                 child: FactoryStatTile(
                   value: bookingsCount?.toString() ?? '—',
                   label: l10n.myBookingsTitle,
-                  icon: Icons.event_note_outlined,
+                  icon: Symbols.calendar_month_rounded,
                 ),
               ),
               Container(width: 1, height: 36, color: colors.border),
@@ -162,7 +163,7 @@ class _LoggedInView extends ConsumerWidget {
                     child: FactoryStatTile(
                       value: favoritesCount?.toString() ?? '—',
                       label: l10n.myFavoritesTitle,
-                      icon: Icons.favorite_border_rounded,
+                      icon: Symbols.favorite_rounded,
                     ),
                   ),
                 ),
@@ -174,11 +175,11 @@ class _LoggedInView extends ConsumerWidget {
         FactorySelectableTile(
           title: l10n.myVehiclesButton,
           leading: Icon(
-            Icons.directions_car_outlined,
+            Symbols.directions_car_rounded,
             color: colors.textSecondary,
           ),
           trailing: Icon(
-            Icons.chevron_right_rounded,
+            Symbols.chevron_right_rounded,
             color: colors.textTertiary,
           ),
           onTap: () => Navigator.of(context).push(
@@ -189,11 +190,11 @@ class _LoggedInView extends ConsumerWidget {
         FactorySelectableTile(
           title: l10n.supportTitle,
           leading: Icon(
-            Icons.support_agent_outlined,
+            Symbols.support_agent_rounded,
             color: colors.textSecondary,
           ),
           trailing: Icon(
-            Icons.chevron_right_rounded,
+            Symbols.chevron_right_rounded,
             color: colors.textTertiary,
           ),
           onTap: () => Navigator.of(context)
@@ -202,9 +203,9 @@ class _LoggedInView extends ConsumerWidget {
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
           title: l10n.aboutTitle,
-          leading: Icon(Icons.info_outline, color: colors.textSecondary),
+          leading: Icon(Symbols.info_rounded, color: colors.textSecondary),
           trailing: Icon(
-            Icons.chevron_right_rounded,
+            Symbols.chevron_right_rounded,
             color: colors.textTertiary,
           ),
           onTap: () =>
@@ -248,7 +249,7 @@ class _LogOutButton extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.logout_rounded, size: 18, color: colors.coral),
+                Icon(Symbols.logout_rounded, size: 18, color: colors.coral),
                 const SizedBox(width: 8),
                 Text(
                   l10n.profileLogOut,

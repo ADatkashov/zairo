@@ -1,6 +1,7 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../providers/beauty_providers.dart';
@@ -10,7 +11,11 @@ class MasterPortfolioScreen extends ConsumerWidget {
   final String masterId;
   final String masterName;
 
-  const MasterPortfolioScreen({super.key, required this.masterId, required this.masterName});
+  const MasterPortfolioScreen({
+    super.key,
+    required this.masterId,
+    required this.masterName,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -24,7 +29,7 @@ class MasterPortfolioScreen extends ConsumerWidget {
           if (items.isEmpty) {
             return Center(
               child: FactoryEmptyState(
-                icon: Icons.photo_library_outlined,
+                icon: Symbols.photo_library_rounded,
                 title: l10n.portfolioEmptyTitle,
                 message: l10n.portfolioEmptyMessage,
               ),
@@ -54,7 +59,10 @@ class MasterPortfolioScreen extends ConsumerWidget {
                 child: GestureDetector(
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => PortfolioFullscreenViewer(items: items, initialIndex: index),
+                      builder: (_) => PortfolioFullscreenViewer(
+                        items: items,
+                        initialIndex: index,
+                      ),
                       fullscreenDialog: true,
                     ),
                   ),
@@ -71,21 +79,36 @@ class MasterPortfolioScreen extends ConsumerWidget {
                             loadingBuilder: (context, child, progress) {
                               if (progress == null) return child;
                               return Container(
-                                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest,
+                                child: const Center(
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
                               );
                             },
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                              child: const Icon(Icons.broken_image_outlined),
-                            ),
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest,
+                                  child: const Icon(
+                                    Symbols.broken_image_rounded,
+                                  ),
+                                ),
                           ),
                         ),
                       ),
                       if (item.caption != null) ...[
                         const SizedBox(height: 4),
-                        Text(item.caption!, style: Theme.of(context).textTheme.bodySmall, maxLines: 1,
-                            overflow: TextOverflow.ellipsis),
+                        Text(
+                          item.caption!,
+                          style: Theme.of(context).textTheme.bodySmall,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ],
                     ],
                   ),
