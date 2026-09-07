@@ -66,10 +66,13 @@ class DashboardScreen extends ConsumerWidget {
           }
           return ListView.separated(
             padding: const EdgeInsets.all(FactorySpacing.space4),
-            itemCount: providers.length + 1,
+            itemCount: providers.length + 2,
             separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
             itemBuilder: (context, index) {
-              if (index == providers.length) {
+              if (index == 0) {
+                return _OwnerOverviewHero(ownerUserId: user.id);
+              }
+              if (index == providers.length + 1) {
                 final subscription = subscriptionAsync.value;
                 final atLimit = subscription != null && providers.length >= subscription.limits.maxProviders;
                 if (atLimit) {
@@ -82,7 +85,7 @@ class DashboardScreen extends ConsumerWidget {
                   onPressed: () => _openCreateSalonDialog(context, ref, user.id),
                 );
               }
-              final provider = providers[index];
+              final provider = providers[index - 1];
               return _SalonCard(
                 provider: provider,
                 onTap: () => Navigator.of(context).push(
@@ -161,6 +164,122 @@ class DashboardScreen extends ConsumerWidget {
     if (created == true) {
       ref.invalidate(myProvidersProvider(ownerUserId));
     }
+  }
+}
+
+/// Gradient overview card summing [DashboardMetrics] across every business
+/// this owner manages — Business Admin Redesign board (2026-09-05). Same
+/// `primaryStrong` → `mint` diagonal treatment as the customer app's Home
+/// availability hero (see user_app's `_AvailabilityHero`): the design
+/// system's gradient case, reserved for one hero moment per app rather than
+/// used as a general card style.
+class _OwnerOverviewHero extends ConsumerWidget {
+  const _OwnerOverviewHero({required this.ownerUserId});
+
+  final String ownerUserId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final overviewAsync = ref.watch(ownerOverviewProvider(ownerUserId));
+    final overview = overviewAsync.value;
+    // No data yet (still loading, or the fetch failed) — the businesses
+    // list below still renders regardless, so this simply omits itself
+    // rather than showing a loading/error placeholder for a purely
+    // supplementary summary.
+    if (overview == null) return const SizedBox.shrink();
+
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      width: double.infinity,
+      clipBehavior: Clip.antiAlias,
+      padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space6, vertical: FactorySpacing.space5),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [colors.primaryStrong, colors.mint],
+        ),
+        borderRadius: FactoryRadius.xlRadius,
+        boxShadow: [
+          BoxShadow(color: colors.primaryStrong.withValues(alpha: 0.24), offset: const Offset(0, 16), blurRadius: 32),
+        ],
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(top: -40, right: -20, child: _HeroCircle(size: 160, opacity: 0.12)),
+          Wrap(
+            spacing: FactorySpacing.space8,
+            runSpacing: FactorySpacing.space3,
+            children: [
+              _OverviewStat(
+                value: Text('${overview.businessCount}', style: textTheme.displaySmall?.copyWith(color: colors.onPrimary)),
+                label: l10n.dashboardBusinessesCountLabel,
+              ),
+              _OverviewStat(
+                value: Text('${overview.totalBookings}', style: textTheme.displaySmall?.copyWith(color: colors.onPrimary)),
+                label: l10n.dashboardTotalBookingsLabel,
+              ),
+              _OverviewStat(
+                value: FactoryPriceText(
+                  amount: overview.totalRevenue,
+                  currencySymbol: overview.currency,
+                  fontSize: 24,
+                  color: colors.onPrimary,
+                ),
+                label: l10n.dashboardTotalRevenueLabel,
+              ),
+              _OverviewStat(
+                value: Text('${overview.totalCustomers}', style: textTheme.displaySmall?.copyWith(color: colors.onPrimary)),
+                label: l10n.dashboardTotalCustomersLabel,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OverviewStat extends StatelessWidget {
+  const _OverviewStat({required this.value, required this.label});
+
+  final Widget value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        value,
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white.withValues(alpha: 0.85)),
+        ),
+      ],
+    );
+  }
+}
+
+class _HeroCircle extends StatelessWidget {
+  const _HeroCircle({required this.size, required this.opacity});
+
+  final double size;
+  final double opacity;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: opacity)),
+    );
   }
 }
 
