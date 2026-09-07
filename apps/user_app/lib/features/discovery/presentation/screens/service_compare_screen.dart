@@ -1,6 +1,7 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../booking/presentation/screens/provider_detail_screen.dart';
@@ -13,7 +14,11 @@ import '../widgets/provider_card.dart';
 /// Reuses ProviderCard/FactoryEmptyState/FactoryErrorState wholesale — this
 /// screen adds no new visual vocabulary, just a fixed filter.
 class ServiceCompareScreen extends ConsumerWidget {
-  const ServiceCompareScreen({super.key, required this.catalogServiceId, required this.serviceName});
+  const ServiceCompareScreen({
+    super.key,
+    required this.catalogServiceId,
+    required this.serviceName,
+  });
 
   final String catalogServiceId;
   final String serviceName;
@@ -22,7 +27,9 @@ class ServiceCompareScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
-    final resultsAsync = ref.watch(serviceCompareResultsProvider(catalogServiceId));
+    final resultsAsync = ref.watch(
+      serviceCompareResultsProvider(catalogServiceId),
+    );
 
     return Scaffold(
       backgroundColor: colors.bg,
@@ -34,7 +41,7 @@ class ServiceCompareScreen extends ConsumerWidget {
               child: Padding(
                 padding: const EdgeInsets.all(FactorySpacing.space4),
                 child: FactoryEmptyState(
-                  icon: Icons.storefront_outlined,
+                  icon: Symbols.storefront_rounded,
                   title: l10n.serviceCompareEmptyTitle,
                   message: l10n.serviceCompareEmptyMessage,
                 ),
@@ -44,13 +51,16 @@ class ServiceCompareScreen extends ConsumerWidget {
           return ListView.separated(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             itemCount: results.length,
-            separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
+            separatorBuilder: (_, _) =>
+                const SizedBox(height: FactorySpacing.space3),
             itemBuilder: (context, index) {
               final result = results[index];
               return ProviderCard(
                 result: result,
                 onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => ProviderDetailScreen(provider: result)),
+                  MaterialPageRoute(
+                    builder: (_) => ProviderDetailScreen(provider: result),
+                  ),
                 ),
               );
             },
@@ -62,7 +72,9 @@ class ServiceCompareScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(FactorySpacing.space4),
             child: FactoryErrorState(
               message: l10n.errorSearchLoadFailed,
-              onRetry: () => ref.invalidate(serviceCompareResultsProvider(catalogServiceId)),
+              onRetry: () => ref.invalidate(
+                serviceCompareResultsProvider(catalogServiceId),
+              ),
             ),
           ),
         ),

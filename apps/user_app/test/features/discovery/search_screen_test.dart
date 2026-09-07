@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:zairo/features/discovery/data/discovery_api.dart';
 import 'package:zairo/features/discovery/data/models/provider_search_result.dart';
 import 'package:zairo/features/discovery/data/models/service_summary.dart';
@@ -97,7 +98,13 @@ void main() {
         hasOpenAvailability: true,
         minPrice: 30,
         services: [
-          ServiceSummary(id: 's1', title: 'Haircut', durationMinutes: 30, price: 30, currency: 'USD'),
+          ServiceSummary(
+            id: 's1',
+            title: 'Haircut',
+            durationMinutes: 30,
+            price: 30,
+            currency: 'USD',
+          ),
         ],
         distanceKm: 3.7,
         latitude: 43.24,
@@ -130,7 +137,9 @@ void main() {
     expect(find.text('(128)'), findsOneWidget);
   });
 
-  testWidgets('shows results as a multi-column grid at desktop width', (tester) async {
+  testWidgets('shows results as a multi-column grid at desktop width', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1400, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -145,7 +154,13 @@ void main() {
         hasOpenAvailability: true,
         minPrice: 30,
         services: [
-          ServiceSummary(id: 's1', title: 'Haircut', durationMinutes: 30, price: 30, currency: 'USD'),
+          ServiceSummary(
+            id: 's1',
+            title: 'Haircut',
+            durationMinutes: 30,
+            price: 30,
+            currency: 'USD',
+          ),
         ],
       ),
     ]);
@@ -168,49 +183,60 @@ void main() {
     expect(find.text('Hair Studio'), findsOneWidget);
   });
 
-  testWidgets('the desktop grid does not overflow at a large accessibility text scale', (tester) async {
-    tester.view.physicalSize = const Size(1400, 900);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'the desktop grid does not overflow at a large accessibility text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    final fakeApi = _FakeDiscoveryApi([
-      const ProviderSearchResult(
-        id: 'p1',
-        name: 'Rossano Ferretti Signature Salon and Spa',
-        vertical: 'beauty',
-        status: 'ACTIVE',
-        hasOpenAvailability: true,
-        minPrice: 30,
-        services: [
-          ServiceSummary(id: 's1', title: 'Haircut', durationMinutes: 30, price: 30, currency: 'USD'),
-        ],
-        distanceKm: 12.3,
-        averageRating: 4.9,
-        reviewCount: 2140,
-      ),
-    ]);
+      final fakeApi = _FakeDiscoveryApi([
+        const ProviderSearchResult(
+          id: 'p1',
+          name: 'Rossano Ferretti Signature Salon and Spa',
+          vertical: 'beauty',
+          status: 'ACTIVE',
+          hasOpenAvailability: true,
+          minPrice: 30,
+          services: [
+            ServiceSummary(
+              id: 's1',
+              title: 'Haircut',
+              durationMinutes: 30,
+              price: 30,
+              currency: 'USD',
+            ),
+          ],
+          distanceKm: 12.3,
+          averageRating: 4.9,
+          reviewCount: 2140,
+        ),
+      ]);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [discoveryApiProvider.overrideWithValue(fakeApi)],
-        child: MediaQuery(
-          data: const MediaQueryData(textScaler: TextScaler.linear(2.0)),
-          child: MaterialApp(
-            theme: factoryLightTheme(),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: const SearchScreen(),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [discoveryApiProvider.overrideWithValue(fakeApi)],
+          child: MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2.0)),
+            child: MaterialApp(
+              theme: factoryLightTheme(),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: const SearchScreen(),
+            ),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(tester.takeException(), isNull);
-  });
+      expect(tester.takeException(), isNull);
+    },
+  );
 
-  testWidgets('shows popular searches above the results, not instead of them', (tester) async {
+  testWidgets('shows popular searches above the results, not instead of them', (
+    tester,
+  ) async {
     final fakeApi = _FakeDiscoveryApi([
       const ProviderSearchResult(
         id: 'p1',
@@ -242,7 +268,9 @@ void main() {
     expect(find.text('Hair Studio'), findsOneWidget);
   });
 
-  testWidgets('tapping a popular search query runs that search', (tester) async {
+  testWidgets('tapping a popular search query runs that search', (
+    tester,
+  ) async {
     final fakeApi = _RecordingDiscoveryApi();
 
     await tester.pumpWidget(
@@ -265,46 +293,51 @@ void main() {
     expect(find.text('No results for "Massage"'), findsOneWidget);
   });
 
-  testWidgets('a submitted search is saved to recent searches and can be cleared', (tester) async {
-    final fakeApi = _RecordingDiscoveryApi();
-    final fakeStorage = _FakeSecureStorageService();
+  testWidgets(
+    'a submitted search is saved to recent searches and can be cleared',
+    (tester) async {
+      final fakeApi = _RecordingDiscoveryApi();
+      final fakeStorage = _FakeSecureStorageService();
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          discoveryApiProvider.overrideWithValue(fakeApi),
-          secureStorageServiceProvider.overrideWithValue(fakeStorage),
-        ],
-        child: MaterialApp(
-          theme: factoryLightTheme(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const SearchScreen(),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            discoveryApiProvider.overrideWithValue(fakeApi),
+            secureStorageServiceProvider.overrideWithValue(fakeStorage),
+          ],
+          child: MaterialApp(
+            theme: factoryLightTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const SearchScreen(),
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField), 'sauna');
-    await tester.testTextInput.receiveAction(TextInputAction.search);
-    await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'sauna');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
 
-    // Back to the pristine screen (clearing the field re-enters it) to see
-    // the search just made show up as a recent one.
-    await tester.enterText(find.byType(TextField), '');
-    await tester.testTextInput.receiveAction(TextInputAction.search);
-    await tester.pumpAndSettle();
+      // Back to the pristine screen (clearing the field re-enters it) to see
+      // the search just made show up as a recent one.
+      await tester.enterText(find.byType(TextField), '');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
 
-    expect(find.text('Recent searches'), findsOneWidget);
-    expect(find.text('sauna'), findsOneWidget);
+      expect(find.text('Recent searches'), findsOneWidget);
+      expect(find.text('sauna'), findsOneWidget);
 
-    await tester.tap(find.text('Clear'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Clear'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Recent searches'), findsNothing);
-  });
+      expect(find.text('Recent searches'), findsNothing);
+    },
+  );
 
-  testWidgets('shows a "no results" state that names the query', (tester) async {
+  testWidgets('shows a "no results" state that names the query', (
+    tester,
+  ) async {
     final fakeApi = _FakeDiscoveryApi(const []);
 
     await tester.pumpWidget(
@@ -327,102 +360,111 @@ void main() {
     expect(find.text('No results for "massage"'), findsOneWidget);
   });
 
-  testWidgets('opening filters, picking a sort and available-only re-runs the search with them', (tester) async {
-    final fakeApi = _RecordingDiscoveryApi();
+  testWidgets(
+    'opening filters, picking a sort and available-only re-runs the search with them',
+    (tester) async {
+      final fakeApi = _RecordingDiscoveryApi();
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [discoveryApiProvider.overrideWithValue(fakeApi)],
-        child: MaterialApp(
-          theme: factoryLightTheme(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const SearchScreen(),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [discoveryApiProvider.overrideWithValue(fakeApi)],
+          child: MaterialApp(
+            theme: factoryLightTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const SearchScreen(),
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(fakeApi.lastSort, 'RECOMMENDED');
-    expect(fakeApi.lastAvailableOnly, false);
+      );
+      await tester.pumpAndSettle();
+      expect(fakeApi.lastSort, 'RECOMMENDED');
+      expect(fakeApi.lastAvailableOnly, false);
 
-    await tester.tap(find.byIcon(Icons.tune_rounded));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Symbols.tune_rounded));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Price: low to high'));
-    await tester.ensureVisible(find.text('Available today only'));
-    await tester.tap(find.text('Available today only'));
-    await tester.ensureVisible(find.text('Apply'));
-    await tester.tap(find.text('Apply'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Price: low to high'));
+      await tester.ensureVisible(find.text('Available today only'));
+      await tester.tap(find.text('Available today only'));
+      await tester.ensureVisible(find.text('Apply'));
+      await tester.tap(find.text('Apply'));
+      await tester.pumpAndSettle();
 
-    expect(fakeApi.lastSort, 'PRICE_ASC');
-    expect(fakeApi.lastAvailableOnly, true);
-  });
+      expect(fakeApi.lastSort, 'PRICE_ASC');
+      expect(fakeApi.lastAvailableOnly, true);
+    },
+  );
 
-  testWidgets('picking rating sort and enabling min-rating re-runs the search with them', (tester) async {
-    final fakeApi = _RecordingDiscoveryApi();
+  testWidgets(
+    'picking rating sort and enabling min-rating re-runs the search with them',
+    (tester) async {
+      final fakeApi = _RecordingDiscoveryApi();
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [discoveryApiProvider.overrideWithValue(fakeApi)],
-        child: MaterialApp(
-          theme: factoryLightTheme(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const SearchScreen(),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [discoveryApiProvider.overrideWithValue(fakeApi)],
+          child: MaterialApp(
+            theme: factoryLightTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const SearchScreen(),
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.tune_rounded));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Symbols.tune_rounded));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Rating'));
-    await tester.ensureVisible(find.text('Minimum rating'));
-    await tester.tap(find.text('Minimum rating'));
-    await tester.ensureVisible(find.text('Apply'));
-    await tester.tap(find.text('Apply'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Rating'));
+      await tester.ensureVisible(find.text('Minimum rating'));
+      await tester.tap(find.text('Minimum rating'));
+      await tester.ensureVisible(find.text('Apply'));
+      await tester.tap(find.text('Apply'));
+      await tester.pumpAndSettle();
 
-    expect(fakeApi.lastSort, 'RATING');
-    expect(fakeApi.lastMinRating, 4.0);
-  });
+      expect(fakeApi.lastSort, 'RATING');
+      expect(fakeApi.lastMinRating, 4.0);
+    },
+  );
 
-  testWidgets('picking the Auto category filter re-runs the search with vertical=auto', (tester) async {
-    final fakeApi = _RecordingDiscoveryApi();
+  testWidgets(
+    'picking the Auto category filter re-runs the search with vertical=auto',
+    (tester) async {
+      final fakeApi = _RecordingDiscoveryApi();
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [discoveryApiProvider.overrideWithValue(fakeApi)],
-        child: MaterialApp(
-          theme: factoryLightTheme(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const SearchScreen(),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [discoveryApiProvider.overrideWithValue(fakeApi)],
+          child: MaterialApp(
+            theme: factoryLightTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const SearchScreen(),
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(fakeApi.lastVertical, isNull);
+      );
+      await tester.pumpAndSettle();
+      expect(fakeApi.lastVertical, isNull);
 
-    await tester.tap(find.byIcon(Icons.tune_rounded));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Symbols.tune_rounded));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Auto'));
-    await tester.ensureVisible(find.text('Apply'));
-    await tester.tap(find.text('Apply'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Auto'));
+      await tester.ensureVisible(find.text('Apply'));
+      await tester.tap(find.text('Apply'));
+      await tester.pumpAndSettle();
 
-    expect(fakeApi.lastVertical, 'auto');
+      expect(fakeApi.lastVertical, 'auto');
 
-    // Reopening the dialog and clearing goes back to no vertical filter.
-    await tester.tap(find.byIcon(Icons.tune_rounded));
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Clear'));
-    await tester.tap(find.text('Clear'));
-    await tester.pumpAndSettle();
+      // Reopening the dialog and clearing goes back to no vertical filter.
+      await tester.tap(find.byIcon(Symbols.tune_rounded));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Clear'));
+      await tester.tap(find.text('Clear'));
+      await tester.pumpAndSettle();
 
-    expect(fakeApi.lastVertical, isNull);
-  });
+      expect(fakeApi.lastVertical, isNull);
+    },
+  );
 }

@@ -1,6 +1,7 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../core/formatting/month_day_time.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -25,7 +26,7 @@ class NotificationsScreen extends ConsumerWidget {
       body: authState.when(
         data: (user) => user == null
             ? LoggedOutGate(
-                icon: Icons.notifications_none_rounded,
+                icon: Symbols.notifications_rounded,
                 message: l10n.notificationsLoggedOutPrompt,
               )
             : _NotificationsList(userId: user.id),
@@ -59,7 +60,7 @@ class _NotificationsList extends ConsumerWidget {
         if (notifications.isEmpty) {
           return Center(
             child: FactoryEmptyState(
-              icon: Icons.notifications_none_rounded,
+              icon: Symbols.notifications_rounded,
               title: l10n.notificationsEmptyTitle,
               message: l10n.notificationsEmptyMessage,
             ),
@@ -128,11 +129,11 @@ class _NotificationTile extends ConsumerWidget {
   final String userId;
 
   IconData get _icon => switch (notification.type) {
-    'BOOKING_CONFIRMED' => Icons.event_available_rounded,
-    'BOOKING_CANCELLED' => Icons.event_busy_rounded,
-    'BOOKING_REMINDER' => Icons.notifications_active_rounded,
-    'PAYMENT_REFUNDED' => Icons.currency_exchange_rounded,
-    _ => Icons.notifications_rounded,
+    'BOOKING_CONFIRMED' => Symbols.event_available_rounded,
+    'BOOKING_CANCELLED' => Symbols.event_busy_rounded,
+    'BOOKING_REMINDER' => Symbols.notifications_active_rounded,
+    'PAYMENT_REFUNDED' => Symbols.currency_exchange_rounded,
+    _ => Symbols.notifications_rounded,
   };
 
   @override

@@ -12,6 +12,11 @@ dependencies:
   google_fonts: ^8.2.1
   core_region:
     path: ../core_region
+  # The Customer App Redesign board renders every icon via Google's Material
+  # Symbols Rounded font (<span class="material-symbols-rounded">), not
+  # Flutter's bundled classic Material Icons font — visually distinct glyphs
+  # even for an icon with the same name.
+  material_symbols_icons: ^4.2960.0
 
 dev_dependencies:
   flutter_test:

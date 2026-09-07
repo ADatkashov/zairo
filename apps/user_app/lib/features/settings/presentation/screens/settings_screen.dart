@@ -1,6 +1,7 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../app/locale/locale_controller.dart';
 import '../../../../app/theme/theme_provider.dart';
@@ -35,7 +36,7 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             title: Text(l10n.languageSectionTitle),
             subtitle: Text(_languageLabel(l10n, locale)),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: const Icon(Symbols.chevron_right_rounded),
             onTap: () => _openLanguagePicker(context, ref, l10n, locale),
           ),
         ],
@@ -106,7 +107,7 @@ class _LanguageOption extends StatelessWidget {
       child: Row(
         children: [
           Expanded(child: Text(label)),
-          if (selected) const Icon(Icons.check, size: 18),
+          if (selected) const Icon(Symbols.check_rounded, fill: 1, size: 18),
         ],
       ),
     );

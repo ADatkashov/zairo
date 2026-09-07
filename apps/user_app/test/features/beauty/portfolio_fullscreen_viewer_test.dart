@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:zairo/features/beauty/data/beauty_api.dart';
 import 'package:zairo/features/beauty/data/models/portfolio_item.dart';
 import 'package:zairo/features/beauty/presentation/providers/beauty_providers.dart';
@@ -42,7 +43,10 @@ Future<void> _pump(WidgetTester tester) async {
         theme: factoryLightTheme(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const MasterPortfolioScreen(masterId: 'master-1', masterName: 'Jamie'),
+        home: const MasterPortfolioScreen(
+          masterId: 'master-1',
+          masterName: 'Jamie',
+        ),
       ),
     ),
   );
@@ -50,40 +54,46 @@ Future<void> _pump(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('tapping a photo opens the fullscreen viewer at the right index', (tester) async {
-    await _pump(tester);
+  testWidgets(
+    'tapping a photo opens the fullscreen viewer at the right index',
+    (tester) async {
+      await _pump(tester);
 
-    await tester.tap(find.text('Bob cut'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Bob cut'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('2 of 2'), findsOneWidget);
-    expect(find.text('Bob cut'), findsOneWidget);
-  });
+      expect(find.text('2 of 2'), findsOneWidget);
+      expect(find.text('Bob cut'), findsOneWidget);
+    },
+  );
 
-  testWidgets('next/previous buttons navigate between photos and hide at the ends', (tester) async {
-    await _pump(tester);
+  testWidgets(
+    'next/previous buttons navigate between photos and hide at the ends',
+    (tester) async {
+      await _pump(tester);
 
-    await tester.tap(find.text('Balayage look'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Balayage look'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('1 of 2'), findsOneWidget);
-    // First photo: no previous button, only next.
-    expect(find.byIcon(Icons.chevron_left), findsNothing);
-    expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      expect(find.text('1 of 2'), findsOneWidget);
+      // First photo: no previous button, only next.
+      expect(find.byIcon(Symbols.chevron_left_rounded), findsNothing);
+      expect(find.byIcon(Symbols.chevron_right_rounded), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.chevron_right));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Symbols.chevron_right_rounded));
+      await tester.pumpAndSettle();
 
-    expect(find.text('2 of 2'), findsOneWidget);
-    // Last photo: no next button, only previous.
-    expect(find.byIcon(Icons.chevron_right), findsNothing);
-    expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+      expect(find.text('2 of 2'), findsOneWidget);
+      // Last photo: no next button, only previous.
+      expect(find.byIcon(Symbols.chevron_right_rounded), findsNothing);
+      expect(find.byIcon(Symbols.chevron_left_rounded), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.chevron_left));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Symbols.chevron_left_rounded));
+      await tester.pumpAndSettle();
 
-    expect(find.text('1 of 2'), findsOneWidget);
-  });
+      expect(find.text('1 of 2'), findsOneWidget);
+    },
+  );
 
   testWidgets('swiping advances to the next photo', (tester) async {
     await _pump(tester);
@@ -106,7 +116,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(PageView), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.close));
+    await tester.tap(find.byIcon(Symbols.close_rounded));
     await tester.pumpAndSettle();
 
     expect(find.byType(PageView), findsNothing);

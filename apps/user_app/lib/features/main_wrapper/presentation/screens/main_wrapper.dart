@@ -1,16 +1,14 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../l10n/app_localizations.dart';
 
 class MainWrapper extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
-  const MainWrapper({
-    super.key,
-    required this.navigationShell,
-  });
+  const MainWrapper({super.key, required this.navigationShell});
 
   @override
   Widget build(BuildContext context) {
@@ -26,15 +24,26 @@ class MainWrapper extends StatelessWidget {
             initialLocation: index == navigationShell.currentIndex,
           );
         },
+        // Icon names match BottomNav.dc.html's own `icon` field verbatim
+        // (home/search/calendar_month/person) — "Записи" uses calendar_month
+        // in the design board, not event_note.
         destinations: [
-          FactoryNavDestination(icon: Icons.home_outlined, selectedIcon: Icons.home, label: l10n.navHome),
-          FactoryNavDestination(icon: Icons.search_outlined, selectedIcon: Icons.search, label: l10n.navSearch),
           FactoryNavDestination(
-            icon: Icons.event_note_outlined,
-            selectedIcon: Icons.event_note,
+            icon: Symbols.home_rounded,
+            label: l10n.navHome,
+          ),
+          FactoryNavDestination(
+            icon: Symbols.search_rounded,
+            label: l10n.navSearch,
+          ),
+          FactoryNavDestination(
+            icon: Symbols.calendar_month_rounded,
             label: l10n.navBookings,
           ),
-          FactoryNavDestination(icon: Icons.person_outline, selectedIcon: Icons.person, label: l10n.navProfile),
+          FactoryNavDestination(
+            icon: Symbols.person_rounded,
+            label: l10n.navProfile,
+          ),
         ],
       ),
     );

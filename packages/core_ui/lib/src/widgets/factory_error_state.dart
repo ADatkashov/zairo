@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../theme/factory_colors.dart';
 import '../theme/factory_spacing.dart';
@@ -8,7 +9,12 @@ import '../theme/factory_spacing.dart';
 /// here; this widget just gives it a consistent, calm presentation instead
 /// of a stack trace on screen.
 class FactoryErrorState extends StatelessWidget {
-  const FactoryErrorState({super.key, required this.message, required this.onRetry, this.retryLabel = 'Try again'});
+  const FactoryErrorState({
+    super.key,
+    required this.message,
+    required this.onRetry,
+    this.retryLabel = 'Try again',
+  });
 
   final String message;
   final VoidCallback onRetry;
@@ -20,7 +26,10 @@ class FactoryErrorState extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space6, horizontal: FactorySpacing.space6),
+      padding: const EdgeInsets.symmetric(
+        vertical: FactorySpacing.space6,
+        horizontal: FactorySpacing.space6,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -28,13 +37,24 @@ class FactoryErrorState extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Color.alphaBlend(colors.error.withValues(alpha: 0.12), colors.surface),
+              color: Color.alphaBlend(
+                colors.error.withValues(alpha: 0.12),
+                colors.surface,
+              ),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.error_outline_rounded, size: 20, color: colors.error),
+            child: Icon(
+              Symbols.error_outline_rounded,
+              size: 20,
+              color: colors.error,
+            ),
           ),
           const SizedBox(height: FactorySpacing.space3),
-          Text(message, style: textTheme.bodySmall?.copyWith(color: colors.textSecondary), textAlign: TextAlign.center),
+          Text(
+            message,
+            style: textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: FactorySpacing.space4),
           OutlinedButton(onPressed: onRetry, child: Text(retryLabel)),
         ],

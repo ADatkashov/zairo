@@ -1,6 +1,7 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
@@ -30,7 +31,10 @@ class FavoritesScreen extends ConsumerWidget {
       appBar: FactoryAppBar(title: l10n.myFavoritesTitle),
       body: authState.when(
         data: (user) => user == null
-            ? LoggedOutGate(icon: Icons.favorite_border_rounded, message: l10n.favoritesLoggedOutPrompt)
+            ? LoggedOutGate(
+                icon: Symbols.favorite_rounded,
+                message: l10n.favoritesLoggedOutPrompt,
+              )
             : _FavoritesList(userId: user.id),
         loading: () => const FactoryLoadingState(),
         error: (error, stackTrace) => Center(
@@ -52,7 +56,11 @@ class _FavoritesList extends ConsumerWidget {
 
   const _FavoritesList({required this.userId});
 
-  Future<void> _confirmAndClearAll(BuildContext context, WidgetRef ref, List<FavoriteProvider> favorites) async {
+  Future<void> _confirmAndClearAll(
+    BuildContext context,
+    WidgetRef ref,
+    List<FavoriteProvider> favorites,
+  ) async {
     final l10n = AppLocalizations.of(context)!;
     final confirmed = await showFactoryDialog<bool>(
       context: context,
@@ -98,7 +106,7 @@ class _FavoritesList extends ConsumerWidget {
         if (favorites.isEmpty) {
           return Center(
             child: FactoryEmptyState(
-              icon: Icons.favorite_border_rounded,
+              icon: Symbols.favorite_rounded,
               title: l10n.favoritesEmptyTitle,
               message: l10n.favoritesEmptyMessage,
             ),
@@ -156,7 +164,10 @@ class _FavoritesList extends ConsumerWidget {
                     result: asSearchResult,
                     layout: FactoryProviderCardLayout.vertical,
                     onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => ProviderDetailScreen(provider: asSearchResult)),
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            ProviderDetailScreen(provider: asSearchResult),
+                      ),
                     ),
                   );
                 },

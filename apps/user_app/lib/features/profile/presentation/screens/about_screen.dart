@@ -1,5 +1,6 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../../core/constants/app_config.dart';
@@ -37,7 +38,7 @@ class AboutScreen extends StatelessWidget {
                           borderRadius: FactoryRadius.xlRadius,
                         ),
                         child: Icon(
-                          Icons.storefront_rounded,
+                          Symbols.storefront_rounded,
                           size: 36,
                           color: colors.primary,
                         ),

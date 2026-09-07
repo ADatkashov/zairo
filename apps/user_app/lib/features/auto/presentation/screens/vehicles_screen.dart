@@ -1,6 +1,7 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../data/models/vehicle.dart';
@@ -28,7 +29,7 @@ class VehiclesScreen extends ConsumerWidget {
         title: l10n.vehiclesScreenTitle,
         actions: [
           IconButton(
-            icon: const Icon(Icons.add),
+            icon: const Icon(Symbols.add_rounded),
             tooltip: l10n.addVehicleButton,
             onPressed: () => _addVehicle(context, ref),
           ),
@@ -39,7 +40,7 @@ class VehiclesScreen extends ConsumerWidget {
           if (vehicles.isEmpty) {
             return Center(
               child: FactoryEmptyState(
-                icon: Icons.directions_car_outlined,
+                icon: Symbols.directions_car_rounded,
                 title: l10n.vehiclesEmptyTitle,
                 message: l10n.vehiclesEmptyMessage,
               ),
@@ -48,7 +49,8 @@ class VehiclesScreen extends ConsumerWidget {
           return ListView.separated(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             itemCount: vehicles.length,
-            separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
+            separatorBuilder: (_, _) =>
+                const SizedBox(height: FactorySpacing.space3),
             itemBuilder: (context, index) => _VehicleTile(
               vehicle: vehicles[index],
               onDelete: () => _deleteVehicle(context, ref, vehicles[index]),
@@ -72,7 +74,9 @@ class VehiclesScreen extends ConsumerWidget {
   Future<void> _addVehicle(BuildContext context, WidgetRef ref) async {
     final result = await showAddVehicleDialog(context);
     if (result == null) return;
-    await ref.read(autoApiProvider).registerVehicle(
+    await ref
+        .read(autoApiProvider)
+        .registerVehicle(
           ownerUserId: userId,
           make: result.make,
           model: result.model,
@@ -82,7 +86,11 @@ class VehiclesScreen extends ConsumerWidget {
     ref.invalidate(vehiclesProvider(userId));
   }
 
-  Future<void> _deleteVehicle(BuildContext context, WidgetRef ref, Vehicle vehicle) async {
+  Future<void> _deleteVehicle(
+    BuildContext context,
+    WidgetRef ref,
+    Vehicle vehicle,
+  ) async {
     final l10n = AppLocalizations.of(context)!;
     final confirmed = await showFactoryDialog<bool>(
       context: context,
@@ -94,7 +102,10 @@ class VehiclesScreen extends ConsumerWidget {
           variant: FactoryButtonVariant.text,
           onPressed: () => Navigator.of(context).pop(false),
         ),
-        FactoryButton(label: l10n.deleteVehicleButton, onPressed: () => Navigator.of(context).pop(true)),
+        FactoryButton(
+          label: l10n.deleteVehicleButton,
+          onPressed: () => Navigator.of(context).pop(true),
+        ),
       ],
     );
     if (confirmed != true) return;
@@ -116,10 +127,16 @@ class _VehicleTile extends StatelessWidget {
 
     return FactorySelectableTile(
       title: vehicle.displayName,
-      subtitle: Text(vehicle.licensePlate, style: FactoryTypography.mono(size: 13, color: colors.textTertiary)),
-      leading: Icon(Icons.directions_car_rounded, color: colors.textSecondary),
+      subtitle: Text(
+        vehicle.licensePlate,
+        style: FactoryTypography.mono(size: 13, color: colors.textTertiary),
+      ),
+      leading: Icon(
+        Symbols.directions_car_rounded,
+        color: colors.textSecondary,
+      ),
       trailing: IconButton(
-        icon: const Icon(Icons.delete_outline),
+        icon: const Icon(Symbols.delete_outline_rounded),
         tooltip: l10n.deleteVehicleButton,
         onPressed: onDelete,
       ),

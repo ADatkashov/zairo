@@ -1,6 +1,7 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../core/formatting/initials.dart';
 import '../../../../core/formatting/month_day_time.dart';
@@ -44,7 +45,8 @@ class ProviderDetailScreen extends ConsumerStatefulWidget {
   const ProviderDetailScreen({super.key, required this.provider});
 
   @override
-  ConsumerState<ProviderDetailScreen> createState() => _ProviderDetailScreenState();
+  ConsumerState<ProviderDetailScreen> createState() =>
+      _ProviderDetailScreenState();
 }
 
 class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
@@ -77,11 +79,13 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     final mechanics = mechanicsAsync.value ?? const <Mechanic>[];
     // Vehicles are owned by the current user, not the provider — only
     // fetchable once logged in (an anonymous caller has none to select).
-    final vehiclesAsync = (widget.provider.vertical == 'auto' && currentUser != null)
+    final vehiclesAsync =
+        (widget.provider.vertical == 'auto' && currentUser != null)
         ? ref.watch(vehiclesProvider(currentUser.id))
         : const AsyncValue.data(<Vehicle>[]);
     final vehicles = vehiclesAsync.value ?? const <Vehicle>[];
-    final requiresVehicleSelection = mechanics.isNotEmpty && currentUser != null;
+    final requiresVehicleSelection =
+        mechanics.isNotEmpty && currentUser != null;
     // Same reasoning as masters/mechanics, for the cleaning vertical's cleaners.
     final cleanersAsync = widget.provider.vertical == 'cleaning'
         ? ref.watch(cleanersProvider(widget.provider.id))
@@ -89,7 +93,8 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     final cleaners = cleanersAsync.value ?? const <Cleaner>[];
     // Any category without its own dedicated staff module falls back to
     // the generic `staff` module — see _verticalsWithDedicatedStaffModule.
-    final staffAsync = !_verticalsWithDedicatedStaffModule.contains(widget.provider.vertical)
+    final staffAsync =
+        !_verticalsWithDedicatedStaffModule.contains(widget.provider.vertical)
         ? ref.watch(staffProvider(widget.provider.id))
         : const AsyncValue.data(<Staff>[]);
     final staffMembers = staffAsync.value ?? const <Staff>[];
@@ -105,234 +110,293 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
           children: [
             Expanded(
               child: ListView(
-          padding: const EdgeInsets.all(FactorySpacing.space4),
-          children: [
-            Container(
-              height: 140,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                borderRadius: FactoryRadius.xlRadius,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [colors.primaryTint, colors.surfaceAlt],
-                ),
-              ),
-              child: Center(
-                child: Icon(
-                  switch (widget.provider.vertical) {
-                    'auto' => Icons.directions_car_filled_rounded,
-                    'cleaning' => Icons.cleaning_services_rounded,
-                    _ => Icons.content_cut_rounded,
-                  },
-                  size: 48,
-                  color: colors.primaryStrong.withValues(alpha: 0.5),
-                ),
-              ),
-            ),
-            const SizedBox(height: FactorySpacing.space4),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                if (widget.provider.averageRating != null)
-                  FactoryRatingLabel(
-                    rating: widget.provider.averageRating!,
-                    reviewCount: widget.provider.reviewCount,
-                    semanticLabel: widget.provider.reviewCount == null
-                        ? l10n.ratingSemanticLabel(widget.provider.averageRating!.toStringAsFixed(1))
-                        : l10n.ratingSemanticLabelWithReviews(
-                            widget.provider.averageRating!.toStringAsFixed(1), widget.provider.reviewCount!),
-                  ),
-                FactoryBadge(label: _capitalize(widget.provider.vertical)),
-                if (widget.provider.hasOpenAvailability)
-                  FactoryBadge(label: l10n.availableTodayLabel, variant: FactoryBadgeVariant.available),
-                if (widget.provider.distanceKm != null)
-                  Text(
-                    l10n.providerDistanceAway(widget.provider.distanceKm!.toStringAsFixed(1)),
-                    style: FactoryTypography.mono(size: 12, color: colors.textTertiary),
-                  ),
-              ],
-            ),
-            if (widget.provider.latitude != null && widget.provider.longitude != null) ...[
-              const SizedBox(height: FactorySpacing.space3),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: FactoryButton(
-                  variant: FactoryButtonVariant.secondary,
-                  icon: Icons.map_outlined,
-                  label: l10n.viewOnMapButton,
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ProviderMapScreen(
-                        providerName: widget.provider.name,
-                        latitude: widget.provider.latitude!,
-                        longitude: widget.provider.longitude!,
-                        distanceKm: widget.provider.distanceKm,
+                padding: const EdgeInsets.all(FactorySpacing.space4),
+                children: [
+                  Container(
+                    height: 140,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      borderRadius: FactoryRadius.xlRadius,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [colors.primaryTint, colors.surfaceAlt],
+                      ),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        switch (widget.provider.vertical) {
+                          'auto' => Symbols.directions_car_filled_rounded,
+                          'cleaning' => Symbols.cleaning_services_rounded,
+                          _ => Symbols.content_cut_rounded,
+                        },
+                        size: 48,
+                        color: colors.primaryStrong.withValues(alpha: 0.5),
                       ),
                     ),
                   ),
-                ),
-              ),
-            ],
-            if (masters.isNotEmpty) ...[
-              const SizedBox(height: FactorySpacing.space6),
-              Text(l10n.mastersSectionTitle, style: textTheme.titleMedium),
-              const SizedBox(height: FactorySpacing.space3),
-              ...masters.map(
-                (master) => Padding(
-                  padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
-                  child: _MasterOption(
-                    master: master,
-                    selected: _selectedMasterId == master.id,
-                    onTap: () => setState(() => _selectedMasterId = master.id),
-                    onViewPortfolio: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => MasterPortfolioScreen(
-                          masterId: master.id,
-                          masterName: master.displayName,
+                  const SizedBox(height: FactorySpacing.space4),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      if (widget.provider.averageRating != null)
+                        FactoryRatingLabel(
+                          rating: widget.provider.averageRating!,
+                          reviewCount: widget.provider.reviewCount,
+                          semanticLabel: widget.provider.reviewCount == null
+                              ? l10n.ratingSemanticLabel(
+                                  widget.provider.averageRating!
+                                      .toStringAsFixed(1),
+                                )
+                              : l10n.ratingSemanticLabelWithReviews(
+                                  widget.provider.averageRating!
+                                      .toStringAsFixed(1),
+                                  widget.provider.reviewCount!,
+                                ),
+                        ),
+                      FactoryBadge(
+                        label: _capitalize(widget.provider.vertical),
+                      ),
+                      if (widget.provider.hasOpenAvailability)
+                        FactoryBadge(
+                          label: l10n.availableTodayLabel,
+                          variant: FactoryBadgeVariant.available,
+                        ),
+                      if (widget.provider.distanceKm != null)
+                        Text(
+                          l10n.providerDistanceAway(
+                            widget.provider.distanceKm!.toStringAsFixed(1),
+                          ),
+                          style: FactoryTypography.mono(
+                            size: 12,
+                            color: colors.textTertiary,
+                          ),
+                        ),
+                    ],
+                  ),
+                  if (widget.provider.latitude != null &&
+                      widget.provider.longitude != null) ...[
+                    const SizedBox(height: FactorySpacing.space3),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: FactoryButton(
+                        variant: FactoryButtonVariant.secondary,
+                        icon: Symbols.map_rounded,
+                        label: l10n.viewOnMapButton,
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => ProviderMapScreen(
+                              providerName: widget.provider.name,
+                              latitude: widget.provider.latitude!,
+                              longitude: widget.provider.longitude!,
+                              distanceKm: widget.provider.distanceKm,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-              ),
-            ],
-            if (mechanics.isNotEmpty) ...[
-              const SizedBox(height: FactorySpacing.space6),
-              Text(l10n.mechanicsSectionTitle, style: textTheme.titleMedium),
-              const SizedBox(height: FactorySpacing.space3),
-              ...mechanics.map(
-                (mechanic) => Padding(
-                  padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
-                  child: _MechanicOption(
-                    mechanic: mechanic,
-                    selected: _selectedMechanicId == mechanic.id,
-                    onTap: () => setState(() => _selectedMechanicId = mechanic.id),
-                  ),
-                ),
-              ),
-            ],
-            if (cleaners.isNotEmpty) ...[
-              const SizedBox(height: FactorySpacing.space6),
-              Text(l10n.cleanersSectionTitle, style: textTheme.titleMedium),
-              const SizedBox(height: FactorySpacing.space3),
-              ...cleaners.map(
-                (cleaner) => Padding(
-                  padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
-                  child: _CleanerOption(
-                    cleaner: cleaner,
-                    selected: _selectedCleanerId == cleaner.id,
-                    onTap: () => setState(() => _selectedCleanerId = cleaner.id),
-                  ),
-                ),
-              ),
-            ],
-            if (staffMembers.isNotEmpty) ...[
-              const SizedBox(height: FactorySpacing.space6),
-              Text(l10n.staffSectionTitle, style: textTheme.titleMedium),
-              const SizedBox(height: FactorySpacing.space3),
-              ...staffMembers.map(
-                (staff) => Padding(
-                  padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
-                  child: _StaffOption(
-                    staff: staff,
-                    selected: _selectedStaffId == staff.id,
-                    onTap: () => setState(() => _selectedStaffId = staff.id),
-                  ),
-                ),
-              ),
-            ],
-            if (widget.provider.vertical == 'auto' && currentUser != null) ...[
-              const SizedBox(height: FactorySpacing.space6),
-              Text(l10n.vehiclesSectionTitle, style: textTheme.titleMedium),
-              const SizedBox(height: FactorySpacing.space3),
-              if (vehicles.isEmpty)
-                FactoryEmptyState(
-                  icon: Icons.directions_car_outlined,
-                  title: l10n.vehiclesEmptyTitle,
-                  message: l10n.vehiclesEmptyMessage,
-                )
-              else
-                ...vehicles.map(
-                  (vehicle) => Padding(
-                    padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
-                    child: _VehicleOption(
-                      vehicle: vehicle,
-                      selected: _selectedVehicleId == vehicle.id,
-                      onTap: () => setState(() => _selectedVehicleId = vehicle.id),
+                  ],
+                  if (masters.isNotEmpty) ...[
+                    const SizedBox(height: FactorySpacing.space6),
+                    Text(
+                      l10n.mastersSectionTitle,
+                      style: textTheme.titleMedium,
                     ),
-                  ),
-                ),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: FactoryButton(
-                  variant: FactoryButtonVariant.text,
-                  icon: Icons.add,
-                  label: l10n.addVehicleButton,
-                  onPressed: () => _addVehicle(currentUser.id),
-                ),
-              ),
-            ],
-            const SizedBox(height: FactorySpacing.space6),
-            Text(l10n.servicesSectionTitle, style: textTheme.titleMedium),
-            const SizedBox(height: FactorySpacing.space2),
-            ...widget.provider.services.map(
-              (service) => FactoryServiceCard(
-                title: service.title,
-                metaText: l10n.serviceDurationMinutes(service.durationMinutes),
-                price: service.price,
-                selected: _selectedServiceId == service.id,
-                onTap: () => setState(() => _selectedServiceId = service.id),
-              ),
-            ),
-            const SizedBox(height: FactorySpacing.space6),
-            Text(l10n.availableTimesSectionTitle, style: textTheme.titleMedium),
-            const SizedBox(height: FactorySpacing.space3),
-            slotsAsync.when(
-              data: (slots) {
-                final openSlots = slots.where((s) => s.isOpen).toList();
-                if (openSlots.isEmpty) {
-                  return FactoryEmptyState(
-                    icon: Icons.event_busy_rounded,
-                    title: l10n.noOpenTimesTitle,
-                    message: l10n.noOpenTimesMessage,
-                  );
-                }
-                return Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: openSlots
-                      .map(
-                        (slot) => FactoryTimeSlot(
-                          label: formatMonthDayTime(l10n, slot.startsAt.toLocal()),
-                          state: _selectedSlotId == slot.id
-                              ? FactoryTimeSlotState.selected
-                              : FactoryTimeSlotState.available,
-                          onTap: () => setState(() => _selectedSlotId = slot.id),
+                    const SizedBox(height: FactorySpacing.space3),
+                    ...masters.map(
+                      (master) => Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: FactorySpacing.space2,
                         ),
+                        child: _MasterOption(
+                          master: master,
+                          selected: _selectedMasterId == master.id,
+                          onTap: () =>
+                              setState(() => _selectedMasterId = master.id),
+                          onViewPortfolio: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => MasterPortfolioScreen(
+                                masterId: master.id,
+                                masterName: master.displayName,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (mechanics.isNotEmpty) ...[
+                    const SizedBox(height: FactorySpacing.space6),
+                    Text(
+                      l10n.mechanicsSectionTitle,
+                      style: textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: FactorySpacing.space3),
+                    ...mechanics.map(
+                      (mechanic) => Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: FactorySpacing.space2,
+                        ),
+                        child: _MechanicOption(
+                          mechanic: mechanic,
+                          selected: _selectedMechanicId == mechanic.id,
+                          onTap: () =>
+                              setState(() => _selectedMechanicId = mechanic.id),
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (cleaners.isNotEmpty) ...[
+                    const SizedBox(height: FactorySpacing.space6),
+                    Text(
+                      l10n.cleanersSectionTitle,
+                      style: textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: FactorySpacing.space3),
+                    ...cleaners.map(
+                      (cleaner) => Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: FactorySpacing.space2,
+                        ),
+                        child: _CleanerOption(
+                          cleaner: cleaner,
+                          selected: _selectedCleanerId == cleaner.id,
+                          onTap: () =>
+                              setState(() => _selectedCleanerId = cleaner.id),
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (staffMembers.isNotEmpty) ...[
+                    const SizedBox(height: FactorySpacing.space6),
+                    Text(l10n.staffSectionTitle, style: textTheme.titleMedium),
+                    const SizedBox(height: FactorySpacing.space3),
+                    ...staffMembers.map(
+                      (staff) => Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: FactorySpacing.space2,
+                        ),
+                        child: _StaffOption(
+                          staff: staff,
+                          selected: _selectedStaffId == staff.id,
+                          onTap: () =>
+                              setState(() => _selectedStaffId = staff.id),
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (widget.provider.vertical == 'auto' &&
+                      currentUser != null) ...[
+                    const SizedBox(height: FactorySpacing.space6),
+                    Text(
+                      l10n.vehiclesSectionTitle,
+                      style: textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: FactorySpacing.space3),
+                    if (vehicles.isEmpty)
+                      FactoryEmptyState(
+                        icon: Symbols.directions_car_rounded,
+                        title: l10n.vehiclesEmptyTitle,
+                        message: l10n.vehiclesEmptyMessage,
                       )
-                      .toList(),
-                );
-              },
-              loading: () => const FactoryLoadingState(),
-              error: (error, stackTrace) => FactoryErrorState(
-                message: l10n.errorAvailabilityLoadFailed,
-                onRetry: () => ref.invalidate(availabilitySlotsProvider(widget.provider.id)),
-              ),
-            ),
-          ],
+                    else
+                      ...vehicles.map(
+                        (vehicle) => Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: FactorySpacing.space2,
+                          ),
+                          child: _VehicleOption(
+                            vehicle: vehicle,
+                            selected: _selectedVehicleId == vehicle.id,
+                            onTap: () =>
+                                setState(() => _selectedVehicleId = vehicle.id),
+                          ),
+                        ),
+                      ),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: FactoryButton(
+                        variant: FactoryButtonVariant.text,
+                        icon: Symbols.add_rounded,
+                        label: l10n.addVehicleButton,
+                        onPressed: () => _addVehicle(currentUser.id),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: FactorySpacing.space6),
+                  Text(l10n.servicesSectionTitle, style: textTheme.titleMedium),
+                  const SizedBox(height: FactorySpacing.space2),
+                  ...widget.provider.services.map(
+                    (service) => FactoryServiceCard(
+                      title: service.title,
+                      metaText: l10n.serviceDurationMinutes(
+                        service.durationMinutes,
+                      ),
+                      price: service.price,
+                      selected: _selectedServiceId == service.id,
+                      onTap: () =>
+                          setState(() => _selectedServiceId = service.id),
+                    ),
+                  ),
+                  const SizedBox(height: FactorySpacing.space6),
+                  Text(
+                    l10n.availableTimesSectionTitle,
+                    style: textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: FactorySpacing.space3),
+                  slotsAsync.when(
+                    data: (slots) {
+                      final openSlots = slots.where((s) => s.isOpen).toList();
+                      if (openSlots.isEmpty) {
+                        return FactoryEmptyState(
+                          icon: Symbols.event_busy_rounded,
+                          title: l10n.noOpenTimesTitle,
+                          message: l10n.noOpenTimesMessage,
+                        );
+                      }
+                      return Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: openSlots
+                            .map(
+                              (slot) => FactoryTimeSlot(
+                                label: formatMonthDayTime(
+                                  l10n,
+                                  slot.startsAt.toLocal(),
+                                ),
+                                state: _selectedSlotId == slot.id
+                                    ? FactoryTimeSlotState.selected
+                                    : FactoryTimeSlotState.available,
+                                onTap: () =>
+                                    setState(() => _selectedSlotId = slot.id),
+                              ),
+                            )
+                            .toList(),
+                      );
+                    },
+                    loading: () => const FactoryLoadingState(),
+                    error: (error, stackTrace) => FactoryErrorState(
+                      message: l10n.errorAvailabilityLoadFailed,
+                      onRetry: () => ref.invalidate(
+                        availabilitySlotsProvider(widget.provider.id),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             _BookingCta(
               selectedService: _selectedService(),
               isLoading: _isBooking,
-              onPressed: (_selectedServiceId != null &&
+              onPressed:
+                  (_selectedServiceId != null &&
                       _selectedSlotId != null &&
                       (masters.isEmpty || _selectedMasterId != null) &&
                       (mechanics.isEmpty || _selectedMechanicId != null) &&
-                      (!requiresVehicleSelection || _selectedVehicleId != null) &&
+                      (!requiresVehicleSelection ||
+                          _selectedVehicleId != null) &&
                       (cleaners.isEmpty || _selectedCleanerId != null) &&
                       (staffMembers.isEmpty || _selectedStaffId != null) &&
                       !_isBooking)
@@ -355,7 +419,9 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
   Future<void> _addVehicle(String userId) async {
     final result = await showAddVehicleDialog(context);
     if (result == null) return;
-    final vehicle = await ref.read(autoApiProvider).registerVehicle(
+    final vehicle = await ref
+        .read(autoApiProvider)
+        .registerVehicle(
           ownerUserId: userId,
           make: result.make,
           model: result.model,
@@ -378,13 +444,16 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     if (currentUser == null) {
       setState(() => _isBooking = false);
       if (!mounted) return;
-      await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
+      await Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => const LoginScreen()));
       return;
     }
 
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
-    final service = widget.provider.services.firstWhere((s) => s.id == _selectedServiceId);
+    final service = widget.provider.services.firstWhere(
+      (s) => s.id == _selectedServiceId,
+    );
     try {
       // A master/mechanic/cleaner was selected only when this provider has a
       // beauty/auto/cleaning staff directory (see the Book button's enable
@@ -393,7 +462,9 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       // Core's plain booking flow, unchanged from before verticals existed.
       final Booking booking;
       if (_selectedMechanicId != null) {
-        booking = await ref.read(autoApiProvider).createAutoBooking(
+        booking = await ref
+            .read(autoApiProvider)
+            .createAutoBooking(
               userId: currentUser.id,
               mechanicId: _selectedMechanicId!,
               vehicleId: _selectedVehicleId!,
@@ -402,7 +473,9 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               totalPrice: service.price,
             );
       } else if (_selectedMasterId != null) {
-        booking = await ref.read(beautyApiProvider).createBeautyBooking(
+        booking = await ref
+            .read(beautyApiProvider)
+            .createBeautyBooking(
               userId: currentUser.id,
               masterId: _selectedMasterId!,
               serviceId: service.id,
@@ -410,7 +483,9 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               totalPrice: service.price,
             );
       } else if (_selectedCleanerId != null) {
-        booking = await ref.read(cleaningApiProvider).createCleaningBooking(
+        booking = await ref
+            .read(cleaningApiProvider)
+            .createCleaningBooking(
               userId: currentUser.id,
               cleanerId: _selectedCleanerId!,
               serviceId: service.id,
@@ -418,7 +493,9 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               totalPrice: service.price,
             );
       } else if (_selectedStaffId != null) {
-        booking = await ref.read(staffApiProvider).createStaffBooking(
+        booking = await ref
+            .read(staffApiProvider)
+            .createStaffBooking(
               userId: currentUser.id,
               staffId: _selectedStaffId!,
               serviceId: service.id,
@@ -426,7 +503,9 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               totalPrice: service.price,
             );
       } else {
-        booking = await ref.read(bookingApiProvider).createBooking(
+        booking = await ref
+            .read(bookingApiProvider)
+            .createBooking(
               userId: currentUser.id,
               serviceId: service.id,
               availabilitySlotId: _selectedSlotId!,
@@ -440,7 +519,9 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       // synchronously, so there's nothing async to wait on).
       String message = l10n.bookingConfirmed;
       try {
-        final payment = await ref.read(paymentsApiProvider).createPayment(booking.id);
+        final payment = await ref
+            .read(paymentsApiProvider)
+            .createPayment(booking.id);
         message = payment.status == 'SUCCEEDED'
             ? l10n.bookingConfirmedAndPaid
             : l10n.bookingConfirmedPaymentStatus(payment.status.toLowerCase());
@@ -449,11 +530,13 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       }
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
       Navigator.of(context).pop();
     } on BookingException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
       ref.invalidate(availabilitySlotsProvider(widget.provider.id));
       setState(() {
         _selectedSlotId = null;
@@ -461,7 +544,8 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       });
     } on BeautyException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
       ref.invalidate(availabilitySlotsProvider(widget.provider.id));
       setState(() {
         _selectedSlotId = null;
@@ -469,7 +553,8 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       });
     } on AutoException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
       ref.invalidate(availabilitySlotsProvider(widget.provider.id));
       setState(() {
         _selectedSlotId = null;
@@ -477,7 +562,8 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       });
     } on CleaningException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
       ref.invalidate(availabilitySlotsProvider(widget.provider.id));
       setState(() {
         _selectedSlotId = null;
@@ -485,7 +571,8 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       });
     } on StaffException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
       ref.invalidate(availabilitySlotsProvider(widget.provider.id));
       setState(() {
         _selectedSlotId = null;
@@ -493,7 +580,9 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.errorBookingGeneric(e.toString()))));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.errorBookingGeneric(e.toString()))),
+      );
       setState(() => _isBooking = false);
     }
   }
@@ -513,7 +602,11 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
 /// previous session explicitly deferred that exact restructuring as too
 /// risky for a real-money flow, and that reasoning still holds.
 class _BookingCta extends StatelessWidget {
-  const _BookingCta({required this.selectedService, required this.isLoading, required this.onPressed});
+  const _BookingCta({
+    required this.selectedService,
+    required this.isLoading,
+    required this.onPressed,
+  });
 
   final ServiceSummary? selectedService;
   final bool isLoading;
@@ -531,7 +624,9 @@ class _BookingCta extends StatelessWidget {
         FactorySpacing.space4,
         FactorySpacing.space4,
       ),
-      decoration: BoxDecoration(border: Border(top: BorderSide(color: colors.border))),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: colors.border)),
+      ),
       child: Row(
         children: [
           if (selectedService != null) ...[
@@ -544,7 +639,8 @@ class _BookingCta extends StatelessWidget {
                     selectedService!.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+                    style: Theme.of(context).textTheme.bodySmall
+                        ?.copyWith(color: colors.textTertiary),
                   ),
                   FactoryPriceText(
                     amount: selectedService!.price,
@@ -612,7 +708,7 @@ class _MasterOption extends StatelessWidget {
         image: master.photoUrl != null ? NetworkImage(master.photoUrl!) : null,
       ),
       trailing: IconButton(
-        icon: const Icon(Icons.photo_library_outlined),
+        icon: const Icon(Symbols.photo_library_rounded),
         tooltip: l10n.viewPortfolioTooltip,
         style: IconButton.styleFrom(
           backgroundColor: Colors.transparent,
@@ -655,7 +751,9 @@ class _MechanicOption extends StatelessWidget {
           : null,
       leading: FactoryAvatar(
         initials: initialsFor(mechanic.displayName),
-        image: mechanic.photoUrl != null ? NetworkImage(mechanic.photoUrl!) : null,
+        image: mechanic.photoUrl != null
+            ? NetworkImage(mechanic.photoUrl!)
+            : null,
       ),
       selected: selected,
       onTap: onTap,
@@ -691,7 +789,9 @@ class _CleanerOption extends StatelessWidget {
           : null,
       leading: FactoryAvatar(
         initials: initialsFor(cleaner.displayName),
-        image: cleaner.photoUrl != null ? NetworkImage(cleaner.photoUrl!) : null,
+        image: cleaner.photoUrl != null
+            ? NetworkImage(cleaner.photoUrl!)
+            : null,
       ),
       selected: selected,
       onTap: onTap,
@@ -752,12 +852,19 @@ class _VehicleOption extends StatelessWidget {
 
     return FactorySelectableTile(
       title: vehicle.displayName,
-      subtitle: Text(vehicle.licensePlate, style: FactoryTypography.mono(size: 13, color: colors.textTertiary)),
-      leading: Icon(Icons.directions_car_rounded, color: colors.textSecondary),
+      subtitle: Text(
+        vehicle.licensePlate,
+        style: FactoryTypography.mono(size: 13, color: colors.textTertiary),
+      ),
+      leading: Icon(
+        Symbols.directions_car_rounded,
+        color: colors.textSecondary,
+      ),
       selected: selected,
       onTap: onTap,
     );
   }
 }
 
-String _capitalize(String s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';
+String _capitalize(String s) =>
+    s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';

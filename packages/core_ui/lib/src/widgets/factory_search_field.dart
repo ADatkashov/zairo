@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../theme/factory_colors.dart';
 import '../theme/factory_radius.dart';
@@ -81,10 +82,13 @@ class FactorySearchField extends StatelessWidget {
           onSubmitted: onSubmitted,
           decoration: InputDecoration(
             hintText: hint,
-            prefixIcon: Icon(Icons.search_rounded, color: colors.textTertiary),
+            prefixIcon: Icon(
+              Symbols.search_rounded,
+              color: colors.textTertiary,
+            ),
             suffixIcon: onFilterTap != null
                 ? FactoryIconButton(
-                    icon: Icons.tune_rounded,
+                    icon: Symbols.tune_rounded,
                     onPressed: onFilterTap,
                     semanticLabel: filterSemanticLabel,
                     isActive: filterActive,

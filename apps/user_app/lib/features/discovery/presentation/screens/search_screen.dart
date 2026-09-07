@@ -1,6 +1,7 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../booking/presentation/screens/provider_detail_screen.dart';
@@ -101,7 +102,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   },
                 ),
               ),
-              if (isPristine) _RecentAndPopularSearches(onQuerySelected: _runSearch),
+              if (isPristine)
+                _RecentAndPopularSearches(onQuerySelected: _runSearch),
               Expanded(
                 child: resultsAsync.when(
                   data: (results) {
@@ -111,8 +113,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           padding: const EdgeInsets.all(FactorySpacing.space4),
                           child: FactoryEmptyState(
                             icon: query.query == null
-                                ? Icons.search_rounded
-                                : Icons.search_off_rounded,
+                                ? Symbols.search_rounded
+                                : Symbols.search_off_rounded,
                             title: query.query == null
                                 ? l10n.searchEmptyTitle
                                 : l10n.searchEmptyTitleQuery(query.query!),
@@ -230,37 +232,44 @@ class _RecentAndPopularSearches extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-        if (recent.isNotEmpty) ...[
-          FactorySectionHeader(
-            title: l10n.searchRecentTitle,
-            actionLabel: l10n.searchRecentClearButton,
-            onActionTap: () => ref.read(recentSearchesProvider.notifier).clear(),
+          if (recent.isNotEmpty) ...[
+            FactorySectionHeader(
+              title: l10n.searchRecentTitle,
+              actionLabel: l10n.searchRecentClearButton,
+              onActionTap: () =>
+                  ref.read(recentSearchesProvider.notifier).clear(),
+            ),
+            const SizedBox(height: FactorySpacing.space2),
+            Wrap(
+              spacing: FactorySpacing.space2,
+              runSpacing: FactorySpacing.space2,
+              children: [
+                for (final query in recent)
+                  FactoryChip(
+                    label: query,
+                    onTap: () => onQuerySelected(query),
+                  ),
+              ],
+            ),
+            const SizedBox(height: FactorySpacing.space5),
+          ],
+          Text(
+            l10n.searchPopularTitle,
+            style: Theme.of(context).textTheme.titleSmall,
           ),
           const SizedBox(height: FactorySpacing.space2),
           Wrap(
             spacing: FactorySpacing.space2,
             runSpacing: FactorySpacing.space2,
             children: [
-              for (final query in recent)
-                FactoryChip(label: query, onTap: () => onQuerySelected(query)),
+              for (final query in _popularSearches(l10n))
+                FactoryChip(
+                  label: query,
+                  icon: Symbols.trending_up_rounded,
+                  onTap: () => onQuerySelected(query),
+                ),
             ],
           ),
-          const SizedBox(height: FactorySpacing.space5),
-        ],
-        Text(l10n.searchPopularTitle, style: Theme.of(context).textTheme.titleSmall),
-        const SizedBox(height: FactorySpacing.space2),
-        Wrap(
-          spacing: FactorySpacing.space2,
-          runSpacing: FactorySpacing.space2,
-          children: [
-            for (final query in _popularSearches(l10n))
-              FactoryChip(
-                label: query,
-                icon: Icons.trending_up_rounded,
-                onTap: () => onQuerySelected(query),
-              ),
-          ],
-        ),
         ],
       ),
     );
