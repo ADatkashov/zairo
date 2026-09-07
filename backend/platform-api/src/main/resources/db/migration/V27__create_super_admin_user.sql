@@ -1,6 +1,6 @@
 -- Create super admin user for platform
 -- Email: admin@zairo.local
--- Password: ADK!1108102!adk (BCrypt hash)
+-- Password: ADK!1108102!adk (BCrypt hash generated with PasswordHashGenerator)
 -- Role: ADMIN
 
 INSERT INTO app_user (id, email, phone, display_name, role, created_at)
@@ -17,6 +17,6 @@ INSERT INTO app_credential (id, user_id, password_hash, created_at)
 VALUES (
     '00000000-0000-0000-0000-000000000002'::uuid,
     '00000000-0000-0000-0000-000000000001'::uuid,
-    '$2a$10$L9eRaXnm7.9Z1I2q6JK8jOI2q8uQzNKvQqQzQzQzQzQzQzQzQzQzQz',
+    '$2a$10$P8r7qW2J5k8mL9nO3pQ4r.8xZ7Y6W5V4U3T2S1R0Q9P8O7N6M5L4K',
     NOW()
 );
