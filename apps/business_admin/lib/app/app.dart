@@ -13,7 +13,7 @@ class BusinessAdminApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeModeProvider);
+    final themeMode = ref.watch(themeModeControllerProvider).value;
     final locale = ref.watch(localeControllerProvider).value;
 
     return MaterialApp(
