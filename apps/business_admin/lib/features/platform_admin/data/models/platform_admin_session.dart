@@ -26,4 +26,8 @@ class PlatformAdminSession {
   }
 
   bool get isPlatformAdmin => role == 'PLATFORM_ADMIN';
+
+  /// PLATFORM_ADMIN or PLATFORM_MODERATOR — the two roles that can approve,
+  /// suspend, or reinstate a business. PLATFORM_SUPPORT stays read-only.
+  bool get canModerateBusinesses => role == 'PLATFORM_ADMIN' || role == 'PLATFORM_MODERATOR';
 }
