@@ -43,4 +43,16 @@ public final class PlatformCurrentAdmin {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "PLATFORM_ADMIN role required");
         }
     }
+
+    /**
+     * 401 if unauthenticated, 403 if PLATFORM_SUPPORT (read-only) — business
+     * moderation (approve/suspend/reinstate a provider) is the one mutation
+     * PLATFORM_MODERATOR can also perform, alongside PLATFORM_ADMIN.
+     */
+    public static void requireModerationCapable(HttpServletRequest request) {
+        PlatformRole role = requireAnyRole(request);
+        if (role != PlatformRole.PLATFORM_ADMIN && role != PlatformRole.PLATFORM_MODERATOR) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "PLATFORM_ADMIN or PLATFORM_MODERATOR role required");
+        }
+    }
 }

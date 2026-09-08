@@ -7,6 +7,8 @@ import '../../../catalog/data/models/business_type.dart';
 import '../../../catalog/data/models/category.dart';
 import '../../../catalog/data/models/subsphere.dart';
 import '../../../catalog/presentation/providers/catalog_providers.dart';
+import '../../../salon/data/models/admin_provider.dart';
+import '../../data/models/platform_admin_session.dart';
 import '../providers/platform_admin_providers.dart';
 
 /// The whole point of the "don't hardcode categories" instruction, made
@@ -29,13 +31,14 @@ class PlatformAdminTaxonomyScreen extends ConsumerWidget {
     }
 
     return DefaultTabController(
-      length: 4,
+      length: 5,
       child: Scaffold(
         appBar: AppBar(
           title: Text(session.email),
           bottom: const TabBar(
             isScrollable: true,
             tabs: [
+              Tab(text: 'Businesses'),
               Tab(text: 'Categories'),
               Tab(text: 'Spheres'),
               Tab(text: 'Subspheres'),
@@ -54,6 +57,7 @@ class PlatformAdminTaxonomyScreen extends ConsumerWidget {
         ),
         body: TabBarView(
           children: [
+            _BusinessesTab(session: session),
             _CategoriesTab(platformToken: session.accessToken),
             _SpheresTab(platformToken: session.accessToken),
             _SubspheresTab(platformToken: session.accessToken),
@@ -62,6 +66,96 @@ class PlatformAdminTaxonomyScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+/// The Control Center's own path to business moderation — same Provider
+/// resource ModerationScreen's ADMIN-role login already moderates (see
+/// ProviderAdminController), now reachable by PLATFORM_ADMIN and
+/// PLATFORM_MODERATOR without a second login or a direct database change.
+/// PLATFORM_SUPPORT still sees the list (any platform role can read it) but
+/// gets no action buttons — it stays read-only by design.
+class _BusinessesTab extends ConsumerWidget {
+  const _BusinessesTab({required this.session});
+
+  final PlatformAdminSession session;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final businessesAsync = ref.watch(platformBusinessesProvider(session.accessToken));
+    return Scaffold(
+      body: businessesAsync.when(
+        data: (businesses) {
+          if (businesses.isEmpty) {
+            return const Center(child: Text('No businesses yet.'));
+          }
+          final sorted = [...businesses]..sort((a, b) => a.status == b.status ? 0 : (a.status == 'PENDING' ? -1 : 1));
+          return ListView(
+            padding: const EdgeInsets.all(FactorySpacing.space4),
+            children: [
+              for (final business in sorted)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
+                  child: FactorySelectableTile(
+                    title: business.name,
+                    subtitle: Text('${business.vertical} · ${business.status}'),
+                    trailing: session.canModerateBusinesses
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (business.status != 'SUSPENDED')
+                                IconButton(
+                                  tooltip: 'Suspend',
+                                  icon: const Icon(Icons.block),
+                                  onPressed: () => _changeStatus(context, ref, business, 'SUSPENDED'),
+                                ),
+                              if (business.status != 'ACTIVE')
+                                IconButton(
+                                  tooltip: 'Approve',
+                                  icon: const Icon(Icons.check_circle_outline),
+                                  onPressed: () => _changeStatus(context, ref, business, 'ACTIVE'),
+                                ),
+                            ],
+                          )
+                        : _StatusBadge(status: business.status),
+                  ),
+                ),
+            ],
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) => Center(child: Text('$error')),
+      ),
+    );
+  }
+
+  Future<void> _changeStatus(
+    BuildContext context,
+    WidgetRef ref,
+    AdminProvider business,
+    String nextStatus,
+  ) async {
+    // Suspending hides a business from customer search and cancels its
+    // ability to take bookings — never a single tap, unlike approving a
+    // still-invisible PENDING business into view.
+    if (nextStatus == 'SUSPENDED') {
+      final confirmed = await showFactoryDialog<bool>(
+        context: context,
+        title: 'Suspend ${business.name}?',
+        message: 'This hides the business from customer search immediately. It can be reinstated later.',
+        actions: [
+          FactoryButton(
+            label: 'Cancel',
+            variant: FactoryButtonVariant.text,
+            onPressed: () => Navigator.of(context).pop(false),
+          ),
+          FactoryButton(label: 'Suspend', onPressed: () => Navigator.of(context).pop(true)),
+        ],
+      );
+      if (confirmed != true) return;
+    }
+    await ref.read(platformBusinessApiProvider).setStatus(session.accessToken, business.id, nextStatus);
+    ref.invalidate(platformBusinessesProvider(session.accessToken));
   }
 }
 
@@ -462,7 +556,10 @@ class _ServicesList extends ConsumerWidget {
 /// Tap to flip ACTIVE <-> INACTIVE — ARCHIVED (the third TaxonomyStatus
 /// value) isn't reachable from here since nothing in this tool needs to set
 /// it; it stays a valid backend state, just not one this simple toggle
-/// offers.
+/// offers. Deactivating asks for confirmation first: this is the taxonomy
+/// tree businesses select from, so switching a category/sphere/subsphere/
+/// service off is never a single accidental tap here — reactivating stays
+/// instant since it's the safe direction.
 class _StatusToggle extends StatelessWidget {
   const _StatusToggle({required this.status, required this.onToggle});
 
@@ -477,10 +574,32 @@ class _StatusToggle extends StatelessWidget {
         _StatusBadge(status: status),
         IconButton(
           icon: Icon(status == 'ACTIVE' ? Icons.toggle_on : Icons.toggle_off_outlined),
-          onPressed: () => onToggle(status == 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'),
+          onPressed: () => _toggle(context),
         ),
       ],
     );
+  }
+
+  Future<void> _toggle(BuildContext context) async {
+    if (status != 'ACTIVE') {
+      onToggle('ACTIVE');
+      return;
+    }
+    final confirmed = await showFactoryDialog<bool>(
+      context: context,
+      title: 'Deactivate this?',
+      message: 'It disappears from the customer and business-owner apps immediately, along with everything '
+          'nested under it. It can be turned back on any time.',
+      actions: [
+        FactoryButton(
+          label: 'Cancel',
+          variant: FactoryButtonVariant.text,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        FactoryButton(label: 'Deactivate', onPressed: () => Navigator.of(context).pop(true)),
+      ],
+    );
+    if (confirmed == true) onToggle('INACTIVE');
   }
 }
 
