@@ -20,6 +20,10 @@ dependencies:
   # while already using win32 ^6, which the 8.x line doesn't — needed for
   # compatibility with flutter_secure_storage.
   file_picker: 12.0.0-beta.1
+  # Avatar/staff-photo change flows: pick from camera/gallery, then
+  # crop/zoom/rotate before upload (see pick_and_crop_image.dart).
+  image_picker: ^1.2.3
+  image_cropper: ^12.2.1
   core_network:
     path: ../../packages/core_network
   core_storage:

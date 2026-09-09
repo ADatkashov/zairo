@@ -1,18 +1,18 @@
 import 'dart:typed_data';
 
 import 'package:core_ui/core_ui.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/image/pick_and_crop_image.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../storage/presentation/providers/storage_providers.dart';
 
-/// Picks a local image, uploads it through backend's storage module, then
-/// PATCHes it onto the current user's account — mirrors
-/// apps/business_admin's AddPortfolioItemDialog. Returns nothing useful:
-/// callers just watch authControllerProvider, which this already updates.
+/// Picks a photo (camera or gallery), lets the user crop/zoom/rotate it,
+/// uploads it through backend's storage module, then PATCHes it onto the
+/// current user's account. Returns nothing useful: callers just watch
+/// authControllerProvider, which this already updates.
 Future<void> showChangeAvatarDialog(BuildContext context, {required bool hasCurrentAvatar}) {
   return showDialog<void>(
     context: context,
@@ -38,17 +38,22 @@ class _ChangeAvatarDialogState extends ConsumerState<_ChangeAvatarDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final pickedBytes = _pickedBytes;
     return FactoryDialog(
       title: l10n.changeAvatarDialogTitle,
       content: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          if (pickedBytes != null) ...[
+            CircleAvatar(radius: 48, backgroundImage: MemoryImage(pickedBytes)),
+            const SizedBox(height: FactorySpacing.space3),
+          ],
           FactoryButton(
             icon: Icons.image_outlined,
-            label: _pickedName ?? l10n.changeAvatarChoosePhotoLabel,
+            label: l10n.changeAvatarChoosePhotoLabel,
             variant: FactoryButtonVariant.secondary,
-            onPressed: _isSubmitting ? null : _pickFile,
+            onPressed: _isSubmitting ? null : _pickPhoto,
           ),
           if (_error != null)
             Padding(
@@ -78,14 +83,13 @@ class _ChangeAvatarDialogState extends ConsumerState<_ChangeAvatarDialog> {
     );
   }
 
-  Future<void> _pickFile() async {
+  Future<void> _pickPhoto() async {
     try {
-      final result = await FilePicker.pickFiles(type: FileType.image, withData: true);
-      final file = result?.files.singleOrNull;
-      if (file?.bytes == null) return;
+      final picked = await pickAndCropImage(context, cropTitle: AppLocalizations.of(context)!.changeAvatarDialogTitle);
+      if (picked == null) return;
       setState(() {
-        _pickedBytes = file!.bytes;
-        _pickedName = file.name;
+        _pickedBytes = picked.bytes;
+        _pickedName = picked.name;
         _error = null;
       });
     } catch (e) {

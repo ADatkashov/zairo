@@ -255,5 +255,7 @@
   "changePhotoTooltip": "Фотоны өзгерту",
   "changePhotoDialogTitle": "Фотоны өзгерту",
   "removePhotoButton": "Фотоны өшіру",
-  "errorUpdatePhotoFailed": "Фотоны жаңарту мүмкін болмады: {error}"
+  "errorUpdatePhotoFailed": "Фотоны жаңарту мүмкін болмады: {error}",
+  "imagePickerCameraLabel": "Камера",
+  "imagePickerGalleryLabel": "Галерея"
 }
