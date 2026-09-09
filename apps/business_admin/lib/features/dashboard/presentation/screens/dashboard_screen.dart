@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../auth/presentation/widgets/change_avatar_dialog.dart';
 import '../../../billing/data/billing_exception.dart';
 import '../../../billing/data/models/subscription.dart';
 import '../../../billing/presentation/providers/billing_providers.dart';
@@ -44,6 +45,17 @@ class DashboardScreen extends ConsumerWidget {
       backgroundColor: colors.bg,
       appBar: FactoryAppBar(
         title: l10n.dashboardGreeting(user.displayName),
+        leading: Padding(
+          padding: const EdgeInsets.all(FactorySpacing.space2),
+          child: GestureDetector(
+            onTap: () => showChangeAvatarDialog(context, hasCurrentAvatar: user.avatarUrl != null),
+            child: FactoryAvatar(
+              initials: _initialsFor(user.displayName),
+              size: 32,
+              image: user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+            ),
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -514,4 +526,13 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
       });
     }
   }
+}
+
+String _initialsFor(String name) {
+  final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+  if (parts.isEmpty) return '?';
+  if (parts.length == 1) {
+    return parts.first.substring(0, parts.first.length >= 2 ? 2 : 1).toUpperCase();
+  }
+  return (parts[0][0] + parts[1][0]).toUpperCase();
 }
