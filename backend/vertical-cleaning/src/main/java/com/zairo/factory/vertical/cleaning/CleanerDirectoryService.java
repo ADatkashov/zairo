@@ -121,6 +121,15 @@ public class CleanerDirectoryService {
         return serviceOfferingRepository.findAllById(serviceIds);
     }
 
+    /** Owner-only — replaces the cleaner's photo (null/blank removes it). */
+    @Transactional
+    public Cleaner updateCleanerPhoto(UUID cleanerId, String photoUrl, UUID requestingUserId) {
+        Cleaner cleaner = getCleaner(cleanerId);
+        providerOwnership.requireOwner(cleaner.getProviderId(), requestingUserId);
+        cleaner.updatePhoto(photoUrl);
+        return cleanerRepository.save(cleaner);
+    }
+
     /** Idempotent — deactivating an already-inactive (or missing) cleaner is a no-op. */
     @Transactional
     public void deactivateCleaner(UUID cleanerId, UUID requestingUserId) {

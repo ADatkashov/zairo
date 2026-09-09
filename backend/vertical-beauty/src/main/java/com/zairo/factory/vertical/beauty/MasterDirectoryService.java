@@ -142,6 +142,15 @@ public class MasterDirectoryService {
         return serviceOfferingRepository.findAllById(serviceIds);
     }
 
+    /** Owner-only — replaces the master's photo (null/blank removes it). */
+    @Transactional
+    public Master updateMasterPhoto(UUID masterId, String photoUrl, UUID requestingUserId) {
+        Master master = getMaster(masterId);
+        providerOwnership.requireOwner(master.getProviderId(), requestingUserId);
+        master.updatePhoto(photoUrl);
+        return masterRepository.save(master);
+    }
+
     /** Idempotent — deactivating an already-inactive (or missing) master is a no-op. */
     @Transactional
     public void deactivateMaster(UUID masterId, UUID requestingUserId) {

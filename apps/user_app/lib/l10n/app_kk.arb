@@ -268,5 +268,13 @@
   "favoritesClearAllConfirmMessage": "Барлық провайдерлер таңдаулылардан жойылады. Бұл әрекетті болдырмауға болмайды.",
   "favoritesClearAllKeepButton": "Тазартпау",
   "bookingCancelledMessage": "Брондаудан бас тартылды.",
-  "paymentStatusRefunded": "Қайтарылды"
+  "paymentStatusRefunded": "Қайтарылды",
+
+  "changeAvatarDialogTitle": "Аватарды өзгерту",
+  "changeAvatarChoosePhotoLabel": "Фото таңдау",
+  "changeAvatarCancelButton": "Бас тарту",
+  "changeAvatarSaveButton": "Сақтау",
+  "changeAvatarRemoveButton": "Фотоны өшіру",
+  "changeAvatarErrorReadFileFailed": "Файлды оқу мүмкін болмады: {error}",
+  "changeAvatarErrorSaveFailed": "Аватарды жаңарту мүмкін болмады: {error}"
 }

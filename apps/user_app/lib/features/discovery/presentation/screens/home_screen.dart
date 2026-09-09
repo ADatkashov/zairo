@@ -70,6 +70,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         initials: user != null
                             ? initialsFor(user.displayName)
                             : '?',
+                        image: user?.avatarUrl != null
+                            ? NetworkImage(user!.avatarUrl!)
+                            : null,
                       ),
                       const SizedBox(width: FactorySpacing.space3),
                       Expanded(
