@@ -1,6 +1,7 @@
 package com.zairo.factory.storage;
 
 import com.zairo.factory.auth.CurrentUser;
+import com.zairo.factory.platformadmin.PlatformCurrentAdmin;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -67,6 +68,32 @@ public class StorageController {
     public UploadResponse upload(@Parameter(description = "The file to upload.", schema = @Schema(type = "string",
             format = "binary")) @RequestParam MultipartFile file, HttpServletRequest request) {
         CurrentUser.requireUserId(request);
+        if (file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File is empty");
+        }
+        String key = storageService.upload(file);
+        String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
+        return new UploadResponse(key, baseUrl + "/api/v1/uploads/" + key);
+    }
+
+    @Operation(summary = "Upload a file (platform staff)", description = "Identical to POST /uploads, gated by a "
+            + "platform access token instead of a customer/business one — platform staff (Control Center) don't "
+            + "carry the latter. Any authenticated platform role.")
+    @ApiResponse(responseCode = "201", description = "Uploaded")
+    @ApiResponse(responseCode = "400", description = "The file field is missing/empty, or the file isn't a "
+            + "recognized JPEG/PNG/WebP image.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true,
+            content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                    schema = @Schema(type = "object", requiredProperties = "file")))
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping(value = "/api/v1/platform/uploads", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public UploadResponse uploadAsPlatformStaff(@Parameter(description = "The file to upload.",
+            schema = @Schema(type = "string", format = "binary")) @RequestParam MultipartFile file,
+            HttpServletRequest request) {
+        PlatformCurrentAdmin.requireAdminId(request);
         if (file.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File is empty");
         }
