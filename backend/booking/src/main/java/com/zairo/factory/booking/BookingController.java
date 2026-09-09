@@ -80,13 +80,30 @@ public class BookingController {
         return BookingResponse.from(booking);
     }
 
-    @Operation(summary = "Get a booking by id")
+    @Operation(summary = "Get a booking by id", description = "Restricted to the two parties involved: the "
+            + "booking's own customer, or the owner of the provider the booking's slot belongs to.")
     @ApiResponse(responseCode = "200", description = "The booking")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "The caller is neither the booking's own customer nor "
+            + "the owner of the provider it belongs to.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/bookings/{id}")
-    public BookingResponse getById(@Parameter(description = "The booking's id.") @PathVariable UUID id) {
-        return bookingRepository.findById(id).map(BookingResponse::from)
+    public BookingResponse getById(@Parameter(description = "The booking's id.") @PathVariable UUID id,
+            HttpServletRequest httpRequest) {
+        UUID callerId = CurrentUser.requireUserId(httpRequest);
+        Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: " + id));
+
+        if (!booking.getUserId().equals(callerId)) {
+            AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            "Availability slot not found: " + booking.getAvailabilitySlotId()));
+            providerOwnership.requireOwner(slot.getProviderId(), callerId);
+        }
+
+        return BookingResponse.from(booking);
     }
 
     @Operation(summary = "Mark a booking complete", description = "Only a CONFIRMED booking can be completed "

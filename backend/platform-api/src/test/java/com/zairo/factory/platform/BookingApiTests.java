@@ -330,6 +330,67 @@ class BookingApiTests {
     }
 
     /**
+     * Proves the fix for GET /bookings/{id}'s missing auth/ownership check:
+     * only the booking's own customer or its provider's own owner may read
+     * it — a stranger (customer or unrelated provider owner) gets 403, and
+     * no token at all gets 401, matching the same pattern already used by
+     * cancel/complete/no-show.
+     */
+    @Test
+    void gettingABookingRequiresBeingItsCustomerOrItsProvidersOwner() {
+        String runId = UUID.randomUUID().toString();
+        Registered customer = TestAuth.registerCustomer(restTemplate, "get-customer-" + runId + "@example.com");
+        Registered otherCustomer = TestAuth.registerCustomer(restTemplate, "get-other-customer-" + runId
+                + "@example.com");
+        Registered owner = TestAuth.registerOwner(restTemplate, "get-owner-" + runId + "@example.com");
+        Registered otherOwner = TestAuth.registerOwner(restTemplate, "get-other-owner-" + runId + "@example.com");
+
+        UUID providerId = createProvider(owner, "Get Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Get Service", new BigDecimal("20.00"));
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+        UUID bookingId = UUID.fromString(createBooking(customer,
+                new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("20.00")))
+                .getBody().get("id").toString());
+
+        // No token at all -> 401.
+        ResponseEntity<Map> unauthenticated = restTemplate.getForEntity("/api/v1/bookings/" + bookingId, Map.class);
+        assertThat(unauthenticated.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        // The booking's own customer can read it.
+        ResponseEntity<Map> asCustomer = restTemplate.exchange("/api/v1/bookings/" + bookingId, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(asCustomer.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(asCustomer.getBody().get("id")).isEqualTo(bookingId.toString());
+
+        // The provider's own owner can read it too.
+        ResponseEntity<Map> asOwner = restTemplate.exchange("/api/v1/bookings/" + bookingId, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(asOwner.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // A different customer cannot.
+        ResponseEntity<Map> asOtherCustomer = restTemplate.exchange("/api/v1/bookings/" + bookingId,
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(otherCustomer.accessToken())),
+                Map.class);
+        assertThat(asOtherCustomer.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        // A different provider's owner cannot either.
+        ResponseEntity<Map> asOtherOwner = restTemplate.exchange("/api/v1/bookings/" + bookingId, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(otherOwner.accessToken())), Map.class);
+        assertThat(asOtherOwner.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void gettingANonexistentBookingIs404EvenWhenAuthenticated() {
+        Registered customer = TestAuth.registerCustomer(restTemplate, "get-missing-" + UUID.randomUUID()
+                + "@example.com");
+
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/bookings/" + UUID.randomUUID(),
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    /**
      * Proves the fix for the price-tampering hole: whatever totalPrice the
      * client sends — correct, lowballed, or wildly inflated — the booking
      * (and the payment actually charged against it) always ends up priced
