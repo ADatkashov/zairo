@@ -46,12 +46,15 @@ public class BookingController {
             Reserves a Service at an Availability slot for a user — atomically claims the slot \
             (OPEN -> BOOKED), so two customers racing for the same slot resolve to one 201 and one 409. \
             Self-service only: the caller must be the exact user named by `userId` — can't book on behalf \
-            of someone else.
+            of someone else. The created booking's `totalPrice`/`currency` always come from the service's \
+            own current price — the request's `totalPrice` field is ignored, not trusted, so a client can't \
+            set its own price.
 
             **Workflow**: `Search -> Get provider details -> Create booking` — this is the last step, using \
             a `serviceId`/`availabilitySlotId` pair found via GET /search/providers and \
             GET /providers/{id}/availability-slots.""")
-    @ApiResponse(responseCode = "201", description = "Booking created, status PENDING, slot now BOOKED")
+    @ApiResponse(responseCode = "201", description = "Booking created, status PENDING, slot now BOOKED, priced "
+            + "from the service's own current price")
     @ApiResponse(responseCode = "400", ref = "BadRequest")
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @ApiResponse(responseCode = "402", description = "The provider owner's subscription plan doesn't allow "
@@ -59,9 +62,10 @@ public class BookingController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @ApiResponse(responseCode = "403", description = "userId doesn't match the caller's own id.",
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
-    @ApiResponse(responseCode = "404", ref = "NotFound", description = "The availability slot doesn't exist.")
-    @ApiResponse(responseCode = "409", description = "The slot isn't OPEN, or was just claimed by a "
-            + "concurrent request for someone else.",
+    @ApiResponse(responseCode = "404", ref = "NotFound", description = "The service or the availability slot "
+            + "doesn't exist.")
+    @ApiResponse(responseCode = "409", description = "The slot isn't OPEN, was just claimed by a concurrent "
+            + "request for someone else, or the service belongs to a different provider than the slot.",
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/bookings")
