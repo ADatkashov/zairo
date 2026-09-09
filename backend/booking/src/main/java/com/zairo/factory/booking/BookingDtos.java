@@ -14,14 +14,21 @@ public final class BookingDtos {
 
     // totalPrice non-negative mirrors Money's own requireNonNegative check
     // (an uncaught IllegalArgumentException -> undocumented 500 without
-    // this — see ServiceOfferingDtos for the same pattern).
+    // this — see ServiceOfferingDtos for the same pattern). Kept @NotNull
+    // for backward compatibility with every existing client, which always
+    // sends it — but BookingService.createBooking ignores its value: the
+    // stored price/currency always come from the service's own
+    // ServiceOffering, never from this field (see BookingService's own
+    // doc comment — this used to be a price-tampering hole).
     public record CreateBookingRequest(
             @NotNull @Schema(example = "550e8400-e29b-41d4-a716-446655440000") UUID userId,
             @NotNull @Schema(example = "550e8400-e29b-41d4-a716-446655440000") UUID serviceId,
             @NotNull @Schema(description = "Must currently be OPEN — claimed atomically on booking creation, "
                     + "so a race against another customer booking the same slot resolves to a 409 for "
                     + "whoever loses it.", example = "550e8400-e29b-41d4-a716-446655440000") UUID availabilitySlotId,
-            @NotNull @DecimalMin("0") @Schema(example = "25.00") BigDecimal totalPrice) {
+            @NotNull @DecimalMin("0") @Schema(description = "Ignored — kept for backward compatibility only. "
+                    + "The booking's real price always comes from the service's own current price, never from "
+                    + "this field.", example = "25.00") BigDecimal totalPrice) {
     }
 
     // Not @NotNull on purpose: every existing client (and test) calls
