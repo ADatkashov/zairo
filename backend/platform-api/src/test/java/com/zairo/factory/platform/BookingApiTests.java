@@ -329,6 +329,88 @@ class BookingApiTests {
         assertThat(again.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
     }
 
+    /**
+     * Proves the fix for the price-tampering hole: whatever totalPrice the
+     * client sends — correct, lowballed, or wildly inflated — the booking
+     * (and the payment actually charged against it) always ends up priced
+     * at the service's own current price, never the client's number.
+     */
+    @Test
+    void bookingPriceAlwaysComesFromTheServiceNeverFromTheClientRequest() {
+        String runId = UUID.randomUUID().toString();
+        Registered customer = TestAuth.registerCustomer(restTemplate, "price-customer-" + runId + "@example.com");
+        Registered owner = TestAuth.registerOwner(restTemplate, "price-owner-" + runId + "@example.com");
+
+        UUID providerId = createProvider(owner, "Price Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Price Service", new BigDecimal("500.00"));
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+
+        // Client sends the correct price — still served from the service,
+        // not merely echoed back.
+        UUID slotCorrect = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+        ResponseEntity<Map> correct = createBooking(customer,
+                new CreateBookingRequest(customer.userId(), serviceId, slotCorrect, new BigDecimal("500.00")));
+        assertThat(correct.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(correct.getBody().get("totalPrice")).isEqualTo(500.00);
+
+        // Client lowballs the price (0.01 vs the real 500.00) — the booking
+        // is still created at the service's real price, not the client's.
+        UUID slotLow = createSlot(owner, providerId, start.plus(1, ChronoUnit.HOURS),
+                start.plus(90, ChronoUnit.MINUTES));
+        ResponseEntity<Map> lowball = createBooking(customer,
+                new CreateBookingRequest(customer.userId(), serviceId, slotLow, new BigDecimal("0.01")));
+        assertThat(lowball.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(lowball.getBody().get("totalPrice")).isEqualTo(500.00);
+        UUID lowballBookingId = UUID.fromString(lowball.getBody().get("id").toString());
+
+        // Client inflates the price (999999 vs the real 500.00) — same
+        // result, the service's price wins either direction.
+        UUID slotHigh = createSlot(owner, providerId, start.plus(2, ChronoUnit.HOURS),
+                start.plus(150, ChronoUnit.MINUTES));
+        ResponseEntity<Map> inflated = createBooking(customer,
+                new CreateBookingRequest(customer.userId(), serviceId, slotHigh, new BigDecimal("999999")));
+        assertThat(inflated.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(inflated.getBody().get("totalPrice")).isEqualTo(500.00);
+
+        // The actual charge (Payments) is computed from the booking's
+        // server-side price too — the 0.01 the client tried to sneak in on
+        // the lowballed booking never reaches the payment provider.
+        ResponseEntity<Map> payment = restTemplate.postForEntity("/api/v1/bookings/" + lowballBookingId
+                + "/payments", null, Map.class);
+        assertThat(payment.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(payment.getBody().get("amount")).isEqualTo(500.00);
+    }
+
+    /**
+     * Proves the fix for the service/slot provider-consistency hole: a
+     * service from one provider can't be booked against a time slot that
+     * belongs to a completely different provider.
+     */
+    @Test
+    void aServiceFromOneProviderCannotBeBookedAgainstAnotherProvidersSlot() {
+        String runId = UUID.randomUUID().toString();
+        Registered customer = TestAuth.registerCustomer(restTemplate, "mismatch-customer-" + runId
+                + "@example.com");
+        Registered ownerA = TestAuth.registerOwner(restTemplate, "mismatch-ownerA-" + runId + "@example.com");
+        Registered ownerB = TestAuth.registerOwner(restTemplate, "mismatch-ownerB-" + runId + "@example.com");
+
+        UUID providerA = createProvider(ownerA, "Mismatch Salon A " + runId);
+        UUID serviceA = createService(ownerA, providerA, "Service A", new BigDecimal("500.00"));
+
+        UUID providerB = createProvider(ownerB, "Mismatch Salon B " + runId);
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        UUID slotB = createSlot(ownerB, providerB, start, start.plus(30, ChronoUnit.MINUTES));
+
+        ResponseEntity<Map> response = createBooking(customer,
+                new CreateBookingRequest(customer.userId(), serviceA, slotB, new BigDecimal("500.00")));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+
+        // The rejected attempt never claimed provider B's slot.
+        ResponseEntity<Map[]> slots = restTemplate.getForEntity(
+                "/api/v1/providers/" + providerB + "/availability-slots", Map[].class);
+        assertThat(slots.getBody()).extracting(s -> s.get("status")).containsExactly("OPEN");
+    }
+
     private UUID createProvider(Registered owner, String name) {
         var request = new CreateProviderRequest(owner.userId(), name, "beauty");
         ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
