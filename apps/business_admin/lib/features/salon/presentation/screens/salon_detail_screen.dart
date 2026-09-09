@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/formatting/month_day_time.dart';
+import '../../../../core/image/pick_and_crop_image.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auto/data/models/admin_mechanic.dart';
 import '../../../auto/presentation/providers/auto_admin_providers.dart';
@@ -331,17 +332,22 @@ class _ChangePhotoDialogState extends ConsumerState<_ChangePhotoDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final pickedBytes = _pickedBytes;
     return FactoryDialog(
       title: l10n.changePhotoDialogTitle,
       content: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          if (pickedBytes != null) ...[
+            CircleAvatar(radius: 48, backgroundImage: MemoryImage(pickedBytes)),
+            const SizedBox(height: FactorySpacing.space3),
+          ],
           FactoryButton(
             icon: Icons.image_outlined,
-            label: _pickedName ?? l10n.choosePhotoLabel,
+            label: l10n.choosePhotoLabel,
             variant: FactoryButtonVariant.secondary,
-            onPressed: _isSubmitting ? null : _pickFile,
+            onPressed: _isSubmitting ? null : _pickPhoto,
           ),
           if (_error != null)
             Padding(
@@ -371,14 +377,13 @@ class _ChangePhotoDialogState extends ConsumerState<_ChangePhotoDialog> {
     );
   }
 
-  Future<void> _pickFile() async {
+  Future<void> _pickPhoto() async {
     try {
-      final result = await FilePicker.pickFiles(type: FileType.image, withData: true);
-      final file = result?.files.singleOrNull;
-      if (file?.bytes == null) return;
+      final picked = await pickAndCropImage(context, cropTitle: AppLocalizations.of(context)!.changePhotoDialogTitle);
+      if (picked == null) return;
       setState(() {
-        _pickedBytes = file!.bytes;
-        _pickedName = file.name;
+        _pickedBytes = picked.bytes;
+        _pickedName = picked.name;
         _error = null;
       });
     } catch (e) {

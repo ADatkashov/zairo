@@ -29,8 +29,9 @@ subprojects {
 // :file_picker. Without this, FilePickerPlugin.kt never gets a
 // :file_picker:compileDebugKotlin task at all, and the generated Java
 // plugin registrant fails with "cannot find symbol: class FilePickerPlugin".
-// Mirrors apps/user_app/android/build.gradle.kts's identical fix (it needs
-// this too now that it also depends on file_picker).
+// apps/user_app no longer depends on file_picker (see its pubspec.yaml —
+// replaced by image_picker + image_cropper for the avatar/photo flows), so
+// it doesn't need this.
 subprojects {
     if (project.name == "file_picker") {
         project.pluginManager.apply("org.jetbrains.kotlin.android")

@@ -276,5 +276,7 @@
   "changeAvatarSaveButton": "Сохранить",
   "changeAvatarRemoveButton": "Удалить фото",
   "changeAvatarErrorReadFileFailed": "Не удалось прочитать файл: {error}",
-  "changeAvatarErrorSaveFailed": "Не удалось обновить аватар: {error}"
+  "changeAvatarErrorSaveFailed": "Не удалось обновить аватар: {error}",
+  "imagePickerCameraLabel": "Камера",
+  "imagePickerGalleryLabel": "Галерея"
 }

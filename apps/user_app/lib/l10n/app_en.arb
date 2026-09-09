@@ -872,5 +872,11 @@
     "placeholders": {
       "error": {"type": "String"}
     }
-  }
+  },
+
+  "imagePickerCameraLabel": "Camera",
+  "@imagePickerCameraLabel": {"description": "Photo-source bottom sheet option: take a new photo."},
+
+  "imagePickerGalleryLabel": "Gallery",
+  "@imagePickerGalleryLabel": {"description": "Photo-source bottom sheet option: pick an existing photo."}
 }

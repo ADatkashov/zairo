@@ -276,5 +276,7 @@
   "changeAvatarSaveButton": "Сақтау",
   "changeAvatarRemoveButton": "Фотоны өшіру",
   "changeAvatarErrorReadFileFailed": "Файлды оқу мүмкін болмады: {error}",
-  "changeAvatarErrorSaveFailed": "Аватарды жаңарту мүмкін болмады: {error}"
+  "changeAvatarErrorSaveFailed": "Аватарды жаңарту мүмкін болмады: {error}",
+  "imagePickerCameraLabel": "Камера",
+  "imagePickerGalleryLabel": "Галерея"
 }

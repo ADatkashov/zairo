@@ -36,6 +36,13 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- image_cropper's native crop screen — required by the plugin's own
+             Android setup instructions; without it, cropping a photo throws
+             an ActivityNotFoundException. -->
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

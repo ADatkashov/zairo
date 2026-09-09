@@ -41,11 +41,10 @@ dependencies:
   # category_icon.dart so category icons render pixel-equivalent to the
   # mockup rather than just semantically equivalent.
   material_symbols_icons: ^4.2960.0
-  # Profile avatar upload — pinned to this exact pre-release for the same
-  # reason as apps/business_admin's identical dependency (see its pubspec):
-  # stable 12.0.0's readAsBytes()/blob-fetch rewrite hangs indefinitely on
-  # web, so this stays on the older withData/PlatformFile.bytes path.
-  file_picker: 12.0.0-beta.1
+  # Profile avatar: pick from camera/gallery, then crop/zoom/rotate before
+  # upload (see pick_and_crop_image.dart).
+  image_picker: ^1.2.3
+  image_cropper: ^12.2.1
 
 dev_dependencies:
   flutter_test:
