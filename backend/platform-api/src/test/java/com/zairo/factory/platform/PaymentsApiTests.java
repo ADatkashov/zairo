@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequest;
 import com.zairo.factory.booking.BookingDtos.CreateBookingRequest;
 import com.zairo.factory.platform.TestAuth.Registered;
+import com.zairo.factory.platformadmin.PlatformAdminAccountRepository;
+import com.zairo.factory.platformadmin.PlatformRole;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
 import java.math.BigDecimal;
@@ -42,6 +44,9 @@ class PaymentsApiTests {
 
     @Autowired
     private TestNotifications.CapturedEmails capturedEmails;
+
+    @Autowired
+    private PlatformAdminAccountRepository platformAdminAccountRepository;
 
     @Test
     void paysForABookingThenRefundsIt() {
@@ -90,11 +95,17 @@ class PaymentsApiTests {
                 "/api/v1/bookings/" + bookingId + "/payments", null, Map.class);
         assertThat(duplicatePay.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
 
+        // Refund is PLATFORM_ADMIN-only — see PaymentsController.refund.
+        var admin = registerPlatformAdmin("pay-refund-admin-" + runId);
+
         // Refund succeeds.
-        ResponseEntity<Map> refundResponse = restTemplate.postForEntity(
-                "/api/v1/payments/" + paymentId + "/refund", null, Map.class);
+        ResponseEntity<Map> refundResponse = refundAs(paymentId, admin);
         assertThat(refundResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(refundResponse.getBody().get("status")).isEqualTo("REFUNDED");
+        // Amount/currency still come from the payment itself — refund takes
+        // no request body, so there is nothing for a caller to override.
+        assertThat(refundResponse.getBody().get("amount")).isEqualTo(35.00);
+        assertThat(refundResponse.getBody().get("currency")).isEqualTo("USD");
 
         // The customer is notified once the refund actually succeeds.
         assertThat(capturedEmails.sent).anySatisfy(email -> {
@@ -103,8 +114,7 @@ class PaymentsApiTests {
         });
 
         // A second refund attempt is rejected — already refunded, not SUCCEEDED.
-        ResponseEntity<Map> duplicateRefund = restTemplate.postForEntity(
-                "/api/v1/payments/" + paymentId + "/refund", null, Map.class);
+        ResponseEntity<Map> duplicateRefund = refundAs(paymentId, admin);
         assertThat(duplicateRefund.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
     }
 
@@ -188,10 +198,10 @@ class PaymentsApiTests {
         UUID bookingId = createBookingForPayment("refund-outage-", new BigDecimal("22.00"));
         UUID paymentId = UUID.fromString(restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments",
                 null, Map.class).getBody().get("id").toString());
+        var admin = registerPlatformAdmin("refund-outage-admin-" + UUID.randomUUID());
 
         failureController.failNextRefund = true;
-        ResponseEntity<Map> refundResponse = restTemplate.postForEntity(
-                "/api/v1/payments/" + paymentId + "/refund", null, Map.class);
+        ResponseEntity<Map> refundResponse = refundAs(paymentId, admin);
         assertThat(refundResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY);
 
         // The failure survived the exception — not rolled back with it (see
@@ -207,11 +217,72 @@ class PaymentsApiTests {
         // Retrying (the mock provider succeeds by default now that the
         // one-shot failure flag has been consumed) clears the failure and
         // actually refunds it.
-        ResponseEntity<Map> retry = restTemplate.postForEntity("/api/v1/payments/" + paymentId + "/refund", null,
-                Map.class);
+        ResponseEntity<Map> retry = refundAs(paymentId, admin);
         assertThat(retry.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(retry.getBody().get("status")).isEqualTo("REFUNDED");
         assertThat(retry.getBody().get("refundFailureReason")).isNull();
+    }
+
+    /**
+     * Proves the fix for the refund endpoint's missing authorization:
+     * PLATFORM_ADMIN-only (mirrors PaymentAdminApiTests' own coverage of the
+     * failed-refund visibility endpoint, the read-side counterpart of this
+     * same admin surface).
+     */
+    @Test
+    void refundingAPaymentRequiresPlatformAdminAndRejectsEveryoneElse() {
+        String runId = UUID.randomUUID().toString();
+        UUID bookingId = createBookingForPayment("refund-authz-", new BigDecimal("50.00"));
+        Registered customer = TestAuth.registerCustomer(restTemplate, "refund-authz-cust-" + runId
+                + "@example.com");
+        UUID paymentId = UUID.fromString(restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments",
+                null, Map.class).getBody().get("id").toString());
+
+        // No token at all -> 401.
+        ResponseEntity<Map> unauthenticated = restTemplate.postForEntity("/api/v1/payments/" + paymentId
+                + "/refund", null, Map.class);
+        assertThat(unauthenticated.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        // A regular (non-platform) bearer token is not a platform access
+        // token at all — same 401, not 403, as the fully anonymous case.
+        // This is what "can't refund someone else's payment" collapses to
+        // under a PLATFORM_ADMIN-only design: no customer or provider token,
+        // including the payment's own customer's, is ever a valid platform
+        // token, so none of them can reach the role check to begin with —
+        // see PlatformCurrentAdmin.requireAnyRole's own doc comment.
+        ResponseEntity<Map> asCustomer = restTemplate.exchange("/api/v1/payments/" + paymentId + "/refund",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(asCustomer.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        // A valid platform token with an insufficient role -> 403. PLATFORM_SUPPORT
+        // is read-only across the whole Control Center (see PlatformRole's own
+        // doc comment) — it can list failed refunds but not retry one.
+        var support = registerPlatformAdmin("refund-authz-support-" + runId, PlatformRole.PLATFORM_SUPPORT);
+        ResponseEntity<Map> asSupport = refundAs(paymentId, support);
+        assertThat(asSupport.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        // PLATFORM_ADMIN succeeds.
+        var admin = registerPlatformAdmin("refund-authz-admin-" + runId);
+        ResponseEntity<Map> asAdmin = refundAs(paymentId, admin);
+        assertThat(asAdmin.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(asAdmin.getBody().get("status")).isEqualTo("REFUNDED");
+        // Amount/currency come from the payment itself, unaffected by who called it.
+        assertThat(asAdmin.getBody().get("amount")).isEqualTo(50.00);
+        assertThat(asAdmin.getBody().get("currency")).isEqualTo("USD");
+    }
+
+    private TestPlatformAuth.Registered registerPlatformAdmin(String emailPrefix) {
+        return registerPlatformAdmin(emailPrefix, PlatformRole.PLATFORM_ADMIN);
+    }
+
+    private TestPlatformAuth.Registered registerPlatformAdmin(String emailPrefix, PlatformRole role) {
+        return TestPlatformAuth.registerPlatformAdmin(restTemplate, platformAdminAccountRepository,
+                emailPrefix + "@factory.internal", role);
+    }
+
+    private ResponseEntity<Map> refundAs(UUID paymentId, TestPlatformAuth.Registered admin) {
+        return restTemplate.exchange("/api/v1/payments/" + paymentId + "/refund", HttpMethod.POST,
+                new HttpEntity<>(null, TestPlatformAuth.authHeaders(admin.accessToken())), Map.class);
     }
 
     private UUID createBookingForPayment(String prefix, BigDecimal price) {
