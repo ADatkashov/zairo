@@ -268,5 +268,13 @@
   "favoritesClearAllConfirmMessage": "Все провайдеры будут удалены из избранного. Это действие нельзя отменить.",
   "favoritesClearAllKeepButton": "Не очищать",
   "bookingCancelledMessage": "Бронирование отменено.",
-  "paymentStatusRefunded": "Возвращено"
+  "paymentStatusRefunded": "Возвращено",
+
+  "changeAvatarDialogTitle": "Сменить аватар",
+  "changeAvatarChoosePhotoLabel": "Выбрать фото",
+  "changeAvatarCancelButton": "Отмена",
+  "changeAvatarSaveButton": "Сохранить",
+  "changeAvatarRemoveButton": "Удалить фото",
+  "changeAvatarErrorReadFileFailed": "Не удалось прочитать файл: {error}",
+  "changeAvatarErrorSaveFailed": "Не удалось обновить аватар: {error}"
 }

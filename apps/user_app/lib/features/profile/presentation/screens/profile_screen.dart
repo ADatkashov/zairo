@@ -13,6 +13,7 @@ import '../../../booking/presentation/providers/booking_providers.dart';
 import '../../../favorites/presentation/providers/favorites_providers.dart';
 import '../../../favorites/presentation/screens/favorites_screen.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
+import '../widgets/change_avatar_dialog.dart';
 import 'about_screen.dart';
 import 'support_screen.dart';
 
@@ -44,6 +45,7 @@ class ProfileScreen extends ConsumerWidget {
                 userId: user.id,
                 displayName: user.displayName,
                 email: user.email,
+                avatarUrl: user.avatarUrl,
               ),
         loading: () => const FactoryLoadingState(),
         error: (error, stackTrace) => Center(
@@ -98,11 +100,13 @@ class _LoggedInView extends ConsumerWidget {
   final String userId;
   final String displayName;
   final String email;
+  final String? avatarUrl;
 
   const _LoggedInView({
     required this.userId,
     required this.displayName,
     required this.email,
+    this.avatarUrl,
   });
 
   @override
@@ -118,9 +122,30 @@ class _LoggedInView extends ConsumerWidget {
       children: [
         const SizedBox(height: FactorySpacing.space4),
         Center(
-          child: FactoryAvatar(
-            initials: initialsFor(displayName),
-            size: FactoryAvatarSize.xl,
+          child: GestureDetector(
+            onTap: () => showChangeAvatarDialog(context, hasCurrentAvatar: avatarUrl != null),
+            child: Stack(
+              children: [
+                FactoryAvatar(
+                  initials: initialsFor(displayName),
+                  size: FactoryAvatarSize.xl,
+                  image: avatarUrl != null ? NetworkImage(avatarUrl!) : null,
+                ),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: colors.primary,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: colors.bg, width: 2),
+                    ),
+                    child: Icon(Icons.edit, size: 14, color: colors.onPrimary),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: FactorySpacing.space3),

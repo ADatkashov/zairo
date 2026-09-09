@@ -51,7 +51,15 @@ public final class AuthDtos {
             @Schema(example = "550e8400-e29b-41d4-a716-446655440000") UUID id,
             @Schema(example = "aigerim@example.com") String email,
             @Schema(example = "Aigerim Bekova") String displayName,
-            UserRole role) {
+            UserRole role,
+            @Schema(example = "http://localhost:8080/api/v1/uploads/a1b2c3d4.jpg") String avatarUrl) {
+    }
+
+    public record UpdateAvatarRequest(
+            @Size(max = 2048) @Schema(description = "Upload via POST /uploads first, then pass its returned url "
+                    + "here. Null/blank removes the avatar.",
+                    example = "http://localhost:8080/api/v1/uploads/a1b2c3d4.jpg")
+            String avatarUrl) {
     }
 
     public record TokenResponse(

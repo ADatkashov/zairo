@@ -296,6 +296,138 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
   }
 }
 
+/// Generic photo-change dialog shared by the master/mechanic/cleaner/staff
+/// rows below — each just passes its own `onSave` calling the matching
+/// admin API's updateXPhoto. Mirrors _EditSalonDialog's pick-then-upload
+/// pattern (upload only happens on submit, so a cancelled dialog never
+/// leaves an orphaned file in storage).
+Future<void> _showChangePhotoDialog(
+  BuildContext context, {
+  required bool hasCurrentPhoto,
+  required Future<void> Function(String? photoUrl) onSave,
+}) {
+  return showDialog<void>(
+    context: context,
+    builder: (_) => _ChangePhotoDialog(hasCurrentPhoto: hasCurrentPhoto, onSave: onSave),
+  );
+}
+
+class _ChangePhotoDialog extends ConsumerStatefulWidget {
+  const _ChangePhotoDialog({required this.hasCurrentPhoto, required this.onSave});
+
+  final bool hasCurrentPhoto;
+  final Future<void> Function(String? photoUrl) onSave;
+
+  @override
+  ConsumerState<_ChangePhotoDialog> createState() => _ChangePhotoDialogState();
+}
+
+class _ChangePhotoDialogState extends ConsumerState<_ChangePhotoDialog> {
+  Uint8List? _pickedBytes;
+  String? _pickedName;
+  bool _isSubmitting = false;
+  String? _error;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return FactoryDialog(
+      title: l10n.changePhotoDialogTitle,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FactoryButton(
+            icon: Icons.image_outlined,
+            label: _pickedName ?? l10n.choosePhotoLabel,
+            variant: FactoryButtonVariant.secondary,
+            onPressed: _isSubmitting ? null : _pickFile,
+          ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: FactorySpacing.space2),
+              child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            ),
+        ],
+      ),
+      actions: [
+        if (widget.hasCurrentPhoto)
+          FactoryButton(
+            label: l10n.removePhotoButton,
+            variant: FactoryButtonVariant.text,
+            onPressed: _isSubmitting ? null : _removePhoto,
+          ),
+        FactoryButton(
+          label: l10n.cancelButton,
+          variant: FactoryButtonVariant.text,
+          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
+        ),
+        FactoryButton(
+          label: l10n.saveButton,
+          isLoading: _isSubmitting,
+          onPressed: _isSubmitting || _pickedBytes == null ? null : _submit,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pickFile() async {
+    try {
+      final result = await FilePicker.pickFiles(type: FileType.image, withData: true);
+      final file = result?.files.singleOrNull;
+      if (file?.bytes == null) return;
+      setState(() {
+        _pickedBytes = file!.bytes;
+        _pickedName = file.name;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = AppLocalizations.of(context)!.errorReadFileFailed(e.toString()));
+    }
+  }
+
+  Future<void> _removePhoto() async {
+    setState(() {
+      _isSubmitting = true;
+      _error = null;
+    });
+    try {
+      await widget.onSave(null);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = AppLocalizations.of(context)!.errorUpdatePhotoFailed(e.toString());
+        _isSubmitting = false;
+      });
+    }
+  }
+
+  Future<void> _submit() async {
+    final bytes = _pickedBytes;
+    final name = _pickedName;
+    if (bytes == null || name == null) return;
+    setState(() {
+      _isSubmitting = true;
+      _error = null;
+    });
+    try {
+      final uploaded = await ref.read(storageApiProvider).uploadBytes(bytes, name);
+      await widget.onSave(uploaded.url);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = AppLocalizations.of(context)!.errorUpdatePhotoFailed(e.toString());
+        _isSubmitting = false;
+      });
+    }
+  }
+}
+
 class _DashboardMetricsSection extends ConsumerWidget {
   final String providerId;
 
@@ -704,6 +836,14 @@ class _MastersSection extends ConsumerWidget {
                             context: context,
                             builder: (_) => AddPortfolioItemDialog(masterId: m.id),
                           ),
+                          onChangePhoto: () => _showChangePhotoDialog(
+                            context,
+                            hasCurrentPhoto: m.photoUrl != null,
+                            onSave: (photoUrl) async {
+                              await ref.read(beautyAdminApiProvider).updateMasterPhoto(m.id, photoUrl);
+                              refresh();
+                            },
+                          ),
                           onRemove: () async {
                             await ref.read(beautyAdminApiProvider).deactivateMaster(m.id);
                             refresh();
@@ -733,6 +873,7 @@ class _MasterAdminRow extends StatelessWidget {
     required this.master,
     required this.onManageServices,
     required this.onAddPortfolioItem,
+    required this.onChangePhoto,
     required this.onRemove,
     required this.onReactivate,
   });
@@ -740,6 +881,7 @@ class _MasterAdminRow extends StatelessWidget {
   final AdminMaster master;
   final VoidCallback onManageServices;
   final VoidCallback onAddPortfolioItem;
+  final VoidCallback onChangePhoto;
   final VoidCallback onRemove;
   final VoidCallback onReactivate;
 
@@ -772,6 +914,11 @@ class _MasterAdminRow extends StatelessWidget {
                   icon: const Icon(Icons.design_services_outlined),
                   tooltip: l10n.manageServicesTooltip,
                   onPressed: onManageServices,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.camera_alt_outlined),
+                  tooltip: l10n.changePhotoTooltip,
+                  onPressed: onChangePhoto,
                 ),
                 IconButton(
                   icon: const Icon(Icons.add_a_photo_outlined),
@@ -856,6 +1003,14 @@ class _MechanicsSection extends ConsumerWidget {
                             context: context,
                             builder: (_) => ManageMechanicServicesDialog(providerId: providerId, mechanicId: m.id),
                           ),
+                          onChangePhoto: () => _showChangePhotoDialog(
+                            context,
+                            hasCurrentPhoto: m.photoUrl != null,
+                            onSave: (photoUrl) async {
+                              await ref.read(autoAdminApiProvider).updateMechanicPhoto(m.id, photoUrl);
+                              refresh();
+                            },
+                          ),
                           onRemove: () async {
                             await ref.read(autoAdminApiProvider).deactivateMechanic(m.id);
                             refresh();
@@ -884,12 +1039,14 @@ class _MechanicAdminRow extends StatelessWidget {
   const _MechanicAdminRow({
     required this.mechanic,
     required this.onManageServices,
+    required this.onChangePhoto,
     required this.onRemove,
     required this.onReactivate,
   });
 
   final AdminMechanic mechanic;
   final VoidCallback onManageServices;
+  final VoidCallback onChangePhoto;
   final VoidCallback onRemove;
   final VoidCallback onReactivate;
 
@@ -922,6 +1079,11 @@ class _MechanicAdminRow extends StatelessWidget {
                   icon: const Icon(Icons.design_services_outlined),
                   tooltip: l10n.manageMechanicServicesTooltip,
                   onPressed: onManageServices,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.camera_alt_outlined),
+                  tooltip: l10n.changePhotoTooltip,
+                  onPressed: onChangePhoto,
                 ),
                 IconButton(
                   icon: const Icon(Icons.person_remove_outlined),
@@ -1001,6 +1163,14 @@ class _CleanersSection extends ConsumerWidget {
                             context: context,
                             builder: (_) => ManageCleanerServicesDialog(providerId: providerId, cleanerId: c.id),
                           ),
+                          onChangePhoto: () => _showChangePhotoDialog(
+                            context,
+                            hasCurrentPhoto: c.photoUrl != null,
+                            onSave: (photoUrl) async {
+                              await ref.read(cleaningAdminApiProvider).updateCleanerPhoto(c.id, photoUrl);
+                              refresh();
+                            },
+                          ),
                           onRemove: () async {
                             await ref.read(cleaningAdminApiProvider).deactivateCleaner(c.id);
                             refresh();
@@ -1029,12 +1199,14 @@ class _CleanerAdminRow extends StatelessWidget {
   const _CleanerAdminRow({
     required this.cleaner,
     required this.onManageServices,
+    required this.onChangePhoto,
     required this.onRemove,
     required this.onReactivate,
   });
 
   final AdminCleaner cleaner;
   final VoidCallback onManageServices;
+  final VoidCallback onChangePhoto;
   final VoidCallback onRemove;
   final VoidCallback onReactivate;
 
@@ -1067,6 +1239,11 @@ class _CleanerAdminRow extends StatelessWidget {
                   icon: const Icon(Icons.design_services_outlined),
                   tooltip: l10n.manageCleanerServicesTooltip,
                   onPressed: onManageServices,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.camera_alt_outlined),
+                  tooltip: l10n.changePhotoTooltip,
+                  onPressed: onChangePhoto,
                 ),
                 IconButton(
                   icon: const Icon(Icons.person_remove_outlined),
@@ -1146,6 +1323,14 @@ class _StaffSection extends ConsumerWidget {
                             context: context,
                             builder: (_) => ManageStaffServicesDialog(providerId: providerId, staffId: s.id),
                           ),
+                          onChangePhoto: () => _showChangePhotoDialog(
+                            context,
+                            hasCurrentPhoto: s.photoUrl != null,
+                            onSave: (photoUrl) async {
+                              await ref.read(staffAdminApiProvider).updateStaffPhoto(s.id, photoUrl);
+                              refresh();
+                            },
+                          ),
                           onRemove: () async {
                             await ref.read(staffAdminApiProvider).deactivateStaff(s.id);
                             refresh();
@@ -1174,12 +1359,14 @@ class _StaffAdminRow extends StatelessWidget {
   const _StaffAdminRow({
     required this.staff,
     required this.onManageServices,
+    required this.onChangePhoto,
     required this.onRemove,
     required this.onReactivate,
   });
 
   final AdminStaff staff;
   final VoidCallback onManageServices;
+  final VoidCallback onChangePhoto;
   final VoidCallback onRemove;
   final VoidCallback onReactivate;
 
@@ -1212,6 +1399,11 @@ class _StaffAdminRow extends StatelessWidget {
                   icon: const Icon(Icons.design_services_outlined),
                   tooltip: l10n.manageStaffServicesTooltip,
                   onPressed: onManageServices,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.camera_alt_outlined),
+                  tooltip: l10n.changePhotoTooltip,
+                  onPressed: onChangePhoto,
                 ),
                 IconButton(
                   icon: const Icon(Icons.person_remove_outlined),
