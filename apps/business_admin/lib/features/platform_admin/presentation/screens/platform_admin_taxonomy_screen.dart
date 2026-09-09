@@ -2,6 +2,7 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/formatting/month_day_time.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../catalog/data/models/business_type.dart';
 import '../../../catalog/data/models/category.dart';
@@ -10,6 +11,7 @@ import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../../salon/data/models/admin_provider.dart';
 import '../../data/models/platform_admin_session.dart';
 import '../providers/platform_admin_providers.dart';
+import '../widgets/platform_change_avatar_dialog.dart';
 
 /// The whole point of the "don't hardcode categories" instruction, made
 /// operable: a PLATFORM_ADMIN creates Category -> Sphere (BusinessType) ->
@@ -30,21 +32,49 @@ class PlatformAdminTaxonomyScreen extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
+    final tabs = [
+      const Tab(text: 'Businesses'),
+      const Tab(text: 'Categories'),
+      const Tab(text: 'Spheres'),
+      const Tab(text: 'Subspheres'),
+      const Tab(text: 'Services'),
+      const Tab(text: 'Audit Log'),
+      if (session.isPlatformAdmin) const Tab(text: 'Staff'),
+    ];
+    final tabViews = [
+      _BusinessesTab(session: session),
+      _CategoriesTab(platformToken: session.accessToken),
+      _SpheresTab(platformToken: session.accessToken),
+      _SubspheresTab(platformToken: session.accessToken),
+      _ServicesTab(platformToken: session.accessToken),
+      _AuditLogTab(platformToken: session.accessToken),
+      if (session.isPlatformAdmin) _StaffTab(session: session),
+    ];
+
     return DefaultTabController(
-      length: 5,
+      length: tabs.length,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(session.email),
-          bottom: const TabBar(
-            isScrollable: true,
-            tabs: [
-              Tab(text: 'Businesses'),
-              Tab(text: 'Categories'),
-              Tab(text: 'Spheres'),
-              Tab(text: 'Subspheres'),
-              Tab(text: 'Services'),
+          leading: Padding(
+            padding: const EdgeInsets.all(FactorySpacing.space2),
+            child: GestureDetector(
+              onTap: () => showPlatformChangeAvatarDialog(context, hasCurrentAvatar: session.avatarUrl != null),
+              child: FactoryAvatar(
+                initials: _initialsFor(session.displayName),
+                size: 32,
+                image: session.avatarUrl != null ? NetworkImage(session.avatarUrl!) : null,
+              ),
+            ),
+          ),
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(child: Text(session.email, overflow: TextOverflow.ellipsis)),
+              const SizedBox(width: FactorySpacing.space2),
+              FactoryBadge(label: session.role, variant: FactoryBadgeVariant.neutral),
             ],
           ),
+          bottom: TabBar(isScrollable: true, tabs: tabs),
           actions: [
             IconButton(
               icon: const Icon(Icons.logout),
@@ -55,18 +85,19 @@ class PlatformAdminTaxonomyScreen extends ConsumerWidget {
             ),
           ],
         ),
-        body: TabBarView(
-          children: [
-            _BusinessesTab(session: session),
-            _CategoriesTab(platformToken: session.accessToken),
-            _SpheresTab(platformToken: session.accessToken),
-            _SubspheresTab(platformToken: session.accessToken),
-            _ServicesTab(platformToken: session.accessToken),
-          ],
-        ),
+        body: TabBarView(children: tabViews),
       ),
     );
   }
+}
+
+String _initialsFor(String name) {
+  final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+  if (parts.isEmpty) return '?';
+  if (parts.length == 1) {
+    return parts.first.substring(0, parts.first.length >= 2 ? 2 : 1).toUpperCase();
+  }
+  return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
 /// The Control Center's own path to business moderation — same Provider
@@ -170,6 +201,242 @@ class _StatusBadge extends StatelessWidget {
       label: status,
       variant: status == 'ACTIVE' ? FactoryBadgeVariant.available : FactoryBadgeVariant.neutral,
     );
+  }
+}
+
+/// Every platform-admin mutation, newest first — any authenticated platform
+/// role can read this (PLATFORM_SUPPORT included), matching how a real
+/// corporate admin console (Google Workspace Admin, Microsoft 365 admin
+/// center) always ships an activity/audit log alongside role management.
+class _AuditLogTab extends ConsumerWidget {
+  const _AuditLogTab({required this.platformToken});
+
+  final String platformToken;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final entriesAsync = ref.watch(platformAuditLogProvider(platformToken));
+    return Scaffold(
+      body: entriesAsync.when(
+        data: (entries) {
+          if (entries.isEmpty) {
+            return const Center(child: Text('No activity recorded yet.'));
+          }
+          return ListView.separated(
+            padding: const EdgeInsets.all(FactorySpacing.space4),
+            itemCount: entries.length,
+            separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space2),
+            itemBuilder: (context, index) {
+              final entry = entries[index];
+              final subtitleParts = <String>[
+                entry.actorEmail,
+                if (entry.previousValue != null || entry.newValue != null)
+                  '${entry.previousValue ?? '—'} → ${entry.newValue ?? '—'}',
+                if (entry.reason != null && entry.reason!.isNotEmpty) entry.reason!,
+              ];
+              return FactorySelectableTile(
+                title: entry.action,
+                subtitle: Text(subtitleParts.join(' · ')),
+                trailing: Text(
+                  formatMonthDayTime(AppLocalizations.of(context)!, entry.createdAt),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              );
+            },
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) => Center(child: Text('$error')),
+      ),
+    );
+  }
+}
+
+/// The Control Center's staff directory — PLATFORM_ADMIN-only, the one role
+/// that can create or deactivate another platform account (see
+/// PlatformCurrentAdmin.requirePlatformAdmin). Modeled on the same shape
+/// every major admin console uses (Google Workspace, Microsoft 365, AWS
+/// IAM): a role per person, an invite/create flow, and a revoke action —
+/// deliberately not more than that until an actual need shows up (see
+/// PlatformRole's own doc comment on why there are only three roles).
+class _StaffTab extends ConsumerWidget {
+  const _StaffTab({required this.session});
+
+  final PlatformAdminSession session;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final adminsAsync = ref.watch(platformAdminsProvider(session.accessToken));
+    void refresh() => ref.invalidate(platformAdminsProvider(session.accessToken));
+
+    return Scaffold(
+      body: adminsAsync.when(
+        data: (admins) => ListView(
+          padding: const EdgeInsets.all(FactorySpacing.space4),
+          children: [
+            for (final admin in admins)
+              Padding(
+                padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
+                child: FactorySelectableTile(
+                  leading: FactoryAvatar(
+                    initials: _initialsFor(admin.displayName),
+                    image: admin.avatarUrl != null ? NetworkImage(admin.avatarUrl!) : null,
+                  ),
+                  title: admin.displayName,
+                  titleColor: admin.active ? null : Theme.of(context).disabledColor,
+                  subtitle: Text('${admin.email} · ${admin.role}'),
+                  trailing: admin.email == session.email
+                      ? const FactoryBadge(label: 'You', variant: FactoryBadgeVariant.neutral)
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            FactoryBadge(
+                              label: admin.active ? 'Active' : 'Deactivated',
+                              variant: admin.active ? FactoryBadgeVariant.available : FactoryBadgeVariant.neutral,
+                            ),
+                            IconButton(
+                              tooltip: admin.active ? 'Deactivate' : 'Reactivate',
+                              icon: Icon(admin.active ? Icons.block : Icons.check_circle_outline),
+                              onPressed: () async {
+                                if (admin.active) {
+                                  await ref.read(platformAdminApiProvider).deactivateAdmin(
+                                        session.accessToken,
+                                        admin.id,
+                                      );
+                                } else {
+                                  await ref.read(platformAdminApiProvider).reactivateAdmin(
+                                        session.accessToken,
+                                        admin.id,
+                                      );
+                                }
+                                refresh();
+                              },
+                            ),
+                          ],
+                        ),
+                ),
+              ),
+          ],
+        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) => Center(child: Text('$error')),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final created = await showDialog<bool>(
+            context: context,
+            builder: (_) => _CreateAdminDialog(platformToken: session.accessToken),
+          );
+          if (created == true) refresh();
+        },
+        child: const Icon(Icons.person_add_alt_1),
+      ),
+    );
+  }
+}
+
+class _CreateAdminDialog extends ConsumerStatefulWidget {
+  const _CreateAdminDialog({required this.platformToken});
+
+  final String platformToken;
+
+  @override
+  ConsumerState<_CreateAdminDialog> createState() => _CreateAdminDialogState();
+}
+
+class _CreateAdminDialogState extends ConsumerState<_CreateAdminDialog> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _displayNameController = TextEditingController();
+  final _reasonController = TextEditingController();
+  String _role = 'PLATFORM_SUPPORT';
+  bool _isSubmitting = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _displayNameController.dispose();
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return FactoryDialog(
+      title: 'Add staff account',
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FactoryTextField(controller: _displayNameController, enabled: !_isSubmitting, label: 'Full name'),
+            const SizedBox(height: FactorySpacing.space3),
+            FactoryTextField(controller: _emailController, enabled: !_isSubmitting, label: 'Email'),
+            const SizedBox(height: FactorySpacing.space3),
+            FactoryTextField(controller: _passwordController, enabled: !_isSubmitting, label: 'Temporary password'),
+            const SizedBox(height: FactorySpacing.space3),
+            DropdownButtonFormField<String>(
+              initialValue: _role,
+              decoration: const InputDecoration(labelText: 'Role'),
+              items: const [
+                DropdownMenuItem(value: 'PLATFORM_ADMIN', child: Text('Platform admin — full access')),
+                DropdownMenuItem(value: 'PLATFORM_MODERATOR', child: Text('Moderator — business approval only')),
+                DropdownMenuItem(value: 'PLATFORM_SUPPORT', child: Text('Support — read-only')),
+              ],
+              onChanged: (value) {
+                if (value != null) setState(() => _role = value);
+              },
+            ),
+            const SizedBox(height: FactorySpacing.space3),
+            FactoryTextField(controller: _reasonController, enabled: !_isSubmitting, label: 'Reason (optional, for the audit log)'),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: FactorySpacing.space2),
+                child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        FactoryButton(
+          label: l10n.cancelButton,
+          variant: FactoryButtonVariant.text,
+          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
+        ),
+        FactoryButton(label: l10n.createButton, isLoading: _isSubmitting, onPressed: _isSubmitting ? null : _submit),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    if (_displayNameController.text.trim().isEmpty ||
+        _emailController.text.trim().isEmpty ||
+        _passwordController.text.trim().length < 8) {
+      setState(() => _error = 'Name and email are required; password needs at least 8 characters.');
+      return;
+    }
+    setState(() {
+      _isSubmitting = true;
+      _error = null;
+    });
+    try {
+      await ref.read(platformAdminApiProvider).createAdmin(
+            widget.platformToken,
+            email: _emailController.text.trim(),
+            password: _passwordController.text.trim(),
+            displayName: _displayNameController.text.trim(),
+            role: _role,
+            reason: _reasonController.text.trim().isEmpty ? null : _reasonController.text.trim(),
+          );
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      setState(() {
+        _error = '$e';
+        _isSubmitting = false;
+      });
+    }
   }
 }
 
