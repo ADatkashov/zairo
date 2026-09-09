@@ -47,8 +47,14 @@ class PaymentAdminApiTests {
         UUID bookingId = createBookingForPayment(runId, new BigDecimal("22.00"));
         UUID paymentId = UUID.fromString(restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments",
                 null, Map.class).getBody().get("id").toString());
+        // Refund is PLATFORM_ADMIN-only (see PaymentsController.refund) —
+        // needs its own admin account to actually reach PaymentsService and
+        // produce the REFUND_FAILED state this test is about.
+        var admin = TestPlatformAuth.registerPlatformAdmin(restTemplate, platformAdminAccountRepository,
+                "payments-admin-" + runId + "@factory.internal", PlatformRole.PLATFORM_ADMIN);
         failureController.failNextRefund = true;
-        restTemplate.postForEntity("/api/v1/payments/" + paymentId + "/refund", null, Map.class);
+        restTemplate.exchange("/api/v1/payments/" + paymentId + "/refund", HttpMethod.POST,
+                new HttpEntity<>(null, TestPlatformAuth.authHeaders(admin.accessToken())), Map.class);
 
         ResponseEntity<Map> unauthenticated = restTemplate.getForEntity("/api/v1/platform/payments/failed-refunds",
                 Map.class);

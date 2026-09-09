@@ -1,12 +1,15 @@
 package com.zairo.factory.payments;
 
 import com.zairo.factory.payments.PaymentDtos.PaymentResponse;
+import com.zairo.factory.platformadmin.PlatformCurrentAdmin;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -62,16 +65,24 @@ public class PaymentsController {
                         "No payment for booking: " + bookingId));
     }
 
-    @Operation(summary = "Refund a payment", description = "Only a SUCCEEDED payment can be refunded.")
+    @Operation(summary = "Refund a payment", description = "PLATFORM_ADMIN-only — same platform-admin "
+            + "authorization as GET /platform/payments/failed-refunds, whose own doc comment already "
+            + "describes this endpoint as the failed-refund retry path. Only a SUCCEEDED payment can be "
+            + "refunded.")
     @ApiResponse(responseCode = "200", description = "Refunded — status is now REFUNDED")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @ApiResponse(responseCode = "409", description = "The payment isn't SUCCEEDED (already refunded, still "
             + "pending, or failed).",
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @ApiResponse(responseCode = "502", description = "The payment provider rejected the refund itself.",
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/payments/{paymentId}/refund")
-    public PaymentResponse refund(@Parameter(description = "The payment's id.") @PathVariable UUID paymentId) {
+    public PaymentResponse refund(@Parameter(description = "The payment's id.") @PathVariable UUID paymentId,
+            HttpServletRequest httpRequest) {
+        PlatformCurrentAdmin.requirePlatformAdmin(httpRequest);
         return PaymentResponse.from(paymentsService.refundPayment(paymentId));
     }
 }
