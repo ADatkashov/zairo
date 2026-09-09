@@ -105,6 +105,15 @@ public class StaffDirectoryService {
         return serviceOfferingRepository.findAllById(serviceIds);
     }
 
+    /** Owner-only — replaces the staff member's photo (null/blank removes it). */
+    @Transactional
+    public Staff updateStaffPhoto(UUID staffId, String photoUrl, UUID requestingUserId) {
+        Staff staff = getStaff(staffId);
+        providerOwnership.requireOwner(staff.getProviderId(), requestingUserId);
+        staff.updatePhoto(photoUrl);
+        return staffRepository.save(staff);
+    }
+
     /** Idempotent — deactivating an already-inactive (or missing) staff member is a no-op. */
     @Transactional
     public void deactivateStaff(UUID staffId, UUID requestingUserId) {

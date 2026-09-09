@@ -4,6 +4,7 @@ import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.staff.StaffDtos.CreateStaffRequest;
 import com.zairo.factory.staff.StaffDtos.StaffResponse;
 import com.zairo.factory.staff.StaffDtos.StaffServiceResponse;
+import com.zairo.factory.staff.StaffDtos.UpdatePhotoRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -105,6 +107,21 @@ public class StaffController {
             HttpServletRequest httpRequest) {
         return StaffResponse.from(
                 staffDirectoryService.reactivateStaff(staffId, CurrentUser.requireUserId(httpRequest)));
+    }
+
+    @Operation(summary = "Update a staff member's photo", description = "Owner-only. Upload the file via POST "
+            + "/uploads first, then pass its returned url as `photoUrl` here. Null/blank removes the photo.")
+    @ApiResponse(responseCode = "200", description = "Photo updated")
+    @ApiResponse(responseCode = "400", ref = "BadRequest")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
+    @PutMapping("/api/v1/staff/{staffId}/photo")
+    public StaffResponse updatePhoto(@Parameter(description = "The staff member's id.") @PathVariable UUID staffId,
+            @Valid @RequestBody UpdatePhotoRequest request, HttpServletRequest httpRequest) {
+        return StaffResponse.from(staffDirectoryService.updateStaffPhoto(staffId, request.photoUrl(),
+                CurrentUser.requireUserId(httpRequest)));
     }
 
     @Operation(summary = "Link a service to a staff member", description = "Owner-only. Marks that this staff "

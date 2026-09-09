@@ -31,6 +31,9 @@ public class User {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
     protected User() {
     }
 
@@ -65,5 +68,14 @@ public class User {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    /** Null/blank removes the avatar — see AuthDtos.UpdateAvatarRequest. */
+    public void updateAvatar(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
     }
 }

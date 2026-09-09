@@ -6,6 +6,7 @@ import com.zairo.factory.vertical.beauty.MasterDtos.CreateMasterRequest;
 import com.zairo.factory.vertical.beauty.MasterDtos.MasterResponse;
 import com.zairo.factory.vertical.beauty.MasterDtos.MasterServiceResponse;
 import com.zairo.factory.vertical.beauty.MasterDtos.PortfolioItemResponse;
+import com.zairo.factory.vertical.beauty.MasterDtos.UpdatePhotoRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -102,6 +104,21 @@ public class MasterController {
             HttpServletRequest httpRequest) {
         return MasterResponse.from(
                 masterDirectoryService.reactivateMaster(masterId, CurrentUser.requireUserId(httpRequest)));
+    }
+
+    @Operation(summary = "Update a master's photo", description = "Owner-only. Upload the file via POST "
+            + "/uploads first, then pass its returned url as `photoUrl` here. Null/blank removes the photo.")
+    @ApiResponse(responseCode = "200", description = "Photo updated")
+    @ApiResponse(responseCode = "400", ref = "BadRequest")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
+    @PutMapping("/api/v1/beauty/masters/{masterId}/photo")
+    public MasterResponse updatePhoto(@Parameter(description = "The master's id.") @PathVariable UUID masterId,
+            @Valid @RequestBody UpdatePhotoRequest request, HttpServletRequest httpRequest) {
+        return MasterResponse.from(masterDirectoryService.updateMasterPhoto(masterId, request.photoUrl(),
+                CurrentUser.requireUserId(httpRequest)));
     }
 
     @Operation(summary = "Add a portfolio photo", description = "Owner-only. Upload the file via POST "

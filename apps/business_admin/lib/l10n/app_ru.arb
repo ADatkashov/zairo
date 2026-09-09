@@ -246,5 +246,14 @@
   "dashboardTopServicesTitle": "Популярные услуги",
   "dashboardNoDataYet": "Метрики появятся после первого бронирования.",
   "dashboardBusinessesCountLabel": "Бизнесов",
-  "errorDashboardLoadFailed": "Не удалось загрузить показатели: {error}"
+  "errorDashboardLoadFailed": "Не удалось загрузить показатели: {error}",
+
+  "changeAvatarDialogTitle": "Сменить аватар",
+  "changeAvatarRemoveButton": "Удалить фото",
+  "errorAvatarUpdateFailed": "Не удалось обновить аватар: {error}",
+
+  "changePhotoTooltip": "Сменить фото",
+  "changePhotoDialogTitle": "Сменить фото",
+  "removePhotoButton": "Удалить фото",
+  "errorUpdatePhotoFailed": "Не удалось обновить фото: {error}"
 }
