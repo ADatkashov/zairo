@@ -4,6 +4,7 @@ import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.vertical.cleaning.CleanerDtos.CreateCleanerRequest;
 import com.zairo.factory.vertical.cleaning.CleanerDtos.CleanerResponse;
 import com.zairo.factory.vertical.cleaning.CleanerDtos.CleanerServiceResponse;
+import com.zairo.factory.vertical.cleaning.CleanerDtos.UpdatePhotoRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -100,6 +102,21 @@ public class CleanerController {
             HttpServletRequest httpRequest) {
         return CleanerResponse.from(
                 cleanerDirectoryService.reactivateCleaner(cleanerId, CurrentUser.requireUserId(httpRequest)));
+    }
+
+    @Operation(summary = "Update a cleaner's photo", description = "Owner-only. Upload the file via POST "
+            + "/uploads first, then pass its returned url as `photoUrl` here. Null/blank removes the photo.")
+    @ApiResponse(responseCode = "200", description = "Photo updated")
+    @ApiResponse(responseCode = "400", ref = "BadRequest")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
+    @PutMapping("/api/v1/cleaning/cleaners/{cleanerId}/photo")
+    public CleanerResponse updatePhoto(@Parameter(description = "The cleaner's id.") @PathVariable UUID cleanerId,
+            @Valid @RequestBody UpdatePhotoRequest request, HttpServletRequest httpRequest) {
+        return CleanerResponse.from(cleanerDirectoryService.updateCleanerPhoto(cleanerId, request.photoUrl(),
+                CurrentUser.requireUserId(httpRequest)));
     }
 
     @Operation(summary = "Link a service to a cleaner", description = "Owner-only. Marks that this cleaner "

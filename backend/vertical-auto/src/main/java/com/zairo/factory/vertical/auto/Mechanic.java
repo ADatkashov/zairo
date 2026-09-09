@@ -79,6 +79,10 @@ public class Mechanic {
         return createdAt;
     }
 
+    void updatePhoto(String photoUrl) {
+        this.photoUrl = photoUrl;
+    }
+
     /** Soft-delete: existing bookings still reference this mechanic by id, so the row must stay. */
     void deactivate() {
         this.active = false;

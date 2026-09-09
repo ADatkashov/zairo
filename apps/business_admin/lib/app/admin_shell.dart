@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/auth/presentation/providers/auth_providers.dart';
+import '../features/auth/presentation/widgets/change_avatar_dialog.dart';
 import '../features/billing/presentation/screens/billing_screen.dart';
 import '../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
@@ -129,7 +130,14 @@ class AdminSidebar extends ConsumerWidget {
               decoration: BoxDecoration(border: Border(top: BorderSide(color: colors.border))),
               child: Row(
                 children: [
-                  FactoryAvatar(initials: _initialsFor(user.displayName), size: 34),
+                  GestureDetector(
+                    onTap: () => showChangeAvatarDialog(context, hasCurrentAvatar: user.avatarUrl != null),
+                    child: FactoryAvatar(
+                      initials: _initialsFor(user.displayName),
+                      size: 34,
+                      image: user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+                    ),
+                  ),
                   const SizedBox(width: FactorySpacing.space2),
                   Expanded(
                     child: Column(

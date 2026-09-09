@@ -56,6 +56,12 @@ class CleaningAdminApi {
     return _dioClient.delete('/cleaning/cleaners/$cleanerId/services/$serviceId');
   }
 
+  /// Owner-only — replaces the cleaner's photo (null removes it).
+  Future<AdminCleaner> updateCleanerPhoto(String cleanerId, String? photoUrl) async {
+    final response = await _dioClient.put('/cleaning/cleaners/$cleanerId/photo', data: {'photoUrl': photoUrl});
+    return AdminCleaner.fromJson(response.data as Map<String, dynamic>);
+  }
+
   /// Soft-delete — see backend's Cleaner.deactivate(). Deactivated cleaners
   /// stop appearing in provider listings (both here and in the customer app).
   Future<void> deactivateCleaner(String cleanerId) {

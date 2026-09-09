@@ -841,5 +841,36 @@
   "@bookingCancelledMessage": {"description": "Snackbar shown after a successful cancellation."},
 
   "paymentStatusRefunded": "Refunded",
-  "@paymentStatusRefunded": {"description": "Payment status badge label for REFUNDED."}
+  "@paymentStatusRefunded": {"description": "Payment status badge label for REFUNDED."},
+
+  "changeAvatarDialogTitle": "Change avatar",
+  "@changeAvatarDialogTitle": {"description": "Title of the profile screen's change-avatar dialog."},
+
+  "changeAvatarChoosePhotoLabel": "Choose photo",
+  "@changeAvatarChoosePhotoLabel": {"description": "Change-avatar dialog's file picker button default label."},
+
+  "changeAvatarCancelButton": "Cancel",
+  "@changeAvatarCancelButton": {"description": "Change-avatar dialog's cancel button."},
+
+  "changeAvatarSaveButton": "Save",
+  "@changeAvatarSaveButton": {"description": "Change-avatar dialog's save button."},
+
+  "changeAvatarRemoveButton": "Remove photo",
+  "@changeAvatarRemoveButton": {"description": "Change-avatar dialog's remove-current-photo button, shown only when an avatar is already set."},
+
+  "changeAvatarErrorReadFileFailed": "Failed to read file: {error}",
+  "@changeAvatarErrorReadFileFailed": {
+    "description": "Change-avatar dialog's error when picking the file fails.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "changeAvatarErrorSaveFailed": "Failed to update avatar: {error}",
+  "@changeAvatarErrorSaveFailed": {
+    "description": "Change-avatar dialog's error when the upload/save request fails.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  }
 }

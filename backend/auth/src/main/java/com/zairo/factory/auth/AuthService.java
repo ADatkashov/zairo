@@ -9,9 +9,11 @@ import com.zairo.factory.users.UserRole;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class AuthService {
@@ -121,7 +123,22 @@ public class AuthService {
         return new TokenResponse(accessToken, refreshToken, toSummary(user));
     }
 
+    /**
+     * Same owner-writes-their-own-account shape as resetPassword: no
+     * ownership check needed beyond "this is the caller's own user id",
+     * which CurrentUser.requireUserId already guarantees at the controller.
+     */
+    @Transactional
+    public UserSummary updateAvatar(UUID userId, String avatarUrl) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User no longer exists"));
+        user.updateAvatar(avatarUrl);
+        userRepository.save(user);
+        return toSummary(user);
+    }
+
     private static UserSummary toSummary(User user) {
-        return new UserSummary(user.getId(), user.getEmail(), user.getDisplayName(), user.getRole());
+        return new UserSummary(user.getId(), user.getEmail(), user.getDisplayName(), user.getRole(),
+                user.getAvatarUrl());
     }
 }
