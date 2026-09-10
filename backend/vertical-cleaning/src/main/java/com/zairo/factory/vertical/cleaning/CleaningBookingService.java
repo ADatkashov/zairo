@@ -6,6 +6,7 @@ import com.zairo.factory.booking.Booking;
 import com.zairo.factory.booking.BookingRepository;
 import com.zairo.factory.booking.BookingService;
 import com.zairo.factory.booking.SlotNotAvailableException;
+import com.zairo.factory.providers.ProviderOwnership;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
@@ -29,17 +30,20 @@ public class CleaningBookingService {
     private final BookingService bookingService;
     private final BookingRepository bookingRepository;
     private final AvailabilitySlotRepository availabilitySlotRepository;
+    private final ProviderOwnership providerOwnership;
 
     public CleaningBookingService(CleanerRepository cleanerRepository,
             CleanerServiceLinkRepository cleanerServiceLinkRepository,
             CleaningBookingRepository cleaningBookingRepository, BookingService bookingService,
-            BookingRepository bookingRepository, AvailabilitySlotRepository availabilitySlotRepository) {
+            BookingRepository bookingRepository, AvailabilitySlotRepository availabilitySlotRepository,
+            ProviderOwnership providerOwnership) {
         this.cleanerRepository = cleanerRepository;
         this.cleanerServiceLinkRepository = cleanerServiceLinkRepository;
         this.cleaningBookingRepository = cleaningBookingRepository;
         this.bookingService = bookingService;
         this.bookingRepository = bookingRepository;
         this.availabilitySlotRepository = availabilitySlotRepository;
+        this.providerOwnership = providerOwnership;
     }
 
     @Transactional
@@ -70,13 +74,27 @@ public class CleaningBookingService {
         return new CleaningBookingResult(booking, cleanerId);
     }
 
-    public CleaningBookingResult getBooking(UUID bookingId) {
+    /**
+     * Restricted to the two parties involved: the booking's own customer, or
+     * the owner of the provider the booking's slot belongs to — same check
+     * as core {@code BookingController.getById} (see PR #57), reused here
+     * rather than reinvented.
+     */
+    public CleaningBookingResult getBooking(UUID bookingId, UUID callerId) {
         CleaningBooking link = cleaningBookingRepository.findByBookingId(bookingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Not a cleaning booking: "
                         + bookingId));
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
                         + bookingId));
+
+        if (!booking.getUserId().equals(callerId)) {
+            AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            "Availability slot not found: " + booking.getAvailabilitySlotId()));
+            providerOwnership.requireOwner(slot.getProviderId(), callerId);
+        }
+
         return new CleaningBookingResult(booking, link.getCleanerId());
     }
 

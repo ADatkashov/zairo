@@ -3,13 +3,14 @@ package com.zairo.factory.booking;
 import com.zairo.factory.providers.Provider;
 import com.zairo.factory.providers.ProviderOwnership;
 import com.zairo.factory.providers.ProviderRepository;
+import com.zairo.factory.services.ServiceOffering;
+import com.zairo.factory.services.ServiceOfferingRepository;
 import com.zairo.factory.subscriptions.SubscriptionLimitService;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.util.UUID;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
@@ -23,22 +24,22 @@ public class BookingService {
     private final AvailabilitySlotRepository availabilitySlotRepository;
     private final BookingRepository bookingRepository;
     private final ProviderRepository providerRepository;
+    private final ServiceOfferingRepository serviceOfferingRepository;
     private final ProviderOwnership providerOwnership;
     private final SubscriptionLimitService subscriptionLimitService;
     private final ApplicationEventPublisher eventPublisher;
-    private final String defaultCurrency;
 
     public BookingService(AvailabilitySlotRepository availabilitySlotRepository, BookingRepository bookingRepository,
-            ProviderRepository providerRepository, ProviderOwnership providerOwnership,
-            SubscriptionLimitService subscriptionLimitService, ApplicationEventPublisher eventPublisher,
-            @Value("${app.platform.default-currency:USD}") String defaultCurrency) {
+            ProviderRepository providerRepository, ServiceOfferingRepository serviceOfferingRepository,
+            ProviderOwnership providerOwnership, SubscriptionLimitService subscriptionLimitService,
+            ApplicationEventPublisher eventPublisher) {
         this.availabilitySlotRepository = availabilitySlotRepository;
         this.bookingRepository = bookingRepository;
         this.providerRepository = providerRepository;
+        this.serviceOfferingRepository = serviceOfferingRepository;
         this.providerOwnership = providerOwnership;
         this.subscriptionLimitService = subscriptionLimitService;
         this.eventPublisher = eventPublisher;
-        this.defaultCurrency = defaultCurrency;
     }
 
     /**
@@ -69,6 +70,22 @@ public class BookingService {
             throw new SlotNotAvailableException("Availability slot is not open: " + availabilitySlotId);
         }
 
+        // ServiceOffering is the sole source of truth for what a booking
+        // costs — see the totalPrice param's own note below. Its providerId
+        // must match the slot's, the same exists-and-belongs-to-the-right-
+        // provider check every vertical booking service (AutoBookingService,
+        // BeautyBookingService, StaffBookingService, CleaningBookingService)
+        // already runs for its own employee/service link before ever
+        // reaching this method — a client can't mix a service from one
+        // provider with a time slot from another.
+        ServiceOffering service = serviceOfferingRepository.findById(serviceId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found: "
+                        + serviceId));
+        if (!service.getProviderId().equals(slot.getProviderId())) {
+            throw new SlotNotAvailableException("Service " + serviceId + " belongs to a different provider than "
+                    + "availability slot " + availabilitySlotId);
+        }
+
         Provider provider = providerRepository.findById(slot.getProviderId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Provider not found: "
                         + slot.getProviderId()));
@@ -89,12 +106,15 @@ public class BookingService {
                     + availabilitySlotId);
         }
 
-        // No per-service currency lookup yet (booking deliberately doesn't
-        // depend on services — see the class doc) — same single-market MVP
-        // assumption Payment used to make independently, now one config
-        // value instead of two that happened to agree.
+        // totalPrice (the method param) is deliberately never used here: a
+        // client-supplied price would let the caller decide what a booking
+        // costs, which is exactly the price-tampering hole this check
+        // closes (see ServiceOffering lookup above). The param stays only so
+        // every existing caller — BookingController and all four vertical
+        // booking services (Auto/Beauty/Cleaning/Staff) — keeps compiling
+        // unchanged; it no longer has any effect on the stored price.
         Booking booking = new Booking(UUID.randomUUID(), userId, serviceId, availabilitySlotId,
-                BookingStatus.PENDING_PAYMENT, totalPrice, defaultCurrency, Instant.now());
+                BookingStatus.PENDING_PAYMENT, service.getPrice(), service.getCurrency(), Instant.now());
         booking = bookingRepository.save(booking);
 
         eventPublisher.publishEvent(new BookingAttemptedEvent(userId, serviceId, slot.getProviderId(), true, null));

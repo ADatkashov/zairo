@@ -43,33 +43,49 @@ class ModerationScreen extends ConsumerWidget {
       ),
       body: pendingAsync.when(
         data: (providers) {
+          Future<void> refresh() => ref.refresh(pendingProvidersProvider.future);
+
           if (providers.isEmpty) {
-            return Center(
-              child: FactoryEmptyState(
-                icon: Icons.fact_check_outlined,
-                title: l10n.moderationEmptyTitle,
-                message: l10n.moderationEmptyMessage,
+            return RefreshIndicator(
+              onRefresh: refresh,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.6,
+                    child: Center(
+                      child: FactoryEmptyState(
+                        icon: Icons.fact_check_outlined,
+                        title: l10n.moderationEmptyTitle,
+                        message: l10n.moderationEmptyMessage,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           }
-          return ListView.separated(
-            padding: const EdgeInsets.all(FactorySpacing.space4),
-            itemCount: providers.length,
-            separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
-            itemBuilder: (context, index) => _PendingSalonCard(
-              provider: providers[index],
-              onSuspend: () async {
-                await ref
-                    .read(salonAdminApiProvider)
-                    .updateProviderStatus(providerId: providers[index].id, status: 'SUSPENDED');
-                ref.invalidate(pendingProvidersProvider);
-              },
-              onApprove: () async {
-                await ref
-                    .read(salonAdminApiProvider)
-                    .updateProviderStatus(providerId: providers[index].id, status: 'ACTIVE');
-                ref.invalidate(pendingProvidersProvider);
-              },
+          return RefreshIndicator(
+            onRefresh: refresh,
+            child: ListView.separated(
+              padding: const EdgeInsets.all(FactorySpacing.space4),
+              itemCount: providers.length,
+              separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
+              itemBuilder: (context, index) => _PendingSalonCard(
+                provider: providers[index],
+                onSuspend: () async {
+                  await ref
+                      .read(salonAdminApiProvider)
+                      .updateProviderStatus(providerId: providers[index].id, status: 'SUSPENDED');
+                  ref.invalidate(pendingProvidersProvider);
+                },
+                onApprove: () async {
+                  await ref
+                      .read(salonAdminApiProvider)
+                      .updateProviderStatus(providerId: providers[index].id, status: 'ACTIVE');
+                  ref.invalidate(pendingProvidersProvider);
+                },
+              ),
             ),
           );
         },

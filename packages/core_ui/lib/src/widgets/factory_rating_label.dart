@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../theme/factory_colors.dart';
 
@@ -7,7 +8,13 @@ import '../theme/factory_colors.dart';
 /// semantic label ("4.9 out of 5, 212 reviews") so a screen reader gets the
 /// full meaning, not just the glyph and two numbers.
 class FactoryRatingLabel extends StatelessWidget {
-  const FactoryRatingLabel({super.key, required this.rating, this.reviewCount, this.iconSize = 13, this.semanticLabel});
+  const FactoryRatingLabel({
+    super.key,
+    required this.rating,
+    this.reviewCount,
+    this.iconSize = 13,
+    this.semanticLabel,
+  });
 
   final double rating;
   final int? reviewCount;
@@ -24,8 +31,11 @@ class FactoryRatingLabel extends StatelessWidget {
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
     final ratingText = rating.toStringAsFixed(1);
-    final effectiveSemanticLabel = semanticLabel ??
-        (reviewCount == null ? '$ratingText out of 5' : '$ratingText out of 5, $reviewCount reviews');
+    final effectiveSemanticLabel =
+        semanticLabel ??
+        (reviewCount == null
+            ? '$ratingText out of 5'
+            : '$ratingText out of 5, $reviewCount reviews');
 
     return Semantics(
       label: effectiveSemanticLabel,
@@ -33,12 +43,32 @@ class FactoryRatingLabel extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.star_rounded, size: iconSize, color: colors.accent),
+          // The design board always renders the rating star solid
+          // (font-variation-settings: 'FILL' 1) — not the empty/filled
+          // toggle a multi-star rating INPUT would need.
+          Icon(
+            Symbols.star_rounded,
+            fill: 1,
+            size: iconSize,
+            color: colors.accent,
+          ),
           const SizedBox(width: 3),
-          Text(ratingText, style: textTheme.labelMedium?.copyWith(color: colors.text, fontWeight: FontWeight.w700)),
+          Text(
+            ratingText,
+            style: textTheme.labelMedium?.copyWith(
+              color: colors.text,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           if (reviewCount != null) ...[
             const SizedBox(width: 3),
-            Text('($reviewCount)', style: textTheme.labelMedium?.copyWith(color: colors.textTertiary, fontWeight: FontWeight.w400)),
+            Text(
+              '($reviewCount)',
+              style: textTheme.labelMedium?.copyWith(
+                color: colors.textTertiary,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
           ],
         ],
       ),

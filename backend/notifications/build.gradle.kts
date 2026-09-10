@@ -1,8 +1,10 @@
 description = "Push and in-app notifications, triggered by domain events (e.g. BookingConfirmed) via in-process events."
 
 dependencies {
+    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.38")
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-web")
 
     // Read-composition only (resolve a booking's customer/provider-owner
     // email to notify) — same "query, not invariant" reasoning as
@@ -13,8 +15,9 @@ dependencies {
     implementation(project(":providers"))
     implementation(project(":booking"))
 
-    // Only for PasswordResetRequestedEvent's type — see auth/build.gradle.kts
-    // for why auth doesn't depend back on notifications instead.
+    // PasswordResetRequestedEvent's type, and CurrentUser for
+    // NotificationsController's ownership check (caller must be the
+    // userId in the path) — same reasoning as favorites/build.gradle.kts.
     implementation(project(":auth"))
 
     // Only for SubscriptionPaymentFailedEvent/SubscriptionPastDueEvent's

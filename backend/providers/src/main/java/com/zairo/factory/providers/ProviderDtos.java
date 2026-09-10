@@ -51,6 +51,19 @@ public final class ProviderDtos {
     public record UpdateProviderStatusRequest(@NotNull ProviderStatus status) {
     }
 
+    /**
+     * The Control Center's version of the same action, with an optional
+     * {@code reason} recorded on the audit log entry — see
+     * {@code ProviderAdminController}. The legacy {@code UserRole.ADMIN}
+     * path (PATCH /providers/{id}/status) keeps its own request shape rather
+     * than being migrated onto this one; see that endpoint's own doc
+     * comment for why both still exist.
+     */
+    public record PlatformSetProviderStatusRequest(
+            @NotNull @Schema(example = "ACTIVE") ProviderStatus status,
+            @Schema(description = "Recorded on the audit log entry for this action.") String reason) {
+    }
+
     public record ProviderResponse(
             @Schema(example = "550e8400-e29b-41d4-a716-446655440000") UUID id,
             @Schema(example = "550e8400-e29b-41d4-a716-446655440000") UUID ownerUserId,

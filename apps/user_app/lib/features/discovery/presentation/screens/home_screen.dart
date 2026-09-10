@@ -2,7 +2,9 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../../core/formatting/initials.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../booking/data/models/book_again_suggestion.dart';
@@ -12,6 +14,8 @@ import '../../../catalog/presentation/category_icon.dart';
 import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../../catalog/presentation/screens/all_categories_screen.dart';
 import '../../../maps/presentation/providers/maps_providers.dart';
+import '../../../notifications/presentation/providers/notifications_providers.dart';
+import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../data/models/provider_search_result.dart';
 import '../../data/models/service_summary.dart';
 import '../providers/discovery_providers.dart';
@@ -41,7 +45,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final query = DiscoveryQuery(vertical: _vertical);
     final resultsAsync = ref.watch(searchResultsProvider(query));
     final locationAsync = ref.watch(currentLocationProvider);
-    final user = ref.watch(authControllerProvider).valueOrNull;
+    final user = ref.watch(authControllerProvider).value;
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
@@ -50,7 +54,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: SafeArea(
         child: resultsAsync.when(
           data: (results) {
-            final openCount = results.where((r) => r.hasOpenAvailability).length;
+            final openCount = results
+                .where((r) => r.hasOpenAvailability)
+                .length;
             final topRated = results.take(8).toList();
             return RefreshIndicator(
               onRefresh: () => ref.refresh(searchResultsProvider(query).future),
@@ -58,16 +64,50 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 padding: const EdgeInsets.all(FactorySpacing.space4),
                 children: [
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Icon(Icons.location_on_outlined, size: 16, color: colors.primary),
-                      const SizedBox(width: 4),
-                      Text(locationAsync.valueOrNull?.label ?? l10n.homeLocationUnknown, style: textTheme.titleSmall),
+                      FactoryAvatar(
+                        initials: user != null
+                            ? initialsFor(user.displayName)
+                            : '?',
+                        image: user?.avatarUrl != null
+                            ? NetworkImage(user!.avatarUrl!)
+                            : null,
+                      ),
+                      const SizedBox(width: FactorySpacing.space3),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Symbols.location_on_rounded,
+                                  size: 16,
+                                  color: colors.primary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  locationAsync.value?.label ??
+                                      l10n.homeLocationUnknown,
+                                  style: textTheme.titleSmall,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: FactorySpacing.space1),
+                            Text(
+                              user != null
+                                  ? l10n.homeGreeting(user.displayName)
+                                  : l10n.homeGreetingGuest,
+                              style: textTheme.headlineSmall?.copyWith(
+                                color: colors.text,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (user != null) const _NotificationBellButton(),
                     ],
-                  ),
-                  const SizedBox(height: FactorySpacing.space1),
-                  Text(
-                    user != null ? l10n.homeGreeting(user.displayName) : l10n.homeGreetingGuest,
-                    style: textTheme.headlineSmall?.copyWith(color: colors.text),
                   ),
                   const SizedBox(height: FactorySpacing.space4),
                   _SearchEntry(onTap: () => context.go('/search')),
@@ -80,7 +120,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   if (openCount > 0) ...[
                     const SizedBox(height: FactorySpacing.space5),
-                    _AvailabilityHero(count: openCount),
+                    _AvailabilityHero(
+                      count: openCount,
+                      onViewAll: () => context.go('/search'),
+                    ),
                   ],
                   if (user != null) ...[
                     const SizedBox(height: FactorySpacing.space6),
@@ -95,7 +138,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(height: FactorySpacing.space3),
                   if (topRated.isEmpty)
                     FactoryEmptyState(
-                      icon: Icons.storefront_outlined,
+                      icon: Symbols.storefront_rounded,
                       title: l10n.homeEmptyTitle,
                       message: l10n.homeEmptyMessage,
                     )
@@ -109,7 +152,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: topRated.length,
-                        separatorBuilder: (_, _) => const SizedBox(width: FactorySpacing.space3),
+                        separatorBuilder: (_, _) =>
+                            const SizedBox(width: FactorySpacing.space3),
                         itemBuilder: (context, index) {
                           final result = topRated[index];
                           return ProviderCard(
@@ -117,17 +161,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             layout: FactoryProviderCardLayout.vertical,
                             width: 168,
                             onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => ProviderDetailScreen(provider: result)),
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    ProviderDetailScreen(provider: result),
+                              ),
                             ),
                           );
                         },
                       ),
                     ),
+                  const SizedBox(height: FactorySpacing.space6),
+                  _RecommendedSection(results: results, excluding: topRated),
                 ],
               ),
             );
           },
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const FactoryLoadingState(),
           error: (error, stackTrace) => Center(
             child: Padding(
               padding: const EdgeInsets.all(FactorySpacing.space4),
@@ -139,6 +188,61 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// A bell button with an unread-count badge (Customer App Redesign board,
+/// 2026-09-05) — pushes [NotificationsScreen] rather than something inline,
+/// same reasoning as Profile's favorites stat tile pushing [FavoritesScreen].
+class _NotificationBellButton extends ConsumerWidget {
+  const _NotificationBellButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final userId = ref.watch(authControllerProvider).value?.id;
+    final unreadCount = userId == null
+        ? 0
+        : ref.watch(unreadNotificationsCountProvider(userId)).value ?? 0;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: FactoryRadius.lgRadius,
+            border: Border.all(color: colors.border),
+          ),
+          child: IconButton(
+            icon: Icon(Symbols.notifications_rounded, color: colors.text),
+            tooltip: l10n.notificationBellTooltip,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+            ),
+          ),
+        ),
+        if (unreadCount > 0)
+          Positioned(
+            top: 4,
+            right: 4,
+            child: IgnorePointer(
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: colors.coral,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: colors.surface, width: 1.5),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -155,23 +259,41 @@ class _SearchEntry extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: FactoryRadius.mdRadius,
+        borderRadius: FactoryRadius.xlRadius,
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space3, vertical: FactorySpacing.space3),
+          padding: const EdgeInsets.symmetric(
+            horizontal: FactorySpacing.space4,
+            vertical: FactorySpacing.space3,
+          ),
           decoration: BoxDecoration(
             color: colors.surface,
-            borderRadius: FactoryRadius.mdRadius,
+            borderRadius: FactoryRadius.xlRadius,
             border: Border.all(color: colors.border, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: colors.text.withValues(alpha: 0.05),
+                offset: const Offset(0, 2),
+                blurRadius: 8,
+              ),
+            ],
           ),
           child: Row(
             children: [
-              Icon(Icons.search, size: 18, color: colors.textTertiary),
-              const SizedBox(width: 10),
-              Text(
-                l10n.homeSearchPrompt,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
+              Icon(
+                Symbols.search_rounded,
+                size: 20,
+                color: colors.textTertiary,
               ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  l10n.homeSearchPrompt,
+                  style: Theme.of(context).textTheme.bodyMedium
+                      ?.copyWith(color: colors.textTertiary),
+                ),
+              ),
+              Icon(Symbols.tune_rounded, size: 18, color: colors.primary),
             ],
           ),
         ),
@@ -223,7 +345,7 @@ class _CategoryGrid extends ConsumerWidget {
     final languageCode = Localizations.localeOf(context).languageCode;
 
     final allCategoriesTile = FactoryCategoryTile(
-      icon: Icons.apps_rounded,
+      icon: Symbols.apps_rounded,
       label: l10n.allCategoriesTitle,
       onTap: () => _openAllCategories(context),
     );
@@ -236,16 +358,19 @@ class _CategoryGrid extends ConsumerWidget {
           return ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: popular.length + 1,
-            separatorBuilder: (_, _) => const SizedBox(width: FactorySpacing.space3),
+            separatorBuilder: (_, _) =>
+                const SizedBox(width: FactorySpacing.space3),
             itemBuilder: (context, index) {
               if (index == popular.length) return allCategoriesTile;
               final category = popular[index];
               final selected = selectedCode == category.code;
+              final accent = colorForCategory(context, category.code);
               return FactoryCategoryTile(
                 icon: iconForCategory(category.code),
-                emoji: category.icon,
                 label: category.nameFor(languageCode),
                 selected: selected,
+                accentColor: accent?.color,
+                accentTint: accent?.tint,
                 onTap: () => onSelect(selected ? null : category.code),
               );
             },
@@ -257,14 +382,25 @@ class _CategoryGrid extends ConsumerWidget {
         loading: () => ListView(
           scrollDirection: Axis.horizontal,
           children: [
-            const FactorySkeleton(width: 64, height: _tileHeight, borderRadius: BorderRadius.all(Radius.circular(12))),
+            const FactorySkeleton(
+              width: 64,
+              height: _tileHeight,
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+            ),
             const SizedBox(width: FactorySpacing.space3),
-            const FactorySkeleton(width: 64, height: _tileHeight, borderRadius: BorderRadius.all(Radius.circular(12))),
+            const FactorySkeleton(
+              width: 64,
+              height: _tileHeight,
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+            ),
             const SizedBox(width: FactorySpacing.space3),
             allCategoriesTile,
           ],
         ),
-        error: (error, stackTrace) => ListView(scrollDirection: Axis.horizontal, children: [allCategoriesTile]),
+        error: (error, stackTrace) => ListView(
+          scrollDirection: Axis.horizontal,
+          children: [allCategoriesTile],
+        ),
       ),
     );
   }
@@ -284,7 +420,7 @@ class _BookAgainSection extends ConsumerWidget {
     // customer has no completed bookings yet — this is a bonus shortcut on
     // top of the main discovery feed, not something worth a loading
     // skeleton or error state of its own.
-    final suggestions = suggestionsAsync.valueOrNull ?? const [];
+    final suggestions = suggestionsAsync.value ?? const [];
     if (suggestions.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -292,14 +428,18 @@ class _BookAgainSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(l10n.homeBookAgainTitle, style: Theme.of(context).textTheme.titleSmall),
+        Text(
+          l10n.homeBookAgainTitle,
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
         const SizedBox(height: FactorySpacing.space3),
         SizedBox(
           height: 96,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: suggestions.length,
-            separatorBuilder: (_, _) => const SizedBox(width: FactorySpacing.space3),
+            separatorBuilder: (_, _) =>
+                const SizedBox(width: FactorySpacing.space3),
             itemBuilder: (context, index) {
               final suggestion = suggestions[index];
               return _BookAgainCard(
@@ -366,19 +506,22 @@ class _BookAgainCard extends StatelessWidget {
                 suggestion.providerName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(color: colors.text),
+                style: Theme.of(context).textTheme.titleSmall
+                    ?.copyWith(color: colors.text),
               ),
               const SizedBox(height: 2),
               Text(
                 suggestion.serviceTitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: colors.textSecondary),
               ),
               const Spacer(),
-              FactoryPriceText(amount: suggestion.price, currencySymbol: suggestion.currency),
+              FactoryPriceText(
+                amount: suggestion.price,
+                currencySymbol: suggestion.currency,
+              ),
             ],
           ),
         ),
@@ -387,28 +530,254 @@ class _BookAgainCard extends StatelessWidget {
   }
 }
 
-class _AvailabilityHero extends StatelessWidget {
-  const _AvailabilityHero({required this.count});
+/// "Recommended for you" (Customer App Redesign board, 2026-09-05) — the
+/// simple heuristic behind it: highest-rated providers in this search
+/// result, [excluding] whatever the Top Rated carousel above already shows
+/// so the two sections don't just repeat each other. No personalization
+/// beyond that exists yet (no purchase-history/collaborative-filtering
+/// signal to draw on) — a provider with no reviews yet never appears here,
+/// same "absent, not zero" reasoning as everywhere else rating is shown.
+class _RecommendedSection extends StatelessWidget {
+  const _RecommendedSection({required this.results, required this.excluding});
 
-  final int count;
+  final List<ProviderSearchResult> results;
+  final List<ProviderSearchResult> excluding;
+
+  static const _maxCount = 5;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final excludedIds = excluding.map((r) => r.id).toSet();
+    final recommended =
+        results
+            .where(
+              (r) => r.averageRating != null && !excludedIds.contains(r.id),
+            )
+            .toList()
+          ..sort((a, b) => b.averageRating!.compareTo(a.averageRating!));
+    if (recommended.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.homeRecommendedTitle,
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        const SizedBox(height: FactorySpacing.space3),
+        for (final result in recommended.take(_maxCount))
+          Padding(
+            padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
+            child: _RecommendedRow(
+              result: result,
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ProviderDetailScreen(provider: result),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _RecommendedRow extends StatelessWidget {
+  const _RecommendedRow({required this.result, required this.onTap});
+
+  final ProviderSearchResult result;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return FactoryCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(FactorySpacing.space2),
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: colors.surfaceAlt,
+              borderRadius: FactoryRadius.mdRadius,
+            ),
+            child: Icon(
+              iconForCategory(result.vertical),
+              color: colors.textSecondary,
+            ),
+          ),
+          const SizedBox(width: FactorySpacing.space3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  result.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Icon(
+                      Symbols.star_rounded,
+                      fill: 1,
+                      size: 14,
+                      color: colors.accent,
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      result.averageRating!.toStringAsFixed(1),
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                    if (result.distanceKm != null) ...[
+                      Text(
+                        ' · ',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                      Text(
+                        l10n.distanceKmShort(
+                          result.distanceKm!.toStringAsFixed(1),
+                        ),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (result.minPrice != null)
+            FactoryPriceText(
+              amount: result.minPrice!,
+              currencySymbol: result.services.isNotEmpty
+                  ? result.services.first.currency
+                  : '',
+              fontSize: 13,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A deliberate gradient case (`primaryStrong` → `mint` diagonal, two soft
+/// translucent circles) — everywhere else in Factory is flat color, this
+/// pattern reserved for one hero moment per app (business_admin's Dashboard
+/// overview hero is the other). Customer App Redesign board, 2026-09-05.
+class _AvailabilityHero extends StatelessWidget {
+  const _AvailabilityHero({required this.count, required this.onViewAll});
+
+  final int count;
+  final VoidCallback onViewAll;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(FactorySpacing.space4),
+      clipBehavior: Clip.antiAlias,
+      padding: const EdgeInsets.all(FactorySpacing.space5),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [colors.primaryStrong, colors.primary],
+          colors: [colors.primaryStrong, colors.mint],
         ),
-        borderRadius: FactoryRadius.lgRadius,
+        borderRadius: FactoryRadius.xxlRadius,
+        boxShadow: [
+          BoxShadow(
+            color: colors.primaryStrong.withValues(alpha: 0.28),
+            offset: const Offset(0, 16),
+            blurRadius: 32,
+          ),
+        ],
       ),
-      child: Text(
-        AppLocalizations.of(context)!.homeAvailabilityHero(count),
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(color: colors.onPrimary),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            top: -30,
+            right: -30,
+            child: _HeroCircle(size: 140, opacity: 0.12),
+          ),
+          Positioned(
+            bottom: -40,
+            right: 40,
+            child: _HeroCircle(size: 90, opacity: 0.1),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.homeAvailabilityEyebrow.toUpperCase(),
+                style: Theme.of(context).textTheme.labelSmall
+                    ?.copyWith(color: Colors.white.withValues(alpha: 0.85)),
+              ),
+              const SizedBox(height: FactorySpacing.space2),
+              Text(
+                l10n.homeAvailabilityHero(count),
+                style: Theme.of(context).textTheme.titleLarge
+                    ?.copyWith(color: colors.onPrimary),
+              ),
+              const SizedBox(height: FactorySpacing.space3),
+              Material(
+                color: Colors.white,
+                shape: FactoryRadius.pill,
+                child: InkWell(
+                  onTap: onViewAll,
+                  customBorder: FactoryRadius.pill,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 9,
+                    ),
+                    child: Text(
+                      l10n.homeSeeAll,
+                      style: Theme.of(context).textTheme.labelLarge
+                          ?.copyWith(color: colors.primaryStrong),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroCircle extends StatelessWidget {
+  const _HeroCircle({required this.size, required this.opacity});
+
+  final double size;
+  final double opacity;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white.withValues(alpha: opacity),
       ),
     );
   }

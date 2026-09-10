@@ -1,6 +1,7 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
@@ -29,11 +30,11 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton> {
 
     if (currentUser == null) {
       return IconButton(
-        icon: const Icon(Icons.favorite_border),
+        icon: const Icon(Symbols.favorite_rounded),
         tooltip: l10n.favoriteAddTooltip,
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-        ),
+        onPressed: () =>
+            Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const LoginScreen())),
       );
     }
 
@@ -42,14 +43,25 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton> {
 
     return favoritedAsync.when(
       data: (isFavorited) => IconButton(
-        icon: Icon(isFavorited ? Icons.favorite : Icons.favorite_border),
+        icon: Icon(Symbols.favorite_rounded, fill: isFavorited ? 1 : 0),
         color: isFavorited ? context.factoryColors.error : null,
-        tooltip: isFavorited ? l10n.favoriteRemoveTooltip : l10n.favoriteAddTooltip,
-        onPressed: _isToggling ? null : () => _toggle(currentUser.id, isFavorited),
+        tooltip: isFavorited
+            ? l10n.favoriteRemoveTooltip
+            : l10n.favoriteAddTooltip,
+        onPressed: _isToggling
+            ? null
+            : () => _toggle(currentUser.id, isFavorited),
       ),
-      loading: () => IconButton(icon: const Icon(Icons.favorite_border), tooltip: l10n.favoriteAddTooltip, onPressed: null),
-      error: (error, stackTrace) =>
-          IconButton(icon: const Icon(Icons.favorite_border), tooltip: l10n.favoriteAddTooltip, onPressed: null),
+      loading: () => IconButton(
+        icon: const Icon(Symbols.favorite_rounded),
+        tooltip: l10n.favoriteAddTooltip,
+        onPressed: null,
+      ),
+      error: (error, stackTrace) => IconButton(
+        icon: const Icon(Symbols.favorite_rounded),
+        tooltip: l10n.favoriteAddTooltip,
+        onPressed: null,
+      ),
     );
   }
 
@@ -61,7 +73,9 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton> {
     } else {
       await api.addFavorite(userId, widget.providerId);
     }
-    ref.invalidate(isFavoritedProvider((userId: userId, providerId: widget.providerId)));
+    ref.invalidate(
+      isFavoritedProvider((userId: userId, providerId: widget.providerId)),
+    );
     ref.invalidate(myFavoritesProvider(userId));
     if (mounted) setState(() => _isToggling = false);
   }

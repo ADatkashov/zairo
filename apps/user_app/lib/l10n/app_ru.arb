@@ -70,6 +70,7 @@
   "errorHomeFeedLoadFailed": "Не удалось загрузить ленту.",
   "homeTopRatedTitle": "Лучшие рядом с вами",
   "homeAvailabilityHero": "{count, plural, one{Рядом с вами {count} провайдер со свободными окнами сегодня} few{Рядом с вами {count} провайдера со свободными окнами сегодня} many{Рядом с вами {count} провайдеров со свободными окнами сегодня} other{Рядом с вами {count} провайдера со свободными окнами сегодня}}",
+  "homeAvailabilityEyebrow": "Сегодня рядом",
   "homeGreeting": "Привет, {name}",
   "homeGreetingGuest": "Добро пожаловать",
   "homeLocationUnknown": "Ваше местоположение",
@@ -85,6 +86,7 @@
   "allCategoriesSearchEmptyMessage": "Ничего не найдено по запросу «{query}». Попробуйте другое слово.",
   "errorCategoriesLoadFailed": "Не удалось загрузить категории.",
   "homeBookAgainTitle": "Повторить запись",
+  "homeRecommendedTitle": "Рекомендуем для вас",
 
   "searchHint": "Поиск услуг или провайдеров",
   "searchEmptyTitle": "Найдите услугу",
@@ -128,6 +130,7 @@
   "nextAvailableTodayLabel": "Сегодня {time}",
   "nextAvailableTomorrowLabel": "Завтра {time}",
   "cardDistanceAndVertical": "{distanceKm} км · {vertical}",
+  "distanceKmShort": "{distanceKm} км",
   "providerDistanceAway": "{distanceKm} км от вас",
   "mapDistanceFromYou": "{distanceKm} км от вас",
 
@@ -140,10 +143,21 @@
   "bookingStatusCompleted": "Завершено",
   "bookingStatusCancelled": "Отменено",
 
+  "bookingsTabUpcoming": "Скоро",
+  "bookingsTabCompleted": "Завершено",
+  "bookingsTabCancelled": "Отменено",
+
   "myFavoritesTitle": "Избранное",
   "favoritesEmptyTitle": "Пока нет избранного",
   "favoritesEmptyMessage": "Провайдеры, которых вы добавите в избранное, появятся здесь.",
   "errorFavoritesLoadFailed": "Не удалось загрузить избранное.",
+
+  "notificationsTitle": "Уведомления",
+  "notificationsEmptyTitle": "Пока нет уведомлений",
+  "notificationsEmptyMessage": "Здесь появятся обновления по бронированиям и напоминания.",
+  "errorNotificationsLoadFailed": "Не удалось загрузить уведомления.",
+  "notificationsMarkAllReadButton": "Прочитать всё",
+  "notificationBellTooltip": "Уведомления",
   "favoriteAddTooltip": "Добавить в избранное",
   "favoriteRemoveTooltip": "Убрать из избранного",
   "ratingSemanticLabel": "{rating} из 5",
@@ -207,6 +221,13 @@
   "deleteVehicleConfirmTitle": "Удалить этот автомобиль?",
   "deleteVehicleConfirmMessage": "Автомобиль {vehicle} будет удалён из списка.",
   "myVehiclesButton": "Мои автомобили",
+
+  "supportTitle": "Поддержка",
+  "supportIntro": "Есть вопрос или что-то не работает? Напишите нам напрямую.",
+  "supportTelegramLabel": "Telegram",
+  "aboutTitle": "О приложении",
+  "aboutVersionLoading": "Загружаем версию…",
+  "aboutVersionLabel": "Версия {version} ({buildNumber})",
   "errorAutoBookingFailed": "Не удалось завершить бронирование — возможно, механик не предоставляет эту услугу, либо время только что было занято. Попробуйте ещё раз.",
   "errorCleaningBookingFailed": "Не удалось завершить бронирование — возможно, клинер не предоставляет эту услугу, либо время только что было занято. Попробуйте ещё раз.",
   "errorStaffBookingFailed": "Не удалось завершить бронирование — возможно, сотрудник не предоставляет эту услугу, либо время только что было занято. Попробуйте ещё раз.",
@@ -231,6 +252,7 @@
 
   "bookingsLoggedOutPrompt": "Войдите, чтобы увидеть свои бронирования",
   "favoritesLoggedOutPrompt": "Войдите, чтобы увидеть избранное",
+  "notificationsLoggedOutPrompt": "Войдите, чтобы увидеть уведомления",
   "settingsButtonTooltip": "Настройки",
 
   "errorBookingNotCancellable": "Это бронирование больше нельзя отменить.",
@@ -240,6 +262,21 @@
   "cancelBookingConfirmMessage": "Если вы уже оплатили, деньги вернутся автоматически.",
   "cancelBookingKeepButton": "Оставить бронирование",
   "cancelBookingConfirmButton": "Отменить бронирование",
+
+  "favoritesClearAllButton": "Очистить всё",
+  "favoritesClearAllConfirmTitle": "Очистить всё избранное?",
+  "favoritesClearAllConfirmMessage": "Все провайдеры будут удалены из избранного. Это действие нельзя отменить.",
+  "favoritesClearAllKeepButton": "Не очищать",
   "bookingCancelledMessage": "Бронирование отменено.",
-  "paymentStatusRefunded": "Возвращено"
+  "paymentStatusRefunded": "Возвращено",
+
+  "changeAvatarDialogTitle": "Сменить аватар",
+  "changeAvatarChoosePhotoLabel": "Выбрать фото",
+  "changeAvatarCancelButton": "Отмена",
+  "changeAvatarSaveButton": "Сохранить",
+  "changeAvatarRemoveButton": "Удалить фото",
+  "changeAvatarErrorReadFileFailed": "Не удалось прочитать файл: {error}",
+  "changeAvatarErrorSaveFailed": "Не удалось обновить аватар: {error}",
+  "imagePickerCameraLabel": "Камера",
+  "imagePickerGalleryLabel": "Галерея"
 }

@@ -65,13 +65,21 @@ public class BeautyBookingController {
         return BeautyBookingResponse.from(result.booking(), result.masterId());
     }
 
-    @Operation(summary = "Get a beauty booking by id")
+    @Operation(summary = "Get a beauty booking by id", description = "Restricted to the two parties involved: "
+            + "the booking's own customer, or the owner of the provider the booking's slot belongs to.")
     @ApiResponse(responseCode = "200", description = "The booking")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "The caller is neither the booking's own customer nor "
+            + "the owner of the provider it belongs to.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/beauty/bookings/{bookingId}")
     public BeautyBookingResponse getById(
-            @Parameter(description = "The booking's id.") @PathVariable UUID bookingId) {
-        BeautyBookingResult result = beautyBookingService.getBooking(bookingId);
+            @Parameter(description = "The booking's id.") @PathVariable UUID bookingId,
+            HttpServletRequest httpRequest) {
+        UUID callerId = CurrentUser.requireUserId(httpRequest);
+        BeautyBookingResult result = beautyBookingService.getBooking(bookingId, callerId);
         return BeautyBookingResponse.from(result.booking(), result.masterId());
     }
 }

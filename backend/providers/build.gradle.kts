@@ -19,4 +19,10 @@ dependencies {
     // Resolving a new provider's businessTypeId from its vertical string at
     // creation time — see ProviderController.create.
     implementation(project(":catalog"))
+
+    // Business moderation (approve/suspend/reinstate) is also reachable from
+    // the Control Center now — reuses platform-admin's caller/audit-log
+    // machinery wholesale instead of a second admin auth system, same
+    // directed dependency shape as catalog -> platform-admin.
+    implementation(project(":platform-admin"))
 }

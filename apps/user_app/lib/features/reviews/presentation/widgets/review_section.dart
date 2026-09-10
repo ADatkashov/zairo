@@ -1,6 +1,7 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../data/review_exception.dart';
@@ -28,7 +29,7 @@ class ReviewSection extends ConsumerWidget {
           return Align(
             alignment: Alignment.centerLeft,
             child: FactoryButton(
-              icon: Icons.star_outline,
+              icon: Symbols.star_rounded,
               label: l10n.reviewLeaveButton,
               variant: FactoryButtonVariant.text,
               onPressed: () => _openLeaveReviewDialog(context, ref),
@@ -44,7 +45,8 @@ class ReviewSection extends ConsumerWidget {
                 children: List.generate(
                   5,
                   (i) => Icon(
-                    i < review.rating ? Icons.star : Icons.star_border,
+                    Symbols.star_rounded,
+                    fill: i < review.rating ? 1 : 0,
                     size: 18,
                     color: colors.accent,
                   ),
@@ -55,7 +57,8 @@ class ReviewSection extends ConsumerWidget {
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     review.comment!,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
+                    style: Theme.of(context).textTheme.bodyMedium
+                        ?.copyWith(color: colors.textSecondary),
                   ),
                 ),
             ],
@@ -67,11 +70,15 @@ class ReviewSection extends ConsumerWidget {
         width: 20,
         child: CircularProgressIndicator(strokeWidth: 2),
       ),
-      error: (error, stackTrace) => Text(l10n.errorReviewLoadFailed(error.toString())),
+      error: (error, stackTrace) =>
+          Text(l10n.errorReviewLoadFailed(error.toString())),
     );
   }
 
-  Future<void> _openLeaveReviewDialog(BuildContext context, WidgetRef ref) async {
+  Future<void> _openLeaveReviewDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     final submitted = await showDialog<bool>(
       context: context,
       builder: (_) => _LeaveReviewDialog(bookingId: bookingId),
@@ -117,10 +124,13 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
             children: List.generate(
               5,
               (i) => IconButton(
-                onPressed: _isSubmitting ? null : () => setState(() => _rating = i + 1),
+                onPressed: _isSubmitting
+                    ? null
+                    : () => setState(() => _rating = i + 1),
                 tooltip: l10n.starRatingSemanticLabel(i + 1),
                 icon: Icon(
-                  i < _rating ? Icons.star : Icons.star_border,
+                  Symbols.star_rounded,
+                  fill: i < _rating ? 1 : 0,
                   color: colors.accent,
                 ),
               ),
@@ -135,7 +145,10 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              child: Text(
+                _error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
             ),
         ],
       ),
@@ -143,7 +156,9 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
         FactoryButton(
           label: l10n.reviewCancel,
           variant: FactoryButtonVariant.text,
-          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
+          onPressed: _isSubmitting
+              ? null
+              : () => Navigator.of(context).pop(false),
         ),
         FactoryButton(
           label: l10n.reviewSubmit,
@@ -161,7 +176,9 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
     });
     try {
       final comment = _commentController.text.trim();
-      await ref.read(reviewsApiProvider).createReview(
+      await ref
+          .read(reviewsApiProvider)
+          .createReview(
             bookingId: widget.bookingId,
             rating: _rating,
             comment: comment.isEmpty ? null : comment,

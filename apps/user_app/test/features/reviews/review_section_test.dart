@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:zairo/features/reviews/data/models/review.dart';
 import 'package:zairo/features/reviews/data/review_exception.dart';
 import 'package:zairo/features/reviews/data/reviews_api.dart';
@@ -12,7 +13,9 @@ import 'package:zairo/features/reviews/presentation/widgets/review_section.dart'
 import 'package:zairo/l10n/app_localizations.dart';
 
 class _FakeReviewsApi extends ReviewsApi {
-  _FakeReviewsApi({Review? existing}) : _review = existing, super(DioClient(Dio()));
+  _FakeReviewsApi({Review? existing})
+    : _review = existing,
+      super(DioClient(Dio()));
 
   Review? _review;
   Map<String, dynamic>? lastCreateCall;
@@ -22,9 +25,17 @@ class _FakeReviewsApi extends ReviewsApi {
   Future<Review?> getReview(String bookingId) async => _review;
 
   @override
-  Future<Review> createReview({required String bookingId, required int rating, String? comment}) async {
+  Future<Review> createReview({
+    required String bookingId,
+    required int rating,
+    String? comment,
+  }) async {
     if (errorOnCreate != null) throw errorOnCreate!;
-    lastCreateCall = {'bookingId': bookingId, 'rating': rating, 'comment': comment};
+    lastCreateCall = {
+      'bookingId': bookingId,
+      'rating': rating,
+      'comment': comment,
+    };
     _review = Review(
       id: 'review-1',
       bookingId: bookingId,
@@ -37,7 +48,9 @@ class _FakeReviewsApi extends ReviewsApi {
 }
 
 void main() {
-  testWidgets('shows a "leave a review" button when there is no review yet', (tester) async {
+  testWidgets('shows a "leave a review" button when there is no review yet', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [reviewsApiProvider.overrideWithValue(_FakeReviewsApi())],
@@ -54,7 +67,9 @@ void main() {
     expect(find.text('Leave a review'), findsOneWidget);
   });
 
-  testWidgets('shows the existing review instead of the button', (tester) async {
+  testWidgets('shows the existing review instead of the button', (
+    tester,
+  ) async {
     final existing = Review(
       id: 'review-1',
       bookingId: 'booking-1',
@@ -65,7 +80,11 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [reviewsApiProvider.overrideWithValue(_FakeReviewsApi(existing: existing))],
+        overrides: [
+          reviewsApiProvider.overrideWithValue(
+            _FakeReviewsApi(existing: existing),
+          ),
+        ],
         child: MaterialApp(
           theme: factoryLightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -78,52 +97,66 @@ void main() {
 
     expect(find.text('Leave a review'), findsNothing);
     expect(find.text('Great service'), findsOneWidget);
-    expect(find.byIcon(Icons.star), findsNWidgets(4));
-    expect(find.byIcon(Icons.star_border), findsNWidgets(1));
+    // Symbols.star_rounded is one IconData regardless of fill state — solid
+    // vs outline is the Icon widget's `fill` value, not a different icon
+    // identity the way classic Icons.star/star_border were.
+    final stars = tester.widgetList<Icon>(find.byIcon(Symbols.star_rounded));
+    expect(stars.where((icon) => icon.fill == 1), hasLength(4));
+    expect(stars.where((icon) => icon.fill == 0), hasLength(1));
   });
 
-  testWidgets('submitting a review from the dialog calls the API with the picked rating',
-      (tester) async {
-    final fakeApi = _FakeReviewsApi();
+  testWidgets(
+    'submitting a review from the dialog calls the API with the picked rating',
+    (tester) async {
+      final fakeApi = _FakeReviewsApi();
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [reviewsApiProvider.overrideWithValue(fakeApi)],
-        child: MaterialApp(
-          theme: factoryLightTheme(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const Scaffold(body: ReviewSection(bookingId: 'booking-1')),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [reviewsApiProvider.overrideWithValue(fakeApi)],
+          child: MaterialApp(
+            theme: factoryLightTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const Scaffold(body: ReviewSection(bookingId: 'booking-1')),
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Leave a review'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Leave a review'));
+      await tester.pumpAndSettle();
 
-    // Tap the 4th star icon button to set rating = 4.
-    expect(find.byTooltip('Rate 4 stars'), findsOneWidget);
-    final starButtons = find.byIcon(Icons.star_border);
-    await tester.tap(starButtons.at(3));
-    await tester.pumpAndSettle();
+      // Tap the 4th star icon button to set rating = 4. Scoped to the dialog:
+      // the "Leave a review" button underneath (still mounted, just obscured
+      // by the modal barrier) uses this exact same Symbols.star_rounded
+      // IconData too, so an unscoped find.byIcon would match 6, not 5.
+      expect(find.byTooltip('Rate 4 stars'), findsOneWidget);
+      final starButtons = find.descendant(
+        of: find.byType(FactoryDialog),
+        matching: find.byIcon(Symbols.star_rounded),
+      );
+      await tester.tap(starButtons.at(3));
+      await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField), 'Loved it');
-    await tester.tap(find.widgetWithText(FilledButton, 'Submit'));
-    await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'Loved it');
+      await tester.tap(find.widgetWithText(FilledButton, 'Submit'));
+      await tester.pumpAndSettle();
 
-    expect(fakeApi.lastCreateCall, {
-      'bookingId': 'booking-1',
-      'rating': 4,
-      'comment': 'Loved it',
-    });
-    // Dialog closes and the section now shows the submitted review.
-    expect(find.text('Loved it'), findsOneWidget);
-  });
+      expect(fakeApi.lastCreateCall, {
+        'bookingId': 'booking-1',
+        'rating': 4,
+        'comment': 'Loved it',
+      });
+      // Dialog closes and the section now shows the submitted review.
+      expect(find.text('Loved it'), findsOneWidget);
+    },
+  );
 
   testWidgets('shows a readable error when submission fails', (tester) async {
     final fakeApi = _FakeReviewsApi()
-      ..errorOnCreate = const ReviewException(ReviewErrorKey.duplicateOrNotCompleted);
+      ..errorOnCreate = const ReviewException(
+        ReviewErrorKey.duplicateOrNotCompleted,
+      );
 
     await tester.pumpWidget(
       ProviderScope(
@@ -140,11 +173,21 @@ void main() {
 
     await tester.tap(find.text('Leave a review'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(Icons.star_border).first);
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byType(FactoryDialog),
+            matching: find.byIcon(Symbols.star_rounded),
+          )
+          .first,
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Submit'));
     await tester.pumpAndSettle();
 
-    expect(find.text('This booking already has a review, or is not completed yet.'), findsOneWidget);
+    expect(
+      find.text('This booking already has a review, or is not completed yet.'),
+      findsOneWidget,
+    );
   });
 }
