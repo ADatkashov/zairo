@@ -84,12 +84,26 @@ class _BookingsListState extends ConsumerState<_BookingsList> {
 
     return bookingsAsync.when(
       data: (bookings) {
+        Future<void> refresh() =>
+            ref.refresh(myBookingsProvider(widget.userId).future);
+
         if (bookings.isEmpty) {
-          return Center(
-            child: FactoryEmptyState(
-              icon: Symbols.calendar_month_rounded,
-              title: l10n.bookingsEmptyTitle,
-              message: l10n.bookingsEmptyMessage,
+          return RefreshIndicator(
+            onRefresh: refresh,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.6,
+                  child: Center(
+                    child: FactoryEmptyState(
+                      icon: Symbols.calendar_month_rounded,
+                      title: l10n.bookingsEmptyTitle,
+                      message: l10n.bookingsEmptyMessage,
+                    ),
+                  ),
+                ),
+              ],
             ),
           );
         }
@@ -111,30 +125,36 @@ class _BookingsListState extends ConsumerState<_BookingsList> {
               ),
             ),
             Expanded(
-              child: filtered.isEmpty
-                  ? Center(
-                      child: Padding(
+              child: RefreshIndicator(
+                onRefresh: refresh,
+                child: filtered.isEmpty
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(FactorySpacing.space4),
+                            child: Text(
+                              l10n.bookingsEmptyMessage,
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: context.factoryColors.textTertiary,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : ListView.separated(
                         padding: const EdgeInsets.all(FactorySpacing.space4),
-                        child: Text(
-                          l10n.bookingsEmptyMessage,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: context.factoryColors.textTertiary,
-                              ),
+                        itemCount: filtered.length,
+                        separatorBuilder: (_, _) =>
+                            const SizedBox(height: FactorySpacing.space3),
+                        itemBuilder: (context, index) => _BookingCard(
+                          booking: filtered[index],
+                          userId: widget.userId,
                         ),
                       ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.all(FactorySpacing.space4),
-                      itemCount: filtered.length,
-                      separatorBuilder: (_, _) =>
-                          const SizedBox(height: FactorySpacing.space3),
-                      itemBuilder: (context, index) => _BookingCard(
-                        booking: filtered[index],
-                        userId: widget.userId,
-                      ),
-                    ),
+              ),
             ),
           ],
         );

@@ -76,7 +76,12 @@ class DashboardScreen extends ConsumerWidget {
           if (providers.isEmpty) {
             return _CreateSalonForm(ownerUserId: user.id);
           }
-          return ListView.separated(
+          return RefreshIndicator(
+            onRefresh: () => Future.wait([
+              ref.refresh(myProvidersProvider(user.id).future),
+              ref.refresh(mySubscriptionProvider.future),
+            ]),
+            child: ListView.separated(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             itemCount: providers.length + 2,
             separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
@@ -105,6 +110,7 @@ class DashboardScreen extends ConsumerWidget {
                 ),
               );
             },
+            ),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),

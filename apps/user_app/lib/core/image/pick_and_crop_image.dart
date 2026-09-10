@@ -15,9 +15,22 @@ class PickedCroppedImage {
 }
 
 /// Camera-or-gallery bottom sheet, then the native crop screen (drag/zoom/
-/// rotate, locked to a square) — the standard pattern most apps use for a
-/// profile photo. Returns null if the user backs out at any step.
-Future<PickedCroppedImage?> pickAndCropImage(BuildContext context, {required String cropTitle}) async {
+/// rotate). Defaults to a square lock — the standard pattern for a profile
+/// photo — but a caller with a differently-shaped target (a wide cover
+/// photo, a freeform portfolio shot) can pass its own [aspectRatio], or
+/// null for an unlocked, freeform crop. Returns null if the user backs out
+/// at any step. Mirrors apps/business_admin's identical helper.
+///
+/// [compressQuality] (0-100, re-encoded on crop) keeps output size bounded
+/// regardless of source resolution — a raw phone-camera photo can exceed
+/// the backend's 10MB upload limit (`spring.servlet.multipart.max-file-size`)
+/// before cropping; this is what actually keeps a cropped upload under it.
+Future<PickedCroppedImage?> pickAndCropImage(
+  BuildContext context, {
+  required String cropTitle,
+  CropAspectRatio? aspectRatio = const CropAspectRatio(ratioX: 1, ratioY: 1),
+  int compressQuality = 85,
+}) async {
   final source = await _chooseImageSource(context);
   if (source == null) return null;
 
@@ -27,10 +40,11 @@ Future<PickedCroppedImage?> pickAndCropImage(BuildContext context, {required Str
 
   final CroppedFile? cropped = await ImageCropper().cropImage(
     sourcePath: picked.path,
-    aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+    aspectRatio: aspectRatio,
+    compressQuality: compressQuality,
     uiSettings: [
-      AndroidUiSettings(toolbarTitle: cropTitle, lockAspectRatio: true),
-      IOSUiSettings(title: cropTitle, aspectRatioLockEnabled: true),
+      AndroidUiSettings(toolbarTitle: cropTitle, lockAspectRatio: aspectRatio != null),
+      IOSUiSettings(title: cropTitle, aspectRatioLockEnabled: aspectRatio != null),
       WebUiSettings(context: context),
     ],
   );

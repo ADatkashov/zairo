@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:core_ui/core_ui.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_cropper/image_cropper.dart';
 
 import '../../../../core/formatting/month_day_time.dart';
 import '../../../../core/image/pick_and_crop_image.dart';
@@ -78,46 +78,63 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(FactorySpacing.space4),
-        children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              FactoryBadge(label: _capitalize(_provider.vertical)),
-              FactoryBadge(
-                label: _providerStatusLabel(l10n, _provider.status),
-                variant: _providerStatusVariant(_provider.status),
-              ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          // Invalidates every argument-instance of each family (not just
+          // this provider's, and regardless of a section's current
+          // show-inactive toggle) — simpler and just as correct as threading
+          // every section's local state up here, since re-fetching another
+          // salon's already-cached data too costs nothing a user notices.
+          ref.invalidate(providerDashboardMetricsProvider);
+          ref.invalidate(providerServicesProvider);
+          ref.invalidate(providerSlotsProvider);
+          ref.invalidate(adminMastersProvider);
+          ref.invalidate(adminMechanicsProvider);
+          ref.invalidate(adminCleanersProvider);
+          ref.invalidate(adminStaffProvider);
+          ref.invalidate(providerBookingsProvider);
+        },
+        child: ListView(
+          padding: const EdgeInsets.all(FactorySpacing.space4),
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                FactoryBadge(label: _capitalize(_provider.vertical)),
+                FactoryBadge(
+                  label: _providerStatusLabel(l10n, _provider.status),
+                  variant: _providerStatusVariant(_provider.status),
+                ),
+              ],
+            ),
+            const SizedBox(height: FactorySpacing.space6),
+            _DashboardMetricsSection(providerId: _provider.id),
+            const SizedBox(height: FactorySpacing.space6),
+            _ServicesSection(providerId: _provider.id),
+            const SizedBox(height: FactorySpacing.space6),
+            _AvailabilitySection(providerId: _provider.id),
+            if (_provider.vertical == 'beauty') ...[
+              const SizedBox(height: FactorySpacing.space6),
+              _MastersSection(providerId: _provider.id),
             ],
-          ),
-          const SizedBox(height: FactorySpacing.space6),
-          _DashboardMetricsSection(providerId: _provider.id),
-          const SizedBox(height: FactorySpacing.space6),
-          _ServicesSection(providerId: _provider.id),
-          const SizedBox(height: FactorySpacing.space6),
-          _AvailabilitySection(providerId: _provider.id),
-          if (_provider.vertical == 'beauty') ...[
+            if (_provider.vertical == 'auto') ...[
+              const SizedBox(height: FactorySpacing.space6),
+              _MechanicsSection(providerId: _provider.id),
+            ],
+            if (_provider.vertical == 'cleaning') ...[
+              const SizedBox(height: FactorySpacing.space6),
+              _CleanersSection(providerId: _provider.id),
+            ],
+            if (!_verticalsWithDedicatedStaffModule.contains(_provider.vertical)) ...[
+              const SizedBox(height: FactorySpacing.space6),
+              _StaffSection(providerId: _provider.id),
+            ],
             const SizedBox(height: FactorySpacing.space6),
-            _MastersSection(providerId: _provider.id),
+            _BookingsSection(providerId: _provider.id),
           ],
-          if (_provider.vertical == 'auto') ...[
-            const SizedBox(height: FactorySpacing.space6),
-            _MechanicsSection(providerId: _provider.id),
-          ],
-          if (_provider.vertical == 'cleaning') ...[
-            const SizedBox(height: FactorySpacing.space6),
-            _CleanersSection(providerId: _provider.id),
-          ],
-          if (!_verticalsWithDedicatedStaffModule.contains(_provider.vertical)) ...[
-            const SizedBox(height: FactorySpacing.space6),
-            _StaffSection(providerId: _provider.id),
-          ],
-          const SizedBox(height: FactorySpacing.space6),
-          _BookingsSection(providerId: _provider.id),
-        ],
+        ),
       ),
     );
   }
@@ -204,6 +221,16 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
           const SizedBox(height: FactorySpacing.space3),
           Text(l10n.coverPhotoLabel, style: Theme.of(context).textTheme.labelMedium),
           const SizedBox(height: FactorySpacing.space2),
+          if (_pickedPhotoBytes != null) ...[
+            ClipRRect(
+              borderRadius: FactoryRadius.mdRadius,
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Image.memory(_pickedPhotoBytes!, fit: BoxFit.cover),
+              ),
+            ),
+            const SizedBox(height: FactorySpacing.space2),
+          ],
           FactoryButton(
             icon: Icons.image_outlined,
             label: _pickedPhotoName ?? l10n.choosePhotoLabel,
@@ -234,12 +261,17 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
 
   Future<void> _pickPhoto() async {
     try {
-      final result = await FilePicker.pickFiles(type: FileType.image, withData: true);
-      final file = result?.files.singleOrNull;
-      if (file?.bytes == null) return;
+      // 16:9, not the square lock most other pickers in this app use — a
+      // cover photo is a wide banner, not an avatar.
+      final picked = await pickAndCropImage(
+        context,
+        cropTitle: AppLocalizations.of(context)!.coverPhotoLabel,
+        aspectRatio: const CropAspectRatio(ratioX: 16, ratioY: 9),
+      );
+      if (picked == null) return;
       setState(() {
-        _pickedPhotoBytes = file!.bytes;
-        _pickedPhotoName = file.name;
+        _pickedPhotoBytes = picked.bytes;
+        _pickedPhotoName = picked.name;
         _error = null;
       });
     } catch (e) {
