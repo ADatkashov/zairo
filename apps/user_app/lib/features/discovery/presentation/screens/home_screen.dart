@@ -367,7 +367,6 @@ class _CategoryGrid extends ConsumerWidget {
               final accent = colorForCategory(context, category.code);
               return FactoryCategoryTile(
                 icon: iconForCategory(category.code),
-                emoji: category.icon,
                 label: category.nameFor(languageCode),
                 selected: selected,
                 accentColor: accent?.color,
