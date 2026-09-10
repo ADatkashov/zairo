@@ -79,6 +79,10 @@ public class Master {
         return createdAt;
     }
 
+    void updatePhoto(String photoUrl) {
+        this.photoUrl = photoUrl;
+    }
+
     /** Soft-delete: existing bookings/portfolio items still reference this master by id, so the row must stay. */
     void deactivate() {
         this.active = false;

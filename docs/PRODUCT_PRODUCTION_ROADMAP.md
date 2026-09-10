@@ -167,13 +167,13 @@ CI/CD — реальный, построен в этой сессии (`.github/
 |---|---|---|---|---|---|---|
 | platform dashboard | Отсутствует (0 операционных эндпоинтов) | Новый read-composition модуль (по образцу provider-insights) | P0 | — | L | См. раздел 9 |
 | users | Нет списка | Live-query эндпоинт | P0 | — | S | — |
-| businesses | Нет списка (модерация — отдельная система) | Live-query эндпоинт | P0 | — | S | — |
+| ~~businesses~~ | ~~Нет списка (модерация — отдельная система)~~ | ✅ **Сделано 2026-09-08** — `GET/PATCH /api/v1/platform/businesses[/{id}/status]` (`ProviderAdminController`), PLATFORM_ADMIN/PLATFORM_MODERATOR, audit-logged. Тот же `Provider`, что и в legacy ADMIN-логине — ни одна из систем не убрана, просто модерация больше не требует отдельного логина или прямого доступа к БД | — | — | S | Готово |
 | subscriptions | Нет обзора | Live-query эндпоинт | P0 | — | S | — |
 | bookings | Нет обзора | Live-query эндпоинт | P1 | — | S | — |
 | payments | Нет обзора | Live-query эндпоинт + failed-refund view | P0 | — | S | — |
 | revenue | Нет вообще | MRR из SubscriptionCharge | P1 | — | S | — |
 | system health | Только `/actuator/health` | Нужна новая модель отслеживания ошибок (раздел 9-10) | P2 | analytics-архитектура | M | Can Wait минимально, но failed-refund — нет |
-| audit logs | Узкое покрытие (только catalog+platform-admin-created) | Добавить в provider-moderation | P1 | — | S | Модерация бизнеса аудируется |
+| audit logs | Покрытие: catalog + platform-admin-created + **provider-moderation через Control Center** (✅ 2026-09-08, `PROVIDER_STATUS_CHANGED`) | Legacy-эндпоинт `PATCH /api/v1/providers/{id}/status` (ADMIN-логин) по-прежнему не аудируется — модерация через него проходит мимо лога | P2 | — | S | Частично: аудируется, только если модерация идёт через Control Center |
 
 ### Infrastructure
 
@@ -451,8 +451,8 @@ Lightweight production security review — код-проверено, не че�
 | ~~CORS = localhost-only~~ | Medium | ✅ **Сделано 2026-08-28** — `app.cors.allowed-origins`/`CORS_ALLOWED_ORIGINS`, дефолт не менялся. Добавить реальный домен теперь одна переменная окружения, не правка кода | — | Готово |
 | ~~Refund failure только логируется~~ | Medium (финансовый риск) | ✅ **Сделано 2026-08-28** — `Payment.refundFailureReason`, персистится до throw (`noRollbackFor`). Видно через `GET /bookings/{id}/payments`; отдельный admin-list всех проблемных refund'ов — по-прежнему часть Platform Dashboard (раздел 9, Phase 1), не сделано в этом заходе | Admin-list — Phase 1 | Ядро готово, обзор — нет |
 | File upload без content-type валидации | Medium | Принимает любой файл, ключ — UUID (не угадать) | Ограничить allow-list по MIME/расширению для фото | Рекомендовано, не жёсткий блокер для малого доверенного пилота |
-| Модерация бизнеса не в audit log | Low-Medium | Только catalog-действия и создание platform-admin логируются | Добавить `auditLogService.record` в `ProviderController.updateStatus` | Желательно, не блокер |
-| Два параллельных admin-контура (обычный ADMIN vs platform-admin) | Low-Medium (архитектурная путаница, не найдена прямая дыра) | Оба по отдельности корректно проверены | Прояснить границу или объединить в будущем | Нет, technical debt (раздел 17) |
+| ~~Модерация бизнеса не в audit log~~ | Low-Medium | ✅ **Частично сделано 2026-09-08** — модерация через новый Control Center путь (`ProviderAdminController`, PLATFORM_ADMIN/PLATFORM_MODERATOR) аудируется (`PROVIDER_STATUS_CHANGED`). Legacy `PATCH /api/v1/providers/{id}/status` (ADMIN-логин) сознательно не тронут — не мигрирован на этот путь, см. отдельную строку в разделе "Admin / Operations" | Добавить `auditLogService.record` и в legacy-эндпоинт, если он остаётся в использовании | Желательно, не блокер |
+| Два параллельных admin-контура (обычный ADMIN vs platform-admin) | Low-Medium (архитектурная путаница, не найдена прямая дыра) | ✅ **Частично закрыто 2026-09-08** — Control Center получил свой путь к модерации бизнеса (новая роль PLATFORM_MODERATOR) плюс проверку "нет функции модератора", которая раньше заставляла лезть прямо в БД; legacy ADMIN-логин по-прежнему существует, обе системы пишут в один и тот же `Provider`, ни одна не удалена | Полное объединение (или явная документация границы) — по-прежнему открыто | Нет, technical debt (раздел 17) |
 | Нет revocation для access-токена | Low | Stateless JWT, TTL 30 мин | Стандартно для этой формы дизайна | Нет |
 | SQL injection | — | Все native queries параметризованы (`:paramName`) | — | Чисто, действий не требуется |
 | Sensitive data в логах | — | Не найдено ни одного случая | — | Чисто |
@@ -571,10 +571,10 @@ Lightweight production security review — код-проверено, не че�
 
 Работает, но со известной ценой — не блокирует пилот, но стоит держать в поле зрения:
 
-- **Два параллельных admin/authority контура** — обычная роль `ADMIN` (auth/users) для модерации бизнеса и совершенно отдельная система `platform-admin` (свой JWT-секрет, свой логин) для остального. Оба по отдельности корректны, но это две системы там, где по смыслу одна — стоит либо объединить, либо явно задокументировать границу, чтобы будущий разработчик не удивился.
+- **Два параллельных admin/authority контура** — обычная роль `ADMIN` (auth/users) для модерации бизнеса и совершенно отдельная система `platform-admin` (свой JWT-секрет, свой логин) для остального. С 2026-09-08 Control Center сам умеет модерировать бизнес (`ProviderAdminController`, роль PLATFORM_MODERATOR) — то есть platform-staff больше не обязаны заводить себе ещё и обычный `ADMIN`-аккаунт или лезть в БД напрямую, но legacy-логин никуда не делся, обе системы пишут в один `Provider`. Полное объединение (или явная документация границы, если объединять не будем) — по-прежнему открытый вопрос.
 - **`LoggingEmailNotificationProvider` как постоянная заглушка** — не проблема сама по себе (тот же паттерн, что и `MockPaymentProvider`), но пока не заменена, ни одно email-уведомление реально не доходит.
 - **Отсутствие backend `MapProvider`-абстракции** — сегодня не нужна (Haversine provider-agnostic), но если когда-нибудь понадобится backend-геокодирование через платный API, точки подмены пока нет.
-- **Узкое покрытие audit log** — самое чувствительное административное действие (модерация бизнеса) сегодня не аудируется.
+- **Узкое покрытие audit log** — модерация бизнеса аудируется, если она идёт через Control Center (`PROVIDER_STATUS_CHANGED`, с 2026-09-08); через legacy `ADMIN`-логин (`PATCH /api/v1/providers/{id}/status`) — по-прежнему нет.
 - **Refund failure = только `log.error`** — тихий финансовый риск, уже учтён в Phase 0 (0.1), но стоит явно назвать техдолгом, а не просто gap: паттерн «залогировать и забыть» использован и для email-провайдера тоже — если это станет привычкой команды, стоит явно решить, что критичные для денег ошибки так обрабатывать нельзя.
 
 ---

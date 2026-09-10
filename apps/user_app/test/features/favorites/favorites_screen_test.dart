@@ -17,9 +17,16 @@ class _FakeFavoritesApi extends FavoritesApi {
   _FakeFavoritesApi(this._favorites) : super(DioClient(Dio()));
 
   final List<FavoriteProvider> _favorites;
+  final List<String> removedProviderIds = [];
 
   @override
   Future<List<FavoriteProvider>> listFavorites(String userId) async => _favorites;
+
+  @override
+  Future<void> removeFavorite(String userId, String providerId) async {
+    removedProviderIds.add(providerId);
+    _favorites.removeWhere((f) => f.id == providerId);
+  }
 }
 
 class _LoggedInAuthController extends AuthController {
@@ -111,5 +118,67 @@ void main() {
     // asserted.
     expect(find.text('Favorite Salon'), findsOneWidget);
     expect(find.text('Available today'), findsOneWidget);
+  });
+
+  testWidgets('clear all removes every favorite after confirmation', (tester) async {
+    final favorites = [
+      FavoriteProvider(
+        id: 'provider-1',
+        name: 'Favorite Salon',
+        vertical: 'beauty',
+        status: 'ACTIVE',
+        hasOpenAvailability: true,
+        minPrice: 30,
+        services: const [
+          ServiceSummary(id: 's1', title: 'Haircut', durationMinutes: 30, price: 30, currency: 'USD'),
+        ],
+        favoritedAt: DateTime(2026, 1, 1),
+      ),
+      FavoriteProvider(
+        id: 'provider-2',
+        name: 'Favorite Barber',
+        vertical: 'beauty',
+        status: 'ACTIVE',
+        hasOpenAvailability: false,
+        minPrice: 20,
+        services: const [],
+        favoritedAt: DateTime(2026, 1, 2),
+      ),
+    ];
+    final fakeApi = _FakeFavoritesApi(favorites);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          favoritesApiProvider.overrideWithValue(fakeApi),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const FavoritesScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Clear all'));
+    await tester.pumpAndSettle();
+
+    // Confirmation dialog — dismissing with "Keep favorites" doesn't call the API.
+    expect(find.text('Clear all favorites?'), findsOneWidget);
+    await tester.tap(find.text('Keep favorites'));
+    await tester.pumpAndSettle();
+    expect(fakeApi.removedProviderIds, isEmpty);
+    expect(find.text('Favorite Salon'), findsOneWidget);
+
+    await tester.tap(find.text('Clear all'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Clear all'));
+    await tester.pumpAndSettle();
+
+    expect(fakeApi.removedProviderIds, unorderedEquals(['provider-1', 'provider-2']));
+    expect(find.text('No favorites yet'), findsOneWidget);
   });
 }

@@ -94,4 +94,14 @@ class AuthApi {
     );
     return UserSummary.fromJson(response.data as Map<String, dynamic>);
   }
+
+  /// Pass null to remove the avatar. [avatarUrl] should come from
+  /// StorageApi.uploadBytes, not a user-typed URL.
+  Future<UserSummary> updateAvatar(String? avatarUrl) async {
+    final response = await _dioClient.patch(
+      '/auth/me/avatar',
+      data: {'avatarUrl': avatarUrl},
+    );
+    return UserSummary.fromJson(response.data as Map<String, dynamic>);
+  }
 }

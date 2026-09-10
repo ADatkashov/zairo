@@ -58,6 +58,12 @@ class StaffAdminApi {
     return _dioClient.delete('/staff/$staffId/services/$serviceId');
   }
 
+  /// Owner-only — replaces the staff member's photo (null removes it).
+  Future<AdminStaff> updateStaffPhoto(String staffId, String? photoUrl) async {
+    final response = await _dioClient.put('/staff/$staffId/photo', data: {'photoUrl': photoUrl});
+    return AdminStaff.fromJson(response.data as Map<String, dynamic>);
+  }
+
   /// Soft-delete — see backend's Staff.deactivate(). Deactivated staff stop
   /// appearing in provider listings (both here and in the customer app).
   Future<void> deactivateStaff(String staffId) {

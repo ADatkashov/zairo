@@ -4,6 +4,7 @@ import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.vertical.auto.MechanicDtos.CreateMechanicRequest;
 import com.zairo.factory.vertical.auto.MechanicDtos.MechanicResponse;
 import com.zairo.factory.vertical.auto.MechanicDtos.MechanicServiceResponse;
+import com.zairo.factory.vertical.auto.MechanicDtos.UpdatePhotoRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -100,6 +102,21 @@ public class MechanicController {
             HttpServletRequest httpRequest) {
         return MechanicResponse.from(
                 mechanicDirectoryService.reactivateMechanic(mechanicId, CurrentUser.requireUserId(httpRequest)));
+    }
+
+    @Operation(summary = "Update a mechanic's photo", description = "Owner-only. Upload the file via POST "
+            + "/uploads first, then pass its returned url as `photoUrl` here. Null/blank removes the photo.")
+    @ApiResponse(responseCode = "200", description = "Photo updated")
+    @ApiResponse(responseCode = "400", ref = "BadRequest")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
+    @PutMapping("/api/v1/auto/mechanics/{mechanicId}/photo")
+    public MechanicResponse updatePhoto(@Parameter(description = "The mechanic's id.") @PathVariable UUID mechanicId,
+            @Valid @RequestBody UpdatePhotoRequest request, HttpServletRequest httpRequest) {
+        return MechanicResponse.from(mechanicDirectoryService.updateMechanicPhoto(mechanicId, request.photoUrl(),
+                CurrentUser.requireUserId(httpRequest)));
     }
 
     @Operation(summary = "Link a service to a mechanic", description = "Owner-only. Marks that this mechanic "

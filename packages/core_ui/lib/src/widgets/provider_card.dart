@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../theme/factory_colors.dart';
 import '../theme/factory_radius.dart';
@@ -31,6 +32,9 @@ class FactoryProviderCard extends StatelessWidget {
     this.priceFrom,
     this.currencySymbol,
     this.availabilityLabel,
+    this.categoryLabel,
+    this.categoryColor,
+    this.categoryTint,
     this.image,
     this.isFavorite = false,
     this.onFavoriteToggle,
@@ -63,6 +67,13 @@ class FactoryProviderCard extends StatelessWidget {
   /// so it reads as state rather than a caption.
   final String? availabilityLabel;
 
+  /// A top-left category chip over the photo (e.g. "Beauty") — Customer
+  /// App Redesign board, 2026-09-05. All three null (the default) renders
+  /// no badge at all, matching every call site that predates this field.
+  final String? categoryLabel;
+  final Color? categoryColor;
+  final Color? categoryTint;
+
   final Widget? image;
   final bool isFavorite;
   final ValueChanged<bool>? onFavoriteToggle;
@@ -92,9 +103,14 @@ class FactoryProviderCard extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: layout == FactoryProviderCardLayout.horizontal
-                ? const BorderRadius.horizontal(left: Radius.circular(FactoryRadius.lg))
-                : const BorderRadius.vertical(top: Radius.circular(FactoryRadius.lg)),
-            child: image ??
+                ? const BorderRadius.horizontal(
+                    left: Radius.circular(FactoryRadius.xl),
+                  )
+                : const BorderRadius.vertical(
+                    top: Radius.circular(FactoryRadius.xl),
+                  ),
+            child:
+                image ??
                 DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -105,6 +121,18 @@ class FactoryProviderCard extends StatelessWidget {
                   ),
                 ),
           ),
+          if (categoryLabel != null &&
+              categoryColor != null &&
+              categoryTint != null)
+            Positioned(
+              top: 8,
+              left: 8,
+              child: FactoryBadge(
+                label: categoryLabel!,
+                backgroundColor: categoryTint,
+                foregroundColor: categoryColor,
+              ),
+            ),
           if (onFavoriteToggle != null)
             Positioned(
               top: 8,
@@ -130,7 +158,8 @@ class FactoryProviderCard extends StatelessWidget {
             title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(color: colors.text),
+            style: Theme.of(context).textTheme.titleSmall
+                ?.copyWith(color: colors.text),
           ),
           const SizedBox(height: 4),
           Row(
@@ -153,7 +182,10 @@ class FactoryProviderCard extends StatelessWidget {
                     metaText!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(color: colors.textTertiary, fontWeight: FontWeight.w400),
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: colors.textTertiary,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
                 ),
             ],
@@ -171,9 +203,16 @@ class FactoryProviderCard extends StatelessWidget {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 if (priceFrom != null)
-                  FactoryPriceText(amount: priceFrom!, currencySymbol: currencySymbol, prefix: 'from '),
+                  FactoryPriceText(
+                    amount: priceFrom!,
+                    currencySymbol: currencySymbol,
+                    prefix: 'from ',
+                  ),
                 if (availabilityLabel != null)
-                  FactoryBadge(label: availabilityLabel!, variant: FactoryBadgeVariant.available),
+                  FactoryBadge(
+                    label: availabilityLabel!,
+                    variant: FactoryBadgeVariant.available,
+                  ),
               ],
             ),
           ],
@@ -184,21 +223,24 @@ class FactoryProviderCard extends StatelessWidget {
     final card = DecoratedBox(
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: FactoryRadius.lgRadius,
+        borderRadius: FactoryRadius.xlRadius,
         border: Border.all(color: colors.border),
       ),
       child: layout == FactoryProviderCardLayout.horizontal
           ? IntrinsicHeight(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [imageArea, Expanded(child: body)],
+                children: [
+                  imageArea,
+                  Expanded(child: body),
+                ],
               ),
             )
           : Column(mainAxisSize: MainAxisSize.min, children: [imageArea, body]),
     );
 
     final tappable = ClipRRect(
-      borderRadius: FactoryRadius.lgRadius,
+      borderRadius: FactoryRadius.xlRadius,
       child: Material(
         color: Colors.transparent,
         child: InkWell(onTap: onTap, child: card),
@@ -239,9 +281,13 @@ class _FavoriteButton extends StatelessWidget {
         child: Container(
           width: 28,
           height: 28,
-          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.92), shape: BoxShape.circle),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.92),
+            shape: BoxShape.circle,
+          ),
           child: Icon(
-            isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+            Symbols.favorite_rounded,
+            fill: isFavorite ? 1 : 0,
             size: 15,
             color: isFavorite ? colors.error : colors.textSecondary,
           ),

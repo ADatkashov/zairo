@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../data/models/portfolio_item.dart';
@@ -11,10 +12,15 @@ class PortfolioFullscreenViewer extends StatefulWidget {
   final List<PortfolioItem> items;
   final int initialIndex;
 
-  const PortfolioFullscreenViewer({super.key, required this.items, required this.initialIndex});
+  const PortfolioFullscreenViewer({
+    super.key,
+    required this.items,
+    required this.initialIndex,
+  });
 
   @override
-  State<PortfolioFullscreenViewer> createState() => _PortfolioFullscreenViewerState();
+  State<PortfolioFullscreenViewer> createState() =>
+      _PortfolioFullscreenViewerState();
 }
 
 class _PortfolioFullscreenViewerState extends State<PortfolioFullscreenViewer> {
@@ -48,13 +54,14 @@ class _PortfolioFullscreenViewerState extends State<PortfolioFullscreenViewer> {
               controller: _controller,
               itemCount: widget.items.length,
               onPageChanged: (i) => setState(() => _index = i),
-              itemBuilder: (context, i) => _PortfolioPage(item: widget.items[i], l10n: l10n),
+              itemBuilder: (context, i) =>
+                  _PortfolioPage(item: widget.items[i], l10n: l10n),
             ),
             Positioned(
               top: 8,
               left: 8,
               child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
+                icon: const Icon(Symbols.close_rounded, color: Colors.white),
                 tooltip: l10n.portfolioViewerCloseTooltip,
                 onPressed: () => Navigator.of(context).pop(),
               ),
@@ -65,7 +72,10 @@ class _PortfolioFullscreenViewerState extends State<PortfolioFullscreenViewer> {
                 right: 16,
                 child: Text(
                   l10n.portfolioViewerCounter(_index + 1, widget.items.length),
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             if (widget.items.length > 1) ...[
@@ -76,7 +86,11 @@ class _PortfolioFullscreenViewerState extends State<PortfolioFullscreenViewer> {
                   bottom: 0,
                   child: Center(
                     child: IconButton(
-                      icon: const Icon(Icons.chevron_left, color: Colors.white, size: 36),
+                      icon: const Icon(
+                        Symbols.chevron_left_rounded,
+                        color: Colors.white,
+                        size: 36,
+                      ),
                       tooltip: l10n.portfolioViewerPreviousTooltip,
                       onPressed: () => _controller.previousPage(
                         duration: const Duration(milliseconds: 250),
@@ -92,7 +106,11 @@ class _PortfolioFullscreenViewerState extends State<PortfolioFullscreenViewer> {
                   bottom: 0,
                   child: Center(
                     child: IconButton(
-                      icon: const Icon(Icons.chevron_right, color: Colors.white, size: 36),
+                      icon: const Icon(
+                        Symbols.chevron_right_rounded,
+                        color: Colors.white,
+                        size: 36,
+                      ),
                       tooltip: l10n.portfolioViewerNextTooltip,
                       onPressed: () => _controller.nextPage(
                         duration: const Duration(milliseconds: 250),
@@ -142,9 +160,16 @@ class _PortfolioPage extends StatelessWidget {
           errorBuilder: (context, error, stackTrace) => Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.broken_image_outlined, color: Colors.white54, size: 48),
+              const Icon(
+                Symbols.broken_image_rounded,
+                color: Colors.white54,
+                size: 48,
+              ),
               const SizedBox(height: 8),
-              Text(l10n.errorPortfolioImageLoadFailed, style: const TextStyle(color: Colors.white54)),
+              Text(
+                l10n.errorPortfolioImageLoadFailed,
+                style: const TextStyle(color: Colors.white54),
+              ),
             ],
           ),
         ),

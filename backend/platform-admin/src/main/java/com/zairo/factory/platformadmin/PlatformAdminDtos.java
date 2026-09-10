@@ -34,12 +34,27 @@ public final class PlatformAdminDtos {
             @Schema(example = "550e8400-e29b-41d4-a716-446655440000") UUID id,
             @Schema(example = "ops@factory.internal") String email,
             @Schema(example = "Aigerim Ops") String displayName,
-            PlatformRole role) {
+            PlatformRole role,
+            @Schema(description = "False once deactivated — see POST /platform/admins/{adminId}/deactivate.")
+            boolean active,
+            @Schema(example = "http://localhost:8080/api/v1/uploads/a1b2c3d4.jpg") String avatarUrl) {
 
         static AdminSummary from(PlatformAdminAccount account) {
             return new AdminSummary(account.getId(), account.getEmail(), account.getDisplayName(),
-                    account.getRole());
+                    account.getRole(), account.isActive(), account.getAvatarUrl());
         }
+    }
+
+    public record DeactivateAdminRequest(
+            @Schema(description = "Recorded on the audit log entry for this action.", example = "Left the company")
+            String reason) {
+    }
+
+    public record UpdateAvatarRequest(
+            @Size(max = 2048) @Schema(description = "Upload via POST /uploads first, then pass its returned url "
+                    + "here. Null/blank removes the avatar.",
+                    example = "http://localhost:8080/api/v1/uploads/a1b2c3d4.jpg")
+            String avatarUrl) {
     }
 
     public record TokenResponse(

@@ -3,7 +3,6 @@ package com.zairo.factory.notifications;
 import com.zairo.factory.booking.Booking;
 import com.zairo.factory.booking.BookingRepository;
 import com.zairo.factory.payments.PaymentRefundedEvent;
-import com.zairo.factory.users.User;
 import com.zairo.factory.users.UserRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -13,8 +12,11 @@ import org.springframework.transaction.event.TransactionalEventListener;
  * Reacts to payments' domain events (see ADR-0002) by emailing the
  * customer — same "listen for the event, don't have the publisher depend
  * on you" pattern as {@link BookingNotificationListener}/{@link
- * SubscriptionNotificationListener}. Only reads (resolving bookingId ->
- * userId -> email), never writes, so no {@code REQUIRES_NEW} is needed.
+ * SubscriptionNotificationListener}. This listener itself only reads
+ * (resolving bookingId -> userId -> email); the in-app notification write
+ * {@link NotificationService#sendPaymentRefundedEmail} makes is its own
+ * {@code REQUIRES_NEW} transaction (see that method's doc comment), so
+ * nothing extra is needed here.
  */
 @Component
 class PaymentNotificationListener {
@@ -35,8 +37,7 @@ class PaymentNotificationListener {
         bookingRepository.findById(event.bookingId())
                 .map(Booking::getUserId)
                 .flatMap(userRepository::findById)
-                .map(User::getEmail)
-                .ifPresent(email -> notificationService.sendPaymentRefundedEmail(email, event.bookingId(),
-                        event.amount(), event.currency()));
+                .ifPresent(customer -> notificationService.sendPaymentRefundedEmail(customer.getId(),
+                        customer.getEmail(), event.bookingId(), event.amount(), event.currency()));
     }
 }

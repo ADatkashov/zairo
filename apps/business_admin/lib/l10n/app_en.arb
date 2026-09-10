@@ -66,6 +66,9 @@
   "navDashboard": "Dashboard",
   "@navDashboard": {"description": "Desktop sidebar nav label for the salon dashboard destination."},
 
+  "ownerRoleLabel": "Owner",
+  "@ownerRoleLabel": {"description": "Role caption under the signed-in owner's name in the desktop sidebar footer."},
+
   "settingsTitle": "Settings",
   "@settingsTitle": {"description": "Settings screen app bar title."},
 
@@ -229,6 +232,9 @@
 
   "dashboardNoDataYet": "Metrics will appear once this business gets its first booking.",
   "@dashboardNoDataYet": {"description": "Dashboard empty state, shown when totalBookings is 0."},
+
+  "dashboardBusinessesCountLabel": "Businesses",
+  "@dashboardBusinessesCountLabel": {"description": "Owner overview hero stat: number of businesses this owner manages."},
 
   "errorDashboardLoadFailed": "Failed to load dashboard: {error}",
   "@errorDashboardLoadFailed": {
@@ -781,5 +787,42 @@
   "@billingDowngradeButtonLabel": {"description": "BillingScreen's downgrade button, shown on PRO."},
 
   "errorBillingUpgradeFailed": "Couldn't upgrade — please try again.",
-  "@errorBillingUpgradeFailed": {"description": "BillingScreen's error state when the upgrade charge fails."}
+  "@errorBillingUpgradeFailed": {"description": "BillingScreen's error state when the upgrade charge fails."},
+
+  "changeAvatarDialogTitle": "Change avatar",
+  "@changeAvatarDialogTitle": {"description": "Title of the sidebar's change-avatar dialog."},
+
+  "changeAvatarRemoveButton": "Remove photo",
+  "@changeAvatarRemoveButton": {"description": "Change-avatar dialog's remove-current-photo button, shown only when an avatar is already set."},
+
+  "errorAvatarUpdateFailed": "Failed to update avatar: {error}",
+  "@errorAvatarUpdateFailed": {
+    "description": "Change-avatar dialog's error when the upload/save request fails.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "changePhotoTooltip": "Change photo",
+  "@changePhotoTooltip": {"description": "Icon button tooltip on a master/mechanic/cleaner/staff row that opens the change-photo dialog."},
+
+  "changePhotoDialogTitle": "Change photo",
+  "@changePhotoDialogTitle": {"description": "Title of the master/mechanic/cleaner/staff change-photo dialog."},
+
+  "removePhotoButton": "Remove photo",
+  "@removePhotoButton": {"description": "Change-photo dialog's remove-current-photo button, shown only when a photo is already set."},
+
+  "errorUpdatePhotoFailed": "Failed to update photo: {error}",
+  "@errorUpdatePhotoFailed": {
+    "description": "Change-photo dialog's error when the upload/save request fails.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "imagePickerCameraLabel": "Camera",
+  "@imagePickerCameraLabel": {"description": "Photo-source bottom sheet option: take a new photo."},
+
+  "imagePickerGalleryLabel": "Gallery",
+  "@imagePickerGalleryLabel": {"description": "Photo-source bottom sheet option: pick an existing photo."}
 }

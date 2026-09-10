@@ -27,6 +27,7 @@
 
   "settingsButtonTooltip": "Баптаулар",
   "navDashboard": "Дашборд",
+  "ownerRoleLabel": "Иесі",
   "settingsTitle": "Баптаулар",
   "darkModeTitle": "Қараңғы режим",
   "darkModeSubtitle": "Ағымдағы тақырып: {mode}",
@@ -244,5 +245,17 @@
   "dashboardAverageCheckLabel": "Орташа чек",
   "dashboardTopServicesTitle": "Танымал қызметтер",
   "dashboardNoDataYet": "Көрсеткіштер алғашқы брондаудан кейін пайда болады.",
-  "errorDashboardLoadFailed": "Көрсеткіштерді жүктеу мүмкін болмады: {error}"
+  "dashboardBusinessesCountLabel": "Бизнестер",
+  "errorDashboardLoadFailed": "Көрсеткіштерді жүктеу мүмкін болмады: {error}",
+
+  "changeAvatarDialogTitle": "Аватарды өзгерту",
+  "changeAvatarRemoveButton": "Фотоны өшіру",
+  "errorAvatarUpdateFailed": "Аватарды жаңарту мүмкін болмады: {error}",
+
+  "changePhotoTooltip": "Фотоны өзгерту",
+  "changePhotoDialogTitle": "Фотоны өзгерту",
+  "removePhotoButton": "Фотоны өшіру",
+  "errorUpdatePhotoFailed": "Фотоны жаңарту мүмкін болмады: {error}",
+  "imagePickerCameraLabel": "Камера",
+  "imagePickerGalleryLabel": "Галерея"
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../theme/factory_colors.dart';
 import '../theme/factory_radius.dart';
@@ -57,11 +58,17 @@ class FactorySelectableTile extends StatelessWidget {
           decoration: BoxDecoration(
             color: selected ? colors.primaryTint : colors.surface,
             borderRadius: FactoryRadius.mdRadius,
-            border: Border.all(color: selected ? colors.primary : colors.border, width: selected ? 1.5 : 1),
+            border: Border.all(
+              color: selected ? colors.primary : colors.border,
+              width: selected ? 1.5 : 1,
+            ),
           ),
           child: Row(
             children: [
-              if (leading != null) ...[leading!, const SizedBox(width: FactorySpacing.space3)],
+              if (leading != null) ...[
+                leading!,
+                const SizedBox(width: FactorySpacing.space3),
+              ],
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,16 +78,29 @@ class FactorySelectableTile extends StatelessWidget {
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: titleColor == null ? textTheme.titleSmall : textTheme.titleSmall?.copyWith(color: titleColor),
+                      style: titleColor == null
+                          ? textTheme.titleSmall
+                          : textTheme.titleSmall?.copyWith(color: titleColor),
                     ),
-                    if (subtitle != null) ...[const SizedBox(height: 2), subtitle!],
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      subtitle!,
+                    ],
                   ],
                 ),
               ),
               if (selected)
                 Padding(
-                  padding: EdgeInsets.only(left: FactorySpacing.space1, right: trailing != null ? FactorySpacing.space1 : 0),
-                  child: Icon(Icons.check_circle_rounded, size: 20, color: colors.primary),
+                  padding: EdgeInsets.only(
+                    left: FactorySpacing.space1,
+                    right: trailing != null ? FactorySpacing.space1 : 0,
+                  ),
+                  child: Icon(
+                    Symbols.check_circle_rounded,
+                    fill: 1,
+                    size: 20,
+                    color: colors.primary,
+                  ),
                 ),
               if (trailing != null) trailing!,
             ],

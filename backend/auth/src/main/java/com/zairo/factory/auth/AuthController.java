@@ -6,6 +6,7 @@ import com.zairo.factory.auth.AuthDtos.RefreshRequest;
 import com.zairo.factory.auth.AuthDtos.RegisterRequest;
 import com.zairo.factory.auth.AuthDtos.ResetPasswordRequest;
 import com.zairo.factory.auth.AuthDtos.TokenResponse;
+import com.zairo.factory.auth.AuthDtos.UpdateAvatarRequest;
 import com.zairo.factory.auth.AuthDtos.UserSummary;
 import com.zairo.factory.users.User;
 import com.zairo.factory.users.UserRepository;
@@ -20,6 +21,7 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -115,6 +117,22 @@ public class AuthController {
         }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User no longer exists"));
-        return new UserSummary(user.getId(), user.getEmail(), user.getDisplayName(), user.getRole());
+        return new UserSummary(user.getId(), user.getEmail(), user.getDisplayName(), user.getRole(),
+                user.getAvatarUrl());
+    }
+
+    @Operation(summary = "Update the current user's avatar", description = "Upload the image via POST /uploads "
+            + "first, then pass its returned url here. Pass null/blank to remove the avatar.")
+    @ApiResponse(responseCode = "200", description = "Avatar updated")
+    @ApiResponse(responseCode = "400", ref = "BadRequest")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @SecurityRequirement(name = "bearerAuth")
+    @PatchMapping("/api/v1/auth/me/avatar")
+    public UserSummary updateAvatar(@Valid @RequestBody UpdateAvatarRequest request, HttpServletRequest httpRequest) {
+        UUID userId = (UUID) httpRequest.getAttribute(JwtAuthFilter.USER_ID_ATTRIBUTE);
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid access token");
+        }
+        return authService.updateAvatar(userId, request.avatarUrl());
     }
 }

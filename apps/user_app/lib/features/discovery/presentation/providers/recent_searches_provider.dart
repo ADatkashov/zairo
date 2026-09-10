@@ -30,7 +30,7 @@ class RecentSearchesController extends AsyncNotifier<List<String>> {
   Future<void> addSearch(String query) async {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return;
-    final current = state.valueOrNull ?? const [];
+    final current = state.value ?? const [];
     final reordered = [trimmed, ...current.where((q) => q.toLowerCase() != trimmed.toLowerCase())];
     final capped = reordered.take(_maxRecentSearches).toList();
     state = AsyncData(capped);

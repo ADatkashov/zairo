@@ -18,10 +18,11 @@ import org.springframework.transaction.event.TransactionalEventListener;
  * of the booking — the customer, and the salon owner — matching this
  * project's established "listen for the event, don't have the publisher
  * depend on you" pattern (same as payments' BookingCancelledPaymentListener
- * for refunds). Only reads (resolving a userId/providerId to an email
- * address), never writes, so unlike that refund listener this doesn't need
- * {@code @Transactional(propagation = REQUIRES_NEW)} — there's nothing here
- * that could be silently lost by "joining" an already-committed transaction.
+ * for refunds). This listener itself only reads (resolving a userId/
+ * providerId to an email address); the in-app notification writes the
+ * customer-facing {@link NotificationService} methods make are each their
+ * own {@code REQUIRES_NEW} transaction (see their doc comments), so nothing
+ * extra is needed here.
  */
 @Component
 class BookingNotificationListener {
@@ -40,8 +41,8 @@ class BookingNotificationListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     void onBookingConfirmed(BookingConfirmedEvent event) {
         userRepository.findById(event.userId())
-                .ifPresent(customer -> notificationService.sendBookingConfirmedEmail(customer.getEmail(),
-                        event.bookingId()));
+                .ifPresent(customer -> notificationService.sendBookingConfirmedEmail(customer.getId(),
+                        customer.getEmail(), event.bookingId()));
         ownerEmailFor(event.providerId())
                 .ifPresent(ownerEmail -> notificationService.sendNewBookingReceivedEmail(ownerEmail,
                         event.bookingId()));
@@ -50,8 +51,8 @@ class BookingNotificationListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     void onBookingCancelled(BookingCancelledEvent event) {
         userRepository.findById(event.userId())
-                .ifPresent(customer -> notificationService.sendBookingCancelledEmail(customer.getEmail(),
-                        event.bookingId()));
+                .ifPresent(customer -> notificationService.sendBookingCancelledEmail(customer.getId(),
+                        customer.getEmail(), event.bookingId()));
         ownerEmailFor(event.providerId())
                 .ifPresent(ownerEmail -> notificationService.sendProviderBookingCancelledEmail(ownerEmail,
                         event.bookingId()));
@@ -60,8 +61,8 @@ class BookingNotificationListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     void onBookingReminderDue(BookingReminderDueEvent event) {
         userRepository.findById(event.userId())
-                .ifPresent(customer -> notificationService.sendBookingReminderEmail(customer.getEmail(),
-                        event.bookingId()));
+                .ifPresent(customer -> notificationService.sendBookingReminderEmail(customer.getId(),
+                        customer.getEmail(), event.bookingId()));
     }
 
     private Optional<String> ownerEmailFor(UUID providerId) {

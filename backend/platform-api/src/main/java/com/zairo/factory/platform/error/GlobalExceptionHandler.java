@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
@@ -66,6 +67,16 @@ class GlobalExceptionHandler {
     ResponseEntity<ApiError> handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
         return ResponseEntity.badRequest().body(ApiError.of(400, "Bad Request",
                 "Invalid value for parameter: " + ex.getName(), request.getRequestURI()));
+    }
+
+    // Spring throws this as a plain RuntimeException with no @ResponseStatus, so without this
+    // handler it fell through to handleUnexpected below — an uploaded file over
+    // spring.servlet.multipart.max-file-size surfaced to the client as an opaque 500 instead of a
+    // clear "too large" error (seen in production against POST /api/v1/uploads).
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    ResponseEntity<ApiError> handleMaxUploadSize(HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(ApiError.of(413, "Payload Too Large",
+                "File exceeds the maximum upload size (10MB)", request.getRequestURI()));
     }
 
     @ExceptionHandler(ResponseStatusException.class)

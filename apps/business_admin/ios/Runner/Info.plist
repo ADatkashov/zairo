@@ -4,6 +4,13 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- Required by image_picker before it may request photo library/camera
+	     access at all — iOS silently refuses the permission prompt without
+	     these (used by the avatar/photo change flows). -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Business Admin needs access to your photo library to set a profile or staff photo.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Business Admin needs access to your camera to take a profile or staff photo.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

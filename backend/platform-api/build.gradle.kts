@@ -42,7 +42,7 @@ dependencies {
     implementation(project(":platform-insights"))
     implementation(project(":messaging"))
 
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.0")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -68,7 +68,7 @@ dependencies {
     // which deliberately refuses the ADMIN role — see AuthService.register).
     // auth's own dependency on this is `implementation`, so it doesn't leak
     // here transitively; declared again explicitly for the test sourceset.
-    testImplementation("org.springframework.security:spring-security-crypto:7.1.0")
+    testImplementation("org.springframework.security:spring-security-crypto:7.1.1")
 }
 
 application {
