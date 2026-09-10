@@ -133,7 +133,7 @@ class BookingApiTests {
         assertThat(unauthenticated.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
 
         // Completing requires CONFIRMED first, which requires payment.
-        payForBooking(bookingId);
+        payForBooking(bookingId, customer);
 
         // A completed booking can no longer be cancelled.
         restTemplate.exchange("/api/v1/bookings/" + bookingId + "/complete", HttpMethod.POST,
@@ -163,7 +163,7 @@ class BookingApiTests {
 
         // Confirmation (and its notifications) now happens on successful
         // payment, not on booking creation — see ADR-0006.
-        payForBooking(bookingId);
+        payForBooking(bookingId, customer);
 
         assertThat(capturedEmails.sent).anySatisfy(email -> {
             assertThat(email.toEmail()).isEqualTo(customerEmail);
@@ -191,7 +191,7 @@ class BookingApiTests {
 
         var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("25.00"));
         UUID bookingId = UUID.fromString(createBooking(customer, bookingRequest).getBody().get("id").toString());
-        payForBooking(bookingId);
+        payForBooking(bookingId, customer);
 
         Instant now = Instant.now();
         bookingService.sendDueReminders(now, now.plus(1, ChronoUnit.HOURS));
@@ -310,7 +310,7 @@ class BookingApiTests {
         UUID bookingId = UUID.fromString(createBooking(customer,
                 new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("20.00")))
                 .getBody().get("id").toString());
-        payForBooking(bookingId);
+        payForBooking(bookingId, customer);
 
         // A different business owner can't mark it.
         ResponseEntity<Map> forbidden = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/no-show",
@@ -436,8 +436,8 @@ class BookingApiTests {
         // The actual charge (Payments) is computed from the booking's
         // server-side price too — the 0.01 the client tried to sneak in on
         // the lowballed booking never reaches the payment provider.
-        ResponseEntity<Map> payment = restTemplate.postForEntity("/api/v1/bookings/" + lowballBookingId
-                + "/payments", null, Map.class);
+        ResponseEntity<Map> payment = restTemplate.exchange("/api/v1/bookings/" + lowballBookingId + "/payments",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
         assertThat(payment.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(payment.getBody().get("amount")).isEqualTo(500.00);
     }
@@ -503,7 +503,8 @@ class BookingApiTests {
     }
 
     /** Confirms a PENDING_PAYMENT booking — the mock provider always succeeds synchronously. */
-    private ResponseEntity<Map> payForBooking(UUID bookingId) {
-        return restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments", null, Map.class);
+    private ResponseEntity<Map> payForBooking(UUID bookingId, Registered customer) {
+        return restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
     }
 }
