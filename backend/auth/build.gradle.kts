@@ -17,7 +17,7 @@ dependencies {
     // Security's BOM as a nested import, which io.spring.dependency-management
     // doesn't resolve transitively (same issue hit with testcontainers in
     // Phase 2 step 1 — see SESSION_NOTES.md).
-    implementation("org.springframework.security:spring-security-crypto:7.1.0")
+    implementation("org.springframework.security:spring-security-crypto:7.1.1")
 
     implementation("io.jsonwebtoken:jjwt-api:0.13.0")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.13.0")

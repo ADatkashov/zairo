@@ -56,6 +56,12 @@ class AutoAdminApi {
     return _dioClient.delete('/auto/mechanics/$mechanicId/services/$serviceId');
   }
 
+  /// Owner-only — replaces the mechanic's photo (null removes it).
+  Future<AdminMechanic> updateMechanicPhoto(String mechanicId, String? photoUrl) async {
+    final response = await _dioClient.put('/auto/mechanics/$mechanicId/photo', data: {'photoUrl': photoUrl});
+    return AdminMechanic.fromJson(response.data as Map<String, dynamic>);
+  }
+
   /// Soft-delete — see backend's Mechanic.deactivate(). Deactivated mechanics
   /// stop appearing in provider listings (both here and in the customer app).
   Future<void> deactivateMechanic(String mechanicId) {

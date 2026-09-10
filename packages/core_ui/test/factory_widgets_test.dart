@@ -1,8 +1,12 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
-Widget _wrap(Widget child) => MaterialApp(theme: factoryLightTheme(), home: Scaffold(body: Center(child: child)));
+Widget _wrap(Widget child) => MaterialApp(
+  theme: factoryLightTheme(),
+  home: Scaffold(body: Center(child: child)),
+);
 
 void main() {
   group('formatFactoryAmount', () {
@@ -18,368 +22,612 @@ void main() {
     });
   });
 
-  testWidgets('FactoryPriceText renders the prefix, grouped amount and currency', (tester) async {
-    await tester.pumpWidget(_wrap(const FactoryPriceText(amount: 15000, prefix: 'from ')));
+  testWidgets(
+    'FactoryPriceText renders the prefix, grouped amount and currency',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(const FactoryPriceText(amount: 15000, prefix: 'from ')),
+      );
 
-    expect(find.text('from '), findsOneWidget);
-    expect(find.text('15 000 ₸'), findsOneWidget);
-  });
+      expect(find.text('from '), findsOneWidget);
+      expect(find.text('15 000 ₸'), findsOneWidget);
+    },
+  );
 
-  testWidgets('FactoryPriceText uses an explicit currencySymbol instead of the regional default',
-      (tester) async {
-    await tester.pumpWidget(_wrap(const FactoryPriceText(amount: 15000, currencySymbol: r'$')));
+  testWidgets(
+    'FactoryPriceText uses an explicit currencySymbol instead of the regional default',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(const FactoryPriceText(amount: 15000, currencySymbol: r'$')),
+      );
 
-    expect(find.text(r'15 000 $'), findsOneWidget);
-  });
+      expect(find.text(r'15 000 $'), findsOneWidget);
+    },
+  );
 
-  testWidgets('FactoryRatingLabel exposes a full semantic label for screen readers', (tester) async {
-    await tester.pumpWidget(_wrap(const FactoryRatingLabel(rating: 4.9, reviewCount: 212)));
+  testWidgets(
+    'FactoryRatingLabel exposes a full semantic label for screen readers',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(const FactoryRatingLabel(rating: 4.9, reviewCount: 212)),
+      );
 
-    expect(find.text('4.9'), findsOneWidget);
-    expect(find.text('(212)'), findsOneWidget);
-    expect(find.bySemanticsLabel('4.9 out of 5, 212 reviews'), findsOneWidget);
-  });
+      expect(find.text('4.9'), findsOneWidget);
+      expect(find.text('(212)'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('4.9 out of 5, 212 reviews'),
+        findsOneWidget,
+      );
+    },
+  );
 
-  testWidgets('FactoryChip reports selected state to semantics and responds to taps', (tester) async {
+  testWidgets(
+    'FactoryChip reports selected state to semantics and responds to taps',
+    (tester) async {
+      var tapped = false;
+      await tester.pumpWidget(
+        _wrap(
+          FactoryChip(
+            label: 'Today',
+            selected: true,
+            onTap: () => tapped = true,
+          ),
+        ),
+      );
+
+      expect(find.text('Today'), findsOneWidget);
+      final semantics = tester.getSemantics(find.byType(FactoryChip));
+      expect(semantics.flagsCollection.isSelected.toBoolOrNull(), isTrue);
+
+      await tester.tap(find.byType(FactoryChip));
+      expect(tapped, isTrue);
+    },
+  );
+
+  testWidgets(
+    'FactoryTimeSlot ignores taps and shows strikethrough when unavailable',
+    (tester) async {
+      var tapped = false;
+      await tester.pumpWidget(
+        _wrap(
+          FactoryTimeSlot(
+            label: '19:00',
+            state: FactoryTimeSlotState.unavailable,
+            onTap: () => tapped = true,
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(FactoryTimeSlot));
+      expect(
+        tapped,
+        isFalse,
+        reason: 'an unavailable slot must not be tappable',
+      );
+
+      final text = tester.widget<Text>(find.text('19:00'));
+      expect(text.style?.decoration, TextDecoration.lineThrough);
+    },
+  );
+
+  testWidgets('FactoryTimeSlot responds normally when available', (
+    tester,
+  ) async {
     var tapped = false;
-    await tester.pumpWidget(_wrap(FactoryChip(label: 'Today', selected: true, onTap: () => tapped = true)));
-
-    expect(find.text('Today'), findsOneWidget);
-    final semantics = tester.getSemantics(find.byType(FactoryChip));
-    expect(semantics.flagsCollection.isSelected.toBoolOrNull(), isTrue);
-
-    await tester.tap(find.byType(FactoryChip));
-    expect(tapped, isTrue);
-  });
-
-  testWidgets('FactoryTimeSlot ignores taps and shows strikethrough when unavailable', (tester) async {
-    var tapped = false;
-    await tester.pumpWidget(_wrap(FactoryTimeSlot(
-      label: '19:00',
-      state: FactoryTimeSlotState.unavailable,
-      onTap: () => tapped = true,
-    )));
-
-    await tester.tap(find.byType(FactoryTimeSlot));
-    expect(tapped, isFalse, reason: 'an unavailable slot must not be tappable');
-
-    final text = tester.widget<Text>(find.text('19:00'));
-    expect(text.style?.decoration, TextDecoration.lineThrough);
-  });
-
-  testWidgets('FactoryTimeSlot responds normally when available', (tester) async {
-    var tapped = false;
-    await tester.pumpWidget(_wrap(FactoryTimeSlot(label: '18:00', onTap: () => tapped = true)));
+    await tester.pumpWidget(
+      _wrap(FactoryTimeSlot(label: '18:00', onTap: () => tapped = true)),
+    );
 
     await tester.tap(find.byType(FactoryTimeSlot));
     expect(tapped, isTrue);
   });
 
   testWidgets('FactoryBadge renders its label', (tester) async {
-    await tester.pumpWidget(_wrap(const FactoryBadge(label: 'Available today', variant: FactoryBadgeVariant.available)));
+    await tester.pumpWidget(
+      _wrap(
+        const FactoryBadge(
+          label: 'Available today',
+          variant: FactoryBadgeVariant.available,
+        ),
+      ),
+    );
     expect(find.text('Available today'), findsOneWidget);
   });
 
   testWidgets('FactoryBadge renders the error variant', (tester) async {
-    await tester.pumpWidget(_wrap(const FactoryBadge(label: 'Cancelled', variant: FactoryBadgeVariant.error)));
+    await tester.pumpWidget(
+      _wrap(
+        const FactoryBadge(
+          label: 'Cancelled',
+          variant: FactoryBadgeVariant.error,
+        ),
+      ),
+    );
     expect(find.text('Cancelled'), findsOneWidget);
   });
 
-  testWidgets('FactoryProviderCard shows title, rating, price and toggles favorite', (tester) async {
-    var favoriteState = false;
-    await tester.pumpWidget(_wrap(StatefulBuilder(
-      builder: (context, setState) => FactoryProviderCard(
-        title: 'Aigerim Beauty Studio',
-        rating: 4.9,
-        reviewCount: 212,
-        metaText: '1.2 km',
-        priceFrom: 8000,
-        isFavorite: favoriteState,
-        onFavoriteToggle: (v) => setState(() => favoriteState = v),
-      ),
-    )));
+  testWidgets(
+    'FactoryProviderCard shows title, rating, price and toggles favorite',
+    (tester) async {
+      var favoriteState = false;
+      await tester.pumpWidget(
+        _wrap(
+          StatefulBuilder(
+            builder: (context, setState) => FactoryProviderCard(
+              title: 'Aigerim Beauty Studio',
+              rating: 4.9,
+              reviewCount: 212,
+              metaText: '1.2 km',
+              priceFrom: 8000,
+              isFavorite: favoriteState,
+              onFavoriteToggle: (v) => setState(() => favoriteState = v),
+            ),
+          ),
+        ),
+      );
 
-    expect(find.text('Aigerim Beauty Studio'), findsOneWidget);
-    expect(find.text('4.9'), findsOneWidget);
-    expect(find.text('1.2 km'), findsOneWidget);
-    expect(find.byIcon(Icons.favorite_border_rounded), findsOneWidget);
+      expect(find.text('Aigerim Beauty Studio'), findsOneWidget);
+      expect(find.text('4.9'), findsOneWidget);
+      expect(find.text('1.2 km'), findsOneWidget);
+      // Symbols.favorite_rounded is one IconData regardless of fill state —
+      // solid vs outline is the Icon widget's `fill` value, not a different
+      // icon identity the way classic Icons.favorite/favorite_border were.
+      expect(find.byIcon(Symbols.favorite_rounded), findsOneWidget);
+      expect(
+        tester.widget<Icon>(find.byIcon(Symbols.favorite_rounded)).fill,
+        0,
+      );
 
-    await tester.tap(find.byIcon(Icons.favorite_border_rounded));
-    await tester.pump();
+      await tester.tap(find.byIcon(Symbols.favorite_rounded));
+      await tester.pump();
 
-    expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
-  });
+      expect(
+        tester.widget<Icon>(find.byIcon(Symbols.favorite_rounded)).fill,
+        1,
+      );
+    },
+  );
 
-  testWidgets('FactoryProviderCard forwards caller-supplied favorite semantic labels, not the English fallback', (tester) async {
-    await tester.pumpWidget(_wrap(FactoryProviderCard(
-      title: 'Aigerim Beauty Studio',
-      isFavorite: false,
-      onFavoriteToggle: (_) {},
-      favoriteAddSemanticLabel: 'Таңдаулыларға қосу',
-      favoriteRemoveSemanticLabel: 'Таңдаулылардан алып тастау',
-    )));
+  testWidgets(
+    'FactoryProviderCard forwards caller-supplied favorite semantic labels, not the English fallback',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          FactoryProviderCard(
+            title: 'Aigerim Beauty Studio',
+            isFavorite: false,
+            onFavoriteToggle: (_) {},
+            favoriteAddSemanticLabel: 'Таңдаулыларға қосу',
+            favoriteRemoveSemanticLabel: 'Таңдаулылардан алып тастау',
+          ),
+        ),
+      );
 
-    final semantics = tester.getSemantics(find.byIcon(Icons.favorite_border_rounded));
-    expect(semantics.label, 'Таңдаулыларға қосу');
-  });
+      final semantics = tester.getSemantics(
+        find.byIcon(Symbols.favorite_rounded),
+      );
+      expect(semantics.label, 'Таңдаулыларға қосу');
+    },
+  );
 
   testWidgets('FactoryProviderCard calls onTap', (tester) async {
     var tapped = false;
-    await tester.pumpWidget(_wrap(FactoryProviderCard(title: 'Nail Bar 21', onTap: () => tapped = true)));
+    await tester.pumpWidget(
+      _wrap(
+        FactoryProviderCard(title: 'Nail Bar 21', onTap: () => tapped = true),
+      ),
+    );
 
     await tester.tap(find.byType(FactoryProviderCard));
     expect(tapped, isTrue);
   });
 
-  testWidgets('FactoryProviderCard does not overflow a narrow vertical card with a long availability label',
-      (tester) async {
-    // Regression test: a horizontally-scrolling discovery rail sizes cards
-    // around 160-170px wide — price + a longer badge used to overflow the
-    // footer row (see provider_card.dart's Wrap, not Row).
-    await tester.pumpWidget(_wrap(const FactoryProviderCard(
-      title: 'Aigerim Beauty Studio',
-      priceFrom: 8000,
-      availabilityLabel: 'Available today',
-      layout: FactoryProviderCardLayout.vertical,
-      width: 168,
-    )));
+  testWidgets(
+    'FactoryProviderCard does not overflow a narrow vertical card with a long availability label',
+    (tester) async {
+      // Regression test: a horizontally-scrolling discovery rail sizes cards
+      // around 160-170px wide — price + a longer badge used to overflow the
+      // footer row (see provider_card.dart's Wrap, not Row).
+      await tester.pumpWidget(
+        _wrap(
+          const FactoryProviderCard(
+            title: 'Aigerim Beauty Studio',
+            priceFrom: 8000,
+            availabilityLabel: 'Available today',
+            layout: FactoryProviderCardLayout.vertical,
+            width: 168,
+          ),
+        ),
+      );
 
-    expect(tester.takeException(), isNull);
-    expect(find.text('Available today'), findsOneWidget);
-  });
+      expect(tester.takeException(), isNull);
+      expect(find.text('Available today'), findsOneWidget);
+    },
+  );
 
   testWidgets('FactoryServiceCard shows the grouped price', (tester) async {
-    await tester
-        .pumpWidget(_wrap(const FactoryServiceCard(title: 'Balayage colouring', metaText: '90 min', price: 15000)));
+    await tester.pumpWidget(
+      _wrap(
+        const FactoryServiceCard(
+          title: 'Balayage colouring',
+          metaText: '90 min',
+          price: 15000,
+        ),
+      ),
+    );
 
     expect(find.text('Balayage colouring'), findsOneWidget);
     expect(find.text('90 min'), findsOneWidget);
     expect(find.text('15 000 ₸'), findsOneWidget);
   });
 
-  testWidgets('FactoryServiceCard shows a check icon and reports selected state to semantics when selected',
-      (tester) async {
-    await tester.pumpWidget(_wrap(const FactoryServiceCard(
-      title: 'Balayage colouring',
-      metaText: '90 min',
-      price: 15000,
-      selected: true,
-    )));
+  testWidgets(
+    'FactoryServiceCard shows a check icon and reports selected state to semantics when selected',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const FactoryServiceCard(
+            title: 'Balayage colouring',
+            metaText: '90 min',
+            price: 15000,
+            selected: true,
+          ),
+        ),
+      );
 
-    expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
-    final semantics = tester.getSemantics(find.byType(FactoryServiceCard));
-    expect(semantics.flagsCollection.isSelected.toBoolOrNull(), isTrue);
-  });
+      expect(find.byIcon(Symbols.check_circle_rounded), findsOneWidget);
+      final semantics = tester.getSemantics(find.byType(FactoryServiceCard));
+      expect(semantics.flagsCollection.isSelected.toBoolOrNull(), isTrue);
+    },
+  );
 
-  testWidgets('FactoryEmptyState only shows the action when both label and callback are given', (tester) async {
-    await tester.pumpWidget(_wrap(const FactoryEmptyState(
-      icon: Icons.calendar_today_rounded,
-      title: 'No available times today',
-      message: 'Try another date.',
-    )));
-    expect(find.byType(OutlinedButton), findsNothing);
+  testWidgets(
+    'FactoryEmptyState only shows the action when both label and callback are given',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const FactoryEmptyState(
+            icon: Icons.calendar_today_rounded,
+            title: 'No available times today',
+            message: 'Try another date.',
+          ),
+        ),
+      );
+      expect(find.byType(OutlinedButton), findsNothing);
 
-    var tapped = false;
-    await tester.pumpWidget(_wrap(FactoryEmptyState(
-      icon: Icons.calendar_today_rounded,
-      title: 'No available times today',
-      message: 'Try another date.',
-      actionLabel: 'Try tomorrow',
-      onAction: () => tapped = true,
-    )));
-    await tester.tap(find.text('Try tomorrow'));
-    expect(tapped, isTrue);
-  });
+      var tapped = false;
+      await tester.pumpWidget(
+        _wrap(
+          FactoryEmptyState(
+            icon: Icons.calendar_today_rounded,
+            title: 'No available times today',
+            message: 'Try another date.',
+            actionLabel: 'Try tomorrow',
+            onAction: () => tapped = true,
+          ),
+        ),
+      );
+      await tester.tap(find.text('Try tomorrow'));
+      expect(tapped, isTrue);
+    },
+  );
 
-  testWidgets('FactoryErrorState surfaces a human message and a retry action', (tester) async {
+  testWidgets('FactoryErrorState surfaces a human message and a retry action', (
+    tester,
+  ) async {
     var retried = false;
-    await tester.pumpWidget(_wrap(FactoryErrorState(
-      message: "Couldn't load your bookings.",
-      onRetry: () => retried = true,
-    )));
+    await tester.pumpWidget(
+      _wrap(
+        FactoryErrorState(
+          message: "Couldn't load your bookings.",
+          onRetry: () => retried = true,
+        ),
+      ),
+    );
 
     expect(find.text("Couldn't load your bookings."), findsOneWidget);
     await tester.tap(find.text('Try again'));
     expect(retried, isTrue);
   });
 
-  testWidgets('FactoryAvatar shows initials when no image is given', (tester) async {
+  testWidgets('FactoryAvatar shows initials when no image is given', (
+    tester,
+  ) async {
     await tester.pumpWidget(_wrap(const FactoryAvatar(initials: 'AS')));
     expect(find.text('AS'), findsOneWidget);
   });
 
-  testWidgets('FactorySkeleton renders a static block when reduce-motion is requested', (tester) async {
-    // The MediaQuery override must sit inside MaterialApp's tree — MaterialApp
-    // builds its own MediaQuery from the test View, which would otherwise
-    // shadow one provided above it.
-    await tester.pumpWidget(_wrap(
-      MediaQuery(
-        data: const MediaQueryData(disableAnimations: true),
-        child: const FactorySkeleton(width: 40, height: 12),
-      ),
-    ));
-    // Should build without an active AnimationController driving frames —
-    // scoped to FactorySkeleton's own subtree, since MaterialApp's
-    // machinery elsewhere in the tree has unrelated AnimatedBuilders of
-    // its own.
-    expect(find.byType(FactorySkeleton), findsOneWidget);
-    expect(
-      find.descendant(of: find.byType(FactorySkeleton), matching: find.byType(AnimatedBuilder)),
-      findsNothing,
-    );
-  });
+  testWidgets(
+    'FactorySkeleton renders a static block when reduce-motion is requested',
+    (tester) async {
+      // The MediaQuery override must sit inside MaterialApp's tree — MaterialApp
+      // builds its own MediaQuery from the test View, which would otherwise
+      // shadow one provided above it.
+      await tester.pumpWidget(
+        _wrap(
+          MediaQuery(
+            data: const MediaQueryData(disableAnimations: true),
+            child: const FactorySkeleton(width: 40, height: 12),
+          ),
+        ),
+      );
+      // Should build without an active AnimationController driving frames —
+      // scoped to FactorySkeleton's own subtree, since MaterialApp's
+      // machinery elsewhere in the tree has unrelated AnimatedBuilders of
+      // its own.
+      expect(find.byType(FactorySkeleton), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(FactorySkeleton),
+          matching: find.byType(AnimatedBuilder),
+        ),
+        findsNothing,
+      );
+    },
+  );
 
-  testWidgets('FactoryLogomark renders at both the dashed and flat-block size variants', (tester) async {
-    await tester.pumpWidget(_wrap(const FactoryLogomark(size: 56)));
-    expect(find.byType(FactoryLogomark), findsOneWidget);
+  testWidgets(
+    'FactoryLogomark renders at both the dashed and flat-block size variants',
+    (tester) async {
+      await tester.pumpWidget(_wrap(const FactoryLogomark(size: 56)));
+      expect(find.byType(FactoryLogomark), findsOneWidget);
 
-    // Below ~32px the fourth block swaps from dashed-open to a flat block —
-    // both must render without throwing, not just the default size.
-    await tester.pumpWidget(_wrap(const FactoryLogomark(size: 16)));
-    expect(find.byType(FactoryLogomark), findsOneWidget);
-  });
+      // Below ~32px the fourth block swaps from dashed-open to a flat block —
+      // both must render without throwing, not just the default size.
+      await tester.pumpWidget(_wrap(const FactoryLogomark(size: 16)));
+      expect(find.byType(FactoryLogomark), findsOneWidget);
+    },
+  );
 
-  testWidgets('FactoryButton shows a spinner instead of the label and disables itself while loading',
-      (tester) async {
-    var tapped = false;
-    await tester.pumpWidget(_wrap(FactoryButton(label: 'Book', onPressed: () => tapped = true, isLoading: true)));
+  testWidgets(
+    'FactoryButton shows a spinner instead of the label and disables itself while loading',
+    (tester) async {
+      var tapped = false;
+      await tester.pumpWidget(
+        _wrap(
+          FactoryButton(
+            label: 'Book',
+            onPressed: () => tapped = true,
+            isLoading: true,
+          ),
+        ),
+      );
 
-    expect(find.text('Book'), findsNothing);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    await tester.tap(find.byType(FilledButton), warnIfMissed: false);
-    expect(tapped, isFalse);
-  });
+      expect(find.text('Book'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      await tester.tap(find.byType(FilledButton), warnIfMissed: false);
+      expect(tapped, isFalse);
+    },
+  );
 
-  testWidgets('FactoryButton renders the danger variant and responds to taps', (tester) async {
+  testWidgets('FactoryButton renders the danger variant and responds to taps', (
+    tester,
+  ) async {
     var tapped = false;
     await tester.pumpWidget(
-      _wrap(FactoryButton(label: 'Delete account', variant: FactoryButtonVariant.danger, onPressed: () => tapped = true)),
+      _wrap(
+        FactoryButton(
+          label: 'Delete account',
+          variant: FactoryButtonVariant.danger,
+          onPressed: () => tapped = true,
+        ),
+      ),
     );
 
     await tester.tap(find.text('Delete account'));
     expect(tapped, isTrue);
   });
 
-  testWidgets('FactoryButton textDanger renders as a TextButton, not a filled one', (tester) async {
-    await tester.pumpWidget(_wrap(FactoryButton(label: 'Cancel booking', variant: FactoryButtonVariant.textDanger, onPressed: () {})));
+  testWidgets(
+    'FactoryButton textDanger renders as a TextButton, not a filled one',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          FactoryButton(
+            label: 'Cancel booking',
+            variant: FactoryButtonVariant.textDanger,
+            onPressed: () {},
+          ),
+        ),
+      );
 
-    expect(find.byType(TextButton), findsOneWidget);
-    expect(find.byType(FilledButton), findsNothing);
-  });
+      expect(find.byType(TextButton), findsOneWidget);
+      expect(find.byType(FilledButton), findsNothing);
+    },
+  );
 
-  testWidgets('FactoryIconButton exposes its label as a tooltip/semantic label', (tester) async {
-    await tester.pumpWidget(_wrap(FactoryIconButton(
-      icon: Icons.favorite_border_rounded,
-      onPressed: () {},
-      semanticLabel: 'Add to favorites',
-    )));
+  testWidgets(
+    'FactoryIconButton exposes its label as a tooltip/semantic label',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          FactoryIconButton(
+            icon: Symbols.favorite_rounded,
+            onPressed: () {},
+            semanticLabel: 'Add to favorites',
+          ),
+        ),
+      );
 
-    expect(find.byTooltip('Add to favorites'), findsOneWidget);
-  });
+      expect(find.byTooltip('Add to favorites'), findsOneWidget);
+    },
+  );
 
-  testWidgets('FactoryTextField always renders a persistent label, not a placeholder-only hint', (tester) async {
-    await tester.pumpWidget(_wrap(const FactoryTextField(label: 'Phone number', hint: '+7 700 000 00 00')));
+  testWidgets(
+    'FactoryTextField always renders a persistent label, not a placeholder-only hint',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const FactoryTextField(
+            label: 'Phone number',
+            hint: '+7 700 000 00 00',
+          ),
+        ),
+      );
 
-    expect(find.text('Phone number'), findsOneWidget);
-  });
+      expect(find.text('Phone number'), findsOneWidget);
+    },
+  );
 
   testWidgets('FactoryTextField surfaces errorText', (tester) async {
-    await tester.pumpWidget(_wrap(const FactoryTextField(label: 'Promo code', errorText: 'Invalid code')));
+    await tester.pumpWidget(
+      _wrap(
+        const FactoryTextField(label: 'Promo code', errorText: 'Invalid code'),
+      ),
+    );
 
     expect(find.text('Invalid code'), findsOneWidget);
   });
 
-  testWidgets('FactoryTextField participates in Form validation via validator', (tester) async {
-    final formKey = GlobalKey<FormState>();
-    await tester.pumpWidget(_wrap(Form(
-      key: formKey,
-      child: FactoryTextField(
-        label: 'Email',
-        validator: (value) => (value == null || !value.contains('@')) ? 'Invalid email' : null,
-      ),
-    )));
+  testWidgets(
+    'FactoryTextField participates in Form validation via validator',
+    (tester) async {
+      final formKey = GlobalKey<FormState>();
+      await tester.pumpWidget(
+        _wrap(
+          Form(
+            key: formKey,
+            child: FactoryTextField(
+              label: 'Email',
+              validator: (value) => (value == null || !value.contains('@'))
+                  ? 'Invalid email'
+                  : null,
+            ),
+          ),
+        ),
+      );
 
-    expect(formKey.currentState!.validate(), isFalse);
-    await tester.pump();
-    expect(find.text('Invalid email'), findsOneWidget);
-  });
+      expect(formKey.currentState!.validate(), isFalse);
+      await tester.pump();
+      expect(find.text('Invalid email'), findsOneWidget);
+    },
+  );
 
-  testWidgets('FactorySearchField shows a filter action only when onFilterTap is given', (tester) async {
-    var filterTapped = false;
-    await tester.pumpWidget(_wrap(FactorySearchField(hint: 'Search salons', onFilterTap: () => filterTapped = true)));
+  testWidgets(
+    'FactorySearchField shows a filter action only when onFilterTap is given',
+    (tester) async {
+      var filterTapped = false;
+      await tester.pumpWidget(
+        _wrap(
+          FactorySearchField(
+            hint: 'Search salons',
+            onFilterTap: () => filterTapped = true,
+          ),
+        ),
+      );
 
-    expect(find.byIcon(Icons.tune_rounded), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.tune_rounded));
-    expect(filterTapped, isTrue);
-  });
+      expect(find.byIcon(Symbols.tune_rounded), findsOneWidget);
+      await tester.tap(find.byIcon(Symbols.tune_rounded));
+      expect(filterTapped, isTrue);
+    },
+  );
 
   testWidgets('FactoryCard calls onTap and renders its child', (tester) async {
     var tapped = false;
-    await tester.pumpWidget(_wrap(FactoryCard(onTap: () => tapped = true, child: const Text('Card content'))));
+    await tester.pumpWidget(
+      _wrap(
+        FactoryCard(
+          onTap: () => tapped = true,
+          child: const Text('Card content'),
+        ),
+      ),
+    );
 
     expect(find.text('Card content'), findsOneWidget);
     await tester.tap(find.text('Card content'));
     expect(tapped, isTrue);
   });
 
-  testWidgets('FactorySectionHeader shows the action only when both label and callback are given', (tester) async {
-    await tester.pumpWidget(_wrap(const FactorySectionHeader(title: 'Popular categories')));
-    expect(find.byType(TextButton), findsNothing);
+  testWidgets(
+    'FactorySectionHeader shows the action only when both label and callback are given',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(const FactorySectionHeader(title: 'Popular categories')),
+      );
+      expect(find.byType(TextButton), findsNothing);
 
-    var tapped = false;
-    await tester.pumpWidget(_wrap(FactorySectionHeader(
-      title: 'Popular categories',
-      actionLabel: 'See all',
-      onActionTap: () => tapped = true,
-    )));
-    await tester.tap(find.text('See all'));
-    expect(tapped, isTrue);
-  });
+      var tapped = false;
+      await tester.pumpWidget(
+        _wrap(
+          FactorySectionHeader(
+            title: 'Popular categories',
+            actionLabel: 'See all',
+            onActionTap: () => tapped = true,
+          ),
+        ),
+      );
+      await tester.tap(find.text('See all'));
+      expect(tapped, isTrue);
+    },
+  );
 
   testWidgets('FactoryAppBar renders its title', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(theme: factoryLightTheme(), home: const Scaffold(appBar: FactoryAppBar(title: 'Bookings'))),
+      MaterialApp(
+        theme: factoryLightTheme(),
+        home: const Scaffold(appBar: FactoryAppBar(title: 'Bookings')),
+      ),
     );
     expect(find.text('Bookings'), findsOneWidget);
   });
 
-  testWidgets('FactoryBottomNavigation reports the tapped destination index', (tester) async {
+  testWidgets('FactoryBottomNavigation reports the tapped destination index', (
+    tester,
+  ) async {
     int? selected;
-    await tester.pumpWidget(_wrap(FactoryBottomNavigation(
-      destinations: const [
-        FactoryNavDestination(icon: Icons.home_outlined, selectedIcon: Icons.home_rounded, label: 'Home'),
-        FactoryNavDestination(icon: Icons.search_outlined, selectedIcon: Icons.search_rounded, label: 'Search'),
-      ],
-      selectedIndex: 0,
-      onDestinationSelected: (index) => selected = index,
-    )));
+    await tester.pumpWidget(
+      _wrap(
+        FactoryBottomNavigation(
+          destinations: const [
+            FactoryNavDestination(icon: Icons.home_rounded, label: 'Home'),
+            FactoryNavDestination(icon: Icons.search_rounded, label: 'Search'),
+          ],
+          selectedIndex: 0,
+          onDestinationSelected: (index) => selected = index,
+        ),
+      ),
+    );
 
     await tester.tap(find.text('Search'));
     expect(selected, 1);
   });
 
-  testWidgets('FactoryLoadingState shows an optional message alongside the spinner', (tester) async {
-    await tester.pumpWidget(_wrap(const FactoryLoadingState(message: 'Loading your bookings…')));
+  testWidgets(
+    'FactoryLoadingState shows an optional message alongside the spinner',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(const FactoryLoadingState(message: 'Loading your bookings…')),
+      );
 
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(find.text('Loading your bookings…'), findsOneWidget);
-  });
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text('Loading your bookings…'), findsOneWidget);
+    },
+  );
 
-  testWidgets('showFactoryDialog renders the title, message and actions', (tester) async {
-    await tester.pumpWidget(MaterialApp(
-      theme: factoryLightTheme(),
-      home: Builder(
-        builder: (context) => ElevatedButton(
-          onPressed: () => showFactoryDialog(
-            context: context,
-            title: 'Cancel booking?',
-            message: 'This can’t be undone.',
-            actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Confirm'))],
+  testWidgets('showFactoryDialog renders the title, message and actions', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: factoryLightTheme(),
+        home: Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () => showFactoryDialog(
+              context: context,
+              title: 'Cancel booking?',
+              message: 'This can’t be undone.',
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Confirm'),
+                ),
+              ],
+            ),
+            child: const Text('Open'),
           ),
-          child: const Text('Open'),
         ),
       ),
-    ));
+    );
 
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
@@ -391,96 +639,132 @@ void main() {
     expect(find.text('Cancel booking?'), findsNothing);
   });
 
-  testWidgets('showFactoryDialog renders custom content instead of message when both would otherwise apply',
-      (tester) async {
-    await tester.pumpWidget(MaterialApp(
-      theme: factoryLightTheme(),
-      home: Builder(
-        builder: (context) => ElevatedButton(
-          onPressed: () => showFactoryDialog(
-            context: context,
-            title: 'Add a business',
-            content: const TextField(key: Key('name-field')),
+  testWidgets(
+    'showFactoryDialog renders custom content instead of message when both would otherwise apply',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: factoryLightTheme(),
+          home: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => showFactoryDialog(
+                context: context,
+                title: 'Add a business',
+                content: const TextField(key: Key('name-field')),
+              ),
+              child: const Text('Open'),
+            ),
           ),
-          child: const Text('Open'),
         ),
-      ),
-    ));
+      );
 
-    await tester.tap(find.text('Open'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Add a business'), findsOneWidget);
-    expect(find.byKey(const Key('name-field')), findsOneWidget);
-  });
+      expect(find.text('Add a business'), findsOneWidget);
+      expect(find.byKey(const Key('name-field')), findsOneWidget);
+    },
+  );
 
-  testWidgets('FactoryCategoryTile reports selected state and responds to taps', (tester) async {
-    var tapped = false;
-    await tester.pumpWidget(_wrap(FactoryCategoryTile(
-      icon: Icons.content_cut_rounded,
-      label: 'Beauty',
-      selected: true,
-      onTap: () => tapped = true,
-    )));
+  testWidgets(
+    'FactoryCategoryTile reports selected state and responds to taps',
+    (tester) async {
+      var tapped = false;
+      await tester.pumpWidget(
+        _wrap(
+          FactoryCategoryTile(
+            icon: Icons.content_cut_rounded,
+            label: 'Beauty',
+            selected: true,
+            onTap: () => tapped = true,
+          ),
+        ),
+      );
 
-    expect(find.text('Beauty'), findsOneWidget);
-    final semantics = tester.getSemantics(find.byType(FactoryCategoryTile));
-    expect(semantics.flagsCollection.isSelected.toBoolOrNull(), isTrue);
-    await tester.tap(find.byType(FactoryCategoryTile));
-    expect(tapped, isTrue);
-  });
+      expect(find.text('Beauty'), findsOneWidget);
+      final semantics = tester.getSemantics(find.byType(FactoryCategoryTile));
+      expect(semantics.flagsCollection.isSelected.toBoolOrNull(), isTrue);
+      await tester.tap(find.byType(FactoryCategoryTile));
+      expect(tapped, isTrue);
+    },
+  );
 
   testWidgets('FactoryStatTile renders a value over a label', (tester) async {
-    await tester.pumpWidget(_wrap(const FactoryStatTile(
-      value: '12',
-      label: 'Bookings',
-      icon: Icons.event_note_outlined,
-    )));
+    await tester.pumpWidget(
+      _wrap(
+        const FactoryStatTile(
+          value: '12',
+          label: 'Bookings',
+          icon: Icons.event_note_outlined,
+        ),
+      ),
+    );
 
     expect(find.text('12'), findsOneWidget);
     expect(find.text('Bookings'), findsOneWidget);
   });
 
-  testWidgets('FactorySelectableTile shows a check icon and reports selected state to semantics', (tester) async {
-    var tapped = false;
-    await tester.pumpWidget(_wrap(FactorySelectableTile(
-      title: 'Aigerim K.',
-      selected: true,
-      onTap: () => tapped = true,
-    )));
+  testWidgets(
+    'FactorySelectableTile shows a check icon and reports selected state to semantics',
+    (tester) async {
+      var tapped = false;
+      await tester.pumpWidget(
+        _wrap(
+          FactorySelectableTile(
+            title: 'Aigerim K.',
+            selected: true,
+            onTap: () => tapped = true,
+          ),
+        ),
+      );
 
-    expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
-    final semantics = tester.getSemantics(find.byType(FactorySelectableTile));
-    expect(semantics.flagsCollection.isSelected.toBoolOrNull(), isTrue);
+      expect(find.byIcon(Symbols.check_circle_rounded), findsOneWidget);
+      final semantics = tester.getSemantics(find.byType(FactorySelectableTile));
+      expect(semantics.flagsCollection.isSelected.toBoolOrNull(), isTrue);
 
-    await tester.tap(find.byType(FactorySelectableTile));
-    expect(tapped, isTrue);
-  });
+      await tester.tap(find.byType(FactorySelectableTile));
+      expect(tapped, isTrue);
+    },
+  );
 
-  testWidgets('FactorySelectableTile renders leading, subtitle and trailing widgets', (tester) async {
-    await tester.pumpWidget(_wrap(const FactorySelectableTile(
-      title: 'Toyota Camry',
-      subtitle: Text('A123BC 02'),
-      leading: Icon(Icons.directions_car_rounded),
-      trailing: Icon(Icons.delete_outline),
-    )));
+  testWidgets(
+    'FactorySelectableTile renders leading, subtitle and trailing widgets',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const FactorySelectableTile(
+            title: 'Toyota Camry',
+            subtitle: Text('A123BC 02'),
+            leading: Icon(Icons.directions_car_rounded),
+            trailing: Icon(Icons.delete_outline),
+          ),
+        ),
+      );
 
-    expect(find.text('Toyota Camry'), findsOneWidget);
-    expect(find.text('A123BC 02'), findsOneWidget);
-    expect(find.byIcon(Icons.directions_car_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.delete_outline), findsOneWidget);
-  });
+      expect(find.text('Toyota Camry'), findsOneWidget);
+      expect(find.text('A123BC 02'), findsOneWidget);
+      expect(find.byIcon(Icons.directions_car_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+    },
+  );
 
-  testWidgets('showFactoryBottomSheet renders its content with a drag handle', (tester) async {
-    await tester.pumpWidget(MaterialApp(
-      theme: factoryLightTheme(),
-      home: Builder(
-        builder: (context) => ElevatedButton(
-          onPressed: () => showFactoryBottomSheet(context: context, builder: (context) => const Text('Filters')),
-          child: const Text('Open'),
+  testWidgets('showFactoryBottomSheet renders its content with a drag handle', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: factoryLightTheme(),
+        home: Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () => showFactoryBottomSheet(
+              context: context,
+              builder: (context) => const Text('Filters'),
+            ),
+            child: const Text('Open'),
+          ),
         ),
       ),
-    ));
+    );
 
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();

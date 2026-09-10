@@ -9,6 +9,13 @@
 	     permission prompt without this. -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Factory uses your location to show nearby businesses and distances to them.</string>
+	<!-- Required by image_picker before it may request photo library/camera
+	     access at all — iOS silently refuses the permission prompt without
+	     these (used by the avatar/photo change flows). -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Factory needs access to your photo library to set your profile photo.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Factory needs access to your camera to take a profile photo.</string>
 	<!-- Sourced from the MAPS_API_KEY build setting (see Debug/Release.xcconfig)
 	     — never hardcoded, empty by default. Read in AppDelegate.swift. -->
 	<key>MAPS_API_KEY</key>

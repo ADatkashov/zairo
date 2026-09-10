@@ -72,7 +72,8 @@ class PlatformInsightsApiTests {
         UUID bookingId = UUID.fromString(restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
                 new HttpEntity<>(bookingRequest, TestAuth.authHeaders(customer.accessToken())), Map.class).getBody()
                 .get("id").toString());
-        restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments", null, Map.class);
+        restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
 
         Map<?, ?> after = restTemplate.exchange("/api/v1/platform/dashboard", HttpMethod.GET,
                 new HttpEntity<>(null, TestPlatformAuth.authHeaders(support.accessToken())), Map.class).getBody();

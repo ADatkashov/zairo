@@ -1,11 +1,12 @@
 import 'dart:typed_data';
 
 import 'package:core_ui/core_ui.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_cropper/image_cropper.dart';
 
 import '../../../../core/formatting/month_day_time.dart';
+import '../../../../core/image/pick_and_crop_image.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auto/data/models/admin_mechanic.dart';
 import '../../../auto/presentation/providers/auto_admin_providers.dart';
@@ -77,46 +78,63 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(FactorySpacing.space4),
-        children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              FactoryBadge(label: _capitalize(_provider.vertical)),
-              FactoryBadge(
-                label: _providerStatusLabel(l10n, _provider.status),
-                variant: _providerStatusVariant(_provider.status),
-              ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          // Invalidates every argument-instance of each family (not just
+          // this provider's, and regardless of a section's current
+          // show-inactive toggle) — simpler and just as correct as threading
+          // every section's local state up here, since re-fetching another
+          // salon's already-cached data too costs nothing a user notices.
+          ref.invalidate(providerDashboardMetricsProvider);
+          ref.invalidate(providerServicesProvider);
+          ref.invalidate(providerSlotsProvider);
+          ref.invalidate(adminMastersProvider);
+          ref.invalidate(adminMechanicsProvider);
+          ref.invalidate(adminCleanersProvider);
+          ref.invalidate(adminStaffProvider);
+          ref.invalidate(providerBookingsProvider);
+        },
+        child: ListView(
+          padding: const EdgeInsets.all(FactorySpacing.space4),
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                FactoryBadge(label: _capitalize(_provider.vertical)),
+                FactoryBadge(
+                  label: _providerStatusLabel(l10n, _provider.status),
+                  variant: _providerStatusVariant(_provider.status),
+                ),
+              ],
+            ),
+            const SizedBox(height: FactorySpacing.space6),
+            _DashboardMetricsSection(providerId: _provider.id),
+            const SizedBox(height: FactorySpacing.space6),
+            _ServicesSection(providerId: _provider.id),
+            const SizedBox(height: FactorySpacing.space6),
+            _AvailabilitySection(providerId: _provider.id),
+            if (_provider.vertical == 'beauty') ...[
+              const SizedBox(height: FactorySpacing.space6),
+              _MastersSection(providerId: _provider.id),
             ],
-          ),
-          const SizedBox(height: FactorySpacing.space6),
-          _DashboardMetricsSection(providerId: _provider.id),
-          const SizedBox(height: FactorySpacing.space6),
-          _ServicesSection(providerId: _provider.id),
-          const SizedBox(height: FactorySpacing.space6),
-          _AvailabilitySection(providerId: _provider.id),
-          if (_provider.vertical == 'beauty') ...[
+            if (_provider.vertical == 'auto') ...[
+              const SizedBox(height: FactorySpacing.space6),
+              _MechanicsSection(providerId: _provider.id),
+            ],
+            if (_provider.vertical == 'cleaning') ...[
+              const SizedBox(height: FactorySpacing.space6),
+              _CleanersSection(providerId: _provider.id),
+            ],
+            if (!_verticalsWithDedicatedStaffModule.contains(_provider.vertical)) ...[
+              const SizedBox(height: FactorySpacing.space6),
+              _StaffSection(providerId: _provider.id),
+            ],
             const SizedBox(height: FactorySpacing.space6),
-            _MastersSection(providerId: _provider.id),
+            _BookingsSection(providerId: _provider.id),
           ],
-          if (_provider.vertical == 'auto') ...[
-            const SizedBox(height: FactorySpacing.space6),
-            _MechanicsSection(providerId: _provider.id),
-          ],
-          if (_provider.vertical == 'cleaning') ...[
-            const SizedBox(height: FactorySpacing.space6),
-            _CleanersSection(providerId: _provider.id),
-          ],
-          if (!_verticalsWithDedicatedStaffModule.contains(_provider.vertical)) ...[
-            const SizedBox(height: FactorySpacing.space6),
-            _StaffSection(providerId: _provider.id),
-          ],
-          const SizedBox(height: FactorySpacing.space6),
-          _BookingsSection(providerId: _provider.id),
-        ],
+        ),
       ),
     );
   }
@@ -203,6 +221,16 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
           const SizedBox(height: FactorySpacing.space3),
           Text(l10n.coverPhotoLabel, style: Theme.of(context).textTheme.labelMedium),
           const SizedBox(height: FactorySpacing.space2),
+          if (_pickedPhotoBytes != null) ...[
+            ClipRRect(
+              borderRadius: FactoryRadius.mdRadius,
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Image.memory(_pickedPhotoBytes!, fit: BoxFit.cover),
+              ),
+            ),
+            const SizedBox(height: FactorySpacing.space2),
+          ],
           FactoryButton(
             icon: Icons.image_outlined,
             label: _pickedPhotoName ?? l10n.choosePhotoLabel,
@@ -233,12 +261,17 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
 
   Future<void> _pickPhoto() async {
     try {
-      final result = await FilePicker.pickFiles(type: FileType.image, withData: true);
-      final file = result?.files.singleOrNull;
-      if (file?.bytes == null) return;
+      // 16:9, not the square lock most other pickers in this app use — a
+      // cover photo is a wide banner, not an avatar.
+      final picked = await pickAndCropImage(
+        context,
+        cropTitle: AppLocalizations.of(context)!.coverPhotoLabel,
+        aspectRatio: const CropAspectRatio(ratioX: 16, ratioY: 9),
+      );
+      if (picked == null) return;
       setState(() {
-        _pickedPhotoBytes = file!.bytes;
-        _pickedPhotoName = file.name;
+        _pickedPhotoBytes = picked.bytes;
+        _pickedPhotoName = picked.name;
         _error = null;
       });
     } catch (e) {
@@ -290,6 +323,142 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
     } catch (e) {
       setState(() {
         _error = l10n.errorSaveBusinessFailed(e.toString());
+        _isSubmitting = false;
+      });
+    }
+  }
+}
+
+/// Generic photo-change dialog shared by the master/mechanic/cleaner/staff
+/// rows below — each just passes its own `onSave` calling the matching
+/// admin API's updateXPhoto. Mirrors _EditSalonDialog's pick-then-upload
+/// pattern (upload only happens on submit, so a cancelled dialog never
+/// leaves an orphaned file in storage).
+Future<void> _showChangePhotoDialog(
+  BuildContext context, {
+  required bool hasCurrentPhoto,
+  required Future<void> Function(String? photoUrl) onSave,
+}) {
+  return showDialog<void>(
+    context: context,
+    builder: (_) => _ChangePhotoDialog(hasCurrentPhoto: hasCurrentPhoto, onSave: onSave),
+  );
+}
+
+class _ChangePhotoDialog extends ConsumerStatefulWidget {
+  const _ChangePhotoDialog({required this.hasCurrentPhoto, required this.onSave});
+
+  final bool hasCurrentPhoto;
+  final Future<void> Function(String? photoUrl) onSave;
+
+  @override
+  ConsumerState<_ChangePhotoDialog> createState() => _ChangePhotoDialogState();
+}
+
+class _ChangePhotoDialogState extends ConsumerState<_ChangePhotoDialog> {
+  Uint8List? _pickedBytes;
+  String? _pickedName;
+  bool _isSubmitting = false;
+  String? _error;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final pickedBytes = _pickedBytes;
+    return FactoryDialog(
+      title: l10n.changePhotoDialogTitle,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          if (pickedBytes != null) ...[
+            CircleAvatar(radius: 48, backgroundImage: MemoryImage(pickedBytes)),
+            const SizedBox(height: FactorySpacing.space3),
+          ],
+          FactoryButton(
+            icon: Icons.image_outlined,
+            label: l10n.choosePhotoLabel,
+            variant: FactoryButtonVariant.secondary,
+            onPressed: _isSubmitting ? null : _pickPhoto,
+          ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: FactorySpacing.space2),
+              child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            ),
+        ],
+      ),
+      actions: [
+        if (widget.hasCurrentPhoto)
+          FactoryButton(
+            label: l10n.removePhotoButton,
+            variant: FactoryButtonVariant.text,
+            onPressed: _isSubmitting ? null : _removePhoto,
+          ),
+        FactoryButton(
+          label: l10n.cancelButton,
+          variant: FactoryButtonVariant.text,
+          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
+        ),
+        FactoryButton(
+          label: l10n.saveButton,
+          isLoading: _isSubmitting,
+          onPressed: _isSubmitting || _pickedBytes == null ? null : _submit,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pickPhoto() async {
+    try {
+      final picked = await pickAndCropImage(context, cropTitle: AppLocalizations.of(context)!.changePhotoDialogTitle);
+      if (picked == null) return;
+      setState(() {
+        _pickedBytes = picked.bytes;
+        _pickedName = picked.name;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = AppLocalizations.of(context)!.errorReadFileFailed(e.toString()));
+    }
+  }
+
+  Future<void> _removePhoto() async {
+    setState(() {
+      _isSubmitting = true;
+      _error = null;
+    });
+    try {
+      await widget.onSave(null);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = AppLocalizations.of(context)!.errorUpdatePhotoFailed(e.toString());
+        _isSubmitting = false;
+      });
+    }
+  }
+
+  Future<void> _submit() async {
+    final bytes = _pickedBytes;
+    final name = _pickedName;
+    if (bytes == null || name == null) return;
+    setState(() {
+      _isSubmitting = true;
+      _error = null;
+    });
+    try {
+      final uploaded = await ref.read(storageApiProvider).uploadBytes(bytes, name);
+      await widget.onSave(uploaded.url);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = AppLocalizations.of(context)!.errorUpdatePhotoFailed(e.toString());
         _isSubmitting = false;
       });
     }
@@ -704,6 +873,14 @@ class _MastersSection extends ConsumerWidget {
                             context: context,
                             builder: (_) => AddPortfolioItemDialog(masterId: m.id),
                           ),
+                          onChangePhoto: () => _showChangePhotoDialog(
+                            context,
+                            hasCurrentPhoto: m.photoUrl != null,
+                            onSave: (photoUrl) async {
+                              await ref.read(beautyAdminApiProvider).updateMasterPhoto(m.id, photoUrl);
+                              refresh();
+                            },
+                          ),
                           onRemove: () async {
                             await ref.read(beautyAdminApiProvider).deactivateMaster(m.id);
                             refresh();
@@ -733,6 +910,7 @@ class _MasterAdminRow extends StatelessWidget {
     required this.master,
     required this.onManageServices,
     required this.onAddPortfolioItem,
+    required this.onChangePhoto,
     required this.onRemove,
     required this.onReactivate,
   });
@@ -740,6 +918,7 @@ class _MasterAdminRow extends StatelessWidget {
   final AdminMaster master;
   final VoidCallback onManageServices;
   final VoidCallback onAddPortfolioItem;
+  final VoidCallback onChangePhoto;
   final VoidCallback onRemove;
   final VoidCallback onReactivate;
 
@@ -772,6 +951,11 @@ class _MasterAdminRow extends StatelessWidget {
                   icon: const Icon(Icons.design_services_outlined),
                   tooltip: l10n.manageServicesTooltip,
                   onPressed: onManageServices,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.camera_alt_outlined),
+                  tooltip: l10n.changePhotoTooltip,
+                  onPressed: onChangePhoto,
                 ),
                 IconButton(
                   icon: const Icon(Icons.add_a_photo_outlined),
@@ -856,6 +1040,14 @@ class _MechanicsSection extends ConsumerWidget {
                             context: context,
                             builder: (_) => ManageMechanicServicesDialog(providerId: providerId, mechanicId: m.id),
                           ),
+                          onChangePhoto: () => _showChangePhotoDialog(
+                            context,
+                            hasCurrentPhoto: m.photoUrl != null,
+                            onSave: (photoUrl) async {
+                              await ref.read(autoAdminApiProvider).updateMechanicPhoto(m.id, photoUrl);
+                              refresh();
+                            },
+                          ),
                           onRemove: () async {
                             await ref.read(autoAdminApiProvider).deactivateMechanic(m.id);
                             refresh();
@@ -884,12 +1076,14 @@ class _MechanicAdminRow extends StatelessWidget {
   const _MechanicAdminRow({
     required this.mechanic,
     required this.onManageServices,
+    required this.onChangePhoto,
     required this.onRemove,
     required this.onReactivate,
   });
 
   final AdminMechanic mechanic;
   final VoidCallback onManageServices;
+  final VoidCallback onChangePhoto;
   final VoidCallback onRemove;
   final VoidCallback onReactivate;
 
@@ -922,6 +1116,11 @@ class _MechanicAdminRow extends StatelessWidget {
                   icon: const Icon(Icons.design_services_outlined),
                   tooltip: l10n.manageMechanicServicesTooltip,
                   onPressed: onManageServices,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.camera_alt_outlined),
+                  tooltip: l10n.changePhotoTooltip,
+                  onPressed: onChangePhoto,
                 ),
                 IconButton(
                   icon: const Icon(Icons.person_remove_outlined),
@@ -1001,6 +1200,14 @@ class _CleanersSection extends ConsumerWidget {
                             context: context,
                             builder: (_) => ManageCleanerServicesDialog(providerId: providerId, cleanerId: c.id),
                           ),
+                          onChangePhoto: () => _showChangePhotoDialog(
+                            context,
+                            hasCurrentPhoto: c.photoUrl != null,
+                            onSave: (photoUrl) async {
+                              await ref.read(cleaningAdminApiProvider).updateCleanerPhoto(c.id, photoUrl);
+                              refresh();
+                            },
+                          ),
                           onRemove: () async {
                             await ref.read(cleaningAdminApiProvider).deactivateCleaner(c.id);
                             refresh();
@@ -1029,12 +1236,14 @@ class _CleanerAdminRow extends StatelessWidget {
   const _CleanerAdminRow({
     required this.cleaner,
     required this.onManageServices,
+    required this.onChangePhoto,
     required this.onRemove,
     required this.onReactivate,
   });
 
   final AdminCleaner cleaner;
   final VoidCallback onManageServices;
+  final VoidCallback onChangePhoto;
   final VoidCallback onRemove;
   final VoidCallback onReactivate;
 
@@ -1067,6 +1276,11 @@ class _CleanerAdminRow extends StatelessWidget {
                   icon: const Icon(Icons.design_services_outlined),
                   tooltip: l10n.manageCleanerServicesTooltip,
                   onPressed: onManageServices,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.camera_alt_outlined),
+                  tooltip: l10n.changePhotoTooltip,
+                  onPressed: onChangePhoto,
                 ),
                 IconButton(
                   icon: const Icon(Icons.person_remove_outlined),
@@ -1146,6 +1360,14 @@ class _StaffSection extends ConsumerWidget {
                             context: context,
                             builder: (_) => ManageStaffServicesDialog(providerId: providerId, staffId: s.id),
                           ),
+                          onChangePhoto: () => _showChangePhotoDialog(
+                            context,
+                            hasCurrentPhoto: s.photoUrl != null,
+                            onSave: (photoUrl) async {
+                              await ref.read(staffAdminApiProvider).updateStaffPhoto(s.id, photoUrl);
+                              refresh();
+                            },
+                          ),
                           onRemove: () async {
                             await ref.read(staffAdminApiProvider).deactivateStaff(s.id);
                             refresh();
@@ -1174,12 +1396,14 @@ class _StaffAdminRow extends StatelessWidget {
   const _StaffAdminRow({
     required this.staff,
     required this.onManageServices,
+    required this.onChangePhoto,
     required this.onRemove,
     required this.onReactivate,
   });
 
   final AdminStaff staff;
   final VoidCallback onManageServices;
+  final VoidCallback onChangePhoto;
   final VoidCallback onRemove;
   final VoidCallback onReactivate;
 
@@ -1212,6 +1436,11 @@ class _StaffAdminRow extends StatelessWidget {
                   icon: const Icon(Icons.design_services_outlined),
                   tooltip: l10n.manageStaffServicesTooltip,
                   onPressed: onManageServices,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.camera_alt_outlined),
+                  tooltip: l10n.changePhotoTooltip,
+                  onPressed: onChangePhoto,
                 ),
                 IconButton(
                   icon: const Icon(Icons.person_remove_outlined),

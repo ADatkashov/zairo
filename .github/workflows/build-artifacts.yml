@@ -38,14 +38,14 @@ jobs:
         app: [user_app, business_admin]
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       # AGP 9.1.0 / Kotlin 2.4.0 (apps/*/android/settings.gradle.kts) need
       # a modern JDK to build with; 21 matches what Android Studio's
       # bundled JBR uses for this project locally and what the backend
       # already standardizes on.
       - name: Set up JDK 21
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "21"
@@ -89,7 +89,7 @@ jobs:
             --dart-define=API_BASE_URL="$API_BASE_URL"
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.app }}-apk-debug-signed
           path: apps/${{ matrix.app }}/build/app/outputs/flutter-apk/app-release.apk
@@ -100,16 +100,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "21"
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       # See backend-ci.yml's identical step — backend/gradlew is committed
       # without the executable bit.
@@ -130,7 +130,7 @@ jobs:
       # classes-only "-plain" jar it keeps for library consumers. Only
       # the former is useful as a runnable artifact.
       - name: Upload bootJar
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: platform-api-bootjar
           path: |

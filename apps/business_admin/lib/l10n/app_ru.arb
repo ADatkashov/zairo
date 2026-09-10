@@ -27,6 +27,7 @@
 
   "settingsButtonTooltip": "Настройки",
   "navDashboard": "Дашборд",
+  "ownerRoleLabel": "Владелец",
   "settingsTitle": "Настройки",
   "darkModeTitle": "Тёмная тема",
   "darkModeSubtitle": "Текущая тема: {mode}",
@@ -244,5 +245,17 @@
   "dashboardAverageCheckLabel": "Средний чек",
   "dashboardTopServicesTitle": "Популярные услуги",
   "dashboardNoDataYet": "Метрики появятся после первого бронирования.",
-  "errorDashboardLoadFailed": "Не удалось загрузить показатели: {error}"
+  "dashboardBusinessesCountLabel": "Бизнесов",
+  "errorDashboardLoadFailed": "Не удалось загрузить показатели: {error}",
+
+  "changeAvatarDialogTitle": "Сменить аватар",
+  "changeAvatarRemoveButton": "Удалить фото",
+  "errorAvatarUpdateFailed": "Не удалось обновить аватар: {error}",
+
+  "changePhotoTooltip": "Сменить фото",
+  "changePhotoDialogTitle": "Сменить фото",
+  "removePhotoButton": "Удалить фото",
+  "errorUpdatePhotoFailed": "Не удалось обновить фото: {error}",
+  "imagePickerCameraLabel": "Камера",
+  "imagePickerGalleryLabel": "Галерея"
 }

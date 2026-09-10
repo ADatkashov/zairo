@@ -65,6 +65,22 @@ android {
     }
 
     signingConfigs {
+        // Committed, deterministic debug keystore (ci-debug.keystore — not
+        // sensitive, same well-known "android"/"androiddebugkey"
+        // credentials Android's own default debug key uses) so every
+        // build shares one certificate. Without this, the Android Gradle
+        // Plugin's default "debug" config falls back to
+        // ~/.android/debug.keystore, silently auto-generated fresh by
+        // every ephemeral CI runner — making each build-artifacts.yml run
+        // sign with a different key, which Android then refuses to
+        // install over whatever build a device already has (signature
+        // mismatch) without uninstalling first.
+        getByName("debug") {
+            storeFile = file("ci-debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
         if (hasReleaseSigning) {
             create("release") {
                 storeFile = file(keystoreProperties.getProperty("storeFile"))

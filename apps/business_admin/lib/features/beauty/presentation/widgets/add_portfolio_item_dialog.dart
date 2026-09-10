@@ -1,10 +1,10 @@
 import 'dart:typed_data';
 
 import 'package:core_ui/core_ui.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/image/pick_and_crop_image.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../storage/presentation/providers/storage_providers.dart';
 import '../providers/beauty_admin_providers.dart';
@@ -44,6 +44,13 @@ class _AddPortfolioItemDialogState extends ConsumerState<AddPortfolioItemDialog>
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (_pickedBytes != null) ...[
+            ClipRRect(
+              borderRadius: FactoryRadius.mdRadius,
+              child: Image.memory(_pickedBytes!, height: 160, fit: BoxFit.cover),
+            ),
+            const SizedBox(height: FactorySpacing.space3),
+          ],
           FactoryButton(
             icon: Icons.image_outlined,
             label: _pickedName ?? l10n.choosePhotoLabel,
@@ -80,12 +87,17 @@ class _AddPortfolioItemDialogState extends ConsumerState<AddPortfolioItemDialog>
 
   Future<void> _pickFile() async {
     try {
-      final result = await FilePicker.pickFiles(type: FileType.image, withData: true);
-      final file = result?.files.singleOrNull;
-      if (file?.bytes == null) return;
+      // Freeform (null aspectRatio) — a before/after or work-sample shot
+      // isn't always square like an avatar, so don't force one.
+      final picked = await pickAndCropImage(
+        context,
+        cropTitle: AppLocalizations.of(context)!.addPortfolioDialogTitle,
+        aspectRatio: null,
+      );
+      if (picked == null) return;
       setState(() {
-        _pickedBytes = file!.bytes;
-        _pickedName = file.name;
+        _pickedBytes = picked.bytes;
+        _pickedName = picked.name;
         _error = null;
       });
     } catch (e) {

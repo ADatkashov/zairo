@@ -201,6 +201,9 @@
     }
   },
 
+  "homeAvailabilityEyebrow": "Today nearby",
+  "@homeAvailabilityEyebrow": {"description": "Small uppercase label above the availability hero banner's headline."},
+
   "homeGreeting": "Hi, {name}",
   "@homeGreeting": {
     "description": "Home screen greeting for a logged-in user.",
@@ -255,6 +258,9 @@
 
   "homeBookAgainTitle": "Book again",
   "@homeBookAgainTitle": {"description": "Home screen section header above the repeat-your-last-appointment row."},
+
+  "homeRecommendedTitle": "Recommended for you",
+  "@homeRecommendedTitle": {"description": "Home screen section header above the top-rated-providers row."},
 
   "searchHint": "Search services or providers",
   "@searchHint": {"description": "Search screen text field hint."},
@@ -406,6 +412,12 @@
     }
   },
 
+  "distanceKmShort": "{distanceKm} km",
+  "@distanceKmShort": {
+    "description": "A bare distance value, no surrounding sentence — Home's Recommended row.",
+    "placeholders": {"distanceKm": {"type": "String", "example": "3.7"}}
+  },
+
   "providerDistanceAway": "{distanceKm} km away",
   "@providerDistanceAway": {
     "description": "Provider detail screen's distance badge.",
@@ -451,6 +463,15 @@
   "bookingStatusCancelled": "Cancelled",
   "@bookingStatusCancelled": {"description": "Booking status badge label for CANCELLED."},
 
+  "bookingsTabUpcoming": "Upcoming",
+  "@bookingsTabUpcoming": {"description": "My Bookings segmented tab: confirmed bookings not yet completed or cancelled."},
+
+  "bookingsTabCompleted": "Completed",
+  "@bookingsTabCompleted": {"description": "My Bookings segmented tab: completed bookings."},
+
+  "bookingsTabCancelled": "Cancelled",
+  "@bookingsTabCancelled": {"description": "My Bookings segmented tab: cancelled bookings."},
+
   "myFavoritesTitle": "My favorites",
   "@myFavoritesTitle": {"description": "Favorites screen app bar title, also used as the Profile screen's button label."},
 
@@ -462,6 +483,24 @@
 
   "errorFavoritesLoadFailed": "Couldn't load your favorites.",
   "@errorFavoritesLoadFailed": {"description": "Favorites screen error state."},
+
+  "notificationsTitle": "Notifications",
+  "@notificationsTitle": {"description": "Notifications screen app bar title."},
+
+  "notificationsEmptyTitle": "No notifications yet",
+  "@notificationsEmptyTitle": {"description": "Notifications screen empty state title."},
+
+  "notificationsEmptyMessage": "Booking updates and reminders will show up here.",
+  "@notificationsEmptyMessage": {"description": "Notifications screen empty state message."},
+
+  "errorNotificationsLoadFailed": "Couldn't load your notifications.",
+  "@errorNotificationsLoadFailed": {"description": "Notifications screen error state."},
+
+  "notificationsMarkAllReadButton": "Mark all read",
+  "@notificationsMarkAllReadButton": {"description": "Notifications screen action clearing every unread notification."},
+
+  "notificationBellTooltip": "Notifications",
+  "@notificationBellTooltip": {"description": "Home screen's notification bell icon button tooltip/semantic label."},
 
   "favoriteAddTooltip": "Add to favorites",
   "@favoriteAddTooltip": {"description": "Screen-reader/tooltip label for the favorite-toggle button when not yet favorited."},
@@ -684,6 +723,30 @@
   "myVehiclesButton": "My vehicles",
   "@myVehiclesButton": {"description": "Profile screen's button opening the My Vehicles screen."},
 
+  "supportTitle": "Support",
+  "@supportTitle": {"description": "Profile screen's button opening Support, and that screen's app bar title."},
+
+  "supportIntro": "Have a question or ran into a problem? Message us directly.",
+  "@supportIntro": {"description": "Support screen's intro text above the contact row."},
+
+  "supportTelegramLabel": "Telegram",
+  "@supportTelegramLabel": {"description": "Support screen's Telegram contact row title."},
+
+  "aboutTitle": "About",
+  "@aboutTitle": {"description": "Profile screen's button opening About, and that screen's app bar title."},
+
+  "aboutVersionLoading": "Loading version…",
+  "@aboutVersionLoading": {"description": "About screen's version line while PackageInfo is still loading."},
+
+  "aboutVersionLabel": "Version {version} ({buildNumber})",
+  "@aboutVersionLabel": {
+    "description": "About screen's version line.",
+    "placeholders": {
+      "version": {"type": "String", "example": "1.0.0"},
+      "buildNumber": {"type": "String", "example": "1"}
+    }
+  },
+
   "errorAutoBookingFailed": "Couldn't complete this booking — the mechanic may not offer this service, or the time slot was just taken. Please try again.",
   "@errorAutoBookingFailed": {"description": "409 from POST .../auto/bookings — covers two distinct backend rejections the response body doesn't distinguish."},
 
@@ -735,6 +798,9 @@
   "favoritesLoggedOutPrompt": "Log in to see your favorites",
   "@favoritesLoggedOutPrompt": {"description": "Shown on the Favorites tab when reached while logged out."},
 
+  "notificationsLoggedOutPrompt": "Log in to see your notifications",
+  "@notificationsLoggedOutPrompt": {"description": "Shown on the Notifications screen when reached while logged out."},
+
   "settingsButtonTooltip": "Settings",
   "@settingsButtonTooltip": {"description": "Profile screen's AppBar action opening Settings."},
 
@@ -759,9 +825,58 @@
   "cancelBookingConfirmButton": "Cancel booking",
   "@cancelBookingConfirmButton": {"description": "Cancel-booking confirmation dialog's confirm action."},
 
+  "favoritesClearAllButton": "Clear all",
+  "@favoritesClearAllButton": {"description": "Favorites screen action removing every favorite."},
+
+  "favoritesClearAllConfirmTitle": "Clear all favorites?",
+  "@favoritesClearAllConfirmTitle": {"description": "Clear-all-favorites confirmation dialog title."},
+
+  "favoritesClearAllConfirmMessage": "This removes every provider from your favorites. This can't be undone.",
+  "@favoritesClearAllConfirmMessage": {"description": "Clear-all-favorites confirmation dialog body."},
+
+  "favoritesClearAllKeepButton": "Keep favorites",
+  "@favoritesClearAllKeepButton": {"description": "Clear-all-favorites confirmation dialog's dismiss action."},
+
   "bookingCancelledMessage": "Booking cancelled.",
   "@bookingCancelledMessage": {"description": "Snackbar shown after a successful cancellation."},
 
   "paymentStatusRefunded": "Refunded",
-  "@paymentStatusRefunded": {"description": "Payment status badge label for REFUNDED."}
+  "@paymentStatusRefunded": {"description": "Payment status badge label for REFUNDED."},
+
+  "changeAvatarDialogTitle": "Change avatar",
+  "@changeAvatarDialogTitle": {"description": "Title of the profile screen's change-avatar dialog."},
+
+  "changeAvatarChoosePhotoLabel": "Choose photo",
+  "@changeAvatarChoosePhotoLabel": {"description": "Change-avatar dialog's file picker button default label."},
+
+  "changeAvatarCancelButton": "Cancel",
+  "@changeAvatarCancelButton": {"description": "Change-avatar dialog's cancel button."},
+
+  "changeAvatarSaveButton": "Save",
+  "@changeAvatarSaveButton": {"description": "Change-avatar dialog's save button."},
+
+  "changeAvatarRemoveButton": "Remove photo",
+  "@changeAvatarRemoveButton": {"description": "Change-avatar dialog's remove-current-photo button, shown only when an avatar is already set."},
+
+  "changeAvatarErrorReadFileFailed": "Failed to read file: {error}",
+  "@changeAvatarErrorReadFileFailed": {
+    "description": "Change-avatar dialog's error when picking the file fails.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "changeAvatarErrorSaveFailed": "Failed to update avatar: {error}",
+  "@changeAvatarErrorSaveFailed": {
+    "description": "Change-avatar dialog's error when the upload/save request fails.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "imagePickerCameraLabel": "Camera",
+  "@imagePickerCameraLabel": {"description": "Photo-source bottom sheet option: take a new photo."},
+
+  "imagePickerGalleryLabel": "Gallery",
+  "@imagePickerGalleryLabel": {"description": "Photo-source bottom sheet option: pick an existing photo."}
 }

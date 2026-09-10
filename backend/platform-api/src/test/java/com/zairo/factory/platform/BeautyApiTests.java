@@ -132,8 +132,9 @@ class BeautyApiTests {
         // Not CONFIRMED yet — a booking starts PENDING_PAYMENT until its payment succeeds (ADR-0006).
         assertThat(created.getBody().get("status")).isEqualTo("PENDING_PAYMENT");
 
-        // Fetching it back through the beauty endpoint returns the same master link.
-        Map<?, ?> fetched = restTemplate.getForEntity("/api/v1/beauty/bookings/" + bookingId, Map.class).getBody();
+        // Fetching it back through the beauty endpoint (as its own customer) returns the same master link.
+        Map<?, ?> fetched = restTemplate.exchange("/api/v1/beauty/bookings/" + bookingId, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class).getBody();
         assertThat(fetched.get("masterId")).isEqualTo(masterId.toString());
 
         // Unlink (owner-only) is idempotent too.
@@ -184,6 +185,67 @@ class BeautyApiTests {
         assertThat(reactivateResponse.getBody().get("active")).isEqualTo(true);
         assertThat(getList("/api/v1/beauty/providers/" + providerId + "/masters")).extracting(m -> m.get("id"))
                 .containsExactly(masterId.toString());
+    }
+
+    /**
+     * Proves the fix for GET /beauty/bookings/{id}'s missing auth/ownership
+     * check (Security Audit #4, P0-NEW-1): only the booking's own customer
+     * or its provider's own owner may read it — a stranger (customer or
+     * unrelated provider owner) gets 403, and no token at all gets 401, same
+     * pattern as core BookingController.getById (PR #57).
+     */
+    @Test
+    void gettingABeautyBookingRequiresBeingItsCustomerOrItsProvidersOwner() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "beauty-get-owner-" + runId + "@example.com");
+        Registered otherOwner = TestAuth.registerOwner(restTemplate, "beauty-get-other-owner-" + runId
+                + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "beauty-get-customer-" + runId
+                + "@example.com");
+        Registered otherCustomer = TestAuth.registerCustomer(restTemplate, "beauty-get-other-customer-" + runId
+                + "@example.com");
+
+        UUID providerId = createProvider(owner, "Get Salon " + runId, "beauty");
+        UUID serviceId = createService(owner, providerId, "Get Service", new BigDecimal("50.00"));
+        UUID masterId = createMaster(owner, providerId, "Get Master");
+        restTemplate.exchange("/api/v1/beauty/masters/" + masterId + "/services/" + serviceId, HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+        UUID slotId = createOpenSlot(owner, providerId);
+
+        ResponseEntity<Map> created = restTemplate.exchange("/api/v1/beauty/bookings", HttpMethod.POST,
+                new HttpEntity<>(
+                        new CreateBeautyBookingRequest(customer.userId(), masterId, serviceId, slotId,
+                                new BigDecimal("50.00")),
+                        TestAuth.authHeaders(customer.accessToken())),
+                Map.class);
+        assertThat(created.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        UUID bookingId = UUID.fromString(created.getBody().get("bookingId").toString());
+
+        // No token at all -> 401.
+        ResponseEntity<Map> unauthenticated = restTemplate.getForEntity("/api/v1/beauty/bookings/" + bookingId,
+                Map.class);
+        assertThat(unauthenticated.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        // The booking's own customer can read it.
+        ResponseEntity<Map> asCustomer = restTemplate.exchange("/api/v1/beauty/bookings/" + bookingId,
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(asCustomer.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // The provider's own owner can read it too.
+        ResponseEntity<Map> asOwner = restTemplate.exchange("/api/v1/beauty/bookings/" + bookingId,
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(asOwner.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // A different customer cannot.
+        ResponseEntity<Map> asOtherCustomer = restTemplate.exchange("/api/v1/beauty/bookings/" + bookingId,
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(otherCustomer.accessToken())),
+                Map.class);
+        assertThat(asOtherCustomer.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        // A different provider's owner cannot either.
+        ResponseEntity<Map> asOtherOwner = restTemplate.exchange("/api/v1/beauty/bookings/" + bookingId,
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(otherOwner.accessToken())), Map.class);
+        assertThat(asOtherOwner.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
     private List<Map> getList(String path) {

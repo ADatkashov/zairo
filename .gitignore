@@ -31,6 +31,17 @@
 **/android/key.properties
 **/*.jks
 **/*.keystore
+# Exception: the committed debug-signing keystores (ci-debug.keystore,
+# well-known "android"/"androiddebugkey" credentials, same as Android's
+# own default debug key) — deliberately checked in so every CI-built
+# debug-signed release APK shares one certificate across runs, instead of
+# each ephemeral runner silently generating its own throwaway
+# ~/.android/debug.keystore. Without this, a fresh CI build can't be
+# installed over the previous one on a real device (signature mismatch)
+# without uninstalling first. Not sensitive — see each app's
+# build.gradle.kts signingConfigs comment.
+!apps/user_app/android/app/ci-debug.keystore
+!apps/business_admin/android/app/ci-debug.keystore
 
 # Scratch space for local-only artifacts not ready/meant for git yet
 # (e.g. a hand-exported Postman collection) — see docs/ci-cd.md's note

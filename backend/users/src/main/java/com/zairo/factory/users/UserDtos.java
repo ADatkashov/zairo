@@ -28,10 +28,11 @@ public final class UserDtos {
             @Schema(example = "+77001234567") String phone,
             @Schema(example = "Aigerim Bekova") String displayName,
             UserRole role,
-            Instant createdAt) {
+            Instant createdAt,
+            @Schema(example = "http://localhost:8080/api/v1/uploads/a1b2c3d4.jpg") String avatarUrl) {
         static UserResponse from(User user) {
             return new UserResponse(user.getId(), user.getEmail(), user.getPhone(), user.getDisplayName(),
-                    user.getRole(), user.getCreatedAt());
+                    user.getRole(), user.getCreatedAt(), user.getAvatarUrl());
         }
     }
 }

@@ -121,6 +121,15 @@ public class MechanicDirectoryService {
         return serviceOfferingRepository.findAllById(serviceIds);
     }
 
+    /** Owner-only — replaces the mechanic's photo (null/blank removes it). */
+    @Transactional
+    public Mechanic updateMechanicPhoto(UUID mechanicId, String photoUrl, UUID requestingUserId) {
+        Mechanic mechanic = getMechanic(mechanicId);
+        providerOwnership.requireOwner(mechanic.getProviderId(), requestingUserId);
+        mechanic.updatePhoto(photoUrl);
+        return mechanicRepository.save(mechanic);
+    }
+
     /** Idempotent — deactivating an already-inactive (or missing) mechanic is a no-op. */
     @Transactional
     public void deactivateMechanic(UUID mechanicId, UUID requestingUserId) {
