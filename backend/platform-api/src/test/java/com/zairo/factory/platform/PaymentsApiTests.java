@@ -78,21 +78,21 @@ class PaymentsApiTests {
         UUID bookingId = UUID.fromString(booking.get("id").toString());
 
         // No payment yet.
-        ResponseEntity<Map> checkBefore = restTemplate.getForEntity("/api/v1/bookings/" + bookingId + "/payments",
-                Map.class);
+        ResponseEntity<Map> checkBefore = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
         assertThat(checkBefore.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 
         // Charge — mock provider always succeeds.
-        ResponseEntity<Map> payResponse = restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments",
-                null, Map.class);
+        ResponseEntity<Map> payResponse = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
         assertThat(payResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(payResponse.getBody().get("status")).isEqualTo("SUCCEEDED");
         assertThat(payResponse.getBody().get("amount")).isEqualTo(35.00);
         UUID paymentId = UUID.fromString(payResponse.getBody().get("id").toString());
 
         // A second payment attempt on the same booking is rejected.
-        ResponseEntity<Map> duplicatePay = restTemplate.postForEntity(
-                "/api/v1/bookings/" + bookingId + "/payments", null, Map.class);
+        ResponseEntity<Map> duplicatePay = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
         assertThat(duplicatePay.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
 
         // Refund is PLATFORM_ADMIN-only — see PaymentsController.refund.
@@ -147,7 +147,8 @@ class PaymentsApiTests {
                 new HttpEntity<>(bookingRequest, TestAuth.authHeaders(customer.accessToken())), Map.class).getBody();
         UUID bookingId = UUID.fromString(booking.get("id").toString());
 
-        restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments", null, Map.class);
+        restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
 
         ResponseEntity<Map> cancelResponse = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/cancel",
                 HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
@@ -155,24 +156,26 @@ class PaymentsApiTests {
 
         // BookingCancelledPaymentListener (AFTER_COMMIT, REQUIRES_NEW) already
         // ran synchronously by the time the cancel response comes back.
-        ResponseEntity<Map> paymentAfterCancel = restTemplate.getForEntity(
-                "/api/v1/bookings/" + bookingId + "/payments", Map.class);
+        ResponseEntity<Map> paymentAfterCancel = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
         assertThat(paymentAfterCancel.getBody().get("status")).isEqualTo("REFUNDED");
     }
 
     @Test
     void aFailedChargeCanBeRetriedReusingTheSamePaymentIdAsTheIdempotencyKey() {
-        UUID bookingId = createBookingForPayment("retry-", new BigDecimal("22.00"));
+        BookingForPayment bfp = createBookingForPayment("retry-", new BigDecimal("22.00"));
+        UUID bookingId = bfp.bookingId();
+        var customerAuth = new HttpEntity<>(null, TestAuth.authHeaders(bfp.customer().accessToken()));
 
         failureController.failNextCharge = true;
-        ResponseEntity<Map> firstAttempt = restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments",
-                null, Map.class);
+        ResponseEntity<Map> firstAttempt = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.POST, customerAuth, Map.class);
         assertThat(firstAttempt.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(firstAttempt.getBody().get("status")).isEqualTo("FAILED");
         UUID paymentId = UUID.fromString(firstAttempt.getBody().get("id").toString());
 
-        ResponseEntity<Map> retry = restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments", null,
-                Map.class);
+        ResponseEntity<Map> retry = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.POST, customerAuth, Map.class);
         assertThat(retry.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(retry.getBody().get("status")).isEqualTo("SUCCEEDED");
         // Same payment id across the failed attempt and the successful retry —
@@ -182,12 +185,14 @@ class PaymentsApiTests {
 
     @Test
     void aProviderExceptionDuringChargeMarksThePaymentFailedInsteadOfCrashing() {
-        UUID bookingId = createBookingForPayment("outage-", new BigDecimal("18.00"));
+        BookingForPayment bfp = createBookingForPayment("outage-", new BigDecimal("18.00"));
+        UUID bookingId = bfp.bookingId();
 
         failureController.failNextCharge = true;
         failureController.throwOnNextCharge = true;
-        ResponseEntity<Map> response = restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments",
-                null, Map.class);
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(bfp.customer().accessToken())),
+                Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody().get("status")).isEqualTo("FAILED");
@@ -195,9 +200,11 @@ class PaymentsApiTests {
 
     @Test
     void aFailedRefundIsRecordedOnThePaymentInsteadOfOnlyBeingLogged() {
-        UUID bookingId = createBookingForPayment("refund-outage-", new BigDecimal("22.00"));
-        UUID paymentId = UUID.fromString(restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments",
-                null, Map.class).getBody().get("id").toString());
+        BookingForPayment bfp = createBookingForPayment("refund-outage-", new BigDecimal("22.00"));
+        UUID bookingId = bfp.bookingId();
+        var customerAuth = new HttpEntity<>(null, TestAuth.authHeaders(bfp.customer().accessToken()));
+        UUID paymentId = UUID.fromString(restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.POST, customerAuth, Map.class).getBody().get("id").toString());
         var admin = registerPlatformAdmin("refund-outage-admin-" + UUID.randomUUID());
 
         failureController.failNextRefund = true;
@@ -208,8 +215,8 @@ class PaymentsApiTests {
         // PaymentsService.refundPayment's noRollbackFor) — and status moves
         // to REFUND_FAILED, not REFUNDED: the money was never actually
         // returned, so the payment can't claim it was.
-        ResponseEntity<Map> check = restTemplate.getForEntity("/api/v1/bookings/" + bookingId + "/payments",
-                Map.class);
+        ResponseEntity<Map> check = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.GET, customerAuth, Map.class);
         assertThat(check.getBody().get("status")).isEqualTo("REFUND_FAILED");
         assertThat(check.getBody().get("refundFailureReason")).isEqualTo("simulated refund outage");
         assertThat(check.getBody().get("refundAttempts")).isEqualTo(1);
@@ -232,11 +239,13 @@ class PaymentsApiTests {
     @Test
     void refundingAPaymentRequiresPlatformAdminAndRejectsEveryoneElse() {
         String runId = UUID.randomUUID().toString();
-        UUID bookingId = createBookingForPayment("refund-authz-", new BigDecimal("50.00"));
+        BookingForPayment bfp = createBookingForPayment("refund-authz-", new BigDecimal("50.00"));
+        UUID bookingId = bfp.bookingId();
         Registered customer = TestAuth.registerCustomer(restTemplate, "refund-authz-cust-" + runId
                 + "@example.com");
-        UUID paymentId = UUID.fromString(restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments",
-                null, Map.class).getBody().get("id").toString());
+        UUID paymentId = UUID.fromString(restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(bfp.customer().accessToken())),
+                Map.class).getBody().get("id").toString());
 
         // No token at all -> 401.
         ResponseEntity<Map> unauthenticated = restTemplate.postForEntity("/api/v1/payments/" + paymentId
@@ -271,6 +280,130 @@ class PaymentsApiTests {
         assertThat(asAdmin.getBody().get("currency")).isEqualTo("USD");
     }
 
+    /**
+     * Proves the fix for the charge endpoint's missing authorization: only the
+     * booking's own customer or its provider's own owner may charge it (mirrors
+     * BookingApiTests.gettingABookingRequiresBeingItsCustomerOrItsProvidersOwner).
+     * Each "allowed" outcome needs its own unpaid booking, since a successful
+     * charge leaves the booking unavailable for a second one (CONFLICT, not the
+     * authorization outcome this test is about).
+     */
+    @Test
+    void chargingABookingRequiresBeingItsCustomerOrItsProvidersOwner() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "chargeauthz-owner-" + runId + "@example.com");
+        Registered otherOwner = TestAuth.registerOwner(restTemplate, "chargeauthz-other-owner-" + runId
+                + "@example.com");
+        Registered otherCustomer = TestAuth.registerCustomer(restTemplate, "chargeauthz-other-cust-" + runId
+                + "@example.com");
+
+        UUID providerId = createProvider(owner, "Charge Authz Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Charge Authz Service", new BigDecimal("20.00"));
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+
+        // No token at all -> 401.
+        Registered unauthBookingCustomer = TestAuth.registerCustomer(restTemplate, "chargeauthz-unauth-cust-"
+                + runId + "@example.com");
+        UUID unauthSlotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+        UUID unauthBookingId = createBooking(unauthBookingCustomer, serviceId, unauthSlotId,
+                new BigDecimal("20.00"));
+        ResponseEntity<Map> unauthenticated = restTemplate.postForEntity(
+                "/api/v1/bookings/" + unauthBookingId + "/payments", null, Map.class);
+        assertThat(unauthenticated.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        // The booking's own customer can pay for it.
+        Registered customer1 = TestAuth.registerCustomer(restTemplate, "chargeauthz-cust1-" + runId
+                + "@example.com");
+        UUID slot1 = createSlot(owner, providerId, start.plus(1, ChronoUnit.HOURS),
+                start.plus(90, ChronoUnit.MINUTES));
+        UUID booking1 = createBooking(customer1, serviceId, slot1, new BigDecimal("20.00"));
+        ResponseEntity<Map> asCustomer = restTemplate.exchange("/api/v1/bookings/" + booking1 + "/payments",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(customer1.accessToken())), Map.class);
+        assertThat(asCustomer.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+        // The provider's own owner can pay for it too.
+        Registered customer2 = TestAuth.registerCustomer(restTemplate, "chargeauthz-cust2-" + runId
+                + "@example.com");
+        UUID slot2 = createSlot(owner, providerId, start.plus(2, ChronoUnit.HOURS),
+                start.plus(150, ChronoUnit.MINUTES));
+        UUID booking2 = createBooking(customer2, serviceId, slot2, new BigDecimal("20.00"));
+        ResponseEntity<Map> asOwner = restTemplate.exchange("/api/v1/bookings/" + booking2 + "/payments",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(asOwner.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+        // A different customer cannot.
+        Registered customer3 = TestAuth.registerCustomer(restTemplate, "chargeauthz-cust3-" + runId
+                + "@example.com");
+        UUID slot3 = createSlot(owner, providerId, start.plus(3, ChronoUnit.HOURS),
+                start.plus(210, ChronoUnit.MINUTES));
+        UUID booking3 = createBooking(customer3, serviceId, slot3, new BigDecimal("20.00"));
+        ResponseEntity<Map> asOtherCustomer = restTemplate.exchange("/api/v1/bookings/" + booking3 + "/payments",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(otherCustomer.accessToken())),
+                Map.class);
+        assertThat(asOtherCustomer.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        // A different provider's owner cannot either.
+        Registered customer4 = TestAuth.registerCustomer(restTemplate, "chargeauthz-cust4-" + runId
+                + "@example.com");
+        UUID slot4 = createSlot(owner, providerId, start.plus(4, ChronoUnit.HOURS),
+                start.plus(270, ChronoUnit.MINUTES));
+        UUID booking4 = createBooking(customer4, serviceId, slot4, new BigDecimal("20.00"));
+        ResponseEntity<Map> asOtherOwner = restTemplate.exchange("/api/v1/bookings/" + booking4 + "/payments",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(otherOwner.accessToken())), Map.class);
+        assertThat(asOtherOwner.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    /**
+     * Proves the fix for the "read a booking's payment" endpoint's missing
+     * authorization: same customer-or-provider-owner rule as the charge
+     * endpoint above. Reads don't mutate state, so a single paid booking is
+     * reused across all five scenarios.
+     */
+    @Test
+    void gettingAPaymentForABookingRequiresBeingItsCustomerOrItsProvidersOwner() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "getpay-owner-" + runId + "@example.com");
+        Registered otherOwner = TestAuth.registerOwner(restTemplate, "getpay-other-owner-" + runId
+                + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "getpay-customer-" + runId + "@example.com");
+        Registered otherCustomer = TestAuth.registerCustomer(restTemplate, "getpay-other-cust-" + runId
+                + "@example.com");
+
+        UUID providerId = createProvider(owner, "Get Pay Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Get Pay Service", new BigDecimal("20.00"));
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+        UUID bookingId = createBooking(customer, serviceId, slotId, new BigDecimal("20.00"));
+        restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+
+        // No token at all -> 401.
+        ResponseEntity<Map> unauthenticated = restTemplate.getForEntity(
+                "/api/v1/bookings/" + bookingId + "/payments", Map.class);
+        assertThat(unauthenticated.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        // The booking's own customer can read its payment.
+        ResponseEntity<Map> asCustomer = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(asCustomer.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // The provider's own owner can read it too.
+        ResponseEntity<Map> asOwner = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(asOwner.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // A different customer cannot.
+        ResponseEntity<Map> asOtherCustomer = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(otherCustomer.accessToken())),
+                Map.class);
+        assertThat(asOtherCustomer.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        // A different provider's owner cannot either.
+        ResponseEntity<Map> asOtherOwner = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(otherOwner.accessToken())), Map.class);
+        assertThat(asOtherOwner.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
     private TestPlatformAuth.Registered registerPlatformAdmin(String emailPrefix) {
         return registerPlatformAdmin(emailPrefix, PlatformRole.PLATFORM_ADMIN);
     }
@@ -285,7 +418,10 @@ class PaymentsApiTests {
                 new HttpEntity<>(null, TestPlatformAuth.authHeaders(admin.accessToken())), Map.class);
     }
 
-    private UUID createBookingForPayment(String prefix, BigDecimal price) {
+    private record BookingForPayment(UUID bookingId, Registered customer, Registered owner) {
+    }
+
+    private BookingForPayment createBookingForPayment(String prefix, BigDecimal price) {
         String runId = UUID.randomUUID().toString();
         Registered customer = TestAuth.registerCustomer(restTemplate, prefix + "customer-" + runId + "@example.com");
         Registered owner = TestAuth.registerOwner(restTemplate, prefix + "owner-" + runId + "@example.com");
@@ -311,6 +447,39 @@ class PaymentsApiTests {
         var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, price);
         Map<?, ?> booking = restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
                 new HttpEntity<>(bookingRequest, TestAuth.authHeaders(customer.accessToken())), Map.class).getBody();
-        return UUID.fromString(booking.get("id").toString());
+        return new BookingForPayment(UUID.fromString(booking.get("id").toString()), customer, owner);
+    }
+
+    private UUID createProvider(Registered owner, String name) {
+        var request = new CreateProviderRequest(owner.userId(), name, "beauty");
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
+                new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        return UUID.fromString(response.getBody().get("id").toString());
+    }
+
+    private UUID createService(Registered owner, UUID providerId, String title, BigDecimal price) {
+        var request = new CreateServiceRequest(title, 30, price, "USD");
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers/" + providerId + "/services",
+                HttpMethod.POST, new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        return UUID.fromString(response.getBody().get("id").toString());
+    }
+
+    private UUID createSlot(Registered owner, UUID providerId, Instant startsAt, Instant endsAt) {
+        var request = new CreateAvailabilitySlotRequest(startsAt, endsAt);
+        ResponseEntity<Map> response = restTemplate.exchange(
+                "/api/v1/providers/" + providerId + "/availability-slots", HttpMethod.POST,
+                new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        return UUID.fromString(response.getBody().get("id").toString());
+    }
+
+    private UUID createBooking(Registered customer, UUID serviceId, UUID slotId, BigDecimal price) {
+        var request = new CreateBookingRequest(customer.userId(), serviceId, slotId, price);
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
+                new HttpEntity<>(request, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        return UUID.fromString(response.getBody().get("id").toString());
     }
 }
