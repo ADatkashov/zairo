@@ -1,11 +1,14 @@
 package com.zairo.factory.payments;
 
+import com.zairo.factory.booking.AvailabilitySlot;
+import com.zairo.factory.booking.AvailabilitySlotRepository;
 import com.zairo.factory.booking.Booking;
 import com.zairo.factory.booking.BookingRepository;
 import com.zairo.factory.booking.BookingService;
 import com.zairo.factory.paymentprovider.PaymentProvider;
 import com.zairo.factory.paymentprovider.PaymentProvider.PaymentInitiation;
 import com.zairo.factory.paymentprovider.PaymentProviderName;
+import com.zairo.factory.providers.ProviderOwnership;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,23 +23,28 @@ public class PaymentsService {
 
     private final PaymentRepository paymentRepository;
     private final BookingRepository bookingRepository;
+    private final AvailabilitySlotRepository availabilitySlotRepository;
     private final BookingService bookingService;
     private final PaymentProvider paymentProvider;
     private final PaymentProviderName providerName;
+    private final ProviderOwnership providerOwnership;
     private final ApplicationEventPublisher eventPublisher;
     private final String successUrl;
     private final String failureUrl;
 
     public PaymentsService(PaymentRepository paymentRepository, BookingRepository bookingRepository,
-            BookingService bookingService, PaymentProvider paymentProvider,
-            @Value("${payment.provider:mock}") String providerName, ApplicationEventPublisher eventPublisher,
+            AvailabilitySlotRepository availabilitySlotRepository, BookingService bookingService,
+            PaymentProvider paymentProvider, @Value("${payment.provider:mock}") String providerName,
+            ProviderOwnership providerOwnership, ApplicationEventPublisher eventPublisher,
             @Value("${payment.return.success-url:}") String successUrl,
             @Value("${payment.return.failure-url:}") String failureUrl) {
         this.paymentRepository = paymentRepository;
         this.bookingRepository = bookingRepository;
+        this.availabilitySlotRepository = availabilitySlotRepository;
         this.bookingService = bookingService;
         this.paymentProvider = paymentProvider;
         this.providerName = PaymentProviderName.valueOf(providerName.toUpperCase());
+        this.providerOwnership = providerOwnership;
         this.eventPublisher = eventPublisher;
         this.successUrl = successUrl;
         this.failureUrl = failureUrl;
@@ -58,10 +66,11 @@ public class PaymentsService {
      * defeat that guarantee.
      */
     @Transactional
-    public Payment createPayment(UUID bookingId) {
+    public Payment createPayment(UUID bookingId, UUID callerId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
                         + bookingId));
+        requireCustomerOrProviderOwner(booking, callerId);
 
         Payment payment = paymentRepository.findByBookingId(bookingId).map(existing -> {
             if (existing.getStatus() != PaymentStatus.FAILED) {
@@ -80,6 +89,37 @@ public class PaymentsService {
 
         charge(payment);
         return paymentRepository.save(payment);
+    }
+
+    /**
+     * Restricted to the two parties involved: the booking's own customer, or
+     * the owner of the provider the booking's slot belongs to — same check
+     * as core {@code BookingController.getById} (see PR #57) and the
+     * vertical booking {@code getBooking} methods (see PR #59), reused here
+     * rather than reinvented. Authorization is resolved from the booking
+     * referenced by {@code bookingId}, never from the payment row itself —
+     * a payment has no owner of its own to trust.
+     */
+    public Payment getPaymentForBooking(UUID bookingId, UUID callerId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
+                        + bookingId));
+        requireCustomerOrProviderOwner(booking, callerId);
+
+        return paymentRepository.findByBookingId(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "No payment for booking: " + bookingId));
+    }
+
+    /** See {@link #getPaymentForBooking} and {@code BookingController.getById}'s own doc comment. */
+    private void requireCustomerOrProviderOwner(Booking booking, UUID callerId) {
+        if (booking.getUserId().equals(callerId)) {
+            return;
+        }
+        AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Availability slot not found: " + booking.getAvailabilitySlotId()));
+        providerOwnership.requireOwner(slot.getProviderId(), callerId);
     }
 
     /**
