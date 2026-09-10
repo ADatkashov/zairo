@@ -49,8 +49,9 @@ public class PaymentsController {
             + "the owner of the provider it belongs to.",
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @ApiResponse(responseCode = "404", ref = "NotFound", description = "The booking doesn't exist.")
-    @ApiResponse(responseCode = "409", description = "This booking already has a payment that isn't FAILED "
-            + "(so there's nothing to retry).",
+    @ApiResponse(responseCode = "409", description = "Either the booking isn't awaiting payment (its status "
+            + "isn't PENDING_PAYMENT), or it already has a payment that isn't FAILED (so there's nothing to "
+            + "retry).",
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/bookings/{bookingId}/payments")
