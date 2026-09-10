@@ -404,6 +404,88 @@ class PaymentsApiTests {
         assertThat(asOtherOwner.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
+    /**
+     * Proves the fix for P1-2: createPayment now checks the booking's own
+     * status, not just authorization — an otherwise-authorized caller still
+     * can't charge a booking once it has left PENDING_PAYMENT (already paid,
+     * cancelled, or completed). Also proves no payment is ever created for a
+     * rejected attempt: CANCELLED never had one to begin with (still 404
+     * afterwards), and CONFIRMED/COMPLETED keep the exact payment from their
+     * original successful charge — same id, still SUCCEEDED — rather than a
+     * duplicate or an overwrite.
+     */
+    @Test
+    void creatingAPaymentRequiresTheBookingToBeAwaitingPayment() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "statusguard-owner-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Status Guard Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Status Guard Service", new BigDecimal("15.00"));
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+
+        // 1. PENDING_PAYMENT -> allowed for an authorized caller.
+        Registered pendingCustomer = TestAuth.registerCustomer(restTemplate, "statusguard-pending-" + runId
+                + "@example.com");
+        UUID pendingSlot = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+        UUID pendingBookingId = createBooking(pendingCustomer, serviceId, pendingSlot, new BigDecimal("15.00"));
+        var pendingAuth = new HttpEntity<>(null, TestAuth.authHeaders(pendingCustomer.accessToken()));
+        ResponseEntity<Map> pendingPay = restTemplate.exchange("/api/v1/bookings/" + pendingBookingId
+                + "/payments", HttpMethod.POST, pendingAuth, Map.class);
+        assertThat(pendingPay.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(pendingPay.getBody().get("status")).isEqualTo("SUCCEEDED");
+
+        // 2. CONFIRMED (that same booking, now paid) -> rejected; the
+        // existing payment is left exactly as it was.
+        ResponseEntity<Map> confirmedPay = restTemplate.exchange("/api/v1/bookings/" + pendingBookingId
+                + "/payments", HttpMethod.POST, pendingAuth, Map.class);
+        assertThat(confirmedPay.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        ResponseEntity<Map> confirmedPayment = restTemplate.exchange("/api/v1/bookings/" + pendingBookingId
+                + "/payments", HttpMethod.GET, pendingAuth, Map.class);
+        assertThat(confirmedPayment.getBody().get("id")).isEqualTo(pendingPay.getBody().get("id"));
+        assertThat(confirmedPayment.getBody().get("status")).isEqualTo("SUCCEEDED");
+
+        // 3. CANCELLED (never paid) -> rejected; no payment is ever created.
+        Registered cancelledCustomer = TestAuth.registerCustomer(restTemplate, "statusguard-cancelled-" + runId
+                + "@example.com");
+        UUID cancelledSlot = createSlot(owner, providerId, start.plus(1, ChronoUnit.HOURS),
+                start.plus(90, ChronoUnit.MINUTES));
+        UUID cancelledBookingId = createBooking(cancelledCustomer, serviceId, cancelledSlot,
+                new BigDecimal("15.00"));
+        var cancelledAuth = new HttpEntity<>(null, TestAuth.authHeaders(cancelledCustomer.accessToken()));
+        ResponseEntity<Map> cancelResponse = restTemplate.exchange("/api/v1/bookings/" + cancelledBookingId
+                + "/cancel", HttpMethod.POST, cancelledAuth, Map.class);
+        assertThat(cancelResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        ResponseEntity<Map> cancelledPay = restTemplate.exchange("/api/v1/bookings/" + cancelledBookingId
+                + "/payments", HttpMethod.POST, cancelledAuth, Map.class);
+        assertThat(cancelledPay.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        ResponseEntity<Map> cancelledPaymentCheck = restTemplate.exchange("/api/v1/bookings/" + cancelledBookingId
+                + "/payments", HttpMethod.GET, cancelledAuth, Map.class);
+        assertThat(cancelledPaymentCheck.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        // 4. COMPLETED -> rejected; the original successful payment is
+        // left exactly as it was.
+        Registered completedCustomer = TestAuth.registerCustomer(restTemplate, "statusguard-completed-" + runId
+                + "@example.com");
+        UUID completedSlot = createSlot(owner, providerId, start.plus(2, ChronoUnit.HOURS),
+                start.plus(150, ChronoUnit.MINUTES));
+        UUID completedBookingId = createBooking(completedCustomer, serviceId, completedSlot,
+                new BigDecimal("15.00"));
+        var completedAuth = new HttpEntity<>(null, TestAuth.authHeaders(completedCustomer.accessToken()));
+        ResponseEntity<Map> completedFirstPay = restTemplate.exchange("/api/v1/bookings/" + completedBookingId
+                + "/payments", HttpMethod.POST, completedAuth, Map.class);
+        assertThat(completedFirstPay.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        ResponseEntity<Map> completeResponse = restTemplate.exchange("/api/v1/bookings/" + completedBookingId
+                + "/complete", HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())),
+                Map.class);
+        assertThat(completeResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        ResponseEntity<Map> completedPay = restTemplate.exchange("/api/v1/bookings/" + completedBookingId
+                + "/payments", HttpMethod.POST, completedAuth, Map.class);
+        assertThat(completedPay.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        ResponseEntity<Map> completedPaymentCheck = restTemplate.exchange("/api/v1/bookings/" + completedBookingId
+                + "/payments", HttpMethod.GET, completedAuth, Map.class);
+        assertThat(completedPaymentCheck.getBody().get("id")).isEqualTo(completedFirstPay.getBody().get("id"));
+        assertThat(completedPaymentCheck.getBody().get("status")).isEqualTo("SUCCEEDED");
+    }
+
     private TestPlatformAuth.Registered registerPlatformAdmin(String emailPrefix) {
         return registerPlatformAdmin(emailPrefix, PlatformRole.PLATFORM_ADMIN);
     }
