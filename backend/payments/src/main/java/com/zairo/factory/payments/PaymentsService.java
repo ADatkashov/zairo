@@ -5,6 +5,8 @@ import com.zairo.factory.booking.AvailabilitySlotRepository;
 import com.zairo.factory.booking.Booking;
 import com.zairo.factory.booking.BookingRepository;
 import com.zairo.factory.booking.BookingService;
+import com.zairo.factory.booking.BookingStatus;
+import com.zairo.factory.booking.InvalidBookingStateException;
 import com.zairo.factory.paymentprovider.PaymentProvider;
 import com.zairo.factory.paymentprovider.PaymentProvider.PaymentInitiation;
 import com.zairo.factory.paymentprovider.PaymentProviderName;
@@ -63,7 +65,9 @@ public class PaymentsService {
      * keeps {@code paymentId} stable across retries, which is exactly the
      * idempotency key {@link PaymentProvider} promises a real provider
      * (see its doc comment) — minting a fresh id per retry would silently
-     * defeat that guarantee.
+     * defeat that guarantee. A FAILED retry never trips the status guard
+     * below: {@code BookingService.cancelUnpaidBooking}'s own doc comment
+     * confirms the booking stays PENDING_PAYMENT through exactly this case.
      */
     @Transactional
     public Payment createPayment(UUID bookingId, UUID callerId) {
@@ -71,6 +75,11 @@ public class PaymentsService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
                         + bookingId));
         requireCustomerOrProviderOwner(booking, callerId);
+
+        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            throw new InvalidBookingStateException("Booking is not awaiting payment: " + bookingId + " (status="
+                    + booking.getStatus() + ")");
+        }
 
         Payment payment = paymentRepository.findByBookingId(bookingId).map(existing -> {
             if (existing.getStatus() != PaymentStatus.FAILED) {
