@@ -172,18 +172,11 @@ class _CategoryExpansionTileState extends State<_CategoryExpansionTile> {
                       shape: BoxShape.circle,
                     ),
                     child: Center(
-                      child: category.icon != null
-                          ? Text(
-                              category.icon!,
-                              style: const TextStyle(
-                                fontSize: FactoryIconSize.md,
-                              ),
-                            )
-                          : Icon(
-                              iconForCategory(category.code),
-                              size: FactoryIconSize.md,
-                              color: accent?.color ?? colors.textSecondary,
-                            ),
+                      child: Icon(
+                        iconForCategory(category.code),
+                        size: FactoryIconSize.md,
+                        color: accent?.color ?? colors.textSecondary,
+                      ),
                     ),
                   ),
                   const SizedBox(width: FactorySpacing.space3),
