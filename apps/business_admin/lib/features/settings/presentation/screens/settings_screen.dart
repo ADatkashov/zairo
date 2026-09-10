@@ -15,7 +15,8 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final themeMode = ref.watch(themeModeProvider);
+    final themeMode =
+        ref.watch(themeModeControllerProvider).value ?? ThemeMode.system;
     final locale = ref.watch(localeControllerProvider).value;
 
     return Scaffold(
@@ -24,11 +25,14 @@ class SettingsScreen extends ConsumerWidget {
         children: [
           SwitchListTile(
             title: Text(l10n.darkModeTitle),
-            subtitle: Text(l10n.darkModeSubtitle(_themeModeLabel(l10n, themeMode))),
+            subtitle: Text(
+              l10n.darkModeSubtitle(_themeModeLabel(l10n, themeMode)),
+            ),
             value: themeMode == ThemeMode.dark,
             onChanged: (value) {
-              ref.read(themeModeProvider.notifier).state =
-                  value ? ThemeMode.dark : ThemeMode.light;
+              ref
+                  .read(themeModeControllerProvider.notifier)
+                  .setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
             },
           ),
           ListTile(
@@ -40,9 +44,8 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             title: Text(l10n.billingSettingsRowTitle),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const BillingScreen()),
-            ),
+            onTap: () => Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const BillingScreen())),
           ),
         ],
       ),
@@ -95,7 +98,11 @@ class SettingsScreen extends ConsumerWidget {
 }
 
 class _LanguageOption extends StatelessWidget {
-  const _LanguageOption({required this.label, required this.selected, required this.onTap});
+  const _LanguageOption({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -116,12 +123,13 @@ class _LanguageOption extends StatelessWidget {
 }
 
 String _themeModeLabel(AppLocalizations l10n, ThemeMode mode) => switch (mode) {
-      ThemeMode.system => l10n.themeModeSystem,
-      ThemeMode.light => l10n.themeModeLight,
-      ThemeMode.dark => l10n.themeModeDark,
-    };
+  ThemeMode.system => l10n.themeModeSystem,
+  ThemeMode.light => l10n.themeModeLight,
+  ThemeMode.dark => l10n.themeModeDark,
+};
 
-String _languageLabel(AppLocalizations l10n, Locale? locale) => switch (locale?.languageCode) {
+String _languageLabel(AppLocalizations l10n, Locale? locale) =>
+    switch (locale?.languageCode) {
       null => l10n.languageSystemDefault,
       'ru' => 'Русский',
       'kk' => 'Қазақша',

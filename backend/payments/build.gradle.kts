@@ -10,6 +10,14 @@ dependencies {
     implementation(project(":booking"))
     implementation(project(":money"))
 
+    // Charging/reading a booking's payment is restricted to that booking's
+    // own customer or its provider's own owner — same "who is this caller"
+    // (CurrentUser) and "does this caller own this provider" (ProviderOwnership)
+    // dependencies booking itself already takes for its own owner-only
+    // endpoints, reused here rather than a new auth mechanism.
+    implementation(project(":auth"))
+    implementation(project(":providers"))
+
     // The PaymentProvider port itself now lives in its own dependency-free
     // module — see payment-provider/build.gradle.kts for why (subscriptions
     // needed the same port without a Gradle cycle).

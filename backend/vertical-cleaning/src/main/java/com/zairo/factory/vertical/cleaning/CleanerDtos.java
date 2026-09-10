@@ -25,6 +25,13 @@ public final class CleanerDtos {
             String photoUrl) {
     }
 
+    public record UpdatePhotoRequest(
+            @Size(max = 500) @Schema(description = "Upload via POST /uploads first, then pass its returned url "
+                    + "here. Null/blank removes the photo.",
+                    example = "http://localhost:8080/api/v1/uploads/a1b2c3d4.jpg")
+            String photoUrl) {
+    }
+
     public record CleanerResponse(
             @Schema(example = "550e8400-e29b-41d4-a716-446655440000") UUID id,
             @Schema(example = "550e8400-e29b-41d4-a716-446655440000") UUID providerId,

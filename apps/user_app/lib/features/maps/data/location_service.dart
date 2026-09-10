@@ -32,7 +32,7 @@ class MockLocationService implements LocationService {
 /// Throws if location services are disabled or permission is denied —
 /// callers already treat a failed lookup as "no location, degrade
 /// gracefully" (see discovery_providers.dart's searchResultsProvider,
-/// home_screen.dart's use of `.valueOrNull`).
+/// home_screen.dart's use of `.value`).
 class DeviceLocationService implements LocationService {
   @override
   Future<GeoPoint> getCurrentLocation() async {

@@ -44,11 +44,20 @@ class PaymentAdminApiTests {
     @Test
     void listsFailedRefundsForAnyAuthenticatedPlatformRoleButNotForAnonymousCallers() {
         String runId = UUID.randomUUID().toString();
-        UUID bookingId = createBookingForPayment(runId, new BigDecimal("22.00"));
-        UUID paymentId = UUID.fromString(restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments",
-                null, Map.class).getBody().get("id").toString());
+        BookingForPayment bookingForPayment = createBookingForPayment(runId, new BigDecimal("22.00"));
+        UUID bookingId = bookingForPayment.bookingId();
+        UUID paymentId = UUID.fromString(restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(bookingForPayment.customer().accessToken())), Map.class)
+                .getBody().get("id").toString());
+        // Refund is PLATFORM_ADMIN-only (see PaymentsController.refund) —
+        // needs its own admin account to actually reach PaymentsService and
+        // produce the REFUND_FAILED state this test is about.
+        var admin = TestPlatformAuth.registerPlatformAdmin(restTemplate, platformAdminAccountRepository,
+                "payments-admin-" + runId + "@factory.internal", PlatformRole.PLATFORM_ADMIN);
         failureController.failNextRefund = true;
-        restTemplate.postForEntity("/api/v1/payments/" + paymentId + "/refund", null, Map.class);
+        restTemplate.exchange("/api/v1/payments/" + paymentId + "/refund", HttpMethod.POST,
+                new HttpEntity<>(null, TestPlatformAuth.authHeaders(admin.accessToken())), Map.class);
 
         ResponseEntity<Map> unauthenticated = restTemplate.getForEntity("/api/v1/platform/payments/failed-refunds",
                 Map.class);
@@ -68,7 +77,10 @@ class PaymentAdminApiTests {
         });
     }
 
-    private UUID createBookingForPayment(String runId, BigDecimal price) {
+    private record BookingForPayment(UUID bookingId, Registered customer) {
+    }
+
+    private BookingForPayment createBookingForPayment(String runId, BigDecimal price) {
         Registered customer = TestAuth.registerCustomer(restTemplate, "refund-admin-cust-" + runId + "@example.com");
         Registered owner = TestAuth.registerOwner(restTemplate, "refund-admin-owner-" + runId + "@example.com");
 
@@ -92,6 +104,6 @@ class PaymentAdminApiTests {
         var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, price);
         Map<?, ?> booking = restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
                 new HttpEntity<>(bookingRequest, TestAuth.authHeaders(customer.accessToken())), Map.class).getBody();
-        return UUID.fromString(booking.get("id").toString());
+        return new BookingForPayment(UUID.fromString(booking.get("id").toString()), customer);
     }
 }

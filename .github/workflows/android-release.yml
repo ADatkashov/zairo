@@ -18,16 +18,18 @@ on:
         default: both
       api_base_url:
         description: >-
-          Backend URL to bake in (optional). Needed to test on a physical
-          device over Wi-Fi — a real phone can't reach `localhost` or the
-          Android-emulator-only `10.0.2.2`. Point it at your computer's LAN
-          IP where the backend is running, e.g.
-          http://192.168.1.23:8080/api/v1 (include the /api/v1 suffix).
-          Leave blank to keep the app's normal auto-detected default (fine
-          for an emulator, not for a physical device).
+          Backend URL to bake in. Defaults to the live Render backend, so a
+          plain release build works on a physical device out of the box.
+          Override only to point at something else — e.g. your computer's
+          LAN IP (http://192.168.1.23:8080/api/v1, include the /api/v1
+          suffix) to test a local backend on a physical device over Wi-Fi,
+          since a real phone can't reach `localhost` or the
+          Android-emulator-only `10.0.2.2`. Clear it (empty string) to fall
+          back to the app's auto-detected localhost/10.0.2.2 default, which
+          only works in an emulator.
         required: false
         type: string
-        default: ""
+        default: "https://zairo-backend.onrender.com/api/v1"
 
 # To create a GitHub Release and attach files to it. Every other workflow
 # in this repo stays on the default `contents: read` — this is the one
@@ -80,12 +82,12 @@ jobs:
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       # AGP/Kotlin toolchain — same version as build-artifacts.yml's
       # android-apk job.
       - name: Set up JDK 21
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "21"
@@ -163,8 +165,11 @@ jobs:
       # relevant for user_app; business_admin ignores it harmlessly.
       #
       # API_BASE_URL: from this workflow's own `api_base_url` input (see
-      # environment.dart in both apps) — empty by default, which keeps the
-      # app's normal auto-detected localhost/10.0.2.2 behavior unchanged.
+      # environment.dart in both apps) — defaults to the live Render
+      # backend (see this input's own description above), so a plain
+      # dispatch produces a build that actually works on a physical
+      # device. Clearing the input falls back to the app's auto-detected
+      # localhost/10.0.2.2 behavior (emulator only).
       - name: flutter build apk --release
         working-directory: apps/${{ matrix.app }}
         env:

@@ -75,6 +75,12 @@ class BeautyAdminApi {
     return _dioClient.delete('/beauty/masters/$masterId/services/$serviceId');
   }
 
+  /// Owner-only — replaces the master's photo (null removes it).
+  Future<AdminMaster> updateMasterPhoto(String masterId, String? photoUrl) async {
+    final response = await _dioClient.put('/beauty/masters/$masterId/photo', data: {'photoUrl': photoUrl});
+    return AdminMaster.fromJson(response.data as Map<String, dynamic>);
+  }
+
   /// Soft-delete — see backend's Master.deactivate(). Deactivated masters
   /// stop appearing in provider listings (both here and in the customer app).
   Future<void> deactivateMaster(String masterId) {

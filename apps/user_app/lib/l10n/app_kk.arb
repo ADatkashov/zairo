@@ -70,6 +70,7 @@
   "errorHomeFeedLoadFailed": "Ленталы жүктеу мүмкін болмады.",
   "homeTopRatedTitle": "Сізге жақын үздіктер",
   "homeAvailabilityHero": "{count, plural, other{Сізге жақын жерде {count} провайдерде бүгін бос уақыт бар}}",
+  "homeAvailabilityEyebrow": "Бүгін жақын жерде",
   "homeGreeting": "Сәлем, {name}",
   "homeGreetingGuest": "Қош келдіңіз",
   "homeLocationUnknown": "Сіздің орналасқан жеріңіз",
@@ -85,6 +86,7 @@
   "allCategoriesSearchEmptyMessage": "«{query}» бойынша ештеңе табылмады. Басқа сөзді байқап көріңіз.",
   "errorCategoriesLoadFailed": "Санаттарды жүктеу мүмкін болмады.",
   "homeBookAgainTitle": "Қайта брондау",
+  "homeRecommendedTitle": "Сізге ұсынамыз",
 
   "searchHint": "Қызметтерді немесе провайдерлерді іздеу",
   "searchEmptyTitle": "Қызметті іздеңіз",
@@ -128,6 +130,7 @@
   "nextAvailableTodayLabel": "Бүгін {time}",
   "nextAvailableTomorrowLabel": "Ертең {time}",
   "cardDistanceAndVertical": "{distanceKm} км · {vertical}",
+  "distanceKmShort": "{distanceKm} км",
   "providerDistanceAway": "{distanceKm} км қашықтықта",
   "mapDistanceFromYou": "Сізден {distanceKm} км қашықтықта",
 
@@ -140,10 +143,21 @@
   "bookingStatusCompleted": "Аяқталды",
   "bookingStatusCancelled": "Бас тартылды",
 
+  "bookingsTabUpcoming": "Жақында",
+  "bookingsTabCompleted": "Аяқталды",
+  "bookingsTabCancelled": "Бас тартылды",
+
   "myFavoritesTitle": "Таңдаулылар",
   "favoritesEmptyTitle": "Әзірге таңдаулылар жоқ",
   "favoritesEmptyMessage": "Таңдаулыға қосқан провайдерлер осында пайда болады.",
   "errorFavoritesLoadFailed": "Таңдаулыларды жүктеу мүмкін болмады.",
+
+  "notificationsTitle": "Хабарландырулар",
+  "notificationsEmptyTitle": "Әзірге хабарландыру жоқ",
+  "notificationsEmptyMessage": "Бронь жаңартулары мен еске салулар осында пайда болады.",
+  "errorNotificationsLoadFailed": "Хабарландыруларды жүктеу мүмкін болмады.",
+  "notificationsMarkAllReadButton": "Барлығын оқылды деп белгілеу",
+  "notificationBellTooltip": "Хабарландырулар",
   "favoriteAddTooltip": "Таңдаулыларға қосу",
   "favoriteRemoveTooltip": "Таңдаулылардан алып тастау",
   "ratingSemanticLabel": "5-тен {rating}",
@@ -207,6 +221,13 @@
   "deleteVehicleConfirmTitle": "Бұл көлікті жою керек пе?",
   "deleteVehicleConfirmMessage": "{vehicle} көліктер тізімінен жойылады.",
   "myVehiclesButton": "Менің көліктерім",
+
+  "supportTitle": "Қолдау қызметі",
+  "supportIntro": "Сұрағыңыз бар ма немесе бір нәрсе дұрыс жұмыс істемей тұр ма? Бізге тікелей жазыңыз.",
+  "supportTelegramLabel": "Telegram",
+  "aboutTitle": "Қолданба туралы",
+  "aboutVersionLoading": "Нұсқа жүктелуде…",
+  "aboutVersionLabel": "Нұсқа {version} ({buildNumber})",
   "errorAutoBookingFailed": "Брондауды аяқтау мүмкін болмады — механик бұл қызметті ұсынбауы мүмкін, немесе уақыт жаңа ғана иеленген. Қайта көріңіз.",
   "errorCleaningBookingFailed": "Брондауды аяқтау мүмкін болмады — тазалаушы бұл қызметті ұсынбауы мүмкін, немесе уақыт жаңа ғана иеленген. Қайта көріңіз.",
   "errorStaffBookingFailed": "Брондауды аяқтау мүмкін болмады — қызметкер бұл қызметті ұсынбауы мүмкін, немесе уақыт жаңа ғана иеленген. Қайта көріңіз.",
@@ -231,6 +252,7 @@
 
   "bookingsLoggedOutPrompt": "Брондарыңызды көру үшін кіріңіз",
   "favoritesLoggedOutPrompt": "Таңдаулыларды көру үшін кіріңіз",
+  "notificationsLoggedOutPrompt": "Хабарландыруларды көру үшін кіріңіз",
   "settingsButtonTooltip": "Баптаулар",
 
   "errorBookingNotCancellable": "Бұл брондауды енді бас тартуға болмайды.",
@@ -240,6 +262,21 @@
   "cancelBookingConfirmMessage": "Егер төлеген болсаңыз, ақша автоматты түрде қайтарылады.",
   "cancelBookingKeepButton": "Брондауды сақтау",
   "cancelBookingConfirmButton": "Брондаудан бас тарту",
+
+  "favoritesClearAllButton": "Барлығын тазарту",
+  "favoritesClearAllConfirmTitle": "Барлық таңдаулыларды тазарту керек пе?",
+  "favoritesClearAllConfirmMessage": "Барлық провайдерлер таңдаулылардан жойылады. Бұл әрекетті болдырмауға болмайды.",
+  "favoritesClearAllKeepButton": "Тазартпау",
   "bookingCancelledMessage": "Брондаудан бас тартылды.",
-  "paymentStatusRefunded": "Қайтарылды"
+  "paymentStatusRefunded": "Қайтарылды",
+
+  "changeAvatarDialogTitle": "Аватарды өзгерту",
+  "changeAvatarChoosePhotoLabel": "Фото таңдау",
+  "changeAvatarCancelButton": "Бас тарту",
+  "changeAvatarSaveButton": "Сақтау",
+  "changeAvatarRemoveButton": "Фотоны өшіру",
+  "changeAvatarErrorReadFileFailed": "Файлды оқу мүмкін болмады: {error}",
+  "changeAvatarErrorSaveFailed": "Аватарды жаңарту мүмкін болмады: {error}",
+  "imagePickerCameraLabel": "Камера",
+  "imagePickerGalleryLabel": "Галерея"
 }

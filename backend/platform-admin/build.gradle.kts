@@ -11,7 +11,7 @@ dependencies {
     // PlatformAuthFilter is a much smaller addition than adopting
     // spring-boot-starter-security, which would auto-secure every endpoint
     // in the whole platform-api deploy unit, not just this module's.
-    implementation("org.springframework.security:spring-security-crypto:7.1.0")
+    implementation("org.springframework.security:spring-security-crypto:7.1.1")
 
     implementation("io.jsonwebtoken:jjwt-api:0.13.0")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.13.0")

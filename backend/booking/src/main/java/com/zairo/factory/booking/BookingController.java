@@ -46,12 +46,15 @@ public class BookingController {
             Reserves a Service at an Availability slot for a user — atomically claims the slot \
             (OPEN -> BOOKED), so two customers racing for the same slot resolve to one 201 and one 409. \
             Self-service only: the caller must be the exact user named by `userId` — can't book on behalf \
-            of someone else.
+            of someone else. The created booking's `totalPrice`/`currency` always come from the service's \
+            own current price — the request's `totalPrice` field is ignored, not trusted, so a client can't \
+            set its own price.
 
             **Workflow**: `Search -> Get provider details -> Create booking` — this is the last step, using \
             a `serviceId`/`availabilitySlotId` pair found via GET /search/providers and \
             GET /providers/{id}/availability-slots.""")
-    @ApiResponse(responseCode = "201", description = "Booking created, status PENDING, slot now BOOKED")
+    @ApiResponse(responseCode = "201", description = "Booking created, status PENDING, slot now BOOKED, priced "
+            + "from the service's own current price")
     @ApiResponse(responseCode = "400", ref = "BadRequest")
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @ApiResponse(responseCode = "402", description = "The provider owner's subscription plan doesn't allow "
@@ -59,9 +62,10 @@ public class BookingController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @ApiResponse(responseCode = "403", description = "userId doesn't match the caller's own id.",
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
-    @ApiResponse(responseCode = "404", ref = "NotFound", description = "The availability slot doesn't exist.")
-    @ApiResponse(responseCode = "409", description = "The slot isn't OPEN, or was just claimed by a "
-            + "concurrent request for someone else.",
+    @ApiResponse(responseCode = "404", ref = "NotFound", description = "The service or the availability slot "
+            + "doesn't exist.")
+    @ApiResponse(responseCode = "409", description = "The slot isn't OPEN, was just claimed by a concurrent "
+            + "request for someone else, or the service belongs to a different provider than the slot.",
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/bookings")
@@ -76,13 +80,30 @@ public class BookingController {
         return BookingResponse.from(booking);
     }
 
-    @Operation(summary = "Get a booking by id")
+    @Operation(summary = "Get a booking by id", description = "Restricted to the two parties involved: the "
+            + "booking's own customer, or the owner of the provider the booking's slot belongs to.")
     @ApiResponse(responseCode = "200", description = "The booking")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "The caller is neither the booking's own customer nor "
+            + "the owner of the provider it belongs to.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/bookings/{id}")
-    public BookingResponse getById(@Parameter(description = "The booking's id.") @PathVariable UUID id) {
-        return bookingRepository.findById(id).map(BookingResponse::from)
+    public BookingResponse getById(@Parameter(description = "The booking's id.") @PathVariable UUID id,
+            HttpServletRequest httpRequest) {
+        UUID callerId = CurrentUser.requireUserId(httpRequest);
+        Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: " + id));
+
+        if (!booking.getUserId().equals(callerId)) {
+            AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            "Availability slot not found: " + booking.getAvailabilitySlotId()));
+            providerOwnership.requireOwner(slot.getProviderId(), callerId);
+        }
+
+        return BookingResponse.from(booking);
     }
 
     @Operation(summary = "Mark a booking complete", description = "Only a CONFIRMED booking can be completed "

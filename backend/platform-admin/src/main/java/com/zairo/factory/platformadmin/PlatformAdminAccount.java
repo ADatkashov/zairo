@@ -46,6 +46,9 @@ public class PlatformAdminAccount {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
     protected PlatformAdminAccount() {
     }
 
@@ -87,5 +90,27 @@ public class PlatformAdminAccount {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    /** Null/blank removes the avatar — see PlatformAdminDtos.UpdateAvatarRequest. */
+    public void updateAvatar(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+        this.updatedAt = Instant.now();
+    }
+
+    /** Soft-revoke: an existing JWT stays valid until it expires (this phase has no revocation list), but
+     * login() and the auth filter's implicit "must still exist and be active" check both close on the next one. */
+    void deactivate() {
+        this.active = false;
+        this.updatedAt = Instant.now();
+    }
+
+    void reactivate() {
+        this.active = true;
+        this.updatedAt = Instant.now();
     }
 }

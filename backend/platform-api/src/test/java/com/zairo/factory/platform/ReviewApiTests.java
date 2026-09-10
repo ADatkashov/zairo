@@ -78,7 +78,8 @@ class ReviewApiTests {
         assertThat(tooEarly.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
 
         // Completing requires CONFIRMED first, which requires payment (ADR-0006).
-        restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments", null, Map.class);
+        restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
         ResponseEntity<Map> completed = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/complete",
                 HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
         assertThat(completed.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -180,7 +181,8 @@ class ReviewApiTests {
         UUID bookingId = UUID.fromString(restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
                 new HttpEntity<>(bookingRequest, TestAuth.authHeaders(customer.accessToken())), Map.class).getBody()
                 .get("id").toString());
-        restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments", null, Map.class);
+        restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
         restTemplate.exchange("/api/v1/bookings/" + bookingId + "/complete", HttpMethod.POST,
                 new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
         UUID reviewId = UUID.fromString(restTemplate.exchange("/api/v1/bookings/" + bookingId + "/reviews",
@@ -253,7 +255,8 @@ class ReviewApiTests {
         UUID bookingId = UUID.fromString(restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
                 new HttpEntity<>(bookingRequest, TestAuth.authHeaders(customer.accessToken())), Map.class).getBody()
                 .get("id").toString());
-        restTemplate.postForEntity("/api/v1/bookings/" + bookingId + "/payments", null, Map.class);
+        restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
 
         return new BookingContext(owner, customer, bookingId);
     }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../data/geo_point.dart';
@@ -11,7 +12,11 @@ import 'map_renderer.dart';
 /// than real map tiles.
 class MockMapRenderer implements MapRenderer {
   @override
-  Widget build(BuildContext context, {required GeoPoint target, required String targetLabel}) {
+  Widget build(
+    BuildContext context, {
+    required GeoPoint target,
+    required String targetLabel,
+  }) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
@@ -30,16 +35,13 @@ class MockMapRenderer implements MapRenderer {
                 border: Border.all(color: theme.colorScheme.outlineVariant),
               ),
               child: Icon(
-                Icons.location_on,
+                Symbols.location_on_rounded,
                 size: 64,
                 color: theme.colorScheme.primary,
               ),
             ),
             const SizedBox(height: 16),
-            Text(
-              l10n.mapPlaceholderTitle,
-              style: theme.textTheme.titleMedium,
-            ),
+            Text(l10n.mapPlaceholderTitle, style: theme.textTheme.titleMedium),
             const SizedBox(height: 4),
             Text(
               l10n.mapPlaceholderMessage,
@@ -47,7 +49,9 @@ class MockMapRenderer implements MapRenderer {
               style: theme.textTheme.bodySmall,
             ),
             const SizedBox(height: 16),
-            Text('${target.latitude.toStringAsFixed(4)}, ${target.longitude.toStringAsFixed(4)}'),
+            Text(
+              '${target.latitude.toStringAsFixed(4)}, ${target.longitude.toStringAsFixed(4)}',
+            ),
           ],
         ),
       ),

@@ -88,6 +88,12 @@ class AuthController extends AsyncNotifier<UserSummary?> {
     state = const AsyncValue.data(null);
   }
 
+  /// Pass null to remove the avatar.
+  Future<void> updateAvatar(String? avatarUrl) async {
+    final updated = await ref.read(authApiProvider).updateAvatar(avatarUrl);
+    state = AsyncValue.data(updated);
+  }
+
   Future<void> _applyTokens(AuthTokens tokens) async {
     await ref.read(tokenStorageProvider).save(tokens);
     ref.read(authTokenHolderProvider).update(tokens.accessToken);
