@@ -114,14 +114,28 @@ class _BusinessesTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final businessesAsync = ref.watch(platformBusinessesProvider(session.accessToken));
+    Future<void> refresh() => ref.refresh(platformBusinessesProvider(session.accessToken).future);
     return Scaffold(
       body: businessesAsync.when(
         data: (businesses) {
           if (businesses.isEmpty) {
-            return const Center(child: Text('No businesses yet.'));
+            return RefreshIndicator(
+              onRefresh: refresh,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  SizedBox(
+                    height: 400,
+                    child: Center(child: Text('No businesses yet.')),
+                  ),
+                ],
+              ),
+            );
           }
           final sorted = [...businesses]..sort((a, b) => a.status == b.status ? 0 : (a.status == 'PENDING' ? -1 : 1));
-          return ListView(
+          return RefreshIndicator(
+            onRefresh: refresh,
+            child: ListView(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             children: [
               for (final business in sorted)
@@ -152,6 +166,7 @@ class _BusinessesTab extends ConsumerWidget {
                   ),
                 ),
             ],
+            ),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -216,33 +231,48 @@ class _AuditLogTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final entriesAsync = ref.watch(platformAuditLogProvider(platformToken));
+    Future<void> refresh() => ref.refresh(platformAuditLogProvider(platformToken).future);
     return Scaffold(
       body: entriesAsync.when(
         data: (entries) {
           if (entries.isEmpty) {
-            return const Center(child: Text('No activity recorded yet.'));
+            return RefreshIndicator(
+              onRefresh: refresh,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  SizedBox(
+                    height: 400,
+                    child: Center(child: Text('No activity recorded yet.')),
+                  ),
+                ],
+              ),
+            );
           }
-          return ListView.separated(
-            padding: const EdgeInsets.all(FactorySpacing.space4),
-            itemCount: entries.length,
-            separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space2),
-            itemBuilder: (context, index) {
-              final entry = entries[index];
-              final subtitleParts = <String>[
-                entry.actorEmail,
-                if (entry.previousValue != null || entry.newValue != null)
-                  '${entry.previousValue ?? '—'} → ${entry.newValue ?? '—'}',
-                if (entry.reason != null && entry.reason!.isNotEmpty) entry.reason!,
-              ];
-              return FactorySelectableTile(
-                title: entry.action,
-                subtitle: Text(subtitleParts.join(' · ')),
-                trailing: Text(
-                  formatMonthDayTime(AppLocalizations.of(context)!, entry.createdAt),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              );
-            },
+          return RefreshIndicator(
+            onRefresh: refresh,
+            child: ListView.separated(
+              padding: const EdgeInsets.all(FactorySpacing.space4),
+              itemCount: entries.length,
+              separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space2),
+              itemBuilder: (context, index) {
+                final entry = entries[index];
+                final subtitleParts = <String>[
+                  entry.actorEmail,
+                  if (entry.previousValue != null || entry.newValue != null)
+                    '${entry.previousValue ?? '—'} → ${entry.newValue ?? '—'}',
+                  if (entry.reason != null && entry.reason!.isNotEmpty) entry.reason!,
+                ];
+                return FactorySelectableTile(
+                  title: entry.action,
+                  subtitle: Text(subtitleParts.join(' · ')),
+                  trailing: Text(
+                    formatMonthDayTime(AppLocalizations.of(context)!, entry.createdAt),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                );
+              },
+            ),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -271,7 +301,9 @@ class _StaffTab extends ConsumerWidget {
 
     return Scaffold(
       body: adminsAsync.when(
-        data: (admins) => ListView(
+        data: (admins) => RefreshIndicator(
+          onRefresh: () => ref.refresh(platformAdminsProvider(session.accessToken).future),
+          child: ListView(
           padding: const EdgeInsets.all(FactorySpacing.space4),
           children: [
             for (final admin in admins)
@@ -317,6 +349,7 @@ class _StaffTab extends ConsumerWidget {
                 ),
               ),
           ],
+          ),
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => Center(child: Text('$error')),

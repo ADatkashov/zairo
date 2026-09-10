@@ -103,12 +103,25 @@ class _FavoritesList extends ConsumerWidget {
 
     return favoritesAsync.when(
       data: (favorites) {
+        Future<void> refresh() => ref.refresh(myFavoritesProvider(userId).future);
+
         if (favorites.isEmpty) {
-          return Center(
-            child: FactoryEmptyState(
-              icon: Symbols.favorite_rounded,
-              title: l10n.favoritesEmptyTitle,
-              message: l10n.favoritesEmptyMessage,
+          return RefreshIndicator(
+            onRefresh: refresh,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.6,
+                  child: Center(
+                    child: FactoryEmptyState(
+                      icon: Symbols.favorite_rounded,
+                      title: l10n.favoritesEmptyTitle,
+                      message: l10n.favoritesEmptyMessage,
+                    ),
+                  ),
+                ),
+              ],
             ),
           );
         }
@@ -131,7 +144,9 @@ class _FavoritesList extends ConsumerWidget {
               ),
             ),
             Expanded(
-              child: GridView.builder(
+              child: RefreshIndicator(
+                onRefresh: refresh,
+                child: GridView.builder(
                 padding: const EdgeInsets.all(FactorySpacing.space4),
                 // A 2-column grid of vertical cards (Customer App Redesign
                 // board, 2026-09-05) — Favorites is a saved-items gallery,
@@ -171,6 +186,7 @@ class _FavoritesList extends ConsumerWidget {
                     ),
                   );
                 },
+                ),
               ),
             ),
           ],

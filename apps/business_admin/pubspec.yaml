@@ -13,15 +13,10 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_riverpod: ^3.4.2
   dio: ^5.11.0
-  # Pinned to this exact pre-release: stable 12.0.0's readAsBytes()/
-  # blob-fetch rewrite was found to hang indefinitely on web in manual
-  # testing (no error, no timeout). 12.0.0-beta.1 still has the older
-  # withData/PlatformFile.bytes path (removed later in the 12.0.0 series)
-  # while already using win32 ^6, which the 8.x line doesn't — needed for
-  # compatibility with flutter_secure_storage.
-  file_picker: 12.0.0-beta.1
-  # Avatar/staff-photo change flows: pick from camera/gallery, then
-  # crop/zoom/rotate before upload (see pick_and_crop_image.dart).
+  # Every photo-upload flow (avatar, staff photos, cover photo, portfolio)
+  # picks from camera/gallery, then crops/zooms/rotates before upload (see
+  # pick_and_crop_image.dart) — file_picker's raw file-chooser is no longer
+  # used anywhere in this app.
   image_picker: ^1.2.3
   image_cropper: ^12.2.1
   core_network:

@@ -80,31 +80,37 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen> {
                   ),
                 ),
                 Expanded(
-                  child: filtered.isEmpty
-                      ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(
-                              FactorySpacing.space4,
-                            ),
-                            child: FactoryEmptyState(
-                              icon: Symbols.search_off_rounded,
-                              title: l10n.allCategoriesSearchEmptyTitle,
-                              message: l10n.allCategoriesSearchEmptyMessage(
-                                _filter.trim(),
+                  child: RefreshIndicator(
+                    onRefresh: () => ref.refresh(categoriesProvider.future),
+                    child: filtered.isEmpty
+                        ? ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(
+                                  FactorySpacing.space4,
+                                ),
+                                child: FactoryEmptyState(
+                                  icon: Symbols.search_off_rounded,
+                                  title: l10n.allCategoriesSearchEmptyTitle,
+                                  message: l10n.allCategoriesSearchEmptyMessage(
+                                    _filter.trim(),
+                                  ),
+                                ),
                               ),
+                            ],
+                          )
+                        : ListView.separated(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: FactorySpacing.space2,
                             ),
+                            itemCount: filtered.length,
+                            separatorBuilder: (_, _) =>
+                                Divider(height: 1, color: colors.border),
+                            itemBuilder: (context, index) =>
+                                _CategoryExpansionTile(category: filtered[index]),
                           ),
-                        )
-                      : ListView.separated(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: FactorySpacing.space2,
-                          ),
-                          itemCount: filtered.length,
-                          separatorBuilder: (_, _) =>
-                              Divider(height: 1, color: colors.border),
-                          itemBuilder: (context, index) =>
-                              _CategoryExpansionTile(category: filtered[index]),
-                        ),
+                  ),
                 ),
               ],
             );

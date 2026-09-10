@@ -57,12 +57,26 @@ class _NotificationsList extends ConsumerWidget {
 
     return notificationsAsync.when(
       data: (notifications) {
+        Future<void> refresh() =>
+            ref.refresh(myNotificationsProvider(userId).future);
+
         if (notifications.isEmpty) {
-          return Center(
-            child: FactoryEmptyState(
-              icon: Symbols.notifications_rounded,
-              title: l10n.notificationsEmptyTitle,
-              message: l10n.notificationsEmptyMessage,
+          return RefreshIndicator(
+            onRefresh: refresh,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.6,
+                  child: Center(
+                    child: FactoryEmptyState(
+                      icon: Symbols.notifications_rounded,
+                      title: l10n.notificationsEmptyTitle,
+                      message: l10n.notificationsEmptyMessage,
+                    ),
+                  ),
+                ),
+              ],
             ),
           );
         }
@@ -91,16 +105,19 @@ class _NotificationsList extends ConsumerWidget {
                 ),
               ),
             Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: FactorySpacing.space4,
-                ),
-                itemCount: notifications.length,
-                separatorBuilder: (_, _) =>
-                    const SizedBox(height: FactorySpacing.space3),
-                itemBuilder: (context, index) => _NotificationTile(
-                  notification: notifications[index],
-                  userId: userId,
+              child: RefreshIndicator(
+                onRefresh: refresh,
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: FactorySpacing.space4,
+                  ),
+                  itemCount: notifications.length,
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(height: FactorySpacing.space3),
+                  itemBuilder: (context, index) => _NotificationTile(
+                    notification: notifications[index],
+                    userId: userId,
+                  ),
                 ),
               ),
             ),
