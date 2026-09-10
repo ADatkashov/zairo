@@ -6,6 +6,7 @@ import com.zairo.factory.booking.Booking;
 import com.zairo.factory.booking.BookingRepository;
 import com.zairo.factory.booking.BookingService;
 import com.zairo.factory.booking.SlotNotAvailableException;
+import com.zairo.factory.providers.ProviderOwnership;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
@@ -29,17 +30,19 @@ public class StaffBookingService {
     private final BookingService bookingService;
     private final BookingRepository bookingRepository;
     private final AvailabilitySlotRepository availabilitySlotRepository;
+    private final ProviderOwnership providerOwnership;
 
     public StaffBookingService(StaffRepository staffRepository,
             StaffServiceLinkRepository staffServiceLinkRepository, StaffBookingRepository staffBookingRepository,
             BookingService bookingService, BookingRepository bookingRepository,
-            AvailabilitySlotRepository availabilitySlotRepository) {
+            AvailabilitySlotRepository availabilitySlotRepository, ProviderOwnership providerOwnership) {
         this.staffRepository = staffRepository;
         this.staffServiceLinkRepository = staffServiceLinkRepository;
         this.staffBookingRepository = staffBookingRepository;
         this.bookingService = bookingService;
         this.bookingRepository = bookingRepository;
         this.availabilitySlotRepository = availabilitySlotRepository;
+        this.providerOwnership = providerOwnership;
     }
 
     @Transactional
@@ -68,13 +71,27 @@ public class StaffBookingService {
         return new StaffBookingResult(booking, staffId);
     }
 
-    public StaffBookingResult getBooking(UUID bookingId) {
+    /**
+     * Restricted to the two parties involved: the booking's own customer, or
+     * the owner of the provider the booking's slot belongs to — same check
+     * as core {@code BookingController.getById} (see PR #57), reused here
+     * rather than reinvented.
+     */
+    public StaffBookingResult getBooking(UUID bookingId, UUID callerId) {
         StaffBooking link = staffBookingRepository.findByBookingId(bookingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Not a staff booking: "
                         + bookingId));
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
                         + bookingId));
+
+        if (!booking.getUserId().equals(callerId)) {
+            AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            "Availability slot not found: " + booking.getAvailabilitySlotId()));
+            providerOwnership.requireOwner(slot.getProviderId(), callerId);
+        }
+
         return new StaffBookingResult(booking, link.getStaffId());
     }
 
