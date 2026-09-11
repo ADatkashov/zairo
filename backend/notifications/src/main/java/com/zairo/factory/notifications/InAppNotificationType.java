@@ -12,4 +12,6 @@ public enum InAppNotificationType {
     BOOKING_CANCELLED,
     BOOKING_REMINDER,
     PAYMENT_REFUNDED,
+    /** A Smart Fill offer for a freed slot -- see smartfill.SmartFillOfferReadyEvent. */
+    SMART_FILL_OFFER,
 }

@@ -22,4 +22,10 @@ dependencies {
 
     // Customer display name/email for the ids booking already carries.
     implementation(project(":users"))
+
+    // Smart Fill performance (recovered slots/revenue, campaign/offer
+    // conversion) is exposed under this module's existing owner-facing
+    // dashboard rather than a second admin surface -- read-composition
+    // only, same reasoning as the dependencies above.
+    implementation(project(":smart-fill"))
 }

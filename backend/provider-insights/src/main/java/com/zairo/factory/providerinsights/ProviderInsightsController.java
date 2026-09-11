@@ -4,6 +4,8 @@ import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.providerinsights.ProviderInsightsDtos.CustomerSummary;
 import com.zairo.factory.providerinsights.ProviderInsightsDtos.DashboardMetrics;
 import com.zairo.factory.providers.ProviderOwnership;
+import com.zairo.factory.smartfill.SmartFillAnalyticsService;
+import com.zairo.factory.smartfill.SmartFillDtos.SmartFillPerformanceResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -22,11 +24,13 @@ public class ProviderInsightsController {
 
     private final ProviderInsightsService providerInsightsService;
     private final ProviderOwnership providerOwnership;
+    private final SmartFillAnalyticsService smartFillAnalyticsService;
 
     public ProviderInsightsController(ProviderInsightsService providerInsightsService,
-            ProviderOwnership providerOwnership) {
+            ProviderOwnership providerOwnership, SmartFillAnalyticsService smartFillAnalyticsService) {
         this.providerInsightsService = providerInsightsService;
         this.providerOwnership = providerOwnership;
+        this.smartFillAnalyticsService = smartFillAnalyticsService;
     }
 
     @Operation(summary = "This provider's customer history", description = """
@@ -62,5 +66,24 @@ public class ProviderInsightsController {
             HttpServletRequest httpRequest) {
         providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         return providerInsightsService.dashboardMetrics(providerId);
+    }
+
+    @Operation(summary = "This provider's Smart Fill performance", description = """
+            Owner-only. How many cancelled bookings' freed slots Smart Fill found candidates for, how many \
+            customers were notified/viewed an offer, how many slots were actually refilled, the resulting \
+            recovery rate, and the revenue those refilled slots represent -- computed fresh from this \
+            provider's own campaigns/offers, same as the other Smart Fill endpoints have no separate \
+            aggregates table.""")
+    @ApiResponse(responseCode = "200", description = "Smart Fill performance, all-zero if this provider has no cancellations yet")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/providers/{providerId}/smart-fill/performance")
+    public SmartFillPerformanceResponse smartFillPerformance(
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
+            HttpServletRequest httpRequest) {
+        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
+        return smartFillAnalyticsService.performance(providerId);
     }
 }
