@@ -8,10 +8,13 @@ import com.zairo.factory.booking.BookingRepository;
 import com.zairo.factory.booking.BookingStatus;
 import com.zairo.factory.providers.Provider;
 import com.zairo.factory.providers.ProviderRepository;
+import com.zairo.factory.revenueengine.ActionType;
+import com.zairo.factory.revenueengine.RevenueAttributionService;
 import com.zairo.factory.services.ServiceOffering;
 import com.zairo.factory.services.ServiceOfferingRepository;
 import com.zairo.factory.staff.Staff;
 import com.zairo.factory.staff.StaffRepository;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -56,12 +59,14 @@ public class SmartFillCampaignService {
     private final ApplicationEventPublisher eventPublisher;
     private final SmartFillProperties properties;
     private final Clock clock;
+    private final RevenueAttributionService revenueAttributionService;
 
     SmartFillCampaignService(SmartFillCampaignRepository campaignRepository, CandidateOfferRepository offerRepository,
             BookingRepository bookingRepository, AvailabilitySlotRepository availabilitySlotRepository,
             ServiceOfferingRepository serviceOfferingRepository, ProviderRepository providerRepository,
             StaffRepository staffRepository, CandidateFinder candidateFinder, NotificationPolicy notificationPolicy,
-            ApplicationEventPublisher eventPublisher, SmartFillProperties properties, Clock clock) {
+            ApplicationEventPublisher eventPublisher, SmartFillProperties properties, Clock clock,
+            RevenueAttributionService revenueAttributionService) {
         this.campaignRepository = campaignRepository;
         this.offerRepository = offerRepository;
         this.bookingRepository = bookingRepository;
@@ -74,25 +79,34 @@ public class SmartFillCampaignService {
         this.eventPublisher = eventPublisher;
         this.properties = properties;
         this.clock = clock;
+        this.revenueAttributionService = revenueAttributionService;
     }
 
     /**
-     * {@link BookingCancelledSmartFillListener}'s one call. A no-op if a
-     * campaign for this cancellation already exists (duplicate protection --
-     * belt-and-braces alongside the unique index) or the freed slot was
-     * already re-booked by the time this ran (the event listener's
-     * AFTER_COMMIT callback can lag a fast concurrent rebooking) or no
-     * eligible candidates exist at all -- the last case still creates the
-     * campaign row (for a truthful analytics count of "slots freed") but
-     * immediately marks it EXPIRED.
+     * {@link SmartFillStrategy#execute}'s one call, made when the Decision
+     * Engine picks {@code SMART_FILL} for a {@code BOOKING_CANCELLED}
+     * decision -- see {@code revenueengine}'s package-info for the full
+     * flow. A no-op if a campaign for this cancellation already exists
+     * (duplicate protection -- belt-and-braces alongside the unique index)
+     * or the freed slot was already re-booked by the time this ran (the
+     * strategy's own {@code evaluate} already re-checks this, but the
+     * window between evaluate and execute is real) or no eligible
+     * candidates exist at all -- the last case still creates the campaign
+     * row (for a truthful analytics count of "slots freed") but immediately
+     * marks it EXPIRED.
      *
-     * <p>{@code REQUIRES_NEW}: called from {@link BookingCancelledSmartFillListener}'s
-     * {@code @TransactionalEventListener(phase = AFTER_COMMIT)} callback --
-     * see {@code notifications.NotificationService}'s identical doc comment
-     * for why a write from inside that callback needs a genuinely new
-     * transaction, not one that silently joins the just-completed one.
+     * <p>Plain {@code @Transactional} (not {@code REQUIRES_NEW}): unlike
+     * {@link #completeCampaignsForBookedSlot}, this always runs with an
+     * active transaction already open -- either {@code
+     * revenueengine.DecisionEngine.decideAndExecute}'s own {@code
+     * REQUIRES_NEW} transaction (so this joins it, making the recorded
+     * decision and the campaign it creates commit or roll back together),
+     * or a caller's own transaction in tests. No transaction is ever
+     * "just completed" at this call site the way {@code
+     * notifications.NotificationService}'s {@code REQUIRES_NEW} methods
+     * guard against.
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void startCampaignForCancelledBooking(UUID cancelledBookingId) {
         if (campaignRepository.existsByCancelledBookingId(cancelledBookingId)) {
             return;
@@ -191,6 +205,7 @@ public class SmartFillCampaignService {
             campaign.markBooked(bookingId, now);
             campaignRepository.save(campaign);
             closeOutOffers(campaign, bookingId, now);
+            resolveRevenueOutcome(campaign, bookingId, now);
         }
     }
 
@@ -233,6 +248,28 @@ public class SmartFillCampaignService {
         campaign.markBooked(bookingId, now);
         campaignRepository.save(campaign);
         closeOutOffers(campaign, bookingId, now);
+        resolveRevenueOutcome(campaign, bookingId, now);
+    }
+
+    /**
+     * Reports the campaign's real outcome back to the Decision Engine's
+     * ledger -- {@link RevenueAttributionService#recordDecision} already
+     * wrote a pending row for this cancellation when the engine chose
+     * SMART_FILL; this fills in what actually happened. {@code bookingId}
+     * null (the {@link #resolveAndCloseAsBooked} fallback couldn't find an
+     * active booking for the slot) leaves the outcome pending rather than
+     * guessing -- an honest "don't know" beats a wrong number in the
+     * revenue-recovered ledger.
+     */
+    private void resolveRevenueOutcome(SmartFillCampaign campaign, UUID bookingId, Instant now) {
+        if (bookingId == null) {
+            return;
+        }
+        Booking recoveredBooking = bookingRepository.findById(bookingId).orElse(null);
+        BigDecimal actualRevenue = recoveredBooking == null ? BigDecimal.ZERO : recoveredBooking.getTotalPrice();
+        String currency = recoveredBooking == null ? campaign.getPriceCurrency() : recoveredBooking.getCurrency();
+        revenueAttributionService.resolve(ActionType.SMART_FILL, campaign.getCancelledBookingId(), actualRevenue,
+                currency, true, now);
     }
 
     private void closeOutOffers(SmartFillCampaign campaign, UUID recoveredBookingId, Instant now) {
@@ -259,5 +296,7 @@ public class SmartFillCampaignService {
             offer.markExpired();
             offerRepository.save(offer);
         }
+        revenueAttributionService.resolve(ActionType.SMART_FILL, campaign.getCancelledBookingId(), BigDecimal.ZERO,
+                campaign.getPriceCurrency(), false, now);
     }
 }

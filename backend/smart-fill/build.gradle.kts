@@ -57,4 +57,12 @@ dependencies {
     // real email -- this module never calls NotificationService directly,
     // same one-directional "publisher doesn't depend on the subscriber"
     // pattern as every other domain event in this codebase (ADR-0002).
+
+    // Smart Fill is the first RevenueStrategy plugged into the Decision
+    // Engine (see revenue-engine's package-info) -- SmartFillStrategy
+    // implements that interface, and SmartFillCampaignService reports its
+    // outcome back through RevenueAttributionService once a campaign
+    // resolves. One-directional: revenue-engine has no knowledge of this
+    // module.
+    implementation(project(":revenue-engine"))
 }
