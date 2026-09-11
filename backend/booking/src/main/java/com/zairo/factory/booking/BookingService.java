@@ -118,6 +118,8 @@ public class BookingService {
         booking = bookingRepository.save(booking);
 
         eventPublisher.publishEvent(new BookingAttemptedEvent(userId, serviceId, slot.getProviderId(), true, null));
+        eventPublisher.publishEvent(new AvailabilitySlotBookedEvent(slot.getId(), booking.getId(),
+                slot.getProviderId()));
         return booking;
     }
 
