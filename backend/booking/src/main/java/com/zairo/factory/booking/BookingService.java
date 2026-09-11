@@ -209,7 +209,10 @@ public class BookingService {
         }
 
         booking.markCompleted();
-        return bookingRepository.save(booking);
+        Booking completed = bookingRepository.save(booking);
+        eventPublisher.publishEvent(new BookingCompletedEvent(completed.getId(), completed.getUserId(),
+                slot.getProviderId(), completed.getServiceId()));
+        return completed;
     }
 
     /**
@@ -284,7 +287,9 @@ public class BookingService {
         providerOwnership.requireOwner(slot.getProviderId(), callerId);
 
         booking.markNoShow();
-        return bookingRepository.save(booking);
+        Booking noShow = bookingRepository.save(booking);
+        eventPublisher.publishEvent(new BookingNoShowEvent(noShow.getId(), noShow.getUserId(), slot.getProviderId()));
+        return noShow;
     }
 
     /**

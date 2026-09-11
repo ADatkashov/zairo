@@ -7,6 +7,9 @@ import com.zairo.factory.booking.BookingDtos.CreateBookingRequest;
 import com.zairo.factory.platform.TestAuth.Registered;
 import com.zairo.factory.platform.TestClock.MutableClock;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
+import com.zairo.factory.revenueengine.ActionType;
+import com.zairo.factory.revenueengine.RevenueOutcome;
+import com.zairo.factory.revenueengine.RevenueOutcomeRepository;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
 import com.zairo.factory.smartfill.CandidateOffer;
 import com.zairo.factory.smartfill.CandidateOfferRepository;
@@ -44,6 +47,12 @@ import org.springframework.http.ResponseEntity;
  * SmartFillCampaignJob}'s real one-minute cadence -- same "the job is a
  * one-line @Scheduled wrapper, nothing to test there beyond it calls the
  * service" reasoning as {@link SubscriptionRenewalServiceTest}.
+ *
+ * <p>Every cancellation here goes through {@code revenueengine.DecisionEngine}
+ * (Smart Fill is registered as its one {@code RevenueStrategy} today) rather
+ * than a direct listener -- these tests exercise that whole path, plus (see
+ * the {@code RevenueOutcome}/{@code revenue-engine/summary} tests) the
+ * "Revenue Recovered by ZAIRO" ledger it feeds.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
@@ -67,6 +76,9 @@ class SmartFillApiTests {
 
     @Autowired
     private SmartFillProperties smartFillProperties;
+
+    @Autowired
+    private RevenueOutcomeRepository revenueOutcomeRepository;
 
     @Autowired
     private MutableClock clock;
@@ -377,6 +389,107 @@ class SmartFillApiTests {
         assertThat(performance.getBody().get("recoveredRevenue")).isEqualTo(123.45);
         assertThat(performance.getBody().get("currency")).isEqualTo("USD");
         assertThat(performance.getBody().get("recoveryRate")).isEqualTo(1.0);
+    }
+
+    @Test
+    void theDecisionEngineRecordsAPendingRevenueOutcomeTheMomentItPicksSmartFill() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "sf-decide-owner-" + runId + "@example.com");
+        Registered follower = TestAuth.registerCustomer(restTemplate, "sf-decide-follower-" + runId + "@example.com");
+        Registered canceller = TestAuth.registerCustomer(restTemplate, "sf-decide-canceller-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "SF Decide Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "SF Decide Service", new BigDecimal("42.00"));
+        addFavorite(follower, providerId);
+
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+        UUID cancelledBookingId = createBooking(canceller, providerId, serviceId, slotId);
+        cancelBooking(canceller, cancelledBookingId);
+
+        RevenueOutcome outcome = revenueOutcomeRepository
+                .findByActionTypeAndTriggerRefId(ActionType.SMART_FILL, cancelledBookingId).orElseThrow();
+        assertThat(outcome.getProviderId()).isEqualTo(providerId);
+        assertThat(outcome.getExpectedValue()).isGreaterThan(BigDecimal.ZERO);
+        assertThat(outcome.getCurrency()).isEqualTo("USD");
+        // Not resolved yet -- the campaign this decision triggered is still running.
+        assertThat(outcome.getRecovered()).isNull();
+        assertThat(outcome.getActualRevenue()).isNull();
+    }
+
+    @Test
+    void revenueOutcomeResolvesToRecoveredOnceACandidateBooksTheFreedSlot() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "sf-resolve-owner-" + runId + "@example.com");
+        Registered winner = TestAuth.registerCustomer(restTemplate, "sf-resolve-winner-" + runId + "@example.com");
+        Registered canceller = TestAuth.registerCustomer(restTemplate, "sf-resolve-canceller-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "SF Resolve Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "SF Resolve Service", new BigDecimal("77.50"));
+        addFavorite(winner, providerId);
+
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+        UUID cancelledBookingId = createBooking(canceller, providerId, serviceId, slotId);
+        cancelBooking(canceller, cancelledBookingId);
+        createBooking(winner, providerId, serviceId, slotId);
+
+        RevenueOutcome outcome = revenueOutcomeRepository
+                .findByActionTypeAndTriggerRefId(ActionType.SMART_FILL, cancelledBookingId).orElseThrow();
+        assertThat(outcome.getRecovered()).isTrue();
+        assertThat(outcome.getActualRevenue()).isEqualByComparingTo(new BigDecimal("77.50"));
+        assertThat(outcome.getCurrency()).isEqualTo("USD");
+    }
+
+    @Test
+    void revenueOutcomeResolvesToNotRecoveredOnceTheCampaignExpiresUnbooked() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "sf-noexpire-owner-" + runId + "@example.com");
+        Registered follower = TestAuth.registerCustomer(restTemplate, "sf-noexpire-follower-" + runId + "@example.com");
+        Registered canceller = TestAuth.registerCustomer(restTemplate, "sf-noexpire-canceller-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "SF NoExpire Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "SF NoExpire Service", new BigDecimal("18.00"));
+        addFavorite(follower, providerId);
+
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+        UUID cancelledBookingId = createBooking(canceller, providerId, serviceId, slotId);
+        cancelBooking(canceller, cancelledBookingId);
+
+        SmartFillCampaign campaign = campaignRepository.findByCancelledBookingId(cancelledBookingId).orElseThrow();
+        clock.advanceTo(start.plus(1, ChronoUnit.MINUTES));
+        smartFillCampaignService.advanceDueCampaign(campaign.getId(), clock.instant());
+
+        RevenueOutcome outcome = revenueOutcomeRepository
+                .findByActionTypeAndTriggerRefId(ActionType.SMART_FILL, cancelledBookingId).orElseThrow();
+        assertThat(outcome.getRecovered()).isFalse();
+        assertThat(outcome.getActualRevenue()).isEqualByComparingTo(BigDecimal.ZERO);
+    }
+
+    @Test
+    void revenueEngineSummaryAggregatesRecoveredRevenueForAProvider() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "sf-summary-owner-" + runId + "@example.com");
+        Registered winner = TestAuth.registerCustomer(restTemplate, "sf-summary-winner-" + runId + "@example.com");
+        Registered canceller = TestAuth.registerCustomer(restTemplate, "sf-summary-canceller-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "SF Summary Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "SF Summary Service", new BigDecimal("60.00"));
+        addFavorite(winner, providerId);
+
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+        UUID cancelledBookingId = createBooking(canceller, providerId, serviceId, slotId);
+        cancelBooking(canceller, cancelledBookingId);
+        createBooking(winner, providerId, serviceId, slotId);
+
+        ResponseEntity<Map> summary = restTemplate.exchange(
+                "/api/v1/providers/" + providerId + "/revenue-engine/summary", HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(summary.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(summary.getBody().get("totalRecovered")).isEqualTo(60.00);
+        assertThat(summary.getBody().get("currency")).isEqualTo("USD");
+        assertThat(summary.getBody().get("decisionsExecuted")).isEqualTo(1);
+        assertThat(summary.getBody().get("decisionsRecovered")).isEqualTo(1);
+        Map<?, ?> byActionType = (Map<?, ?>) summary.getBody().get("recoveredByActionType");
+        assertThat(byActionType.get("SMART_FILL")).isEqualTo(60.00);
     }
 
     @Test

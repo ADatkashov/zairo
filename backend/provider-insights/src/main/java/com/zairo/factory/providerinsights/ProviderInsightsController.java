@@ -4,6 +4,8 @@ import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.providerinsights.ProviderInsightsDtos.CustomerSummary;
 import com.zairo.factory.providerinsights.ProviderInsightsDtos.DashboardMetrics;
 import com.zairo.factory.providers.ProviderOwnership;
+import com.zairo.factory.revenueengine.RevenueAttributionService;
+import com.zairo.factory.revenueengine.RevenueEngineDtos.RevenueSummaryResponse;
 import com.zairo.factory.smartfill.SmartFillAnalyticsService;
 import com.zairo.factory.smartfill.SmartFillDtos.SmartFillPerformanceResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,12 +27,15 @@ public class ProviderInsightsController {
     private final ProviderInsightsService providerInsightsService;
     private final ProviderOwnership providerOwnership;
     private final SmartFillAnalyticsService smartFillAnalyticsService;
+    private final RevenueAttributionService revenueAttributionService;
 
     public ProviderInsightsController(ProviderInsightsService providerInsightsService,
-            ProviderOwnership providerOwnership, SmartFillAnalyticsService smartFillAnalyticsService) {
+            ProviderOwnership providerOwnership, SmartFillAnalyticsService smartFillAnalyticsService,
+            RevenueAttributionService revenueAttributionService) {
         this.providerInsightsService = providerInsightsService;
         this.providerOwnership = providerOwnership;
         this.smartFillAnalyticsService = smartFillAnalyticsService;
+        this.revenueAttributionService = revenueAttributionService;
     }
 
     @Operation(summary = "This provider's customer history", description = """
@@ -85,5 +90,23 @@ public class ProviderInsightsController {
             HttpServletRequest httpRequest) {
         providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         return smartFillAnalyticsService.performance(providerId);
+    }
+
+    @Operation(summary = "Revenue Recovered by ZAIRO", description = """
+            Owner-only. The Decision Engine's own outcome ledger for this provider: total revenue recovered \
+            across every strategy the engine has ever executed (Smart Fill today, more strategies later -- \
+            see revenue-engine's package-info), how many decisions it made, how many actually paid off, and \
+            the breakdown by action type. This is the top-line "how much has ZAIRO made you" number.""")
+    @ApiResponse(responseCode = "200", description = "Revenue summary, all-zero if no decisions have been made for this provider yet")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/providers/{providerId}/revenue-engine/summary")
+    public RevenueSummaryResponse revenueSummary(
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
+            HttpServletRequest httpRequest) {
+        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
+        return revenueAttributionService.summary(providerId);
     }
 }

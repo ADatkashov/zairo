@@ -28,4 +28,9 @@ dependencies {
     // dashboard rather than a second admin surface -- read-composition
     // only, same reasoning as the dependencies above.
     implementation(project(":smart-fill"))
+
+    // "Revenue Recovered by ZAIRO" -- the Decision Engine's own outcome
+    // ledger, spanning every RevenueStrategy (Smart Fill today, more
+    // later), same read-composition reasoning as the dependency above.
+    implementation(project(":revenue-engine"))
 }

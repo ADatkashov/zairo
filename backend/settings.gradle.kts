@@ -33,5 +33,6 @@ include(
     "provider-insights",
     "platform-insights",
     "messaging",
+    "revenue-engine",
     "smart-fill",
 )
