@@ -11,6 +11,15 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
     List<Booking> findByUserId(UUID userId);
 
+    /**
+     * Every booking (any status, any provider) for a whole set of
+     * candidate users in one query -- {@code smartfill.CandidateFinder}'s
+     * bulk fetch for conflict/category-interest/recent-engagement/
+     * suitable-time signals across an entire candidate pool at once,
+     * instead of one {@link #findByUserId} call per candidate.
+     */
+    List<Booking> findByUserIdIn(List<UUID> userIds);
+
     List<Booking> findByAvailabilitySlotIdIn(List<UUID> availabilitySlotIds);
 
     /** BookingPaymentTimeoutJob's sweep target — a booking that's sat unpaid past the configured timeout. */
