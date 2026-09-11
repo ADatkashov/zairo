@@ -4,7 +4,10 @@ import com.zairo.factory.notifications.NotificationDtos.NotificationResponse;
 import com.zairo.factory.notifications.NotificationDtos.UnreadCountResponse;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -107,6 +110,29 @@ public class NotificationService {
                 + ") has been processed.";
         emailProvider.send(toEmail, title, body);
         recordInApp(recipientUserId, InAppNotificationType.PAYMENT_REFUNDED, title, body);
+    }
+
+    private static final DateTimeFormatter SMART_FILL_SLOT_TIME = DateTimeFormatter
+            .ofPattern("EEEE, MMM d 'at' HH:mm 'UTC'", Locale.ENGLISH).withZone(ZoneOffset.UTC);
+
+    /**
+     * {@code REQUIRES_NEW} -- same reasoning as {@link #sendBookingConfirmedEmail}.
+     * The example this copy is modeled on (see the task Smart Fill was
+     * built from): "A slot just opened up at Alia's today at 15:00 -- want
+     * to book it?", provider/employee names substituted in, employee
+     * omitted entirely when null (see {@code
+     * smartfill.SmartFillOfferReadyEvent#employeeName}'s own doc comment
+     * for why that can happen).
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void sendSmartFillOfferEmail(UUID recipientUserId, String toEmail, String providerName,
+            String serviceName, String employeeName, Instant slotStartsAt) {
+        String title = "A slot just opened up!";
+        String who = employeeName == null ? "at " + providerName : "with " + employeeName + " at " + providerName;
+        String body = "Good news -- a " + serviceName + " slot " + who + " just opened up on "
+                + SMART_FILL_SLOT_TIME.format(slotStartsAt) + ". Want to book it before someone else does?";
+        emailProvider.send(toEmail, title, body);
+        recordInApp(recipientUserId, InAppNotificationType.SMART_FILL_OFFER, title, body);
     }
 
     private void recordInApp(UUID recipientUserId, InAppNotificationType type, String title, String body) {

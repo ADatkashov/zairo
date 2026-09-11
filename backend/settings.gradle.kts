@@ -33,4 +33,5 @@ include(
     "provider-insights",
     "platform-insights",
     "messaging",
+    "smart-fill",
 )

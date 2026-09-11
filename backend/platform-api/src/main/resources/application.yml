@@ -126,6 +126,44 @@ booking:
   # cancels it and releases the slot — see booking.BookingPaymentTimeoutJob.
   payment-timeout-minutes: ${BOOKING_PAYMENT_TIMEOUT_MINUTES:15}
 
+# Smart Fill Engine (see smartfill's own package-info.java). Every tunable
+# the feature needs is here, not hardcoded in the module — see
+# SmartFillProperties.
+smartfill:
+  staging:
+    # Candidates contacted per stage, and how long to wait before trying
+    # the next stage if the slot's still open — see SmartFillCampaignService.
+    batch-size: ${SMARTFILL_BATCH_SIZE:3}
+    stage-delay-minutes: ${SMARTFILL_STAGE_DELAY_MINUTES:15}
+    # A campaign never sends more than this many stages, even if the
+    # candidate pool is bigger.
+    max-stages: ${SMARTFILL_MAX_STAGES:4}
+    max-candidates-per-campaign: ${SMARTFILL_MAX_CANDIDATES_PER_CAMPAIGN:20}
+    # Hard ceiling on a campaign's total lifetime, regardless of the slot's
+    # own start time (which usually ends it sooner).
+    campaign-max-duration-minutes: ${SMARTFILL_CAMPAIGN_MAX_DURATION_MINUTES:180}
+  antispam:
+    per-user-cooldown-hours: ${SMARTFILL_PER_USER_COOLDOWN_HOURS:6}
+    per-business-cooldown-days: ${SMARTFILL_PER_BUSINESS_COOLDOWN_DAYS:7}
+    decline-cooldown-days: ${SMARTFILL_DECLINE_COOLDOWN_DAYS:14}
+    max-daily-notifications-per-user: ${SMARTFILL_MAX_DAILY_NOTIFICATIONS:3}
+    max-weekly-notifications-per-user: ${SMARTFILL_MAX_WEEKLY_NOTIFICATIONS:10}
+  scoring:
+    recent-visit-window-days: ${SMARTFILL_RECENT_VISIT_WINDOW_DAYS:90}
+    recent-engagement-window-days: ${SMARTFILL_RECENT_ENGAGEMENT_WINDOW_DAYS:30}
+    suitable-time-tolerance-minutes: ${SMARTFILL_SUITABLE_TIME_TOLERANCE_MINUTES:60}
+    # See ScoringFactor for what each key means. Not hardcoded anywhere in
+    # the scoring engine — change priority by editing this map alone.
+    weights:
+      FOLLOWS_PROVIDER: 15
+      PREVIOUSLY_BOOKED_SAME_EMPLOYEE: 25
+      RECENTLY_VISITED_PROVIDER: 20
+      PREVIOUSLY_BOOKED_SAME_SERVICE: 20
+      PREVIOUS_PROVIDER_BOOKING: 10
+      CATEGORY_INTEREST: 5
+      SUITABLE_HISTORICAL_TIME: 10
+      RECENT_ENGAGEMENT: 5
+
 management:
   endpoints:
     web:
