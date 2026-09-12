@@ -7,7 +7,7 @@
  * no scoring/candidate-finding/notification logic of its own.
  *
  * <h2>The seam: {@link com.zairo.factory.revenueengine.RevenueStrategy}</h2>
- * Every concrete play (Smart Fill and Rebook today; lost-customer recovery,
+ * Every concrete play (Smart Fill, Rebook, and Lost Customer Recovery today;
  * gap-fill, targeted promotion, no-show prevention, VIP retention tomorrow)
  * is one {@code @Component implements RevenueStrategy} living in its own
  * module, declaring which {@link com.zairo.factory.revenueengine.DecisionTrigger}s
@@ -18,13 +18,17 @@
  *
  * <h2>How a decision happens</h2>
  * <ol>
- *   <li>A domain event fires (today: {@code booking.BookingCancelledEvent}
+ *   <li>Usually, a domain event fires (today: {@code booking.BookingCancelledEvent}
  *   — see {@link com.zairo.factory.revenueengine.BookingCancelledDecisionListener}
  *   — or {@code booking.BookingCompletedEvent} — see {@link
- *   com.zairo.factory.revenueengine.BookingCompletedDecisionListener}).
+ *   com.zairo.factory.revenueengine.BookingCompletedDecisionListener}); one
+ *   trigger, {@link com.zairo.factory.revenueengine.DecisionTrigger#CUSTOMER_INACTIVE},
+ *   instead comes from a periodic scan with no single triggering event — see
+ *   that constant's own doc comment.
  *   <li>It's turned into a {@link com.zairo.factory.revenueengine.DecisionContext}
  *   — trigger + provider + a reference id whose meaning depends on the
- *   trigger (a bookingId for a cancellation or completion).
+ *   trigger (a bookingId for a cancellation, completion, or inactive
+ *   customer's last visit).
  *   <li>{@link com.zairo.factory.revenueengine.DecisionEngine} asks every
  *   strategy registered for that trigger to {@code evaluate} the context —
  *   each returns a {@link com.zairo.factory.revenueengine.StrategyDecision}:
@@ -42,14 +46,14 @@
  * </ol>
  *
  * <h2>Deliberately not built here</h2>
- * Only Smart Fill and Rebook exist so far — {@link
+ * Only Smart Fill, Rebook, and Lost Customer Recovery exist so far — {@link
  * com.zairo.factory.revenueengine.ActionType} enumerates the rest
- * (CUSTOMER_REACTIVATION, GAP_FILL, SMART_PROMOTION, NO_SHOW_PREVENTION,
- * VIP_RETENTION) purely so the outcome ledger and any future dashboard
- * already speak the right vocabulary; building the strategies themselves is
- * separate, future work, each its own module depending on this one. No LLM
- * calls anywhere in this module — {@code evaluate()} is deterministic
- * rules/scoring/probability today; a future ML-backed strategy is just
- * another {@code RevenueStrategy} implementation, not a change here.
+ * (GAP_FILL, SMART_PROMOTION, NO_SHOW_PREVENTION, VIP_RETENTION) purely so
+ * the outcome ledger and any future dashboard already speak the right
+ * vocabulary; building the strategies themselves is separate, future work,
+ * each its own module depending on this one. No LLM calls anywhere in this
+ * module — {@code evaluate()} is deterministic rules/scoring/probability
+ * today; a future ML-backed strategy is just another {@code RevenueStrategy}
+ * implementation, not a change here.
  */
 package com.zairo.factory.revenueengine;

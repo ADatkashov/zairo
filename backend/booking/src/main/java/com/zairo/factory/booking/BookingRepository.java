@@ -91,4 +91,38 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             """, nativeQuery = true)
     List<Booking> findCompletedByUserIdAndProviderIdOrderByVisitDate(@Param("userId") UUID userId,
             @Param("providerId") UUID providerId);
+
+    /**
+     * {@code reactivationengine}'s discovery-sweep target -- every distinct
+     * (customer, provider) pair's single most recent COMPLETED visit,
+     * across the whole platform. {@code distinct on} (Postgres-specific,
+     * fine since Flyway already targets Postgres only) rather than a
+     * {@code group by max(starts_at)} because the sweep needs the actual
+     * booking id of that latest visit, not just its timestamp -- it's the
+     * anchor a {@code ReactivationCampaign} is keyed on. Deliberately not
+     * filtered by any inactivity cutoff here: filtering by {@code
+     * starts_at < cutoff} before picking "the latest" would let an older
+     * row win the pick for a customer whose true latest visit happens to
+     * fall inside the cutoff (i.e. isn't actually inactive) -- correctness
+     * over one fewer full-table scan, since this runs at most once a day.
+     */
+    @Query(value = """
+            select distinct on (b.user_id, s.provider_id)
+                   b.id as bookingId, b.user_id as userId, s.provider_id as providerId, s.starts_at as lastVisitAt
+            from booking b
+            join availability_slot s on s.id = b.availability_slot_id
+            where b.status = 'COMPLETED'
+            order by b.user_id, s.provider_id, s.starts_at desc
+            """, nativeQuery = true)
+    List<LatestCompletedVisitRow> findLatestCompletedVisitPerUserAndProvider();
+
+    interface LatestCompletedVisitRow {
+        UUID getBookingId();
+
+        UUID getUserId();
+
+        UUID getProviderId();
+
+        Instant getLastVisitAt();
+    }
 }

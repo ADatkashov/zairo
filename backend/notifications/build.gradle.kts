@@ -39,4 +39,8 @@ dependencies {
     // Only for RebookOfferReadyEvent's type — same one-directional "listen
     // for the event" reasoning as the dependency above.
     implementation(project(":rebook-engine"))
+
+    // Only for ReactivationOfferReadyEvent's type — same one-directional
+    // "listen for the event" reasoning as the dependency above.
+    implementation(project(":reactivation-engine"))
 }

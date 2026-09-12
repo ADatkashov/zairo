@@ -36,4 +36,5 @@ include(
     "revenue-engine",
     "smart-fill",
     "rebook-engine",
+    "reactivation-engine",
 )
