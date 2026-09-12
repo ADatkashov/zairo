@@ -182,6 +182,28 @@ rebook:
   # (see that class's own doc comment on where a future ML model would slot in).
   base-probability: ${REBOOK_BASE_PROBABILITY:0.35}
 
+# Lost Customer Recovery (see reactivationengine's own package-info.java).
+# Every tunable the feature needs is here, not hardcoded in the module --
+# see ReactivationProperties.
+reactivation:
+  # The daily sweep's SQL floor -- a pair whose last visit is more recent
+  # than this is never even considered, regardless of their usual cadence.
+  scan-minimum-inactivity-days: ${REACTIVATION_SCAN_MINIMUM_INACTIVITY_DAYS:45}
+  # Once a customer has an established average interval, their inactivity
+  # must clear (average interval x this) to count as "lost" rather than
+  # just "due" (Rebook's territory).
+  interval-multiplier: ${REACTIVATION_INTERVAL_MULTIPLIER:2.0}
+  # Regardless of any established pattern (or lack of one), this many days
+  # of inactivity always qualifies -- the safety net for a single-visit
+  # customer with no cadence to compare against.
+  absolute-max-inactivity-days: ${REACTIVATION_ABSOLUTE_MAX_INACTIVITY_DAYS:120}
+  # Longer than Rebook's follow-up window -- a colder lead is given more
+  # time to respond before the campaign gives up.
+  follow-up-window-days: ${REACTIVATION_FOLLOW_UP_WINDOW_DAYS:30}
+  # ReactivationStrategy#evaluate's probability estimate -- lower than
+  # Rebook's since these are colder leads by construction.
+  base-probability: ${REACTIVATION_BASE_PROBABILITY:0.15}
+
 management:
   endpoints:
     web:
