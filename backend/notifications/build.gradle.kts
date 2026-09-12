@@ -35,4 +35,8 @@ dependencies {
     // strings, so this dependency is for the type alone, not to read
     // smart-fill's data.
     implementation(project(":smart-fill"))
+
+    // Only for RebookOfferReadyEvent's type — same one-directional "listen
+    // for the event" reasoning as the dependency above.
+    implementation(project(":rebook-engine"))
 }

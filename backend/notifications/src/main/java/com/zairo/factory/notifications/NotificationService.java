@@ -135,6 +135,23 @@ public class NotificationService {
         recordInApp(recipientUserId, InAppNotificationType.SMART_FILL_OFFER, title, body);
     }
 
+    /**
+     * {@code REQUIRES_NEW} -- same reasoning as {@link #sendBookingConfirmedEmail}.
+     * The example this copy is modeled on: "Looks like it's time for your
+     * next visit -- book your next [service] at [provider]?" -- deliberately
+     * generic (no specific date/time to point at, unlike a Smart Fill offer)
+     * since a rebook nudge just invites the customer back to the ordinary
+     * booking flow rather than offering one specific slot.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void sendRebookOfferEmail(UUID recipientUserId, String toEmail, String providerName, String serviceName) {
+        String title = "Time for your next visit?";
+        String body = "Looks like it's about time for your next " + serviceName + " at " + providerName
+                + " -- ready to book it?";
+        emailProvider.send(toEmail, title, body);
+        recordInApp(recipientUserId, InAppNotificationType.REBOOK_OFFER, title, body);
+    }
+
     private void recordInApp(UUID recipientUserId, InAppNotificationType type, String title, String body) {
         inAppNotificationRepository.save(
                 new InAppNotification(UUID.randomUUID(), recipientUserId, type, title, body, Instant.now()));
