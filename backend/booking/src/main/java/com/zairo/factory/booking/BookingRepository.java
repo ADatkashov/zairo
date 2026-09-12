@@ -91,4 +91,20 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             """, nativeQuery = true)
     List<Booking> findCompletedByUserIdAndProviderIdOrderByVisitDate(@Param("userId") UUID userId,
             @Param("providerId") UUID providerId);
+
+    /**
+     * {@code customerintelligence.BookingHistoryReader}'s provider-scoped
+     * fetch -- every booking (any status) a customer has ever made with one
+     * specific provider, used to compute {@code CustomerProviderProfile}.
+     * Same native-join shape as {@link #findCompletedByUserIdAndProviderIdOrderByVisitDate}
+     * (booking has no direct providerId column), just without the status
+     * filter since intelligence needs cancellations/no-shows too, not only
+     * completions.
+     */
+    @Query(value = """
+            select b.* from booking b
+            join availability_slot s on s.id = b.availability_slot_id
+            where b.user_id = :userId and s.provider_id = :providerId
+            """, nativeQuery = true)
+    List<Booking> findByUserIdAndProviderId(@Param("userId") UUID userId, @Param("providerId") UUID providerId);
 }

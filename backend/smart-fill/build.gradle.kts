@@ -65,4 +65,11 @@ dependencies {
     // resolves. One-directional: revenue-engine has no knowledge of this
     // module.
     implementation(project(":revenue-engine"))
+
+    // Customer Intelligence's own bulk read (CustomerIntelligenceService
+    // .findProviderProfiles) feeds one additional, purely additive scoring
+    // signal (ScoringFactor.DUE_FOR_REBOOKING) -- see CandidateFinder's own
+    // doc comment. One-directional: customer-intelligence has no knowledge
+    // of this module, same as revenue-engine above.
+    implementation(project(":customer-intelligence"))
 }
