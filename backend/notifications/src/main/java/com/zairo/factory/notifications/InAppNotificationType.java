@@ -16,4 +16,6 @@ public enum InAppNotificationType {
     SMART_FILL_OFFER,
     /** A Rebook nudge for a customer whose usual visit interval has elapsed -- see rebookengine.RebookOfferReadyEvent. */
     REBOOK_OFFER,
+    /** A Lost Customer Recovery win-back nudge -- see reactivationengine.ReactivationOfferReadyEvent. */
+    REACTIVATION_OFFER,
 }

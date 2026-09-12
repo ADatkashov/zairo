@@ -37,4 +37,5 @@ include(
     "smart-fill",
     "rebook-engine",
     "customer-intelligence",
+    "reactivation-engine",
 )
