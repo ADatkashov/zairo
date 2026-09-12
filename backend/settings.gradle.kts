@@ -35,4 +35,5 @@ include(
     "messaging",
     "revenue-engine",
     "smart-fill",
+    "rebook-engine",
 )
