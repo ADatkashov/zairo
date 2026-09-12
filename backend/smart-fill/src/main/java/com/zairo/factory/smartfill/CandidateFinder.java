@@ -5,6 +5,9 @@ import com.zairo.factory.booking.AvailabilitySlotRepository;
 import com.zairo.factory.booking.Booking;
 import com.zairo.factory.booking.BookingRepository;
 import com.zairo.factory.booking.BookingStatus;
+import com.zairo.factory.customerintelligence.CustomerIntelligenceService;
+import com.zairo.factory.customerintelligence.CustomerProviderProfile;
+import com.zairo.factory.customerintelligence.RetentionStatus;
 import com.zairo.factory.favorites.Favorite;
 import com.zairo.factory.favorites.FavoriteRepository;
 import com.zairo.factory.providers.Provider;
@@ -19,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -52,10 +56,12 @@ class CandidateFinder {
     private final CandidateScorer candidateScorer;
     private final NotificationPolicy notificationPolicy;
     private final SmartFillProperties properties;
+    private final CustomerIntelligenceService customerIntelligenceService;
 
     CandidateFinder(BookingRepository bookingRepository, AvailabilitySlotRepository availabilitySlotRepository,
             FavoriteRepository favoriteRepository, ProviderRepository providerRepository,
-            CandidateScorer candidateScorer, NotificationPolicy notificationPolicy, SmartFillProperties properties) {
+            CandidateScorer candidateScorer, NotificationPolicy notificationPolicy, SmartFillProperties properties,
+            CustomerIntelligenceService customerIntelligenceService) {
         this.bookingRepository = bookingRepository;
         this.availabilitySlotRepository = availabilitySlotRepository;
         this.favoriteRepository = favoriteRepository;
@@ -63,6 +69,7 @@ class CandidateFinder {
         this.candidateScorer = candidateScorer;
         this.notificationPolicy = notificationPolicy;
         this.properties = properties;
+        this.customerIntelligenceService = customerIntelligenceService;
     }
 
     /**
@@ -107,6 +114,12 @@ class CandidateFinder {
         Instant recentEngagementCutoff = now.minus(scoring.recentEngagementWindowDays(), ChronoUnit.DAYS);
         int slotMinuteOfDay = minuteOfDayUtc(campaign.getSlotStartsAt());
 
+        // One bulk read for the whole candidate pool, not one lookup per candidate -- same "no N+1"
+        // discipline as every other data source above. See customerintelligence's own package-info on
+        // why this reads a persisted profile instead of recomputing visit history itself.
+        Map<UUID, CustomerProviderProfile> intelligenceByUserId = customerIntelligenceService
+                .findProviderProfiles(providerId, candidateIds);
+
         List<ScoredCandidate> scored = new ArrayList<>();
         for (UUID candidateId : candidateIds) {
             List<Booking> atProvider = providerBookingsByUser.getOrDefault(candidateId, List.of());
@@ -145,10 +158,14 @@ class CandidateFinder {
                     .anyMatch(s -> minuteOfDayDistance(minuteOfDayUtc(s.getStartsAt()), slotMinuteOfDay)
                             <= scoring.suitableTimeToleranceMinutes());
             boolean recentEngagement = everywhere.stream().anyMatch(b -> !b.getCreatedAt().isBefore(recentEngagementCutoff));
+            RetentionStatus retentionStatus = Optional.ofNullable(intelligenceByUserId.get(candidateId))
+                    .map(CustomerProviderProfile::getRetentionStatus).orElse(null);
+            boolean dueForRebooking = retentionStatus == RetentionStatus.DUE_FOR_REBOOKING
+                    || retentionStatus == RetentionStatus.AT_RISK;
 
             CandidateSignals signals = new CandidateSignals(followsProvider, previouslyBookedSameEmployee,
                     recentlyVisitedProvider, previouslyBookedSameService, previousProviderBooking, categoryInterest,
-                    suitableHistoricalTime, recentEngagement);
+                    suitableHistoricalTime, recentEngagement, dueForRebooking);
             scored.add(candidateScorer.score(candidateId, signals));
         }
 
