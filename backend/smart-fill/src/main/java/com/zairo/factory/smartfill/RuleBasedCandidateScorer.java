@@ -49,6 +49,9 @@ class RuleBasedCandidateScorer implements CandidateScorer {
         if (signals.recentEngagement()) {
             matched.add(ScoringFactor.RECENT_ENGAGEMENT);
         }
+        if (signals.dueForRebooking()) {
+            matched.add(ScoringFactor.DUE_FOR_REBOOKING);
+        }
 
         int total = matched.stream().mapToInt(properties.scoring()::weightOf).sum();
         return new ScoredCandidate(userId, total, matched);

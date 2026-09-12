@@ -163,6 +163,7 @@ smartfill:
       CATEGORY_INTEREST: 5
       SUITABLE_HISTORICAL_TIME: 10
       RECENT_ENGAGEMENT: 5
+      DUE_FOR_REBOOKING: 10
 
 # Rebook Engine (see rebookengine's own package-info.java). Every tunable
 # the feature needs is here, not hardcoded in the module -- see
@@ -181,6 +182,38 @@ rebook:
   # RebookStrategy#evaluate's probability estimate -- a flat heuristic today
   # (see that class's own doc comment on where a future ML model would slot in).
   base-probability: ${REBOOK_BASE_PROBABILITY:0.35}
+
+# Customer Intelligence (see customerintelligence's own package-info.java).
+# Every threshold RetentionCalculator/CustomerValueCalculator use is here,
+# not hardcoded in either class -- same reasoning as smartfill/rebook above.
+customer-intelligence:
+  interval:
+    # Fewer completed visits than this and averageVisitIntervalDays stays
+    # null -- a single visit establishes no cadence.
+    min-completed-visits-for-interval: ${CI_MIN_VISITS_FOR_INTERVAL:2}
+  retention:
+    # Days-since-last-visit up to this multiple of the average interval is
+    # still ACTIVE; beyond it, DUE_FOR_REBOOKING; beyond at-risk-factor,
+    # AT_RISK; beyond inactive-factor, INACTIVE. See RetentionCalculator's
+    # own worked example.
+    due-soon-factor: ${CI_DUE_SOON_FACTOR:1.15}
+    at-risk-factor: ${CI_AT_RISK_FACTOR:2.0}
+    inactive-factor: ${CI_INACTIVE_FACTOR:3.0}
+    # Fallback flat windows for a customer with only one visit ever (no
+    # established interval to multiply against).
+    single-visit-active-window-days: ${CI_SINGLE_VISIT_ACTIVE_WINDOW_DAYS:60}
+    single-visit-at-risk-window-days: ${CI_SINGLE_VISIT_AT_RISK_WINDOW_DAYS:120}
+  value:
+    # Caps that alone max out their factor at 1.0 -- see CustomerValueCalculator.
+    max-completed-bookings-for-score: ${CI_VALUE_MAX_BOOKINGS:20}
+    max-total-spent-for-score: ${CI_VALUE_MAX_SPENT:2000}
+    recency-window-days: ${CI_VALUE_RECENCY_WINDOW_DAYS:180}
+    # Blend weights -- normalized against their own sum, so they need not add to 1.
+    completed-bookings-weight: ${CI_VALUE_WEIGHT_BOOKINGS:0.30}
+    total-spent-weight: ${CI_VALUE_WEIGHT_SPENT:0.30}
+    attendance-weight: ${CI_VALUE_WEIGHT_ATTENDANCE:0.15}
+    recency-weight: ${CI_VALUE_WEIGHT_RECENCY:0.15}
+    repeat-relationship-weight: ${CI_VALUE_WEIGHT_REPEAT:0.10}
 
 # Lost Customer Recovery (see reactivationengine's own package-info.java).
 # Every tunable the feature needs is here, not hardcoded in the module --

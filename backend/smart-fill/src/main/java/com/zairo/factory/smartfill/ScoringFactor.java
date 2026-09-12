@@ -28,4 +28,12 @@ public enum ScoringFactor {
     SUITABLE_HISTORICAL_TIME,
     /** The candidate has made a booking (anywhere) within the configured recent-engagement window. */
     RECENT_ENGAGEMENT,
+    /**
+     * Customer Intelligence says this candidate's usual visit interval with
+     * this provider has elapsed (retention status {@code DUE_FOR_REBOOKING}
+     * or {@code AT_RISK}) -- see {@code customerintelligence.CustomerProviderProfile}.
+     * A freed slot is a good opportunity to reach someone who was likely
+     * about to book again anyway.
+     */
+    DUE_FOR_REBOOKING,
 }
