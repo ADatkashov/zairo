@@ -152,6 +152,26 @@ public class NotificationService {
         recordInApp(recipientUserId, InAppNotificationType.REBOOK_OFFER, title, body);
     }
 
+    /**
+     * {@code REQUIRES_NEW} -- same reasoning as {@link #sendBookingConfirmedEmail}.
+     * Deliberately warmer/more direct than {@link #sendRebookOfferEmail}'s
+     * neutral "time for your next visit?" -- this only ever goes to a
+     * customer the Lost Customer Recovery sweep judged significantly
+     * overdue, a colder lead worth a more pointed "we miss you" than a
+     * routine cadence reminder. No discount mentioned here on purpose (see
+     * {@code reactivationengine}'s package-info) -- whether to offer one is
+     * Smart Promotion Engine's decision, not this one's.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void sendReactivationOfferEmail(UUID recipientUserId, String toEmail, String providerName,
+            String serviceName) {
+        String title = "We miss you!";
+        String body = "It's been a while since your last " + serviceName + " at " + providerName
+                + " -- we'd love to see you again. Ready to book?";
+        emailProvider.send(toEmail, title, body);
+        recordInApp(recipientUserId, InAppNotificationType.REACTIVATION_OFFER, title, body);
+    }
+
     private void recordInApp(UUID recipientUserId, InAppNotificationType type, String title, String body) {
         inAppNotificationRepository.save(
                 new InAppNotification(UUID.randomUUID(), recipientUserId, type, title, body, Instant.now()));
