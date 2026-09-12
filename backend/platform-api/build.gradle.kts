@@ -44,6 +44,7 @@ dependencies {
     implementation(project(":revenue-engine"))
     implementation(project(":smart-fill"))
     implementation(project(":rebook-engine"))
+    implementation(project(":customer-intelligence"))
 
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.0")
     implementation("org.springframework.boot:spring-boot-starter-web")

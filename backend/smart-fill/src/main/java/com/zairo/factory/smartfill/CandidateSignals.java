@@ -16,5 +16,7 @@ public record CandidateSignals(
         boolean previousProviderBooking,
         boolean categoryInterest,
         boolean suitableHistoricalTime,
-        boolean recentEngagement) {
+        boolean recentEngagement,
+        /** See {@link ScoringFactor#DUE_FOR_REBOOKING} -- sourced from {@code customerintelligence.CustomerIntelligenceService}, not derived here. */
+        boolean dueForRebooking) {
 }
