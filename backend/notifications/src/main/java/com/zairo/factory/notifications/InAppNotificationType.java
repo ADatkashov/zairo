@@ -14,4 +14,6 @@ public enum InAppNotificationType {
     PAYMENT_REFUNDED,
     /** A Smart Fill offer for a freed slot -- see smartfill.SmartFillOfferReadyEvent. */
     SMART_FILL_OFFER,
+    /** A Rebook nudge for a customer whose usual visit interval has elapsed -- see rebookengine.RebookOfferReadyEvent. */
+    REBOOK_OFFER,
 }

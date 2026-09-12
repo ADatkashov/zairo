@@ -7,7 +7,7 @@
  * no scoring/candidate-finding/notification logic of its own.
  *
  * <h2>The seam: {@link com.zairo.factory.revenueengine.RevenueStrategy}</h2>
- * Every concrete play (Smart Fill today; rebooking, lost-customer recovery,
+ * Every concrete play (Smart Fill and Rebook today; lost-customer recovery,
  * gap-fill, targeted promotion, no-show prevention, VIP retention tomorrow)
  * is one {@code @Component implements RevenueStrategy} living in its own
  * module, declaring which {@link com.zairo.factory.revenueengine.DecisionTrigger}s
@@ -19,10 +19,12 @@
  * <h2>How a decision happens</h2>
  * <ol>
  *   <li>A domain event fires (today: {@code booking.BookingCancelledEvent}
- *   — see {@link com.zairo.factory.revenueengine.BookingCancelledDecisionListener}).
+ *   — see {@link com.zairo.factory.revenueengine.BookingCancelledDecisionListener}
+ *   — or {@code booking.BookingCompletedEvent} — see {@link
+ *   com.zairo.factory.revenueengine.BookingCompletedDecisionListener}).
  *   <li>It's turned into a {@link com.zairo.factory.revenueengine.DecisionContext}
  *   — trigger + provider + a reference id whose meaning depends on the
- *   trigger (a bookingId for a cancellation).
+ *   trigger (a bookingId for a cancellation or completion).
  *   <li>{@link com.zairo.factory.revenueengine.DecisionEngine} asks every
  *   strategy registered for that trigger to {@code evaluate} the context —
  *   each returns a {@link com.zairo.factory.revenueengine.StrategyDecision}:
@@ -40,9 +42,9 @@
  * </ol>
  *
  * <h2>Deliberately not built here</h2>
- * No strategy other than Smart Fill exists yet — {@link
- * com.zairo.factory.revenueengine.ActionType} enumerates the rest (REBOOK,
- * CUSTOMER_REACTIVATION, GAP_FILL, SMART_PROMOTION, NO_SHOW_PREVENTION,
+ * Only Smart Fill and Rebook exist so far — {@link
+ * com.zairo.factory.revenueengine.ActionType} enumerates the rest
+ * (CUSTOMER_REACTIVATION, GAP_FILL, SMART_PROMOTION, NO_SHOW_PREVENTION,
  * VIP_RETENTION) purely so the outcome ledger and any future dashboard
  * already speak the right vocabulary; building the strategies themselves is
  * separate, future work, each its own module depending on this one. No LLM

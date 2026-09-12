@@ -73,4 +73,22 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             """, nativeQuery = true)
     long countByProviderIdAndCreatedAtBetween(@Param("providerId") UUID providerId,
             @Param("monthStart") Instant monthStart, @Param("monthEnd") Instant monthEnd);
+
+    /**
+     * {@code rebookengine.RebookStrategy}/{@code RebookCampaignService}'s
+     * visit-history lookup — every COMPLETED booking a customer has with a
+     * given provider, oldest first, used to establish their usual visit
+     * interval. Same native-join shape as {@link #findByProviderId} (booking
+     * has no direct providerId column); ordered by the slot's own {@code
+     * starts_at} rather than {@code created_at} since a customer may book
+     * appointments out of creation order.
+     */
+    @Query(value = """
+            select b.* from booking b
+            join availability_slot s on s.id = b.availability_slot_id
+            where b.user_id = :userId and s.provider_id = :providerId and b.status = 'COMPLETED'
+            order by s.starts_at asc
+            """, nativeQuery = true)
+    List<Booking> findCompletedByUserIdAndProviderIdOrderByVisitDate(@Param("userId") UUID userId,
+            @Param("providerId") UUID providerId);
 }

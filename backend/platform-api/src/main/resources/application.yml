@@ -164,6 +164,24 @@ smartfill:
       SUITABLE_HISTORICAL_TIME: 10
       RECENT_ENGAGEMENT: 5
 
+# Rebook Engine (see rebookengine's own package-info.java). Every tunable
+# the feature needs is here, not hardcoded in the module -- see
+# RebookProperties.
+rebook:
+  # A customer needs at least this many COMPLETED visits with a provider
+  # (including the one that just completed) before ZAIRO tries to establish
+  # a usual visit interval for them at all.
+  min-visits-to-establish-interval: ${REBOOK_MIN_VISITS:2}
+  # The computed average gap between visits is clamped into this range --
+  # guards against one outlier pair of visits predicting an absurd cadence.
+  min-interval-days: ${REBOOK_MIN_INTERVAL_DAYS:7}
+  max-interval-days: ${REBOOK_MAX_INTERVAL_DAYS:180}
+  # How long after the nudge goes out to wait for a rebooking before giving up.
+  follow-up-window-days: ${REBOOK_FOLLOW_UP_WINDOW_DAYS:14}
+  # RebookStrategy#evaluate's probability estimate -- a flat heuristic today
+  # (see that class's own doc comment on where a future ML model would slot in).
+  base-probability: ${REBOOK_BASE_PROBABILITY:0.35}
+
 management:
   endpoints:
     web:
