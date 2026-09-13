@@ -448,6 +448,48 @@
     }
   },
 
+  "smartFillCampaignsScreenTitle": "Smart Fill Campaigns",
+  "@smartFillCampaignsScreenTitle": {"description": "Action Center drill-down screen's AppBar title."},
+
+  "smartFillCampaignsEmpty": "No active Smart Fill campaigns right now.",
+  "@smartFillCampaignsEmpty": {"description": "Smart Fill campaigns drill-down screen's empty state."},
+
+  "smartFillCampaignCandidatesNotified": "{count} candidates notified",
+  "@smartFillCampaignCandidatesNotified": {
+    "description": "Smart Fill campaign row: how many candidates this campaign has notified so far.",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "campaignStatusCreated": "Just cancelled",
+  "@campaignStatusCreated": {"description": "Smart Fill campaign status badge: no candidates found/scored yet."},
+
+  "campaignStatusSearching": "Searching",
+  "@campaignStatusSearching": {"description": "Smart Fill campaign status badge: candidate pool scored, no offer sent yet."},
+
+  "campaignStatusNotifying": "Notifying",
+  "@campaignStatusNotifying": {"description": "Smart Fill campaign status badge: at least one offer stage sent."},
+
+  "customerListEmpty": "No customers match this filter.",
+  "@customerListEmpty": {"description": "Customer list drill-down screen's empty state."},
+
+  "customerListLastVisitLabel": "Last visit: {date}",
+  "@customerListLastVisitLabel": {
+    "description": "Customer list row: their most recent completed visit's date.",
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+
+  "customerListNextExpectedLabel": "Expected back: {date}",
+  "@customerListNextExpectedLabel": {
+    "description": "Customer list row: their predicted next-visit date.",
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+
   "servicesSectionTitle": "Services",
   "@servicesSectionTitle": {"description": "Salon detail screen's services section header."},
 

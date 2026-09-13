@@ -1,9 +1,11 @@
 package com.zairo.factory.providerinsights;
 
 import com.zairo.factory.auth.CurrentUser;
+import com.zairo.factory.customerintelligence.RetentionStatus;
 import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.ActionCenterResponse;
 import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.BookingAnalyticsResponse;
 import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.CustomerAnalyticsResponse;
+import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.CustomerListItem;
 import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.OverviewResponse;
 import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.RevenueAnalyticsResponse;
 import com.zairo.factory.providerinsights.ProviderInsightsDtos.CustomerSummary;
@@ -12,6 +14,7 @@ import com.zairo.factory.providers.ProviderOwnership;
 import com.zairo.factory.revenueengine.RevenueAttributionService;
 import com.zairo.factory.revenueengine.RevenueEngineDtos.RevenueSummaryResponse;
 import com.zairo.factory.smartfill.SmartFillAnalyticsService;
+import com.zairo.factory.smartfill.SmartFillDtos.CampaignSummary;
 import com.zairo.factory.smartfill.SmartFillDtos.SmartFillPerformanceResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -241,5 +244,42 @@ public class ProviderInsightsController {
             HttpServletRequest httpRequest) {
         providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         return businessAnalyticsService.actions(providerId);
+    }
+
+    @Operation(summary = "Active Smart Fill campaigns", description = """
+            Owner-only. Every campaign still actively trying to recover a freed slot (not yet BOOKED/EXPIRED/ \
+            CANCELLED) -- the Action Center's Smart Fill opportunity drill-down. Not date-scoped: current \
+            state, not a historical report.""")
+    @ApiResponse(responseCode = "200", description = "Active campaigns, oldest slot first; empty if none")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/providers/{providerId}/analytics/smart-fill/active")
+    public List<CampaignSummary> analyticsActiveSmartFillCampaigns(
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
+            HttpServletRequest httpRequest) {
+        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
+        return smartFillAnalyticsService.activeCampaigns(providerId);
+    }
+
+    @Operation(summary = "Business Intelligence Dashboard — customer list", description = """
+            Owner-only. The individual customers behind one of the customer-analytics counts -- the Action \
+            Center's rebook-opportunity/retention-risk drill-down. Optionally filtered by retention status; \
+            unfiltered returns every customer who has ever had a relationship with this provider. Not \
+            date-scoped: current relationship state, not a historical report.""")
+    @ApiResponse(responseCode = "200", description = "Matching customers, empty if none")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/providers/{providerId}/analytics/customers/list")
+    public List<CustomerListItem> analyticsCustomersList(
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
+            @Parameter(description = "Only customers currently in this retention state. Omit for every customer.")
+            @RequestParam(required = false) RetentionStatus retentionStatus,
+            HttpServletRequest httpRequest) {
+        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
+        return businessAnalyticsService.customersList(providerId, retentionStatus);
     }
 }

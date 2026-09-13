@@ -308,6 +308,82 @@ class BusinessAnalyticsApiTests {
         assertThat(wholeHistory.get("campaignsCreated")).isEqualTo(2);
     }
 
+    @Test
+    void activeSmartFillCampaignsExcludesResolvedOnes() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "ba-sfactive-owner-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "BA SF Active Salon " + runId);
+        Instant now = Instant.now();
+
+        UUID activeSlotId = UUID.randomUUID();
+        SmartFillCampaign active = new SmartFillCampaign(UUID.randomUUID(), providerId, UUID.randomUUID(), null,
+                activeSlotId, UUID.randomUUID(), now.plus(1, ChronoUnit.DAYS),
+                now.plus(1, ChronoUnit.DAYS).plus(30, ChronoUnit.MINUTES), new BigDecimal("20.00"), "USD", now);
+        smartFillCampaignRepository.save(active);
+
+        // A real cancellation with no eligible candidates -- Smart Fill expires it immediately (see
+        // SmartFillApiTests) -- must not appear in the active list.
+        UUID serviceId = createService(owner, providerId, "SF Active Service " + runId, new BigDecimal("20.00"));
+        Instant resolvedStart = now.plus(2, ChronoUnit.DAYS);
+        UUID resolvedSlot = createSlot(owner, providerId, resolvedStart, resolvedStart.plus(30, ChronoUnit.MINUTES));
+        Registered canceller = TestAuth.registerCustomer(restTemplate, "ba-sfactive-canceller-" + runId + "@example.com");
+        UUID resolvedBookingId = bookWithPrice(canceller, serviceId, resolvedSlot, new BigDecimal("20.00"));
+        cancelBooking(canceller, resolvedBookingId);
+
+        ResponseEntity<List> response = restTemplate.exchange(
+                "/api/v1/providers/" + providerId + "/analytics/smart-fill/active", HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), List.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).hasSize(1);
+        Map<?, ?> campaign = (Map<?, ?>) response.getBody().get(0);
+        assertThat(campaign.get("status")).isEqualTo("CREATED");
+    }
+
+    @Test
+    void customerListFiltersByRetentionStatusAndOnlyTheOwnerCanReadIt() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "ba-custlist-owner-" + runId + "@example.com");
+        Registered otherOwner = TestAuth.registerOwner(restTemplate, "ba-custlist-other-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "BA Customer List Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Overdue List Service " + runId, new BigDecimal("35.00"));
+
+        // Same technique as CustomerIntelligenceApiTests / customerAnalyticsReportsRetentionMix...:
+        // a 14-day cadence (visits 44 and 30 days ago) lands 30 days since the last visit -- past
+        // atRiskFactor (2.0 x 14 = 28) but within inactiveFactor (3.0 x 14 = 42), so DUE_FOR_REBOOKING
+        // or AT_RISK.
+        Registered overdueCustomer = TestAuth.registerCustomer(restTemplate,
+                "ba-custlist-overdue-" + runId + "@example.com");
+        Instant today = Instant.now().truncatedTo(ChronoUnit.DAYS);
+        completeVisit(owner, overdueCustomer, providerId, serviceId, today.minus(44, ChronoUnit.DAYS));
+        completeVisit(owner, overdueCustomer, providerId, serviceId, today.minus(30, ChronoUnit.DAYS));
+
+        ResponseEntity<Map> forbidden = restTemplate.exchange(
+                "/api/v1/providers/" + providerId + "/analytics/customers/list", HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(otherOwner.accessToken())), Map.class);
+        assertThat(forbidden.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        ResponseEntity<List> unfiltered = restTemplate.exchange(
+                "/api/v1/providers/" + providerId + "/analytics/customers/list", HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), List.class);
+        assertThat(unfiltered.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(unfiltered.getBody()).hasSize(1);
+        Map<?, ?> customer = (Map<?, ?>) unfiltered.getBody().get(0);
+        assertThat(customer.get("userId")).isEqualTo(overdueCustomer.userId().toString());
+        assertThat(customer.get("favouriteServiceTitle")).isEqualTo("Overdue List Service " + runId);
+        String actualStatus = (String) customer.get("retentionStatus");
+        assertThat(actualStatus).isIn("DUE_FOR_REBOOKING", "AT_RISK");
+
+        ResponseEntity<List> matchingFilter = restTemplate.exchange(
+                "/api/v1/providers/" + providerId + "/analytics/customers/list?retentionStatus=" + actualStatus,
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), List.class);
+        assertThat(matchingFilter.getBody()).hasSize(1);
+
+        ResponseEntity<List> nonMatchingFilter = restTemplate.exchange(
+                "/api/v1/providers/" + providerId + "/analytics/customers/list?retentionStatus=ACTIVE",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), List.class);
+        assertThat(nonMatchingFilter.getBody()).isEmpty();
+    }
+
     private void completeVisit(Registered owner, Registered customer, UUID providerId, UUID serviceId,
             Instant startsAt) {
         UUID slotId = createSlot(owner, providerId, startsAt, startsAt.plus(30, ChronoUnit.MINUTES));

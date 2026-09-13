@@ -1,5 +1,6 @@
 package com.zairo.factory.providerinsights;
 
+import com.zairo.factory.customerintelligence.RetentionStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -111,6 +112,24 @@ public final class BusinessAnalyticsDtos {
 
         public record FavouriteStaff(UUID employeeId, long customerCount) {
         }
+    }
+
+    @Schema(description = "One customer behind a CustomerAnalyticsResponse count -- the Action Center's "
+            + "rebook-opportunity/retention-risk drill-down.")
+    public record CustomerListItem(
+            UUID userId,
+            String displayName,
+            String email,
+            RetentionStatus retentionStatus,
+            @Schema(description = "Their most recent COMPLETED booking's slot start -- null if none yet.")
+            Instant lastVisitAt,
+            @Schema(description = "Customer Intelligence's predicted next-visit date, from their own established "
+                    + "cadence -- null if none established yet.")
+            Instant nextExpectedVisitAt,
+            @Schema(description = "Lifetime spend with this provider, from SUCCEEDED payments only.")
+            BigDecimal totalSpent,
+            String currency,
+            String favouriteServiceTitle) {
     }
 
     public record ActionCenterResponse(UUID providerId, List<ActionItem> actions) {
