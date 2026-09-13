@@ -118,3 +118,16 @@ final businessAnalyticsActionsProvider =
     FutureProvider.autoDispose.family<BusinessActionCenter, String>((ref, providerId) {
   return ref.watch(salonAdminApiProvider).fetchAnalyticsActions(providerId);
 });
+
+/// The Action Center's Smart Fill drill-down screen's data source.
+final activeSmartFillCampaignsProvider =
+    FutureProvider.autoDispose.family<List<SmartFillCampaignSummary>, String>((ref, providerId) {
+  return ref.watch(salonAdminApiProvider).fetchActiveSmartFillCampaigns(providerId);
+});
+
+/// The Action Center's rebook-opportunity/retention-risk drill-down
+/// screen's data source, keyed by (providerId, retentionStatus filter).
+final customerListProvider = FutureProvider.autoDispose
+    .family<List<CustomerListItem>, (String providerId, CustomerRetentionStatus? retentionStatus)>((ref, key) {
+  return ref.watch(salonAdminApiProvider).fetchCustomerList(key.$1, retentionStatus: key.$2);
+});

@@ -305,6 +305,16 @@
   "actionLowUtilization": "Ертеңге брондалмаған {count} бос слот бар.",
   "errorAnalyticsLoadFailed": "Аналитиканы жүктеу мүмкін болмады: {error}",
 
+  "smartFillCampaignsScreenTitle": "Smart Fill науқандары",
+  "smartFillCampaignsEmpty": "Қазір белсенді Smart Fill науқандары жоқ.",
+  "smartFillCampaignCandidatesNotified": "Хабарланған үміткерлер: {count}",
+  "campaignStatusCreated": "Жаңа болдырылмады",
+  "campaignStatusSearching": "Үміткерлерді іздеу",
+  "campaignStatusNotifying": "Хабарлау",
+  "customerListEmpty": "Осы сүзгі бойынша клиенттер жоқ.",
+  "customerListLastVisitLabel": "Соңғы келуі: {date}",
+  "customerListNextExpectedLabel": "Күтілуде: {date}",
+
   "changeAvatarDialogTitle": "Аватарды өзгерту",
   "changeAvatarRemoveButton": "Фотоны өшіру",
   "errorAvatarUpdateFailed": "Аватарды жаңарту мүмкін болмады: {error}",
