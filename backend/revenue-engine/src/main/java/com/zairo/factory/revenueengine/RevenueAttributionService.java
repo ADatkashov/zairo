@@ -60,10 +60,22 @@ public class RevenueAttributionService {
         });
     }
 
-    /** provider-insights' "Revenue Recovered by ZAIRO" panel — see {@code ProviderInsightsController}. */
+    /** provider-insights' "Revenue Recovered by ZAIRO" panel — see {@code ProviderInsightsController}. Lifetime, all decisions ever made. */
     public RevenueSummaryResponse summary(UUID providerId) {
-        List<RevenueOutcome> outcomes = repository.findByProviderId(providerId);
+        return summarize(repository.findByProviderId(providerId));
+    }
 
+    /**
+     * The same summary, scoped to one reporting period — the Business
+     * Analytics dashboard's "revenue recovered this month" tile, which
+     * must move with the same date range as every other metric on the
+     * page (see {@code providerinsights.BusinessAnalyticsService}).
+     */
+    public RevenueSummaryResponse summary(UUID providerId, Instant from, Instant to) {
+        return summarize(repository.findByProviderIdAndDecidedAtBetween(providerId, from, to));
+    }
+
+    private RevenueSummaryResponse summarize(List<RevenueOutcome> outcomes) {
         long executed = outcomes.stream().filter(o -> o.getActionType() != ActionType.NO_ACTION).count();
         List<RevenueOutcome> recovered = outcomes.stream().filter(o -> Boolean.TRUE.equals(o.getRecovered())).toList();
 

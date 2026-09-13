@@ -33,4 +33,11 @@ dependencies {
     // ledger, spanning every RevenueStrategy (Smart Fill today, more
     // later), same read-composition reasoning as the dependency above.
     implementation(project(":revenue-engine"))
+
+    // Business Analytics' customer section and Action Center read
+    // Customer Intelligence's already-computed per-business retention
+    // classification (due-for-rebooking/at-risk/etc.) rather than
+    // recomputing any of it here -- same read-composition reasoning as
+    // the dependencies above.
+    implementation(project(":customer-intelligence"))
 }
