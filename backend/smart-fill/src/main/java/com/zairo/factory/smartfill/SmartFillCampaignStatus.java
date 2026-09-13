@@ -11,6 +11,16 @@ public enum SmartFillCampaignStatus {
     BOOKED,
     /** No candidates found, or every stage was exhausted / the slot's start time passed with no booking -- terminal. */
     EXPIRED,
-    /** Reserved for a future manual/admin abort -- no code path sets this yet. */
+    /** The owner cancelled the campaign -- terminal (see {@code campaigncenter}'s Campaign Center). */
     CANCELLED,
+    /**
+     * The owner paused notification staging -- only reachable from NOTIFYING
+     * (see {@link SmartFillCampaignService#pauseCampaign}). Excluded from
+     * {@link SmartFillCampaignJob}'s sweep (which filters on NOTIFYING
+     * specifically) so no further stage is sent while paused, but still
+     * included wherever an active campaign must be closed out if its slot
+     * gets booked anyway (see {@link SmartFillCampaignService
+     * #completeCampaignsForBookedSlot}).
+     */
+    PAUSED,
 }

@@ -1,6 +1,7 @@
 package com.zairo.factory.smartfill;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,6 +9,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface CandidateOfferRepository extends JpaRepository<CandidateOffer, UUID> {
 
     List<CandidateOffer> findByCampaignId(UUID campaignId);
+
+    /** {@code campaigncenter.CampaignCenterService}'s bulk read for a whole page of campaigns -- one query, not one {@link #findByCampaignId} call per campaign. */
+    List<CandidateOffer> findByCampaignIdIn(Collection<UUID> campaignIds);
 
     List<CandidateOffer> findByCampaignIdAndStage(UUID campaignId, int stage);
 

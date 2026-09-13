@@ -150,6 +150,27 @@ public class RebookCampaignService {
     }
 
     /**
+     * {@code campaigncenter.CampaignCenterService}'s cancel action -- an
+     * owner-initiated abort, same close-out as {@link #expireCampaign} but
+     * reachable any time the campaign is still active (waiting for {@code
+     * dueAt} or already offered). False (no-op) once the campaign is already
+     * terminal (BOOKED/EXPIRED/CANCELLED) -- idempotent under a retried/
+     * duplicate request.
+     */
+    @Transactional
+    public boolean cancelCampaign(UUID campaignId, Instant now) {
+        RebookCampaign campaign = campaignRepository.findById(campaignId).orElse(null);
+        if (campaign == null || !campaign.isActive()) {
+            return false;
+        }
+        campaign.markCancelled(now);
+        campaignRepository.save(campaign);
+        revenueAttributionService.resolve(ActionType.REBOOK, campaign.getCompletedBookingId(), BigDecimal.ZERO,
+                campaign.getPriceCurrency(), false, now);
+        return true;
+    }
+
+    /**
      * {@link RebookOutcomeListener}'s one call, fired whenever ANY booking
      * is confirmed -- closes out every still-active campaign for this exact
      * customer+provider pair as a genuine "they came back" win, whether or

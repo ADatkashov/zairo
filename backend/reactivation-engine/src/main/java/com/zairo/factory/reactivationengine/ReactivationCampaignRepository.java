@@ -29,4 +29,10 @@ public interface ReactivationCampaignRepository extends JpaRepository<Reactivati
      */
     List<ReactivationCampaign> findByUserIdAndProviderIdAndStatus(UUID userId, UUID providerId,
             ReactivationCampaignStatus status);
+
+    /** {@code campaigncenter.CampaignCenterService}'s Campaign Center read surface -- every Reactivation campaign this provider has ever run. */
+    List<ReactivationCampaign> findByProviderId(UUID providerId);
+
+    /** The same read surface's date-scoped variant -- the Campaign Center's selected date-range filter. */
+    List<ReactivationCampaign> findByProviderIdAndCreatedAtBetween(UUID providerId, Instant from, Instant to);
 }

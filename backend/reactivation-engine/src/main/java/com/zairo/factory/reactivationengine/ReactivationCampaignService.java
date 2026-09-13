@@ -128,6 +128,25 @@ public class ReactivationCampaignService {
     }
 
     /**
+     * {@code campaigncenter.CampaignCenterService}'s cancel action -- an
+     * owner-initiated abort, same close-out as {@link #expireCampaign}. False
+     * (no-op) once the campaign is already terminal (BOOKED/EXPIRED/
+     * CANCELLED) -- idempotent under a retried/duplicate request.
+     */
+    @Transactional
+    public boolean cancelCampaign(UUID campaignId, Instant now) {
+        ReactivationCampaign campaign = campaignRepository.findById(campaignId).orElse(null);
+        if (campaign == null || !campaign.isActive()) {
+            return false;
+        }
+        campaign.markCancelled(now);
+        campaignRepository.save(campaign);
+        revenueAttributionService.resolve(ActionType.CUSTOMER_REACTIVATION, campaign.getLastVisitBookingId(),
+                BigDecimal.ZERO, campaign.getPriceCurrency(), false, now);
+        return true;
+    }
+
+    /**
      * {@link ReactivationOutcomeListener}'s one call, fired whenever ANY
      * booking is confirmed -- closes out every still-active campaign for
      * this exact customer+provider pair as a genuine "they came back" win,
