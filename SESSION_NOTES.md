@@ -4845,3 +4845,77 @@ no-show поля на Booking и дальнейшее расширение Avail
 явно поглощены/переоценены новым Discovery-планом и не были в его
 scope (P0-P3 приоритеты брифа сфокусированы на discovery/customer
 experience, не на operational booking fields).
+
+---
+
+## Campaign Center + Smart Actions (2026-09-13)
+
+Продолжение Business Intelligence Dashboard (см. выше) — закрывает явно
+зафиксированный в `docs/business-intelligence-dashboard.md` разрыв: "no
+manage-campaign action ... exists yet in this app". Задача: сделать три
+существующих campaign-движка (Smart Fill, Rebook, Reactivation) видимыми,
+понятными и управляемыми для владельца бизнеса, не дублируя их логику.
+
+**Backend** (`backend/campaign-center`, новый read-composition модуль,
+без своих таблиц — по образцу `provider-insights`):
+- Единый `CampaignDto` поверх `SmartFillCampaign`/`RebookCampaign`/
+  `ReactivationCampaign` — списка нет ни одного объединяющего "Campaign"
+  где-либо в кодовой базе, поэтому composition, а не четвёртая таблица.
+- Эндпоинты: `GET /campaigns` (пагинация/фильтры/поиск), `/campaigns/stats`,
+  `/smart-actions`, `/campaigns/{type}/{id}`, `/campaigns/{type}/{id}/timeline`,
+  и четыре POST-действия (`pause`/`resume`/`cancel`/`retry`).
+- Таймлайн строится только из реально сохранённых timestamp'ов — Rebook,
+  например, не хранит "notified at", поэтому для него `NOTIFICATION_SENT`
+  никогда не показывается (задокументированный, не выдуманный пробел).
+- Минимальные безопасные lifecycle-команды добавлены в сами движки, а не
+  продублированы здесь: pause/resume только для Smart Fill (новый статус
+  `PAUSED`), cancel для всех трёх типов, retry только для Smart Fill
+  (перезапускает поиск кандидатов на уже истёкшей, но не занятой заявке).
+  Всё идемпотентно, всё повторно проверяет владение кампанией.
+- `FAILED` — производный статус (EXPIRED без единого уведомленного
+  кандидата), не персистится отдельно.
+- V56: индексы `provider_id` для rebook/reactivation (раньше не нужны
+  были), без новых колонок — PAUSED/CANCELLED это новые значения
+  существующей `status varchar(20)` без check-constraint.
+- Тесты: `CampaignCenterApiTests` (compiles, требует Testcontainers/Docker
+  — не запускался в этой песочнице, тот же документированный лимит, что и
+  у `BusinessAnalyticsApiTests`).
+- См. `docs/campaign-center.md`.
+
+**Flutter** (business_admin, делегировано фоновому агенту с точной
+спецификацией контракта API, результат вручную перепроверен): новый
+top-level `features/campaigns/` — список кампаний (KPI-карточки,
+фильтры, пагинация, pull-to-refresh), карточка кампании, экран деталей
+(таймлайн, исход, доступные действия строго по `availableActions` с
+сервера, подтверждение для Cancel). Smart Action Center — новая секция
+на существующем `BusinessAnalyticsScreen`'е поверх `/smart-actions`, тот
+же визуальный язык, что у уже существующего Action Center. Новый пункт
+навигации в desktop-сайдбаре и mobile AppBar. Локализация en/ru/kk (85
+новых ключей, полный паритет).
+
+**Независимая проверка** (Flutter SDK 3.47.0 склонирован отдельно в этой
+сессии, поскольку не был предустановлен): `flutter analyze` — 0 новых
+замечаний (единственное найденное — pre-existing, не в затронутых
+строках), `flutter test` — 51/51 (13 новых, без регрессий). `pubspec.lock`
+и сгенерированные Windows plugin-registrant файлы, которые локально
+задрейфовали при `flutter pub get` в этой песочнице (не из-за фичи —
+транзитивная замена `file_picker` → `file_selector_*`, не связанная с
+задачей), сознательно НЕ закоммичены — откачены обратно, чтобы не тащить
+в PR посторонний, не связанный с фичей diff.
+
+### CI
+
+Backend Gradle-сборка и оба модуля Flutter-теста прогнаны локально и
+зелёные (Docker недоступен в песочнице — backend integration-тесты не
+запускались, только компиляция). GitHub Actions ("Flutter CI" и "backend
+(build + test)") красные на PR #80, но это не связано с этим PR — тот же
+workflow красный на `develop` уже 5+ мёрджей подряд, каждый job падает за
+~3 секунды без назначенного runner'а (инфраструктурная проблема на уровне
+репозитория/организации, не код). Задокументировано комментарием на PR,
+один re-run запрошен (упал так же) — дальше вне зоны действия этой сессии.
+
+### Текущий статус
+
+PR #80 (`claude/campaign-center-smart-actions-5a092d` → `develop`),
+draft, подписка на события активна. Backend и Flutter запушены двумя
+коммитами. Мёрдж заблокирован инфраструктурной проблемой CI, не кодом.

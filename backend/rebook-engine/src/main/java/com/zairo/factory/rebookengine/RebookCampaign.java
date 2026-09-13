@@ -182,6 +182,11 @@ public class RebookCampaign {
         this.completedAt = now;
     }
 
+    void markCancelled(Instant now) {
+        this.status = RebookCampaignStatus.CANCELLED;
+        this.completedAt = now;
+    }
+
     boolean isActive() {
         return status == RebookCampaignStatus.CREATED || status == RebookCampaignStatus.OFFERED;
     }

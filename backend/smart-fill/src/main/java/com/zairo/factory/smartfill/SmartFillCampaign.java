@@ -184,8 +184,10 @@ public class SmartFillCampaign {
         this.nextStageAt = nextStageAt;
     }
 
+    /** Also clears {@code completedAt} -- a no-op the first time (always null then), but required for {@link SmartFillCampaignService#retryCampaign} reviving an EXPIRED campaign. */
     void markSearching() {
         this.status = SmartFillCampaignStatus.SEARCHING;
+        this.completedAt = null;
     }
 
     void markBooked(UUID recoveredBookingId, Instant now) {
@@ -197,6 +199,24 @@ public class SmartFillCampaign {
 
     void markExpired(Instant now) {
         this.status = SmartFillCampaignStatus.EXPIRED;
+        this.nextStageAt = null;
+        this.completedAt = now;
+    }
+
+    /** Only reachable from NOTIFYING -- see {@link SmartFillCampaignService#pauseCampaign}. */
+    void markPaused() {
+        this.status = SmartFillCampaignStatus.PAUSED;
+        this.nextStageAt = null;
+    }
+
+    /** Resumes staging at the next stage, as if this stage had just been sent -- see {@link SmartFillCampaignService#resumeCampaign}. */
+    void markResumed(Instant nextStageAt) {
+        this.status = SmartFillCampaignStatus.NOTIFYING;
+        this.nextStageAt = nextStageAt;
+    }
+
+    void markCancelled(Instant now) {
+        this.status = SmartFillCampaignStatus.CANCELLED;
         this.nextStageAt = null;
         this.completedAt = now;
     }

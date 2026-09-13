@@ -7,4 +7,6 @@ public enum ReactivationCampaignStatus {
     BOOKED,
     /** The follow-up window closed with no rebooking -- terminal. */
     EXPIRED,
+    /** The owner cancelled the campaign -- terminal (see {@code campaigncenter}'s Campaign Center). */
+    CANCELLED,
 }

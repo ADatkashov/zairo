@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/auth/presentation/providers/auth_providers.dart';
 import '../features/auth/presentation/widgets/change_avatar_dialog.dart';
 import '../features/billing/presentation/screens/billing_screen.dart';
+import '../features/campaigns/presentation/screens/campaign_center_screen.dart';
 import '../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
 import '../l10n/app_localizations.dart';
@@ -21,23 +22,32 @@ import '../l10n/app_localizations.dart';
 /// does when reached by push on mobile — this composes them side-by-side
 /// rather than stripping their chrome, so nothing about DashboardScreen,
 /// BillingScreen or SettingsScreen had to change to gain a desktop shell.
-class AdminShell extends StatefulWidget {
+class AdminShell extends ConsumerStatefulWidget {
   const AdminShell({super.key});
 
   @override
-  State<AdminShell> createState() => _AdminShellState();
+  ConsumerState<AdminShell> createState() => _AdminShellState();
 }
 
-class _AdminShellState extends State<AdminShell> {
+class _AdminShellState extends ConsumerState<AdminShell> {
   int _selectedIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
+    // AdminShell only ever renders once logged in (see ResponsiveOwnerHome,
+    // reached through AuthGate) -- a null id here would mean a logout
+    // happened mid-frame, same edge case DashboardScreen already handles.
+    final ownerUserId = ref.watch(authControllerProvider).value?.id;
 
     final destinations = [
       AdminSidebarDestination(icon: Icons.dashboard_outlined, selectedIcon: Icons.dashboard_rounded, label: l10n.navDashboard),
+      AdminSidebarDestination(
+        icon: Icons.campaign_outlined,
+        selectedIcon: Icons.campaign_rounded,
+        label: l10n.campaignCenterNavLabel,
+      ),
       AdminSidebarDestination(
         icon: Icons.receipt_long_outlined,
         selectedIcon: Icons.receipt_long_rounded,
@@ -58,7 +68,12 @@ class _AdminShellState extends State<AdminShell> {
           Expanded(
             child: IndexedStack(
               index: _selectedIndex,
-              children: const [DashboardScreen(), BillingScreen(), SettingsScreen()],
+              children: [
+                const DashboardScreen(),
+                if (ownerUserId != null) CampaignCenterScreen(ownerUserId: ownerUserId) else const SizedBox.shrink(),
+                const BillingScreen(),
+                const SettingsScreen(),
+              ],
             ),
           ),
         ],
