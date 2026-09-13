@@ -9,6 +9,7 @@ import '../../../billing/data/billing_exception.dart';
 import '../../../billing/data/models/subscription.dart';
 import '../../../billing/presentation/providers/billing_providers.dart';
 import '../../../billing/presentation/screens/billing_screen.dart';
+import '../../../campaigns/presentation/screens/campaign_center_screen.dart';
 import '../../../catalog/presentation/category_icon.dart';
 import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../../salon/data/models/admin_provider.dart';
@@ -57,6 +58,13 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.campaign_outlined),
+            tooltip: l10n.campaignCenterNavLabel,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => CampaignCenterScreen(ownerUserId: user.id)),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             tooltip: l10n.settingsButtonTooltip,
