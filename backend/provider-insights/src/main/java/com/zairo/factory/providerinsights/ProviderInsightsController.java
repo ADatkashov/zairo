@@ -1,6 +1,11 @@
 package com.zairo.factory.providerinsights;
 
 import com.zairo.factory.auth.CurrentUser;
+import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.ActionCenterResponse;
+import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.BookingAnalyticsResponse;
+import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.CustomerAnalyticsResponse;
+import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.OverviewResponse;
+import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.RevenueAnalyticsResponse;
 import com.zairo.factory.providerinsights.ProviderInsightsDtos.CustomerSummary;
 import com.zairo.factory.providerinsights.ProviderInsightsDtos.DashboardMetrics;
 import com.zairo.factory.providers.ProviderOwnership;
@@ -14,10 +19,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -28,14 +36,16 @@ public class ProviderInsightsController {
     private final ProviderOwnership providerOwnership;
     private final SmartFillAnalyticsService smartFillAnalyticsService;
     private final RevenueAttributionService revenueAttributionService;
+    private final BusinessAnalyticsService businessAnalyticsService;
 
     public ProviderInsightsController(ProviderInsightsService providerInsightsService,
             ProviderOwnership providerOwnership, SmartFillAnalyticsService smartFillAnalyticsService,
-            RevenueAttributionService revenueAttributionService) {
+            RevenueAttributionService revenueAttributionService, BusinessAnalyticsService businessAnalyticsService) {
         this.providerInsightsService = providerInsightsService;
         this.providerOwnership = providerOwnership;
         this.smartFillAnalyticsService = smartFillAnalyticsService;
         this.revenueAttributionService = revenueAttributionService;
+        this.businessAnalyticsService = businessAnalyticsService;
     }
 
     @Operation(summary = "This provider's customer history", description = """
@@ -108,5 +118,128 @@ public class ProviderInsightsController {
             HttpServletRequest httpRequest) {
         providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         return revenueAttributionService.summary(providerId);
+    }
+
+    @Operation(summary = "Business Intelligence Dashboard — overview", description = """
+            Owner-only. The dashboard's top-line snapshot for one reporting period: booking mix, revenue \
+            (from SUCCEEDED payments only), utilization (booked vs. offered availability-slot duration — \
+            null if this provider has no slots in range, never a guessed figure), lifetime returning-customer \
+            rate, and revenue recovered by the Decision Engine within the period. [from]/[to] default to the \
+            current calendar month (UTC) through now when omitted.""")
+    @ApiResponse(responseCode = "200", description = "Overview metrics for the resolved [from, to) range")
+    @ApiResponse(responseCode = "400", description = "'from' is not before 'to'")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/providers/{providerId}/analytics/overview")
+    public OverviewResponse analyticsOverview(
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
+            @Parameter(description = "Start of the reporting period, inclusive. Defaults to the start of the "
+                    + "current UTC calendar month.")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @Parameter(description = "End of the reporting period, exclusive. Defaults to now.")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            HttpServletRequest httpRequest) {
+        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
+        return businessAnalyticsService.overview(providerId, from, to);
+    }
+
+    @Operation(summary = "Business Intelligence Dashboard — revenue", description = """
+            Owner-only. Total/average revenue for the period (SUCCEEDED payments only), a daily revenue \
+            trend, breakdowns by service and by staff member, and revenue recovered by the Decision Engine \
+            within the same period.""")
+    @ApiResponse(responseCode = "200", description = "Revenue analytics for the resolved [from, to) range")
+    @ApiResponse(responseCode = "400", description = "'from' is not before 'to'")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/providers/{providerId}/analytics/revenue")
+    public RevenueAnalyticsResponse analyticsRevenue(
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            HttpServletRequest httpRequest) {
+        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
+        return businessAnalyticsService.revenue(providerId, from, to);
+    }
+
+    @Operation(summary = "Business Intelligence Dashboard — bookings", description = """
+            Owner-only. Booking mix (completed/upcoming/cancelled/no-show), cancellation/no-show/repeat-booking \
+            rates, and a daily booking trend, all scoped to bookings whose slot falls within the period.""")
+    @ApiResponse(responseCode = "200", description = "Booking analytics for the resolved [from, to) range")
+    @ApiResponse(responseCode = "400", description = "'from' is not before 'to'")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/providers/{providerId}/analytics/bookings")
+    public BookingAnalyticsResponse analyticsBookings(
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            HttpServletRequest httpRequest) {
+        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
+        return businessAnalyticsService.bookings(providerId, from, to);
+    }
+
+    @Operation(summary = "Business Intelligence Dashboard — Smart Fill", description = """
+            Owner-only. The same Smart Fill performance snapshot as {@code /smart-fill/performance}, scoped \
+            to campaigns created within the given reporting period instead of this provider's whole history \
+            — so it moves with the dashboard's selected date range.""")
+    @ApiResponse(responseCode = "200", description = "Smart Fill performance for the resolved [from, to) range")
+    @ApiResponse(responseCode = "400", description = "'from' is not before 'to'")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/providers/{providerId}/analytics/smart-fill")
+    public SmartFillPerformanceResponse analyticsSmartFill(
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            HttpServletRequest httpRequest) {
+        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
+        return businessAnalyticsService.smartFillPerformance(providerId, from, to);
+    }
+
+    @Operation(summary = "Business Intelligence Dashboard — customers", description = """
+            Owner-only. Business-level rollup over Customer Intelligence's per-customer profiles for this \
+            provider: retention mix (active/due-for-rebooking/at-risk/inactive), average visit interval and \
+            customer value, and favourite services/staff. Most fields are lifetime (a customer relationship \
+            spans the whole history); [from]/[to] only scope "new customers" (first visit within the period).""")
+    @ApiResponse(responseCode = "200", description = "Customer analytics, all-zero if this provider has no customers yet")
+    @ApiResponse(responseCode = "400", description = "'from' is not before 'to'")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/providers/{providerId}/analytics/customers")
+    public CustomerAnalyticsResponse analyticsCustomers(
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            HttpServletRequest httpRequest) {
+        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
+        return businessAnalyticsService.customers(providerId, from, to);
+    }
+
+    @Operation(summary = "Business Intelligence Dashboard — Action Center", description = """
+            Owner-only. Deterministic, rule-based signals for what deserves attention right now — active \
+            Smart Fill opportunities, customers due for rebooking, customers at retention risk, and near-term \
+            low-utilization days — never a generated recommendation. Not date-scoped: this reflects current \
+            state, not a historical report.""")
+    @ApiResponse(responseCode = "200", description = "Action items, empty if nothing currently needs attention")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/providers/{providerId}/analytics/actions")
+    public ActionCenterResponse analyticsActions(
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
+            HttpServletRequest httpRequest) {
+        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
+        return businessAnalyticsService.actions(providerId);
     }
 }

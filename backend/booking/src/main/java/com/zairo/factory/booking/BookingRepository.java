@@ -75,6 +75,22 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             @Param("monthStart") Instant monthStart, @Param("monthEnd") Instant monthEnd);
 
     /**
+     * {@code providerinsights.BusinessAnalyticsService}'s shared date-range
+     * fetch behind every Business Analytics endpoint -- every booking whose
+     * slot falls within [from, to), scoped to when the appointment happens
+     * rather than when it was made. Same native-join shape as {@link
+     * #findByProviderId}, just bounded so a reporting period doesn't load
+     * this provider's entire booking history.
+     */
+    @Query(value = """
+            select b.* from booking b
+            join availability_slot s on s.id = b.availability_slot_id
+            where s.provider_id = :providerId and s.starts_at >= :from and s.starts_at < :to
+            """, nativeQuery = true)
+    List<Booking> findByProviderIdAndSlotStartsAtBetween(@Param("providerId") UUID providerId,
+            @Param("from") Instant from, @Param("to") Instant to);
+
+    /**
      * {@code rebookengine.RebookStrategy}/{@code RebookCampaignService}'s
      * visit-history lookup — every COMPLETED booking a customer has with a
      * given provider, oldest first, used to establish their usual visit

@@ -547,7 +547,7 @@ Lightweight production security review — код-проверено, не че�
 ## 15. Phase 2 — Growth
 
 - Полная событийная модель (`analytics_event` + недостающие publish-точки, раздел 10) + conversion funnel на дашборде.
-- Business Dashboard v2 (тренды по времени, разбивка по сотрудникам).
+- ~~**Business Dashboard v2** (тренды по времени, разбивка по сотрудникам)~~ — ✅ **Сделано (2026-09-13)**: полноценный Business Intelligence Dashboard в `provider-insights` (`BusinessAnalyticsService` + `GET /api/v1/providers/{id}/analytics/{overview,revenue,bookings,smart-fill,customers,actions}`), см. `docs/business-intelligence-dashboard.md`. Configurable date range (today/week/month/custom), revenue by day/service/staff, booking trend, Smart Fill и Revenue Engine переиспользованы (не задублированы), Customer Intelligence agregated по бизнесу, детерминированный Action Center. Live-query, без новых таблиц — та же read-composition дисциплина, что и у `provider-insights`/`platform-insights`. Utilization считается по реальным `availability_slot` (booked/offered duration), а не гадается. Flutter: новый экран `BusinessAnalyticsScreen` (иконка на SalonDetailScreen), локализация en/ru/kk.
 - Промокоды / скидка на первый визит.
 - Геокодирование адреса (если ручной ввод lat/lng окажется болью при росте числа бизнесов).
 - Push-уведомления (FCM) — оправданы с реальным объёмом пользователей.

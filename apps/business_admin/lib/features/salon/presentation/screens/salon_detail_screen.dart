@@ -33,6 +33,7 @@ import '../providers/salon_providers.dart';
 import '../widgets/add_service_dialog.dart';
 import '../widgets/add_slot_dialog.dart';
 import '../widgets/recurring_schedule_dialog.dart';
+import 'business_analytics_screen.dart';
 
 /// Categories with their own hardcoded staff module (Master/Mechanic/
 /// Cleaner) — every other category falls back to the generic `staff`
@@ -62,6 +63,15 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
       appBar: FactoryAppBar(
         title: _provider.name,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.insights_outlined),
+            tooltip: l10n.businessAnalyticsTooltip,
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => BusinessAnalyticsScreen(provider: _provider)),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.edit_outlined),
             tooltip: l10n.editBusinessTooltip,

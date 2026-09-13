@@ -6,6 +6,7 @@ import '../../data/models/admin_booking.dart';
 import '../../data/models/admin_provider.dart';
 import '../../data/models/admin_service.dart';
 import '../../data/models/admin_slot.dart';
+import '../../data/models/business_analytics.dart';
 import '../../data/models/dashboard_metrics.dart';
 import '../../data/models/owner_overview.dart';
 import '../../data/salon_admin_api.dart';
@@ -65,4 +66,55 @@ final ownerOverviewProvider = FutureProvider.autoDispose.family<OwnerOverview, S
     businessCount: providers.length,
     currency: currency,
   );
+});
+
+/// A reporting period's bounds, in UTC — the Business Intelligence
+/// Dashboard's single source of truth for "which window every section's
+/// metrics are scoped to" (see BusinessAnalyticsScreen). Dart records give
+/// structural equality for free, so this doubles as a family key.
+typedef AnalyticsRange = (DateTime from, DateTime to);
+
+/// Keyed by (providerId, range) -- every Business Analytics section below
+/// re-fetches whenever either changes.
+final businessAnalyticsOverviewProvider =
+    FutureProvider.autoDispose.family<BusinessAnalyticsOverview, (String providerId, AnalyticsRange range)>((
+  ref,
+  key,
+) {
+  return ref.watch(salonAdminApiProvider).fetchAnalyticsOverview(key.$1, from: key.$2.$1, to: key.$2.$2);
+});
+
+final businessAnalyticsRevenueProvider =
+    FutureProvider.autoDispose.family<BusinessAnalyticsRevenue, (String providerId, AnalyticsRange range)>((
+  ref,
+  key,
+) {
+  return ref.watch(salonAdminApiProvider).fetchAnalyticsRevenue(key.$1, from: key.$2.$1, to: key.$2.$2);
+});
+
+final businessAnalyticsBookingsProvider =
+    FutureProvider.autoDispose.family<BusinessAnalyticsBookings, (String providerId, AnalyticsRange range)>((
+  ref,
+  key,
+) {
+  return ref.watch(salonAdminApiProvider).fetchAnalyticsBookings(key.$1, from: key.$2.$1, to: key.$2.$2);
+});
+
+final businessAnalyticsSmartFillProvider =
+    FutureProvider.autoDispose.family<SmartFillPerformance, (String providerId, AnalyticsRange range)>((ref, key) {
+  return ref.watch(salonAdminApiProvider).fetchAnalyticsSmartFill(key.$1, from: key.$2.$1, to: key.$2.$2);
+});
+
+final businessAnalyticsCustomersProvider =
+    FutureProvider.autoDispose.family<BusinessAnalyticsCustomers, (String providerId, AnalyticsRange range)>((
+  ref,
+  key,
+) {
+  return ref.watch(salonAdminApiProvider).fetchAnalyticsCustomers(key.$1, from: key.$2.$1, to: key.$2.$2);
+});
+
+/// Not range-scoped on the server -- "what needs attention right now".
+final businessAnalyticsActionsProvider =
+    FutureProvider.autoDispose.family<BusinessActionCenter, String>((ref, providerId) {
+  return ref.watch(salonAdminApiProvider).fetchAnalyticsActions(providerId);
 });

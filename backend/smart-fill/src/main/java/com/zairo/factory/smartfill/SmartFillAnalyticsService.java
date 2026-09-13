@@ -3,6 +3,7 @@ package com.zairo.factory.smartfill;
 import com.zairo.factory.smartfill.SmartFillDtos.CampaignSummary;
 import com.zairo.factory.smartfill.SmartFillDtos.SmartFillPerformanceResponse;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +42,20 @@ public class SmartFillAnalyticsService {
     }
 
     public SmartFillPerformanceResponse performance(UUID providerId) {
-        List<SmartFillCampaign> campaigns = campaignRepository.findByProviderId(providerId);
+        return performance(campaignRepository.findByProviderId(providerId));
+    }
+
+    /**
+     * The same performance snapshot, scoped to one reporting period -- the
+     * Business Analytics dashboard's "recovered N slots this month" tile,
+     * which must move with the same date range as every other metric on
+     * the page (see {@code providerinsights.BusinessAnalyticsService}).
+     */
+    public SmartFillPerformanceResponse performance(UUID providerId, Instant from, Instant to) {
+        return performance(campaignRepository.findByProviderIdAndCreatedAtBetween(providerId, from, to));
+    }
+
+    private SmartFillPerformanceResponse performance(List<SmartFillCampaign> campaigns) {
         if (campaigns.isEmpty()) {
             return new SmartFillPerformanceResponse(0, 0, 0, 0, 0, 0.0, BigDecimal.ZERO, null, List.of());
         }
