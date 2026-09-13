@@ -170,6 +170,11 @@ public class ReactivationCampaign {
         this.completedAt = now;
     }
 
+    void markCancelled(Instant now) {
+        this.status = ReactivationCampaignStatus.CANCELLED;
+        this.completedAt = now;
+    }
+
     boolean isActive() {
         return status == ReactivationCampaignStatus.SENT;
     }

@@ -199,7 +199,7 @@ public class SmartFillCampaignService {
     public void completeCampaignsForBookedSlot(UUID availabilitySlotId, UUID bookingId) {
         List<SmartFillCampaign> active = campaignRepository.findByAvailabilitySlotIdAndStatusIn(availabilitySlotId,
                 List.of(SmartFillCampaignStatus.CREATED, SmartFillCampaignStatus.SEARCHING,
-                        SmartFillCampaignStatus.NOTIFYING));
+                        SmartFillCampaignStatus.NOTIFYING, SmartFillCampaignStatus.PAUSED));
         Instant now = clock.instant();
         for (SmartFillCampaign campaign : active) {
             campaign.markBooked(bookingId, now);
@@ -207,6 +207,114 @@ public class SmartFillCampaignService {
             closeOutOffers(campaign, bookingId, now);
             resolveRevenueOutcome(campaign, bookingId, now);
         }
+    }
+
+    /**
+     * {@code campaigncenter.CampaignCenterService}'s pause action -- only
+     * meaningful while a stage is actively out (NOTIFYING); CREATED/SEARCHING
+     * are same-transaction transients (see {@link SmartFillCampaignStatus}'s
+     * own doc comment) not worth exposing an owner-facing pause for. Returns
+     * false (a no-op, not an error) if the campaign isn't in a pausable state
+     * -- idempotent under a retried/duplicate request.
+     */
+    @Transactional
+    public boolean pauseCampaign(UUID campaignId) {
+        SmartFillCampaign campaign = campaignRepository.findById(campaignId).orElse(null);
+        if (campaign == null || campaign.getStatus() != SmartFillCampaignStatus.NOTIFYING) {
+            return false;
+        }
+        campaign.markPaused();
+        campaignRepository.save(campaign);
+        return true;
+    }
+
+    /**
+     * {@code campaigncenter.CampaignCenterService}'s resume action --
+     * schedules the next stage as if the paused stage had just been sent,
+     * same delay as a normal stage transition. False (no-op) if the campaign
+     * isn't currently paused.
+     */
+    @Transactional
+    public boolean resumeCampaign(UUID campaignId, Instant now) {
+        SmartFillCampaign campaign = campaignRepository.findById(campaignId).orElse(null);
+        if (campaign == null || campaign.getStatus() != SmartFillCampaignStatus.PAUSED) {
+            return false;
+        }
+        Instant nextStageAt = now.plus(properties.staging().stageDelayMinutes(), ChronoUnit.MINUTES);
+        campaign.markResumed(nextStageAt);
+        campaignRepository.save(campaign);
+        return true;
+    }
+
+    /**
+     * {@code campaigncenter.CampaignCenterService}'s cancel action -- an
+     * owner-initiated abort, same close-out as {@link #expireCampaign}
+     * (every still-open offer becomes CANCELLED, the outcome ledger resolves
+     * to not-recovered) but reachable from PAUSED too, not just active
+     * staging. False (no-op) once the campaign is already terminal (BOOKED/
+     * EXPIRED/CANCELLED) -- idempotent under a retried/duplicate request.
+     */
+    @Transactional
+    public boolean cancelCampaign(UUID campaignId, Instant now) {
+        SmartFillCampaign campaign = campaignRepository.findById(campaignId).orElse(null);
+        if (campaign == null || !(campaign.isActive() || campaign.getStatus() == SmartFillCampaignStatus.PAUSED)) {
+            return false;
+        }
+        campaign.markCancelled(now);
+        campaignRepository.save(campaign);
+        closeOutOffers(campaign, null, now);
+        revenueAttributionService.resolve(ActionType.SMART_FILL, campaign.getCancelledBookingId(), BigDecimal.ZERO,
+                campaign.getPriceCurrency(), false, now);
+        return true;
+    }
+
+    /**
+     * {@code campaigncenter.CampaignCenterService}'s retry action -- only for
+     * a campaign that expired never having recovered its slot, and whose
+     * slot is still genuinely OPEN (not booked by someone else since). Runs
+     * the exact same candidate-discovery-and-first-stage flow {@link
+     * #startCampaignForCancelledBooking} does, on the same campaign row
+     * (own new stage numbers, continuing on from wherever staging left off)
+     * rather than creating a second campaign for the same cancellation.
+     * False (no-op, not an error) if the campaign isn't retriable or no
+     * eligible candidates exist right now -- idempotent under a retried/
+     * duplicate request, and safe to call on an already-active campaign
+     * (returns false rather than sending a duplicate round of notifications).
+     */
+    @Transactional
+    public boolean retryCampaign(UUID campaignId, Instant now) {
+        SmartFillCampaign campaign = campaignRepository.findById(campaignId).orElse(null);
+        if (campaign == null || campaign.getStatus() != SmartFillCampaignStatus.EXPIRED
+                || campaign.getRecoveredBookingId() != null) {
+            return false;
+        }
+        AvailabilitySlot slot = availabilitySlotRepository.findById(campaign.getAvailabilitySlotId()).orElse(null);
+        if (slot == null || slot.getStatus() != AvailabilityStatus.OPEN) {
+            return false;
+        }
+        Booking cancelledBooking = bookingRepository.findById(campaign.getCancelledBookingId()).orElse(null);
+        UUID excludedUserId = cancelledBooking == null ? null : cancelledBooking.getUserId();
+
+        List<ScoredCandidate> candidates = candidateFinder.findCandidates(campaign, excludedUserId, now);
+        if (candidates.isEmpty()) {
+            return false;
+        }
+
+        int nextStage = campaign.getCurrentStage() + 1;
+        int batchSize = Math.max(1, properties.staging().batchSize());
+        List<CandidateOffer> offers = new ArrayList<>(candidates.size());
+        for (int i = 0; i < candidates.size(); i++) {
+            ScoredCandidate candidate = candidates.get(i);
+            offers.add(new CandidateOffer(UUID.randomUUID(), campaign.getId(), campaign.getProviderId(),
+                    candidate.userId(), candidate.score(), i + 1, nextStage + i / batchSize, candidate.matchedFactors(),
+                    now));
+        }
+        offerRepository.saveAll(offers);
+        campaign.markSearching();
+        campaignRepository.save(campaign);
+
+        sendStage(campaign, nextStage, offerRepository.findByCampaignIdAndStage(campaign.getId(), nextStage), now);
+        return true;
     }
 
     private void sendStage(SmartFillCampaign campaign, int stage, List<CandidateOffer> stageOffers, Instant now) {

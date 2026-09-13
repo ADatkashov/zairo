@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../l10n/app_localizations.dart';
+import '../../../campaigns/presentation/widgets/smart_action_center_section.dart';
 import '../../data/models/admin_provider.dart';
 import '../../data/models/business_analytics.dart';
 import '../providers/salon_providers.dart';
@@ -99,6 +100,8 @@ class _BusinessAnalyticsScreenState extends ConsumerState<BusinessAnalyticsScree
             ),
             const SizedBox(height: FactorySpacing.space6),
             _ActionCenterSection(providerId: providerId),
+            const SizedBox(height: FactorySpacing.space6),
+            SmartActionCenterSection(providerId: providerId),
             const SizedBox(height: FactorySpacing.space6),
             _OverviewSection(providerId: providerId, range: range),
             const SizedBox(height: FactorySpacing.space6),
