@@ -4,7 +4,7 @@ description = "Basic 1:1 text chat between a customer and a business — no atta
         "(no WebSocket) — the simplest thing that actually closes the gap."
 
 dependencies {
-    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.38")
+    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.55")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("jakarta.validation:jakarta.validation-api")
