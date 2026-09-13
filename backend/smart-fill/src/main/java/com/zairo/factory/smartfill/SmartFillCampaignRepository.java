@@ -29,4 +29,7 @@ public interface SmartFillCampaignRepository extends JpaRepository<SmartFillCamp
 
     /** provider-insights' Smart Fill performance panel -- every campaign this provider has ever run. */
     List<SmartFillCampaign> findByProviderId(UUID providerId);
+
+    /** The same panel's date-scoped variant -- the Business Analytics dashboard's selected reporting period. */
+    List<SmartFillCampaign> findByProviderIdAndCreatedAtBetween(UUID providerId, Instant from, Instant to);
 }

@@ -244,6 +244,210 @@
     }
   },
 
+  "businessAnalyticsTooltip": "Business analytics",
+  "@businessAnalyticsTooltip": {"description": "Salon detail screen's AppBar icon button opening the Business Intelligence Dashboard."},
+
+  "businessAnalyticsTitle": "Business Intelligence",
+  "@businessAnalyticsTitle": {"description": "Business Intelligence Dashboard screen's AppBar title."},
+
+  "analyticsPeriodToday": "Today",
+  "@analyticsPeriodToday": {"description": "Date-range chip: today."},
+
+  "analyticsPeriodThisWeek": "This week",
+  "@analyticsPeriodThisWeek": {"description": "Date-range chip: the current calendar week."},
+
+  "analyticsPeriodThisMonth": "This month",
+  "@analyticsPeriodThisMonth": {"description": "Date-range chip: the current calendar month."},
+
+  "analyticsPeriodCustom": "Custom",
+  "@analyticsPeriodCustom": {"description": "Date-range chip opening a custom date-range picker."},
+
+  "analyticsOverviewSectionTitle": "Overview",
+  "@analyticsOverviewSectionTitle": {"description": "Business Intelligence Dashboard's overview section header."},
+
+  "analyticsKpiRevenue": "Revenue",
+  "@analyticsKpiRevenue": {"description": "Overview KPI card: total revenue for the selected period."},
+
+  "analyticsKpiBookings": "Bookings",
+  "@analyticsKpiBookings": {"description": "Overview KPI card: total bookings for the selected period."},
+
+  "analyticsKpiUtilization": "Utilization",
+  "@analyticsKpiUtilization": {"description": "Overview KPI card: booked vs. offered availability-slot duration."},
+
+  "analyticsKpiRevenueRecovered": "Recovered by ZAIRO",
+  "@analyticsKpiRevenueRecovered": {"description": "Overview KPI card: revenue the Decision Engine recovered in the period."},
+
+  "analyticsUtilizationUnavailable": "Not available yet",
+  "@analyticsUtilizationUnavailable": {"description": "Shown instead of a percentage when utilization can't be reliably calculated (no availability slots in range)."},
+
+  "analyticsCompletedBookingsLabel": "Completed",
+  "@analyticsCompletedBookingsLabel": {"description": "Overview stat: completed bookings in the period."},
+
+  "analyticsUpcomingBookingsLabel": "Upcoming",
+  "@analyticsUpcomingBookingsLabel": {"description": "Overview stat: confirmed bookings still ahead in the period."},
+
+  "analyticsCancelledBookingsLabel": "Cancelled",
+  "@analyticsCancelledBookingsLabel": {"description": "Overview stat: cancelled bookings in the period."},
+
+  "analyticsNoShowLabel": "No-shows",
+  "@analyticsNoShowLabel": {"description": "Overview stat: no-show bookings in the period."},
+
+  "analyticsCancellationRateLabel": "Cancellation rate",
+  "@analyticsCancellationRateLabel": {"description": "Overview stat: cancelled / total bookings in the period."},
+
+  "analyticsNoShowRateLabel": "No-show rate",
+  "@analyticsNoShowRateLabel": {"description": "Overview stat: no-shows / total bookings in the period."},
+
+  "analyticsReturningCustomerRateLabel": "Returning customers",
+  "@analyticsReturningCustomerRateLabel": {"description": "Overview stat: lifetime share of customers with more than one completed booking."},
+
+  "analyticsAverageBookingValueLabel": "Avg. booking value",
+  "@analyticsAverageBookingValueLabel": {"description": "Overview/revenue stat: revenue divided by number of paid bookings."},
+
+  "analyticsRevenueSectionTitle": "Revenue",
+  "@analyticsRevenueSectionTitle": {"description": "Business Intelligence Dashboard's revenue section header."},
+
+  "analyticsRevenueByDayTitle": "Revenue by day",
+  "@analyticsRevenueByDayTitle": {"description": "Revenue section's daily breakdown sub-header."},
+
+  "analyticsRevenueByServiceTitle": "Revenue by service",
+  "@analyticsRevenueByServiceTitle": {"description": "Revenue section's per-service breakdown sub-header."},
+
+  "analyticsNoRevenueYet": "No revenue in this period yet.",
+  "@analyticsNoRevenueYet": {"description": "Revenue section's empty state."},
+
+  "analyticsBookingsSectionTitle": "Bookings",
+  "@analyticsBookingsSectionTitle": {"description": "Business Intelligence Dashboard's bookings section header."},
+
+  "analyticsRepeatBookingRateLabel": "Repeat bookings",
+  "@analyticsRepeatBookingRateLabel": {"description": "Bookings stat: share of this period's customers who booked more than once."},
+
+  "analyticsBookingTrendTitle": "Booking trend",
+  "@analyticsBookingTrendTitle": {"description": "Bookings section's daily trend sub-header."},
+
+  "analyticsNoBookingsYet": "No bookings in this period yet.",
+  "@analyticsNoBookingsYet": {"description": "Bookings section's empty state."},
+
+  "analyticsSmartFillSectionTitle": "Smart Fill",
+  "@analyticsSmartFillSectionTitle": {"description": "Business Intelligence Dashboard's Smart Fill section header."},
+
+  "analyticsSlotsFreedLabel": "Slots freed",
+  "@analyticsSlotsFreedLabel": {"description": "Smart Fill stat: cancelled slots Smart Fill attempted to recover."},
+
+  "analyticsCampaignsCreatedLabel": "Campaigns",
+  "@analyticsCampaignsCreatedLabel": {"description": "Smart Fill stat: campaigns created in the period."},
+
+  "analyticsSlotsRecoveredLabel": "Slots recovered",
+  "@analyticsSlotsRecoveredLabel": {"description": "Smart Fill stat: slots actually refilled."},
+
+  "analyticsRecoveryRateLabel": "Recovery rate",
+  "@analyticsRecoveryRateLabel": {"description": "Smart Fill stat: slots recovered / campaigns created."},
+
+  "analyticsRecoveredRevenueLabel": "Revenue recovered",
+  "@analyticsRecoveredRevenueLabel": {"description": "Smart Fill stat: revenue represented by recovered slots."},
+
+  "analyticsSmartFillEmpty": "No cancelled slots in this period.",
+  "@analyticsSmartFillEmpty": {"description": "Smart Fill section's empty state."},
+
+  "analyticsSmartFillSummary": "ZAIRO recovered {count} of {total} cancelled slots this period.",
+  "@analyticsSmartFillSummary": {
+    "description": "Smart Fill section's narrative summary line.",
+    "placeholders": {
+      "count": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+
+  "analyticsCustomersSectionTitle": "Customers",
+  "@analyticsCustomersSectionTitle": {"description": "Business Intelligence Dashboard's customers section header."},
+
+  "analyticsTotalCustomersLabel": "Total customers",
+  "@analyticsTotalCustomersLabel": {"description": "Customers stat: every customer who has ever had a relationship with this business."},
+
+  "analyticsActiveCustomersLabel": "Active",
+  "@analyticsActiveCustomersLabel": {"description": "Customers stat: customers within their usual visit cadence."},
+
+  "analyticsReturningCustomersLabel": "Returning",
+  "@analyticsReturningCustomersLabel": {"description": "Customers stat: customers with more than one completed booking."},
+
+  "analyticsNewCustomersLabel": "New",
+  "@analyticsNewCustomersLabel": {"description": "Customers stat: customers whose first visit falls within the period."},
+
+  "analyticsDueForRebookingLabel": "Due for rebooking",
+  "@analyticsDueForRebookingLabel": {"description": "Customers stat: customers whose usual visit interval has just elapsed."},
+
+  "analyticsAtRiskCustomersLabel": "At risk",
+  "@analyticsAtRiskCustomersLabel": {"description": "Customers stat: customers well past their usual visit interval."},
+
+  "analyticsInactiveCustomersLabel": "Inactive",
+  "@analyticsInactiveCustomersLabel": {"description": "Customers stat: customers far past their usual visit interval."},
+
+  "analyticsAverageVisitIntervalLabel": "Avg. visit interval",
+  "@analyticsAverageVisitIntervalLabel": {"description": "Customers stat: average days between visits."},
+
+  "analyticsAverageVisitIntervalValue": "{days} days",
+  "@analyticsAverageVisitIntervalValue": {
+    "description": "Customers stat value: average visit interval in days.",
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+
+  "analyticsAverageCustomerValueLabel": "Avg. customer value",
+  "@analyticsAverageCustomerValueLabel": {"description": "Customers stat: average lifetime spend per customer."},
+
+  "analyticsFavouriteServicesTitle": "Favourite services",
+  "@analyticsFavouriteServicesTitle": {"description": "Customers section's favourite-services sub-header."},
+
+  "analyticsNoCustomersYet": "No customer activity yet.",
+  "@analyticsNoCustomersYet": {"description": "Customers section's empty state."},
+
+  "actionCenterSectionTitle": "Action Center",
+  "@actionCenterSectionTitle": {"description": "Business Intelligence Dashboard's Action Center section header."},
+
+  "actionCenterEmpty": "Nothing needs your attention right now.",
+  "@actionCenterEmpty": {"description": "Action Center's empty state, shown when no rule currently fires."},
+
+  "actionSmartFillOpportunity": "{count} cancelled slots are currently being recovered by Smart Fill.",
+  "@actionSmartFillOpportunity": {
+    "description": "Action Center item: active Smart Fill campaigns still searching for a candidate.",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "actionRebookOpportunity": "{count} returning customers are due for their next visit.",
+  "@actionRebookOpportunity": {
+    "description": "Action Center item: customers whose usual visit interval has just elapsed.",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "actionRetentionRisk": "{count} customers have exceeded their usual visit interval.",
+  "@actionRetentionRisk": {
+    "description": "Action Center item: customers well past their usual visit interval.",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "actionLowUtilization": "Tomorrow has {count} open slots that aren't booked yet.",
+  "@actionLowUtilization": {
+    "description": "Action Center item: a near-term day with a low booked/offered slot ratio.",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "errorAnalyticsLoadFailed": "Failed to load analytics: {error}",
+  "@errorAnalyticsLoadFailed": {
+    "description": "Business Intelligence Dashboard section's error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
   "servicesSectionTitle": "Services",
   "@servicesSectionTitle": {"description": "Salon detail screen's services section header."},
 
