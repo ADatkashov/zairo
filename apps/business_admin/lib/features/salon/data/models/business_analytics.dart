@@ -350,3 +350,107 @@ class BusinessActionCenter {
     );
   }
 }
+
+/// Mirrors backend's SmartFillDtos.CampaignSummary, as returned by the
+/// Action Center's Smart Fill drill-down
+/// (`/analytics/smart-fill/active`) -- always one of CREATED/SEARCHING/
+/// NOTIFYING there, but the raw status string is kept as-is so a future
+/// caller reusing this model for a resolved campaign isn't surprised.
+class SmartFillCampaignSummary {
+  final String campaignId;
+  final String status;
+  final DateTime slotStartsAt;
+  final int candidatesNotified;
+  final String? recoveredBookingId;
+
+  const SmartFillCampaignSummary({
+    required this.campaignId,
+    required this.status,
+    required this.slotStartsAt,
+    required this.candidatesNotified,
+    this.recoveredBookingId,
+  });
+
+  factory SmartFillCampaignSummary.fromJson(Map<String, dynamic> json) {
+    return SmartFillCampaignSummary(
+      campaignId: json['campaignId'] as String,
+      status: json['status'] as String,
+      slotStartsAt: DateTime.parse(json['slotStartsAt'] as String),
+      candidatesNotified: (json['candidatesNotified'] as num).toInt(),
+      recoveredBookingId: json['recoveredBookingId'] as String?,
+    );
+  }
+}
+
+/// Matches backend's customerintelligence.RetentionStatus — how a
+/// customer's visit pattern compares to their own established cadence.
+enum CustomerRetentionStatus {
+  newCustomer,
+  active,
+  dueForRebooking,
+  atRisk,
+  inactive;
+
+  static CustomerRetentionStatus fromWire(String value) {
+    return switch (value) {
+      'NEW' => CustomerRetentionStatus.newCustomer,
+      'ACTIVE' => CustomerRetentionStatus.active,
+      'DUE_FOR_REBOOKING' => CustomerRetentionStatus.dueForRebooking,
+      'AT_RISK' => CustomerRetentionStatus.atRisk,
+      'INACTIVE' => CustomerRetentionStatus.inactive,
+      _ => throw ArgumentError('Unknown RetentionStatus: $value'),
+    };
+  }
+
+  String toWire() {
+    return switch (this) {
+      CustomerRetentionStatus.newCustomer => 'NEW',
+      CustomerRetentionStatus.active => 'ACTIVE',
+      CustomerRetentionStatus.dueForRebooking => 'DUE_FOR_REBOOKING',
+      CustomerRetentionStatus.atRisk => 'AT_RISK',
+      CustomerRetentionStatus.inactive => 'INACTIVE',
+    };
+  }
+}
+
+/// Mirrors backend's BusinessAnalyticsDtos.CustomerListItem, as returned by
+/// the Action Center's rebook-opportunity/retention-risk drill-down
+/// (`/analytics/customers/list`).
+class CustomerListItem {
+  final String userId;
+  final String? displayName;
+  final String? email;
+  final CustomerRetentionStatus retentionStatus;
+  final DateTime? lastVisitAt;
+  final DateTime? nextExpectedVisitAt;
+  final double totalSpent;
+  final String? currency;
+  final String? favouriteServiceTitle;
+
+  const CustomerListItem({
+    required this.userId,
+    this.displayName,
+    this.email,
+    required this.retentionStatus,
+    this.lastVisitAt,
+    this.nextExpectedVisitAt,
+    required this.totalSpent,
+    this.currency,
+    this.favouriteServiceTitle,
+  });
+
+  factory CustomerListItem.fromJson(Map<String, dynamic> json) {
+    return CustomerListItem(
+      userId: json['userId'] as String,
+      displayName: json['displayName'] as String?,
+      email: json['email'] as String?,
+      retentionStatus: CustomerRetentionStatus.fromWire(json['retentionStatus'] as String),
+      lastVisitAt: json['lastVisitAt'] == null ? null : DateTime.parse(json['lastVisitAt'] as String),
+      nextExpectedVisitAt:
+          json['nextExpectedVisitAt'] == null ? null : DateTime.parse(json['nextExpectedVisitAt'] as String),
+      totalSpent: (json['totalSpent'] as num).toDouble(),
+      currency: json['currency'] as String?,
+      favouriteServiceTitle: json['favouriteServiceTitle'] as String?,
+    );
+  }
+}

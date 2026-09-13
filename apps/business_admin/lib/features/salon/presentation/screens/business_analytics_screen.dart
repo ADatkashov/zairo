@@ -7,6 +7,8 @@ import '../../../../l10n/app_localizations.dart';
 import '../../data/models/admin_provider.dart';
 import '../../data/models/business_analytics.dart';
 import '../providers/salon_providers.dart';
+import 'customer_list_screen.dart';
+import 'smart_fill_campaigns_screen.dart';
 
 enum _Period { today, thisWeek, thisMonth, custom }
 
@@ -191,7 +193,7 @@ class _ActionCenterSection extends ConsumerWidget {
               );
             }
             return Column(
-              children: data.actions.map((action) => _ActionCard(action: action)).toList(),
+              children: data.actions.map((action) => _ActionCard(providerId: providerId, action: action)).toList(),
             );
           },
           loading: () => const FactoryLoadingState(),
@@ -206,9 +208,10 @@ class _ActionCenterSection extends ConsumerWidget {
 }
 
 class _ActionCard extends StatelessWidget {
+  final String providerId;
   final ActionItem action;
 
-  const _ActionCard({required this.action});
+  const _ActionCard({required this.providerId, required this.action});
 
   @override
   Widget build(BuildContext context) {
@@ -224,15 +227,52 @@ class _ActionCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
       child: FactoryCard(
+        onTap: () => _onTap(context, l10n),
         child: Row(
           children: [
             Icon(icon, size: 20, color: colors.primary),
             const SizedBox(width: FactorySpacing.space3),
             Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium)),
+            Icon(Icons.chevron_right, size: 20, color: colors.textTertiary),
           ],
         ),
       ),
     );
+  }
+
+  /// Each type opens the real screen behind its count — the currently
+  /// active Smart Fill campaigns, the actual overdue/at-risk customers, or
+  /// (for a low-utilization day, which has no dedicated screen yet) back to
+  /// this business's own schedule section on SalonDetailScreen.
+  void _onTap(BuildContext context, AppLocalizations l10n) {
+    switch (action.type) {
+      case ActionItemType.smartFillOpportunity:
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => SmartFillCampaignsScreen(providerId: providerId)),
+        );
+      case ActionItemType.rebookOpportunity:
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => CustomerListScreen(
+              providerId: providerId,
+              retentionStatus: CustomerRetentionStatus.dueForRebooking,
+              title: l10n.analyticsDueForRebookingLabel,
+            ),
+          ),
+        );
+      case ActionItemType.retentionRisk:
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => CustomerListScreen(
+              providerId: providerId,
+              retentionStatus: CustomerRetentionStatus.atRisk,
+              title: l10n.analyticsAtRiskCustomersLabel,
+            ),
+          ),
+        );
+      case ActionItemType.lowUtilization:
+        Navigator.of(context).pop();
+    }
   }
 }
 

@@ -305,4 +305,24 @@ class SalonAdminApi {
     final response = await _dioClient.get('/providers/$providerId/analytics/actions');
     return BusinessActionCenter.fromJson(response.data as Map<String, dynamic>);
   }
+
+  /// The Action Center's Smart Fill drill-down -- every campaign still
+  /// actively trying to recover a slot. Not date-scoped.
+  Future<List<SmartFillCampaignSummary>> fetchActiveSmartFillCampaigns(String providerId) async {
+    final response = await _dioClient.get('/providers/$providerId/analytics/smart-fill/active');
+    final data = response.data as List<dynamic>;
+    return data.map((e) => SmartFillCampaignSummary.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// The Action Center's rebook-opportunity/retention-risk drill-down.
+  /// [retentionStatus] narrows to customers currently in that state; omit
+  /// for every customer. Not date-scoped.
+  Future<List<CustomerListItem>> fetchCustomerList(String providerId, {CustomerRetentionStatus? retentionStatus}) async {
+    final response = await _dioClient.get(
+      '/providers/$providerId/analytics/customers/list',
+      queryParameters: {if (retentionStatus != null) 'retentionStatus': retentionStatus.toWire()},
+    );
+    final data = response.data as List<dynamic>;
+    return data.map((e) => CustomerListItem.fromJson(e as Map<String, dynamic>)).toList();
+  }
 }

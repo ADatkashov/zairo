@@ -55,6 +55,28 @@ public class SmartFillAnalyticsService {
         return performance(campaignRepository.findByProviderIdAndCreatedAtBetween(providerId, from, to));
     }
 
+    /**
+     * Every campaign of this provider's still actively trying to recover a
+     * slot (not yet {@code BOOKED}/{@code EXPIRED}/{@code CANCELLED}) --
+     * the Action Center's "Smart Fill opportunity" drill-down (see {@code
+     * providerinsights.BusinessAnalyticsService#actions}), oldest slot
+     * first so the most time-sensitive campaign surfaces first. Not
+     * date-scoped, same "current state, not a historical report" reasoning
+     * as the Action Center itself.
+     */
+    public List<CampaignSummary> activeCampaigns(UUID providerId) {
+        List<SmartFillCampaign> active = campaignRepository.findByProviderId(providerId).stream()
+                .filter(c -> c.getStatus() == SmartFillCampaignStatus.CREATED
+                        || c.getStatus() == SmartFillCampaignStatus.SEARCHING
+                        || c.getStatus() == SmartFillCampaignStatus.NOTIFYING)
+                .sorted(Comparator.comparing(SmartFillCampaign::getSlotStartsAt))
+                .toList();
+        Map<UUID, List<CandidateOffer>> offersByCampaignId = active.stream()
+                .collect(Collectors.toMap(SmartFillCampaign::getId,
+                        campaign -> offerRepository.findByCampaignId(campaign.getId())));
+        return active.stream().map(campaign -> toSummary(campaign, offersByCampaignId)).toList();
+    }
+
     private SmartFillPerformanceResponse performance(List<SmartFillCampaign> campaigns) {
         if (campaigns.isEmpty()) {
             return new SmartFillPerformanceResponse(0, 0, 0, 0, 0, 0.0, BigDecimal.ZERO, null, List.of());
@@ -84,14 +106,18 @@ public class SmartFillAnalyticsService {
         List<CampaignSummary> recentCampaigns = campaigns.stream()
                 .sorted(Comparator.comparing(SmartFillCampaign::getCreatedAt).reversed())
                 .limit(MAX_RECENT_CAMPAIGNS)
-                .map(campaign -> new CampaignSummary(campaign.getId(), campaign.getStatus(),
-                        campaign.getSlotStartsAt(),
-                        (int) offersByCampaignId.getOrDefault(campaign.getId(), List.of()).stream()
-                                .filter(o -> o.getNotifiedAt() != null).count(),
-                        campaign.getRecoveredBookingId()))
+                .map(campaign -> toSummary(campaign, offersByCampaignId))
                 .toList();
 
         return new SmartFillPerformanceResponse(slotsFreed, campaignsCreated, candidatesNotified, offersViewed,
                 slotsRecovered, recoveryRate, recoveredRevenue, currency, recentCampaigns);
+    }
+
+    private static CampaignSummary toSummary(SmartFillCampaign campaign,
+            Map<UUID, List<CandidateOffer>> offersByCampaignId) {
+        int candidatesNotified = (int) offersByCampaignId.getOrDefault(campaign.getId(), List.of()).stream()
+                .filter(o -> o.getNotifiedAt() != null).count();
+        return new CampaignSummary(campaign.getId(), campaign.getStatus(), campaign.getSlotStartsAt(),
+                candidatesNotified, campaign.getRecoveredBookingId());
     }
 }

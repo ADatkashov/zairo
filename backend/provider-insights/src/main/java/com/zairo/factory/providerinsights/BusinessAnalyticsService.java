@@ -20,6 +20,7 @@ import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.BookingAnalytics
 import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.CustomerAnalyticsResponse;
 import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.CustomerAnalyticsResponse.FavouriteService;
 import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.CustomerAnalyticsResponse.FavouriteStaff;
+import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.CustomerListItem;
 import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.OverviewResponse;
 import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.RevenueAnalyticsResponse;
 import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.RevenueAnalyticsResponse.DailyAmount;
@@ -34,6 +35,8 @@ import com.zairo.factory.smartfill.SmartFillCampaign;
 import com.zairo.factory.smartfill.SmartFillCampaignRepository;
 import com.zairo.factory.smartfill.SmartFillCampaignStatus;
 import com.zairo.factory.smartfill.SmartFillDtos.SmartFillPerformanceResponse;
+import com.zairo.factory.users.User;
+import com.zairo.factory.users.UserRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
@@ -81,6 +84,7 @@ public class BusinessAnalyticsService {
     private final SmartFillCampaignRepository smartFillCampaignRepository;
     private final SmartFillAnalyticsService smartFillAnalyticsService;
     private final RevenueAttributionService revenueAttributionService;
+    private final UserRepository userRepository;
     private final Clock clock;
 
     public BusinessAnalyticsService(BookingRepository bookingRepository,
@@ -89,7 +93,7 @@ public class BusinessAnalyticsService {
             CustomerProviderProfileRepository customerProviderProfileRepository,
             SmartFillCampaignRepository smartFillCampaignRepository,
             SmartFillAnalyticsService smartFillAnalyticsService, RevenueAttributionService revenueAttributionService,
-            Clock clock) {
+            UserRepository userRepository, Clock clock) {
         this.bookingRepository = bookingRepository;
         this.availabilitySlotRepository = availabilitySlotRepository;
         this.paymentRepository = paymentRepository;
@@ -98,6 +102,7 @@ public class BusinessAnalyticsService {
         this.smartFillCampaignRepository = smartFillCampaignRepository;
         this.smartFillAnalyticsService = smartFillAnalyticsService;
         this.revenueAttributionService = revenueAttributionService;
+        this.userRepository = userRepository;
         this.clock = clock;
     }
 
@@ -270,6 +275,50 @@ public class BusinessAnalyticsService {
         return new CustomerAnalyticsResponse(providerId, range.from(), range.to(), total, active, returning,
                 newCustomers, dueForRebooking, atRisk, inactive, averageVisitIntervalDays, averageCustomerValue,
                 currency, favouriteServices, favouriteStaff);
+    }
+
+    /**
+     * The individual customers behind one of {@link #customers}'s counts --
+     * the Action Center's "rebook opportunity"/"retention risk" drill-down
+     * (see {@code providerinsights.ProviderInsightsController}). Oldest
+     * last-visit first when a filter is given (the most overdue customer
+     * first), since that's the one who most needs the owner's attention;
+     * unfiltered, newest-visited first, matching {@link
+     * ProviderInsightsService#customerHistory}. Not date-scoped, same
+     * "current relationship state" reasoning as {@link #customers}'s own
+     * (non-"new customers") fields.
+     */
+    public List<CustomerListItem> customersList(UUID providerId, RetentionStatus retentionStatus) {
+        List<CustomerProviderProfile> profiles = customerProviderProfileRepository.findByProviderId(providerId);
+        List<CustomerProviderProfile> filtered = retentionStatus == null ? profiles
+                : profiles.stream().filter(p -> p.getRetentionStatus() == retentionStatus).toList();
+        if (filtered.isEmpty()) {
+            return List.of();
+        }
+
+        Map<UUID, User> userById = userRepository
+                .findAllById(filtered.stream().map(CustomerProviderProfile::getUserId).distinct().toList()).stream()
+                .collect(Collectors.toMap(User::getId, user -> user));
+        Map<UUID, String> serviceTitleById = serviceOfferingRepository
+                .findAllById(filtered.stream().map(CustomerProviderProfile::getFavouriteServiceId)
+                        .filter(Objects::nonNull).distinct().toList())
+                .stream().collect(Collectors.toMap(ServiceOffering::getId, ServiceOffering::getTitle));
+
+        Comparator<CustomerProviderProfile> order = retentionStatus == null
+                ? Comparator.comparing(CustomerProviderProfile::getLastVisitAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                : Comparator.comparing(CustomerProviderProfile::getLastVisitAt, Comparator.nullsLast(Comparator.naturalOrder()));
+
+        return filtered.stream().sorted(order)
+                .map(profile -> {
+                    User user = userById.get(profile.getUserId());
+                    return new CustomerListItem(profile.getUserId(), user == null ? null : user.getDisplayName(),
+                            user == null ? null : user.getEmail(), profile.getRetentionStatus(),
+                            profile.getLastVisitAt(), profile.getNextExpectedVisitAt(), profile.getTotalSpent(),
+                            profile.getCurrency(),
+                            profile.getFavouriteServiceId() == null ? null
+                                    : serviceTitleById.get(profile.getFavouriteServiceId()));
+                })
+                .toList();
     }
 
     /** Smart Fill's own performance snapshot, scoped to the same reporting period as the rest of this dashboard. */
