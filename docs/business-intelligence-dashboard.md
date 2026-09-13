@@ -38,6 +38,8 @@ the same pattern every other `provider-insights` endpoint uses):
 | `GET /api/v1/providers/{id}/analytics/smart-fill?from=&to=` | `smartfill.SmartFillDtos.SmartFillPerformanceResponse` (reused, not duplicated) |
 | `GET /api/v1/providers/{id}/analytics/customers?from=&to=` | `CustomerAnalyticsResponse` |
 | `GET /api/v1/providers/{id}/analytics/actions` | `ActionCenterResponse` (not date-scoped — current state) |
+| `GET /api/v1/providers/{id}/analytics/smart-fill/active` | `smartfill.SmartFillDtos.CampaignSummary[]` — Action Center's Smart Fill drill-down, not date-scoped |
+| `GET /api/v1/providers/{id}/analytics/customers/list?retentionStatus=` | `CustomerListItem[]` — Action Center's rebook/retention drill-down, not date-scoped |
 
 The existing `/dashboard`, `/customers`, `/smart-fill/performance`, and
 `/revenue-engine/summary` endpoints are unchanged and still lifetime-scoped —
@@ -90,6 +92,24 @@ backend string work. Extending it: add an enum value to
 `BusinessAnalyticsService.actions`, and a matching localized string + icon case
 in `business_analytics_screen.dart`'s `_ActionCard`.
 
+Every Action Center card is tappable and opens the real data behind its count
+(`_ActionCard._onTap`):
+
+- **Smart Fill opportunity** → `SmartFillCampaignsScreen`, backed by
+  `SmartFillAnalyticsService.activeCampaigns` / `GET .../analytics/smart-fill/active`
+  — the same active-campaign set the count itself comes from, not a
+  re-derived approximation.
+- **Rebook opportunity** / **Retention risk** → `CustomerListScreen`, backed by
+  `BusinessAnalyticsService.customersList` / `GET .../analytics/customers/list?retentionStatus=`
+  — filtered to exactly `DUE_FOR_REBOOKING` / `AT_RISK` respectively.
+- **Low utilization** → pops back to `SalonDetailScreen`, which already shows
+  this business's availability/schedule section (no dedicated "schedule for
+  one day" screen exists yet).
+
+Both drill-down screens are read-only (list the affected campaigns/customers),
+since no per-campaign "manage" action or in-admin rebooking workflow exists
+yet in this app.
+
 ## Authorization & cross-business isolation
 
 Every endpoint calls `providerOwnership.requireOwner(providerId, callerUserId)`
@@ -110,6 +130,8 @@ were somehow bypassed).
   dashboard screen (Today/This week/This month/Custom chips, KPI tiles, revenue
   and booking trend bars, Smart Fill and Customer Intelligence sections, Action
   Center). Opened from `SalonDetailScreen`'s AppBar (insights icon).
+- `features/salon/presentation/screens/smart_fill_campaigns_screen.dart` /
+  `customer_list_screen.dart` — the Action Center's drill-down screens.
 - No new chart library dependency — day-by-day trends use a small proportional
   `LinearProgressIndicator`-based bar row (`_BarRow`), not a fabricated chart.
 - Localized in en/ru/kk; no hardcoded UI strings.
@@ -126,10 +148,10 @@ any other section.
 
 ## Known limitations / follow-ups
 
-- Action Center items are informational only in v1 — no deep link to a Smart
-  Fill campaign list or a customer list screen, since neither exists yet in the
-  Flutter app. Wiring "view affected slots" / "open customer list" buttons is a
-  natural follow-up once those management screens are built.
+- Action Center drill-down screens are view-only — no "manage campaign" action
+  and no in-admin rebooking workflow, since neither exists yet in this app.
+  Adding either is a natural follow-up; the drill-down screens and endpoints
+  are already in place to extend.
 - `revenueByStaff`/favourite-staff use the opaque `employeeId` from
   `AvailabilitySlot`/`CustomerProviderProfile` (no cross-module name lookup,
   matching this codebase's existing convention of not coupling core modules to

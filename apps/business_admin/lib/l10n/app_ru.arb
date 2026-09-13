@@ -305,6 +305,16 @@
   "actionLowUtilization": "Завтра ещё {count} свободных слотов без брони.",
   "errorAnalyticsLoadFailed": "Не удалось загрузить аналитику: {error}",
 
+  "smartFillCampaignsScreenTitle": "Кампании Smart Fill",
+  "smartFillCampaignsEmpty": "Сейчас нет активных кампаний Smart Fill.",
+  "smartFillCampaignCandidatesNotified": "Уведомлено кандидатов: {count}",
+  "campaignStatusCreated": "Только что отменено",
+  "campaignStatusSearching": "Поиск кандидатов",
+  "campaignStatusNotifying": "Уведомление",
+  "customerListEmpty": "Нет клиентов по этому фильтру.",
+  "customerListLastVisitLabel": "Последний визит: {date}",
+  "customerListNextExpectedLabel": "Ожидается: {date}",
+
   "changeAvatarDialogTitle": "Сменить аватар",
   "changeAvatarRemoveButton": "Удалить фото",
   "errorAvatarUpdateFailed": "Не удалось обновить аватар: {error}",
