@@ -28,4 +28,10 @@ public interface RebookCampaignRepository extends JpaRepository<RebookCampaign, 
      */
     List<RebookCampaign> findByUserIdAndProviderIdAndStatusIn(UUID userId, UUID providerId,
             List<RebookCampaignStatus> statuses);
+
+    /** {@code campaigncenter.CampaignCenterService}'s Campaign Center read surface -- every Rebook campaign this provider has ever run. */
+    List<RebookCampaign> findByProviderId(UUID providerId);
+
+    /** The same read surface's date-scoped variant -- the Campaign Center's selected date-range filter. */
+    List<RebookCampaign> findByProviderIdAndCreatedAtBetween(UUID providerId, Instant from, Instant to);
 }

@@ -38,4 +38,5 @@ include(
     "rebook-engine",
     "customer-intelligence",
     "reactivation-engine",
+    "campaign-center",
 )
