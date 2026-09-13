@@ -1070,5 +1070,331 @@
   "@imagePickerCameraLabel": {"description": "Photo-source bottom sheet option: take a new photo."},
 
   "imagePickerGalleryLabel": "Gallery",
-  "@imagePickerGalleryLabel": {"description": "Photo-source bottom sheet option: pick an existing photo."}
+  "@imagePickerGalleryLabel": {"description": "Photo-source bottom sheet option: pick an existing photo."},
+
+  "campaignCenterNavLabel": "Campaign Center",
+  "@campaignCenterNavLabel": {"description": "Sidebar/AppBar nav label for the Campaign Center top-level destination."},
+
+  "campaignCenterScreenTitle": "Campaign Center",
+  "@campaignCenterScreenTitle": {"description": "CampaignCenterScreen's AppBar title."},
+
+  "campaignCenterSubtitle": "Track every Smart Fill, Rebook and Reactivation campaign, and act on what needs attention.",
+  "@campaignCenterSubtitle": {"description": "CampaignCenterScreen's short explanatory subtitle under the title."},
+
+  "campaignCenterNoBusinesses": "Create a business first to see its campaigns.",
+  "@campaignCenterNoBusinesses": {"description": "CampaignCenterScreen's empty state when the owner has no businesses yet."},
+
+  "campaignKpiActive": "Active campaigns",
+  "@campaignKpiActive": {"description": "Campaign Center KPI tile label: campaigns currently active."},
+
+  "campaignKpiRecoveredRevenue": "Recovered revenue",
+  "@campaignKpiRecoveredRevenue": {"description": "Campaign Center KPI tile label: total revenue recovered across campaigns."},
+
+  "campaignKpiConversionRate": "Conversion rate",
+  "@campaignKpiConversionRate": {"description": "Campaign Center KPI tile label: share of campaigns that recovered a slot/booking."},
+
+  "campaignKpiNeedsAttention": "Needs attention",
+  "@campaignKpiNeedsAttention": {"description": "Campaign Center KPI tile label: campaigns requiring the owner's attention right now."},
+
+  "campaignFilterStatusAll": "All statuses",
+  "@campaignFilterStatusAll": {"description": "Campaign Center status filter chip: clears the status filter."},
+
+  "campaignFilterTypeAll": "All types",
+  "@campaignFilterTypeAll": {"description": "Campaign Center type filter chip: clears the campaign-type filter."},
+
+  "campaignFilterServiceAll": "All services",
+  "@campaignFilterServiceAll": {"description": "Campaign Center service filter chip: clears the service filter."},
+
+  "campaignFilterDateAll": "All time",
+  "@campaignFilterDateAll": {"description": "Campaign Center date filter chip: clears the creation-date range filter."},
+
+  "campaignFilterSearchHint": "Search by service or staff name",
+  "@campaignFilterSearchHint": {"description": "Campaign Center search field's placeholder text."},
+
+  "campaignListEmpty": "No campaigns match these filters.",
+  "@campaignListEmpty": {"description": "Campaign Center list's empty state."},
+
+  "campaignListLoadMore": "Load more",
+  "@campaignListLoadMore": {"description": "Campaign Center list's load-more-pages button."},
+
+  "errorCampaignsLoadFailed": "Couldn't load campaigns: {error}",
+  "@errorCampaignsLoadFailed": {
+    "description": "Campaign Center list's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "errorCampaignStatsLoadFailed": "Couldn't load campaign stats: {error}",
+  "@errorCampaignStatsLoadFailed": {
+    "description": "Campaign Center KPI row's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "errorCampaignDetailLoadFailed": "Couldn't load this campaign: {error}",
+  "@errorCampaignDetailLoadFailed": {
+    "description": "CampaignDetailScreen's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "errorCampaignTimelineLoadFailed": "Couldn't load the timeline: {error}",
+  "@errorCampaignTimelineLoadFailed": {
+    "description": "CampaignDetailScreen's timeline section error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "errorSmartActionsLoadFailed": "Couldn't load smart actions: {error}",
+  "@errorSmartActionsLoadFailed": {
+    "description": "Smart Action Center section's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "errorCampaignActionConflict": "That action no longer applies — the campaign's status was refreshed.",
+  "@errorCampaignActionConflict": {"description": "Snackbar shown when a pause/resume/cancel/retry call returns 409 Conflict."},
+
+  "errorCampaignActionFailed": "Couldn't complete that action: {error}",
+  "@errorCampaignActionFailed": {
+    "description": "Snackbar shown when a pause/resume/cancel/retry call fails for any other reason.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "campaignTypeSmartFill": "Smart Fill",
+  "@campaignTypeSmartFill": {"description": "CampaignType.smartFill's display label."},
+
+  "campaignTypeRebook": "Rebook",
+  "@campaignTypeRebook": {"description": "CampaignType.rebook's display label."},
+
+  "campaignTypeReactivation": "Reactivation",
+  "@campaignTypeReactivation": {"description": "CampaignType.reactivation's display label."},
+
+  "campaignUnifiedStatusActive": "Active",
+  "@campaignUnifiedStatusActive": {"description": "CampaignStatus.active's badge label."},
+
+  "campaignUnifiedStatusPaused": "Paused",
+  "@campaignUnifiedStatusPaused": {"description": "CampaignStatus.paused's badge label."},
+
+  "campaignUnifiedStatusCompleted": "Completed",
+  "@campaignUnifiedStatusCompleted": {"description": "CampaignStatus.completed's badge label."},
+
+  "campaignUnifiedStatusExpired": "Expired",
+  "@campaignUnifiedStatusExpired": {"description": "CampaignStatus.expired's badge label."},
+
+  "campaignUnifiedStatusFailed": "Failed",
+  "@campaignUnifiedStatusFailed": {"description": "CampaignStatus.failed's badge label."},
+
+  "campaignUnifiedStatusCancelled": "Cancelled",
+  "@campaignUnifiedStatusCancelled": {"description": "CampaignStatus.cancelled's badge label."},
+
+  "campaignTriggerBookingCancelled": "Slot freed by a cancellation",
+  "@campaignTriggerBookingCancelled": {"description": "CampaignTriggerReason.bookingCancelled's display label."},
+
+  "campaignTriggerBookingCompleted": "Follow-up after a completed visit",
+  "@campaignTriggerBookingCompleted": {"description": "CampaignTriggerReason.bookingCompleted's display label."},
+
+  "campaignTriggerCustomerInactive": "Customer has gone quiet",
+  "@campaignTriggerCustomerInactive": {"description": "CampaignTriggerReason.customerInactive's display label."},
+
+  "campaignOutcomePending": "Pending",
+  "@campaignOutcomePending": {"description": "CampaignOutcome.pending's display label."},
+
+  "campaignOutcomeRecovered": "Recovered",
+  "@campaignOutcomeRecovered": {"description": "CampaignOutcome.recovered's display label."},
+
+  "campaignOutcomeNotRecovered": "Not recovered",
+  "@campaignOutcomeNotRecovered": {"description": "CampaignOutcome.notRecovered's display label."},
+
+  "campaignFailureNoCandidatesNotified": "No candidates could be notified",
+  "@campaignFailureNoCandidatesNotified": {"description": "CampaignFailureReason.noCandidatesNotified's display label."},
+
+  "campaignFailureOther": "Unknown reason",
+  "@campaignFailureOther": {"description": "CampaignFailureReason.other's display label -- a forward-compat fallback for a reason this app doesn't recognize yet."},
+
+  "campaignNextActionNone": "No action needed",
+  "@campaignNextActionNone": {"description": "CampaignNextAction.none's display label."},
+
+  "campaignNextActionWaitingForResponse": "Waiting for a candidate to respond",
+  "@campaignNextActionWaitingForResponse": {"description": "CampaignNextAction.waitingForResponse's display label."},
+
+  "campaignNextActionPausedByOwner": "Paused by you",
+  "@campaignNextActionPausedByOwner": {"description": "CampaignNextAction.pausedByOwner's display label."},
+
+  "campaignNextActionRetryAvailable": "Ready to retry",
+  "@campaignNextActionRetryAvailable": {"description": "CampaignNextAction.retryAvailable's display label."},
+
+  "campaignNextActionViewRecoveredBooking": "View the recovered booking",
+  "@campaignNextActionViewRecoveredBooking": {"description": "CampaignNextAction.viewRecoveredBooking's display label."},
+
+  "campaignActionPause": "Pause",
+  "@campaignActionPause": {"description": "Campaign detail screen's pause-campaign action button."},
+
+  "campaignActionResume": "Resume",
+  "@campaignActionResume": {"description": "Campaign detail screen's resume-campaign action button."},
+
+  "campaignActionCancel": "Cancel campaign",
+  "@campaignActionCancel": {"description": "Campaign detail screen's cancel-campaign action button."},
+
+  "campaignActionRetry": "Retry",
+  "@campaignActionRetry": {"description": "Campaign detail screen's (and Smart Action Center's) retry-campaign action button."},
+
+  "campaignCancelConfirmTitle": "Cancel this campaign?",
+  "@campaignCancelConfirmTitle": {"description": "Confirmation dialog title before cancelling a campaign."},
+
+  "campaignCancelConfirmMessage": "This stops the campaign for good — it can't be resumed afterwards.",
+  "@campaignCancelConfirmMessage": {"description": "Confirmation dialog body before cancelling a campaign."},
+
+  "campaignCancelConfirmButton": "Cancel campaign",
+  "@campaignCancelConfirmButton": {"description": "Confirmation dialog's destructive confirm button."},
+
+  "campaignCancelConfirmDismiss": "No, keep it",
+  "@campaignCancelConfirmDismiss": {"description": "Confirmation dialog's dismiss button that backs out of cancelling."},
+
+  "campaignCardNotifiedProgress": "{notified}/{candidates} notified",
+  "@campaignCardNotifiedProgress": {
+    "description": "CampaignCard's candidate/notification progress label, e.g. '2/4 notified'.",
+    "placeholders": {
+      "notified": {"type": "int"},
+      "candidates": {"type": "int"}
+    }
+  },
+
+  "campaignCardRecoveredRevenueLabel": "Recovered",
+  "@campaignCardRecoveredRevenueLabel": {"description": "CampaignCard's label before the recovered-revenue amount."},
+
+  "campaignCardUpdatedLabel": "Updated {time}",
+  "@campaignCardUpdatedLabel": {
+    "description": "CampaignCard's last-updated timestamp label.",
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+
+  "campaignDetailSectionProgress": "Candidate progress",
+  "@campaignDetailSectionProgress": {"description": "CampaignDetailScreen's candidate/notification/offer progress section header."},
+
+  "campaignDetailSectionOutcome": "Outcome",
+  "@campaignDetailSectionOutcome": {"description": "CampaignDetailScreen's outcome section header."},
+
+  "campaignDetailSectionTimeline": "Timeline",
+  "@campaignDetailSectionTimeline": {"description": "CampaignDetailScreen's timeline section header."},
+
+  "campaignDetailTriggerLabel": "Why this campaign started",
+  "@campaignDetailTriggerLabel": {"description": "CampaignDetailScreen's trigger-reason row label."},
+
+  "campaignDetailServiceLabel": "Service",
+  "@campaignDetailServiceLabel": {"description": "CampaignDetailScreen's service row label."},
+
+  "campaignDetailEmployeeLabel": "Staff",
+  "@campaignDetailEmployeeLabel": {"description": "CampaignDetailScreen's staff/employee row label."},
+
+  "campaignDetailSlotLabel": "Slot",
+  "@campaignDetailSlotLabel": {"description": "CampaignDetailScreen's slot date/time row label (Smart Fill only)."},
+
+  "campaignDetailCandidatesLabel": "Candidates",
+  "@campaignDetailCandidatesLabel": {"description": "CampaignDetailScreen's candidate-count stat tile label."},
+
+  "campaignDetailNotifiedLabel": "Notified",
+  "@campaignDetailNotifiedLabel": {"description": "CampaignDetailScreen's notified-count stat tile label."},
+
+  "campaignDetailViewedLabel": "Viewed the offer",
+  "@campaignDetailViewedLabel": {"description": "CampaignDetailScreen's viewed-count stat tile label."},
+
+  "campaignDetailAcceptedLabel": "Accepted",
+  "@campaignDetailAcceptedLabel": {"description": "CampaignDetailScreen's accepted-count stat tile label."},
+
+  "campaignDetailRecoveredRevenueLabel": "Recovered revenue",
+  "@campaignDetailRecoveredRevenueLabel": {"description": "CampaignDetailScreen's recovered-revenue row label."},
+
+  "campaignDetailRecoveredBookingLabel": "Recovered booking",
+  "@campaignDetailRecoveredBookingLabel": {"description": "CampaignDetailScreen's recovered-booking-id row label."},
+
+  "campaignDetailCreatedLabel": "Created",
+  "@campaignDetailCreatedLabel": {"description": "CampaignDetailScreen's created-at row label."},
+
+  "campaignDetailUpdatedLabel": "Last updated",
+  "@campaignDetailUpdatedLabel": {"description": "CampaignDetailScreen's updated-at row label."},
+
+  "campaignDetailCompletedLabel": "Completed",
+  "@campaignDetailCompletedLabel": {"description": "CampaignDetailScreen's completed-at row label."},
+
+  "campaignDetailFailureReasonLabel": "Failure reason",
+  "@campaignDetailFailureReasonLabel": {"description": "CampaignDetailScreen's failure-reason row label, shown only when present."},
+
+  "campaignDetailRawStatusLabel": "Engine status",
+  "@campaignDetailRawStatusLabel": {"description": "CampaignDetailScreen's secondary raw-engine-status row label."},
+
+  "campaignTimelineEmpty": "No timeline events yet.",
+  "@campaignTimelineEmpty": {"description": "CampaignDetailScreen's timeline section empty state."},
+
+  "timelineEventCampaignCreated": "Campaign created",
+  "@timelineEventCampaignCreated": {"description": "CampaignTimelineEventType.campaignCreated's display label."},
+
+  "timelineEventCandidatesSelected": "Candidates selected",
+  "@timelineEventCandidatesSelected": {"description": "CampaignTimelineEventType.candidatesSelected's display label."},
+
+  "timelineEventNotificationSent": "Notification sent",
+  "@timelineEventNotificationSent": {"description": "CampaignTimelineEventType.notificationSent's display label."},
+
+  "timelineEventOfferAccepted": "Offer accepted",
+  "@timelineEventOfferAccepted": {"description": "CampaignTimelineEventType.offerAccepted's display label."},
+
+  "timelineEventBookingCreated": "Booking created",
+  "@timelineEventBookingCreated": {"description": "CampaignTimelineEventType.bookingCreated's display label."},
+
+  "timelineEventSlotRecovered": "Slot recovered",
+  "@timelineEventSlotRecovered": {"description": "CampaignTimelineEventType.slotRecovered's display label."},
+
+  "timelineEventCampaignExpired": "Campaign expired",
+  "@timelineEventCampaignExpired": {"description": "CampaignTimelineEventType.campaignExpired's display label."},
+
+  "timelineEventCampaignCancelled": "Campaign cancelled",
+  "@timelineEventCampaignCancelled": {"description": "CampaignTimelineEventType.campaignCancelled's display label."},
+
+  "timelineEventCampaignCompleted": "Campaign completed",
+  "@timelineEventCampaignCompleted": {"description": "CampaignTimelineEventType.campaignCompleted's display label."},
+
+  "smartActionCenterSectionTitle": "Smart Action Center",
+  "@smartActionCenterSectionTitle": {"description": "Business Analytics' Smart Action Center subsection header."},
+
+  "smartActionCenterSeeAll": "See all",
+  "@smartActionCenterSeeAll": {"description": "Smart Action Center's link into the full Campaign Center screen, shown only when there's more than fits."},
+
+  "smartActionCenterEmpty": "Nothing needs attention right now.",
+  "@smartActionCenterEmpty": {"description": "Smart Action Center's empty state."},
+
+  "smartActionExplainCampaignExpiringSoon": "A Smart Fill campaign is about to expire.",
+  "@smartActionExplainCampaignExpiringSoon": {"description": "SmartActionType.campaignExpiringSoon's short explanation."},
+
+  "smartActionExplainFailedCampaign": "A campaign couldn't recover this slot.",
+  "@smartActionExplainFailedCampaign": {"description": "SmartActionType.failedCampaign's short explanation."},
+
+  "smartActionExplainRetriableCampaign": "This expired campaign can be retried — the slot is still open.",
+  "@smartActionExplainRetriableCampaign": {"description": "SmartActionType.retriableCampaign's short explanation."},
+
+  "smartActionExplainRebookingOpportunity": "A returning customer is due for their next visit.",
+  "@smartActionExplainRebookingOpportunity": {"description": "SmartActionType.rebookingOpportunity's short explanation."},
+
+  "smartActionExplainAtRiskCustomer": "A customer has exceeded their usual visit interval.",
+  "@smartActionExplainAtRiskCustomer": {"description": "SmartActionType.atRiskCustomer's short explanation."},
+
+  "smartActionExplainLongInactiveCustomer": "A customer has been inactive for a long time.",
+  "@smartActionExplainLongInactiveCustomer": {"description": "SmartActionType.longInactiveCustomer's short explanation."},
+
+  "smartActionPriorityHigh": "High priority",
+  "@smartActionPriorityHigh": {"description": "SmartActionPriority.high's badge label."},
+
+  "smartActionPriorityMedium": "Medium priority",
+  "@smartActionPriorityMedium": {"description": "SmartActionPriority.medium's badge label."},
+
+  "smartActionPriorityLow": "Low priority",
+  "@smartActionPriorityLow": {"description": "SmartActionPriority.low's badge label."}
 }
