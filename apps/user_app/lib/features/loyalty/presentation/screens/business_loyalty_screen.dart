@@ -183,7 +183,7 @@ class _BusinessLoyaltyScreenState extends ConsumerState<BusinessLoyaltyScreen> {
     try {
       final redemption = await ref.read(loyaltyApiProvider).redeem(reward.id);
       invalidateLoyaltyData(ref, widget.providerId);
-      if (!mounted) return;
+      if (!context.mounted) return;
       await showFactoryDialog<void>(
         context: context,
         title: l10n.loyaltyRedemptionSuccessTitle,
@@ -213,10 +213,10 @@ class _BusinessLoyaltyScreenState extends ConsumerState<BusinessLoyaltyScreen> {
         ],
       );
     } on LoyaltyException catch (e) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
     } catch (e) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.errorLoyaltyRedeemFailed(e.toString()))));
     } finally {
       if (mounted) setState(() => _redeemingRewardId = null);
