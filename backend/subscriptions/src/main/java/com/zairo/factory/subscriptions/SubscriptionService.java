@@ -71,6 +71,24 @@ public class SubscriptionService {
             return new SubscriptionUpgradeResult(subscriptionRepository.save(subscription), null);
         }
 
+        // Idempotency guard (Phase 0 stabilization): without this, calling
+        // this endpoint twice in a row while a real-provider checkout is
+        // still PENDING would mint two separate SubscriptionCharge rows and
+        // two separate provider-side checkout sessions/potential charges —
+        // same double-submit risk PaymentsService.createPayment already
+        // guards against for booking payments. The pending checkout's own
+        // URL can't be handed back here (FreedomPay doesn't let it be
+        // re-fetched, and this codebase doesn't persist it), so the second
+        // call is rejected rather than silently reusing/discarding it.
+        subscriptionChargeRepository
+                .findFirstBySubscriptionIdAndStatusOrderByCreatedAtDesc(subscription.getId(),
+                        SubscriptionChargeStatus.PENDING)
+                .ifPresent(pending -> {
+                    throw new SubscriptionUpgradeFailedException(
+                            "A PRO upgrade payment is already pending for this subscription — finish or wait for "
+                                    + "that checkout before trying again.");
+                });
+
         SubscriptionCharge charge = subscriptionChargeRepository.save(new SubscriptionCharge(UUID.randomUUID(),
                 subscription.getId(), SubscriptionPlan.PRO.monthlyPrice, defaultCurrency, providerName, null,
                 Instant.now()));

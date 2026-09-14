@@ -29,6 +29,12 @@ dependencies {
     // The review-bonus earning rule listens for ReviewCreatedEvent.
     implementation(project(":reviews"))
 
+    // A COMPLETED booking's payment refunded after the fact must claw back
+    // its earned points (Phase 0 stabilization) -- listens for
+    // PaymentRefundedEvent. One-directional: payments has no idea this
+    // module exists.
+    implementation(project(":payments"))
+
     // Read-only composition for the one enriched business-admin view that
     // merges a customer's platform retention signal with their loyalty
     // standing -- same read-composition reasoning as provider-insights/

@@ -33,4 +33,8 @@ public interface SubscriptionChargeRepository extends JpaRepository<Subscription
     /** MRR's source data — see platforminsights.PlatformInsightsService. */
     List<SubscriptionCharge> findByStatusAndCreatedAtBetween(SubscriptionChargeStatus status, Instant start,
             Instant end);
+
+    /** {@code SubscriptionService.upgradeToPro}'s idempotency guard: is a checkout already pending for this subscription? */
+    Optional<SubscriptionCharge> findFirstBySubscriptionIdAndStatusOrderByCreatedAtDesc(UUID subscriptionId,
+            SubscriptionChargeStatus status);
 }

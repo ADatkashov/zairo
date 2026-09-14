@@ -40,6 +40,8 @@ unique indexes rather than only an application-level check).
   spend already deducted from their account, a short lookup code, and a
   snapshot of the reward's shape at redemption time (so editing the
   catalog later never rewrites history).
+- `loyalty_outbox_event` (`V58`, Phase 0 stabilization) — the durable queue
+  behind earning delivery; see "Earning rules" below.
 
 Every cross-module id (`provider_id`, `user_id`, `service_id`, `booking_id`,
 `actor_user_id`) is a bare `uuid` column with no FK, the same established
@@ -50,11 +52,27 @@ convention every other module here uses (see `docs/erd/core-domain.md`).
 Triggered off `booking.BookingCompletedEvent` and the new
 `reviews.ReviewCreatedEvent` (added to `reviews` for this feature, following
 the same in-process domain-event pattern as every other cross-module
-listener — ADR-0002) via `LoyaltyEarningListener`. A cancelled or no-show
-booking publishes no completion event, so it simply never earns anything —
-there is nothing to reverse. A disabled or never-configured program means
-every rule is a silent no-op: existing businesses that haven't touched
-Loyalty behave exactly as before this module existed.
+listener — ADR-0002). A cancelled or no-show booking publishes no completion
+event, so it simply never earns anything — there is nothing to reverse. A
+disabled or never-configured program means every rule is a silent no-op:
+existing businesses that haven't touched Loyalty behave exactly as before
+this module existed.
+
+**Durable, transactional-outbox delivery** (Phase 0 stabilization,
+`V58__create_loyalty_outbox_event_table.sql`): `LoyaltyEarningListener` no
+longer does the earning computation itself. It writes one
+`loyalty_outbox_event` row *inside the same transaction* as the booking/
+review write (a plain `@EventListener`, not `@TransactionalEventListener
+(AFTER_COMMIT)`), so the row is as durable as the fact it records — a crash
+between commit and the old AFTER_COMMIT listener firing used to lose that
+booking's points forever, with no retry. `LoyaltyOutboxProcessor` then polls
+PENDING rows every 15s and runs `LoyaltyEarningProcessor` (the actual rule
+computation, unchanged) against each one, retrying failures up to 10 times
+before dead-lettering a row as FAILED. Safe to retry any number of times:
+`LoyaltyLedgerService#earn` is idempotent per `(referenceType, referenceId)`
+under the account's own pessimistic lock — a duplicated outbox row, a
+restarted process mid-sweep, or a retried processing attempt all land on the
+same already-recorded ledger row and no-op.
 
 ## Redemption and "apply to booking"
 
@@ -63,12 +81,41 @@ under a pessimistic lock on the account row — two concurrent redemption
 requests against a nearly-exhausted balance serialize instead of racing to a
 negative balance) and issues a short code. A business owner later looks that
 code up and applies it to a specific booking of that same customer's, at
-that same business (`LoyaltyRedemptionService#applyToBooking`). This
+that same business (`LoyaltyRedemptionService#applyToBooking`). Applying (and
+cancelling) a code itself now also takes a pessimistic lock on the
+redemption row (`LoyaltyRedemptionRepository#lockByCode`/`lockById`, Phase 0
+stabilization) — two concurrent apply (or cancel) calls for the same code
+serialize instead of both observing `ACTIVE` and both transitioning it. This
 iteration deliberately stops there rather than rewriting
 `booking.BookingService`'s price-calculation pipeline to actually reduce a
 booking's stored total — see that method's own doc comment. The discount a
 customer gets is always read from the reward's own server-held snapshot;
 nothing about a redemption's value is ever client-supplied.
+
+## Refund reversal
+
+A booking that already reached COMPLETED (and so may have already earned
+points) can still have its payment refunded after the fact — a
+platform-admin dispute/chargeback correction via `PaymentsService
+#refundPayment`, not the ordinary cancel-before-completion path (a
+cancelled booking is never COMPLETED, so it never earned anything to
+reverse in the first place — see "Earning rules" above).
+`LoyaltyRefundListener` reacts to `payments.PaymentRefundedEvent`, and for
+that one COMPLETED-then-refunded case, claws back the booking's own
+`BOOKING_EARNING` points (only that direct award, not first-booking/
+repeat-visit/milestone bonuses tied to overall visit cadence rather than
+this one booking) via `LoyaltyLedgerService#reverseEarning` — capped at the
+account's current balance so a customer who already spent those points
+elsewhere never goes negative. Same outbox-backed durability and
+`(referenceType, referenceId)` idempotency as ordinary earning (Phase 0
+stabilization).
+
+An already-`APPLIED` redemption (a reward code used at checkout) has no
+reversal path if its booking is later refunded/disputed — `APPLIED` is a
+terminal status by design (see `LoyaltyRedemptionStatus`). This is a known,
+narrower gap than the points-earning case above, left as technical debt:
+there's no existing business rule this iteration can safely infer for
+"how much of a redeemed discount does a business claw back."
 
 ## Expiration
 

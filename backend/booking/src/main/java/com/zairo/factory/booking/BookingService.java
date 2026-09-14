@@ -6,6 +6,7 @@ import com.zairo.factory.providers.ProviderRepository;
 import com.zairo.factory.services.ServiceOffering;
 import com.zairo.factory.services.ServiceOfferingRepository;
 import com.zairo.factory.subscriptions.SubscriptionLimitService;
+import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.YearMonth;
@@ -28,11 +29,12 @@ public class BookingService {
     private final ProviderOwnership providerOwnership;
     private final SubscriptionLimitService subscriptionLimitService;
     private final ApplicationEventPublisher eventPublisher;
+    private final EntityManager entityManager;
 
     public BookingService(AvailabilitySlotRepository availabilitySlotRepository, BookingRepository bookingRepository,
             ProviderRepository providerRepository, ServiceOfferingRepository serviceOfferingRepository,
             ProviderOwnership providerOwnership, SubscriptionLimitService subscriptionLimitService,
-            ApplicationEventPublisher eventPublisher) {
+            ApplicationEventPublisher eventPublisher, EntityManager entityManager) {
         this.availabilitySlotRepository = availabilitySlotRepository;
         this.bookingRepository = bookingRepository;
         this.providerRepository = providerRepository;
@@ -40,6 +42,7 @@ public class BookingService {
         this.providerOwnership = providerOwnership;
         this.subscriptionLimitService = subscriptionLimitService;
         this.eventPublisher = eventPublisher;
+        this.entityManager = entityManager;
     }
 
     /**
@@ -89,6 +92,18 @@ public class BookingService {
         Provider provider = providerRepository.findById(slot.getProviderId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Provider not found: "
                         + slot.getProviderId()));
+
+        // Serializes the count-then-insert sequence below across concurrent
+        // requests for this same provider (Phase 0 stabilization) -- without
+        // this, two requests at 29/30 could both read 29, both pass the
+        // quota check, and both commit, letting the FREE plan's monthly cap
+        // be exceeded. A Postgres advisory *transaction* lock: released
+        // automatically at commit/rollback, no new table, no separate
+        // unlock call, doesn't block unrelated providers' bookings — same
+        // "simple Postgres primitive over new infrastructure" choice this
+        // module already makes with @Version for slot double-booking.
+        lockProviderForBookingQuotaCheck(slot.getProviderId());
+
         YearMonth thisMonth = YearMonth.now(ZoneOffset.UTC);
         Instant monthStart = thisMonth.atDay(1).atStartOfDay(ZoneOffset.UTC).toInstant();
         Instant monthEnd = thisMonth.plusMonths(1).atDay(1).atStartOfDay(ZoneOffset.UTC).toInstant();
@@ -310,5 +325,20 @@ public class BookingService {
             bookingRepository.save(booking);
             eventPublisher.publishEvent(new BookingReminderDueEvent(booking.getId(), booking.getUserId()));
         }
+    }
+
+    /**
+     * Postgres advisory transaction lock keyed by this provider -- see
+     * {@link #createBooking}'s own comment on why. {@code hashtext} maps
+     * the provider id to the single {@code int4} key {@code
+     * pg_advisory_xact_lock} takes; a hash collision between two different
+     * providers only ever costs unrelated bookings a moment of unnecessary
+     * serialization, never a correctness problem (the actual quota check
+     * right after this is still scoped by the real providerId).
+     */
+    private void lockProviderForBookingQuotaCheck(UUID providerId) {
+        entityManager.createNativeQuery("select pg_advisory_xact_lock(hashtext(:providerId))")
+                .setParameter("providerId", providerId.toString())
+                .getSingleResult();
     }
 }
