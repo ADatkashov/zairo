@@ -39,4 +39,5 @@ include(
     "customer-intelligence",
     "reactivation-engine",
     "campaign-center",
+    "loyalty",
 )
