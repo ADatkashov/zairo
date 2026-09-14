@@ -2,6 +2,7 @@ package com.zairo.factory.loyalty;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,6 +17,10 @@ public interface LoyaltyTransactionRepository extends JpaRepository<LoyaltyTrans
 
     boolean existsByProviderIdAndUserIdAndReferenceTypeAndReferenceId(UUID providerId, UUID userId,
             LoyaltyReferenceType referenceType, UUID referenceId);
+
+    /** Used by LoyaltyRefundProcessor to find how many points a completed, now-refunded booking originally earned. */
+    Optional<LoyaltyTransaction> findFirstByProviderIdAndUserIdAndReferenceTypeAndReferenceId(UUID providerId,
+            UUID userId, LoyaltyReferenceType referenceType, UUID referenceId);
 
     /**
      * Rolling-window earning cap check (see LoyaltyProgram's daily/monthly
