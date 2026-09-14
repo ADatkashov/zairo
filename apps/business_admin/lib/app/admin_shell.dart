@@ -7,6 +7,7 @@ import '../features/auth/presentation/widgets/change_avatar_dialog.dart';
 import '../features/billing/presentation/screens/billing_screen.dart';
 import '../features/campaigns/presentation/screens/campaign_center_screen.dart';
 import '../features/dashboard/presentation/screens/dashboard_screen.dart';
+import '../features/loyalty/presentation/screens/loyalty_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
 import '../l10n/app_localizations.dart';
 
@@ -49,6 +50,11 @@ class _AdminShellState extends ConsumerState<AdminShell> {
         label: l10n.campaignCenterNavLabel,
       ),
       AdminSidebarDestination(
+        icon: Icons.loyalty_outlined,
+        selectedIcon: Icons.loyalty,
+        label: l10n.loyaltyNavLabel,
+      ),
+      AdminSidebarDestination(
         icon: Icons.receipt_long_outlined,
         selectedIcon: Icons.receipt_long_rounded,
         label: l10n.billingScreenTitle,
@@ -71,6 +77,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
               children: [
                 const DashboardScreen(),
                 if (ownerUserId != null) CampaignCenterScreen(ownerUserId: ownerUserId) else const SizedBox.shrink(),
+                if (ownerUserId != null) LoyaltyScreen(ownerUserId: ownerUserId) else const SizedBox.shrink(),
                 const BillingScreen(),
                 const SettingsScreen(),
               ],
