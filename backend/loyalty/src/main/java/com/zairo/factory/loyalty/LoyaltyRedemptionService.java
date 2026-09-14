@@ -128,6 +128,14 @@ public class LoyaltyRedemptionService {
     }
 
     private LoyaltyRedemption cancel(LoyaltyRedemption redemption, String reason) {
+        // Re-fetch under a pessimistic lock before transitioning status --
+        // the initial lookups above (by id, scoped to the caller) are
+        // plain reads; two concurrent cancel calls for the same redemption
+        // must not both observe ACTIVE and both refund the same points.
+        UUID redemptionId = redemption.getId();
+        redemption = redemptionRepository.lockById(redemptionId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Redemption not found: "
+                        + redemptionId));
         if (redemption.getStatus() != LoyaltyRedemptionStatus.ACTIVE) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Only an active, unused redemption can be "
                     + "cancelled (current status: " + redemption.getStatus() + ")");
@@ -159,7 +167,11 @@ public class LoyaltyRedemptionService {
      */
     @Transactional
     public LoyaltyRedemption applyToBooking(UUID providerId, String code, UUID bookingId) {
-        LoyaltyRedemption redemption = redemptionRepository.findByCode(code)
+        // Locked from the first read: two concurrent apply calls for the
+        // same code must serialize rather than both observe ACTIVE and
+        // both transition it (Phase 0 stabilization) -- same guarantee
+        // LoyaltyLedgerService#consume gives the account row.
+        LoyaltyRedemption redemption = redemptionRepository.lockByCode(code)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Redemption code not found"));
         if (!redemption.getProviderId().equals(providerId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Redemption code not found");

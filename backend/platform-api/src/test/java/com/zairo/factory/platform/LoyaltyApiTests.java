@@ -3,6 +3,7 @@ package com.zairo.factory.platform;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequest;
+import com.zairo.factory.booking.BookingCompletedEvent;
 import com.zairo.factory.booking.BookingDtos.CreateBookingRequest;
 import com.zairo.factory.loyalty.LoyaltyAccountRepository;
 import com.zairo.factory.loyalty.LoyaltyAdminDtos.AdjustPointsRequest;
@@ -23,6 +24,8 @@ import com.zairo.factory.loyalty.LoyaltyTransactionRepository;
 import com.zairo.factory.loyalty.LoyaltyTransactionType;
 import com.zairo.factory.platform.TestAuth.Registered;
 import com.zairo.factory.platform.TestClock.MutableClock;
+import com.zairo.factory.platformadmin.PlatformAdminAccountRepository;
+import com.zairo.factory.platformadmin.PlatformRole;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.reviews.ReviewDtos.CreateReviewRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
@@ -43,6 +46,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpEntity;
@@ -84,6 +88,12 @@ class LoyaltyApiTests {
 
     @Autowired
     private MutableClock clock;
+
+    @Autowired
+    private PlatformAdminAccountRepository platformAdminAccountRepository;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     @BeforeEach
     void resetClockToRealNow() {
@@ -309,6 +319,135 @@ class LoyaltyApiTests {
     }
 
     @Test
+    void onlyOneOfTwoConcurrentApplicationsOfTheSameRedemptionCodeSucceeds() throws InterruptedException {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "loy-apply-race-owner-" + runId + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate,
+                "loy-apply-race-customer-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Loyalty Apply Race Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Cut", new BigDecimal("100.00"));
+        enableProgram(owner, providerId, settings(0, "1.00", 0, 0, 0, false, null));
+        UUID rewardId = createReward(owner, providerId, new RewardRequest("100 off", null,
+                LoyaltyRewardType.FIXED_DISCOUNT, 100, new BigDecimal("100.00"), "USD", null, null, null, null, null,
+                null));
+
+        completeVisit(owner, customer, providerId, serviceId, Instant.now().minus(1, ChronoUnit.DAYS));
+        ResponseEntity<Map> redeemed = restTemplate.exchange("/api/v1/loyalty/rewards/" + rewardId + "/redeem",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(redeemed.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        String code = redeemed.getBody().get("code").toString();
+
+        UUID applySlot = createSlot(owner, providerId, Instant.now().plus(1, ChronoUnit.DAYS),
+                Instant.now().plus(1, ChronoUnit.DAYS).plus(30, ChronoUnit.MINUTES));
+        UUID applyBookingId = createBooking(customer, providerId, serviceId, applySlot);
+
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch go = new CountDownLatch(1);
+        AtomicInteger successes = new AtomicInteger();
+        AtomicInteger conflicts = new AtomicInteger();
+
+        Runnable attempt = () -> {
+            ready.countDown();
+            try {
+                go.await();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    "/api/v1/business/" + providerId + "/loyalty/redemptions/" + code + "/apply", HttpMethod.POST,
+                    new HttpEntity<>(new ApplyRedemptionRequest(applyBookingId),
+                            TestAuth.authHeaders(owner.accessToken())),
+                    Map.class);
+            if (response.getStatusCode() == HttpStatus.OK) {
+                successes.incrementAndGet();
+            } else if (response.getStatusCode() == HttpStatus.CONFLICT) {
+                conflicts.incrementAndGet();
+            }
+        };
+        pool.submit(attempt);
+        pool.submit(attempt);
+        ready.await();
+        go.countDown();
+        pool.shutdown();
+        assertThat(pool.awaitTermination(30, TimeUnit.SECONDS)).isTrue();
+
+        assertThat(successes.get()).isEqualTo(1);
+        assertThat(conflicts.get()).isEqualTo(1);
+    }
+
+    @Test
+    void refundingACompletedBookingsPaymentClawsBackItsEarnedPoints() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "loy-refund-owner-" + runId + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "loy-refund-customer-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Loyalty Refund Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Massage", new BigDecimal("10.00"));
+        enableProgram(owner, providerId, settings(50, "0", 0, 0, 0, false, null));
+
+        UUID slotId = createSlot(owner, providerId, Instant.now().minus(1, ChronoUnit.DAYS),
+                Instant.now().minus(1, ChronoUnit.DAYS).plus(30, ChronoUnit.MINUTES));
+        UUID bookingId = createBooking(customer, providerId, serviceId, slotId);
+        UUID paymentId = payBookingReturningPaymentId(customer, bookingId);
+        completeBooking(owner, bookingId);
+        assertThat(balanceOf(providerId, customer.userId())).isEqualTo(50);
+
+        TestPlatformAuth.Registered admin = TestPlatformAuth.registerPlatformAdmin(restTemplate,
+                platformAdminAccountRepository, "loy-refund-admin-" + runId + "@factory.internal",
+                PlatformRole.PLATFORM_ADMIN);
+        ResponseEntity<Map> refundResponse = restTemplate.exchange("/api/v1/payments/" + paymentId + "/refund",
+                HttpMethod.POST, new HttpEntity<>(null, TestPlatformAuth.authHeaders(admin.accessToken())),
+                Map.class);
+        assertThat(refundResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        assertThat(balanceOf(providerId, customer.userId())).isEqualTo(0);
+        List<LoyaltyTransaction> history = transactionRepository
+                .findByProviderIdAndUserIdOrderByCreatedAtDesc(providerId, customer.userId(), PageRequest.of(0, 10))
+                .getContent();
+        assertThat(history).extracting(LoyaltyTransaction::getType)
+                .containsExactlyInAnyOrder(LoyaltyTransactionType.EARNED, LoyaltyTransactionType.REVERSAL);
+    }
+
+    @Test
+    void refundReversalNeverTakesTheBalanceNegativeWhenPointsAlreadySpent() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "loy-refund-spent-owner-" + runId + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate,
+                "loy-refund-spent-customer-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Loyalty Refund Spent Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Massage", new BigDecimal("10.00"));
+        enableProgram(owner, providerId, settings(50, "0", 0, 0, 0, false, null));
+        UUID rewardId = createReward(owner, providerId, new RewardRequest("30 off", null,
+                LoyaltyRewardType.FIXED_DISCOUNT, 30, new BigDecimal("30.00"), "USD", null, null, null, null, null,
+                null));
+
+        UUID slotId = createSlot(owner, providerId, Instant.now().minus(1, ChronoUnit.DAYS),
+                Instant.now().minus(1, ChronoUnit.DAYS).plus(30, ChronoUnit.MINUTES));
+        UUID bookingId = createBooking(customer, providerId, serviceId, slotId);
+        UUID paymentId = payBookingReturningPaymentId(customer, bookingId);
+        completeBooking(owner, bookingId);
+        assertThat(balanceOf(providerId, customer.userId())).isEqualTo(50);
+
+        // The customer spends 30 of the 50 points before the payment is
+        // ever refunded -- only 20 are still there to claw back.
+        ResponseEntity<Map> redeemed = restTemplate.exchange("/api/v1/loyalty/rewards/" + rewardId + "/redeem",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(redeemed.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(balanceOf(providerId, customer.userId())).isEqualTo(20);
+
+        TestPlatformAuth.Registered admin = TestPlatformAuth.registerPlatformAdmin(restTemplate,
+                platformAdminAccountRepository, "loy-refund-spent-admin-" + runId + "@factory.internal",
+                PlatformRole.PLATFORM_ADMIN);
+        ResponseEntity<Map> refundResponse = restTemplate.exchange("/api/v1/payments/" + paymentId + "/refund",
+                HttpMethod.POST, new HttpEntity<>(null, TestPlatformAuth.authHeaders(admin.accessToken())),
+                Map.class);
+        assertThat(refundResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // Capped at the remaining balance -- never negative.
+        assertThat(balanceOf(providerId, customer.userId())).isEqualTo(0);
+    }
+
+    @Test
     void manualAdjustmentRequiresAReasonAndNeverTakesTheBalanceNegative() {
         String runId = UUID.randomUUID().toString();
         Registered owner = TestAuth.registerOwner(restTemplate, "loy-adjust-owner-" + runId + "@example.com");
@@ -393,6 +532,45 @@ class LoyaltyApiTests {
                 PageRequest.of(0, 10)).getTotalElements()).isEqualTo(1);
     }
 
+    /**
+     * Exercises the real {@code LoyaltyEarningListener -> loyalty_outbox_event
+     * -> LoyaltyOutboxProcessor} pipeline end to end (Phase 0
+     * stabilization), not just {@code LoyaltyLedgerService#earn}'s own
+     * idempotency (see the test above) -- a genuinely duplicated {@code
+     * BookingCompletedEvent} delivery (the actual scenario this pipeline
+     * exists to survive: a retried event, an application restart mid-sweep)
+     * creates a second, distinct outbox row, and processing that second row
+     * must still land on exactly one earning.
+     */
+    @Test
+    void aSecondBookingCompletedEventDeliveryForTheSameBookingProcessesAsASafeNoOp() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "loy-dup-event-owner-" + runId + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate,
+                "loy-dup-event-customer-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Loyalty Dup Event Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Wash", new BigDecimal("10.00"));
+        enableProgram(owner, providerId, settings(60, "0", 0, 0, 0, false, null));
+
+        Instant start = Instant.now().minus(1, ChronoUnit.DAYS);
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+        UUID bookingId = createBooking(customer, providerId, serviceId, slotId);
+        payBooking(customer, bookingId);
+        completeBooking(owner, bookingId);
+        assertThat(balanceOf(providerId, customer.userId())).isEqualTo(60);
+
+        // A second, independent delivery of the same event -- e.g. a
+        // process restart between the original commit and its own outbox
+        // row being marked processed, followed by whatever re-derives and
+        // republishes it. Creates its own new loyalty_outbox_event row
+        // (this is not the same call as the ledger-level test above).
+        eventPublisher.publishEvent(new BookingCompletedEvent(bookingId, customer.userId(), providerId, serviceId));
+
+        assertThat(balanceOf(providerId, customer.userId())).isEqualTo(60); // unchanged -- no double award
+        assertThat(transactionRepository.findByProviderIdAndUserIdOrderByCreatedAtDesc(providerId, customer.userId(),
+                PageRequest.of(0, 10)).getTotalElements()).isEqualTo(1);
+    }
+
     @Test
     void expiredPointsAreDeductedByTheSweepAndTheHistoryStaysAuditable() {
         String runId = UUID.randomUUID().toString();
@@ -465,9 +643,14 @@ class LoyaltyApiTests {
     }
 
     private void payBooking(Registered customer, UUID bookingId) {
+        payBookingReturningPaymentId(customer, bookingId);
+    }
+
+    private UUID payBookingReturningPaymentId(Registered customer, UUID bookingId) {
         ResponseEntity<Map> response = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
                 HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        return UUID.fromString(response.getBody().get("id").toString());
     }
 
     private void completeBooking(Registered owner, UUID bookingId) {

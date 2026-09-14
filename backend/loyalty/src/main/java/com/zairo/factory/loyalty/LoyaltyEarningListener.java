@@ -1,136 +1,69 @@
 package com.zairo.factory.loyalty;
 
-import com.zairo.factory.booking.Booking;
 import com.zairo.factory.booking.BookingCompletedEvent;
-import com.zairo.factory.booking.BookingRepository;
 import com.zairo.factory.reviews.ReviewCreatedEvent;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.time.Clock;
+import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Turns real booking/review activity into points -- see this module's own
- * package-info ("Computed on events, same pattern as Customer
- * Intelligence"). Every award goes through {@link LoyaltyLedgerService#earn},
- * which is itself idempotent per {@code (referenceType, referenceId)} -- a
- * duplicated event never double-awards (Phase 19).
+ * Turns real booking/review activity into a durable {@link
+ * LoyaltyOutboxEvent} row -- see this module's own package-info
+ * ("Computed on events, same pattern as Customer Intelligence") and {@link
+ * LoyaltyOutboxEvent}'s own doc comment for the full "why".
  *
- * <p>A disabled or never-configured program means every method here is a
- * silent no-op -- existing businesses that haven't touched Loyalty behave
- * exactly as before this module existed (Phase 29).
+ * <p>Deliberately a plain {@link EventListener}, not {@code
+ * @TransactionalEventListener(AFTER_COMMIT)}: it must run <em>inside</em>
+ * the same transaction as the booking-completion/review-creation write
+ * (ADR-0002's synchronous in-process publish means that transaction is
+ * still open here), so the outbox row commits atomically with the fact it
+ * records. Earlier this class did the earning computation itself,
+ * AFTER_COMMIT and best-effort -- any failure (or a crash between commit
+ * and the listener firing) silently lost that booking's points forever,
+ * with no retry. Now this class only ever does one cheap, unlikely-to-fail
+ * insert; the actual computation lives in {@link LoyaltyEarningProcessor},
+ * run durably and retried by {@link LoyaltyOutboxProcessor}.
+ *
+ * <p>A disabled or never-configured program still gets an outbox row (the
+ * cheap check happens later, in the processor) -- existing businesses that
+ * haven't touched Loyalty pay one extra small row per booking/review, not
+ * a behavior change.
  */
 @Component
 class LoyaltyEarningListener {
 
-    private static final Logger log = LoggerFactory.getLogger(LoyaltyEarningListener.class);
+    private final LoyaltyOutboxEventRepository outboxRepository;
+    private final ApplicationEventPublisher eventPublisher;
+    private final Clock clock;
 
-    private final LoyaltyProgramRepository programRepository;
-    private final LoyaltyLedgerService ledgerService;
-    private final LoyaltyMilestoneRuleRepository milestoneRuleRepository;
-    private final BookingRepository bookingRepository;
-
-    LoyaltyEarningListener(LoyaltyProgramRepository programRepository, LoyaltyLedgerService ledgerService,
-            LoyaltyMilestoneRuleRepository milestoneRuleRepository, BookingRepository bookingRepository) {
-        this.programRepository = programRepository;
-        this.ledgerService = ledgerService;
-        this.milestoneRuleRepository = milestoneRuleRepository;
-        this.bookingRepository = bookingRepository;
+    LoyaltyEarningListener(LoyaltyOutboxEventRepository outboxRepository, ApplicationEventPublisher eventPublisher,
+            Clock clock) {
+        this.outboxRepository = outboxRepository;
+        this.eventPublisher = eventPublisher;
+        this.clock = clock;
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @EventListener
+    @Transactional
     void onBookingCompleted(BookingCompletedEvent event) {
-        try {
-            handleBookingCompleted(event);
-        } catch (RuntimeException e) {
-            // A booking's own completion must never fail because loyalty
-            // couldn't award points -- same "log and move on" discipline
-            // BookingPaymentTimeoutJob uses for a per-item failure in a
-            // batch, just for a single event here.
-            log.error("Failed to process loyalty earning for booking {}: {}", event.bookingId(), e.getMessage(), e);
-        }
+        LoyaltyOutboxEvent outboxEvent = outboxRepository.save(new LoyaltyOutboxEvent(UUID.randomUUID(),
+                LoyaltyOutboxEventType.BOOKING_COMPLETED, event.providerId(), event.userId(), event.bookingId(),
+                null, clock.instant()));
+        // Best-effort nudge for near-immediate processing (see
+        // LoyaltyOutboxEventReady's own doc comment) -- the row saved above
+        // is what actually guarantees this is never lost.
+        eventPublisher.publishEvent(new LoyaltyOutboxEventReady(outboxEvent.getId()));
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @EventListener
+    @Transactional
     void onReviewCreated(ReviewCreatedEvent event) {
-        try {
-            handleReviewCreated(event);
-        } catch (RuntimeException e) {
-            log.error("Failed to process loyalty review bonus for review {}: {}", event.reviewId(), e.getMessage(),
-                    e);
-        }
-    }
-
-    private void handleBookingCompleted(BookingCompletedEvent event) {
-        LoyaltyProgram program = programRepository.findByProviderId(event.providerId()).orElse(null);
-        if (program == null || !program.isEnabled()) {
-            return;
-        }
-
-        Booking booking = bookingRepository.findById(event.bookingId()).orElse(null);
-        if (booking == null) {
-            return;
-        }
-
-        int bookingPoints = computeBookingPoints(program, booking);
-        if (bookingPoints > 0) {
-            ledgerService.earn(event.providerId(), event.userId(), bookingPoints, LoyaltyTransactionType.EARNED,
-                    LoyaltyReferenceType.BOOKING_EARNING, event.bookingId(), event.bookingId(), "Booking completed",
-                    program);
-        }
-
-        List<Booking> completedVisits = bookingRepository
-                .findCompletedByUserIdAndProviderIdOrderByVisitDate(event.userId(), event.providerId());
-        int visitNumber = completedVisits.size();
-        ledgerService.syncCompletedVisits(event.providerId(), event.userId(), visitNumber);
-
-        if (visitNumber == 1 && program.getFirstBookingBonusPoints() > 0) {
-            ledgerService.earn(event.providerId(), event.userId(), program.getFirstBookingBonusPoints(),
-                    LoyaltyTransactionType.BONUS, LoyaltyReferenceType.FIRST_BOOKING_BONUS, event.bookingId(),
-                    event.bookingId(), "First booking bonus", program);
-        }
-
-        if (visitNumber == program.getRepeatVisitThreshold() && program.getRepeatVisitBonusPoints() > 0) {
-            ledgerService.earn(event.providerId(), event.userId(), program.getRepeatVisitBonusPoints(),
-                    LoyaltyTransactionType.BONUS, LoyaltyReferenceType.REPEAT_VISIT_BONUS, event.bookingId(),
-                    event.bookingId(), "Repeat visit bonus", program);
-        }
-
-        for (LoyaltyMilestoneRule milestone : milestoneRuleRepository
-                .findByProgramIdOrderByVisitsRequiredAsc(program.getId())) {
-            if (milestone.getVisitsRequired() <= visitNumber) {
-                ledgerService.earn(event.providerId(), event.userId(), milestone.getPointsAwarded(),
-                        LoyaltyTransactionType.BONUS, LoyaltyReferenceType.MILESTONE, milestone.getId(),
-                        event.bookingId(), "Milestone reached: " + milestoneLabel(milestone), program);
-            }
-        }
-    }
-
-    private void handleReviewCreated(ReviewCreatedEvent event) {
-        LoyaltyProgram program = programRepository.findByProviderId(event.providerId()).orElse(null);
-        if (program == null || !program.isEnabled() || program.getReviewBonusPoints() <= 0) {
-            return;
-        }
-        ledgerService.earn(event.providerId(), event.userId(), program.getReviewBonusPoints(),
-                LoyaltyTransactionType.BONUS, LoyaltyReferenceType.REVIEW_BONUS, event.bookingId(), event.bookingId(),
-                "Review bonus", program);
-    }
-
-    private static String milestoneLabel(LoyaltyMilestoneRule milestone) {
-        return milestone.getLabel() != null ? milestone.getLabel() : milestone.getVisitsRequired() + " visits";
-    }
-
-    private static int computeBookingPoints(LoyaltyProgram program, Booking booking) {
-        int points = program.getFixedPointsPerBooking();
-        if (program.getPointsPerCurrencyUnit() != null && program.getPointsPerCurrencyUnit().signum() > 0) {
-            BigDecimal earned = booking.getTotalPrice().multiply(program.getPointsPerCurrencyUnit())
-                    .setScale(0, RoundingMode.DOWN);
-            points += earned.intValueExact();
-        }
-        return points;
+        LoyaltyOutboxEvent outboxEvent = outboxRepository.save(new LoyaltyOutboxEvent(UUID.randomUUID(),
+                LoyaltyOutboxEventType.REVIEW_CREATED, event.providerId(), event.userId(), event.bookingId(),
+                event.reviewId(), clock.instant()));
+        eventPublisher.publishEvent(new LoyaltyOutboxEventReady(outboxEvent.getId()));
     }
 }

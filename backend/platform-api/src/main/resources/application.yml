@@ -49,6 +49,9 @@ app:
     # env var. Whoever sets up staging/production: this specific value has
     # been public in git history since early in the project — treat it as
     # burned, generate a fresh one, never reuse it for anything real.
+    # ProductionSecretsValidator refuses to boot on this exact value (or a
+    # blank one) when SPRING_PROFILES_ACTIVE=prod — see that class and
+    # docs/ci-cd.md §12.
     secret: ${JWT_SECRET:Jc65IChbJdrOLj/C4rT+OCdPEdvzosIIpIG0xYM9dJ1Eflr/QDsOg+hLKOdX8k1B}
     access-token-ttl-minutes: 30
     refresh-token-ttl-days: 30

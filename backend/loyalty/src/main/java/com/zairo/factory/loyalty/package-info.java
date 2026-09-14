@@ -43,29 +43,48 @@
  * pessimistic write lock on the account row for the whole redeem-or-expire
  * operation (see {@link com.zairo.factory.loyalty.LoyaltyAccountRepository#lockByProviderIdAndUserId}) --
  * two concurrent redemption requests for the same nearly-exhausted balance
- * serialize instead of racing to a negative balance. Duplicate earning
- * (the same booking's completion event firing twice, a retried webhook,
- * ...) is closed at the database level: partial unique indexes on {@code
- * loyalty_transaction} (see V57) reject a second BOOKING_EARNING/
- * REVIEW_BONUS/REPEAT_VISIT_BONUS row for the same booking, a second
- * FIRST_BOOKING_BONUS for the same account, and a second MILESTONE award
- * for the same milestone -- {@link com.zairo.factory.loyalty.LoyaltyLedgerService#earn}
- * catches the resulting constraint violation and treats it as a no-op
- * rather than an error, so a retried event is safe by construction, not
- * just by convention.
+ * serialize instead of racing to a negative balance. {@link
+ * com.zairo.factory.loyalty.LoyaltyRedemptionRepository#lockByCode} gives
+ * the same guarantee to the ACTIVE-status transition itself (apply-to-
+ * booking, cancel) -- two concurrent applies/cancels of the same code
+ * serialize instead of both observing ACTIVE (Phase 0 stabilization).
+ * Duplicate earning (the same booking's completion event firing twice, a
+ * retried outbox row, an application restart mid-sweep, ...) is idempotent
+ * by construction: {@link com.zairo.factory.loyalty.LoyaltyLedgerService#earn}
+ * takes the account lock first, then checks {@code
+ * existsByProviderIdAndUserIdAndReferenceTypeAndReferenceId} under that
+ * lock -- a second award for the same {@code (referenceType, referenceId)}
+ * always sees the first one's already-committed row and safely no-ops.
+ * Partial unique indexes on {@code loyalty_transaction} (see V57) are the
+ * database-level backstop behind that same-process guarantee, not the
+ * primary mechanism.
  *
- * <h2>Computed on events, same pattern as Customer Intelligence</h2>
- * {@link com.zairo.factory.loyalty.LoyaltyEarningListener} reacts to {@code
- * booking.BookingCompletedEvent} and {@code reviews.ReviewCreatedEvent} via
- * {@code @TransactionalEventListener(AFTER_COMMIT)} (ADR-0002) -- booking
- * and reviews have no idea this module exists. Cancelled/no-show bookings
- * publish no completion event, so they simply never earn anything; there is
- * nothing to reverse. A booking whose price was reduced by an applied
- * loyalty reward is a business-admin action recorded on {@link
- * com.zairo.factory.loyalty.LoyaltyRedemption} itself (see {@code
- * applyToBooking}) rather than a change to {@code booking.Booking}'s own
- * stored price -- see that method's own doc comment for why this iteration
- * stops short of rewriting the booking pricing pipeline.
+ * <h2>Durable, retried earning -- transactional outbox</h2>
+ * {@link com.zairo.factory.loyalty.LoyaltyEarningListener} reacts to
+ * {@code booking.BookingCompletedEvent} and {@code reviews.ReviewCreatedEvent}
+ * (ADR-0002) -- booking and reviews have no idea this module exists. It does
+ * the least possible work: writing one {@link
+ * com.zairo.factory.loyalty.LoyaltyOutboxEvent} row, inside the SAME
+ * transaction as the booking/review write (a plain, non-{@code
+ * AFTER_COMMIT} listener), so the row is as durable as the fact it
+ * records. {@link com.zairo.factory.loyalty.LoyaltyOutboxProcessor} then
+ * runs the actual earning computation ({@link
+ * com.zairo.factory.loyalty.LoyaltyEarningProcessor}) every 15 seconds
+ * against PENDING rows, retrying on failure (DB hiccup, app restart mid-
+ * sweep -- the row is still PENDING on the next tick) up to {@link
+ * com.zairo.factory.loyalty.LoyaltyOutboxProcessor#MAX_ATTEMPTS} times
+ * before dead-lettering it. Safe to retry because {@code earn()} is
+ * idempotent (above) -- this is the "transactional event/outbox -&gt;
+ * retryable processing -&gt; idempotent earning" shape, sized to what
+ * Postgres + a scheduled job can do alone, no broker needed (ADR-0002).
+ * Cancelled/no-show bookings publish no completion event, so they simply
+ * never earn anything; there is nothing to reverse. A booking whose price
+ * was reduced by an applied loyalty reward is a business-admin action
+ * recorded on {@link com.zairo.factory.loyalty.LoyaltyRedemption} itself
+ * (see {@code applyToBooking}) rather than a change to {@code
+ * booking.Booking}'s own stored price -- see that method's own doc comment
+ * for why this iteration stops short of rewriting the booking pricing
+ * pipeline.
  *
  * <h2>Deliberately not built here</h2>
  * No cross-business/platform-wide wallet (see above). No referral program

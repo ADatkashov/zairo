@@ -7,6 +7,7 @@ import com.zairo.factory.booking.BookingStatus;
 import com.zairo.factory.paymentprovider.PaymentProviderName;
 import com.zairo.factory.paymentprovider.freedompay.FreedomPayOrderIds;
 import com.zairo.factory.paymentprovider.freedompay.FreedomPayWebhookVerifier.VerifiedWebhook;
+import com.zairo.factory.subscriptions.SubscriptionChargeWebhookService;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,16 +36,19 @@ class PaymentWebhookProcessor {
     private final BookingRepository bookingRepository;
     private final BookingService bookingService;
     private final PaymentsService paymentsService;
+    private final SubscriptionChargeWebhookService subscriptionChargeWebhookService;
 
     PaymentWebhookProcessor(PaymentWebhookEventRepository webhookEventRepository,
             PaymentWebhookEventRecorder eventRecorder, PaymentRepository paymentRepository,
-            BookingRepository bookingRepository, BookingService bookingService, PaymentsService paymentsService) {
+            BookingRepository bookingRepository, BookingService bookingService, PaymentsService paymentsService,
+            SubscriptionChargeWebhookService subscriptionChargeWebhookService) {
         this.webhookEventRepository = webhookEventRepository;
         this.eventRecorder = eventRecorder;
         this.paymentRepository = paymentRepository;
         this.bookingRepository = bookingRepository;
         this.bookingService = bookingService;
         this.paymentsService = paymentsService;
+        this.subscriptionChargeWebhookService = subscriptionChargeWebhookService;
     }
 
     enum Outcome {
@@ -84,7 +88,23 @@ class PaymentWebhookProcessor {
         }
 
         Optional<UUID> paymentId = FreedomPayOrderIds.parseBookingPaymentId(webhook.orderId());
-        Optional<Payment> maybePayment = paymentId.flatMap(paymentRepository::findById);
+        if (paymentId.isPresent()) {
+            return processBookingPayment(event, paymentId.get(), webhook);
+        }
+
+        Optional<UUID> chargeId = FreedomPayOrderIds.parseSubscriptionChargeId(webhook.orderId());
+        if (chargeId.isPresent()) {
+            return processSubscriptionCharge(event, chargeId.get(), webhook);
+        }
+
+        event.markFailed("unrecognized pg_order_id=" + webhook.orderId(), Instant.now());
+        webhookEventRepository.save(event);
+        log.warn("Freedom Pay webhook rejected: unresolved order id {}", webhook.orderId());
+        return new Result(Outcome.REJECTED, "unknown payment");
+    }
+
+    private Result processBookingPayment(PaymentWebhookEvent event, UUID paymentId, VerifiedWebhook webhook) {
+        Optional<Payment> maybePayment = paymentRepository.findById(paymentId);
         if (maybePayment.isEmpty()) {
             event.markFailed("no matching payment for pg_order_id=" + webhook.orderId(), Instant.now());
             webhookEventRepository.save(event);
@@ -106,6 +126,50 @@ class PaymentWebhookProcessor {
         event.markProcessed(Instant.now());
         webhookEventRepository.save(event);
         return new Result(Outcome.ACCEPTED, "processed");
+    }
+
+    /**
+     * The subscription-charge counterpart of {@link #processBookingPayment}
+     * -- delegates the actual charge/subscription state transition to
+     * {@code subscriptions.SubscriptionChargeWebhookService} (see that
+     * class's own doc comment for why this stays a delegation rather than a
+     * second copy of Payment's own transition logic), and only translates
+     * its outcome back into this class's webhook-event bookkeeping/{@link
+     * Result}.
+     */
+    private Result processSubscriptionCharge(PaymentWebhookEvent event, UUID chargeId, VerifiedWebhook webhook) {
+        event.assignPayment(chargeId);
+        String failureReason = webhook.paymentSucceeded() ? null : "Freedom Pay reported failure (pg_result != 1)";
+        SubscriptionChargeWebhookService.Outcome outcome = subscriptionChargeWebhookService.applyChargeResult(
+                chargeId, webhook.paymentSucceeded(), webhook.providerPaymentId(), webhook.amount(),
+                webhook.currency(), failureReason);
+        return switch (outcome) {
+            case APPLIED -> {
+                event.markProcessed(Instant.now());
+                webhookEventRepository.save(event);
+                yield new Result(Outcome.ACCEPTED, "processed");
+            }
+            case ALREADY_RESOLVED -> {
+                event.markProcessed(Instant.now());
+                webhookEventRepository.save(event);
+                log.info("Freedom Pay webhook no-op: subscription charge {} already resolved", chargeId);
+                yield new Result(Outcome.ACCEPTED, "already resolved");
+            }
+            case UNKNOWN_CHARGE -> {
+                event.markFailed("no matching subscription charge for pg_order_id=" + webhook.orderId(),
+                        Instant.now());
+                webhookEventRepository.save(event);
+                log.warn("Freedom Pay webhook rejected: unresolved order id {}", webhook.orderId());
+                yield new Result(Outcome.REJECTED, "unknown payment");
+            }
+            case AMOUNT_MISMATCH -> {
+                event.markFailed("amount/currency mismatch", Instant.now());
+                webhookEventRepository.save(event);
+                log.warn("Freedom Pay webhook rejected: amount/currency mismatch for subscription charge {}",
+                        chargeId);
+                yield new Result(Outcome.REJECTED, "amount/currency mismatch");
+            }
+        };
     }
 
     /**

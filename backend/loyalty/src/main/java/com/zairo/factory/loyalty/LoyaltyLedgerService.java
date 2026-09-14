@@ -40,6 +40,15 @@ public class LoyaltyLedgerService {
         return accountRepository.findByProviderIdAndUserId(providerId, userId);
     }
 
+    /** Read-only lookup of a specific earning row, e.g. so a refund reversal knows how many points to claw back. */
+    public LoyaltyTransaction findEarningTransaction(UUID providerId, UUID userId, LoyaltyReferenceType referenceType,
+            UUID referenceId) {
+        return transactionRepository
+                .findFirstByProviderIdAndUserIdAndReferenceTypeAndReferenceId(providerId, userId, referenceType,
+                        referenceId)
+                .orElse(null);
+    }
+
     @Transactional
     public LoyaltyAccount getOrCreateAccount(UUID providerId, UUID userId) {
         return accountRepository.findByProviderIdAndUserId(providerId, userId).orElseGet(() -> {
@@ -150,6 +159,63 @@ public class LoyaltyLedgerService {
                 account.getPointsBalance(), reason, referenceType, referenceId, bookingId, rewardId, redemptionId,
                 actorUserId, now, null);
         return transactionRepository.save(tx);
+    }
+
+    /**
+     * Claws back previously-earned points after their originating booking's
+     * payment was refunded post-completion (Phase 0 stabilization) -- see
+     * {@code LoyaltyRefundListener}/{@code LoyaltyRefundProcessor}. Capped
+     * at the account's current balance rather than throwing if the customer
+     * already spent some or all of those points elsewhere: undoing an
+     * earlier award must never take a balance negative. Idempotent per
+     * {@code (referenceType, referenceId)} exactly like {@link #earn} -- a
+     * retried/duplicated outbox row is a safe no-op.
+     */
+    @Transactional
+    public Optional<LoyaltyTransaction> reverseEarning(UUID providerId, UUID userId, int points, String reason,
+            LoyaltyReferenceType referenceType, UUID referenceId, UUID bookingId) {
+        if (points <= 0) {
+            return Optional.empty();
+        }
+        Instant now = clock.instant();
+        LoyaltyAccount account = lockAccount(providerId, userId, now);
+
+        if (referenceType != null && referenceId != null && transactionRepository
+                .existsByProviderIdAndUserIdAndReferenceTypeAndReferenceId(providerId, userId, referenceType,
+                        referenceId)) {
+            return Optional.empty();
+        }
+
+        int amount = Math.min(points, account.getPointsBalance());
+        if (amount <= 0) {
+            return Optional.empty();
+        }
+
+        List<LoyaltyEarnLot> lots = earnLotRepository
+                .findByProviderIdAndUserIdAndPointsRemainingGreaterThanOrderByEarnedAtAsc(providerId, userId, 0);
+        int remaining = amount;
+        for (LoyaltyEarnLot lot : lots) {
+            if (remaining <= 0) {
+                break;
+            }
+            remaining -= lot.consume(remaining);
+            earnLotRepository.save(lot);
+        }
+        if (remaining > 0) {
+            // Same invariant #consume relies on: live lots always sum to
+            // the cached balance, so capping `amount` at the balance above
+            // should exhaust exactly that many lot points.
+            throw new IllegalStateException("Loyalty lots for " + providerId + "/" + userId + " could not cover "
+                    + amount + " points of reversal (short by " + remaining + ")");
+        }
+
+        account.debit(amount, LoyaltyTransactionType.REVERSAL, now);
+        accountRepository.save(account);
+
+        LoyaltyTransaction tx = LoyaltyTransaction.create(providerId, userId, LoyaltyTransactionType.REVERSAL,
+                -amount, account.getPointsBalance(), reason, referenceType, referenceId, bookingId, null, null, null,
+                now, null);
+        return Optional.of(transactionRepository.save(tx));
     }
 
     /**

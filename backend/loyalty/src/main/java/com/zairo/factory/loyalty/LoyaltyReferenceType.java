@@ -24,5 +24,13 @@ public enum LoyaltyReferenceType {
     /** referenceId = the {@link LoyaltyEarnLot} that expired. */
     LOT_EXPIRATION,
     /** No structured reference -- a free-text manual adjustment; see {@link LoyaltyTransaction#getActorUserId()}. */
-    MANUAL_ADJUSTMENT
+    MANUAL_ADJUSTMENT,
+    /**
+     * referenceId/bookingId = a COMPLETED booking whose payment was later
+     * refunded (Phase 0 stabilization) -- claws back that booking's own
+     * BOOKING_EARNING points, capped at the account's current balance. At
+     * most one per booking, enforced by a unique index (see V59), same
+     * idempotency shape as the earning rules it undoes.
+     */
+    PAYMENT_REFUND_REVERSAL
 }
