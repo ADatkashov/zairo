@@ -23,6 +23,13 @@ dependencies {
     // needed the same port without a Gradle cycle).
     implementation(project(":payment-provider"))
 
+    // PaymentWebhookProcessor routes a subscription-charge webhook to
+    // SubscriptionChargeWebhookService (Phase 0 stabilization) -- safe,
+    // one-directional: subscriptions depends only on money/payment-provider/
+    // auth, never on payments (see subscriptions/build.gradle.kts's own
+    // comment on why it avoids that cycle).
+    implementation(project(":subscriptions"))
+
     // The failed-refund admin visibility endpoint (PaymentAdminController)
     // reuses platform-admin's caller resolution wholesale instead of a
     // second admin auth system — same directed dependency shape as

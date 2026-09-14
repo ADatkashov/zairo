@@ -514,9 +514,16 @@ dashboard itself has no such limitation):
 4. **Instance Type**: **Free**.
 5. **Environment** tab → add every variable from the table above, plus
    `PAYMENT_PROVIDER=mock` (no real Freedom Pay credentials exist yet —
-   see ADR-0006). Do **not** set `SERVER_PORT` — Render injects its own
-   `PORT`, and `application.yml`'s `server.port: ${SERVER_PORT:${PORT:8080}}`
-   already falls back to it.
+   see ADR-0006) **and `SPRING_PROFILES_ACTIVE=prod`**. Do **not** set
+   `SERVER_PORT` — Render injects its own `PORT`, and `application.yml`'s
+   `server.port: ${SERVER_PORT:${PORT:8080}}` already falls back to it.
+
+   `SPRING_PROFILES_ACTIVE=prod` turns on `ProductionSecretsValidator`
+   (Phase 0 stabilization) — the app refuses to start if `JWT_SECRET`,
+   `PLATFORM_ADMIN_JWT_SECRET`, `DB_PASSWORD`, or `MINIO_SECRET_KEY` are
+   still the dev-default values committed in `application.yml`, or unset.
+   Set every real value from "Where the real values live" below *before*
+   adding this variable, or the service will fail to boot.
 6. **Create Web Service.** First build takes a few minutes (full Gradle
    build from scratch, no cache yet). Render gives the service a public
    URL like `https://zairo-backend.onrender.com` once it's live —
