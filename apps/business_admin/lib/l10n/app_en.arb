@@ -1396,5 +1396,454 @@
   "@smartActionPriorityMedium": {"description": "SmartActionPriority.medium's badge label."},
 
   "smartActionPriorityLow": "Low priority",
-  "@smartActionPriorityLow": {"description": "SmartActionPriority.low's badge label."}
+  "@smartActionPriorityLow": {"description": "SmartActionPriority.low's badge label."},
+
+  "loyaltyNavLabel": "Loyalty",
+  "@loyaltyNavLabel": {"description": "Sidebar/AppBar nav label for the Loyalty top-level destination."},
+  "loyaltyScreenTitle": "Loyalty & Rewards",
+  "@loyaltyScreenTitle": {"description": "LoyaltyScreen's AppBar title."},
+  "loyaltyNoBusinesses": "Create a business first to set up its loyalty program.",
+  "@loyaltyNoBusinesses": {"description": "LoyaltyScreen's empty state when the owner has no businesses yet."},
+  "loyaltyTabOverview": "Overview",
+  "@loyaltyTabOverview": {"description": "Loyalty tab label."},
+  "loyaltyTabSettings": "Settings",
+  "@loyaltyTabSettings": {"description": "Loyalty tab label."},
+  "loyaltyTabRewards": "Rewards",
+  "@loyaltyTabRewards": {"description": "Loyalty tab label."},
+  "loyaltyTabCustomers": "Customers",
+  "@loyaltyTabCustomers": {"description": "Loyalty tab label."},
+  "loyaltyTabRedemptions": "Redemptions",
+  "@loyaltyTabRedemptions": {"description": "Loyalty tab label."},
+  "loyaltyTabMilestones": "Milestones",
+  "@loyaltyTabMilestones": {"description": "Loyalty tab label."},
+  "loyaltyTabTiers": "Tiers",
+  "@loyaltyTabTiers": {"description": "Loyalty tab label."},
+
+  "errorLoyaltySettingsLoadFailed": "Couldn't load loyalty settings: {error}",
+  "@errorLoyaltySettingsLoadFailed": {
+    "description": "LoyaltySettingsScreen's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "errorLoyaltyOverviewLoadFailed": "Couldn't load the loyalty overview: {error}",
+  "@errorLoyaltyOverviewLoadFailed": {
+    "description": "LoyaltyOverviewScreen's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "errorLoyaltyRewardsLoadFailed": "Couldn't load rewards: {error}",
+  "@errorLoyaltyRewardsLoadFailed": {
+    "description": "LoyaltyRewardsScreen's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "errorLoyaltyCustomersLoadFailed": "Couldn't load the loyalty roster: {error}",
+  "@errorLoyaltyCustomersLoadFailed": {
+    "description": "LoyaltyCustomersScreen/LoyaltyCustomerDetailScreen's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "errorLoyaltyRedemptionsLoadFailed": "Couldn't load redemptions: {error}",
+  "@errorLoyaltyRedemptionsLoadFailed": {
+    "description": "LoyaltyRedemptionsScreen's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "errorLoyaltyMilestonesLoadFailed": "Couldn't load milestones: {error}",
+  "@errorLoyaltyMilestonesLoadFailed": {
+    "description": "LoyaltyMilestonesScreen's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "errorLoyaltyTiersLoadFailed": "Couldn't load tiers: {error}",
+  "@errorLoyaltyTiersLoadFailed": {
+    "description": "LoyaltyTiersScreen's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "errorLoyaltyValidationFailed": "Some of these values aren't valid. Please check the form.",
+  "@errorLoyaltyValidationFailed": {"description": "LoyaltyAdminException's generic 400 fallback when the backend sent no message."},
+  "errorLoyaltyForbidden": "You don't have access to this business's loyalty program.",
+  "@errorLoyaltyForbidden": {"description": "LoyaltyAdminException's 403 message."},
+  "errorLoyaltyNotFound": "That wasn't found.",
+  "@errorLoyaltyNotFound": {"description": "LoyaltyAdminException's 404 message."},
+  "errorLoyaltyConflict": "That action can't be completed right now.",
+  "@errorLoyaltyConflict": {"description": "LoyaltyAdminException's generic 409 fallback when the backend sent no message."},
+  "errorLoyaltyActionFailed": "Something went wrong: {error}",
+  "@errorLoyaltyActionFailed": {
+    "description": "LoyaltyAdminException's generic fallback for an unexpected status code.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "loyaltyOverviewTotalMembers": "Total members",
+  "@loyaltyOverviewTotalMembers": {"description": "Loyalty overview tile label."},
+  "loyaltyOverviewActiveMembers": "Active members",
+  "@loyaltyOverviewActiveMembers": {"description": "Loyalty overview tile label."},
+  "loyaltyOverviewPointsIssued": "Points issued",
+  "@loyaltyOverviewPointsIssued": {"description": "Loyalty overview tile label."},
+  "loyaltyOverviewPointsRedeemed": "Points redeemed",
+  "@loyaltyOverviewPointsRedeemed": {"description": "Loyalty overview tile label."},
+  "loyaltyOverviewOutstandingLiability": "Outstanding liability",
+  "@loyaltyOverviewOutstandingLiability": {"description": "Loyalty overview tile label -- points issued but not yet redeemed or expired."},
+  "loyaltyOverviewRewardsRedeemed": "Rewards redeemed",
+  "@loyaltyOverviewRewardsRedeemed": {"description": "Loyalty overview tile label."},
+
+  "loyaltySettingsEnableTitle": "Enable loyalty program",
+  "@loyaltySettingsEnableTitle": {"description": "LoyaltySettingsScreen's enable/disable switch title."},
+  "loyaltySettingsEnableSubtitle": "Customers earn and redeem points once this is on.",
+  "@loyaltySettingsEnableSubtitle": {"description": "LoyaltySettingsScreen's enable/disable switch subtitle."},
+  "loyaltySettingsSectionProgram": "Program",
+  "@loyaltySettingsSectionProgram": {"description": "LoyaltySettingsScreen's section header."},
+  "loyaltySettingsNameLabel": "Program name",
+  "@loyaltySettingsNameLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsDescriptionLabel": "Description",
+  "@loyaltySettingsDescriptionLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsSectionEarning": "Earning rules",
+  "@loyaltySettingsSectionEarning": {"description": "LoyaltySettingsScreen's section header."},
+  "loyaltySettingsFixedPointsPerBookingLabel": "Points per completed booking",
+  "@loyaltySettingsFixedPointsPerBookingLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsPointsPerCurrencyUnitLabel": "Points per currency unit spent",
+  "@loyaltySettingsPointsPerCurrencyUnitLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsFirstBookingBonusLabel": "First booking bonus points",
+  "@loyaltySettingsFirstBookingBonusLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsRepeatVisitBonusLabel": "Repeat visit bonus points",
+  "@loyaltySettingsRepeatVisitBonusLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsRepeatVisitThresholdLabel": "Repeat visit threshold",
+  "@loyaltySettingsRepeatVisitThresholdLabel": {"description": "LoyaltySettingsScreen field label -- which visit number earns the repeat-visit bonus."},
+  "loyaltySettingsRepeatVisitThresholdHint": "e.g. 3 for the 3rd visit",
+  "@loyaltySettingsRepeatVisitThresholdHint": {"description": "LoyaltySettingsScreen field hint."},
+  "loyaltySettingsReviewBonusLabel": "Review bonus points",
+  "@loyaltySettingsReviewBonusLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsSectionRedemption": "Redemption rules",
+  "@loyaltySettingsSectionRedemption": {"description": "LoyaltySettingsScreen's section header."},
+  "loyaltySettingsRedemptionRateLabel": "Points per currency unit (redemption)",
+  "@loyaltySettingsRedemptionRateLabel": {"description": "LoyaltySettingsScreen field label -- the conversion rate used when a reward's value is derived from points."},
+  "loyaltySettingsRedemptionRateHint": "Leave blank if rewards use a fixed points cost instead",
+  "@loyaltySettingsRedemptionRateHint": {"description": "LoyaltySettingsScreen field hint."},
+  "loyaltySettingsMinRedemptionLabel": "Minimum points to redeem",
+  "@loyaltySettingsMinRedemptionLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsMaxRedemptionPerBookingLabel": "Max points redeemable per booking",
+  "@loyaltySettingsMaxRedemptionPerBookingLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsSectionExpiration": "Expiration",
+  "@loyaltySettingsSectionExpiration": {"description": "LoyaltySettingsScreen's section header."},
+  "loyaltySettingsExpireEnabledTitle": "Points expire",
+  "@loyaltySettingsExpireEnabledTitle": {"description": "LoyaltySettingsScreen switch title."},
+  "loyaltySettingsExpirationMonthsLabel": "Expire after (months)",
+  "@loyaltySettingsExpirationMonthsLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsSectionCaps": "Earning caps",
+  "@loyaltySettingsSectionCaps": {"description": "LoyaltySettingsScreen's section header."},
+  "loyaltySettingsDailyCapLabel": "Daily earning cap",
+  "@loyaltySettingsDailyCapLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsMonthlyCapLabel": "Monthly earning cap",
+  "@loyaltySettingsMonthlyCapLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsOptionalSuffix": "optional",
+  "@loyaltySettingsOptionalSuffix": {"description": "Appended to an optional field's label across the Loyalty feature, e.g. 'Daily earning cap (optional)'."},
+  "loyaltySettingsValidationError": "Please fill in every field with a valid, non-negative value (repeat visit threshold must be at least 2).",
+  "@loyaltySettingsValidationError": {"description": "LoyaltySettingsScreen's client-side validation error."},
+  "loyaltySettingsExpirationValidationError": "Enter how many months until points expire.",
+  "@loyaltySettingsExpirationValidationError": {"description": "LoyaltySettingsScreen's client-side validation error when expiration is enabled without a month count."},
+  "loyaltySettingsSavedMessage": "Loyalty settings saved.",
+  "@loyaltySettingsSavedMessage": {"description": "LoyaltySettingsScreen's save-success snackbar."},
+
+  "loyaltyRewardAddButton": "Add reward",
+  "@loyaltyRewardAddButton": {"description": "LoyaltyRewardsScreen's add button/FAB label."},
+  "loyaltyRewardAddTitle": "Add reward",
+  "@loyaltyRewardAddTitle": {"description": "LoyaltyRewardFormScreen's AppBar title when creating."},
+  "loyaltyRewardEditTitle": "Edit reward",
+  "@loyaltyRewardEditTitle": {"description": "LoyaltyRewardFormScreen's AppBar title when editing."},
+  "loyaltyRewardsEmptyTitle": "No rewards yet",
+  "@loyaltyRewardsEmptyTitle": {"description": "LoyaltyRewardsScreen's empty state title."},
+  "loyaltyRewardsEmptyMessage": "Add a reward customers can redeem their points for.",
+  "@loyaltyRewardsEmptyMessage": {"description": "LoyaltyRewardsScreen's empty state message."},
+  "loyaltyRewardStatusActive": "Active",
+  "@loyaltyRewardStatusActive": {"description": "LoyaltyRewardCard's active badge."},
+  "loyaltyRewardStatusInactive": "Inactive",
+  "@loyaltyRewardStatusInactive": {"description": "LoyaltyRewardCard's inactive badge."},
+  "loyaltyRewardPointsCostLabel": "{points} pts",
+  "@loyaltyRewardPointsCostLabel": {
+    "description": "LoyaltyRewardCard's points-cost row, e.g. '500 pts'.",
+    "placeholders": {
+      "points": {"type": "int"}
+    }
+  },
+  "loyaltyRewardRedemptionsCountLabel": "{count} redeemed",
+  "@loyaltyRewardRedemptionsCountLabel": {
+    "description": "LoyaltyRewardCard's redemption-count row.",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "loyaltyRewardMaxRedemptionsLabel": "Max {max}",
+  "@loyaltyRewardMaxRedemptionsLabel": {
+    "description": "LoyaltyRewardCard's max-redemptions row.",
+    "placeholders": {
+      "max": {"type": "int"}
+    }
+  },
+  "loyaltyRewardActivateButton": "Activate",
+  "@loyaltyRewardActivateButton": {"description": "LoyaltyRewardsScreen's activate action."},
+  "loyaltyRewardDeactivateButton": "Deactivate",
+  "@loyaltyRewardDeactivateButton": {"description": "LoyaltyRewardsScreen's deactivate action."},
+  "loyaltyRewardDeleteButton": "Delete",
+  "@loyaltyRewardDeleteButton": {"description": "LoyaltyRewardsScreen's delete action."},
+  "loyaltyRewardDeleteBlockedTitle": "Can't delete this reward",
+  "@loyaltyRewardDeleteBlockedTitle": {"description": "Shown instead of the plain delete confirm once a reward has redemption history."},
+  "loyaltyRewardDeleteBlockedMessage": "This reward has been redeemed {count, plural, one{once} other{{count} times}}, so it can't be deleted. Deactivate it instead to stop new redemptions.",
+  "@loyaltyRewardDeleteBlockedMessage": {
+    "description": "LoyaltyRewardsScreen's 409-avoidance dialog message, shown when redemptionsCount > 0.",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "loyaltyRewardDeleteConfirmTitle": "Delete this reward?",
+  "@loyaltyRewardDeleteConfirmTitle": {"description": "LoyaltyRewardsScreen's delete confirmation title."},
+  "loyaltyRewardDeleteConfirmMessage": "\"{name}\" will be removed from the catalog. This can't be undone.",
+  "@loyaltyRewardDeleteConfirmMessage": {
+    "description": "LoyaltyRewardsScreen's delete confirmation message.",
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "loyaltyRewardNameLabel": "Reward name",
+  "@loyaltyRewardNameLabel": {"description": "LoyaltyRewardFormScreen field label."},
+  "loyaltyRewardDescriptionLabel": "Description",
+  "@loyaltyRewardDescriptionLabel": {"description": "LoyaltyRewardFormScreen field label."},
+  "loyaltyRewardPointsCostFieldLabel": "Points cost",
+  "@loyaltyRewardPointsCostFieldLabel": {"description": "LoyaltyRewardFormScreen field label."},
+  "loyaltyRewardTypeLabel": "Reward type",
+  "@loyaltyRewardTypeLabel": {"description": "LoyaltyRewardFormScreen's type picker label, and LoyaltyRewardCard's type row."},
+  "loyaltyRewardTypeFixedDiscount": "Fixed discount",
+  "@loyaltyRewardTypeFixedDiscount": {"description": "LoyaltyRewardType.fixedDiscount's label."},
+  "loyaltyRewardTypePercentageDiscount": "Percentage discount",
+  "@loyaltyRewardTypePercentageDiscount": {"description": "LoyaltyRewardType.percentageDiscount's label."},
+  "loyaltyRewardTypeFreeService": "Free service",
+  "@loyaltyRewardTypeFreeService": {"description": "LoyaltyRewardType.freeService's label."},
+  "loyaltyRewardTypeCustom": "Custom",
+  "@loyaltyRewardTypeCustom": {"description": "LoyaltyRewardType.custom's label."},
+  "loyaltyRewardDiscountAmountLabel": "Discount amount",
+  "@loyaltyRewardDiscountAmountLabel": {"description": "LoyaltyRewardFormScreen field label, shown for FIXED_DISCOUNT."},
+  "loyaltyRewardDiscountCurrencyLabel": "Currency",
+  "@loyaltyRewardDiscountCurrencyLabel": {"description": "LoyaltyRewardFormScreen field label, shown for FIXED_DISCOUNT."},
+  "loyaltyRewardDiscountPercentageLabel": "Discount percentage",
+  "@loyaltyRewardDiscountPercentageLabel": {"description": "LoyaltyRewardFormScreen field label, shown for PERCENTAGE_DISCOUNT."},
+  "loyaltyRewardServiceLabel": "Service",
+  "@loyaltyRewardServiceLabel": {"description": "LoyaltyRewardFormScreen's service picker label, shown for FREE_SERVICE."},
+  "loyaltyRewardNoServicesAvailable": "Add a service first to offer it as a reward.",
+  "@loyaltyRewardNoServicesAvailable": {"description": "LoyaltyRewardFormScreen's service picker, shown when the business has no services yet."},
+  "loyaltyRewardCustomTypeHint": "Explain what this reward gets the customer in the description or terms below -- there's nothing else to configure for a custom reward.",
+  "@loyaltyRewardCustomTypeHint": {"description": "LoyaltyRewardFormScreen's hint shown for CUSTOM type."},
+  "loyaltyRewardMaxRedemptionsFieldLabel": "Max redemptions",
+  "@loyaltyRewardMaxRedemptionsFieldLabel": {"description": "LoyaltyRewardFormScreen field label."},
+  "loyaltyRewardStartsAtLabel": "Starts",
+  "@loyaltyRewardStartsAtLabel": {"description": "LoyaltyRewardFormScreen's start-date field label."},
+  "loyaltyRewardEndsAtLabel": "Ends",
+  "@loyaltyRewardEndsAtLabel": {"description": "LoyaltyRewardFormScreen's end-date field label."},
+  "loyaltyRewardNoDateSet": "Not set",
+  "@loyaltyRewardNoDateSet": {"description": "LoyaltyRewardFormScreen's date field value when unset."},
+  "loyaltyRewardTermsLabel": "Terms",
+  "@loyaltyRewardTermsLabel": {"description": "LoyaltyRewardFormScreen field label."},
+  "loyaltyRewardValidationErrorBasic": "Enter a name and a positive points cost.",
+  "@loyaltyRewardValidationErrorBasic": {"description": "LoyaltyRewardFormScreen's validation error for the always-required fields."},
+  "loyaltyRewardValidationErrorFixedDiscount": "Enter a positive discount amount and a 3-letter currency code.",
+  "@loyaltyRewardValidationErrorFixedDiscount": {"description": "LoyaltyRewardFormScreen's validation error for FIXED_DISCOUNT."},
+  "loyaltyRewardValidationErrorPercentageDiscount": "Enter a discount percentage between 0 and 100.",
+  "@loyaltyRewardValidationErrorPercentageDiscount": {"description": "LoyaltyRewardFormScreen's validation error for PERCENTAGE_DISCOUNT."},
+  "loyaltyRewardValidationErrorFreeService": "Pick which service this reward gives for free.",
+  "@loyaltyRewardValidationErrorFreeService": {"description": "LoyaltyRewardFormScreen's validation error for FREE_SERVICE."},
+
+  "loyaltyCustomersSearchHint": "Search by name or email",
+  "@loyaltyCustomersSearchHint": {"description": "LoyaltyCustomersScreen's search field hint."},
+  "loyaltyCustomersEmpty": "No loyalty members yet.",
+  "@loyaltyCustomersEmpty": {"description": "LoyaltyCustomersScreen's empty state."},
+  "loyaltyCustomersSearchEmpty": "No members match your search.",
+  "@loyaltyCustomersSearchEmpty": {"description": "LoyaltyCustomersScreen's empty state when a search filters everything out."},
+  "loyaltyCustomersLoadMore": "Load more",
+  "@loyaltyCustomersLoadMore": {"description": "LoyaltyCustomersScreen/LoyaltyRedemptionsScreen's pagination button."},
+  "loyaltyCustomerBalanceLabel": "{balance} pts balance",
+  "@loyaltyCustomerBalanceLabel": {
+    "description": "Loyalty roster row's points balance.",
+    "placeholders": {
+      "balance": {"type": "int"}
+    }
+  },
+  "loyaltyCustomerLastActivityLabel": "Last activity: {date}",
+  "@loyaltyCustomerLastActivityLabel": {
+    "description": "Loyalty roster row/detail's last-activity date.",
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "loyaltyCustomerDetailTitle": "Loyalty member",
+  "@loyaltyCustomerDetailTitle": {"description": "LoyaltyCustomerDetailScreen's fallback AppBar title before the name loads."},
+  "loyaltyCustomerDetailBalance": "Balance",
+  "@loyaltyCustomerDetailBalance": {"description": "LoyaltyCustomerDetailScreen stat tile label."},
+  "loyaltyCustomerDetailLifetimeEarned": "Lifetime earned",
+  "@loyaltyCustomerDetailLifetimeEarned": {"description": "LoyaltyCustomerDetailScreen stat tile label."},
+  "loyaltyCustomerDetailLifetimeRedeemed": "Lifetime redeemed",
+  "@loyaltyCustomerDetailLifetimeRedeemed": {"description": "LoyaltyCustomerDetailScreen stat tile label."},
+  "loyaltyCustomerDetailVisits": "Completed visits",
+  "@loyaltyCustomerDetailVisits": {"description": "LoyaltyCustomerDetailScreen stat tile label."},
+  "loyaltyCustomerDetailExpiringSoon": "Expiring in 30 days",
+  "@loyaltyCustomerDetailExpiringSoon": {"description": "LoyaltyCustomerDetailScreen stat tile label, shown only when > 0."},
+
+  "loyaltyAdjustPointsButton": "Adjust points",
+  "@loyaltyAdjustPointsButton": {"description": "LoyaltyCustomerDetailScreen's action button."},
+  "loyaltyAdjustPointsDialogTitle": "Adjust points",
+  "@loyaltyAdjustPointsDialogTitle": {"description": "showLoyaltyAdjustPointsDialog's form-step title."},
+  "loyaltyAdjustPointsCurrentBalanceLabel": "Current balance: {balance} pts",
+  "@loyaltyAdjustPointsCurrentBalanceLabel": {
+    "description": "showLoyaltyAdjustPointsDialog's current-balance line.",
+    "placeholders": {
+      "balance": {"type": "int"}
+    }
+  },
+  "loyaltyAdjustPointsDeltaLabel": "Points to add or remove",
+  "@loyaltyAdjustPointsDeltaLabel": {"description": "showLoyaltyAdjustPointsDialog's delta field label."},
+  "loyaltyAdjustPointsDeltaHint": "Positive to credit, negative to debit",
+  "@loyaltyAdjustPointsDeltaHint": {"description": "showLoyaltyAdjustPointsDialog's delta field hint."},
+  "loyaltyAdjustPointsReasonLabel": "Reason",
+  "@loyaltyAdjustPointsReasonLabel": {"description": "showLoyaltyAdjustPointsDialog's reason field label, and the confirm step's reason summary label."},
+  "loyaltyAdjustPointsReasonHint": "Required -- explain why you're making this correction",
+  "@loyaltyAdjustPointsReasonHint": {"description": "showLoyaltyAdjustPointsDialog's reason field hint."},
+  "loyaltyAdjustPointsDeltaError": "Enter a non-zero number of points.",
+  "@loyaltyAdjustPointsDeltaError": {"description": "showLoyaltyAdjustPointsDialog's delta validation error."},
+  "loyaltyAdjustPointsReasonError": "A reason is required for a manual adjustment.",
+  "@loyaltyAdjustPointsReasonError": {"description": "showLoyaltyAdjustPointsDialog's reason validation error."},
+  "loyaltyAdjustPointsContinueButton": "Continue",
+  "@loyaltyAdjustPointsContinueButton": {"description": "showLoyaltyAdjustPointsDialog's form-step continue button."},
+  "loyaltyAdjustPointsConfirmTitle": "Confirm adjustment",
+  "@loyaltyAdjustPointsConfirmTitle": {"description": "showLoyaltyAdjustPointsDialog's confirm-step title."},
+  "loyaltyAdjustPointsConfirmCredit": "Credit this customer {delta} points.",
+  "@loyaltyAdjustPointsConfirmCredit": {
+    "description": "showLoyaltyAdjustPointsDialog's confirm-step summary for a positive delta.",
+    "placeholders": {
+      "delta": {"type": "int"}
+    }
+  },
+  "loyaltyAdjustPointsConfirmDebit": "Debit this customer {delta} points.",
+  "@loyaltyAdjustPointsConfirmDebit": {
+    "description": "showLoyaltyAdjustPointsDialog's confirm-step summary for a negative delta (delta is shown as a positive number).",
+    "placeholders": {
+      "delta": {"type": "int"}
+    }
+  },
+  "loyaltyAdjustPointsConfirmProjectedBalance": "New balance: {balance} pts",
+  "@loyaltyAdjustPointsConfirmProjectedBalance": {
+    "description": "showLoyaltyAdjustPointsDialog's confirm-step projected-balance line.",
+    "placeholders": {
+      "balance": {"type": "int"}
+    }
+  },
+  "loyaltyAdjustPointsBackButton": "Back",
+  "@loyaltyAdjustPointsBackButton": {"description": "showLoyaltyAdjustPointsDialog's confirm-step back button."},
+  "loyaltyAdjustPointsConfirmButton": "Confirm",
+  "@loyaltyAdjustPointsConfirmButton": {"description": "showLoyaltyAdjustPointsDialog's confirm-step submit button."},
+  "loyaltyAdjustPointsSuccessMessage": "Points adjusted.",
+  "@loyaltyAdjustPointsSuccessMessage": {"description": "LoyaltyCustomerDetailScreen's success snackbar after an adjustment."},
+
+  "loyaltyRetentionNew": "New",
+  "@loyaltyRetentionNew": {"description": "retentionStatus == 'NEW' badge label."},
+  "loyaltyRetentionActive": "Active",
+  "@loyaltyRetentionActive": {"description": "retentionStatus == 'ACTIVE' badge label."},
+  "loyaltyRetentionAtRisk": "At risk",
+  "@loyaltyRetentionAtRisk": {"description": "retentionStatus == 'AT_RISK' badge label."},
+  "loyaltyRetentionDueForRebooking": "Due for rebooking",
+  "@loyaltyRetentionDueForRebooking": {"description": "retentionStatus == 'DUE_FOR_REBOOKING' badge label."},
+  "loyaltyRetentionLost": "Lost",
+  "@loyaltyRetentionLost": {"description": "retentionStatus == 'LOST' badge label."},
+
+  "loyaltyRedemptionsEmpty": "No redemptions yet.",
+  "@loyaltyRedemptionsEmpty": {"description": "LoyaltyRedemptionsScreen's empty state."},
+  "loyaltyRedemptionStatusActive": "Active",
+  "@loyaltyRedemptionStatusActive": {"description": "LoyaltyRedemptionStatus.active's badge label."},
+  "loyaltyRedemptionStatusApplied": "Applied",
+  "@loyaltyRedemptionStatusApplied": {"description": "LoyaltyRedemptionStatus.applied's badge label."},
+  "loyaltyRedemptionStatusCancelled": "Cancelled",
+  "@loyaltyRedemptionStatusCancelled": {"description": "LoyaltyRedemptionStatus.cancelled's badge label."},
+  "loyaltyRedemptionStatusExpired": "Expired",
+  "@loyaltyRedemptionStatusExpired": {"description": "LoyaltyRedemptionStatus.expired's badge label."},
+  "loyaltyRedemptionPointsSpentLabel": "{points} pts spent",
+  "@loyaltyRedemptionPointsSpentLabel": {
+    "description": "LoyaltyRedemptionCard's points-spent row.",
+    "placeholders": {
+      "points": {"type": "int"}
+    }
+  },
+  "loyaltyRedemptionAppliedBookingLabel": "Applied to booking {bookingId}",
+  "@loyaltyRedemptionAppliedBookingLabel": {
+    "description": "LoyaltyRedemptionCard's applied-booking row.",
+    "placeholders": {
+      "bookingId": {"type": "String"}
+    }
+  },
+  "loyaltyRedemptionCancelButton": "Cancel redemption",
+  "@loyaltyRedemptionCancelButton": {"description": "LoyaltyRedemptionCard/LoyaltyRedemptionsScreen's cancel action."},
+  "loyaltyRedemptionCancelConfirmTitle": "Cancel this redemption?",
+  "@loyaltyRedemptionCancelConfirmTitle": {"description": "LoyaltyRedemptionsScreen's cancel confirmation title."},
+  "loyaltyRedemptionCancelConfirmMessage": "The customer's points for code {code} will be refunded. This can't be undone.",
+  "@loyaltyRedemptionCancelConfirmMessage": {
+    "description": "LoyaltyRedemptionsScreen's cancel confirmation message.",
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "loyaltyRedemptionCancelReasonLabel": "Reason",
+  "@loyaltyRedemptionCancelReasonLabel": {"description": "LoyaltyRedemptionsScreen's cancel dialog reason field label."},
+  "loyaltyRedemptionApplyButton": "Apply a code",
+  "@loyaltyRedemptionApplyButton": {"description": "LoyaltyRedemptionsScreen's FAB label and apply-dialog submit button."},
+  "loyaltyRedemptionApplyDialogTitle": "Apply a redemption code",
+  "@loyaltyRedemptionApplyDialogTitle": {"description": "The apply-redemption dialog's title."},
+  "loyaltyRedemptionApplyDialogSubtitle": "Enter the code the customer showed you and the booking it applies to.",
+  "@loyaltyRedemptionApplyDialogSubtitle": {"description": "The apply-redemption dialog's subtitle."},
+  "loyaltyRedemptionCodeLabel": "Redemption code",
+  "@loyaltyRedemptionCodeLabel": {"description": "The apply-redemption dialog's code field label."},
+  "loyaltyRedemptionBookingIdLabel": "Booking ID",
+  "@loyaltyRedemptionBookingIdLabel": {"description": "The apply-redemption dialog's booking id field label."},
+  "loyaltyRedemptionApplyValidationError": "Enter both the code and the booking ID.",
+  "@loyaltyRedemptionApplyValidationError": {"description": "The apply-redemption dialog's validation error."},
+
+  "loyaltyMilestonesSubtitle": "Award bonus points when a customer reaches a visit count.",
+  "@loyaltyMilestonesSubtitle": {"description": "LoyaltyMilestonesScreen's subtitle."},
+  "loyaltyMilestonesEmpty": "No milestones yet.",
+  "@loyaltyMilestonesEmpty": {"description": "LoyaltyMilestonesScreen's empty state."},
+  "loyaltyMilestoneAddButton": "Add milestone",
+  "@loyaltyMilestoneAddButton": {"description": "LoyaltyMilestonesScreen's add-row button."},
+  "loyaltyMilestoneVisitsLabel": "Visits required",
+  "@loyaltyMilestoneVisitsLabel": {"description": "LoyaltyMilestonesScreen row field label."},
+  "loyaltyMilestonePointsLabel": "Points awarded",
+  "@loyaltyMilestonePointsLabel": {"description": "LoyaltyMilestonesScreen row field label."},
+  "loyaltyMilestoneLabelLabel": "Label",
+  "@loyaltyMilestoneLabelLabel": {"description": "LoyaltyMilestonesScreen row field label -- a customer-facing name for this milestone."},
+  "loyaltyMilestoneRemoveButton": "Remove milestone",
+  "@loyaltyMilestoneRemoveButton": {"description": "LoyaltyMilestonesScreen row's remove icon button tooltip."},
+  "loyaltyMilestoneValidationError": "Every milestone needs a positive visit count and points value.",
+  "@loyaltyMilestoneValidationError": {"description": "LoyaltyMilestonesScreen's validation error."},
+  "loyaltyMilestonesSavedMessage": "Milestones saved.",
+  "@loyaltyMilestonesSavedMessage": {"description": "LoyaltyMilestonesScreen's save-success snackbar."},
+
+  "loyaltyTiersSubtitle": "Group customers into tiers once they reach a lifetime points total.",
+  "@loyaltyTiersSubtitle": {"description": "LoyaltyTiersScreen's subtitle."},
+  "loyaltyTiersEmpty": "No tiers yet.",
+  "@loyaltyTiersEmpty": {"description": "LoyaltyTiersScreen's empty state."},
+  "loyaltyTierAddButton": "Add tier",
+  "@loyaltyTierAddButton": {"description": "LoyaltyTiersScreen's add-row button."},
+  "loyaltyTierNameLabel": "Tier name",
+  "@loyaltyTierNameLabel": {"description": "LoyaltyTiersScreen row field label."},
+  "loyaltyTierMinPointsLabel": "Min. lifetime points",
+  "@loyaltyTierMinPointsLabel": {"description": "LoyaltyTiersScreen row field label."},
+  "loyaltyTierRemoveButton": "Remove tier",
+  "@loyaltyTierRemoveButton": {"description": "LoyaltyTiersScreen row's remove icon button tooltip."},
+  "loyaltyTierValidationError": "Every tier needs a name and a non-negative points threshold.",
+  "@loyaltyTierValidationError": {"description": "LoyaltyTiersScreen's validation error."},
+  "loyaltyTiersSavedMessage": "Tiers saved.",
+  "@loyaltyTiersSavedMessage": {"description": "LoyaltyTiersScreen's save-success snackbar."}
 }
