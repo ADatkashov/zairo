@@ -878,5 +878,315 @@
   "@imagePickerCameraLabel": {"description": "Photo-source bottom sheet option: take a new photo."},
 
   "imagePickerGalleryLabel": "Gallery",
-  "@imagePickerGalleryLabel": {"description": "Photo-source bottom sheet option: pick an existing photo."}
+  "@imagePickerGalleryLabel": {"description": "Photo-source bottom sheet option: pick an existing photo."},
+
+  "myRewardsTitle": "My Rewards",
+  "@myRewardsTitle": {"description": "Profile tile label and My Rewards screen's app bar title."},
+
+  "loyaltyRedemptionsTitle": "My redemption codes",
+  "@loyaltyRedemptionsTitle": {"description": "Profile tile label and My Redemptions screen's app bar title."},
+
+  "myRewardsLoggedOutPrompt": "Log in to see your rewards across every business",
+  "@myRewardsLoggedOutPrompt": {"description": "Shown on My Rewards when reached while logged out."},
+
+  "myRewardsEmptyTitle": "No rewards yet",
+  "@myRewardsEmptyTitle": {"description": "My Rewards empty state title — the customer has no loyalty account anywhere yet."},
+
+  "myRewardsEmptyMessage": "Complete a booking at any business to start earning points — each business runs its own rewards program, entirely separate from the others.",
+  "@myRewardsEmptyMessage": {"description": "My Rewards empty state message, explaining what loyalty is."},
+
+  "errorMyRewardsLoadFailed": "Couldn't load your rewards.",
+  "@errorMyRewardsLoadFailed": {"description": "My Rewards screen's error state message."},
+
+  "loyaltyPointsBalanceShort": "{points} pts",
+  "@loyaltyPointsBalanceShort": {
+    "description": "Compact points balance badge, e.g. a My Rewards row or a reward card's cost.",
+    "placeholders": {
+      "points": {"type": "int"}
+    }
+  },
+
+  "loyaltyPointsExpiringSoon30d": "{points, plural, one{{points} point} other{{points} points}} expiring within 30 days",
+  "@loyaltyPointsExpiringSoon30d": {
+    "description": "Hint shown when pointsExpiringSoon30d > 0, on a My Rewards row and the business loyalty screen's banner.",
+    "placeholders": {
+      "points": {"type": "int"}
+    }
+  },
+
+  "loyaltyProgramInactiveLabel": "No active program",
+  "@loyaltyProgramInactiveLabel": {"description": "My Rewards row badge for a business whose program is currently disabled."},
+
+  "loyaltyEntryTileTitle": "Rewards & loyalty",
+  "@loyaltyEntryTileTitle": {"description": "Provider detail screen's entry point tile into that business's loyalty program."},
+
+  "loyaltyEntryTileSubtitleLoggedOut": "Log in to see your points and rewards",
+  "@loyaltyEntryTileSubtitleLoggedOut": {"description": "Loyalty entry tile subtitle when reached while logged out."},
+
+  "loyaltyEntryTileSubtitleDefault": "View rewards for this business",
+  "@loyaltyEntryTileSubtitleDefault": {"description": "Loyalty entry tile subtitle when logged in but with no points balance to show yet."},
+
+  "loyaltyEntryTileSubtitleBalance": "{points} pts available",
+  "@loyaltyEntryTileSubtitleBalance": {
+    "description": "Loyalty entry tile subtitle when the caller already holds points at this business.",
+    "placeholders": {
+      "points": {"type": "int"}
+    }
+  },
+
+  "loyaltyProgramDisabledBanner": "This business doesn't have an active rewards program right now.",
+  "@loyaltyProgramDisabledBanner": {"description": "Business loyalty screen's banner when programEnabled is false."},
+
+  "loyaltyStatBalance": "Points",
+  "@loyaltyStatBalance": {"description": "Business loyalty screen's points-balance stat label."},
+
+  "loyaltyStatLifetimeEarned": "Lifetime earned",
+  "@loyaltyStatLifetimeEarned": {"description": "Business loyalty screen's lifetime-earned stat label."},
+
+  "loyaltyStatVisits": "Visits",
+  "@loyaltyStatVisits": {"description": "Business loyalty screen's completed-visits stat label."},
+
+  "loyaltyWaysToEarnTitle": "Ways to earn points",
+  "@loyaltyWaysToEarnTitle": {"description": "Business loyalty screen's waysToEarn section heading."},
+
+  "loyaltyNextMilestoneTitle": "Next milestone",
+  "@loyaltyNextMilestoneTitle": {"description": "Business loyalty screen's next-milestone section heading."},
+
+  "loyaltyNextMilestoneProgressText": "{visitsRemaining, plural, one{{visitsRemaining} more visit} other{{visitsRemaining} more visits}} to earn {pointsAwarded} bonus points",
+  "@loyaltyNextMilestoneProgressText": {
+    "description": "Next-milestone progress text, built from nextMilestone.visitsRemaining/pointsAwarded — never hardcoded.",
+    "placeholders": {
+      "visitsRemaining": {"type": "int"},
+      "pointsAwarded": {"type": "int"}
+    }
+  },
+
+  "loyaltyRewardsTitle": "Available rewards",
+  "@loyaltyRewardsTitle": {"description": "Business loyalty screen's rewards section heading."},
+
+  "loyaltyViewHistoryAction": "History",
+  "@loyaltyViewHistoryAction": {"description": "Business loyalty screen's rewards section header action, opening the points history screen."},
+
+  "loyaltyRewardsEmptyTitle": "No rewards available",
+  "@loyaltyRewardsEmptyTitle": {"description": "Business loyalty screen's empty state when there are no active rewards."},
+
+  "loyaltyRewardsEmptyMessage": "This business hasn't published any rewards yet. Check back later.",
+  "@loyaltyRewardsEmptyMessage": {"description": "Business loyalty screen's empty rewards message."},
+
+  "errorLoyaltyBusinessLoadFailed": "Couldn't load this business's rewards program.",
+  "@errorLoyaltyBusinessLoadFailed": {"description": "Business loyalty screen's error state when the program summary fails to load."},
+
+  "errorLoyaltyRewardsLoadFailed": "Couldn't load rewards.",
+  "@errorLoyaltyRewardsLoadFailed": {"description": "Business loyalty screen's error state when the rewards list fails to load."},
+
+  "loyaltyRewardPointsCost": "{points} pts",
+  "@loyaltyRewardPointsCost": {
+    "description": "Reward card's points-cost badge.",
+    "placeholders": {
+      "points": {"type": "int"}
+    }
+  },
+
+  "loyaltyRewardRedeemButton": "Redeem",
+  "@loyaltyRewardRedeemButton": {"description": "Reward card's redeem button, enabled when affordable."},
+
+  "loyaltyRewardLockedLabel": "Not enough points",
+  "@loyaltyRewardLockedLabel": {"description": "Reward card's redeem button label when affordable is false."},
+
+  "loyaltyRewardEndsOn": "Ends {date}",
+  "@loyaltyRewardEndsOn": {
+    "description": "Reward card's expiry line when endsAt is set.",
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+
+  "loyaltyRewardTerms": "Terms: {terms}",
+  "@loyaltyRewardTerms": {
+    "description": "Reward card's terms line when terms is set.",
+    "placeholders": {
+      "terms": {"type": "String"}
+    }
+  },
+
+  "loyaltyRewardDiscountFixed": "{amount} {currency} off",
+  "@loyaltyRewardDiscountFixed": {
+    "description": "Reward card's FIXED_DISCOUNT summary line.",
+    "placeholders": {
+      "amount": {"type": "String"},
+      "currency": {"type": "String"}
+    }
+  },
+
+  "loyaltyRewardDiscountPercentage": "{percentage}% off",
+  "@loyaltyRewardDiscountPercentage": {
+    "description": "Reward card's PERCENTAGE_DISCOUNT summary line.",
+    "placeholders": {
+      "percentage": {"type": "String"}
+    }
+  },
+
+  "loyaltyRewardFreeService": "Free service",
+  "@loyaltyRewardFreeService": {"description": "Reward card's FREE_SERVICE summary line."},
+
+  "loyaltyRedeemConfirmTitle": "Redeem this reward?",
+  "@loyaltyRedeemConfirmTitle": {"description": "Redeem confirmation dialog title."},
+
+  "loyaltyRedeemConfirmMessage": "Spend {points} points on \"{reward}\"? You'll get a code to show the business at checkout.",
+  "@loyaltyRedeemConfirmMessage": {
+    "description": "Redeem confirmation dialog body.",
+    "placeholders": {
+      "points": {"type": "int"},
+      "reward": {"type": "String"}
+    }
+  },
+
+  "loyaltyRedeemConfirmButton": "Redeem",
+  "@loyaltyRedeemConfirmButton": {"description": "Redeem confirmation dialog's confirm action."},
+
+  "loyaltyRedeemCancelButton": "Cancel",
+  "@loyaltyRedeemCancelButton": {"description": "Redeem confirmation dialog's dismiss action."},
+
+  "loyaltyRedemptionSuccessTitle": "Reward redeemed!",
+  "@loyaltyRedemptionSuccessTitle": {"description": "Redemption success dialog title."},
+
+  "loyaltyRedemptionSuccessMessage": "Show this code to the business at checkout to apply your reward.",
+  "@loyaltyRedemptionSuccessMessage": {"description": "Redemption success dialog body, shown above the redemption code."},
+
+  "loyaltyRedemptionSuccessDone": "Done",
+  "@loyaltyRedemptionSuccessDone": {"description": "Redemption success dialog's dismiss action."},
+
+  "errorLoyaltyRedeemFailed": "Couldn't redeem this reward: {error}",
+  "@errorLoyaltyRedeemFailed": {
+    "description": "Unexpected (non-LoyaltyException) failure redeeming a reward.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "errorLoyaltyActionConflict": "This action can no longer be completed. Please refresh and try again.",
+  "@errorLoyaltyActionConflict": {"description": "LoyaltyException's fallback message when the server's own message couldn't be parsed."},
+
+  "loyaltyHistoryTitle": "Points history",
+  "@loyaltyHistoryTitle": {"description": "Points history screen's app bar title."},
+
+  "loyaltyHistoryEmptyTitle": "No activity yet",
+  "@loyaltyHistoryEmptyTitle": {"description": "Points history screen's empty state title."},
+
+  "loyaltyHistoryEmptyMessage": "Your points activity with this business will show up here.",
+  "@loyaltyHistoryEmptyMessage": {"description": "Points history screen's empty state message."},
+
+  "errorLoyaltyHistoryLoadFailed": "Couldn't load points history.",
+  "@errorLoyaltyHistoryLoadFailed": {"description": "Points history screen's error state message."},
+
+  "loyaltyTxTypeEarned": "Earned",
+  "@loyaltyTxTypeEarned": {"description": "Transaction type label: EARNED."},
+
+  "loyaltyTxTypeBonus": "Bonus",
+  "@loyaltyTxTypeBonus": {"description": "Transaction type label: BONUS."},
+
+  "loyaltyTxTypeRedeemed": "Redeemed",
+  "@loyaltyTxTypeRedeemed": {"description": "Transaction type label: REDEEMED."},
+
+  "loyaltyTxTypeExpired": "Expired",
+  "@loyaltyTxTypeExpired": {"description": "Transaction type label: EXPIRED."},
+
+  "loyaltyTxTypeRefund": "Refunded",
+  "@loyaltyTxTypeRefund": {"description": "Transaction type label: REFUND."},
+
+  "loyaltyTxTypeAdjustment": "Adjustment",
+  "@loyaltyTxTypeAdjustment": {"description": "Transaction type label: ADJUSTMENT."},
+
+  "loyaltyTxTypeReversal": "Reversal",
+  "@loyaltyTxTypeReversal": {"description": "Transaction type label: REVERSAL."},
+
+  "loyaltyTransactionExpiresOn": "Expires {date}",
+  "@loyaltyTransactionExpiresOn": {
+    "description": "History row's expiry caption when expiresAt is set and still in the future.",
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+
+  "loyaltyTransactionBalanceAfter": "Balance: {balance}",
+  "@loyaltyTransactionBalanceAfter": {
+    "description": "History row's resulting balance caption.",
+    "placeholders": {
+      "balance": {"type": "int"}
+    }
+  },
+
+  "loyaltyListLoadMore": "Load more",
+  "@loyaltyListLoadMore": {"description": "Pagination button shared by the points history and my-redemptions screens."},
+
+  "loyaltyRedemptionsLoggedOutPrompt": "Log in to see your redemption codes",
+  "@loyaltyRedemptionsLoggedOutPrompt": {"description": "Shown on My Redemptions when reached while logged out."},
+
+  "loyaltyRedemptionsEmptyTitle": "No redemptions yet",
+  "@loyaltyRedemptionsEmptyTitle": {"description": "My Redemptions empty state title."},
+
+  "loyaltyRedemptionsEmptyMessage": "Rewards you redeem at any business will show up here as codes.",
+  "@loyaltyRedemptionsEmptyMessage": {"description": "My Redemptions empty state message."},
+
+  "errorLoyaltyRedemptionsLoadFailed": "Couldn't load your redemptions.",
+  "@errorLoyaltyRedemptionsLoadFailed": {"description": "My Redemptions screen's error state message."},
+
+  "loyaltyRedemptionStatusActive": "Active",
+  "@loyaltyRedemptionStatusActive": {"description": "Redemption status label: ACTIVE."},
+
+  "loyaltyRedemptionStatusApplied": "Applied",
+  "@loyaltyRedemptionStatusApplied": {"description": "Redemption status label: APPLIED."},
+
+  "loyaltyRedemptionStatusCancelled": "Cancelled",
+  "@loyaltyRedemptionStatusCancelled": {"description": "Redemption status label: CANCELLED."},
+
+  "loyaltyRedemptionStatusExpired": "Expired",
+  "@loyaltyRedemptionStatusExpired": {"description": "Redemption status label: EXPIRED."},
+
+  "loyaltyRedemptionCancelButton": "Cancel",
+  "@loyaltyRedemptionCancelButton": {"description": "My Redemptions row's cancel action, shown only for ACTIVE redemptions."},
+
+  "loyaltyRedemptionCancelConfirmTitle": "Cancel this redemption?",
+  "@loyaltyRedemptionCancelConfirmTitle": {"description": "Cancel-redemption confirmation dialog title."},
+
+  "loyaltyRedemptionCancelConfirmMessage": "Your {points} points will be refunded and this code will stop working. This can't be undone.",
+  "@loyaltyRedemptionCancelConfirmMessage": {
+    "description": "Cancel-redemption confirmation dialog body.",
+    "placeholders": {
+      "points": {"type": "int"}
+    }
+  },
+
+  "loyaltyRedemptionCancelKeepButton": "Keep it",
+  "@loyaltyRedemptionCancelKeepButton": {"description": "Cancel-redemption confirmation dialog's dismiss action."},
+
+  "loyaltyRedemptionCancelConfirmButton": "Cancel redemption",
+  "@loyaltyRedemptionCancelConfirmButton": {"description": "Cancel-redemption confirmation dialog's confirm action."},
+
+  "loyaltyRedemptionCancelledMessage": "Redemption cancelled — your points were refunded.",
+  "@loyaltyRedemptionCancelledMessage": {"description": "Snackbar shown after successfully cancelling a redemption."},
+
+  "errorLoyaltyCancelGeneric": "Couldn't cancel this redemption: {error}",
+  "@errorLoyaltyCancelGeneric": {
+    "description": "Unexpected (non-LoyaltyException) failure cancelling a redemption.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "loyaltyRedemptionCreatedOn": "Redeemed {date}",
+  "@loyaltyRedemptionCreatedOn": {
+    "description": "My Redemptions row's creation date caption.",
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+
+  "loyaltyRedemptionAppliedOn": "Applied {date}",
+  "@loyaltyRedemptionAppliedOn": {
+    "description": "My Redemptions row's applied-at caption, shown only once the business has applied the code.",
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  }
 }
