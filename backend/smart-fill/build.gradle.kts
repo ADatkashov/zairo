@@ -3,7 +3,7 @@ description = "Smart Fill Engine -- when a booking is cancelled, finds, scores, 
         "revenue. First slice of what can grow into a general revenue-recovery engine (see package-info)."
 
 dependencies {
-    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.38")
+    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.55")
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")

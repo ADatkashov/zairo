@@ -1,7 +1,7 @@
 description = "Generic staff directory and staff-scoped booking, usable by ANY provider regardless of vertical — unlike vertical-beauty/vertical-auto/vertical-cleaning, this module reads no Provider.vertical string at all. New categories (medicine, home repair, tutoring, ...) get staff selection at booking time without a new Java module or a release; those three existing modules are untouched and keep working exactly as they do today."
 
 dependencies {
-    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.38")
+    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.55")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("jakarta.validation:jakarta.validation-api")

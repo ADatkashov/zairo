@@ -4,7 +4,7 @@ description = "ZAIRO Intelligence/Decision Engine foundation -- a use-case-agnos
         "outcome. Owns no domain logic of its own -- see this module's package-info."
 
 dependencies {
-    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.38")
+    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.55")
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 
