@@ -18,7 +18,7 @@ dependencies:
   # Used directly (not just through core_network) for Options() when a
   # request needs an explicit header before core_network's AuthTokenHolder
   # is populated — see AuthApi.me.
-  dio: ^5.11.0
+  dio: ^5.11.1
   core_network:
     path: ../../packages/core_network
   core_storage:
