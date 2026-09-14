@@ -23,7 +23,6 @@ import '../../../cleaning/presentation/providers/cleaning_providers.dart';
 import '../../../discovery/data/models/provider_search_result.dart';
 import '../../../discovery/data/models/service_summary.dart';
 import '../../../favorites/presentation/widgets/favorite_button.dart';
-import '../../../loyalty/presentation/widgets/loyalty_entry_tile.dart';
 import '../../../maps/presentation/screens/provider_map_screen.dart';
 import '../../../payments/data/payment_exception.dart';
 import '../../../payments/presentation/providers/payments_providers.dart';
@@ -199,11 +198,6 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: FactorySpacing.space3),
-                  LoyaltyEntryTile(
-                    providerId: widget.provider.id,
-                    providerName: widget.provider.name,
-                  ),
                   if (masters.isNotEmpty) ...[
                     const SizedBox(height: FactorySpacing.space6),
                     Text(

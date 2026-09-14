@@ -78,7 +78,7 @@ class _LoyaltyHistoryScreenState extends ConsumerState<LoyaltyHistoryScreen> {
           : ListView.separated(
               padding: const EdgeInsets.all(FactorySpacing.space4),
               itemCount: _items.length + 1,
-              separatorBuilder: (_, __) => const SizedBox(height: FactorySpacing.space2),
+              separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space2),
               itemBuilder: (context, index) {
                 if (index == _items.length) {
                   if (_page + 1 >= _totalPages) return const SizedBox.shrink();
