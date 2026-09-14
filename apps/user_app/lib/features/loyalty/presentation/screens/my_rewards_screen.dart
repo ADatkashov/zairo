@@ -87,7 +87,7 @@ class _MyRewardsList extends ConsumerWidget {
             padding: const EdgeInsets.all(FactorySpacing.space4),
             physics: const AlwaysScrollableScrollPhysics(),
             itemCount: businesses.length,
-            separatorBuilder: (_, __) => const SizedBox(height: FactorySpacing.space3),
+            separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
             itemBuilder: (context, index) => _BusinessRow(business: businesses[index]),
           ),
         );

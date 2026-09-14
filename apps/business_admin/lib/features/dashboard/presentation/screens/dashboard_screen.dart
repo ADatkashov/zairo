@@ -12,6 +12,7 @@ import '../../../billing/presentation/screens/billing_screen.dart';
 import '../../../campaigns/presentation/screens/campaign_center_screen.dart';
 import '../../../catalog/presentation/category_icon.dart';
 import '../../../catalog/presentation/providers/catalog_providers.dart';
+import '../../../loyalty/presentation/screens/loyalty_screen.dart';
 import '../../../salon/data/models/admin_provider.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
 import '../../../salon/presentation/screens/salon_detail_screen.dart';
@@ -63,6 +64,13 @@ class DashboardScreen extends ConsumerWidget {
             tooltip: l10n.campaignCenterNavLabel,
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => CampaignCenterScreen(ownerUserId: user.id)),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.loyalty_outlined),
+            tooltip: l10n.loyaltyNavLabel,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => LoyaltyScreen(ownerUserId: user.id)),
             ),
           ),
           IconButton(

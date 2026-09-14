@@ -920,20 +920,6 @@
   "loyaltyEntryTileTitle": "Rewards & loyalty",
   "@loyaltyEntryTileTitle": {"description": "Provider detail screen's entry point tile into that business's loyalty program."},
 
-  "loyaltyEntryTileSubtitleLoggedOut": "Log in to see your points and rewards",
-  "@loyaltyEntryTileSubtitleLoggedOut": {"description": "Loyalty entry tile subtitle when reached while logged out."},
-
-  "loyaltyEntryTileSubtitleDefault": "View rewards for this business",
-  "@loyaltyEntryTileSubtitleDefault": {"description": "Loyalty entry tile subtitle when logged in but with no points balance to show yet."},
-
-  "loyaltyEntryTileSubtitleBalance": "{points} pts available",
-  "@loyaltyEntryTileSubtitleBalance": {
-    "description": "Loyalty entry tile subtitle when the caller already holds points at this business.",
-    "placeholders": {
-      "points": {"type": "int"}
-    }
-  },
-
   "loyaltyProgramDisabledBanner": "This business doesn't have an active rewards program right now.",
   "@loyaltyProgramDisabledBanner": {"description": "Business loyalty screen's banner when programEnabled is false."},
 
