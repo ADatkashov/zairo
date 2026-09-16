@@ -25,6 +25,7 @@ import '../../../staff/data/models/admin_staff.dart';
 import '../../../staff/presentation/providers/staff_admin_providers.dart';
 import '../../../staff/presentation/widgets/add_staff_dialog.dart';
 import '../../../staff/presentation/widgets/manage_staff_services_dialog.dart';
+import '../../../reviews/presentation/screens/reviews_screen.dart';
 import '../../../storage/presentation/providers/storage_providers.dart';
 import '../../data/models/admin_booking.dart';
 import '../../data/models/admin_provider.dart';
@@ -63,6 +64,17 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
       appBar: FactoryAppBar(
         title: _provider.name,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.star_outline_rounded),
+            tooltip: l10n.reviewsTooltip,
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ReviewsScreen(providerId: _provider.id, providerName: _provider.name),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.insights_outlined),
             tooltip: l10n.businessAnalyticsTooltip,

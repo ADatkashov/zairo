@@ -613,5 +613,27 @@
   "loyaltyTierMinPointsLabel": "Ең аз жалпы ұпай",
   "loyaltyTierRemoveButton": "Деңгейді жою",
   "loyaltyTierValidationError": "Әрбір деңгейде атауы және теріс емес ұпай шегі болуы керек.",
-  "loyaltyTiersSavedMessage": "Деңгейлер сақталды."
+  "loyaltyTiersSavedMessage": "Деңгейлер сақталды.",
+
+  "reviewsTooltip": "Пікірлер",
+  "reviewsScreenTitle": "Пікірлер — {providerName}",
+  "reviewsAverageRatingLabel": "Орташа рейтинг",
+  "reviewsTotalCountLabel": "Барлық пікірлер",
+  "reviewsAwaitingReplyLabel": "Жауап күтуде",
+  "reviewsEmptyTitle": "Әзірге пікірлер жоқ",
+  "reviewsEmptyMessage": "Аяқталған брондаулар бойынша пікірлер осында көрінеді.",
+  "errorReviewsLoadFailed": "Пікірлерді жүктеу мүмкін болмады: {error}",
+  "reviewsLoadMore": "Тағы жүктеу",
+  "reviewOwnerReplyLabel": "Сіздің жауабыңыз",
+  "reviewEditReplyButton": "Жауапты өзгерту",
+  "reviewReplyButton": "Жауап беру",
+  "reviewReplyDialogTitle": "Пікірге жауап",
+  "reviewEditReplyDialogTitle": "Жауапты өзгерту",
+  "reviewReplyFieldLabel": "Сіздің жауабыңыз",
+  "reviewReplyFieldHint": "Пікіріңізге рахмет…",
+  "reviewReplySubmitButton": "Жауапты жариялау",
+  "reviewReplyEmptyError": "Жариялау алдында жауап жазыңыз.",
+  "errorReviewsForbidden": "Бұл пікірге қол жеткізу мүмкін емес.",
+  "errorReviewsNotFound": "Пікір табылмады.",
+  "errorReviewsActionFailed": "Бірдеңе дұрыс болмады: {error}"
 }

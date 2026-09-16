@@ -2,8 +2,11 @@ package com.zairo.factory.reviews;
 
 import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.reviews.ReviewDtos.CreateReviewRequest;
+import com.zairo.factory.reviews.ReviewDtos.ProviderReviewResponse;
 import com.zairo.factory.reviews.ReviewDtos.ReplyToReviewRequest;
 import com.zairo.factory.reviews.ReviewDtos.ReviewResponse;
+import com.zairo.factory.users.User;
+import com.zairo.factory.users.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -13,7 +16,11 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,10 +36,13 @@ public class ReviewController {
 
     private final ReviewService reviewService;
     private final ReviewRepository reviewRepository;
+    private final UserRepository userRepository;
 
-    public ReviewController(ReviewService reviewService, ReviewRepository reviewRepository) {
+    public ReviewController(ReviewService reviewService, ReviewRepository reviewRepository,
+            UserRepository userRepository) {
         this.reviewService = reviewService;
         this.reviewRepository = reviewRepository;
+        this.userRepository = userRepository;
     }
 
     @Operation(summary = "Leave a review for a booking", description = """
@@ -85,5 +95,29 @@ public class ReviewController {
         UUID callerId = CurrentUser.requireUserId(httpRequest);
         Review review = reviewService.replyToReview(reviewId, callerId, request.reply());
         return ReviewResponse.from(review);
+    }
+
+    @Operation(summary = "List a provider's reviews", description = """
+            Owner-only, newest first. Powers the Business Admin reviews screen — each row carries the \
+            reviewer's display name so the owner never sees a bare customer id.""")
+    @ApiResponse(responseCode = "200", description = "Page of reviews")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "The caller doesn't own this provider.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/providers/{providerId}/reviews")
+    public Page<ProviderReviewResponse> listByProvider(
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId, Pageable pageable,
+            HttpServletRequest httpRequest) {
+        UUID callerId = CurrentUser.requireUserId(httpRequest);
+        Page<ReviewRepository.ProviderReviewRow> rows = reviewService.listByProvider(providerId, callerId, pageable);
+
+        Map<UUID, String> namesByUserId = userRepository
+                .findAllById(rows.map(ReviewRepository.ProviderReviewRow::getUserId).toList()).stream()
+                .collect(Collectors.toMap(User::getId, User::getDisplayName));
+
+        return rows.map(row -> new ProviderReviewResponse(row.getId(), row.getBookingId(),
+                namesByUserId.getOrDefault(row.getUserId(), "Customer"), row.getRating(), row.getComment(),
+                row.getCreatedAt(), row.getBusinessReply(), row.getBusinessReplyAt()));
     }
 }

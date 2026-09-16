@@ -41,4 +41,12 @@ public final class ReviewDtos {
                     review.getBusinessReplyAt());
         }
     }
+
+    /** One row of the owner-facing reviews list — {@link ReviewResponse} plus the reviewer's name. */
+    public record ProviderReviewResponse(
+            UUID id, UUID bookingId,
+            @Schema(description = "The reviewing customer's display name.", example = "Aisha K.") String customerName,
+            int rating, String comment, Instant createdAt,
+            String businessReply, Instant businessReplyAt) {
+    }
 }

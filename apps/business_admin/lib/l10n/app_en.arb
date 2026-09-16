@@ -1845,5 +1845,57 @@
   "loyaltyTierValidationError": "Every tier needs a name and a non-negative points threshold.",
   "@loyaltyTierValidationError": {"description": "LoyaltyTiersScreen's validation error."},
   "loyaltyTiersSavedMessage": "Tiers saved.",
-  "@loyaltyTiersSavedMessage": {"description": "LoyaltyTiersScreen's save-success snackbar."}
+  "@loyaltyTiersSavedMessage": {"description": "LoyaltyTiersScreen's save-success snackbar."},
+
+  "reviewsTooltip": "Reviews",
+  "@reviewsTooltip": {"description": "SalonDetailScreen app bar action opening ReviewsScreen."},
+  "reviewsScreenTitle": "Reviews — {providerName}",
+  "@reviewsScreenTitle": {
+    "description": "ReviewsScreen app bar title.",
+    "placeholders": {"providerName": {"type": "String"}}
+  },
+  "reviewsAverageRatingLabel": "Average rating",
+  "@reviewsAverageRatingLabel": {"description": "ReviewsScreen stat tile label."},
+  "reviewsTotalCountLabel": "Total reviews",
+  "@reviewsTotalCountLabel": {"description": "ReviewsScreen stat tile label."},
+  "reviewsAwaitingReplyLabel": "Awaiting reply",
+  "@reviewsAwaitingReplyLabel": {"description": "ReviewsScreen stat tile label."},
+  "reviewsEmptyTitle": "No reviews yet",
+  "@reviewsEmptyTitle": {"description": "ReviewsScreen's empty state title."},
+  "reviewsEmptyMessage": "Reviews from completed bookings will show up here.",
+  "@reviewsEmptyMessage": {"description": "ReviewsScreen's empty state message."},
+  "errorReviewsLoadFailed": "Couldn't load reviews: {error}",
+  "@errorReviewsLoadFailed": {
+    "description": "ReviewsScreen's error state message.",
+    "placeholders": {"error": {"type": "String"}}
+  },
+  "reviewsLoadMore": "Load more",
+  "@reviewsLoadMore": {"description": "ReviewsScreen's pagination button."},
+  "reviewOwnerReplyLabel": "Your reply",
+  "@reviewOwnerReplyLabel": {"description": "Label above the owner's posted reply on a review card."},
+  "reviewEditReplyButton": "Edit reply",
+  "@reviewEditReplyButton": {"description": "Button under an existing reply to edit it."},
+  "reviewReplyButton": "Reply",
+  "@reviewReplyButton": {"description": "Button on a review with no reply yet."},
+  "reviewReplyDialogTitle": "Reply to review",
+  "@reviewReplyDialogTitle": {"description": "ReviewReplyDialog's title when posting a first reply."},
+  "reviewEditReplyDialogTitle": "Edit your reply",
+  "@reviewEditReplyDialogTitle": {"description": "ReviewReplyDialog's title when editing an existing reply."},
+  "reviewReplyFieldLabel": "Your reply",
+  "@reviewReplyFieldLabel": {"description": "ReviewReplyDialog's text field label."},
+  "reviewReplyFieldHint": "Thank you for the feedback…",
+  "@reviewReplyFieldHint": {"description": "ReviewReplyDialog's text field hint."},
+  "reviewReplySubmitButton": "Post reply",
+  "@reviewReplySubmitButton": {"description": "ReviewReplyDialog's submit button."},
+  "reviewReplyEmptyError": "Write a reply before posting.",
+  "@reviewReplyEmptyError": {"description": "ReviewReplyDialog's validation error for a blank reply."},
+  "errorReviewsForbidden": "You don't have access to this review.",
+  "@errorReviewsForbidden": {"description": "ReviewsException's message for a 403 response."},
+  "errorReviewsNotFound": "This review could not be found.",
+  "@errorReviewsNotFound": {"description": "ReviewsException's message for a 404 response."},
+  "errorReviewsActionFailed": "Something went wrong: {error}",
+  "@errorReviewsActionFailed": {
+    "description": "ReviewsException's message for any other response.",
+    "placeholders": {"error": {"type": "String"}}
+  }
 }
