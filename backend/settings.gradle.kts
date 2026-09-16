@@ -34,6 +34,7 @@ include(
     "platform-insights",
     "messaging",
     "revenue-engine",
+    "automation",
     "smart-fill",
     "rebook-engine",
     "customer-intelligence",

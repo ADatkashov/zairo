@@ -38,4 +38,11 @@ dependencies {
     // module, and this module has no knowledge of rebook-engine/smart-fill
     // (sibling strategies never depend on each other).
     implementation(project(":revenue-engine"))
+
+    // Reads AutomationSettings to decide whether this provider has
+    // Reactivation enabled at all, and whether they've overridden any of
+    // ReactivationProperties' global defaults -- one-directional
+    // (reactivation-engine -> automation), same as every other cross-module
+    // reference here.
+    implementation(project(":automation"))
 }

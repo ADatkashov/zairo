@@ -1,5 +1,7 @@
 package com.zairo.factory.rebookengine;
 
+import com.zairo.factory.automation.AutomationSettings;
+import com.zairo.factory.automation.AutomationSettingsService;
 import com.zairo.factory.booking.Booking;
 import com.zairo.factory.booking.BookingRepository;
 import com.zairo.factory.revenueengine.ActionType;
@@ -26,12 +28,14 @@ class RebookStrategy implements RevenueStrategy {
     private final BookingRepository bookingRepository;
     private final RebookProperties properties;
     private final RebookCampaignService campaignService;
+    private final AutomationSettingsService automationSettingsService;
 
     RebookStrategy(BookingRepository bookingRepository, RebookProperties properties,
-            RebookCampaignService campaignService) {
+            RebookCampaignService campaignService, AutomationSettingsService automationSettingsService) {
         this.bookingRepository = bookingRepository;
         this.properties = properties;
         this.campaignService = campaignService;
+        this.automationSettingsService = automationSettingsService;
     }
 
     @Override
@@ -46,6 +50,13 @@ class RebookStrategy implements RevenueStrategy {
 
     @Override
     public StrategyDecision evaluate(DecisionContext context) {
+        boolean enabled = automationSettingsService.findByProviderId(context.providerId())
+                .map(AutomationSettings::isRebookEnabled).orElse(true);
+        if (!enabled) {
+            return StrategyDecision.notApplicable(ActionType.REBOOK,
+                    "Rebook is disabled for this provider in Automation Center");
+        }
+
         Booking completedBooking = bookingRepository.findById(context.referenceId()).orElse(null);
         if (completedBooking == null) {
             return StrategyDecision.notApplicable(ActionType.REBOOK, "Completed booking no longer exists");

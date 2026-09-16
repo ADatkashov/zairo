@@ -42,6 +42,7 @@ dependencies {
     implementation(project(":platform-insights"))
     implementation(project(":messaging"))
     implementation(project(":revenue-engine"))
+    implementation(project(":automation"))
     implementation(project(":smart-fill"))
     implementation(project(":rebook-engine"))
     implementation(project(":customer-intelligence"))

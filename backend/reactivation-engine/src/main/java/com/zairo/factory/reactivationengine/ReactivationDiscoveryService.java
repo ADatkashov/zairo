@@ -1,5 +1,7 @@
 package com.zairo.factory.reactivationengine;
 
+import com.zairo.factory.automation.AutomationSettings;
+import com.zairo.factory.automation.AutomationSettingsService;
 import com.zairo.factory.booking.BookingRepository;
 import com.zairo.factory.booking.BookingRepository.LatestCompletedVisitRow;
 import com.zairo.factory.revenueengine.DecisionContext;
@@ -34,18 +36,48 @@ public class ReactivationDiscoveryService {
     private final ReactivationCampaignRepository campaignRepository;
     private final ReactivationCampaignService campaignService;
     private final ReactivationProperties properties;
+    private final AutomationSettingsService automationSettingsService;
     private final DecisionEngine decisionEngine;
     private final Clock clock;
 
     ReactivationDiscoveryService(BookingRepository bookingRepository, ReactivationCampaignRepository campaignRepository,
             ReactivationCampaignService campaignService, ReactivationProperties properties,
-            DecisionEngine decisionEngine, Clock clock) {
+            AutomationSettingsService automationSettingsService, DecisionEngine decisionEngine, Clock clock) {
         this.bookingRepository = bookingRepository;
         this.campaignRepository = campaignRepository;
         this.campaignService = campaignService;
         this.properties = properties;
+        this.automationSettingsService = automationSettingsService;
         this.decisionEngine = decisionEngine;
         this.clock = clock;
+    }
+
+    /** Merges this provider's overrides onto {@link ReactivationProperties}' global defaults, same split as {@code rebookengine.RebookCampaignService}'s own resolver. */
+    private record EffectiveConfig(int scanMinimumInactivityDays, double intervalMultiplier,
+            int absoluteMaxInactivityDays) {
+
+        boolean isSignificantlyOverdue(long inactiveDays, Long averageIntervalDays) {
+            if (inactiveDays >= absoluteMaxInactivityDays) {
+                return true;
+            }
+            return averageIntervalDays != null && inactiveDays >= averageIntervalDays * intervalMultiplier;
+        }
+    }
+
+    private EffectiveConfig resolveEffectiveConfig(AutomationSettings settings) {
+        if (settings == null) {
+            return new EffectiveConfig(properties.scanMinimumInactivityDays(), properties.intervalMultiplier(),
+                    properties.absoluteMaxInactivityDays());
+        }
+        return new EffectiveConfig(
+                orDefault(settings.getReactivationScanMinInactivityDays(), properties.scanMinimumInactivityDays()),
+                settings.getReactivationIntervalMultiplier() != null ? settings.getReactivationIntervalMultiplier()
+                        : properties.intervalMultiplier(),
+                orDefault(settings.getReactivationAbsoluteMaxInactivityDays(), properties.absoluteMaxInactivityDays()));
+    }
+
+    private static int orDefault(Integer override, int fallback) {
+        return override != null ? override : fallback;
     }
 
     /**
@@ -58,21 +90,41 @@ public class ReactivationDiscoveryService {
      */
     public void scanForInactiveCustomers() {
         Instant now = clock.instant();
-        Instant flatFloor = now.minus(properties.scanMinimumInactivityDays(), ChronoUnit.DAYS);
 
         List<LatestCompletedVisitRow> pairs = bookingRepository.findLatestCompletedVisitPerUserAndProvider();
         for (LatestCompletedVisitRow row : pairs) {
             try {
+                AutomationSettings settings = automationSettingsService.findByProviderId(row.getProviderId())
+                        .orElse(null);
+                EffectiveConfig config = resolveEffectiveConfig(settings);
+
+                Instant flatFloor = now.minus(config.scanMinimumInactivityDays(), ChronoUnit.DAYS);
                 if (!row.getLastVisitAt().isBefore(flatFloor)) {
                     continue;
                 }
                 if (campaignRepository.existsByLastVisitBookingId(row.getBookingId())) {
                     continue;
                 }
+                // Outside this provider's allowed-hours window: leave the
+                // candidate undiscovered for now (no campaign created yet,
+                // so the unique-index guard above hasn't fired) -- tomorrow's
+                // sweep picks it back up. Coarser than Rebook's own hourly
+                // deferred-send job since this sweep itself only runs daily
+                // (ADR-0005); tightening that would mean giving Reactivation
+                // Rebook's two-step CREATED-then-sent lifecycle, which is a
+                // bigger change than this pass makes.
+                if (!automationSettingsService.isWithinAllowedHours(row.getProviderId(), now)) {
+                    continue;
+                }
+                Integer cooldownDays = settings == null ? null : settings.getCooldownDaysBetweenOffers();
+                if (cooldownDays != null && campaignRepository.existsByUserIdAndProviderIdAndCreatedAtGreaterThan(
+                        row.getUserId(), row.getProviderId(), now.minus(cooldownDays, ChronoUnit.DAYS))) {
+                    continue;
+                }
                 long inactiveDays = Duration.between(row.getLastVisitAt(), now).toDays();
                 Long averageIntervalDays = campaignService.computeAverageIntervalDays(row.getUserId(),
                         row.getProviderId());
-                if (!properties.isSignificantlyOverdue(inactiveDays, averageIntervalDays)) {
+                if (!config.isSignificantlyOverdue(inactiveDays, averageIntervalDays)) {
                     continue;
                 }
                 decisionEngine.decideAndExecute(new DecisionContext(DecisionTrigger.CUSTOMER_INACTIVE,

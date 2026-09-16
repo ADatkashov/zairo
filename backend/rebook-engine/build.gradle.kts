@@ -35,4 +35,10 @@ dependencies {
     // RevenueAttributionService once a campaign resolves. One-directional:
     // revenue-engine has no knowledge of this module.
     implementation(project(":revenue-engine"))
+
+    // Reads AutomationSettings to decide whether this provider has Rebook
+    // enabled at all, and whether they've overridden any of
+    // RebookProperties' global defaults -- one-directional (rebook-engine
+    // -> automation), same as every other cross-module reference here.
+    implementation(project(":automation"))
 }

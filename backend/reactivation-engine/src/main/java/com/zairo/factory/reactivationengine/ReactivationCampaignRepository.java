@@ -35,4 +35,11 @@ public interface ReactivationCampaignRepository extends JpaRepository<Reactivati
 
     /** The same read surface's date-scoped variant -- the Campaign Center's selected date-range filter. */
     List<ReactivationCampaign> findByProviderIdAndCreatedAtBetween(UUID providerId, Instant from, Instant to);
+
+    /**
+     * Automation Center's cooldown guard -- true if this customer already
+     * got a win-back nudge from this provider more recently than the
+     * configured cooldown, regardless of that campaign's current status.
+     */
+    boolean existsByUserIdAndProviderIdAndCreatedAtGreaterThan(UUID userId, UUID providerId, Instant since);
 }
