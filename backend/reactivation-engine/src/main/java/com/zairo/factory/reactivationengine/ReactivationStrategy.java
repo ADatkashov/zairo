@@ -1,5 +1,7 @@
 package com.zairo.factory.reactivationengine;
 
+import com.zairo.factory.automation.AutomationSettings;
+import com.zairo.factory.automation.AutomationSettingsService;
 import com.zairo.factory.booking.Booking;
 import com.zairo.factory.booking.BookingRepository;
 import com.zairo.factory.revenueengine.ActionType;
@@ -26,12 +28,14 @@ class ReactivationStrategy implements RevenueStrategy {
     private final BookingRepository bookingRepository;
     private final ReactivationProperties properties;
     private final ReactivationCampaignService campaignService;
+    private final AutomationSettingsService automationSettingsService;
 
     ReactivationStrategy(BookingRepository bookingRepository, ReactivationProperties properties,
-            ReactivationCampaignService campaignService) {
+            ReactivationCampaignService campaignService, AutomationSettingsService automationSettingsService) {
         this.bookingRepository = bookingRepository;
         this.properties = properties;
         this.campaignService = campaignService;
+        this.automationSettingsService = automationSettingsService;
     }
 
     @Override
@@ -46,6 +50,13 @@ class ReactivationStrategy implements RevenueStrategy {
 
     @Override
     public StrategyDecision evaluate(DecisionContext context) {
+        boolean enabled = automationSettingsService.findByProviderId(context.providerId())
+                .map(AutomationSettings::isReactivationEnabled).orElse(true);
+        if (!enabled) {
+            return StrategyDecision.notApplicable(ActionType.CUSTOMER_REACTIVATION,
+                    "Reactivation is disabled for this provider in Automation Center");
+        }
+
         Booking lastVisit = bookingRepository.findById(context.referenceId()).orElse(null);
         if (lastVisit == null) {
             return StrategyDecision.notApplicable(ActionType.CUSTOMER_REACTIVATION,

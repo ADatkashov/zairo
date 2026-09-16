@@ -1,5 +1,7 @@
 package com.zairo.factory.rebookengine;
 
+import com.zairo.factory.automation.AutomationSettings;
+import com.zairo.factory.automation.AutomationSettingsService;
 import com.zairo.factory.booking.AvailabilitySlot;
 import com.zairo.factory.booking.AvailabilitySlotRepository;
 import com.zairo.factory.booking.Booking;
@@ -48,12 +50,14 @@ public class RebookCampaignService {
     private final RevenueAttributionService revenueAttributionService;
     private final ApplicationEventPublisher eventPublisher;
     private final RebookProperties properties;
+    private final AutomationSettingsService automationSettingsService;
     private final Clock clock;
 
     RebookCampaignService(RebookCampaignRepository campaignRepository, BookingRepository bookingRepository,
             AvailabilitySlotRepository availabilitySlotRepository, ProviderRepository providerRepository,
             ServiceOfferingRepository serviceOfferingRepository, RevenueAttributionService revenueAttributionService,
-            ApplicationEventPublisher eventPublisher, RebookProperties properties, Clock clock) {
+            ApplicationEventPublisher eventPublisher, RebookProperties properties,
+            AutomationSettingsService automationSettingsService, Clock clock) {
         this.campaignRepository = campaignRepository;
         this.bookingRepository = bookingRepository;
         this.availabilitySlotRepository = availabilitySlotRepository;
@@ -62,7 +66,40 @@ public class RebookCampaignService {
         this.revenueAttributionService = revenueAttributionService;
         this.eventPublisher = eventPublisher;
         this.properties = properties;
+        this.automationSettingsService = automationSettingsService;
         this.clock = clock;
+    }
+
+    /**
+     * Merges this provider's {@link AutomationSettings} overrides (any of
+     * them may be null, meaning "no override") onto {@link RebookProperties}'
+     * global defaults -- the one place both {@link #startCampaignForCompletedBooking}
+     * and {@link #computeAverageIntervalDays} read tuning from, so a business's
+     * override is honored consistently across both.
+     */
+    private record EffectiveConfig(int minVisitsToEstablishInterval, int minIntervalDays, int maxIntervalDays,
+            int followUpWindowDays) {
+
+        int clamp(long averageGapDays) {
+            return (int) Math.min(maxIntervalDays, Math.max(minIntervalDays, averageGapDays));
+        }
+    }
+
+    private EffectiveConfig resolveEffectiveConfig(UUID providerId) {
+        AutomationSettings settings = automationSettingsService.findByProviderId(providerId).orElse(null);
+        if (settings == null) {
+            return new EffectiveConfig(properties.minVisitsToEstablishInterval(), properties.minIntervalDays(),
+                    properties.maxIntervalDays(), properties.followUpWindowDays());
+        }
+        return new EffectiveConfig(
+                orDefault(settings.getRebookMinVisitsToEstablishInterval(), properties.minVisitsToEstablishInterval()),
+                orDefault(settings.getRebookMinIntervalDays(), properties.minIntervalDays()),
+                orDefault(settings.getRebookMaxIntervalDays(), properties.maxIntervalDays()),
+                orDefault(settings.getRebookFollowUpWindowDays(), properties.followUpWindowDays()));
+    }
+
+    private static int orDefault(Integer override, int fallback) {
+        return override != null ? override : fallback;
     }
 
     /**
@@ -90,9 +127,11 @@ public class RebookCampaignService {
             return;
         }
 
+        EffectiveConfig config = resolveEffectiveConfig(slot.getProviderId());
+
         List<Booking> visitHistory = bookingRepository
                 .findCompletedByUserIdAndProviderIdOrderByVisitDate(completedBooking.getUserId(), slot.getProviderId());
-        if (visitHistory.size() < properties.minVisitsToEstablishInterval()) {
+        if (visitHistory.size() < config.minVisitsToEstablishInterval()) {
             return;
         }
 
@@ -101,15 +140,22 @@ public class RebookCampaignService {
                 .collect(Collectors.toMap(AvailabilitySlot::getId, AvailabilitySlot::getStartsAt));
         List<Instant> visitTimes = visitHistory.stream().map(b -> slotStartTimes.get(b.getAvailabilitySlotId()))
                 .filter(Objects::nonNull).sorted().toList();
-        if (visitTimes.size() < properties.minVisitsToEstablishInterval()) {
+        if (visitTimes.size() < config.minVisitsToEstablishInterval()) {
             return;
         }
 
-        int averageIntervalDays = computeAverageIntervalDays(visitTimes);
-        Instant lastVisitAt = visitTimes.get(visitTimes.size() - 1);
         Instant now = clock.instant();
+        Integer cooldownDays = automationSettingsService.findByProviderId(slot.getProviderId())
+                .map(AutomationSettings::getCooldownDaysBetweenOffers).orElse(null);
+        if (cooldownDays != null && campaignRepository.existsByUserIdAndProviderIdAndCreatedAtGreaterThan(
+                completedBooking.getUserId(), slot.getProviderId(), now.minus(cooldownDays, ChronoUnit.DAYS))) {
+            return;
+        }
+
+        int averageIntervalDays = computeAverageIntervalDays(visitTimes, config);
+        Instant lastVisitAt = visitTimes.get(visitTimes.size() - 1);
         Instant dueAt = lastVisitAt.plus(averageIntervalDays, ChronoUnit.DAYS);
-        Instant expiresAt = dueAt.plus(properties.followUpWindowDays(), ChronoUnit.DAYS);
+        Instant expiresAt = dueAt.plus(config.followUpWindowDays(), ChronoUnit.DAYS);
 
         RebookCampaign campaign = new RebookCampaign(UUID.randomUUID(), slot.getProviderId(),
                 completedBooking.getServiceId(), completedBooking.getUserId(), completedBookingId, lastVisitAt,
@@ -201,17 +247,18 @@ public class RebookCampaignService {
 
     /**
      * The average gap (in days) between consecutive visits, oldest to
-     * newest, clamped to {@link RebookProperties}' sane range -- a single
-     * outlier (a customer who vanished for a year then came back once)
-     * shouldn't predict an absurd cadence for everyone after them.
+     * newest, clamped to the effective (business-overridden, or global)
+     * min/max range -- a single outlier (a customer who vanished for a year
+     * then came back once) shouldn't predict an absurd cadence for everyone
+     * after them.
      */
-    private int computeAverageIntervalDays(List<Instant> visitTimes) {
+    private int computeAverageIntervalDays(List<Instant> visitTimes, EffectiveConfig config) {
         long totalDays = 0;
         int gaps = visitTimes.size() - 1;
         for (int i = 1; i < visitTimes.size(); i++) {
             totalDays += Duration.between(visitTimes.get(i - 1), visitTimes.get(i)).toDays();
         }
-        long averageGapDays = gaps == 0 ? properties.minIntervalDays() : totalDays / gaps;
-        return properties.clamp(averageGapDays);
+        long averageGapDays = gaps == 0 ? config.minIntervalDays() : totalDays / gaps;
+        return config.clamp(averageGapDays);
     }
 }

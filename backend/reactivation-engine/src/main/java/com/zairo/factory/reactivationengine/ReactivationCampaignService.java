@@ -1,5 +1,7 @@
 package com.zairo.factory.reactivationengine;
 
+import com.zairo.factory.automation.AutomationSettings;
+import com.zairo.factory.automation.AutomationSettingsService;
 import com.zairo.factory.booking.AvailabilitySlot;
 import com.zairo.factory.booking.AvailabilitySlotRepository;
 import com.zairo.factory.booking.Booking;
@@ -55,12 +57,14 @@ public class ReactivationCampaignService {
     private final RevenueAttributionService revenueAttributionService;
     private final ApplicationEventPublisher eventPublisher;
     private final ReactivationProperties properties;
+    private final AutomationSettingsService automationSettingsService;
     private final Clock clock;
 
     ReactivationCampaignService(ReactivationCampaignRepository campaignRepository, BookingRepository bookingRepository,
             AvailabilitySlotRepository availabilitySlotRepository, ProviderRepository providerRepository,
             ServiceOfferingRepository serviceOfferingRepository, RevenueAttributionService revenueAttributionService,
-            ApplicationEventPublisher eventPublisher, ReactivationProperties properties, Clock clock) {
+            ApplicationEventPublisher eventPublisher, ReactivationProperties properties,
+            AutomationSettingsService automationSettingsService, Clock clock) {
         this.campaignRepository = campaignRepository;
         this.bookingRepository = bookingRepository;
         this.availabilitySlotRepository = availabilitySlotRepository;
@@ -69,6 +73,7 @@ public class ReactivationCampaignService {
         this.revenueAttributionService = revenueAttributionService;
         this.eventPublisher = eventPublisher;
         this.properties = properties;
+        this.automationSettingsService = automationSettingsService;
         this.clock = clock;
     }
 
@@ -99,8 +104,18 @@ public class ReactivationCampaignService {
         }
 
         Instant now = clock.instant();
+        AutomationSettings settings = automationSettingsService.findByProviderId(providerId).orElse(null);
+        Integer cooldownDays = settings == null ? null : settings.getCooldownDaysBetweenOffers();
+        if (cooldownDays != null && campaignRepository.existsByUserIdAndProviderIdAndCreatedAtGreaterThan(
+                lastVisit.getUserId(), providerId, now.minus(cooldownDays, ChronoUnit.DAYS))) {
+            return;
+        }
+
+        Integer followUpWindowOverride = settings == null ? null : settings.getReactivationFollowUpWindowDays();
+        int followUpWindowDays = followUpWindowOverride != null ? followUpWindowOverride
+                : properties.followUpWindowDays();
         int inactivityDays = (int) Duration.between(slot.getStartsAt(), now).toDays();
-        Instant expiresAt = now.plus(properties.followUpWindowDays(), ChronoUnit.DAYS);
+        Instant expiresAt = now.plus(followUpWindowDays, ChronoUnit.DAYS);
 
         ReactivationCampaign campaign = new ReactivationCampaign(UUID.randomUUID(), providerId,
                 lastVisit.getServiceId(), lastVisit.getUserId(), lastVisitBookingId, slot.getStartsAt(),

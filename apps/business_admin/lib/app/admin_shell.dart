@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/auth/presentation/providers/auth_providers.dart';
 import '../features/auth/presentation/widgets/change_avatar_dialog.dart';
+import '../features/automation/presentation/screens/automation_center_screen.dart';
 import '../features/billing/presentation/screens/billing_screen.dart';
 import '../features/campaigns/presentation/screens/campaign_center_screen.dart';
 import '../features/dashboard/presentation/screens/dashboard_screen.dart';
@@ -50,6 +51,11 @@ class _AdminShellState extends ConsumerState<AdminShell> {
         label: l10n.campaignCenterNavLabel,
       ),
       AdminSidebarDestination(
+        icon: Icons.bolt_outlined,
+        selectedIcon: Icons.bolt,
+        label: l10n.automationCenterNavLabel,
+      ),
+      AdminSidebarDestination(
         icon: Icons.loyalty_outlined,
         selectedIcon: Icons.loyalty,
         label: l10n.loyaltyNavLabel,
@@ -77,6 +83,10 @@ class _AdminShellState extends ConsumerState<AdminShell> {
               children: [
                 const DashboardScreen(),
                 if (ownerUserId != null) CampaignCenterScreen(ownerUserId: ownerUserId) else const SizedBox.shrink(),
+                if (ownerUserId != null)
+                  AutomationCenterScreen(ownerUserId: ownerUserId)
+                else
+                  const SizedBox.shrink(),
                 if (ownerUserId != null) LoyaltyScreen(ownerUserId: ownerUserId) else const SizedBox.shrink(),
                 const BillingScreen(),
                 const SettingsScreen(),

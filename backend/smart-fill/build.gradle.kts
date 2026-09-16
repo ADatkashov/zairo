@@ -72,4 +72,9 @@ dependencies {
     // doc comment. One-directional: customer-intelligence has no knowledge
     // of this module, same as revenue-engine above.
     implementation(project(":customer-intelligence"))
+
+    // Reads AutomationSettings to decide whether this provider has Smart
+    // Fill enabled at all -- one-directional (smart-fill -> automation),
+    // same as every other cross-module reference here.
+    implementation(project(":automation"))
 }

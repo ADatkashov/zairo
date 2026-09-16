@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/widgets/change_avatar_dialog.dart';
+import '../../../automation/presentation/screens/automation_center_screen.dart';
 import '../../../billing/data/billing_exception.dart';
 import '../../../billing/data/models/subscription.dart';
 import '../../../billing/presentation/providers/billing_providers.dart';
@@ -64,6 +65,13 @@ class DashboardScreen extends ConsumerWidget {
             tooltip: l10n.campaignCenterNavLabel,
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => CampaignCenterScreen(ownerUserId: user.id)),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.bolt_outlined),
+            tooltip: l10n.automationCenterNavLabel,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => AutomationCenterScreen(ownerUserId: user.id)),
             ),
           ),
           IconButton(

@@ -1,5 +1,6 @@
 package com.zairo.factory.rebookengine;
 
+import com.zairo.factory.automation.AutomationSettingsService;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -34,12 +35,14 @@ class RebookCampaignJob {
 
     private final RebookCampaignRepository campaignRepository;
     private final RebookCampaignService campaignService;
+    private final AutomationSettingsService automationSettingsService;
     private final Clock clock;
 
     RebookCampaignJob(RebookCampaignRepository campaignRepository, RebookCampaignService campaignService,
-            Clock clock) {
+            AutomationSettingsService automationSettingsService, Clock clock) {
         this.campaignRepository = campaignRepository;
         this.campaignService = campaignService;
+        this.automationSettingsService = automationSettingsService;
         this.clock = clock;
     }
 
@@ -50,6 +53,14 @@ class RebookCampaignJob {
                 now);
         for (RebookCampaign campaign : due) {
             try {
+                // Outside this provider's allowed-hours window: leave it
+                // CREATED past its dueAt -- next hour's sweep re-checks it,
+                // and expireStaleCampaigns() below only ever acts on OFFERED
+                // campaigns, so a still-CREATED one waiting on allowed hours
+                // is never mistaken for stale.
+                if (!automationSettingsService.isWithinAllowedHours(campaign.getProviderId(), now)) {
+                    continue;
+                }
                 campaignService.sendDueOffer(campaign.getId(), now);
             } catch (OptimisticLockingFailureException e) {
                 log.debug("Rebook campaign {} was already advanced/closed concurrently, skipping", campaign.getId());

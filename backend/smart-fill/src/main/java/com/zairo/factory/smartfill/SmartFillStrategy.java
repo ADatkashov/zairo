@@ -1,5 +1,7 @@
 package com.zairo.factory.smartfill;
 
+import com.zairo.factory.automation.AutomationSettings;
+import com.zairo.factory.automation.AutomationSettingsService;
 import com.zairo.factory.booking.AvailabilitySlot;
 import com.zairo.factory.booking.AvailabilitySlotRepository;
 import com.zairo.factory.booking.AvailabilityStatus;
@@ -34,15 +36,17 @@ class SmartFillStrategy implements RevenueStrategy {
     private final ServiceOfferingRepository serviceOfferingRepository;
     private final FavoriteRepository favoriteRepository;
     private final SmartFillCampaignService campaignService;
+    private final AutomationSettingsService automationSettingsService;
 
     SmartFillStrategy(BookingRepository bookingRepository, AvailabilitySlotRepository availabilitySlotRepository,
             ServiceOfferingRepository serviceOfferingRepository, FavoriteRepository favoriteRepository,
-            SmartFillCampaignService campaignService) {
+            SmartFillCampaignService campaignService, AutomationSettingsService automationSettingsService) {
         this.bookingRepository = bookingRepository;
         this.availabilitySlotRepository = availabilitySlotRepository;
         this.serviceOfferingRepository = serviceOfferingRepository;
         this.favoriteRepository = favoriteRepository;
         this.campaignService = campaignService;
+        this.automationSettingsService = automationSettingsService;
     }
 
     @Override
@@ -57,6 +61,13 @@ class SmartFillStrategy implements RevenueStrategy {
 
     @Override
     public StrategyDecision evaluate(DecisionContext context) {
+        boolean enabled = automationSettingsService.findByProviderId(context.providerId())
+                .map(AutomationSettings::isSmartFillEnabled).orElse(true);
+        if (!enabled) {
+            return StrategyDecision.notApplicable(ActionType.SMART_FILL,
+                    "Smart Fill is disabled for this provider in Automation Center");
+        }
+
         Booking cancelledBooking = bookingRepository.findById(context.referenceId()).orElse(null);
         if (cancelledBooking == null) {
             return StrategyDecision.notApplicable(ActionType.SMART_FILL, "Cancelled booking no longer exists");

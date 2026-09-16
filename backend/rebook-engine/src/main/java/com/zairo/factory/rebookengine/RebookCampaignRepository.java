@@ -34,4 +34,13 @@ public interface RebookCampaignRepository extends JpaRepository<RebookCampaign, 
 
     /** The same read surface's date-scoped variant -- the Campaign Center's selected date-range filter. */
     List<RebookCampaign> findByProviderIdAndCreatedAtBetween(UUID providerId, Instant from, Instant to);
+
+    /**
+     * Automation Center's cooldown guard -- true if this customer already
+     * got a Rebook nudge from this provider more recently than the
+     * configured cooldown, regardless of that campaign's current status
+     * (even a since-expired/cancelled one still counts as "already nudged
+     * them recently").
+     */
+    boolean existsByUserIdAndProviderIdAndCreatedAtGreaterThan(UUID userId, UUID providerId, Instant since);
 }
