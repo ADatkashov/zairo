@@ -9,6 +9,8 @@ import com.zairo.factory.providers.ProviderOwnership;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -89,5 +91,19 @@ public class ReviewService {
 
         review.addBusinessReply(reply, Instant.now());
         return reviewRepository.save(review);
+    }
+
+    /**
+     * Owner-only, newest first. Returns the repository's row projection rather
+     * than the final response DTO -- resolving reviewer names is the
+     * controller's job, same split {@code LoyaltyAdminController.getCustomers}
+     * already uses (one batch {@code userRepository.findAllById} there, not
+     * here, so this service stays free of a {@code users} dependency).
+     */
+    @Transactional(readOnly = true)
+    public Page<ReviewRepository.ProviderReviewRow> listByProvider(UUID providerId, UUID callerId,
+            Pageable pageable) {
+        providerOwnership.requireOwner(providerId, callerId);
+        return reviewRepository.findByProviderId(providerId, pageable);
     }
 }

@@ -20,4 +20,9 @@ dependencies {
     // for its own owner-only endpoints (markNoShow, etc.), same reasoning.
     implementation(project(":providers"))
     implementation(project(":auth"))
+
+    // The owner-facing reviews list shows each reviewer's name (same need
+    // loyalty's LoyaltyAdminController already has for its Customers tab) —
+    // one-directional (reviews -> users), no cycle.
+    implementation(project(":users"))
 }

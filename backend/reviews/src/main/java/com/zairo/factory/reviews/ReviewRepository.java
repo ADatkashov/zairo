@@ -1,9 +1,12 @@
 package com.zairo.factory.reviews;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -43,5 +46,51 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
         double getAverageRating();
 
         long getReviewCount();
+    }
+
+    /**
+     * The owner-facing reviews list, newest first — same indexed
+     * review -> booking -> availability_slot -> provider join as {@link
+     * #aggregateRatingsByProviderIds}, just filtered to one provider and
+     * paginated instead of aggregated. Carries {@code userId} along (Review
+     * itself has no such column, see {@code Review}'s doc comment) so the
+     * caller can resolve reviewer names in one batch instead of re-joining.
+     */
+    @Query(value = """
+            select r.id as id, r.booking_id as bookingId, b.user_id as userId, r.rating as rating,
+                   r.comment as comment, r.created_at as createdAt, r.business_reply as businessReply,
+                   r.business_reply_at as businessReplyAt
+            from review r
+            join booking b on b.id = r.booking_id
+            join availability_slot s on s.id = b.availability_slot_id
+            where s.provider_id = :providerId
+            order by r.created_at desc
+            """,
+            countQuery = """
+            select count(*)
+            from review r
+            join booking b on b.id = r.booking_id
+            join availability_slot s on s.id = b.availability_slot_id
+            where s.provider_id = :providerId
+            """,
+            nativeQuery = true)
+    Page<ProviderReviewRow> findByProviderId(@Param("providerId") UUID providerId, Pageable pageable);
+
+    interface ProviderReviewRow {
+        UUID getId();
+
+        UUID getBookingId();
+
+        UUID getUserId();
+
+        int getRating();
+
+        String getComment();
+
+        Instant getCreatedAt();
+
+        String getBusinessReply();
+
+        Instant getBusinessReplyAt();
     }
 }

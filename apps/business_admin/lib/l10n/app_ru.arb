@@ -613,5 +613,27 @@
   "loyaltyTierMinPointsLabel": "Мин. баллов за всё время",
   "loyaltyTierRemoveButton": "Удалить уровень",
   "loyaltyTierValidationError": "У каждого уровня должно быть название и неотрицательный порог баллов.",
-  "loyaltyTiersSavedMessage": "Уровни сохранены."
+  "loyaltyTiersSavedMessage": "Уровни сохранены.",
+
+  "reviewsTooltip": "Отзывы",
+  "reviewsScreenTitle": "Отзывы — {providerName}",
+  "reviewsAverageRatingLabel": "Средний рейтинг",
+  "reviewsTotalCountLabel": "Всего отзывов",
+  "reviewsAwaitingReplyLabel": "Ждут ответа",
+  "reviewsEmptyTitle": "Пока нет отзывов",
+  "reviewsEmptyMessage": "Здесь появятся отзывы по завершённым бронированиям.",
+  "errorReviewsLoadFailed": "Не удалось загрузить отзывы: {error}",
+  "reviewsLoadMore": "Загрузить ещё",
+  "reviewOwnerReplyLabel": "Ваш ответ",
+  "reviewEditReplyButton": "Изменить ответ",
+  "reviewReplyButton": "Ответить",
+  "reviewReplyDialogTitle": "Ответ на отзыв",
+  "reviewEditReplyDialogTitle": "Изменить ответ",
+  "reviewReplyFieldLabel": "Ваш ответ",
+  "reviewReplyFieldHint": "Спасибо за отзыв…",
+  "reviewReplySubmitButton": "Опубликовать ответ",
+  "reviewReplyEmptyError": "Напишите ответ перед публикацией.",
+  "errorReviewsForbidden": "У вас нет доступа к этому отзыву.",
+  "errorReviewsNotFound": "Отзыв не найден.",
+  "errorReviewsActionFailed": "Что-то пошло не так: {error}"
 }
