@@ -6,6 +6,7 @@ import 'models/admin_booking.dart';
 import 'models/admin_provider.dart';
 import 'models/admin_service.dart';
 import 'models/admin_slot.dart';
+import 'models/business_analytics.dart';
 import 'models/dashboard_metrics.dart';
 import 'models/recurring_schedule_result.dart';
 
@@ -248,5 +249,80 @@ class SalonAdminApi {
   Future<DashboardMetrics> fetchDashboardMetrics(String providerId) async {
     final response = await _dioClient.get('/providers/$providerId/dashboard');
     return DashboardMetrics.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// [from]/[to] are omitted when null -- the backend then defaults to the
+  /// current calendar month through now (see BusinessAnalyticsService).
+  Map<String, dynamic> _rangeParams(DateTime? from, DateTime? to) {
+    return {
+      if (from != null) 'from': from.toUtc().toIso8601String(),
+      if (to != null) 'to': to.toUtc().toIso8601String(),
+    };
+  }
+
+  Future<BusinessAnalyticsOverview> fetchAnalyticsOverview(String providerId, {DateTime? from, DateTime? to}) async {
+    final response = await _dioClient.get(
+      '/providers/$providerId/analytics/overview',
+      queryParameters: _rangeParams(from, to),
+    );
+    return BusinessAnalyticsOverview.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<BusinessAnalyticsRevenue> fetchAnalyticsRevenue(String providerId, {DateTime? from, DateTime? to}) async {
+    final response = await _dioClient.get(
+      '/providers/$providerId/analytics/revenue',
+      queryParameters: _rangeParams(from, to),
+    );
+    return BusinessAnalyticsRevenue.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<BusinessAnalyticsBookings> fetchAnalyticsBookings(String providerId, {DateTime? from, DateTime? to}) async {
+    final response = await _dioClient.get(
+      '/providers/$providerId/analytics/bookings',
+      queryParameters: _rangeParams(from, to),
+    );
+    return BusinessAnalyticsBookings.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<SmartFillPerformance> fetchAnalyticsSmartFill(String providerId, {DateTime? from, DateTime? to}) async {
+    final response = await _dioClient.get(
+      '/providers/$providerId/analytics/smart-fill',
+      queryParameters: _rangeParams(from, to),
+    );
+    return SmartFillPerformance.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<BusinessAnalyticsCustomers> fetchAnalyticsCustomers(String providerId, {DateTime? from, DateTime? to}) async {
+    final response = await _dioClient.get(
+      '/providers/$providerId/analytics/customers',
+      queryParameters: _rangeParams(from, to),
+    );
+    return BusinessAnalyticsCustomers.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// Not date-scoped on the server -- "what needs attention right now".
+  Future<BusinessActionCenter> fetchAnalyticsActions(String providerId) async {
+    final response = await _dioClient.get('/providers/$providerId/analytics/actions');
+    return BusinessActionCenter.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// The Action Center's Smart Fill drill-down -- every campaign still
+  /// actively trying to recover a slot. Not date-scoped.
+  Future<List<SmartFillCampaignSummary>> fetchActiveSmartFillCampaigns(String providerId) async {
+    final response = await _dioClient.get('/providers/$providerId/analytics/smart-fill/active');
+    final data = response.data as List<dynamic>;
+    return data.map((e) => SmartFillCampaignSummary.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// The Action Center's rebook-opportunity/retention-risk drill-down.
+  /// [retentionStatus] narrows to customers currently in that state; omit
+  /// for every customer. Not date-scoped.
+  Future<List<CustomerListItem>> fetchCustomerList(String providerId, {CustomerRetentionStatus? retentionStatus}) async {
+    final response = await _dioClient.get(
+      '/providers/$providerId/analytics/customers/list',
+      queryParameters: {if (retentionStatus != null) 'retentionStatus': retentionStatus.toWire()},
+    );
+    final data = response.data as List<dynamic>;
+    return data.map((e) => CustomerListItem.fromJson(e as Map<String, dynamic>)).toList();
   }
 }

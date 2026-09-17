@@ -1,0 +1,90 @@
+package com.zairo.factory.platform;
+
+import jakarta.annotation.PostConstruct;
+import java.util.ArrayList;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
+import org.springframework.stereotype.Component;
+
+/**
+ * Fails application startup fast if it's about to run in production
+ * ({@code spring.profiles.active} includes {@code prod}, e.g. {@code
+ * SPRING_PROFILES_ACTIVE=prod}) while still using one of the dev-only
+ * default secrets committed in {@code application.yml} (Phase 0
+ * stabilization).
+ *
+ * <p>This codebase deliberately has no per-environment config files (see
+ * {@code docs/ci-cd.md}'s deployment runbook) — every secret is a single
+ * {@code ${ENV_VAR:dev-default}} placeholder, and a real deployment sets
+ * the env var. Nothing previously enforced that: forgetting to set {@code
+ * JWT_SECRET} (or any of the others below) meant production would silently
+ * boot and serve real traffic on a value that's been public in this
+ * repository's git history since early in the project. This class doesn't
+ * change what the defaults are or how they're read (every existing bean
+ * still resolves them exactly as before) — it just refuses to let the
+ * application start with them <em>while a deployer has explicitly said
+ * this is production</em>, by activating the {@code prod} profile. Nobody
+ * has to change how local dev or {@code test} profile runs: neither sets
+ * {@code spring.profiles.active=prod}, so this check never even runs for
+ * them (see {@link #run}'s own guard).
+ */
+@Component
+class ProductionSecretsValidator {
+
+    // The exact dev-default values committed in application.yml -- kept
+    // here, not derived, so a future edit to one default can't silently
+    // defeat this check by making "the default" and "the configured value"
+    // match by coincidence instead of by the deployer actually overriding
+    // anything.
+    static final String DEV_JWT_SECRET = "Jc65IChbJdrOLj/C4rT+OCdPEdvzosIIpIG0xYM9dJ1Eflr/QDsOg+hLKOdX8k1B";
+    static final String DEV_PLATFORM_ADMIN_JWT_SECRET = "R2v8QnZmU4hLxE0pTsYkD9bWcAoFj3GiN6uHrMz1XqCvS7eKtY5wPd2LbNhOaIu";
+    static final String DEV_DB_PASSWORD = "app_factory";
+    static final String DEV_STORAGE_SECRET_KEY = "app_factory_secret";
+
+    private final Environment environment;
+    private final String jwtSecret;
+    private final String platformAdminJwtSecret;
+    private final String dbPassword;
+    private final String storageSecretKey;
+
+    ProductionSecretsValidator(Environment environment, @Value("${app.jwt.secret}") String jwtSecret,
+            @Value("${app.jwt.platform-admin-secret}") String platformAdminJwtSecret,
+            @Value("${spring.datasource.password}") String dbPassword,
+            @Value("${app.storage.secret-key}") String storageSecretKey) {
+        this.environment = environment;
+        this.jwtSecret = jwtSecret;
+        this.platformAdminJwtSecret = platformAdminJwtSecret;
+        this.dbPassword = dbPassword;
+        this.storageSecretKey = storageSecretKey;
+    }
+
+    @PostConstruct
+    void run() {
+        if (!environment.acceptsProfiles(Profiles.of("prod"))) {
+            return;
+        }
+        List<String> problems = new ArrayList<>();
+        checkOverridden(problems, "JWT_SECRET (app.jwt.secret)", jwtSecret, DEV_JWT_SECRET);
+        checkOverridden(problems, "PLATFORM_ADMIN_JWT_SECRET (app.jwt.platform-admin-secret)", platformAdminJwtSecret,
+                DEV_PLATFORM_ADMIN_JWT_SECRET);
+        checkOverridden(problems, "DB_PASSWORD (spring.datasource.password)", dbPassword, DEV_DB_PASSWORD);
+        checkOverridden(problems, "MINIO_SECRET_KEY (app.storage.secret-key)", storageSecretKey,
+                DEV_STORAGE_SECRET_KEY);
+        if (!problems.isEmpty()) {
+            throw new IllegalStateException(
+                    "Refusing to start with spring.profiles.active=prod while still using a committed dev-default "
+                            + "secret. Set a real value via environment variable before deploying to production: "
+                            + String.join("; ", problems));
+        }
+    }
+
+    private static void checkOverridden(List<String> problems, String name, String actual, String devDefault) {
+        if (actual == null || actual.isBlank()) {
+            problems.add(name + " is not set");
+        } else if (actual.equals(devDefault)) {
+            problems.add(name + " is still the committed dev-default value");
+        }
+    }
+}

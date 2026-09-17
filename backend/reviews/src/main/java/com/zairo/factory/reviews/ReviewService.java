@@ -8,6 +8,9 @@ import com.zairo.factory.booking.BookingStatus;
 import com.zairo.factory.providers.ProviderOwnership;
 import java.time.Instant;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,13 +23,16 @@ public class ReviewService {
     private final BookingRepository bookingRepository;
     private final AvailabilitySlotRepository availabilitySlotRepository;
     private final ProviderOwnership providerOwnership;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ReviewService(ReviewRepository reviewRepository, BookingRepository bookingRepository,
-            AvailabilitySlotRepository availabilitySlotRepository, ProviderOwnership providerOwnership) {
+            AvailabilitySlotRepository availabilitySlotRepository, ProviderOwnership providerOwnership,
+            ApplicationEventPublisher eventPublisher) {
         this.reviewRepository = reviewRepository;
         this.bookingRepository = bookingRepository;
         this.availabilitySlotRepository = availabilitySlotRepository;
         this.providerOwnership = providerOwnership;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -53,7 +59,13 @@ public class ReviewService {
         }
 
         Review review = new Review(UUID.randomUUID(), bookingId, rating, comment, Instant.now());
-        return reviewRepository.save(review);
+        review = reviewRepository.save(review);
+
+        AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
+                        + booking.getAvailabilitySlotId()));
+        eventPublisher.publishEvent(new ReviewCreatedEvent(review.getId(), bookingId, callerId, slot.getProviderId()));
+        return review;
     }
 
     /**
@@ -79,5 +91,19 @@ public class ReviewService {
 
         review.addBusinessReply(reply, Instant.now());
         return reviewRepository.save(review);
+    }
+
+    /**
+     * Owner-only, newest first. Returns the repository's row projection rather
+     * than the final response DTO -- resolving reviewer names is the
+     * controller's job, same split {@code LoyaltyAdminController.getCustomers}
+     * already uses (one batch {@code userRepository.findAllById} there, not
+     * here, so this service stays free of a {@code users} dependency).
+     */
+    @Transactional(readOnly = true)
+    public Page<ReviewRepository.ProviderReviewRow> listByProvider(UUID providerId, UUID callerId,
+            Pageable pageable) {
+        providerOwnership.requireOwner(providerId, callerId);
+        return reviewRepository.findByProviderId(providerId, pageable);
     }
 }

@@ -79,6 +79,25 @@ public class SubscriptionRenewalService {
         }
     }
 
+    /**
+     * Owner-triggered "Fix" action (Billing screen's grace-period banner —
+     * v2 design audit) — the same charge path {@link #chargeForRenewal}
+     * already runs from the daily sweep, just invoked immediately instead
+     * of waiting for the next one. A no-op guard: retrying only makes sense
+     * while the subscription is actually PAST_DUE.
+     */
+    @Transactional
+    public Subscription retryPastDueCharge(UUID ownerUserId) {
+        Subscription subscription = subscriptionRepository.findByOwnerUserId(ownerUserId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Subscription not found for owner: " + ownerUserId));
+        if (subscription.getStatus() != SubscriptionStatus.PAST_DUE) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Subscription is not past due.");
+        }
+        chargeForRenewal(subscription);
+        return subscription;
+    }
+
     @Transactional
     void renewOrDowngradeOne(UUID subscriptionId) {
         Subscription subscription = subscriptionRepository.findById(subscriptionId)

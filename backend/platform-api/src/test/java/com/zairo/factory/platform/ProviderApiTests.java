@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.zairo.factory.auth.CredentialRepository;
 import com.zairo.factory.platform.TestAuth.Registered;
+import com.zairo.factory.platformadmin.PlatformAdminAccountRepository;
+import com.zairo.factory.platformadmin.PlatformRole;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.providers.ProviderDtos.UpdateProviderRequest;
 import com.zairo.factory.providers.ProviderDtos.UpdateProviderStatusRequest;
@@ -21,6 +23,7 @@ import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRe
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +46,9 @@ class ProviderApiTests {
 
     @Autowired
     private CredentialRepository credentialRepository;
+
+    @Autowired
+    private PlatformAdminAccountRepository platformAdminAccountRepository;
 
     @Test
     void createsOwnerThenProviderThenService() {
@@ -207,9 +213,15 @@ class ProviderApiTests {
         assertThat(approved.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(approved.getBody().get("status")).isEqualTo("ACTIVE");
 
-        // Shows up in the PENDING filter before approval, not after.
-        assertThat(getProviderIdsByStatus(ProviderStatus.PENDING)).doesNotContain(providerId.toString());
-        assertThat(getProviderIdsByStatus(ProviderStatus.ACTIVE)).contains(providerId.toString());
+        // Shows up in the PENDING filter before approval, not after. The
+        // PENDING filter is moderation data — see
+        // gettingProvidersByNonActiveStatusRequiresAPlatformRole — so this
+        // read needs a platform token too, unlike the public ACTIVE one.
+        var platformAdmin = TestPlatformAuth.registerPlatformAdmin(restTemplate, platformAdminAccountRepository,
+                "moderation-platform-admin-" + runId + "@factory.internal", PlatformRole.PLATFORM_ADMIN);
+        assertThat(getProviderIdsByStatus(ProviderStatus.PENDING, platformAdmin)).doesNotContain(
+                providerId.toString());
+        assertThat(getProviderIdsByStatus(ProviderStatus.ACTIVE, null)).contains(providerId.toString());
 
         // Admin can also suspend it again.
         var suspendRequest = new UpdateProviderStatusRequest(ProviderStatus.SUSPENDED);
@@ -220,9 +232,73 @@ class ProviderApiTests {
         assertThat(suspended.getBody().get("status")).isEqualTo("SUSPENDED");
     }
 
-    private java.util.List<String> getProviderIdsByStatus(ProviderStatus status) {
-        ResponseEntity<java.util.Map[]> response = restTemplate.getForEntity(
-                "/api/v1/providers?status=" + status, java.util.Map[].class);
+    /**
+     * Proves the fix for GET /providers's missing authorization on non-ACTIVE
+     * status filters (Security Audit follow-up, P2-1): a PENDING/SUSPENDED
+     * listing is moderation data, so it now requires an authenticated
+     * platform role (PLATFORM_ADMIN or PLATFORM_SUPPORT, same as GET
+     * /platform/businesses) — a regular customer/owner bearer token doesn't
+     * satisfy that role check at all, same 401-not-403 semantics as
+     * PaymentsController.refund's own platform-only endpoint. The unfiltered
+     * listing and ?status=ACTIVE stay exactly as public as before.
+     */
+    @Test
+    void gettingProvidersByNonActiveStatusRequiresAPlatformRole() {
+        String runId = UUID.randomUUID().toString();
+
+        // No token at all -> 401 for a non-ACTIVE status.
+        ResponseEntity<java.util.Map> unauthenticatedPending = restTemplate.getForEntity(
+                "/api/v1/providers?status=PENDING", java.util.Map.class);
+        assertThat(unauthenticatedPending.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        ResponseEntity<java.util.Map> unauthenticatedSuspended = restTemplate.getForEntity(
+                "/api/v1/providers?status=SUSPENDED", java.util.Map.class);
+        assertThat(unauthenticatedSuspended.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        // A regular (non-platform) bearer token is not a platform access
+        // token at all — same 401, not 403, as the fully anonymous case,
+        // same reasoning as PaymentsController.refund's own coverage.
+        Registered customer = TestAuth.registerCustomer(restTemplate, "providers-authz-cust-" + runId
+                + "@example.com");
+        ResponseEntity<java.util.Map> asCustomer = restTemplate.exchange("/api/v1/providers?status=PENDING",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())),
+                java.util.Map.class);
+        assertThat(asCustomer.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        // PLATFORM_SUPPORT (read-only across the Control Center) can still read this listing.
+        var support = TestPlatformAuth.registerPlatformAdmin(restTemplate, platformAdminAccountRepository,
+                "providers-authz-support-" + runId + "@factory.internal", PlatformRole.PLATFORM_SUPPORT);
+        ResponseEntity<java.util.Map[]> asSupport = restTemplate.exchange("/api/v1/providers?status=PENDING",
+                HttpMethod.GET, new HttpEntity<>(null, TestPlatformAuth.authHeaders(support.accessToken())),
+                java.util.Map[].class);
+        assertThat(asSupport.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // PLATFORM_ADMIN can read it too.
+        var admin = TestPlatformAuth.registerPlatformAdmin(restTemplate, platformAdminAccountRepository,
+                "providers-authz-admin-" + runId + "@factory.internal", PlatformRole.PLATFORM_ADMIN);
+        ResponseEntity<java.util.Map[]> asAdmin = restTemplate.exchange("/api/v1/providers?status=PENDING",
+                HttpMethod.GET, new HttpEntity<>(null, TestPlatformAuth.authHeaders(admin.accessToken())),
+                java.util.Map[].class);
+        assertThat(asAdmin.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // The unfiltered listing and ?status=ACTIVE stay exactly as public as before.
+        ResponseEntity<java.util.Map[]> unauthenticatedUnfiltered = restTemplate.getForEntity("/api/v1/providers",
+                java.util.Map[].class);
+        assertThat(unauthenticatedUnfiltered.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        ResponseEntity<java.util.Map[]> unauthenticatedActive = restTemplate.getForEntity(
+                "/api/v1/providers?status=ACTIVE", java.util.Map[].class);
+        assertThat(unauthenticatedActive.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    /** {@code platformAdmin} is only needed (and only sent) for a non-ACTIVE status — see ProviderController.list. */
+    private java.util.List<String> getProviderIdsByStatus(ProviderStatus status,
+            TestPlatformAuth.Registered platformAdmin) {
+        HttpHeaders headers = platformAdmin == null ? new HttpHeaders()
+                : TestPlatformAuth.authHeaders(platformAdmin.accessToken());
+        HttpEntity<Void> entity = new HttpEntity<>(null, headers);
+        ResponseEntity<java.util.Map[]> response = restTemplate.exchange("/api/v1/providers?status=" + status,
+                HttpMethod.GET, entity, java.util.Map[].class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         return java.util.Arrays.stream(response.getBody()).map(p -> (String) p.get("id")).toList();
     }

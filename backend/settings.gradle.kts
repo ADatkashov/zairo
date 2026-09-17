@@ -33,4 +33,12 @@ include(
     "provider-insights",
     "platform-insights",
     "messaging",
+    "revenue-engine",
+    "automation",
+    "smart-fill",
+    "rebook-engine",
+    "customer-intelligence",
+    "reactivation-engine",
+    "campaign-center",
+    "loyalty",
 )
