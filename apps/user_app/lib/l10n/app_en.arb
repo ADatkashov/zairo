@@ -148,19 +148,28 @@
   "errorBeautyBookingFailed": "Couldn't complete this booking — the master may not offer this service, or the time slot was just taken. Please try again.",
   "@errorBeautyBookingFailed": {"description": "409 from POST .../beauty bookings — covers two distinct backend rejections the response body doesn't distinguish."},
 
-  "bookingConfirmed": "Booking confirmed!",
-  "@bookingConfirmed": {"description": "Snackbar shown when a booking succeeds but no payment status is known yet."},
+  "bookingConfirmationTitle": "Booking confirmed!",
+  "@bookingConfirmationTitle": {"description": "BookingConfirmationScreen heading, shown right after a successful booking."},
 
-  "bookingConfirmedAndPaid": "Booking confirmed and paid!",
-  "@bookingConfirmedAndPaid": {"description": "Snackbar shown when booking + payment both succeed."},
-
-  "bookingConfirmedPaymentStatus": "Booking confirmed, but payment {status}.",
-  "@bookingConfirmedPaymentStatus": {
-    "description": "Snackbar shown when booking succeeds but payment did not (status is a lowercased backend status word, e.g. \"failed\").",
+  "bookingConfirmationSubtitle": "Your spot at {providerName} is booked.",
+  "@bookingConfirmationSubtitle": {
+    "description": "BookingConfirmationScreen subheading.",
     "placeholders": {
-      "status": {"type": "String"}
+      "providerName": {"type": "String"}
     }
   },
+
+  "bookingConfirmationWhenLabel": "When",
+  "@bookingConfirmationWhenLabel": {"description": "BookingConfirmationScreen — label above the booked slot's date/time."},
+
+  "bookingConfirmationTotalLabel": "Total",
+  "@bookingConfirmationTotalLabel": {"description": "BookingConfirmationScreen — label next to the booking's price."},
+
+  "bookingConfirmationViewBookingsButton": "View my bookings",
+  "@bookingConfirmationViewBookingsButton": {"description": "BookingConfirmationScreen primary action."},
+
+  "bookingConfirmationBackHomeButton": "Back to home",
+  "@bookingConfirmationBackHomeButton": {"description": "BookingConfirmationScreen secondary action."},
 
   "bookingConfirmedButError": "Booking confirmed, but {error}",
   "@bookingConfirmedButError": {
@@ -305,6 +314,22 @@
 
   "searchSortLabel": "Sort by",
   "@searchSortLabel": {"description": "Search filters dialog section label for the sort-order chips."},
+
+  "searchSortButtonLabel": "Sort: {sort}",
+  "@searchSortButtonLabel": {
+    "description": "One-tap sort control shown above the results list (board 07, v2 design audit) — sort is the already-localized sort option name.",
+    "placeholders": {
+      "sort": {"type": "String"}
+    }
+  },
+
+  "searchResultsCount": "{count, plural, one{{count} result near you} other{{count} results near you}}",
+  "@searchResultsCount": {
+    "description": "Result count shown above the search results list.",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
 
   "searchSortRecommended": "Recommended",
   "@searchSortRecommended": {"description": "Search sort option: the default availability-then-price ranking."},

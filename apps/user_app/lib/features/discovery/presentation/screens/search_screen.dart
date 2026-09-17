@@ -138,47 +138,80 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           ),
                         );
 
-                    return RefreshIndicator(
-                      onRefresh: () =>
-                          ref.refresh(searchResultsProvider(query).future),
-                      child: columns == 1
-                          ? ListView.separated(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: FactorySpacing.space4,
-                                vertical: FactorySpacing.space2,
+                    return Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            FactorySpacing.space4,
+                            FactorySpacing.space2,
+                            FactorySpacing.space4,
+                            0,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                l10n.searchResultsCount(results.length),
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(color: colors.textTertiary),
                               ),
-                              itemCount: results.length,
-                              separatorBuilder: (_, _) =>
-                                  const SizedBox(height: FactorySpacing.space3),
-                              itemBuilder: (context, index) {
-                                final result = results[index];
-                                return ProviderCard(
-                                  result: result,
-                                  onTap: () => openProvider(result),
-                                );
-                              },
-                            )
-                          : GridView.builder(
-                              padding: const EdgeInsets.all(
-                                FactorySpacing.space4,
+                              _SortMenuButton(
+                                value: query.sort,
+                                onChanged: (sort) => setState(
+                                  () => _query = _query.copyWith(sort: sort),
+                                ),
                               ),
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: columns,
-                                    mainAxisSpacing: FactorySpacing.space4,
-                                    crossAxisSpacing: FactorySpacing.space4,
-                                    childAspectRatio: 0.78,
-                                  ),
-                              itemCount: results.length,
-                              itemBuilder: (context, index) {
-                                final result = results[index];
-                                return ProviderCard(
-                                  result: result,
-                                  layout: FactoryProviderCardLayout.vertical,
-                                  onTap: () => openProvider(result),
-                                );
-                              },
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: RefreshIndicator(
+                            onRefresh: () => ref.refresh(
+                              searchResultsProvider(query).future,
                             ),
+                            child: columns == 1
+                                ? ListView.separated(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: FactorySpacing.space4,
+                                      vertical: FactorySpacing.space2,
+                                    ),
+                                    itemCount: results.length,
+                                    separatorBuilder: (_, _) => const SizedBox(
+                                      height: FactorySpacing.space3,
+                                    ),
+                                    itemBuilder: (context, index) {
+                                      final result = results[index];
+                                      return ProviderCard(
+                                        result: result,
+                                        onTap: () => openProvider(result),
+                                      );
+                                    },
+                                  )
+                                : GridView.builder(
+                                    padding: const EdgeInsets.all(
+                                      FactorySpacing.space4,
+                                    ),
+                                    gridDelegate:
+                                        SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: columns,
+                                          mainAxisSpacing: FactorySpacing.space4,
+                                          crossAxisSpacing: FactorySpacing.space4,
+                                          childAspectRatio: 0.78,
+                                        ),
+                                    itemCount: results.length,
+                                    itemBuilder: (context, index) {
+                                      final result = results[index];
+                                      return ProviderCard(
+                                        result: result,
+                                        layout:
+                                            FactoryProviderCardLayout.vertical,
+                                        onTap: () => openProvider(result),
+                                      );
+                                    },
+                                  ),
+                          ),
+                        ),
+                      ],
                     );
                   },
                   loading: () => const FactoryLoadingState(),
@@ -275,6 +308,51 @@ class _RecentAndPopularSearches extends ConsumerWidget {
     );
   }
 }
+
+/// Board 07 (v2 design audit) — sort previously lived only inside the
+/// filter sheet, several taps deep; this is the same [DiscoverySort]/
+/// [DiscoveryQuery] plumbing the filter sheet already used, just also
+/// reachable as a one-tap control above the results list.
+class _SortMenuButton extends StatelessWidget {
+  final DiscoverySort value;
+  final ValueChanged<DiscoverySort> onChanged;
+
+  const _SortMenuButton({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    return PopupMenuButton<DiscoverySort>(
+      initialValue: value,
+      onSelected: onChanged,
+      itemBuilder: (context) => [
+        for (final sort in DiscoverySort.values)
+          PopupMenuItem(value: sort, child: Text(_sortLabel(l10n, sort))),
+      ],
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            l10n.searchSortButtonLabel(_sortLabel(l10n, value)),
+            style: Theme.of(
+              context,
+            ).textTheme.labelMedium?.copyWith(color: colors.primary),
+          ),
+          Icon(Symbols.expand_more_rounded, size: 18, color: colors.primary),
+        ],
+      ),
+    );
+  }
+}
+
+String _sortLabel(AppLocalizations l10n, DiscoverySort sort) => switch (sort) {
+  DiscoverySort.recommended => l10n.searchSortRecommended,
+  DiscoverySort.priceAsc => l10n.searchSortPriceAsc,
+  DiscoverySort.priceDesc => l10n.searchSortPriceDesc,
+  DiscoverySort.distance => l10n.searchSortDistance,
+  DiscoverySort.rating => l10n.searchSortRating,
+};
 
 /// The filter form — presented as a bottom sheet (see [showFactoryBottomSheet]
 /// in build()), matching the design system's rule that filters live in a

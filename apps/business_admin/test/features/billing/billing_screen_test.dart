@@ -8,6 +8,7 @@ import 'package:business_admin/features/auth/data/models/user_summary.dart';
 import 'package:business_admin/features/auth/presentation/providers/auth_providers.dart';
 import 'package:business_admin/features/billing/data/billing_api.dart';
 import 'package:business_admin/features/billing/data/models/subscription.dart';
+import 'package:business_admin/features/billing/data/models/subscription_charge.dart';
 import 'package:business_admin/features/billing/presentation/providers/billing_providers.dart';
 import 'package:business_admin/features/billing/presentation/screens/billing_screen.dart';
 import 'package:business_admin/features/salon/data/models/admin_provider.dart';
@@ -30,6 +31,9 @@ class _FakeBillingApi extends BillingApi {
     _subscription = _free.copyWith(plan: 'PRO');
     return _subscription;
   }
+
+  @override
+  Future<List<SubscriptionCharge>> listCharges() async => const [];
 }
 
 final _free = Subscription(
