@@ -156,7 +156,7 @@ class _RecommendedActionCard extends StatelessWidget {
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
-    final messages = <String>[
+    final messages = <String?>[
       if (customer.pointsExpiringSoon30d > 0)
         l10n.loyaltyCustomerActionPointsExpiring(customer.pointsExpiringSoon30d),
       switch (customer.retentionStatus) {
