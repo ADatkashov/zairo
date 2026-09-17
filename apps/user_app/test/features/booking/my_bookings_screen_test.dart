@@ -12,6 +12,11 @@ import 'package:zairo/features/booking/data/models/availability_slot.dart';
 import 'package:zairo/features/booking/data/models/booking.dart';
 import 'package:zairo/features/booking/presentation/providers/booking_providers.dart';
 import 'package:zairo/features/booking/presentation/screens/my_bookings_screen.dart';
+import 'package:zairo/features/messaging/data/messaging_api.dart';
+import 'package:zairo/features/messaging/data/messaging_exception.dart';
+import 'package:zairo/features/messaging/data/models/chat_message.dart';
+import 'package:zairo/features/messaging/data/models/conversation.dart';
+import 'package:zairo/features/messaging/presentation/providers/messaging_providers.dart';
 import 'package:zairo/features/payments/data/models/payment.dart';
 import 'package:zairo/features/payments/data/payments_api.dart';
 import 'package:zairo/features/payments/presentation/providers/payments_providers.dart';
@@ -64,6 +69,38 @@ class _FakePaymentsApi extends PaymentsApi {
 
   @override
   Future<Payment?> getPayment(String bookingId) async => null;
+}
+
+class _FakeMessagingApi extends MessagingApi {
+  _FakeMessagingApi({this.conversations = const [], this.sendError})
+    : super(DioClient(Dio()));
+
+  final List<Conversation> conversations;
+  final Object? sendError;
+  String? lastBookingId;
+  String? lastBody;
+
+  @override
+  Future<List<Conversation>> myInbox() async => conversations;
+
+  @override
+  Future<ChatMessage> sendAboutBooking(String bookingId, String body) async {
+    if (sendError != null) throw sendError!;
+    lastBookingId = bookingId;
+    lastBody = body;
+    return ChatMessage(
+      id: 'message-1',
+      conversationId: 'conversation-1',
+      senderUserId: 'user-1',
+      body: body,
+      bookingId: bookingId,
+      createdAt: DateTime(2026, 1, 3),
+    );
+  }
+
+  @override
+  Future<List<ChatMessage>> threadWithProvider(String providerId) async =>
+      const [];
 }
 
 class _LoggedInAuthController extends AuthController {
@@ -321,5 +358,108 @@ void main() {
     expect(find.text('This booking can no longer be cancelled.'), findsOneWidget);
     // Still shows the Cancel button — the booking stayed CONFIRMED.
     expect(find.text('Cancel booking'), findsOneWidget);
+  });
+
+  testWidgets('message about this booking sends it and opens the matching chat thread', (
+    tester,
+  ) async {
+    final booking = Booking(
+      id: 'booking-1',
+      userId: 'user-1',
+      serviceId: 'service-1',
+      availabilitySlotId: 'slot-1',
+      status: 'CONFIRMED',
+      totalPrice: 20,
+      createdAt: DateTime(2026, 1, 1),
+    );
+    final conversation = Conversation(
+      id: 'conversation-1',
+      customerId: 'user-1',
+      providerId: 'provider-1',
+      providerName: 'Glow Salon',
+      createdAt: DateTime(2026, 1, 1),
+      lastMessageAt: DateTime(2026, 1, 3),
+    );
+    final fakeMessagingApi = _FakeMessagingApi(conversations: [conversation]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(_FakeBookingApi([booking])),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          messagingApiProvider.overrideWithValue(fakeMessagingApi),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const MyBookingsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Message about this booking'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Message the business'), findsOneWidget);
+    await tester.enterText(
+      find.byType(TextFormField),
+      'When can I reschedule?',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Send'));
+    await tester.pumpAndSettle();
+
+    expect(fakeMessagingApi.lastBookingId, 'booking-1');
+    expect(fakeMessagingApi.lastBody, 'When can I reschedule?');
+    // Navigated straight into the matched conversation's thread rather
+    // than staying on MyBookingsScreen with a plain snackbar.
+    expect(find.text('Glow Salon'), findsOneWidget);
+  });
+
+  testWidgets('shows a readable error when messaging about a booking fails', (
+    tester,
+  ) async {
+    final booking = Booking(
+      id: 'booking-1',
+      userId: 'user-1',
+      serviceId: 'service-1',
+      availabilitySlotId: 'slot-1',
+      status: 'CONFIRMED',
+      totalPrice: 20,
+      createdAt: DateTime(2026, 1, 1),
+    );
+    final fakeMessagingApi = _FakeMessagingApi(
+      sendError: const MessagingException(MessagingErrorKey.notYourBooking),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(_FakeBookingApi([booking])),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          messagingApiProvider.overrideWithValue(fakeMessagingApi),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const MyBookingsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Message about this booking'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField), 'Hello?');
+    await tester.tap(find.widgetWithText(FilledButton, 'Send'));
+    await tester.pumpAndSettle();
+
+    // The dialog stays open with an inline error rather than closing.
+    expect(find.text("This isn't your booking."), findsOneWidget);
+    expect(find.text('Message the business'), findsOneWidget);
   });
 }

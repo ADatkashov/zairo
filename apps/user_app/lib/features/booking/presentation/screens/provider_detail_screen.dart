@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../../../core/formatting/initials.dart';
 import '../../../../core/formatting/month_day_time.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../auth/data/models/user_summary.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../auto/data/auto_exception.dart';
@@ -25,6 +26,7 @@ import '../../../discovery/data/models/service_summary.dart';
 import '../../../favorites/presentation/widgets/favorite_button.dart';
 import '../../../loyalty/presentation/screens/business_loyalty_screen.dart';
 import '../../../maps/presentation/screens/provider_map_screen.dart';
+import '../../../messaging/presentation/screens/chat_thread_screen.dart';
 import '../../../payments/data/payment_exception.dart';
 import '../../../payments/presentation/providers/payments_providers.dart';
 import '../../../staff/data/models/staff.dart';
@@ -106,7 +108,14 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       backgroundColor: colors.bg,
       appBar: FactoryAppBar(
         title: widget.provider.name,
-        actions: [FavoriteButton(providerId: widget.provider.id)],
+        actions: [
+          IconButton(
+            icon: const Icon(Symbols.chat_rounded),
+            tooltip: l10n.messageProviderTooltip,
+            onPressed: () => _openMessageThread(currentUser),
+          ),
+          FavoriteButton(providerId: widget.provider.id),
+        ],
       ),
       body: SafeArea(
         child: Column(
@@ -434,6 +443,25 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       if (service.id == _selectedServiceId) return service;
     }
     return null;
+  }
+
+  /// Same in-flow login gate as [FavoriteButton]: logged out just opens
+  /// LoginScreen instead of silently failing or disabling the action.
+  void _openMessageThread(UserSummary? currentUser) {
+    if (currentUser == null) {
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ChatThreadScreen(
+          providerId: widget.provider.id,
+          providerName: widget.provider.name,
+        ),
+      ),
+    );
   }
 
   Future<void> _addVehicle(String userId) async {

@@ -7,6 +7,11 @@ import '../../../../core/formatting/month_day_time.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/widgets/logged_out_gate.dart';
+import '../../../messaging/data/messaging_exception.dart';
+import '../../../messaging/data/models/chat_message.dart';
+import '../../../messaging/data/models/conversation.dart';
+import '../../../messaging/presentation/providers/messaging_providers.dart';
+import '../../../messaging/presentation/screens/chat_thread_screen.dart';
 import '../../../payments/presentation/providers/payments_providers.dart';
 import '../../../payments/presentation/widgets/payment_status_chip.dart';
 import '../../../reviews/presentation/widgets/review_section.dart';
@@ -298,21 +303,75 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
           PaymentStatusChip(bookingId: booking.id),
           if (booking.status == 'COMPLETED')
             ReviewSection(bookingId: booking.id),
-          if (booking.status == 'CONFIRMED') ...[
-            const SizedBox(height: FactorySpacing.space2),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: FactoryButton(
-                label: l10n.cancelBookingButton,
-                variant: FactoryButtonVariant.textDanger,
-                isLoading: _isCancelling,
-                onPressed: _isCancelling ? null : _confirmAndCancel,
-              ),
+          const SizedBox(height: FactorySpacing.space2),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Wrap(
+              spacing: FactorySpacing.space2,
+              children: [
+                FactoryButton(
+                  label: l10n.messageAboutBookingButton,
+                  variant: FactoryButtonVariant.text,
+                  onPressed: _openMessageAboutBookingDialog,
+                ),
+                if (booking.status == 'CONFIRMED')
+                  FactoryButton(
+                    label: l10n.cancelBookingButton,
+                    variant: FactoryButtonVariant.textDanger,
+                    isLoading: _isCancelling,
+                    onPressed: _isCancelling ? null : _confirmAndCancel,
+                  ),
+              ],
             ),
-          ],
+          ),
         ],
       ),
     );
+  }
+
+  /// Opens a small compose dialog, sends the message tagged with this
+  /// booking, then — per the spec's fallback rule — looks the resulting
+  /// conversation up via `myInbox()` (the response only carries a
+  /// conversationId, and this screen has no client-side providerId for a
+  /// [Booking] to key a thread screen off of directly) and pushes straight
+  /// into [ChatThreadScreen]. Falls back to a plain success snackbar if
+  /// that lookup can't find a match.
+  Future<void> _openMessageAboutBookingDialog() async {
+    final message = await showDialog<ChatMessage>(
+      context: context,
+      builder: (_) => _MessageAboutBookingDialog(bookingId: widget.booking.id),
+    );
+    if (message == null || !mounted) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    Conversation? matched;
+    try {
+      final conversations = await ref.read(messagingApiProvider).myInbox();
+      for (final conversation in conversations) {
+        if (conversation.id == message.conversationId) {
+          matched = conversation;
+          break;
+        }
+      }
+    } catch (_) {
+      // Falls through to the snackbar fallback below — the message itself
+      // already sent successfully.
+    }
+    if (!mounted) return;
+    if (matched != null) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ChatThreadScreen(
+            providerId: matched!.providerId,
+            providerName: matched.providerName ?? l10n.messagingUnknownBusinessName,
+          ),
+        ),
+      );
+      return;
+    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.messageAboutBookingSentMessage)));
   }
 
   Future<void> _confirmAndCancel() async {
@@ -359,6 +418,108 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
         SnackBar(content: Text(l10n.errorBookingGeneric(e.toString()))),
       );
       setState(() => _isCancelling = false);
+    }
+  }
+}
+
+/// A single multiline field + Send/Cancel, same shape as
+/// ReviewSection's `_LeaveReviewDialog` — its own stateful dialog widget
+/// rather than a plain `showFactoryDialog` call, since it needs to own an
+/// in-flight/error state while the send is pending.
+class _MessageAboutBookingDialog extends ConsumerStatefulWidget {
+  final String bookingId;
+
+  const _MessageAboutBookingDialog({required this.bookingId});
+
+  @override
+  ConsumerState<_MessageAboutBookingDialog> createState() =>
+      _MessageAboutBookingDialogState();
+}
+
+class _MessageAboutBookingDialogState
+    extends ConsumerState<_MessageAboutBookingDialog> {
+  final _bodyController = TextEditingController();
+  bool _isSubmitting = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _bodyController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return FactoryDialog(
+      title: l10n.messageAboutBookingDialogTitle,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FactoryTextField(
+            controller: _bodyController,
+            enabled: !_isSubmitting,
+            label: l10n.chatComposeLabel,
+            maxLines: 4,
+          ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                _error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+        ],
+      ),
+      actions: [
+        FactoryButton(
+          label: l10n.messageAboutBookingCancelButton,
+          variant: FactoryButtonVariant.text,
+          onPressed: _isSubmitting
+              ? null
+              : () => Navigator.of(context).pop(),
+        ),
+        FactoryButton(
+          label: l10n.messageAboutBookingSendButton,
+          isLoading: _isSubmitting,
+          onPressed: _isSubmitting ? null : _submit,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context)!;
+    final text = _bodyController.text.trim();
+    if (text.isEmpty) {
+      setState(() => _error = l10n.messageAboutBookingEmptyError);
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+      _error = null;
+    });
+    try {
+      final message = await ref
+          .read(messagingApiProvider)
+          .sendAboutBooking(widget.bookingId, text);
+      if (!mounted) return;
+      Navigator.of(context).pop(message);
+    } on MessagingException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.localizedMessage(l10n);
+        _isSubmitting = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = l10n.errorMessagingGeneric(e.toString());
+        _isSubmitting = false;
+      });
     }
   }
 }
