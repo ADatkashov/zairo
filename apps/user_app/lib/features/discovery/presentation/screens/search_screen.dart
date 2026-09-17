@@ -5,6 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../booking/presentation/screens/provider_detail_screen.dart';
+import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../data/models/provider_search_result.dart';
 import '../providers/discovery_providers.dart';
 import '../providers/recent_searches_provider.dart';
@@ -429,15 +430,28 @@ class _FilterSheetState extends State<_FilterSheet> {
             style: Theme.of(context).textTheme.labelLarge,
           ),
           const SizedBox(height: FactorySpacing.space2),
-          Wrap(
-            spacing: FactorySpacing.space2,
-            runSpacing: FactorySpacing.space2,
-            children: [
-              _verticalChip(l10n.searchFilterCategoryAll, null),
-              _verticalChip(l10n.discoveryVerticalBeauty, 'beauty'),
-              _verticalChip(l10n.discoveryVerticalAuto, 'auto'),
-              _verticalChip(l10n.discoveryVerticalCleaning, 'cleaning'),
-            ],
+          Consumer(
+            builder: (context, ref, _) {
+              final categoriesAsync = ref.watch(categoriesProvider);
+              final languageCode = Localizations.localeOf(context).languageCode;
+              // Board 07 (v2 design audit) — this used to hardcode exactly
+              // the three verticals that existed when this screen was first
+              // built (beauty/auto/cleaning), so a platform admin adding a
+              // new category — or deactivating an old one — never showed up
+              // here. Sourced from the same master catalog Home's category
+              // grid already reads, ACTIVE-only by construction (see
+              // CatalogController).
+              final categories = categoriesAsync.value ?? const [];
+              return Wrap(
+                spacing: FactorySpacing.space2,
+                runSpacing: FactorySpacing.space2,
+                children: [
+                  _verticalChip(l10n.searchFilterCategoryAll, null),
+                  for (final category in categories)
+                    _verticalChip(category.nameFor(languageCode), category.code),
+                ],
+              );
+            },
           ),
           const SizedBox(height: FactorySpacing.space4),
           Text(
