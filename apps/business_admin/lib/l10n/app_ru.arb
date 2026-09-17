@@ -705,5 +705,19 @@
   "automationAllowedHoursValidationError": "Заполните оба поля разрешённых часов или оставьте оба пустыми.",
   "errorAutomationValidationFailed": "Проверьте введённые значения.",
   "errorAutomationForbidden": "У вас нет доступа к настройкам автоматизации этого бизнеса.",
-  "errorAutomationActionFailed": "Что-то пошло не так: {error}"
+  "errorAutomationActionFailed": "Что-то пошло не так: {error}",
+
+  "messagingNavLabel": "Сообщения",
+  "businessInboxScreenTitle": "Входящие",
+  "businessInboxSubtitle": "Переписка с вашими клиентами.",
+  "businessInboxNoBusinesses": "Сначала создайте бизнес, чтобы увидеть переписку.",
+  "businessInboxEmpty": "Пока нет переписок.",
+  "messagingUnknownCustomer": "Клиент",
+  "errorConversationsLoadFailed": "Не удалось загрузить переписки: {error}",
+  "errorMessagesLoadFailed": "Не удалось загрузить сообщения: {error}",
+  "errorMessageSendFailed": "Не удалось отправить сообщение: {error}",
+  "chatEmptyThread": "Пока нет сообщений. Поздоровайтесь!",
+  "chatComposeHint": "Введите сообщение",
+  "chatSendButtonTooltip": "Отправить",
+  "chatBookingChipLabel": "О бронировании"
 }
