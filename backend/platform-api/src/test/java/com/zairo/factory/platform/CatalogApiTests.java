@@ -2,9 +2,14 @@ package com.zairo.factory.platform;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.zairo.factory.auth.CredentialRepository;
+import com.zairo.factory.platform.TestAuth.Registered;
 import com.zairo.factory.platformadmin.PlatformAdminAccountRepository;
 import com.zairo.factory.platformadmin.PlatformRole;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
+import com.zairo.factory.providers.ProviderDtos.UpdateProviderStatusRequest;
+import com.zairo.factory.providers.ProviderStatus;
+import com.zairo.factory.users.UserRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -38,6 +43,12 @@ class CatalogApiTests {
 
     @Autowired
     private PlatformAdminAccountRepository platformAdminAccountRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private CredentialRepository credentialRepository;
 
     @Test
     void publicReadsReturnTheSeededCatalog() {
@@ -121,5 +132,96 @@ class CatalogApiTests {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody().get("businessTypeId")).isEqualTo(SEEDED_BEAUTY_SALON_BUSINESS_TYPE_ID);
+    }
+
+    /**
+     * The product rule this guards: {@code Category.status} is a
+     * customer-catalog-visibility switch for launching a vertical, never a
+     * cascade onto {@code Provider.status}. A vertical can be pre-provisioned
+     * with real businesses in the database while still INACTIVE (not yet
+     * announced to customers); those businesses keep whatever status an
+     * ADMIN already gave them, and stay fully discoverable by anyone who
+     * already knows how to ask for that vertical (direct search by
+     * `vertical`, a favorite, a bookmarked profile link) the entire time —
+     * only the customer-facing "pick a category" surfaces (GET /categories
+     * and everything built on it) hide it. Flipping the category to ACTIVE
+     * later is purely additive: it makes the category itself pickable, it
+     * does not touch a single Provider row.
+     */
+    @Test
+    void deactivatingACategoryNeverChangesAnExistingBusinesssStatusOrDiscoverability() {
+        var platformAdmin = TestPlatformAuth.registerPlatformAdmin(restTemplate, platformAdminAccountRepository,
+                "catalog-launch-admin-" + UUID.randomUUID() + "@factory.internal", PlatformRole.PLATFORM_ADMIN);
+        String code = "medicine_" + UUID.randomUUID().toString().replace("-", "");
+        Map<String, Object> createCategoryRequest = Map.of(
+                "code", code, "nameKk", "Медицина", "nameRu", "Медицина", "nameEn", "Medicine", "sortOrder", 50);
+        ResponseEntity<Map> createdCategory = restTemplate.exchange("/api/v1/platform/categories", HttpMethod.POST,
+                new HttpEntity<>(createCategoryRequest, TestPlatformAuth.authHeaders(platformAdmin.accessToken())),
+                Map.class);
+        assertThat(createdCategory.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        UUID categoryId = UUID.fromString((String) createdCategory.getBody().get("id"));
+
+        // Not launched yet -- the vertical starts INACTIVE, same as
+        // Medicine/Dentistry/Auto/Cleaning would while Beauty alone is live.
+        ResponseEntity<Map> deactivated = restTemplate.exchange(
+                "/api/v1/platform/categories/" + categoryId + "/status", HttpMethod.PATCH,
+                new HttpEntity<>(Map.of("status", "INACTIVE"),
+                        TestPlatformAuth.authHeaders(platformAdmin.accessToken())),
+                Map.class);
+        assertThat(deactivated.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        ResponseEntity<List> categoriesWhileInactive = restTemplate.getForEntity("/api/v1/categories", List.class);
+        assertThat(categoriesWhileInactive.getBody())
+                .noneSatisfy(entry -> assertThat(((Map<?, ?>) entry).get("code")).isEqualTo(code));
+
+        // A business can still be onboarded under this not-yet-launched
+        // vertical, and an ADMIN can still approve it to ACTIVE -- exactly
+        // the pre-provisioning step 2 of the launch scenario describes.
+        var owner = TestAuth.registerOwner(restTemplate, "medicine-owner-" + UUID.randomUUID() + "@example.com");
+        var createProviderRequest = new CreateProviderRequest(owner.userId(), "Test Clinic", code);
+        ResponseEntity<Map> createdProvider = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
+                new HttpEntity<>(createProviderRequest, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(createdProvider.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        UUID providerId = UUID.fromString((String) createdProvider.getBody().get("id"));
+
+        Registered legacyAdmin = TestAuth.registerAdmin(restTemplate, userRepository, credentialRepository,
+                "medicine-approver-" + UUID.randomUUID() + "@example.com");
+        ResponseEntity<Map> approved = restTemplate.exchange("/api/v1/providers/" + providerId + "/status",
+                HttpMethod.PATCH,
+                new HttpEntity<>(new UpdateProviderStatusRequest(ProviderStatus.ACTIVE),
+                        TestAuth.authHeaders(legacyAdmin.accessToken())),
+                Map.class);
+        assertThat(approved.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(approved.getBody().get("status")).isEqualTo("ACTIVE");
+
+        // The category is still INACTIVE (never re-activated), yet the
+        // business's own status is untouched and it's fully discoverable.
+        ResponseEntity<Map> providerWhileCategoryInactive = restTemplate
+                .getForEntity("/api/v1/providers/" + providerId, Map.class);
+        assertThat(providerWhileCategoryInactive.getBody().get("status")).isEqualTo("ACTIVE");
+
+        ResponseEntity<List> searchWhileCategoryInactive = restTemplate
+                .getForEntity("/api/v1/search/providers?vertical=" + code, List.class);
+        assertThat(searchWhileCategoryInactive.getBody()).anySatisfy(
+                entry -> assertThat(((Map<?, ?>) entry).get("id")).isEqualTo(providerId.toString()));
+
+        // Launching the vertical (INACTIVE -> ACTIVE) is purely additive:
+        // the category becomes pickable again, the already-ACTIVE business
+        // is untouched (it was never hidden to begin with) and stays exactly
+        // as discoverable as it already was.
+        ResponseEntity<Map> reactivated = restTemplate.exchange(
+                "/api/v1/platform/categories/" + categoryId + "/status", HttpMethod.PATCH,
+                new HttpEntity<>(Map.of("status", "ACTIVE"),
+                        TestPlatformAuth.authHeaders(platformAdmin.accessToken())),
+                Map.class);
+        assertThat(reactivated.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        ResponseEntity<List> categoriesAfterLaunch = restTemplate.getForEntity("/api/v1/categories", List.class);
+        assertThat(categoriesAfterLaunch.getBody())
+                .anySatisfy(entry -> assertThat(((Map<?, ?>) entry).get("code")).isEqualTo(code));
+
+        ResponseEntity<Map> providerAfterLaunch = restTemplate
+                .getForEntity("/api/v1/providers/" + providerId, Map.class);
+        assertThat(providerAfterLaunch.getBody().get("status")).isEqualTo("ACTIVE");
     }
 }

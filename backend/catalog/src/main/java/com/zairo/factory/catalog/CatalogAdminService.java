@@ -108,6 +108,13 @@ public class CatalogAdminService {
         return CategoryResponse.from(category);
     }
 
+    /**
+     * A vertical launch/visibility switch, not a moderation action — see
+     * {@link TaxonomyStatus}'s doc comment. Deliberately touches only this
+     * {@code Category} row: never look up or write to {@code
+     * providers.Provider} from here, however tempting a "hide the
+     * businesses too" cascade might seem.
+     */
     @Transactional
     public CategoryResponse setCategoryStatus(UUID actorId, String actorEmail, UUID id, SetStatusRequest request) {
         Category category = findCategory(id);
