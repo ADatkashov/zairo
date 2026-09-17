@@ -36,6 +36,8 @@ class LoyaltyCustomerDetailScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(FactorySpacing.space4),
             children: [
               _ProfileCard(customer: customer),
+              const SizedBox(height: FactorySpacing.space4),
+              _RecommendedActionCard(customer: customer),
               const SizedBox(height: FactorySpacing.space5),
               FactoryButton(
                 label: l10n.loyaltyAdjustPointsButton,
@@ -129,6 +131,61 @@ class _ProfileCard extends StatelessWidget {
               style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Board 20 (v2 design audit) — the Customer 360 profile's "Recommended
+/// action", derived only from fields this insight already carries
+/// ([LoyaltyCustomerInsight.retentionStatus]/[pointsExpiringSoon30d]).
+/// Advisory text only, deliberately not a button: nothing in this codebase
+/// lets an owner manually trigger outreach to one specific customer —
+/// Rebook/Reactivation only ever run as automated, provider-wide sweeps
+/// (see backend/rebook-engine, backend/reactivation-engine) — so a "Send
+/// offer" CTA here would be decorative, not real.
+class _RecommendedActionCard extends StatelessWidget {
+  final LoyaltyCustomerInsight customer;
+
+  const _RecommendedActionCard({required this.customer});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    final messages = <String>[
+      if (customer.pointsExpiringSoon30d > 0)
+        l10n.loyaltyCustomerActionPointsExpiring(customer.pointsExpiringSoon30d),
+      switch (customer.retentionStatus) {
+        'AT_RISK' => l10n.loyaltyCustomerActionAtRisk,
+        'DUE_FOR_REBOOKING' => l10n.loyaltyCustomerActionDueForRebooking,
+        'LOST' => l10n.loyaltyCustomerActionLost,
+        _ => null,
+      },
+    ].whereType<String>().toList();
+
+    if (messages.isEmpty) messages.add(l10n.loyaltyCustomerActionNone);
+
+    return FactoryCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.lightbulb_outline_rounded, size: 18, color: colors.accent),
+              const SizedBox(width: FactorySpacing.space2),
+              Text(l10n.loyaltyCustomerRecommendedActionTitle, style: textTheme.titleSmall),
+            ],
+          ),
+          const SizedBox(height: FactorySpacing.space2),
+          for (final message in messages)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(message, style: textTheme.bodySmall?.copyWith(color: colors.textSecondary)),
+            ),
         ],
       ),
     );

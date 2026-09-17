@@ -10,6 +10,9 @@ public interface SubscriptionChargeRepository extends JpaRepository<Subscription
 
     List<SubscriptionCharge> findBySubscriptionId(UUID subscriptionId);
 
+    /** The Billing screen's invoice history (v2 design audit) — most recent charge first. */
+    List<SubscriptionCharge> findBySubscriptionIdOrderByCreatedAtDesc(UUID subscriptionId);
+
     /**
      * The renewal job's idempotency lookup: is there already a charge
      * attempt for the subscription's *current* billing period (i.e. created

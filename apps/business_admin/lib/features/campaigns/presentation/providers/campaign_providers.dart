@@ -1,11 +1,24 @@
 import 'package:core_network/core_network.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../salon/presentation/providers/salon_providers.dart';
 import '../../data/api/campaign_center_api.dart';
 import '../../data/models/campaign.dart';
 
 final campaignCenterApiProvider = Provider<CampaignCenterApi>((ref) {
   return CampaignCenterApi(ref.watch(dioClientProvider));
+});
+
+/// Every open [SmartActionItem] across every business [ownerUserId] manages
+/// — the Dashboard's "Needs attention today" strip (v2 design audit). Same
+/// per-provider-then-sum shape as [ownerOverviewProvider], just for smart
+/// actions instead of [DashboardMetrics].
+final ownerSmartActionsProvider =
+    FutureProvider.autoDispose.family<List<SmartActionItem>, String>((ref, ownerUserId) async {
+  final api = ref.watch(campaignCenterApiProvider);
+  final providers = await ref.watch(myProvidersProvider(ownerUserId).future);
+  final perProvider = await Future.wait(providers.map((p) => api.fetchSmartActions(p.id)));
+  return [for (final response in perProvider) ...response.items];
 });
 
 /// The Campaign Center list screen's filter set -- everything

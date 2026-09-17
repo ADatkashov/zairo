@@ -31,8 +31,10 @@ import '../../../staff/data/models/staff.dart';
 import '../../../staff/data/staff_exception.dart';
 import '../../../staff/presentation/providers/staff_providers.dart';
 import '../../data/booking_exception.dart';
+import '../../data/models/availability_slot.dart';
 import '../../data/models/booking.dart';
 import '../providers/booking_providers.dart';
+import 'booking_confirmation_screen.dart';
 
 /// Categories with their own hardcoded staff module (Master/Mechanic/
 /// Cleaner) — every other category falls back to the generic `staff`
@@ -472,6 +474,18 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     final service = widget.provider.services.firstWhere(
       (s) => s.id == _selectedServiceId,
     );
+    // Captured before the booking call below, since a successful booking
+    // consumes the slot and the next read of this provider would no longer
+    // contain it — needed only to show the "when" on BookingConfirmationScreen.
+    AvailabilitySlot? selectedSlot;
+    for (final slot
+        in ref.read(availabilitySlotsProvider(widget.provider.id)).value ??
+            const <AvailabilitySlot>[]) {
+      if (slot.id == _selectedSlotId) {
+        selectedSlot = slot;
+        break;
+      }
+    }
     try {
       // A master/mechanic/cleaner was selected only when this provider has a
       // beauty/auto/cleaning staff directory (see the Book button's enable
@@ -535,22 +549,35 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       // SESSION_NOTES.md for why this isn't gated behind a webhook yet
       // (no real payment provider/webhook exists; the mock resolves
       // synchronously, so there's nothing async to wait on).
-      String message = l10n.bookingConfirmed;
+      String? paymentErrorMessage;
       try {
-        final payment = await ref
-            .read(paymentsApiProvider)
-            .createPayment(booking.id);
-        message = payment.status == 'SUCCEEDED'
-            ? l10n.bookingConfirmedAndPaid
-            : l10n.bookingConfirmedPaymentStatus(payment.status.toLowerCase());
+        await ref.read(paymentsApiProvider).createPayment(booking.id);
       } on PaymentException catch (e) {
-        message = l10n.bookingConfirmedButError(e.localizedMessage(l10n));
+        paymentErrorMessage = l10n.bookingConfirmedButError(
+          e.localizedMessage(l10n),
+        );
       }
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
-      Navigator.of(context).pop();
+      if (paymentErrorMessage != null) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(paymentErrorMessage)));
+      }
+      // Board 19 (v2 design audit) — a durable confirmation screen, not a
+      // snackbar that's gone in a few seconds, so replaces this route
+      // rather than pushing on top of it.
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => BookingConfirmationScreen(
+            booking: booking,
+            providerId: widget.provider.id,
+            providerName: widget.provider.name,
+            providerVertical: widget.provider.vertical,
+            service: service,
+            slotStartsAt: selectedSlot?.startsAt,
+          ),
+        ),
+      );
     } on BookingException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)

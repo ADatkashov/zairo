@@ -207,6 +207,8 @@ class _CampaignCenterBody extends ConsumerWidget {
           ],
           _StatsRow(providerId: providerId),
           const SizedBox(height: FactorySpacing.space5),
+          _FunnelSection(providerId: providerId),
+          const SizedBox(height: FactorySpacing.space5),
           _FiltersSection(
             providerId: providerId,
             filters: filters,
@@ -328,6 +330,101 @@ class _StatsRow extends ConsumerWidget {
         message: l10n.errorCampaignStatsLoadFailed(error.toString()),
         onRetry: () => ref.invalidate(campaignStatsProvider(providerId)),
       ),
+    );
+  }
+}
+
+/// Board 13 (v2 design audit) — the funnel the brief asked for was
+/// Audience→Campaign→Offer→Sent→Opened→Booked→Revenue; only four of those
+/// stages are backend-real (see [CampaignStatsResponse]): the platform
+/// never records a distinct "audience size" separate from campaigns
+/// started (each campaign already targets one customer), and there is no
+/// notification open/read receipt anywhere in the notifications module.
+/// This renders exactly the four stages the API returns, not a fabricated
+/// seven.
+class _FunnelSection extends ConsumerWidget {
+  final String providerId;
+
+  const _FunnelSection({required this.providerId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final statsAsync = ref.watch(campaignStatsProvider(providerId));
+    final stats = statsAsync.value;
+    if (stats == null) return const SizedBox.shrink();
+
+    final totalCampaigns = stats.activeCampaigns +
+        stats.completedCampaigns +
+        stats.failedCampaigns +
+        stats.expiredCampaigns +
+        stats.cancelledCampaigns;
+    final maxCount = [totalCampaigns, stats.notificationsSent, stats.offersAccepted]
+        .fold(0, (max, v) => v > max ? v : max);
+
+    return FactoryCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.campaignFunnelTitle, style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: FactorySpacing.space3),
+          _FunnelStage(label: l10n.campaignFunnelStageCampaigns, count: totalCampaigns, maxCount: maxCount),
+          const SizedBox(height: FactorySpacing.space2),
+          _FunnelStage(label: l10n.campaignFunnelStageSent, count: stats.notificationsSent, maxCount: maxCount),
+          const SizedBox(height: FactorySpacing.space2),
+          _FunnelStage(label: l10n.campaignFunnelStageBooked, count: stats.offersAccepted, maxCount: maxCount),
+          const SizedBox(height: FactorySpacing.space3),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(l10n.campaignFunnelStageRevenue, style: Theme.of(context).textTheme.bodyMedium),
+              FactoryPriceText(
+                amount: stats.totalRecoveredRevenue,
+                currencySymbol: stats.currency,
+                fontSize: 15,
+                weight: FontWeight.w700,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FunnelStage extends StatelessWidget {
+  final String label;
+  final int count;
+  final int maxCount;
+
+  const _FunnelStage({required this.label, required this.count, required this.maxCount});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final fraction = maxCount == 0 ? 0.0 : count / maxCount;
+    return Row(
+      children: [
+        SizedBox(
+          width: 96,
+          child: Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textSecondary)),
+        ),
+        Expanded(
+          child: FractionallySizedBox(
+            alignment: Alignment.centerLeft,
+            widthFactor: fraction.clamp(0.04, 1.0),
+            child: Container(
+              height: 20,
+              decoration: BoxDecoration(color: colors.primary, borderRadius: FactoryRadius.smRadius),
+            ),
+          ),
+        ),
+        const SizedBox(width: FactorySpacing.space2),
+        SizedBox(
+          width: 36,
+          child: Text('$count', textAlign: TextAlign.end, style: Theme.of(context).textTheme.bodyMedium),
+        ),
+      ],
     );
   }
 }

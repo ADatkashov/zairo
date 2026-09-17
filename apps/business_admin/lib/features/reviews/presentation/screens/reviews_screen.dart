@@ -191,6 +191,84 @@ class _StatTile extends StatelessWidget {
   }
 }
 
+/// Board 15 (v2 design audit) — a review's lifecycle is exactly two real,
+/// backend-tracked steps: received ([ProviderReview.createdAt], always
+/// true) and replied ([ProviderReview.hasReply]/[businessReplyAt]). No
+/// third "resolved"/"escalated" step exists anywhere in backend/reviews,
+/// so this stays a two-step stepper rather than inventing one.
+class _ReviewLifecycleStepper extends StatelessWidget {
+  final ProviderReview review;
+
+  const _ReviewLifecycleStepper({required this.review});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    final locale = Localizations.localeOf(context).toString();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            _StepDot(done: true, colors: colors),
+            Expanded(
+              child: Container(height: 2, color: review.hasReply ? colors.primary : colors.border),
+            ),
+            _StepDot(done: review.hasReply, colors: colors),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                l10n.reviewLifecycleReceived,
+                style: textTheme.labelSmall?.copyWith(color: colors.textSecondary),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                review.hasReply
+                    ? l10n.reviewLifecycleRepliedOn(
+                        DateFormat.yMMMd(locale).format(review.businessReplyAt!.toLocal()),
+                      )
+                    : l10n.reviewLifecyclePending,
+                textAlign: TextAlign.end,
+                style: textTheme.labelSmall?.copyWith(
+                  color: review.hasReply ? colors.textSecondary : colors.textTertiary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _StepDot extends StatelessWidget {
+  final bool done;
+  final FactoryColors colors;
+
+  const _StepDot({required this.done, required this.colors});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 10,
+      height: 10,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: done ? colors.primary : colors.surfaceAlt,
+        border: done ? null : Border.all(color: colors.border, width: 1.5),
+      ),
+    );
+  }
+}
+
 class _ReviewCard extends StatelessWidget {
   final ProviderReview review;
   final VoidCallback onReply;
@@ -221,6 +299,8 @@ class _ReviewCard extends StatelessWidget {
             DateFormat.yMMMd(locale).format(review.createdAt.toLocal()),
             style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
           ),
+          const SizedBox(height: FactorySpacing.space3),
+          _ReviewLifecycleStepper(review: review),
           if (review.comment != null && review.comment!.isNotEmpty) ...[
             const SizedBox(height: FactorySpacing.space2),
             Text(review.comment!, style: textTheme.bodyMedium),

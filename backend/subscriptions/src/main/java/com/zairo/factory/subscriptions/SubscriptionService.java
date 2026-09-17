@@ -5,6 +5,7 @@ import com.zairo.factory.paymentprovider.PaymentProvider.InitiationStatus;
 import com.zairo.factory.paymentprovider.PaymentProvider.PaymentInitiation;
 import com.zairo.factory.paymentprovider.PaymentProviderName;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -139,5 +140,11 @@ public class SubscriptionService {
         Subscription subscription = getOrCreate(ownerUserId);
         subscription.requestDowngradeAtPeriodEnd(Instant.now());
         return subscriptionRepository.save(subscription);
+    }
+
+    /** The Billing screen's invoice history (v2 design audit) — most recent charge first. */
+    public List<SubscriptionCharge> listCharges(UUID ownerUserId) {
+        Subscription subscription = getOrCreate(ownerUserId);
+        return subscriptionChargeRepository.findBySubscriptionIdOrderByCreatedAtDesc(subscription.getId());
     }
 }

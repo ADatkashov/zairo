@@ -236,6 +236,51 @@
   "dashboardBusinessesCountLabel": "Businesses",
   "@dashboardBusinessesCountLabel": {"description": "Owner overview hero stat: number of businesses this owner manages."},
 
+  "dashboardNeedsAttentionTitle": "Needs attention today",
+  "@dashboardNeedsAttentionTitle": {"description": "Board 12 (v2 design audit) — Dashboard section header above the attention strip."},
+
+  "dashboardAttentionAllClear": "All caught up — nothing needs attention today.",
+  "@dashboardAttentionAllClear": {"description": "Shown in place of the attention strip when there's nothing to flag."},
+
+  "dashboardAttentionBillingPastDue": "Payment failed — fix billing to keep PRO",
+  "@dashboardAttentionBillingPastDue": {"description": "Attention strip item, shown when the owner's subscription is PAST_DUE."},
+
+  "dashboardAttentionCampaignExpiringSoon": "{count, plural, one{{count} campaign expiring soon} other{{count} campaigns expiring soon}}",
+  "@dashboardAttentionCampaignExpiringSoon": {
+    "description": "Attention strip item for SmartActionType.campaignExpiringSoon.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+
+  "dashboardAttentionFailedCampaign": "{count, plural, one{{count} failed campaign to retry} other{{count} failed campaigns to retry}}",
+  "@dashboardAttentionFailedCampaign": {
+    "description": "Attention strip item for SmartActionType.failedCampaign.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+
+  "dashboardAttentionRetriableCampaign": "{count, plural, one{{count} campaign ready to retry} other{{count} campaigns ready to retry}}",
+  "@dashboardAttentionRetriableCampaign": {
+    "description": "Attention strip item for SmartActionType.retriableCampaign.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+
+  "dashboardAttentionRebookingOpportunity": "{count, plural, one{{count} rebooking opportunity} other{{count} rebooking opportunities}}",
+  "@dashboardAttentionRebookingOpportunity": {
+    "description": "Attention strip item for SmartActionType.rebookingOpportunity.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+
+  "dashboardAttentionAtRiskCustomer": "{count, plural, one{{count} at-risk customer} other{{count} at-risk customers}}",
+  "@dashboardAttentionAtRiskCustomer": {
+    "description": "Attention strip item for SmartActionType.atRiskCustomer.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+
+  "dashboardAttentionLongInactiveCustomer": "{count, plural, one{{count} long-inactive customer} other{{count} long-inactive customers}}",
+  "@dashboardAttentionLongInactiveCustomer": {
+    "description": "Attention strip item for SmartActionType.longInactiveCustomer.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+
   "errorDashboardLoadFailed": "Failed to load dashboard: {error}",
   "@errorDashboardLoadFailed": {
     "description": "Dashboard section's error state.",
@@ -1035,6 +1080,41 @@
   "errorBillingUpgradeFailed": "Couldn't upgrade — please try again.",
   "@errorBillingUpgradeFailed": {"description": "BillingScreen's error state when the upgrade charge fails."},
 
+  "billingGracePeriodBanner": "Payment failed — PRO stays on for {days} more days.",
+  "@billingGracePeriodBanner": {
+    "description": "Board 16 (v2 design audit) — grace-period banner shown while status is PAST_DUE, days is the whole days remaining until gracePeriodEndsAt.",
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+
+  "billingGracePeriodExpiringToday": "Payment failed — fix today to keep PRO.",
+  "@billingGracePeriodExpiringToday": {"description": "Same banner as billingGracePeriodBanner, for the last day of the grace period (0 days left reads oddly as a count)."},
+
+  "billingGracePeriodFixButton": "Fix",
+  "@billingGracePeriodFixButton": {"description": "Grace-period banner's action button — retries the failed charge now."},
+
+  "billingGracePeriodFixSucceeded": "Payment succeeded — you're back on PRO.",
+  "@billingGracePeriodFixSucceeded": {"description": "Snackbar shown when retrying the past-due charge succeeds."},
+
+  "billingGracePeriodFixFailed": "That charge failed again — please check your payment method.",
+  "@billingGracePeriodFixFailed": {"description": "Snackbar shown when retrying the past-due charge fails again."},
+
+  "billingInvoicesSectionTitle": "Invoices",
+  "@billingInvoicesSectionTitle": {"description": "BillingScreen section header for the charge history list."},
+
+  "billingInvoicesEmpty": "No charges yet.",
+  "@billingInvoicesEmpty": {"description": "BillingScreen invoices section, shown for a FREE owner who's never been charged."},
+
+  "billingInvoiceStatusSucceeded": "Paid",
+  "@billingInvoiceStatusSucceeded": {"description": "Invoice row status: charge succeeded."},
+
+  "billingInvoiceStatusFailed": "Failed",
+  "@billingInvoiceStatusFailed": {"description": "Invoice row status: charge failed."},
+
+  "billingInvoiceStatusPending": "Pending",
+  "@billingInvoiceStatusPending": {"description": "Invoice row status: charge still in flight (real, non-mock payment provider only)."},
+
   "changeAvatarDialogTitle": "Change avatar",
   "@changeAvatarDialogTitle": {"description": "Title of the sidebar's change-avatar dialog."},
 
@@ -1095,6 +1175,21 @@
 
   "campaignKpiNeedsAttention": "Needs attention",
   "@campaignKpiNeedsAttention": {"description": "Campaign Center KPI tile label: campaigns requiring the owner's attention right now."},
+
+  "campaignFunnelTitle": "Funnel",
+  "@campaignFunnelTitle": {"description": "Board 13 (v2 design audit) — Campaign Center funnel section header."},
+
+  "campaignFunnelStageCampaigns": "Campaigns",
+  "@campaignFunnelStageCampaigns": {"description": "Funnel stage: total campaigns started (any status)."},
+
+  "campaignFunnelStageSent": "Notified",
+  "@campaignFunnelStageSent": {"description": "Funnel stage: notifications sent to customers."},
+
+  "campaignFunnelStageBooked": "Booked",
+  "@campaignFunnelStageBooked": {"description": "Funnel stage: offers accepted / bookings recovered."},
+
+  "campaignFunnelStageRevenue": "Revenue recovered",
+  "@campaignFunnelStageRevenue": {"description": "Funnel's final stage: total recovered revenue, shown as an amount rather than a bar."},
 
   "campaignFilterStatusAll": "All statuses",
   "@campaignFilterStatusAll": {"description": "Campaign Center status filter chip: clears the status filter."},
@@ -1695,6 +1790,27 @@
   "loyaltyCustomerDetailExpiringSoon": "Expiring in 30 days",
   "@loyaltyCustomerDetailExpiringSoon": {"description": "LoyaltyCustomerDetailScreen stat tile label, shown only when > 0."},
 
+  "loyaltyCustomerRecommendedActionTitle": "Recommended action",
+  "@loyaltyCustomerRecommendedActionTitle": {"description": "Board 20 (v2 design audit) — Customer 360 profile's advisory insight card header. Advisory only: derived from retentionStatus/pointsExpiringSoon30d, no per-customer outreach action exists yet to trigger from here."},
+
+  "loyaltyCustomerActionAtRisk": "Engagement has slowed — a personal check-in or a rebook offer could bring them back before Reactivation's automated sweep reaches them.",
+  "@loyaltyCustomerActionAtRisk": {"description": "Recommended-action text for retentionStatus == AT_RISK."},
+
+  "loyaltyCustomerActionDueForRebooking": "Due for their next visit based on past booking rhythm — a well-timed nudge now, ahead of the automated rebook offer, tends to land better.",
+  "@loyaltyCustomerActionDueForRebooking": {"description": "Recommended-action text for retentionStatus == DUE_FOR_REBOOKING."},
+
+  "loyaltyCustomerActionLost": "Hasn't returned in a long time. Reactivation's automated sweep already tried; a direct outreach may be the only thing left that works.",
+  "@loyaltyCustomerActionLost": {"description": "Recommended-action text for retentionStatus == LOST."},
+
+  "loyaltyCustomerActionPointsExpiring": "{count} points expire within 30 days — worth a reminder before they lapse unused.",
+  "@loyaltyCustomerActionPointsExpiring": {
+    "description": "Recommended-action text when pointsExpiringSoon30d > 0, shown alongside or instead of the retention-status advice.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+
+  "loyaltyCustomerActionNone": "No action needed — this customer is engaged.",
+  "@loyaltyCustomerActionNone": {"description": "Recommended-action text for retentionStatus NEW/ACTIVE with no points expiring soon."},
+
   "loyaltyAdjustPointsButton": "Adjust points",
   "@loyaltyAdjustPointsButton": {"description": "LoyaltyCustomerDetailScreen's action button."},
   "loyaltyAdjustPointsDialogTitle": "Adjust points",
@@ -1871,6 +1987,15 @@
   },
   "reviewsLoadMore": "Load more",
   "@reviewsLoadMore": {"description": "ReviewsScreen's pagination button."},
+  "reviewLifecycleReceived": "Received",
+  "@reviewLifecycleReceived": {"description": "Board 15 (v2 design audit) — lifecycle stepper's first step label."},
+  "reviewLifecycleRepliedOn": "Replied {date}",
+  "@reviewLifecycleRepliedOn": {
+    "description": "Lifecycle stepper's second step label once the owner has replied.",
+    "placeholders": {"date": {"type": "String"}}
+  },
+  "reviewLifecyclePending": "Awaiting reply",
+  "@reviewLifecyclePending": {"description": "Lifecycle stepper's second step label before the owner has replied."},
   "reviewOwnerReplyLabel": "Your reply",
   "@reviewOwnerReplyLabel": {"description": "Label above the owner's posted reply on a review card."},
   "reviewEditReplyButton": "Edit reply",
