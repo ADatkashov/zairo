@@ -15,6 +15,7 @@ import com.zairo.factory.catalog.CatalogDtos.UpdateCategoryRequest;
 import com.zairo.factory.catalog.CatalogDtos.UpdateSubsphereRequest;
 import com.zairo.factory.platformadmin.PlatformAuditLogService;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -52,6 +53,36 @@ public class CatalogAdminService {
     }
 
     // ---- Category ----------------------------------------------------
+
+    /**
+     * Every status, not just ACTIVE — the whole point of this screen is to
+     * flip a category back on after deactivating it, which is impossible if
+     * deactivating it also makes it disappear from the list that offers the
+     * toggle. See {@link CatalogController}'s doc comment: the public,
+     * unauthenticated reads stay ACTIVE-only; this is the admin-only escape
+     * hatch that comment always assumed existed.
+     */
+    public List<CategoryResponse> listAllCategories() {
+        return categoryRepository.findAllByOrderBySortOrderAsc().stream().map(CategoryResponse::from).toList();
+    }
+
+    public List<BusinessTypeResponse> listAllBusinessTypes(UUID categoryId) {
+        findCategory(categoryId);
+        return businessTypeRepository.findByCategoryIdOrderBySortOrderAsc(categoryId).stream()
+                .map(BusinessTypeResponse::from).toList();
+    }
+
+    public List<SubsphereResponse> listAllSubspheres(UUID businessTypeId) {
+        findBusinessType(businessTypeId);
+        return subsphereRepository.findByBusinessTypeIdOrderBySortOrderAsc(businessTypeId).stream()
+                .map(SubsphereResponse::from).toList();
+    }
+
+    public List<CatalogServiceResponse> listAllCatalogServices(UUID businessTypeId) {
+        findBusinessType(businessTypeId);
+        return catalogServiceRepository.findByBusinessTypeIdOrderBySortOrderAsc(businessTypeId).stream()
+                .map(CatalogServiceResponse::from).toList();
+    }
 
     @Transactional
     public CategoryResponse createCategory(UUID actorId, String actorEmail, CreateCategoryRequest request) {
