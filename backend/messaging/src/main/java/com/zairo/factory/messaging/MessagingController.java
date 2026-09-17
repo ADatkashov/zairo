@@ -73,8 +73,7 @@ public class MessagingController {
             @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             HttpServletRequest httpRequest) {
         UUID callerId = CurrentUser.requireUserId(httpRequest);
-        return messagingService.conversationsForProvider(providerId, callerId).stream()
-                .map(ConversationResponse::from).toList();
+        return messagingService.conversationsForProvider(providerId, callerId);
     }
 
     @Operation(summary = "My own message inbox (as a customer)")
@@ -84,8 +83,25 @@ public class MessagingController {
     @GetMapping("/api/v1/conversations/mine")
     public List<ConversationResponse> myInbox(HttpServletRequest httpRequest) {
         UUID customerId = CurrentUser.requireUserId(httpRequest);
-        return messagingService.conversationsForCustomer(customerId).stream().map(ConversationResponse::from)
-                .toList();
+        return messagingService.conversationsForCustomer(customerId);
+    }
+
+    @Operation(summary = "Message a business about a specific booking", description = """
+            Same as messaging the provider directly, but tags the message with the booking it's about — \
+            lets the thread show a booking chip/quick-open action on it. The provider is resolved from \
+            the booking itself, not from the caller.""")
+    @ApiResponse(responseCode = "201", description = "Message sent")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "The caller doesn't own this booking.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/api/v1/bookings/{bookingId}/messages")
+    @ResponseStatus(HttpStatus.CREATED)
+    public MessageResponse sendAboutBooking(@Parameter(description = "The booking's id.") @PathVariable UUID bookingId,
+            @Valid @RequestBody SendMessageRequest request, HttpServletRequest httpRequest) {
+        UUID customerId = CurrentUser.requireUserId(httpRequest);
+        return MessageResponse.from(messagingService.sendAsCustomerForBooking(bookingId, customerId, request.body()));
     }
 
     @Operation(summary = "Reply in an existing conversation",

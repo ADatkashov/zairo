@@ -24,17 +24,22 @@ public class Message {
     @Column(nullable = false)
     private String body;
 
+    /** Set only when sent from a booking's detail screen — see MessagingService.sendAsCustomerForBooking. */
+    @Column(name = "booking_id")
+    private UUID bookingId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     protected Message() {
     }
 
-    public Message(UUID id, UUID conversationId, UUID senderUserId, String body, Instant createdAt) {
+    public Message(UUID id, UUID conversationId, UUID senderUserId, String body, UUID bookingId, Instant createdAt) {
         this.id = id;
         this.conversationId = conversationId;
         this.senderUserId = senderUserId;
         this.body = body;
+        this.bookingId = bookingId;
         this.createdAt = createdAt;
     }
 
@@ -52,6 +57,10 @@ public class Message {
 
     public String getBody() {
         return body;
+    }
+
+    public UUID getBookingId() {
+        return bookingId;
     }
 
     public Instant getCreatedAt() {
