@@ -480,7 +480,7 @@ class _CategoriesTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final categoriesAsync = ref.watch(categoriesProvider);
+    final categoriesAsync = ref.watch(platformAllCategoriesProvider(platformToken));
     return Scaffold(
       body: categoriesAsync.when(
         data: (categories) => ListView(
@@ -494,7 +494,7 @@ class _CategoriesTab extends ConsumerWidget {
                   status: category.status,
                   onToggle: (next) async {
                     await ref.read(catalogApiProvider).setCategoryStatus(platformToken, category.id, next);
-                    ref.invalidate(categoriesProvider);
+                    ref.invalidate(platformAllCategoriesProvider(platformToken));
                   },
                 ),
               ),
@@ -509,7 +509,7 @@ class _CategoriesTab extends ConsumerWidget {
             context: context,
             builder: (_) => _CreateCategoryDialog(platformToken: platformToken),
           );
-          if (created == true) ref.invalidate(categoriesProvider);
+          if (created == true) ref.invalidate(platformAllCategoriesProvider(platformToken));
         },
         child: const Icon(Icons.add),
       ),
@@ -531,7 +531,7 @@ class _SpheresTabState extends ConsumerState<_SpheresTab> {
 
   @override
   Widget build(BuildContext context) {
-    final categoriesAsync = ref.watch(categoriesProvider);
+    final categoriesAsync = ref.watch(platformAllCategoriesProvider(widget.platformToken));
     return Scaffold(
       body: categoriesAsync.when(
         data: (categories) {
@@ -551,7 +551,10 @@ class _SpheresTabState extends ConsumerState<_SpheresTab> {
                   onChanged: (value) => setState(() => _selectedCategory = value),
                 ),
               ),
-              if (selected != null) Expanded(child: _SpheresList(category: selected, platformToken: widget.platformToken)),
+              if (selected != null)
+                Expanded(
+                  child: _SpheresList(category: selected, platformToken: widget.platformToken),
+                ),
             ],
           );
         },
@@ -567,7 +570,9 @@ class _SpheresTabState extends ConsumerState<_SpheresTab> {
                   context: context,
                   builder: (_) => _CreateBusinessTypeDialog(platformToken: widget.platformToken, category: category),
                 );
-                if (created == true) ref.invalidate(businessTypesProvider(category.id));
+                if (created == true) {
+                  ref.invalidate(platformAllBusinessTypesProvider((widget.platformToken, category.id)));
+                }
               },
               child: const Icon(Icons.add),
             ),
@@ -583,7 +588,7 @@ class _SpheresList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final businessTypesAsync = ref.watch(businessTypesProvider(category.id));
+    final businessTypesAsync = ref.watch(platformAllBusinessTypesProvider((platformToken, category.id)));
     return businessTypesAsync.when(
       data: (businessTypes) => ListView(
         padding: const EdgeInsets.all(FactorySpacing.space4),
@@ -596,7 +601,7 @@ class _SpheresList extends ConsumerWidget {
                 status: businessType.status,
                 onToggle: (next) async {
                   await ref.read(catalogApiProvider).setBusinessTypeStatus(platformToken, businessType.id, next);
-                  ref.invalidate(businessTypesProvider(category.id));
+                  ref.invalidate(platformAllBusinessTypesProvider((platformToken, category.id)));
                 },
               ),
             ),
@@ -623,7 +628,7 @@ class _SubspheresTabState extends ConsumerState<_SubspheresTab> {
 
   @override
   Widget build(BuildContext context) {
-    final categoriesAsync = ref.watch(categoriesProvider);
+    final categoriesAsync = ref.watch(platformAllCategoriesProvider(widget.platformToken));
     return Scaffold(
       body: categoriesAsync.when(
         data: (categories) {
@@ -651,7 +656,8 @@ class _SubspheresTabState extends ConsumerState<_SubspheresTab> {
                   padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4),
                   child: Consumer(
                     builder: (context, ref, _) {
-                      final businessTypesAsync = ref.watch(businessTypesProvider(selectedCategory.id));
+                      final businessTypesAsync =
+                          ref.watch(platformAllBusinessTypesProvider((widget.platformToken, selectedCategory.id)));
                       return businessTypesAsync.when(
                         data: (businessTypes) {
                           final selectedBusinessType =
@@ -689,7 +695,9 @@ class _SubspheresTabState extends ConsumerState<_SubspheresTab> {
                   context: context,
                   builder: (_) => _CreateSubsphereDialog(platformToken: widget.platformToken, businessType: businessType),
                 );
-                if (created == true) ref.invalidate(subspheresProvider(businessType.id));
+                if (created == true) {
+                  ref.invalidate(platformAllSubspheresProvider((widget.platformToken, businessType.id)));
+                }
               },
               child: const Icon(Icons.add),
             ),
@@ -705,7 +713,7 @@ class _SubspheresList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final subspheresAsync = ref.watch(subspheresProvider(businessType.id));
+    final subspheresAsync = ref.watch(platformAllSubspheresProvider((platformToken, businessType.id)));
     return subspheresAsync.when(
       data: (subspheres) => subspheres.isEmpty
           ? const Center(child: Text('No subspheres yet — this sphere has no drill-down level below it.'))
@@ -720,7 +728,7 @@ class _SubspheresList extends ConsumerWidget {
                       status: subsphere.status,
                       onToggle: (next) async {
                         await ref.read(catalogApiProvider).setSubsphereStatus(platformToken, subsphere.id, next);
-                        ref.invalidate(subspheresProvider(businessType.id));
+                        ref.invalidate(platformAllSubspheresProvider((platformToken, businessType.id)));
                       },
                     ),
                   ),
@@ -747,7 +755,7 @@ class _ServicesTabState extends ConsumerState<_ServicesTab> {
 
   @override
   Widget build(BuildContext context) {
-    final categoriesAsync = ref.watch(categoriesProvider);
+    final categoriesAsync = ref.watch(platformAllCategoriesProvider(widget.platformToken));
     return Scaffold(
       body: categoriesAsync.when(
         data: (categories) {
@@ -775,7 +783,8 @@ class _ServicesTabState extends ConsumerState<_ServicesTab> {
                   padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4),
                   child: Consumer(
                     builder: (context, ref, _) {
-                      final businessTypesAsync = ref.watch(businessTypesProvider(selectedCategory.id));
+                      final businessTypesAsync =
+                          ref.watch(platformAllBusinessTypesProvider((widget.platformToken, selectedCategory.id)));
                       return businessTypesAsync.when(
                         data: (businessTypes) {
                           final selectedBusinessType =
@@ -813,7 +822,9 @@ class _ServicesTabState extends ConsumerState<_ServicesTab> {
                   context: context,
                   builder: (_) => _CreateCatalogServiceDialog(platformToken: widget.platformToken, businessType: businessType),
                 );
-                if (created == true) ref.invalidate(catalogServicesProvider(businessType.id));
+                if (created == true) {
+                  ref.invalidate(platformAllCatalogServicesProvider((widget.platformToken, businessType.id)));
+                }
               },
               child: const Icon(Icons.add),
             ),
@@ -829,7 +840,7 @@ class _ServicesList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final servicesAsync = ref.watch(catalogServicesProvider(businessType.id));
+    final servicesAsync = ref.watch(platformAllCatalogServicesProvider((platformToken, businessType.id)));
     return servicesAsync.when(
       data: (services) => ListView(
         padding: const EdgeInsets.all(FactorySpacing.space4),
@@ -841,7 +852,7 @@ class _ServicesList extends ConsumerWidget {
                 status: service.status,
                 onToggle: (next) async {
                   await ref.read(catalogApiProvider).setCatalogServiceStatus(platformToken, service.id, next);
-                  ref.invalidate(catalogServicesProvider(businessType.id));
+                  ref.invalidate(platformAllCatalogServicesProvider((platformToken, businessType.id)));
                 },
               ),
             ),
@@ -1217,7 +1228,8 @@ class _CreateCatalogServiceDialogState extends ConsumerState<_CreateCatalogServi
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final subspheresAsync = ref.watch(subspheresProvider(widget.businessType.id));
+    final subspheresAsync =
+        ref.watch(platformAllSubspheresProvider((widget.platformToken, widget.businessType.id)));
     return FactoryDialog(
       title: 'New service under ${widget.businessType.nameEn}',
       content: SingleChildScrollView(
