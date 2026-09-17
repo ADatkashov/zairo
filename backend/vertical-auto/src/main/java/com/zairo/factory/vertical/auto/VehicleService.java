@@ -32,6 +32,20 @@ public class VehicleService {
                         + vehicleId));
     }
 
+    /**
+     * Owner-only — same 404-first-then-403 order as {@link #deleteVehicle},
+     * and the same rule: a vehicle's make/model/year/licensePlate (and its
+     * ownerUserId) are only the owning customer's to see, not any other
+     * authenticated caller's.
+     */
+    public Vehicle getVehicle(UUID vehicleId, UUID requestingUserId) {
+        Vehicle vehicle = getVehicle(vehicleId);
+        if (!vehicle.getOwnerUserId().equals(requestingUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot view another user's vehicle");
+        }
+        return vehicle;
+    }
+
     public List<Vehicle> listVehiclesByOwner(UUID ownerUserId) {
         return vehicleRepository.findByOwnerUserId(ownerUserId);
     }

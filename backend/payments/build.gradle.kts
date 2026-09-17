@@ -1,7 +1,7 @@
 description = "Payments — deposits, refunds, commission. Payment provider webhook is the source of truth, never the client."
 
 dependencies {
-    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.38")
+    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.55")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
 
@@ -22,6 +22,13 @@ dependencies {
     // module — see payment-provider/build.gradle.kts for why (subscriptions
     // needed the same port without a Gradle cycle).
     implementation(project(":payment-provider"))
+
+    // PaymentWebhookProcessor routes a subscription-charge webhook to
+    // SubscriptionChargeWebhookService (Phase 0 stabilization) -- safe,
+    // one-directional: subscriptions depends only on money/payment-provider/
+    // auth, never on payments (see subscriptions/build.gradle.kts's own
+    // comment on why it avoids that cycle).
+    implementation(project(":subscriptions"))
 
     // The failed-refund admin visibility endpoint (PaymentAdminController)
     // reuses platform-admin's caller resolution wholesale instead of a

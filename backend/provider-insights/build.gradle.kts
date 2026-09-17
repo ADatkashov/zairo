@@ -4,7 +4,7 @@ description = "Business-owner-facing read composition over existing operational 
         "the whole marketplace."
 
 dependencies {
-    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.38")
+    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.55")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
 
@@ -22,4 +22,22 @@ dependencies {
 
     // Customer display name/email for the ids booking already carries.
     implementation(project(":users"))
+
+    // Smart Fill performance (recovered slots/revenue, campaign/offer
+    // conversion) is exposed under this module's existing owner-facing
+    // dashboard rather than a second admin surface -- read-composition
+    // only, same reasoning as the dependencies above.
+    implementation(project(":smart-fill"))
+
+    // "Revenue Recovered by ZAIRO" -- the Decision Engine's own outcome
+    // ledger, spanning every RevenueStrategy (Smart Fill today, more
+    // later), same read-composition reasoning as the dependency above.
+    implementation(project(":revenue-engine"))
+
+    // Business Analytics' customer section and Action Center read
+    // Customer Intelligence's already-computed per-business retention
+    // classification (due-for-rebooking/at-risk/etc.) rather than
+    // recomputing any of it here -- same read-composition reasoning as
+    // the dependencies above.
+    implementation(project(":customer-intelligence"))
 }

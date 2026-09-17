@@ -25,6 +25,7 @@ import '../../../staff/data/models/admin_staff.dart';
 import '../../../staff/presentation/providers/staff_admin_providers.dart';
 import '../../../staff/presentation/widgets/add_staff_dialog.dart';
 import '../../../staff/presentation/widgets/manage_staff_services_dialog.dart';
+import '../../../reviews/presentation/screens/reviews_screen.dart';
 import '../../../storage/presentation/providers/storage_providers.dart';
 import '../../data/models/admin_booking.dart';
 import '../../data/models/admin_provider.dart';
@@ -33,6 +34,7 @@ import '../providers/salon_providers.dart';
 import '../widgets/add_service_dialog.dart';
 import '../widgets/add_slot_dialog.dart';
 import '../widgets/recurring_schedule_dialog.dart';
+import 'business_analytics_screen.dart';
 
 /// Categories with their own hardcoded staff module (Master/Mechanic/
 /// Cleaner) — every other category falls back to the generic `staff`
@@ -62,6 +64,26 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
       appBar: FactoryAppBar(
         title: _provider.name,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.star_outline_rounded),
+            tooltip: l10n.reviewsTooltip,
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ReviewsScreen(providerId: _provider.id, providerName: _provider.name),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.insights_outlined),
+            tooltip: l10n.businessAnalyticsTooltip,
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => BusinessAnalyticsScreen(provider: _provider)),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.edit_outlined),
             tooltip: l10n.editBusinessTooltip,

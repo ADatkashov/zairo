@@ -5,6 +5,7 @@ import com.zairo.factory.catalog.BusinessType;
 import com.zairo.factory.catalog.BusinessTypeRepository;
 import com.zairo.factory.catalog.CategoryRepository;
 import com.zairo.factory.catalog.TaxonomyStatus;
+import com.zairo.factory.platformadmin.PlatformCurrentAdmin;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.providers.ProviderDtos.ProviderResponse;
 import com.zairo.factory.providers.ProviderDtos.UpdateProviderRequest;
@@ -103,13 +104,22 @@ public class ProviderController {
     @Operation(summary = "List providers", description = """
             Unfiltered by default (every provider regardless of moderation status) — this raw listing isn't \
             the customer-facing discovery path (that's **GET /search/providers**, which filters to ACTIVE \
-            only). The optional `status` filter exists for the Business Admin moderation screen, e.g. \
-            `?status=PENDING`. No authentication required.""")
+            only). No authentication required for the default (unfiltered) listing or `?status=ACTIVE` — both \
+            surface nothing beyond what Search already exposes publicly. Any other `status` value (e.g. \
+            `?status=PENDING`) is the Business Admin moderation view and requires an authenticated platform \
+            role (PLATFORM_ADMIN or PLATFORM_SUPPORT), mirroring GET /platform/businesses.""")
     @ApiResponse(responseCode = "200", description = "Matching providers")
+    @ApiResponse(responseCode = "401", description = "A non-ACTIVE status filter was requested without a valid "
+            + "platform access token.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @GetMapping("/api/v1/providers")
     public List<ProviderResponse> list(
-            @Parameter(description = "Filter to one moderation status. Omit for every provider.")
-            @RequestParam(required = false) ProviderStatus status) {
+            @Parameter(description = "Filter to one moderation status. Omit for every provider. Any value "
+                    + "other than ACTIVE requires an authenticated platform role.")
+            @RequestParam(required = false) ProviderStatus status, HttpServletRequest httpRequest) {
+        if (status != null && status != ProviderStatus.ACTIVE) {
+            PlatformCurrentAdmin.requireAnyRole(httpRequest);
+        }
         List<Provider> providers = status == null ? providerRepository.findAll()
                 : providerRepository.findByStatus(status);
         return providers.stream().map(ProviderResponse::from).toList();

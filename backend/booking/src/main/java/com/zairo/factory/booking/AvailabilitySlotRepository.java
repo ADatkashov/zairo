@@ -19,6 +19,14 @@ public interface AvailabilitySlotRepository extends JpaRepository<AvailabilitySl
             AvailabilityStatus status);
 
     /**
+     * {@code providerinsights.BusinessAnalyticsService}'s utilization
+     * input -- every slot (any status) this provider offered starting
+     * within [from, to), used to compare booked duration against offered
+     * duration for the same window.
+     */
+    List<AvailabilitySlot> findByProviderIdAndStartsAtBetween(UUID providerId, Instant from, Instant to);
+
+    /**
      * Every existing slot (any status) whose [startsAt, endsAt) window
      * could overlap something in [windowStart, windowEnd) — fetched once
      * for the whole requested date range so RecurringScheduleService can

@@ -236,11 +236,302 @@
   "dashboardBusinessesCountLabel": "Businesses",
   "@dashboardBusinessesCountLabel": {"description": "Owner overview hero stat: number of businesses this owner manages."},
 
+  "dashboardNeedsAttentionTitle": "Needs attention today",
+  "@dashboardNeedsAttentionTitle": {"description": "Board 12 (v2 design audit) — Dashboard section header above the attention strip."},
+
+  "dashboardAttentionAllClear": "All caught up — nothing needs attention today.",
+  "@dashboardAttentionAllClear": {"description": "Shown in place of the attention strip when there's nothing to flag."},
+
+  "dashboardAttentionBillingPastDue": "Payment failed — fix billing to keep PRO",
+  "@dashboardAttentionBillingPastDue": {"description": "Attention strip item, shown when the owner's subscription is PAST_DUE."},
+
+  "dashboardAttentionCampaignExpiringSoon": "{count, plural, one{{count} campaign expiring soon} other{{count} campaigns expiring soon}}",
+  "@dashboardAttentionCampaignExpiringSoon": {
+    "description": "Attention strip item for SmartActionType.campaignExpiringSoon.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+
+  "dashboardAttentionFailedCampaign": "{count, plural, one{{count} failed campaign to retry} other{{count} failed campaigns to retry}}",
+  "@dashboardAttentionFailedCampaign": {
+    "description": "Attention strip item for SmartActionType.failedCampaign.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+
+  "dashboardAttentionRetriableCampaign": "{count, plural, one{{count} campaign ready to retry} other{{count} campaigns ready to retry}}",
+  "@dashboardAttentionRetriableCampaign": {
+    "description": "Attention strip item for SmartActionType.retriableCampaign.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+
+  "dashboardAttentionRebookingOpportunity": "{count, plural, one{{count} rebooking opportunity} other{{count} rebooking opportunities}}",
+  "@dashboardAttentionRebookingOpportunity": {
+    "description": "Attention strip item for SmartActionType.rebookingOpportunity.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+
+  "dashboardAttentionAtRiskCustomer": "{count, plural, one{{count} at-risk customer} other{{count} at-risk customers}}",
+  "@dashboardAttentionAtRiskCustomer": {
+    "description": "Attention strip item for SmartActionType.atRiskCustomer.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+
+  "dashboardAttentionLongInactiveCustomer": "{count, plural, one{{count} long-inactive customer} other{{count} long-inactive customers}}",
+  "@dashboardAttentionLongInactiveCustomer": {
+    "description": "Attention strip item for SmartActionType.longInactiveCustomer.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+
   "errorDashboardLoadFailed": "Failed to load dashboard: {error}",
   "@errorDashboardLoadFailed": {
     "description": "Dashboard section's error state.",
     "placeholders": {
       "error": {"type": "String"}
+    }
+  },
+
+  "businessAnalyticsTooltip": "Business analytics",
+  "@businessAnalyticsTooltip": {"description": "Salon detail screen's AppBar icon button opening the Business Intelligence Dashboard."},
+
+  "businessAnalyticsTitle": "Business Intelligence",
+  "@businessAnalyticsTitle": {"description": "Business Intelligence Dashboard screen's AppBar title."},
+
+  "analyticsPeriodToday": "Today",
+  "@analyticsPeriodToday": {"description": "Date-range chip: today."},
+
+  "analyticsPeriodThisWeek": "This week",
+  "@analyticsPeriodThisWeek": {"description": "Date-range chip: the current calendar week."},
+
+  "analyticsPeriodThisMonth": "This month",
+  "@analyticsPeriodThisMonth": {"description": "Date-range chip: the current calendar month."},
+
+  "analyticsPeriodCustom": "Custom",
+  "@analyticsPeriodCustom": {"description": "Date-range chip opening a custom date-range picker."},
+
+  "analyticsOverviewSectionTitle": "Overview",
+  "@analyticsOverviewSectionTitle": {"description": "Business Intelligence Dashboard's overview section header."},
+
+  "analyticsKpiRevenue": "Revenue",
+  "@analyticsKpiRevenue": {"description": "Overview KPI card: total revenue for the selected period."},
+
+  "analyticsKpiBookings": "Bookings",
+  "@analyticsKpiBookings": {"description": "Overview KPI card: total bookings for the selected period."},
+
+  "analyticsKpiUtilization": "Utilization",
+  "@analyticsKpiUtilization": {"description": "Overview KPI card: booked vs. offered availability-slot duration."},
+
+  "analyticsKpiRevenueRecovered": "Recovered by ZAIRO",
+  "@analyticsKpiRevenueRecovered": {"description": "Overview KPI card: revenue the Decision Engine recovered in the period."},
+
+  "analyticsUtilizationUnavailable": "Not available yet",
+  "@analyticsUtilizationUnavailable": {"description": "Shown instead of a percentage when utilization can't be reliably calculated (no availability slots in range)."},
+
+  "analyticsCompletedBookingsLabel": "Completed",
+  "@analyticsCompletedBookingsLabel": {"description": "Overview stat: completed bookings in the period."},
+
+  "analyticsUpcomingBookingsLabel": "Upcoming",
+  "@analyticsUpcomingBookingsLabel": {"description": "Overview stat: confirmed bookings still ahead in the period."},
+
+  "analyticsCancelledBookingsLabel": "Cancelled",
+  "@analyticsCancelledBookingsLabel": {"description": "Overview stat: cancelled bookings in the period."},
+
+  "analyticsNoShowLabel": "No-shows",
+  "@analyticsNoShowLabel": {"description": "Overview stat: no-show bookings in the period."},
+
+  "analyticsCancellationRateLabel": "Cancellation rate",
+  "@analyticsCancellationRateLabel": {"description": "Overview stat: cancelled / total bookings in the period."},
+
+  "analyticsNoShowRateLabel": "No-show rate",
+  "@analyticsNoShowRateLabel": {"description": "Overview stat: no-shows / total bookings in the period."},
+
+  "analyticsReturningCustomerRateLabel": "Returning customers",
+  "@analyticsReturningCustomerRateLabel": {"description": "Overview stat: lifetime share of customers with more than one completed booking."},
+
+  "analyticsAverageBookingValueLabel": "Avg. booking value",
+  "@analyticsAverageBookingValueLabel": {"description": "Overview/revenue stat: revenue divided by number of paid bookings."},
+
+  "analyticsRevenueSectionTitle": "Revenue",
+  "@analyticsRevenueSectionTitle": {"description": "Business Intelligence Dashboard's revenue section header."},
+
+  "analyticsRevenueByDayTitle": "Revenue by day",
+  "@analyticsRevenueByDayTitle": {"description": "Revenue section's daily breakdown sub-header."},
+
+  "analyticsRevenueByServiceTitle": "Revenue by service",
+  "@analyticsRevenueByServiceTitle": {"description": "Revenue section's per-service breakdown sub-header."},
+
+  "analyticsNoRevenueYet": "No revenue in this period yet.",
+  "@analyticsNoRevenueYet": {"description": "Revenue section's empty state."},
+
+  "analyticsBookingsSectionTitle": "Bookings",
+  "@analyticsBookingsSectionTitle": {"description": "Business Intelligence Dashboard's bookings section header."},
+
+  "analyticsRepeatBookingRateLabel": "Repeat bookings",
+  "@analyticsRepeatBookingRateLabel": {"description": "Bookings stat: share of this period's customers who booked more than once."},
+
+  "analyticsBookingTrendTitle": "Booking trend",
+  "@analyticsBookingTrendTitle": {"description": "Bookings section's daily trend sub-header."},
+
+  "analyticsNoBookingsYet": "No bookings in this period yet.",
+  "@analyticsNoBookingsYet": {"description": "Bookings section's empty state."},
+
+  "analyticsSmartFillSectionTitle": "Smart Fill",
+  "@analyticsSmartFillSectionTitle": {"description": "Business Intelligence Dashboard's Smart Fill section header."},
+
+  "analyticsSlotsFreedLabel": "Slots freed",
+  "@analyticsSlotsFreedLabel": {"description": "Smart Fill stat: cancelled slots Smart Fill attempted to recover."},
+
+  "analyticsCampaignsCreatedLabel": "Campaigns",
+  "@analyticsCampaignsCreatedLabel": {"description": "Smart Fill stat: campaigns created in the period."},
+
+  "analyticsSlotsRecoveredLabel": "Slots recovered",
+  "@analyticsSlotsRecoveredLabel": {"description": "Smart Fill stat: slots actually refilled."},
+
+  "analyticsRecoveryRateLabel": "Recovery rate",
+  "@analyticsRecoveryRateLabel": {"description": "Smart Fill stat: slots recovered / campaigns created."},
+
+  "analyticsRecoveredRevenueLabel": "Revenue recovered",
+  "@analyticsRecoveredRevenueLabel": {"description": "Smart Fill stat: revenue represented by recovered slots."},
+
+  "analyticsSmartFillEmpty": "No cancelled slots in this period.",
+  "@analyticsSmartFillEmpty": {"description": "Smart Fill section's empty state."},
+
+  "analyticsSmartFillSummary": "ZAIRO recovered {count} of {total} cancelled slots this period.",
+  "@analyticsSmartFillSummary": {
+    "description": "Smart Fill section's narrative summary line.",
+    "placeholders": {
+      "count": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+
+  "analyticsCustomersSectionTitle": "Customers",
+  "@analyticsCustomersSectionTitle": {"description": "Business Intelligence Dashboard's customers section header."},
+
+  "analyticsTotalCustomersLabel": "Total customers",
+  "@analyticsTotalCustomersLabel": {"description": "Customers stat: every customer who has ever had a relationship with this business."},
+
+  "analyticsActiveCustomersLabel": "Active",
+  "@analyticsActiveCustomersLabel": {"description": "Customers stat: customers within their usual visit cadence."},
+
+  "analyticsReturningCustomersLabel": "Returning",
+  "@analyticsReturningCustomersLabel": {"description": "Customers stat: customers with more than one completed booking."},
+
+  "analyticsNewCustomersLabel": "New",
+  "@analyticsNewCustomersLabel": {"description": "Customers stat: customers whose first visit falls within the period."},
+
+  "analyticsDueForRebookingLabel": "Due for rebooking",
+  "@analyticsDueForRebookingLabel": {"description": "Customers stat: customers whose usual visit interval has just elapsed."},
+
+  "analyticsAtRiskCustomersLabel": "At risk",
+  "@analyticsAtRiskCustomersLabel": {"description": "Customers stat: customers well past their usual visit interval."},
+
+  "analyticsInactiveCustomersLabel": "Inactive",
+  "@analyticsInactiveCustomersLabel": {"description": "Customers stat: customers far past their usual visit interval."},
+
+  "analyticsAverageVisitIntervalLabel": "Avg. visit interval",
+  "@analyticsAverageVisitIntervalLabel": {"description": "Customers stat: average days between visits."},
+
+  "analyticsAverageVisitIntervalValue": "{days} days",
+  "@analyticsAverageVisitIntervalValue": {
+    "description": "Customers stat value: average visit interval in days.",
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+
+  "analyticsAverageCustomerValueLabel": "Avg. customer value",
+  "@analyticsAverageCustomerValueLabel": {"description": "Customers stat: average lifetime spend per customer."},
+
+  "analyticsFavouriteServicesTitle": "Favourite services",
+  "@analyticsFavouriteServicesTitle": {"description": "Customers section's favourite-services sub-header."},
+
+  "analyticsNoCustomersYet": "No customer activity yet.",
+  "@analyticsNoCustomersYet": {"description": "Customers section's empty state."},
+
+  "actionCenterSectionTitle": "Action Center",
+  "@actionCenterSectionTitle": {"description": "Business Intelligence Dashboard's Action Center section header."},
+
+  "actionCenterEmpty": "Nothing needs your attention right now.",
+  "@actionCenterEmpty": {"description": "Action Center's empty state, shown when no rule currently fires."},
+
+  "actionSmartFillOpportunity": "{count} cancelled slots are currently being recovered by Smart Fill.",
+  "@actionSmartFillOpportunity": {
+    "description": "Action Center item: active Smart Fill campaigns still searching for a candidate.",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "actionRebookOpportunity": "{count} returning customers are due for their next visit.",
+  "@actionRebookOpportunity": {
+    "description": "Action Center item: customers whose usual visit interval has just elapsed.",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "actionRetentionRisk": "{count} customers have exceeded their usual visit interval.",
+  "@actionRetentionRisk": {
+    "description": "Action Center item: customers well past their usual visit interval.",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "actionLowUtilization": "Tomorrow has {count} open slots that aren't booked yet.",
+  "@actionLowUtilization": {
+    "description": "Action Center item: a near-term day with a low booked/offered slot ratio.",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "errorAnalyticsLoadFailed": "Failed to load analytics: {error}",
+  "@errorAnalyticsLoadFailed": {
+    "description": "Business Intelligence Dashboard section's error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "smartFillCampaignsScreenTitle": "Smart Fill Campaigns",
+  "@smartFillCampaignsScreenTitle": {"description": "Action Center drill-down screen's AppBar title."},
+
+  "smartFillCampaignsEmpty": "No active Smart Fill campaigns right now.",
+  "@smartFillCampaignsEmpty": {"description": "Smart Fill campaigns drill-down screen's empty state."},
+
+  "smartFillCampaignCandidatesNotified": "{count} candidates notified",
+  "@smartFillCampaignCandidatesNotified": {
+    "description": "Smart Fill campaign row: how many candidates this campaign has notified so far.",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "campaignStatusCreated": "Just cancelled",
+  "@campaignStatusCreated": {"description": "Smart Fill campaign status badge: no candidates found/scored yet."},
+
+  "campaignStatusSearching": "Searching",
+  "@campaignStatusSearching": {"description": "Smart Fill campaign status badge: candidate pool scored, no offer sent yet."},
+
+  "campaignStatusNotifying": "Notifying",
+  "@campaignStatusNotifying": {"description": "Smart Fill campaign status badge: at least one offer stage sent."},
+
+  "customerListEmpty": "No customers match this filter.",
+  "@customerListEmpty": {"description": "Customer list drill-down screen's empty state."},
+
+  "customerListLastVisitLabel": "Last visit: {date}",
+  "@customerListLastVisitLabel": {
+    "description": "Customer list row: their most recent completed visit's date.",
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+
+  "customerListNextExpectedLabel": "Expected back: {date}",
+  "@customerListNextExpectedLabel": {
+    "description": "Customer list row: their predicted next-visit date.",
+    "placeholders": {
+      "date": {"type": "String"}
     }
   },
 
@@ -789,6 +1080,41 @@
   "errorBillingUpgradeFailed": "Couldn't upgrade — please try again.",
   "@errorBillingUpgradeFailed": {"description": "BillingScreen's error state when the upgrade charge fails."},
 
+  "billingGracePeriodBanner": "Payment failed — PRO stays on for {days} more days.",
+  "@billingGracePeriodBanner": {
+    "description": "Board 16 (v2 design audit) — grace-period banner shown while status is PAST_DUE, days is the whole days remaining until gracePeriodEndsAt.",
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+
+  "billingGracePeriodExpiringToday": "Payment failed — fix today to keep PRO.",
+  "@billingGracePeriodExpiringToday": {"description": "Same banner as billingGracePeriodBanner, for the last day of the grace period (0 days left reads oddly as a count)."},
+
+  "billingGracePeriodFixButton": "Fix",
+  "@billingGracePeriodFixButton": {"description": "Grace-period banner's action button — retries the failed charge now."},
+
+  "billingGracePeriodFixSucceeded": "Payment succeeded — you're back on PRO.",
+  "@billingGracePeriodFixSucceeded": {"description": "Snackbar shown when retrying the past-due charge succeeds."},
+
+  "billingGracePeriodFixFailed": "That charge failed again — please check your payment method.",
+  "@billingGracePeriodFixFailed": {"description": "Snackbar shown when retrying the past-due charge fails again."},
+
+  "billingInvoicesSectionTitle": "Invoices",
+  "@billingInvoicesSectionTitle": {"description": "BillingScreen section header for the charge history list."},
+
+  "billingInvoicesEmpty": "No charges yet.",
+  "@billingInvoicesEmpty": {"description": "BillingScreen invoices section, shown for a FREE owner who's never been charged."},
+
+  "billingInvoiceStatusSucceeded": "Paid",
+  "@billingInvoiceStatusSucceeded": {"description": "Invoice row status: charge succeeded."},
+
+  "billingInvoiceStatusFailed": "Failed",
+  "@billingInvoiceStatusFailed": {"description": "Invoice row status: charge failed."},
+
+  "billingInvoiceStatusPending": "Pending",
+  "@billingInvoiceStatusPending": {"description": "Invoice row status: charge still in flight (real, non-mock payment provider only)."},
+
   "changeAvatarDialogTitle": "Change avatar",
   "@changeAvatarDialogTitle": {"description": "Title of the sidebar's change-avatar dialog."},
 
@@ -824,5 +1150,1010 @@
   "@imagePickerCameraLabel": {"description": "Photo-source bottom sheet option: take a new photo."},
 
   "imagePickerGalleryLabel": "Gallery",
-  "@imagePickerGalleryLabel": {"description": "Photo-source bottom sheet option: pick an existing photo."}
+  "@imagePickerGalleryLabel": {"description": "Photo-source bottom sheet option: pick an existing photo."},
+
+  "campaignCenterNavLabel": "Campaign Center",
+  "@campaignCenterNavLabel": {"description": "Sidebar/AppBar nav label for the Campaign Center top-level destination."},
+
+  "campaignCenterScreenTitle": "Campaign Center",
+  "@campaignCenterScreenTitle": {"description": "CampaignCenterScreen's AppBar title."},
+
+  "campaignCenterSubtitle": "Track every Smart Fill, Rebook and Reactivation campaign, and act on what needs attention.",
+  "@campaignCenterSubtitle": {"description": "CampaignCenterScreen's short explanatory subtitle under the title."},
+
+  "campaignCenterNoBusinesses": "Create a business first to see its campaigns.",
+  "@campaignCenterNoBusinesses": {"description": "CampaignCenterScreen's empty state when the owner has no businesses yet."},
+
+  "campaignKpiActive": "Active campaigns",
+  "@campaignKpiActive": {"description": "Campaign Center KPI tile label: campaigns currently active."},
+
+  "campaignKpiRecoveredRevenue": "Recovered revenue",
+  "@campaignKpiRecoveredRevenue": {"description": "Campaign Center KPI tile label: total revenue recovered across campaigns."},
+
+  "campaignKpiConversionRate": "Conversion rate",
+  "@campaignKpiConversionRate": {"description": "Campaign Center KPI tile label: share of campaigns that recovered a slot/booking."},
+
+  "campaignKpiNeedsAttention": "Needs attention",
+  "@campaignKpiNeedsAttention": {"description": "Campaign Center KPI tile label: campaigns requiring the owner's attention right now."},
+
+  "campaignFunnelTitle": "Funnel",
+  "@campaignFunnelTitle": {"description": "Board 13 (v2 design audit) — Campaign Center funnel section header."},
+
+  "campaignFunnelStageCampaigns": "Campaigns",
+  "@campaignFunnelStageCampaigns": {"description": "Funnel stage: total campaigns started (any status)."},
+
+  "campaignFunnelStageSent": "Notified",
+  "@campaignFunnelStageSent": {"description": "Funnel stage: notifications sent to customers."},
+
+  "campaignFunnelStageBooked": "Booked",
+  "@campaignFunnelStageBooked": {"description": "Funnel stage: offers accepted / bookings recovered."},
+
+  "campaignFunnelStageRevenue": "Revenue recovered",
+  "@campaignFunnelStageRevenue": {"description": "Funnel's final stage: total recovered revenue, shown as an amount rather than a bar."},
+
+  "campaignFilterStatusAll": "All statuses",
+  "@campaignFilterStatusAll": {"description": "Campaign Center status filter chip: clears the status filter."},
+
+  "campaignFilterTypeAll": "All types",
+  "@campaignFilterTypeAll": {"description": "Campaign Center type filter chip: clears the campaign-type filter."},
+
+  "campaignFilterServiceAll": "All services",
+  "@campaignFilterServiceAll": {"description": "Campaign Center service filter chip: clears the service filter."},
+
+  "campaignFilterDateAll": "All time",
+  "@campaignFilterDateAll": {"description": "Campaign Center date filter chip: clears the creation-date range filter."},
+
+  "campaignFilterSearchHint": "Search by service or staff name",
+  "@campaignFilterSearchHint": {"description": "Campaign Center search field's placeholder text."},
+
+  "campaignListEmpty": "No campaigns match these filters.",
+  "@campaignListEmpty": {"description": "Campaign Center list's empty state."},
+
+  "campaignListLoadMore": "Load more",
+  "@campaignListLoadMore": {"description": "Campaign Center list's load-more-pages button."},
+
+  "errorCampaignsLoadFailed": "Couldn't load campaigns: {error}",
+  "@errorCampaignsLoadFailed": {
+    "description": "Campaign Center list's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "errorCampaignStatsLoadFailed": "Couldn't load campaign stats: {error}",
+  "@errorCampaignStatsLoadFailed": {
+    "description": "Campaign Center KPI row's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "errorCampaignDetailLoadFailed": "Couldn't load this campaign: {error}",
+  "@errorCampaignDetailLoadFailed": {
+    "description": "CampaignDetailScreen's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "errorCampaignTimelineLoadFailed": "Couldn't load the timeline: {error}",
+  "@errorCampaignTimelineLoadFailed": {
+    "description": "CampaignDetailScreen's timeline section error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "errorSmartActionsLoadFailed": "Couldn't load smart actions: {error}",
+  "@errorSmartActionsLoadFailed": {
+    "description": "Smart Action Center section's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "errorCampaignActionConflict": "That action no longer applies — the campaign's status was refreshed.",
+  "@errorCampaignActionConflict": {"description": "Snackbar shown when a pause/resume/cancel/retry call returns 409 Conflict."},
+
+  "errorCampaignActionFailed": "Couldn't complete that action: {error}",
+  "@errorCampaignActionFailed": {
+    "description": "Snackbar shown when a pause/resume/cancel/retry call fails for any other reason.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "campaignTypeSmartFill": "Smart Fill",
+  "@campaignTypeSmartFill": {"description": "CampaignType.smartFill's display label."},
+
+  "campaignTypeRebook": "Rebook",
+  "@campaignTypeRebook": {"description": "CampaignType.rebook's display label."},
+
+  "campaignTypeReactivation": "Reactivation",
+  "@campaignTypeReactivation": {"description": "CampaignType.reactivation's display label."},
+
+  "campaignUnifiedStatusActive": "Active",
+  "@campaignUnifiedStatusActive": {"description": "CampaignStatus.active's badge label."},
+
+  "campaignUnifiedStatusPaused": "Paused",
+  "@campaignUnifiedStatusPaused": {"description": "CampaignStatus.paused's badge label."},
+
+  "campaignUnifiedStatusCompleted": "Completed",
+  "@campaignUnifiedStatusCompleted": {"description": "CampaignStatus.completed's badge label."},
+
+  "campaignUnifiedStatusExpired": "Expired",
+  "@campaignUnifiedStatusExpired": {"description": "CampaignStatus.expired's badge label."},
+
+  "campaignUnifiedStatusFailed": "Failed",
+  "@campaignUnifiedStatusFailed": {"description": "CampaignStatus.failed's badge label."},
+
+  "campaignUnifiedStatusCancelled": "Cancelled",
+  "@campaignUnifiedStatusCancelled": {"description": "CampaignStatus.cancelled's badge label."},
+
+  "campaignTriggerBookingCancelled": "Slot freed by a cancellation",
+  "@campaignTriggerBookingCancelled": {"description": "CampaignTriggerReason.bookingCancelled's display label."},
+
+  "campaignTriggerBookingCompleted": "Follow-up after a completed visit",
+  "@campaignTriggerBookingCompleted": {"description": "CampaignTriggerReason.bookingCompleted's display label."},
+
+  "campaignTriggerCustomerInactive": "Customer has gone quiet",
+  "@campaignTriggerCustomerInactive": {"description": "CampaignTriggerReason.customerInactive's display label."},
+
+  "campaignOutcomePending": "Pending",
+  "@campaignOutcomePending": {"description": "CampaignOutcome.pending's display label."},
+
+  "campaignOutcomeRecovered": "Recovered",
+  "@campaignOutcomeRecovered": {"description": "CampaignOutcome.recovered's display label."},
+
+  "campaignOutcomeNotRecovered": "Not recovered",
+  "@campaignOutcomeNotRecovered": {"description": "CampaignOutcome.notRecovered's display label."},
+
+  "campaignFailureNoCandidatesNotified": "No candidates could be notified",
+  "@campaignFailureNoCandidatesNotified": {"description": "CampaignFailureReason.noCandidatesNotified's display label."},
+
+  "campaignFailureOther": "Unknown reason",
+  "@campaignFailureOther": {"description": "CampaignFailureReason.other's display label -- a forward-compat fallback for a reason this app doesn't recognize yet."},
+
+  "campaignNextActionNone": "No action needed",
+  "@campaignNextActionNone": {"description": "CampaignNextAction.none's display label."},
+
+  "campaignNextActionWaitingForResponse": "Waiting for a candidate to respond",
+  "@campaignNextActionWaitingForResponse": {"description": "CampaignNextAction.waitingForResponse's display label."},
+
+  "campaignNextActionPausedByOwner": "Paused by you",
+  "@campaignNextActionPausedByOwner": {"description": "CampaignNextAction.pausedByOwner's display label."},
+
+  "campaignNextActionRetryAvailable": "Ready to retry",
+  "@campaignNextActionRetryAvailable": {"description": "CampaignNextAction.retryAvailable's display label."},
+
+  "campaignNextActionViewRecoveredBooking": "View the recovered booking",
+  "@campaignNextActionViewRecoveredBooking": {"description": "CampaignNextAction.viewRecoveredBooking's display label."},
+
+  "campaignActionPause": "Pause",
+  "@campaignActionPause": {"description": "Campaign detail screen's pause-campaign action button."},
+
+  "campaignActionResume": "Resume",
+  "@campaignActionResume": {"description": "Campaign detail screen's resume-campaign action button."},
+
+  "campaignActionCancel": "Cancel campaign",
+  "@campaignActionCancel": {"description": "Campaign detail screen's cancel-campaign action button."},
+
+  "campaignActionRetry": "Retry",
+  "@campaignActionRetry": {"description": "Campaign detail screen's (and Smart Action Center's) retry-campaign action button."},
+
+  "campaignCancelConfirmTitle": "Cancel this campaign?",
+  "@campaignCancelConfirmTitle": {"description": "Confirmation dialog title before cancelling a campaign."},
+
+  "campaignCancelConfirmMessage": "This stops the campaign for good — it can't be resumed afterwards.",
+  "@campaignCancelConfirmMessage": {"description": "Confirmation dialog body before cancelling a campaign."},
+
+  "campaignCancelConfirmButton": "Cancel campaign",
+  "@campaignCancelConfirmButton": {"description": "Confirmation dialog's destructive confirm button."},
+
+  "campaignCancelConfirmDismiss": "No, keep it",
+  "@campaignCancelConfirmDismiss": {"description": "Confirmation dialog's dismiss button that backs out of cancelling."},
+
+  "campaignCardNotifiedProgress": "{notified}/{candidates} notified",
+  "@campaignCardNotifiedProgress": {
+    "description": "CampaignCard's candidate/notification progress label, e.g. '2/4 notified'.",
+    "placeholders": {
+      "notified": {"type": "int"},
+      "candidates": {"type": "int"}
+    }
+  },
+
+  "campaignCardRecoveredRevenueLabel": "Recovered",
+  "@campaignCardRecoveredRevenueLabel": {"description": "CampaignCard's label before the recovered-revenue amount."},
+
+  "campaignCardUpdatedLabel": "Updated {time}",
+  "@campaignCardUpdatedLabel": {
+    "description": "CampaignCard's last-updated timestamp label.",
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+
+  "campaignDetailSectionProgress": "Candidate progress",
+  "@campaignDetailSectionProgress": {"description": "CampaignDetailScreen's candidate/notification/offer progress section header."},
+
+  "campaignDetailSectionOutcome": "Outcome",
+  "@campaignDetailSectionOutcome": {"description": "CampaignDetailScreen's outcome section header."},
+
+  "campaignDetailSectionTimeline": "Timeline",
+  "@campaignDetailSectionTimeline": {"description": "CampaignDetailScreen's timeline section header."},
+
+  "campaignDetailTriggerLabel": "Why this campaign started",
+  "@campaignDetailTriggerLabel": {"description": "CampaignDetailScreen's trigger-reason row label."},
+
+  "campaignDetailServiceLabel": "Service",
+  "@campaignDetailServiceLabel": {"description": "CampaignDetailScreen's service row label."},
+
+  "campaignDetailEmployeeLabel": "Staff",
+  "@campaignDetailEmployeeLabel": {"description": "CampaignDetailScreen's staff/employee row label."},
+
+  "campaignDetailSlotLabel": "Slot",
+  "@campaignDetailSlotLabel": {"description": "CampaignDetailScreen's slot date/time row label (Smart Fill only)."},
+
+  "campaignDetailCandidatesLabel": "Candidates",
+  "@campaignDetailCandidatesLabel": {"description": "CampaignDetailScreen's candidate-count stat tile label."},
+
+  "campaignDetailNotifiedLabel": "Notified",
+  "@campaignDetailNotifiedLabel": {"description": "CampaignDetailScreen's notified-count stat tile label."},
+
+  "campaignDetailViewedLabel": "Viewed the offer",
+  "@campaignDetailViewedLabel": {"description": "CampaignDetailScreen's viewed-count stat tile label."},
+
+  "campaignDetailAcceptedLabel": "Accepted",
+  "@campaignDetailAcceptedLabel": {"description": "CampaignDetailScreen's accepted-count stat tile label."},
+
+  "campaignDetailRecoveredRevenueLabel": "Recovered revenue",
+  "@campaignDetailRecoveredRevenueLabel": {"description": "CampaignDetailScreen's recovered-revenue row label."},
+
+  "campaignDetailRecoveredBookingLabel": "Recovered booking",
+  "@campaignDetailRecoveredBookingLabel": {"description": "CampaignDetailScreen's recovered-booking-id row label."},
+
+  "campaignDetailCreatedLabel": "Created",
+  "@campaignDetailCreatedLabel": {"description": "CampaignDetailScreen's created-at row label."},
+
+  "campaignDetailUpdatedLabel": "Last updated",
+  "@campaignDetailUpdatedLabel": {"description": "CampaignDetailScreen's updated-at row label."},
+
+  "campaignDetailCompletedLabel": "Completed",
+  "@campaignDetailCompletedLabel": {"description": "CampaignDetailScreen's completed-at row label."},
+
+  "campaignDetailFailureReasonLabel": "Failure reason",
+  "@campaignDetailFailureReasonLabel": {"description": "CampaignDetailScreen's failure-reason row label, shown only when present."},
+
+  "campaignDetailRawStatusLabel": "Engine status",
+  "@campaignDetailRawStatusLabel": {"description": "CampaignDetailScreen's secondary raw-engine-status row label."},
+
+  "campaignTimelineEmpty": "No timeline events yet.",
+  "@campaignTimelineEmpty": {"description": "CampaignDetailScreen's timeline section empty state."},
+
+  "timelineEventCampaignCreated": "Campaign created",
+  "@timelineEventCampaignCreated": {"description": "CampaignTimelineEventType.campaignCreated's display label."},
+
+  "timelineEventCandidatesSelected": "Candidates selected",
+  "@timelineEventCandidatesSelected": {"description": "CampaignTimelineEventType.candidatesSelected's display label."},
+
+  "timelineEventNotificationSent": "Notification sent",
+  "@timelineEventNotificationSent": {"description": "CampaignTimelineEventType.notificationSent's display label."},
+
+  "timelineEventOfferAccepted": "Offer accepted",
+  "@timelineEventOfferAccepted": {"description": "CampaignTimelineEventType.offerAccepted's display label."},
+
+  "timelineEventBookingCreated": "Booking created",
+  "@timelineEventBookingCreated": {"description": "CampaignTimelineEventType.bookingCreated's display label."},
+
+  "timelineEventSlotRecovered": "Slot recovered",
+  "@timelineEventSlotRecovered": {"description": "CampaignTimelineEventType.slotRecovered's display label."},
+
+  "timelineEventCampaignExpired": "Campaign expired",
+  "@timelineEventCampaignExpired": {"description": "CampaignTimelineEventType.campaignExpired's display label."},
+
+  "timelineEventCampaignCancelled": "Campaign cancelled",
+  "@timelineEventCampaignCancelled": {"description": "CampaignTimelineEventType.campaignCancelled's display label."},
+
+  "timelineEventCampaignCompleted": "Campaign completed",
+  "@timelineEventCampaignCompleted": {"description": "CampaignTimelineEventType.campaignCompleted's display label."},
+
+  "smartActionCenterSectionTitle": "Smart Action Center",
+  "@smartActionCenterSectionTitle": {"description": "Business Analytics' Smart Action Center subsection header."},
+
+  "smartActionCenterSeeAll": "See all",
+  "@smartActionCenterSeeAll": {"description": "Smart Action Center's link into the full Campaign Center screen, shown only when there's more than fits."},
+
+  "smartActionCenterEmpty": "Nothing needs attention right now.",
+  "@smartActionCenterEmpty": {"description": "Smart Action Center's empty state."},
+
+  "smartActionExplainCampaignExpiringSoon": "A Smart Fill campaign is about to expire.",
+  "@smartActionExplainCampaignExpiringSoon": {"description": "SmartActionType.campaignExpiringSoon's short explanation."},
+
+  "smartActionExplainFailedCampaign": "A campaign couldn't recover this slot.",
+  "@smartActionExplainFailedCampaign": {"description": "SmartActionType.failedCampaign's short explanation."},
+
+  "smartActionExplainRetriableCampaign": "This expired campaign can be retried — the slot is still open.",
+  "@smartActionExplainRetriableCampaign": {"description": "SmartActionType.retriableCampaign's short explanation."},
+
+  "smartActionExplainRebookingOpportunity": "A returning customer is due for their next visit.",
+  "@smartActionExplainRebookingOpportunity": {"description": "SmartActionType.rebookingOpportunity's short explanation."},
+
+  "smartActionExplainAtRiskCustomer": "A customer has exceeded their usual visit interval.",
+  "@smartActionExplainAtRiskCustomer": {"description": "SmartActionType.atRiskCustomer's short explanation."},
+
+  "smartActionExplainLongInactiveCustomer": "A customer has been inactive for a long time.",
+  "@smartActionExplainLongInactiveCustomer": {"description": "SmartActionType.longInactiveCustomer's short explanation."},
+
+  "smartActionPriorityHigh": "High priority",
+  "@smartActionPriorityHigh": {"description": "SmartActionPriority.high's badge label."},
+
+  "smartActionPriorityMedium": "Medium priority",
+  "@smartActionPriorityMedium": {"description": "SmartActionPriority.medium's badge label."},
+
+  "smartActionPriorityLow": "Low priority",
+  "@smartActionPriorityLow": {"description": "SmartActionPriority.low's badge label."},
+
+  "loyaltyNavLabel": "Loyalty",
+  "@loyaltyNavLabel": {"description": "Sidebar/AppBar nav label for the Loyalty top-level destination."},
+  "loyaltyScreenTitle": "Loyalty & Rewards",
+  "@loyaltyScreenTitle": {"description": "LoyaltyScreen's AppBar title."},
+  "loyaltyNoBusinesses": "Create a business first to set up its loyalty program.",
+  "@loyaltyNoBusinesses": {"description": "LoyaltyScreen's empty state when the owner has no businesses yet."},
+  "loyaltyTabOverview": "Overview",
+  "@loyaltyTabOverview": {"description": "Loyalty tab label."},
+  "loyaltyTabSettings": "Settings",
+  "@loyaltyTabSettings": {"description": "Loyalty tab label."},
+  "loyaltyTabRewards": "Rewards",
+  "@loyaltyTabRewards": {"description": "Loyalty tab label."},
+  "loyaltyTabCustomers": "Customers",
+  "@loyaltyTabCustomers": {"description": "Loyalty tab label."},
+  "loyaltyTabRedemptions": "Redemptions",
+  "@loyaltyTabRedemptions": {"description": "Loyalty tab label."},
+  "loyaltyTabMilestones": "Milestones",
+  "@loyaltyTabMilestones": {"description": "Loyalty tab label."},
+  "loyaltyTabTiers": "Tiers",
+  "@loyaltyTabTiers": {"description": "Loyalty tab label."},
+
+  "errorLoyaltySettingsLoadFailed": "Couldn't load loyalty settings: {error}",
+  "@errorLoyaltySettingsLoadFailed": {
+    "description": "LoyaltySettingsScreen's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "errorLoyaltyOverviewLoadFailed": "Couldn't load the loyalty overview: {error}",
+  "@errorLoyaltyOverviewLoadFailed": {
+    "description": "LoyaltyOverviewScreen's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "errorLoyaltyRewardsLoadFailed": "Couldn't load rewards: {error}",
+  "@errorLoyaltyRewardsLoadFailed": {
+    "description": "LoyaltyRewardsScreen's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "errorLoyaltyCustomersLoadFailed": "Couldn't load the loyalty roster: {error}",
+  "@errorLoyaltyCustomersLoadFailed": {
+    "description": "LoyaltyCustomersScreen/LoyaltyCustomerDetailScreen's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "errorLoyaltyRedemptionsLoadFailed": "Couldn't load redemptions: {error}",
+  "@errorLoyaltyRedemptionsLoadFailed": {
+    "description": "LoyaltyRedemptionsScreen's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "errorLoyaltyMilestonesLoadFailed": "Couldn't load milestones: {error}",
+  "@errorLoyaltyMilestonesLoadFailed": {
+    "description": "LoyaltyMilestonesScreen's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "errorLoyaltyTiersLoadFailed": "Couldn't load tiers: {error}",
+  "@errorLoyaltyTiersLoadFailed": {
+    "description": "LoyaltyTiersScreen's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "errorLoyaltyValidationFailed": "Some of these values aren't valid. Please check the form.",
+  "@errorLoyaltyValidationFailed": {"description": "LoyaltyAdminException's generic 400 fallback when the backend sent no message."},
+  "errorLoyaltyForbidden": "You don't have access to this business's loyalty program.",
+  "@errorLoyaltyForbidden": {"description": "LoyaltyAdminException's 403 message."},
+  "errorLoyaltyNotFound": "That wasn't found.",
+  "@errorLoyaltyNotFound": {"description": "LoyaltyAdminException's 404 message."},
+  "errorLoyaltyConflict": "That action can't be completed right now.",
+  "@errorLoyaltyConflict": {"description": "LoyaltyAdminException's generic 409 fallback when the backend sent no message."},
+  "errorLoyaltyActionFailed": "Something went wrong: {error}",
+  "@errorLoyaltyActionFailed": {
+    "description": "LoyaltyAdminException's generic fallback for an unexpected status code.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "loyaltyOverviewTotalMembers": "Total members",
+  "@loyaltyOverviewTotalMembers": {"description": "Loyalty overview tile label."},
+  "loyaltyOverviewActiveMembers": "Active members",
+  "@loyaltyOverviewActiveMembers": {"description": "Loyalty overview tile label."},
+  "loyaltyOverviewPointsIssued": "Points issued",
+  "@loyaltyOverviewPointsIssued": {"description": "Loyalty overview tile label."},
+  "loyaltyOverviewPointsRedeemed": "Points redeemed",
+  "@loyaltyOverviewPointsRedeemed": {"description": "Loyalty overview tile label."},
+  "loyaltyOverviewOutstandingLiability": "Outstanding liability",
+  "@loyaltyOverviewOutstandingLiability": {"description": "Loyalty overview tile label -- points issued but not yet redeemed or expired."},
+  "loyaltyOverviewRewardsRedeemed": "Rewards redeemed",
+  "@loyaltyOverviewRewardsRedeemed": {"description": "Loyalty overview tile label."},
+
+  "loyaltySettingsEnableTitle": "Enable loyalty program",
+  "@loyaltySettingsEnableTitle": {"description": "LoyaltySettingsScreen's enable/disable switch title."},
+  "loyaltySettingsEnableSubtitle": "Customers earn and redeem points once this is on.",
+  "@loyaltySettingsEnableSubtitle": {"description": "LoyaltySettingsScreen's enable/disable switch subtitle."},
+  "loyaltySettingsSectionProgram": "Program",
+  "@loyaltySettingsSectionProgram": {"description": "LoyaltySettingsScreen's section header."},
+  "loyaltySettingsNameLabel": "Program name",
+  "@loyaltySettingsNameLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsDescriptionLabel": "Description",
+  "@loyaltySettingsDescriptionLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsSectionEarning": "Earning rules",
+  "@loyaltySettingsSectionEarning": {"description": "LoyaltySettingsScreen's section header."},
+  "loyaltySettingsFixedPointsPerBookingLabel": "Points per completed booking",
+  "@loyaltySettingsFixedPointsPerBookingLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsPointsPerCurrencyUnitLabel": "Points per currency unit spent",
+  "@loyaltySettingsPointsPerCurrencyUnitLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsFirstBookingBonusLabel": "First booking bonus points",
+  "@loyaltySettingsFirstBookingBonusLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsRepeatVisitBonusLabel": "Repeat visit bonus points",
+  "@loyaltySettingsRepeatVisitBonusLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsRepeatVisitThresholdLabel": "Repeat visit threshold",
+  "@loyaltySettingsRepeatVisitThresholdLabel": {"description": "LoyaltySettingsScreen field label -- which visit number earns the repeat-visit bonus."},
+  "loyaltySettingsRepeatVisitThresholdHint": "e.g. 3 for the 3rd visit",
+  "@loyaltySettingsRepeatVisitThresholdHint": {"description": "LoyaltySettingsScreen field hint."},
+  "loyaltySettingsReviewBonusLabel": "Review bonus points",
+  "@loyaltySettingsReviewBonusLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsSectionRedemption": "Redemption rules",
+  "@loyaltySettingsSectionRedemption": {"description": "LoyaltySettingsScreen's section header."},
+  "loyaltySettingsRedemptionRateLabel": "Points per currency unit (redemption)",
+  "@loyaltySettingsRedemptionRateLabel": {"description": "LoyaltySettingsScreen field label -- the conversion rate used when a reward's value is derived from points."},
+  "loyaltySettingsRedemptionRateHint": "Leave blank if rewards use a fixed points cost instead",
+  "@loyaltySettingsRedemptionRateHint": {"description": "LoyaltySettingsScreen field hint."},
+  "loyaltySettingsMinRedemptionLabel": "Minimum points to redeem",
+  "@loyaltySettingsMinRedemptionLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsMaxRedemptionPerBookingLabel": "Max points redeemable per booking",
+  "@loyaltySettingsMaxRedemptionPerBookingLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsSectionExpiration": "Expiration",
+  "@loyaltySettingsSectionExpiration": {"description": "LoyaltySettingsScreen's section header."},
+  "loyaltySettingsExpireEnabledTitle": "Points expire",
+  "@loyaltySettingsExpireEnabledTitle": {"description": "LoyaltySettingsScreen switch title."},
+  "loyaltySettingsExpirationMonthsLabel": "Expire after (months)",
+  "@loyaltySettingsExpirationMonthsLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsSectionCaps": "Earning caps",
+  "@loyaltySettingsSectionCaps": {"description": "LoyaltySettingsScreen's section header."},
+  "loyaltySettingsDailyCapLabel": "Daily earning cap",
+  "@loyaltySettingsDailyCapLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsMonthlyCapLabel": "Monthly earning cap",
+  "@loyaltySettingsMonthlyCapLabel": {"description": "LoyaltySettingsScreen field label."},
+  "loyaltySettingsOptionalSuffix": "optional",
+  "@loyaltySettingsOptionalSuffix": {"description": "Appended to an optional field's label across the Loyalty feature, e.g. 'Daily earning cap (optional)'."},
+  "loyaltySettingsValidationError": "Please fill in every field with a valid, non-negative value (repeat visit threshold must be at least 2).",
+  "@loyaltySettingsValidationError": {"description": "LoyaltySettingsScreen's client-side validation error."},
+  "loyaltySettingsExpirationValidationError": "Enter how many months until points expire.",
+  "@loyaltySettingsExpirationValidationError": {"description": "LoyaltySettingsScreen's client-side validation error when expiration is enabled without a month count."},
+  "loyaltySettingsSavedMessage": "Loyalty settings saved.",
+  "@loyaltySettingsSavedMessage": {"description": "LoyaltySettingsScreen's save-success snackbar."},
+
+  "loyaltyRewardAddButton": "Add reward",
+  "@loyaltyRewardAddButton": {"description": "LoyaltyRewardsScreen's add button/FAB label."},
+  "loyaltyRewardAddTitle": "Add reward",
+  "@loyaltyRewardAddTitle": {"description": "LoyaltyRewardFormScreen's AppBar title when creating."},
+  "loyaltyRewardEditTitle": "Edit reward",
+  "@loyaltyRewardEditTitle": {"description": "LoyaltyRewardFormScreen's AppBar title when editing."},
+  "loyaltyRewardsEmptyTitle": "No rewards yet",
+  "@loyaltyRewardsEmptyTitle": {"description": "LoyaltyRewardsScreen's empty state title."},
+  "loyaltyRewardsEmptyMessage": "Add a reward customers can redeem their points for.",
+  "@loyaltyRewardsEmptyMessage": {"description": "LoyaltyRewardsScreen's empty state message."},
+  "loyaltyRewardStatusActive": "Active",
+  "@loyaltyRewardStatusActive": {"description": "LoyaltyRewardCard's active badge."},
+  "loyaltyRewardStatusInactive": "Inactive",
+  "@loyaltyRewardStatusInactive": {"description": "LoyaltyRewardCard's inactive badge."},
+  "loyaltyRewardPointsCostLabel": "{points} pts",
+  "@loyaltyRewardPointsCostLabel": {
+    "description": "LoyaltyRewardCard's points-cost row, e.g. '500 pts'.",
+    "placeholders": {
+      "points": {"type": "int"}
+    }
+  },
+  "loyaltyRewardRedemptionsCountLabel": "{count} redeemed",
+  "@loyaltyRewardRedemptionsCountLabel": {
+    "description": "LoyaltyRewardCard's redemption-count row.",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "loyaltyRewardMaxRedemptionsLabel": "Max {max}",
+  "@loyaltyRewardMaxRedemptionsLabel": {
+    "description": "LoyaltyRewardCard's max-redemptions row.",
+    "placeholders": {
+      "max": {"type": "int"}
+    }
+  },
+  "loyaltyRewardActivateButton": "Activate",
+  "@loyaltyRewardActivateButton": {"description": "LoyaltyRewardsScreen's activate action."},
+  "loyaltyRewardDeactivateButton": "Deactivate",
+  "@loyaltyRewardDeactivateButton": {"description": "LoyaltyRewardsScreen's deactivate action."},
+  "loyaltyRewardDeleteButton": "Delete",
+  "@loyaltyRewardDeleteButton": {"description": "LoyaltyRewardsScreen's delete action."},
+  "loyaltyRewardDeleteBlockedTitle": "Can't delete this reward",
+  "@loyaltyRewardDeleteBlockedTitle": {"description": "Shown instead of the plain delete confirm once a reward has redemption history."},
+  "loyaltyRewardDeleteBlockedMessage": "This reward has been redeemed {count, plural, one{once} other{{count} times}}, so it can't be deleted. Deactivate it instead to stop new redemptions.",
+  "@loyaltyRewardDeleteBlockedMessage": {
+    "description": "LoyaltyRewardsScreen's 409-avoidance dialog message, shown when redemptionsCount > 0.",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "loyaltyRewardDeleteConfirmTitle": "Delete this reward?",
+  "@loyaltyRewardDeleteConfirmTitle": {"description": "LoyaltyRewardsScreen's delete confirmation title."},
+  "loyaltyRewardDeleteConfirmMessage": "\"{name}\" will be removed from the catalog. This can't be undone.",
+  "@loyaltyRewardDeleteConfirmMessage": {
+    "description": "LoyaltyRewardsScreen's delete confirmation message.",
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "loyaltyRewardNameLabel": "Reward name",
+  "@loyaltyRewardNameLabel": {"description": "LoyaltyRewardFormScreen field label."},
+  "loyaltyRewardDescriptionLabel": "Description",
+  "@loyaltyRewardDescriptionLabel": {"description": "LoyaltyRewardFormScreen field label."},
+  "loyaltyRewardPointsCostFieldLabel": "Points cost",
+  "@loyaltyRewardPointsCostFieldLabel": {"description": "LoyaltyRewardFormScreen field label."},
+  "loyaltyRewardTypeLabel": "Reward type",
+  "@loyaltyRewardTypeLabel": {"description": "LoyaltyRewardFormScreen's type picker label, and LoyaltyRewardCard's type row."},
+  "loyaltyRewardTypeFixedDiscount": "Fixed discount",
+  "@loyaltyRewardTypeFixedDiscount": {"description": "LoyaltyRewardType.fixedDiscount's label."},
+  "loyaltyRewardTypePercentageDiscount": "Percentage discount",
+  "@loyaltyRewardTypePercentageDiscount": {"description": "LoyaltyRewardType.percentageDiscount's label."},
+  "loyaltyRewardTypeFreeService": "Free service",
+  "@loyaltyRewardTypeFreeService": {"description": "LoyaltyRewardType.freeService's label."},
+  "loyaltyRewardTypeCustom": "Custom",
+  "@loyaltyRewardTypeCustom": {"description": "LoyaltyRewardType.custom's label."},
+  "loyaltyRewardDiscountAmountLabel": "Discount amount",
+  "@loyaltyRewardDiscountAmountLabel": {"description": "LoyaltyRewardFormScreen field label, shown for FIXED_DISCOUNT."},
+  "loyaltyRewardDiscountCurrencyLabel": "Currency",
+  "@loyaltyRewardDiscountCurrencyLabel": {"description": "LoyaltyRewardFormScreen field label, shown for FIXED_DISCOUNT."},
+  "loyaltyRewardDiscountPercentageLabel": "Discount percentage",
+  "@loyaltyRewardDiscountPercentageLabel": {"description": "LoyaltyRewardFormScreen field label, shown for PERCENTAGE_DISCOUNT."},
+  "loyaltyRewardServiceLabel": "Service",
+  "@loyaltyRewardServiceLabel": {"description": "LoyaltyRewardFormScreen's service picker label, shown for FREE_SERVICE."},
+  "loyaltyRewardNoServicesAvailable": "Add a service first to offer it as a reward.",
+  "@loyaltyRewardNoServicesAvailable": {"description": "LoyaltyRewardFormScreen's service picker, shown when the business has no services yet."},
+  "loyaltyRewardCustomTypeHint": "Explain what this reward gets the customer in the description or terms below -- there's nothing else to configure for a custom reward.",
+  "@loyaltyRewardCustomTypeHint": {"description": "LoyaltyRewardFormScreen's hint shown for CUSTOM type."},
+  "loyaltyRewardMaxRedemptionsFieldLabel": "Max redemptions",
+  "@loyaltyRewardMaxRedemptionsFieldLabel": {"description": "LoyaltyRewardFormScreen field label."},
+  "loyaltyRewardStartsAtLabel": "Starts",
+  "@loyaltyRewardStartsAtLabel": {"description": "LoyaltyRewardFormScreen's start-date field label."},
+  "loyaltyRewardEndsAtLabel": "Ends",
+  "@loyaltyRewardEndsAtLabel": {"description": "LoyaltyRewardFormScreen's end-date field label."},
+  "loyaltyRewardNoDateSet": "Not set",
+  "@loyaltyRewardNoDateSet": {"description": "LoyaltyRewardFormScreen's date field value when unset."},
+  "loyaltyRewardTermsLabel": "Terms",
+  "@loyaltyRewardTermsLabel": {"description": "LoyaltyRewardFormScreen field label."},
+  "loyaltyRewardValidationErrorBasic": "Enter a name and a positive points cost.",
+  "@loyaltyRewardValidationErrorBasic": {"description": "LoyaltyRewardFormScreen's validation error for the always-required fields."},
+  "loyaltyRewardValidationErrorFixedDiscount": "Enter a positive discount amount and a 3-letter currency code.",
+  "@loyaltyRewardValidationErrorFixedDiscount": {"description": "LoyaltyRewardFormScreen's validation error for FIXED_DISCOUNT."},
+  "loyaltyRewardValidationErrorPercentageDiscount": "Enter a discount percentage between 0 and 100.",
+  "@loyaltyRewardValidationErrorPercentageDiscount": {"description": "LoyaltyRewardFormScreen's validation error for PERCENTAGE_DISCOUNT."},
+  "loyaltyRewardValidationErrorFreeService": "Pick which service this reward gives for free.",
+  "@loyaltyRewardValidationErrorFreeService": {"description": "LoyaltyRewardFormScreen's validation error for FREE_SERVICE."},
+
+  "loyaltyCustomersSearchHint": "Search by name or email",
+  "@loyaltyCustomersSearchHint": {"description": "LoyaltyCustomersScreen's search field hint."},
+  "loyaltyCustomersEmpty": "No loyalty members yet.",
+  "@loyaltyCustomersEmpty": {"description": "LoyaltyCustomersScreen's empty state."},
+  "loyaltyCustomersSearchEmpty": "No members match your search.",
+  "@loyaltyCustomersSearchEmpty": {"description": "LoyaltyCustomersScreen's empty state when a search filters everything out."},
+  "loyaltyCustomersLoadMore": "Load more",
+  "@loyaltyCustomersLoadMore": {"description": "LoyaltyCustomersScreen/LoyaltyRedemptionsScreen's pagination button."},
+  "loyaltyCustomerBalanceLabel": "{balance} pts balance",
+  "@loyaltyCustomerBalanceLabel": {
+    "description": "Loyalty roster row's points balance.",
+    "placeholders": {
+      "balance": {"type": "int"}
+    }
+  },
+  "loyaltyCustomerLastActivityLabel": "Last activity: {date}",
+  "@loyaltyCustomerLastActivityLabel": {
+    "description": "Loyalty roster row/detail's last-activity date.",
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "loyaltyCustomerDetailTitle": "Loyalty member",
+  "@loyaltyCustomerDetailTitle": {"description": "LoyaltyCustomerDetailScreen's fallback AppBar title before the name loads."},
+  "loyaltyCustomerDetailBalance": "Balance",
+  "@loyaltyCustomerDetailBalance": {"description": "LoyaltyCustomerDetailScreen stat tile label."},
+  "loyaltyCustomerDetailLifetimeEarned": "Lifetime earned",
+  "@loyaltyCustomerDetailLifetimeEarned": {"description": "LoyaltyCustomerDetailScreen stat tile label."},
+  "loyaltyCustomerDetailLifetimeRedeemed": "Lifetime redeemed",
+  "@loyaltyCustomerDetailLifetimeRedeemed": {"description": "LoyaltyCustomerDetailScreen stat tile label."},
+  "loyaltyCustomerDetailVisits": "Completed visits",
+  "@loyaltyCustomerDetailVisits": {"description": "LoyaltyCustomerDetailScreen stat tile label."},
+  "loyaltyCustomerDetailExpiringSoon": "Expiring in 30 days",
+  "@loyaltyCustomerDetailExpiringSoon": {"description": "LoyaltyCustomerDetailScreen stat tile label, shown only when > 0."},
+
+  "loyaltyCustomerRecommendedActionTitle": "Recommended action",
+  "@loyaltyCustomerRecommendedActionTitle": {"description": "Board 20 (v2 design audit) — Customer 360 profile's advisory insight card header. Advisory only: derived from retentionStatus/pointsExpiringSoon30d, no per-customer outreach action exists yet to trigger from here."},
+
+  "loyaltyCustomerActionAtRisk": "Engagement has slowed — a personal check-in or a rebook offer could bring them back before Reactivation's automated sweep reaches them.",
+  "@loyaltyCustomerActionAtRisk": {"description": "Recommended-action text for retentionStatus == AT_RISK."},
+
+  "loyaltyCustomerActionDueForRebooking": "Due for their next visit based on past booking rhythm — a well-timed nudge now, ahead of the automated rebook offer, tends to land better.",
+  "@loyaltyCustomerActionDueForRebooking": {"description": "Recommended-action text for retentionStatus == DUE_FOR_REBOOKING."},
+
+  "loyaltyCustomerActionLost": "Hasn't returned in a long time. Reactivation's automated sweep already tried; a direct outreach may be the only thing left that works.",
+  "@loyaltyCustomerActionLost": {"description": "Recommended-action text for retentionStatus == LOST."},
+
+  "loyaltyCustomerActionPointsExpiring": "{count} points expire within 30 days — worth a reminder before they lapse unused.",
+  "@loyaltyCustomerActionPointsExpiring": {
+    "description": "Recommended-action text when pointsExpiringSoon30d > 0, shown alongside or instead of the retention-status advice.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+
+  "loyaltyCustomerActionNone": "No action needed — this customer is engaged.",
+  "@loyaltyCustomerActionNone": {"description": "Recommended-action text for retentionStatus NEW/ACTIVE with no points expiring soon."},
+
+  "loyaltyAdjustPointsButton": "Adjust points",
+  "@loyaltyAdjustPointsButton": {"description": "LoyaltyCustomerDetailScreen's action button."},
+  "loyaltyAdjustPointsDialogTitle": "Adjust points",
+  "@loyaltyAdjustPointsDialogTitle": {"description": "showLoyaltyAdjustPointsDialog's form-step title."},
+  "loyaltyAdjustPointsCurrentBalanceLabel": "Current balance: {balance} pts",
+  "@loyaltyAdjustPointsCurrentBalanceLabel": {
+    "description": "showLoyaltyAdjustPointsDialog's current-balance line.",
+    "placeholders": {
+      "balance": {"type": "int"}
+    }
+  },
+  "loyaltyAdjustPointsDeltaLabel": "Points to add or remove",
+  "@loyaltyAdjustPointsDeltaLabel": {"description": "showLoyaltyAdjustPointsDialog's delta field label."},
+  "loyaltyAdjustPointsDeltaHint": "Positive to credit, negative to debit",
+  "@loyaltyAdjustPointsDeltaHint": {"description": "showLoyaltyAdjustPointsDialog's delta field hint."},
+  "loyaltyAdjustPointsReasonLabel": "Reason",
+  "@loyaltyAdjustPointsReasonLabel": {"description": "showLoyaltyAdjustPointsDialog's reason field label, and the confirm step's reason summary label."},
+  "loyaltyAdjustPointsReasonHint": "Required -- explain why you're making this correction",
+  "@loyaltyAdjustPointsReasonHint": {"description": "showLoyaltyAdjustPointsDialog's reason field hint."},
+  "loyaltyAdjustPointsDeltaError": "Enter a non-zero number of points.",
+  "@loyaltyAdjustPointsDeltaError": {"description": "showLoyaltyAdjustPointsDialog's delta validation error."},
+  "loyaltyAdjustPointsReasonError": "A reason is required for a manual adjustment.",
+  "@loyaltyAdjustPointsReasonError": {"description": "showLoyaltyAdjustPointsDialog's reason validation error."},
+  "loyaltyAdjustPointsContinueButton": "Continue",
+  "@loyaltyAdjustPointsContinueButton": {"description": "showLoyaltyAdjustPointsDialog's form-step continue button."},
+  "loyaltyAdjustPointsConfirmTitle": "Confirm adjustment",
+  "@loyaltyAdjustPointsConfirmTitle": {"description": "showLoyaltyAdjustPointsDialog's confirm-step title."},
+  "loyaltyAdjustPointsConfirmCredit": "Credit this customer {delta} points.",
+  "@loyaltyAdjustPointsConfirmCredit": {
+    "description": "showLoyaltyAdjustPointsDialog's confirm-step summary for a positive delta.",
+    "placeholders": {
+      "delta": {"type": "int"}
+    }
+  },
+  "loyaltyAdjustPointsConfirmDebit": "Debit this customer {delta} points.",
+  "@loyaltyAdjustPointsConfirmDebit": {
+    "description": "showLoyaltyAdjustPointsDialog's confirm-step summary for a negative delta (delta is shown as a positive number).",
+    "placeholders": {
+      "delta": {"type": "int"}
+    }
+  },
+  "loyaltyAdjustPointsConfirmProjectedBalance": "New balance: {balance} pts",
+  "@loyaltyAdjustPointsConfirmProjectedBalance": {
+    "description": "showLoyaltyAdjustPointsDialog's confirm-step projected-balance line.",
+    "placeholders": {
+      "balance": {"type": "int"}
+    }
+  },
+  "loyaltyAdjustPointsBackButton": "Back",
+  "@loyaltyAdjustPointsBackButton": {"description": "showLoyaltyAdjustPointsDialog's confirm-step back button."},
+  "loyaltyAdjustPointsConfirmButton": "Confirm",
+  "@loyaltyAdjustPointsConfirmButton": {"description": "showLoyaltyAdjustPointsDialog's confirm-step submit button."},
+  "loyaltyAdjustPointsSuccessMessage": "Points adjusted.",
+  "@loyaltyAdjustPointsSuccessMessage": {"description": "LoyaltyCustomerDetailScreen's success snackbar after an adjustment."},
+
+  "loyaltyRetentionNew": "New",
+  "@loyaltyRetentionNew": {"description": "retentionStatus == 'NEW' badge label."},
+  "loyaltyRetentionActive": "Active",
+  "@loyaltyRetentionActive": {"description": "retentionStatus == 'ACTIVE' badge label."},
+  "loyaltyRetentionAtRisk": "At risk",
+  "@loyaltyRetentionAtRisk": {"description": "retentionStatus == 'AT_RISK' badge label."},
+  "loyaltyRetentionDueForRebooking": "Due for rebooking",
+  "@loyaltyRetentionDueForRebooking": {"description": "retentionStatus == 'DUE_FOR_REBOOKING' badge label."},
+  "loyaltyRetentionLost": "Lost",
+  "@loyaltyRetentionLost": {"description": "retentionStatus == 'LOST' badge label."},
+
+  "loyaltyRedemptionsEmpty": "No redemptions yet.",
+  "@loyaltyRedemptionsEmpty": {"description": "LoyaltyRedemptionsScreen's empty state."},
+  "loyaltyRedemptionStatusActive": "Active",
+  "@loyaltyRedemptionStatusActive": {"description": "LoyaltyRedemptionStatus.active's badge label."},
+  "loyaltyRedemptionStatusApplied": "Applied",
+  "@loyaltyRedemptionStatusApplied": {"description": "LoyaltyRedemptionStatus.applied's badge label."},
+  "loyaltyRedemptionStatusCancelled": "Cancelled",
+  "@loyaltyRedemptionStatusCancelled": {"description": "LoyaltyRedemptionStatus.cancelled's badge label."},
+  "loyaltyRedemptionStatusExpired": "Expired",
+  "@loyaltyRedemptionStatusExpired": {"description": "LoyaltyRedemptionStatus.expired's badge label."},
+  "loyaltyRedemptionPointsSpentLabel": "{points} pts spent",
+  "@loyaltyRedemptionPointsSpentLabel": {
+    "description": "LoyaltyRedemptionCard's points-spent row.",
+    "placeholders": {
+      "points": {"type": "int"}
+    }
+  },
+  "loyaltyRedemptionAppliedBookingLabel": "Applied to booking {bookingId}",
+  "@loyaltyRedemptionAppliedBookingLabel": {
+    "description": "LoyaltyRedemptionCard's applied-booking row.",
+    "placeholders": {
+      "bookingId": {"type": "String"}
+    }
+  },
+  "loyaltyRedemptionCancelButton": "Cancel redemption",
+  "@loyaltyRedemptionCancelButton": {"description": "LoyaltyRedemptionCard/LoyaltyRedemptionsScreen's cancel action."},
+  "loyaltyRedemptionCancelConfirmTitle": "Cancel this redemption?",
+  "@loyaltyRedemptionCancelConfirmTitle": {"description": "LoyaltyRedemptionsScreen's cancel confirmation title."},
+  "loyaltyRedemptionCancelConfirmMessage": "The customer's points for code {code} will be refunded. This can't be undone.",
+  "@loyaltyRedemptionCancelConfirmMessage": {
+    "description": "LoyaltyRedemptionsScreen's cancel confirmation message.",
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "loyaltyRedemptionCancelReasonLabel": "Reason",
+  "@loyaltyRedemptionCancelReasonLabel": {"description": "LoyaltyRedemptionsScreen's cancel dialog reason field label."},
+  "loyaltyRedemptionApplyButton": "Apply a code",
+  "@loyaltyRedemptionApplyButton": {"description": "LoyaltyRedemptionsScreen's FAB label and apply-dialog submit button."},
+  "loyaltyRedemptionApplyDialogTitle": "Apply a redemption code",
+  "@loyaltyRedemptionApplyDialogTitle": {"description": "The apply-redemption dialog's title."},
+  "loyaltyRedemptionApplyDialogSubtitle": "Enter the code the customer showed you and the booking it applies to.",
+  "@loyaltyRedemptionApplyDialogSubtitle": {"description": "The apply-redemption dialog's subtitle."},
+  "loyaltyRedemptionCodeLabel": "Redemption code",
+  "@loyaltyRedemptionCodeLabel": {"description": "The apply-redemption dialog's code field label."},
+  "loyaltyRedemptionBookingIdLabel": "Booking ID",
+  "@loyaltyRedemptionBookingIdLabel": {"description": "The apply-redemption dialog's booking id field label."},
+  "loyaltyRedemptionApplyValidationError": "Enter both the code and the booking ID.",
+  "@loyaltyRedemptionApplyValidationError": {"description": "The apply-redemption dialog's validation error."},
+
+  "loyaltyMilestonesSubtitle": "Award bonus points when a customer reaches a visit count.",
+  "@loyaltyMilestonesSubtitle": {"description": "LoyaltyMilestonesScreen's subtitle."},
+  "loyaltyMilestonesEmpty": "No milestones yet.",
+  "@loyaltyMilestonesEmpty": {"description": "LoyaltyMilestonesScreen's empty state."},
+  "loyaltyMilestoneAddButton": "Add milestone",
+  "@loyaltyMilestoneAddButton": {"description": "LoyaltyMilestonesScreen's add-row button."},
+  "loyaltyMilestoneVisitsLabel": "Visits required",
+  "@loyaltyMilestoneVisitsLabel": {"description": "LoyaltyMilestonesScreen row field label."},
+  "loyaltyMilestonePointsLabel": "Points awarded",
+  "@loyaltyMilestonePointsLabel": {"description": "LoyaltyMilestonesScreen row field label."},
+  "loyaltyMilestoneLabelLabel": "Label",
+  "@loyaltyMilestoneLabelLabel": {"description": "LoyaltyMilestonesScreen row field label -- a customer-facing name for this milestone."},
+  "loyaltyMilestoneRemoveButton": "Remove milestone",
+  "@loyaltyMilestoneRemoveButton": {"description": "LoyaltyMilestonesScreen row's remove icon button tooltip."},
+  "loyaltyMilestoneValidationError": "Every milestone needs a positive visit count and points value.",
+  "@loyaltyMilestoneValidationError": {"description": "LoyaltyMilestonesScreen's validation error."},
+  "loyaltyMilestonesSavedMessage": "Milestones saved.",
+  "@loyaltyMilestonesSavedMessage": {"description": "LoyaltyMilestonesScreen's save-success snackbar."},
+
+  "loyaltyTiersSubtitle": "Group customers into tiers once they reach a lifetime points total.",
+  "@loyaltyTiersSubtitle": {"description": "LoyaltyTiersScreen's subtitle."},
+  "loyaltyTiersEmpty": "No tiers yet.",
+  "@loyaltyTiersEmpty": {"description": "LoyaltyTiersScreen's empty state."},
+  "loyaltyTierAddButton": "Add tier",
+  "@loyaltyTierAddButton": {"description": "LoyaltyTiersScreen's add-row button."},
+  "loyaltyTierNameLabel": "Tier name",
+  "@loyaltyTierNameLabel": {"description": "LoyaltyTiersScreen row field label."},
+  "loyaltyTierMinPointsLabel": "Min. lifetime points",
+  "@loyaltyTierMinPointsLabel": {"description": "LoyaltyTiersScreen row field label."},
+  "loyaltyTierRemoveButton": "Remove tier",
+  "@loyaltyTierRemoveButton": {"description": "LoyaltyTiersScreen row's remove icon button tooltip."},
+  "loyaltyTierValidationError": "Every tier needs a name and a non-negative points threshold.",
+  "@loyaltyTierValidationError": {"description": "LoyaltyTiersScreen's validation error."},
+  "loyaltyTiersSavedMessage": "Tiers saved.",
+  "@loyaltyTiersSavedMessage": {"description": "LoyaltyTiersScreen's save-success snackbar."},
+
+  "reviewsTooltip": "Reviews",
+  "@reviewsTooltip": {"description": "SalonDetailScreen app bar action opening ReviewsScreen."},
+  "reviewsScreenTitle": "Reviews — {providerName}",
+  "@reviewsScreenTitle": {
+    "description": "ReviewsScreen app bar title.",
+    "placeholders": {"providerName": {"type": "String"}}
+  },
+  "reviewsAverageRatingLabel": "Average rating",
+  "@reviewsAverageRatingLabel": {"description": "ReviewsScreen stat tile label."},
+  "reviewsTotalCountLabel": "Total reviews",
+  "@reviewsTotalCountLabel": {"description": "ReviewsScreen stat tile label."},
+  "reviewsAwaitingReplyLabel": "Awaiting reply",
+  "@reviewsAwaitingReplyLabel": {"description": "ReviewsScreen stat tile label."},
+  "reviewsEmptyTitle": "No reviews yet",
+  "@reviewsEmptyTitle": {"description": "ReviewsScreen's empty state title."},
+  "reviewsEmptyMessage": "Reviews from completed bookings will show up here.",
+  "@reviewsEmptyMessage": {"description": "ReviewsScreen's empty state message."},
+  "errorReviewsLoadFailed": "Couldn't load reviews: {error}",
+  "@errorReviewsLoadFailed": {
+    "description": "ReviewsScreen's error state message.",
+    "placeholders": {"error": {"type": "String"}}
+  },
+  "reviewsLoadMore": "Load more",
+  "@reviewsLoadMore": {"description": "ReviewsScreen's pagination button."},
+  "reviewLifecycleReceived": "Received",
+  "@reviewLifecycleReceived": {"description": "Board 15 (v2 design audit) — lifecycle stepper's first step label."},
+  "reviewLifecycleRepliedOn": "Replied {date}",
+  "@reviewLifecycleRepliedOn": {
+    "description": "Lifecycle stepper's second step label once the owner has replied.",
+    "placeholders": {"date": {"type": "String"}}
+  },
+  "reviewLifecyclePending": "Awaiting reply",
+  "@reviewLifecyclePending": {"description": "Lifecycle stepper's second step label before the owner has replied."},
+  "reviewOwnerReplyLabel": "Your reply",
+  "@reviewOwnerReplyLabel": {"description": "Label above the owner's posted reply on a review card."},
+  "reviewEditReplyButton": "Edit reply",
+  "@reviewEditReplyButton": {"description": "Button under an existing reply to edit it."},
+  "reviewReplyButton": "Reply",
+  "@reviewReplyButton": {"description": "Button on a review with no reply yet."},
+  "reviewReplyDialogTitle": "Reply to review",
+  "@reviewReplyDialogTitle": {"description": "ReviewReplyDialog's title when posting a first reply."},
+  "reviewEditReplyDialogTitle": "Edit your reply",
+  "@reviewEditReplyDialogTitle": {"description": "ReviewReplyDialog's title when editing an existing reply."},
+  "reviewReplyFieldLabel": "Your reply",
+  "@reviewReplyFieldLabel": {"description": "ReviewReplyDialog's text field label."},
+  "reviewReplyFieldHint": "Thank you for the feedback…",
+  "@reviewReplyFieldHint": {"description": "ReviewReplyDialog's text field hint."},
+  "reviewReplySubmitButton": "Post reply",
+  "@reviewReplySubmitButton": {"description": "ReviewReplyDialog's submit button."},
+  "reviewReplyEmptyError": "Write a reply before posting.",
+  "@reviewReplyEmptyError": {"description": "ReviewReplyDialog's validation error for a blank reply."},
+  "errorReviewsForbidden": "You don't have access to this review.",
+  "@errorReviewsForbidden": {"description": "ReviewsException's message for a 403 response."},
+  "errorReviewsNotFound": "This review could not be found.",
+  "@errorReviewsNotFound": {"description": "ReviewsException's message for a 404 response."},
+  "errorReviewsActionFailed": "Something went wrong: {error}",
+  "@errorReviewsActionFailed": {
+    "description": "ReviewsException's message for any other response.",
+    "placeholders": {"error": {"type": "String"}}
+  },
+
+  "automationCenterNavLabel": "Automation Center",
+  "@automationCenterNavLabel": {"description": "Sidebar/AppBar nav label for AutomationCenterScreen."},
+  "automationCenterScreenTitle": "Automation Center",
+  "@automationCenterScreenTitle": {"description": "AutomationCenterScreen app bar title."},
+  "automationCenterNoBusinesses": "Create a business first to configure automation.",
+  "@automationCenterNoBusinesses": {"description": "AutomationCenterScreen's empty state when the owner has no businesses yet."},
+  "automationCenterIntro": "Turn Smart Fill, Rebook and Reactivation on or off, tune how they decide who to nudge, and set when they're allowed to send anything at all.",
+  "@automationCenterIntro": {"description": "AutomationCenterScreen's intro paragraph."},
+  "errorAutomationSettingsLoadFailed": "Couldn't load automation settings: {error}",
+  "@errorAutomationSettingsLoadFailed": {
+    "description": "AutomationCenterScreen's error state message.",
+    "placeholders": {"error": {"type": "String"}}
+  },
+  "automationSectionSmartFill": "Smart Fill",
+  "@automationSectionSmartFill": {"description": "AutomationSettingsForm section header."},
+  "automationSmartFillEnableTitle": "Smart Fill",
+  "@automationSmartFillEnableTitle": {"description": "AutomationSettingsForm's Smart Fill enable switch title."},
+  "automationSmartFillEnableSubtitle": "Offer a cancelled slot to likely customers automatically.",
+  "@automationSmartFillEnableSubtitle": {"description": "AutomationSettingsForm's Smart Fill enable switch subtitle."},
+  "automationSectionRebook": "Rebook",
+  "@automationSectionRebook": {"description": "AutomationSettingsForm section header."},
+  "automationRebookEnableTitle": "Rebook",
+  "@automationRebookEnableTitle": {"description": "AutomationSettingsForm's Rebook enable switch title."},
+  "automationRebookEnableSubtitle": "Nudge a customer to rebook once their usual visit interval has passed.",
+  "@automationRebookEnableSubtitle": {"description": "AutomationSettingsForm's Rebook enable switch subtitle."},
+  "automationRebookMinVisitsLabel": "Minimum visits to establish a pattern",
+  "@automationRebookMinVisitsLabel": {"description": "AutomationSettingsForm's Rebook tuning field label."},
+  "automationRebookMinIntervalLabel": "Minimum interval (days)",
+  "@automationRebookMinIntervalLabel": {"description": "AutomationSettingsForm's Rebook tuning field label."},
+  "automationRebookMaxIntervalLabel": "Maximum interval (days)",
+  "@automationRebookMaxIntervalLabel": {"description": "AutomationSettingsForm's Rebook tuning field label."},
+  "automationRebookFollowUpLabel": "Follow-up window (days)",
+  "@automationRebookFollowUpLabel": {"description": "AutomationSettingsForm's Rebook tuning field label."},
+  "automationSectionReactivation": "Reactivation",
+  "@automationSectionReactivation": {"description": "AutomationSettingsForm section header."},
+  "automationReactivationEnableTitle": "Reactivation",
+  "@automationReactivationEnableTitle": {"description": "AutomationSettingsForm's Reactivation enable switch title."},
+  "automationReactivationEnableSubtitle": "Win back customers who have gone quiet well past their usual visit interval.",
+  "@automationReactivationEnableSubtitle": {"description": "AutomationSettingsForm's Reactivation enable switch subtitle."},
+  "automationReactivationScanMinLabel": "Minimum days inactive before scanning",
+  "@automationReactivationScanMinLabel": {"description": "AutomationSettingsForm's Reactivation tuning field label."},
+  "automationReactivationMultiplierLabel": "Overdue multiplier",
+  "@automationReactivationMultiplierLabel": {"description": "AutomationSettingsForm's Reactivation tuning field label."},
+  "automationReactivationMultiplierHint": "e.g. 2 = twice their usual interval",
+  "@automationReactivationMultiplierHint": {"description": "AutomationSettingsForm's Reactivation multiplier field hint."},
+  "automationReactivationAbsoluteMaxLabel": "Absolute max inactivity (days)",
+  "@automationReactivationAbsoluteMaxLabel": {"description": "AutomationSettingsForm's Reactivation tuning field label."},
+  "automationReactivationFollowUpLabel": "Follow-up window (days)",
+  "@automationReactivationFollowUpLabel": {"description": "AutomationSettingsForm's Reactivation tuning field label."},
+  "automationSectionTiming": "Timing",
+  "@automationSectionTiming": {"description": "AutomationSettingsForm section header."},
+  "automationAllowedHoursStartLabel": "Allowed from (hour)",
+  "@automationAllowedHoursStartLabel": {"description": "AutomationSettingsForm's allowed-hours start field label."},
+  "automationAllowedHoursEndLabel": "Allowed until (hour)",
+  "@automationAllowedHoursEndLabel": {"description": "AutomationSettingsForm's allowed-hours end field label."},
+  "automationAllowedHoursHint": "0-23",
+  "@automationAllowedHoursHint": {"description": "AutomationSettingsForm's allowed-hours field hint."},
+  "automationTimezoneLabel": "Timezone",
+  "@automationTimezoneLabel": {"description": "AutomationSettingsForm's timezone field label."},
+  "automationTimezoneHint": "e.g. Asia/Almaty",
+  "@automationTimezoneHint": {"description": "AutomationSettingsForm's timezone field hint."},
+  "automationCooldownLabel": "Cooldown between offers (days)",
+  "@automationCooldownLabel": {"description": "AutomationSettingsForm's cooldown field label."},
+  "automationCooldownHint": "Minimum days before nudging the same customer again",
+  "@automationCooldownHint": {"description": "AutomationSettingsForm's cooldown field hint."},
+  "automationSettingsSavedMessage": "Automation settings saved.",
+  "@automationSettingsSavedMessage": {"description": "AutomationSettingsForm's save-success snackbar."},
+  "automationAllowedHoursValidationError": "Set both allowed-hours fields, or leave both empty.",
+  "@automationAllowedHoursValidationError": {"description": "AutomationSettingsForm's validation error when only one allowed-hours field is set."},
+  "errorAutomationValidationFailed": "Please check the values you entered.",
+  "@errorAutomationValidationFailed": {"description": "AutomationException's message for a 400 response with no server message."},
+  "errorAutomationForbidden": "You don't have access to this business's automation settings.",
+  "@errorAutomationForbidden": {"description": "AutomationException's message for a 403 response."},
+  "errorAutomationActionFailed": "Something went wrong: {error}",
+  "@errorAutomationActionFailed": {
+    "description": "AutomationException's message for any other response.",
+    "placeholders": {"error": {"type": "String"}}
+  },
+
+  "messagingNavLabel": "Messages",
+  "@messagingNavLabel": {"description": "Sidebar/AppBar nav label for the business inbox top-level destination."},
+
+  "businessInboxScreenTitle": "Inbox",
+  "@businessInboxScreenTitle": {"description": "BusinessInboxScreen's AppBar title."},
+
+  "businessInboxSubtitle": "Conversations between you and your customers.",
+  "@businessInboxSubtitle": {"description": "BusinessInboxScreen's short explanatory subtitle under the title."},
+
+  "businessInboxNoBusinesses": "Create a business first to see its conversations.",
+  "@businessInboxNoBusinesses": {"description": "BusinessInboxScreen's empty state when the owner has no businesses yet."},
+
+  "businessInboxEmpty": "No conversations yet.",
+  "@businessInboxEmpty": {"description": "BusinessInboxScreen's empty state when the selected business has no conversations."},
+
+  "messagingUnknownCustomer": "Customer",
+  "@messagingUnknownCustomer": {"description": "Fallback shown in place of a conversation's customerDisplayName when the backend has none."},
+
+  "errorConversationsLoadFailed": "Couldn't load conversations: {error}",
+  "@errorConversationsLoadFailed": {
+    "description": "BusinessInboxScreen's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "errorMessagesLoadFailed": "Couldn't load messages: {error}",
+  "@errorMessagesLoadFailed": {
+    "description": "BusinessChatThreadScreen's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "errorMessageSendFailed": "Couldn't send message: {error}",
+  "@errorMessageSendFailed": {
+    "description": "Snackbar shown when replying in a conversation fails.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "chatEmptyThread": "No messages yet. Say hello!",
+  "@chatEmptyThread": {"description": "BusinessChatThreadScreen's empty state before the first message."},
+
+  "chatComposeHint": "Type a message",
+  "@chatComposeHint": {"description": "BusinessChatThreadScreen's compose field label."},
+
+  "chatSendButtonTooltip": "Send",
+  "@chatSendButtonTooltip": {"description": "BusinessChatThreadScreen's send button tooltip."},
+
+  "chatBookingChipLabel": "About a booking",
+  "@chatBookingChipLabel": {"description": "Non-interactive chip on a message that carries a bookingId -- it was sent from the customer's booking detail screen."}
 }

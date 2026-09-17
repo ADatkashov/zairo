@@ -1,6 +1,7 @@
 package com.zairo.factory.subscriptions;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -38,6 +39,21 @@ public final class SubscriptionDtos {
                     subscription.getStatus(), PlanLimits.from(plan), subscription.getCurrentPeriodStart(),
                     subscription.getCurrentPeriodEnd(), subscription.getGracePeriodEndsAt(),
                     subscription.isCancelAtPeriodEnd(), checkoutUrl);
+        }
+    }
+
+    @Schema(description = "One billing-period charge attempt — the Billing screen's invoice history "
+            + "(v2 design audit).")
+    public record SubscriptionChargeResponse(
+            @Schema(example = "550e8400-e29b-41d4-a716-446655440000") UUID id,
+            BigDecimal amount,
+            String currency,
+            SubscriptionChargeStatus status,
+            Instant createdAt) {
+
+        static SubscriptionChargeResponse from(SubscriptionCharge charge) {
+            return new SubscriptionChargeResponse(charge.getId(), charge.getAmount(), charge.getCurrency(),
+                    charge.getStatus(), charge.getCreatedAt());
         }
     }
 

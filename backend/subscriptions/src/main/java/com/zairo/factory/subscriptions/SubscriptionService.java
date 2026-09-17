@@ -5,6 +5,7 @@ import com.zairo.factory.paymentprovider.PaymentProvider.InitiationStatus;
 import com.zairo.factory.paymentprovider.PaymentProvider.PaymentInitiation;
 import com.zairo.factory.paymentprovider.PaymentProviderName;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -71,6 +72,24 @@ public class SubscriptionService {
             return new SubscriptionUpgradeResult(subscriptionRepository.save(subscription), null);
         }
 
+        // Idempotency guard (Phase 0 stabilization): without this, calling
+        // this endpoint twice in a row while a real-provider checkout is
+        // still PENDING would mint two separate SubscriptionCharge rows and
+        // two separate provider-side checkout sessions/potential charges —
+        // same double-submit risk PaymentsService.createPayment already
+        // guards against for booking payments. The pending checkout's own
+        // URL can't be handed back here (FreedomPay doesn't let it be
+        // re-fetched, and this codebase doesn't persist it), so the second
+        // call is rejected rather than silently reusing/discarding it.
+        subscriptionChargeRepository
+                .findFirstBySubscriptionIdAndStatusOrderByCreatedAtDesc(subscription.getId(),
+                        SubscriptionChargeStatus.PENDING)
+                .ifPresent(pending -> {
+                    throw new SubscriptionUpgradeFailedException(
+                            "A PRO upgrade payment is already pending for this subscription — finish or wait for "
+                                    + "that checkout before trying again.");
+                });
+
         SubscriptionCharge charge = subscriptionChargeRepository.save(new SubscriptionCharge(UUID.randomUUID(),
                 subscription.getId(), SubscriptionPlan.PRO.monthlyPrice, defaultCurrency, providerName, null,
                 Instant.now()));
@@ -121,5 +140,11 @@ public class SubscriptionService {
         Subscription subscription = getOrCreate(ownerUserId);
         subscription.requestDowngradeAtPeriodEnd(Instant.now());
         return subscriptionRepository.save(subscription);
+    }
+
+    /** The Billing screen's invoice history (v2 design audit) — most recent charge first. */
+    public List<SubscriptionCharge> listCharges(UUID ownerUserId) {
+        Subscription subscription = getOrCreate(ownerUserId);
+        return subscriptionChargeRepository.findBySubscriptionIdOrderByCreatedAtDesc(subscription.getId());
     }
 }

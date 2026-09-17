@@ -10,4 +10,7 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
     Optional<Category> findByCode(String code);
 
     List<Category> findByStatusOrderBySortOrderAsc(TaxonomyStatus status);
+
+    /** The Platform Admin taxonomy screen's own list — every status, not just ACTIVE (see CatalogController's doc comment). */
+    List<Category> findAllByOrderBySortOrderAsc();
 }

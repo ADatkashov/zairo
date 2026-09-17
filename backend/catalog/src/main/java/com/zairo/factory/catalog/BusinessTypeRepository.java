@@ -10,4 +10,7 @@ public interface BusinessTypeRepository extends JpaRepository<BusinessType, UUID
     Optional<BusinessType> findByCode(String code);
 
     List<BusinessType> findByCategoryIdAndStatusOrderBySortOrderAsc(UUID categoryId, TaxonomyStatus status);
+
+    /** The Platform Admin taxonomy screen's own list — every status, not just ACTIVE. */
+    List<BusinessType> findByCategoryIdOrderBySortOrderAsc(UUID categoryId);
 }

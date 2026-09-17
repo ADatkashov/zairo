@@ -7,6 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:zairo/features/catalog/data/catalog_api.dart';
+import 'package:zairo/features/catalog/data/models/category.dart';
+import 'package:zairo/features/catalog/presentation/providers/catalog_providers.dart' show catalogApiProvider;
 import 'package:zairo/features/discovery/data/discovery_api.dart';
 import 'package:zairo/features/discovery/data/models/provider_search_result.dart';
 import 'package:zairo/features/discovery/data/models/service_summary.dart';
@@ -86,6 +89,26 @@ class _RecordingDiscoveryApi extends DiscoveryApi {
     return const [];
   }
 }
+
+class _FakeCatalogApi extends CatalogApi {
+  _FakeCatalogApi(this._categories) : super(DioClient(Dio()));
+
+  final List<Category> _categories;
+
+  @override
+  Future<List<Category>> listCategories() async => _categories;
+}
+
+const _autoCategory = Category(
+  id: 'cat-auto',
+  code: 'auto',
+  nameKk: 'Авто',
+  nameRu: 'Авто',
+  nameEn: 'Auto',
+  icon: null,
+  sortOrder: 1,
+  status: 'ACTIVE',
+);
 
 void main() {
   testWidgets('shows provider results once loaded', (tester) async {
@@ -435,7 +458,13 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [discoveryApiProvider.overrideWithValue(fakeApi)],
+          overrides: [
+            discoveryApiProvider.overrideWithValue(fakeApi),
+            // The filter sheet's category chips are sourced from the
+            // master catalog (v2 design audit fix), not hardcoded, so this
+            // test needs its own "Auto" category to tap.
+            catalogApiProvider.overrideWithValue(_FakeCatalogApi([_autoCategory])),
+          ],
           child: MaterialApp(
             theme: factoryLightTheme(),
             localizationsDelegates: AppLocalizations.localizationsDelegates,

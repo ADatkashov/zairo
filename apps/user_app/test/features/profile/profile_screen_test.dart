@@ -74,6 +74,7 @@ void main() {
     expect(find.text('Aigerim K.'), findsOneWidget);
     expect(find.text('aigerim@example.com'), findsOneWidget);
     expect(find.text('My vehicles'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Log out'), 200);
     expect(find.text('Log out'), findsOneWidget);
   });
 
