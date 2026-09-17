@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../../../core/formatting/initials.dart';
 import '../../../../core/formatting/month_day_time.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../auth/data/models/user_summary.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../auto/data/auto_exception.dart';
@@ -23,15 +24,19 @@ import '../../../cleaning/presentation/providers/cleaning_providers.dart';
 import '../../../discovery/data/models/provider_search_result.dart';
 import '../../../discovery/data/models/service_summary.dart';
 import '../../../favorites/presentation/widgets/favorite_button.dart';
+import '../../../loyalty/presentation/screens/business_loyalty_screen.dart';
 import '../../../maps/presentation/screens/provider_map_screen.dart';
+import '../../../messaging/presentation/screens/chat_thread_screen.dart';
 import '../../../payments/data/payment_exception.dart';
 import '../../../payments/presentation/providers/payments_providers.dart';
 import '../../../staff/data/models/staff.dart';
 import '../../../staff/data/staff_exception.dart';
 import '../../../staff/presentation/providers/staff_providers.dart';
 import '../../data/booking_exception.dart';
+import '../../data/models/availability_slot.dart';
 import '../../data/models/booking.dart';
 import '../providers/booking_providers.dart';
+import 'booking_confirmation_screen.dart';
 
 /// Categories with their own hardcoded staff module (Master/Mechanic/
 /// Cleaner) — every other category falls back to the generic `staff`
@@ -103,7 +108,14 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       backgroundColor: colors.bg,
       appBar: FactoryAppBar(
         title: widget.provider.name,
-        actions: [FavoriteButton(providerId: widget.provider.id)],
+        actions: [
+          IconButton(
+            icon: const Icon(Symbols.chat_rounded),
+            tooltip: l10n.messageProviderTooltip,
+            onPressed: () => _openMessageThread(currentUser),
+          ),
+          FavoriteButton(providerId: widget.provider.id),
+        ],
       ),
       body: SafeArea(
         child: Column(
@@ -198,6 +210,23 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                       ),
                     ),
                   ],
+                  const SizedBox(height: FactorySpacing.space3),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: FactoryButton(
+                      variant: FactoryButtonVariant.secondary,
+                      icon: Symbols.workspace_premium_rounded,
+                      label: l10n.loyaltyEntryTileTitle,
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => BusinessLoyaltyScreen(
+                            providerId: widget.provider.id,
+                            providerName: widget.provider.name,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                   if (masters.isNotEmpty) ...[
                     const SizedBox(height: FactorySpacing.space6),
                     Text(
@@ -416,6 +445,25 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     return null;
   }
 
+  /// Same in-flow login gate as [FavoriteButton]: logged out just opens
+  /// LoginScreen instead of silently failing or disabling the action.
+  void _openMessageThread(UserSummary? currentUser) {
+    if (currentUser == null) {
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ChatThreadScreen(
+          providerId: widget.provider.id,
+          providerName: widget.provider.name,
+        ),
+      ),
+    );
+  }
+
   Future<void> _addVehicle(String userId) async {
     final result = await showAddVehicleDialog(context);
     if (result == null) return;
@@ -454,6 +502,18 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     final service = widget.provider.services.firstWhere(
       (s) => s.id == _selectedServiceId,
     );
+    // Captured before the booking call below, since a successful booking
+    // consumes the slot and the next read of this provider would no longer
+    // contain it — needed only to show the "when" on BookingConfirmationScreen.
+    AvailabilitySlot? selectedSlot;
+    for (final slot
+        in ref.read(availabilitySlotsProvider(widget.provider.id)).value ??
+            const <AvailabilitySlot>[]) {
+      if (slot.id == _selectedSlotId) {
+        selectedSlot = slot;
+        break;
+      }
+    }
     try {
       // A master/mechanic/cleaner was selected only when this provider has a
       // beauty/auto/cleaning staff directory (see the Book button's enable
@@ -517,22 +577,35 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       // SESSION_NOTES.md for why this isn't gated behind a webhook yet
       // (no real payment provider/webhook exists; the mock resolves
       // synchronously, so there's nothing async to wait on).
-      String message = l10n.bookingConfirmed;
+      String? paymentErrorMessage;
       try {
-        final payment = await ref
-            .read(paymentsApiProvider)
-            .createPayment(booking.id);
-        message = payment.status == 'SUCCEEDED'
-            ? l10n.bookingConfirmedAndPaid
-            : l10n.bookingConfirmedPaymentStatus(payment.status.toLowerCase());
+        await ref.read(paymentsApiProvider).createPayment(booking.id);
       } on PaymentException catch (e) {
-        message = l10n.bookingConfirmedButError(e.localizedMessage(l10n));
+        paymentErrorMessage = l10n.bookingConfirmedButError(
+          e.localizedMessage(l10n),
+        );
       }
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
-      Navigator.of(context).pop();
+      if (paymentErrorMessage != null) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(paymentErrorMessage)));
+      }
+      // Board 19 (v2 design audit) — a durable confirmation screen, not a
+      // snackbar that's gone in a few seconds, so replaces this route
+      // rather than pushing on top of it.
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => BookingConfirmationScreen(
+            booking: booking,
+            providerId: widget.provider.id,
+            providerName: widget.provider.name,
+            providerVertical: widget.provider.vertical,
+            service: service,
+            slotStartsAt: selectedSlot?.startsAt,
+          ),
+        ),
+      );
     } on BookingException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)

@@ -204,6 +204,38 @@ class AutoApiTests {
         assertThat(deleteResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     }
 
+    /**
+     * Proves the fix for GET /vehicles/{id}'s missing authorization (Security
+     * Audit #4, P1-1): the response includes ownerUserId and licensePlate, so
+     * it's owner-only, not just authenticated-only — no token at all gets
+     * 401, a different authenticated user gets 403, same
+     * getVehicle-then-check-ownership order as VehicleService.deleteVehicle.
+     */
+    @Test
+    void gettingAVehicleRequiresBeingItsOwner() {
+        String runId = UUID.randomUUID().toString();
+        Registered customer = TestAuth.registerCustomer(restTemplate, "veh-get-owner-" + runId + "@example.com");
+        Registered otherCustomer = TestAuth.registerCustomer(restTemplate, "veh-get-other-" + runId
+                + "@example.com");
+        UUID vehicleId = registerVehicle(customer, "Mazda", "3", 2020, "GET 002");
+
+        // No token at all -> 401.
+        ResponseEntity<Map> unauthenticated = restTemplate.getForEntity("/api/v1/vehicles/" + vehicleId, Map.class);
+        assertThat(unauthenticated.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        // The vehicle's own owner can read it.
+        ResponseEntity<Map> asOwner = restTemplate.exchange("/api/v1/vehicles/" + vehicleId, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(asOwner.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(asOwner.getBody().get("id")).isEqualTo(vehicleId.toString());
+        assertThat(asOwner.getBody().get("licensePlate")).isEqualTo("GET 002");
+
+        // A different authenticated user cannot.
+        ResponseEntity<Map> asOtherCustomer = restTemplate.exchange("/api/v1/vehicles/" + vehicleId, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(otherCustomer.accessToken())), Map.class);
+        assertThat(asOtherCustomer.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
     @Test
     void deactivatingAMechanicRemovesItFromTheProviderListingAndReactivationBringsItBack() {
         String runId = UUID.randomUUID().toString();

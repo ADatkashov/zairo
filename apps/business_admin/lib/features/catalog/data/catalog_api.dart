@@ -42,6 +42,48 @@ class CatalogApi {
     return data.map((e) => CatalogServiceModel.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  // ---- Admin reads (any status, not just ACTIVE) -------------------
+  //
+  // The Platform Admin taxonomy screen's own list: the public reads above
+  // are ACTIVE-only by design (see backend's CatalogController doc
+  // comment), which meant deactivating a category made it vanish from the
+  // very screen that could reactivate it. These hit the admin-only
+  // `/platform/**` GETs instead, so INACTIVE/ARCHIVED entries stay visible
+  // (with a status toggle) here.
+
+  Future<List<Category>> listAllCategories(String platformToken) async {
+    final response = await _dioClient.get('/platform/categories', options: _authed(platformToken));
+    final data = response.data as List<dynamic>;
+    return data.map((e) => Category.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<List<BusinessType>> listAllBusinessTypes(String platformToken, String categoryId) async {
+    final response = await _dioClient.get(
+      '/platform/categories/$categoryId/business-types',
+      options: _authed(platformToken),
+    );
+    final data = response.data as List<dynamic>;
+    return data.map((e) => BusinessType.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<List<Subsphere>> listAllSubspheres(String platformToken, String businessTypeId) async {
+    final response = await _dioClient.get(
+      '/platform/business-types/$businessTypeId/subspheres',
+      options: _authed(platformToken),
+    );
+    final data = response.data as List<dynamic>;
+    return data.map((e) => Subsphere.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<List<CatalogServiceModel>> listAllCatalogServices(String platformToken, String businessTypeId) async {
+    final response = await _dioClient.get(
+      '/platform/business-types/$businessTypeId/services',
+      options: _authed(platformToken),
+    );
+    final data = response.data as List<dynamic>;
+    return data.map((e) => CatalogServiceModel.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
   Future<Category> createCategory(
     String platformToken, {
     required String code,

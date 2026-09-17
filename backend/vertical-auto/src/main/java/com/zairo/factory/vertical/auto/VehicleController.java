@@ -55,12 +55,18 @@ public class VehicleController {
         return VehicleResponse.from(vehicle);
     }
 
-    @Operation(summary = "Get a vehicle by id")
+    @Operation(summary = "Get a vehicle by id", description = "Owner-only: the caller must be the vehicle's "
+            + "own owner — the response includes ownerUserId and licensePlate, not for another caller to see.")
     @ApiResponse(responseCode = "200", description = "The vehicle")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
     @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/vehicles/{vehicleId}")
-    public VehicleResponse getById(@Parameter(description = "The vehicle's id.") @PathVariable UUID vehicleId) {
-        return VehicleResponse.from(vehicleService.getVehicle(vehicleId));
+    public VehicleResponse getById(@Parameter(description = "The vehicle's id.") @PathVariable UUID vehicleId,
+            HttpServletRequest httpRequest) {
+        UUID callerId = CurrentUser.requireUserId(httpRequest);
+        return VehicleResponse.from(vehicleService.getVehicle(vehicleId, callerId));
     }
 
     @Operation(summary = "List a user's vehicles", description = "Owner-only: the caller must be the exact "

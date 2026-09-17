@@ -49,6 +49,9 @@ app:
     # env var. Whoever sets up staging/production: this specific value has
     # been public in git history since early in the project — treat it as
     # burned, generate a fresh one, never reuse it for anything real.
+    # ProductionSecretsValidator refuses to boot on this exact value (or a
+    # blank one) when SPRING_PROFILES_ACTIVE=prod — see that class and
+    # docs/ci-cd.md §12.
     secret: ${JWT_SECRET:Jc65IChbJdrOLj/C4rT+OCdPEdvzosIIpIG0xYM9dJ1Eflr/QDsOg+hLKOdX8k1B}
     access-token-ttl-minutes: 30
     refresh-token-ttl-days: 30
@@ -125,6 +128,117 @@ booking:
   # How long a booking can sit in PENDING_PAYMENT before the sweep job
   # cancels it and releases the slot — see booking.BookingPaymentTimeoutJob.
   payment-timeout-minutes: ${BOOKING_PAYMENT_TIMEOUT_MINUTES:15}
+
+# Smart Fill Engine (see smartfill's own package-info.java). Every tunable
+# the feature needs is here, not hardcoded in the module — see
+# SmartFillProperties.
+smartfill:
+  staging:
+    # Candidates contacted per stage, and how long to wait before trying
+    # the next stage if the slot's still open — see SmartFillCampaignService.
+    batch-size: ${SMARTFILL_BATCH_SIZE:3}
+    stage-delay-minutes: ${SMARTFILL_STAGE_DELAY_MINUTES:15}
+    # A campaign never sends more than this many stages, even if the
+    # candidate pool is bigger.
+    max-stages: ${SMARTFILL_MAX_STAGES:4}
+    max-candidates-per-campaign: ${SMARTFILL_MAX_CANDIDATES_PER_CAMPAIGN:20}
+    # Hard ceiling on a campaign's total lifetime, regardless of the slot's
+    # own start time (which usually ends it sooner).
+    campaign-max-duration-minutes: ${SMARTFILL_CAMPAIGN_MAX_DURATION_MINUTES:180}
+  antispam:
+    per-user-cooldown-hours: ${SMARTFILL_PER_USER_COOLDOWN_HOURS:6}
+    per-business-cooldown-days: ${SMARTFILL_PER_BUSINESS_COOLDOWN_DAYS:7}
+    decline-cooldown-days: ${SMARTFILL_DECLINE_COOLDOWN_DAYS:14}
+    max-daily-notifications-per-user: ${SMARTFILL_MAX_DAILY_NOTIFICATIONS:3}
+    max-weekly-notifications-per-user: ${SMARTFILL_MAX_WEEKLY_NOTIFICATIONS:10}
+  scoring:
+    recent-visit-window-days: ${SMARTFILL_RECENT_VISIT_WINDOW_DAYS:90}
+    recent-engagement-window-days: ${SMARTFILL_RECENT_ENGAGEMENT_WINDOW_DAYS:30}
+    suitable-time-tolerance-minutes: ${SMARTFILL_SUITABLE_TIME_TOLERANCE_MINUTES:60}
+    # See ScoringFactor for what each key means. Not hardcoded anywhere in
+    # the scoring engine — change priority by editing this map alone.
+    weights:
+      FOLLOWS_PROVIDER: 15
+      PREVIOUSLY_BOOKED_SAME_EMPLOYEE: 25
+      RECENTLY_VISITED_PROVIDER: 20
+      PREVIOUSLY_BOOKED_SAME_SERVICE: 20
+      PREVIOUS_PROVIDER_BOOKING: 10
+      CATEGORY_INTEREST: 5
+      SUITABLE_HISTORICAL_TIME: 10
+      RECENT_ENGAGEMENT: 5
+      DUE_FOR_REBOOKING: 10
+
+# Rebook Engine (see rebookengine's own package-info.java). Every tunable
+# the feature needs is here, not hardcoded in the module -- see
+# RebookProperties.
+rebook:
+  # A customer needs at least this many COMPLETED visits with a provider
+  # (including the one that just completed) before ZAIRO tries to establish
+  # a usual visit interval for them at all.
+  min-visits-to-establish-interval: ${REBOOK_MIN_VISITS:2}
+  # The computed average gap between visits is clamped into this range --
+  # guards against one outlier pair of visits predicting an absurd cadence.
+  min-interval-days: ${REBOOK_MIN_INTERVAL_DAYS:7}
+  max-interval-days: ${REBOOK_MAX_INTERVAL_DAYS:180}
+  # How long after the nudge goes out to wait for a rebooking before giving up.
+  follow-up-window-days: ${REBOOK_FOLLOW_UP_WINDOW_DAYS:14}
+  # RebookStrategy#evaluate's probability estimate -- a flat heuristic today
+  # (see that class's own doc comment on where a future ML model would slot in).
+  base-probability: ${REBOOK_BASE_PROBABILITY:0.35}
+
+# Customer Intelligence (see customerintelligence's own package-info.java).
+# Every threshold RetentionCalculator/CustomerValueCalculator use is here,
+# not hardcoded in either class -- same reasoning as smartfill/rebook above.
+customer-intelligence:
+  interval:
+    # Fewer completed visits than this and averageVisitIntervalDays stays
+    # null -- a single visit establishes no cadence.
+    min-completed-visits-for-interval: ${CI_MIN_VISITS_FOR_INTERVAL:2}
+  retention:
+    # Days-since-last-visit up to this multiple of the average interval is
+    # still ACTIVE; beyond it, DUE_FOR_REBOOKING; beyond at-risk-factor,
+    # AT_RISK; beyond inactive-factor, INACTIVE. See RetentionCalculator's
+    # own worked example.
+    due-soon-factor: ${CI_DUE_SOON_FACTOR:1.15}
+    at-risk-factor: ${CI_AT_RISK_FACTOR:2.0}
+    inactive-factor: ${CI_INACTIVE_FACTOR:3.0}
+    # Fallback flat windows for a customer with only one visit ever (no
+    # established interval to multiply against).
+    single-visit-active-window-days: ${CI_SINGLE_VISIT_ACTIVE_WINDOW_DAYS:60}
+    single-visit-at-risk-window-days: ${CI_SINGLE_VISIT_AT_RISK_WINDOW_DAYS:120}
+  value:
+    # Caps that alone max out their factor at 1.0 -- see CustomerValueCalculator.
+    max-completed-bookings-for-score: ${CI_VALUE_MAX_BOOKINGS:20}
+    max-total-spent-for-score: ${CI_VALUE_MAX_SPENT:2000}
+    recency-window-days: ${CI_VALUE_RECENCY_WINDOW_DAYS:180}
+    # Blend weights -- normalized against their own sum, so they need not add to 1.
+    completed-bookings-weight: ${CI_VALUE_WEIGHT_BOOKINGS:0.30}
+    total-spent-weight: ${CI_VALUE_WEIGHT_SPENT:0.30}
+    attendance-weight: ${CI_VALUE_WEIGHT_ATTENDANCE:0.15}
+    recency-weight: ${CI_VALUE_WEIGHT_RECENCY:0.15}
+    repeat-relationship-weight: ${CI_VALUE_WEIGHT_REPEAT:0.10}
+
+# Lost Customer Recovery (see reactivationengine's own package-info.java).
+# Every tunable the feature needs is here, not hardcoded in the module --
+# see ReactivationProperties.
+reactivation:
+  # The daily sweep's SQL floor -- a pair whose last visit is more recent
+  # than this is never even considered, regardless of their usual cadence.
+  scan-minimum-inactivity-days: ${REACTIVATION_SCAN_MINIMUM_INACTIVITY_DAYS:45}
+  # Once a customer has an established average interval, their inactivity
+  # must clear (average interval x this) to count as "lost" rather than
+  # just "due" (Rebook's territory).
+  interval-multiplier: ${REACTIVATION_INTERVAL_MULTIPLIER:2.0}
+  # Regardless of any established pattern (or lack of one), this many days
+  # of inactivity always qualifies -- the safety net for a single-visit
+  # customer with no cadence to compare against.
+  absolute-max-inactivity-days: ${REACTIVATION_ABSOLUTE_MAX_INACTIVITY_DAYS:120}
+  # Longer than Rebook's follow-up window -- a colder lead is given more
+  # time to respond before the campaign gives up.
+  follow-up-window-days: ${REACTIVATION_FOLLOW_UP_WINDOW_DAYS:30}
+  # ReactivationStrategy#evaluate's probability estimate -- lower than
+  # Rebook's since these are colder leads by construction.
+  base-probability: ${REACTIVATION_BASE_PROBABILITY:0.15}
 
 management:
   endpoints:

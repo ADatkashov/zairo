@@ -5,12 +5,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/widgets/change_avatar_dialog.dart';
+import '../../../automation/presentation/screens/automation_center_screen.dart';
 import '../../../billing/data/billing_exception.dart';
 import '../../../billing/data/models/subscription.dart';
 import '../../../billing/presentation/providers/billing_providers.dart';
 import '../../../billing/presentation/screens/billing_screen.dart';
+import '../../../campaigns/data/models/campaign.dart';
+import '../../../campaigns/presentation/providers/campaign_providers.dart';
+import '../../../campaigns/presentation/screens/campaign_center_screen.dart';
 import '../../../catalog/presentation/category_icon.dart';
 import '../../../catalog/presentation/providers/catalog_providers.dart';
+import '../../../loyalty/presentation/screens/loyalty_screen.dart';
+import '../../../messaging/presentation/screens/business_inbox_screen.dart';
 import '../../../salon/data/models/admin_provider.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
 import '../../../salon/presentation/screens/salon_detail_screen.dart';
@@ -58,6 +64,34 @@ class DashboardScreen extends ConsumerWidget {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.campaign_outlined),
+            tooltip: l10n.campaignCenterNavLabel,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => CampaignCenterScreen(ownerUserId: user.id)),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.bolt_outlined),
+            tooltip: l10n.automationCenterNavLabel,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => AutomationCenterScreen(ownerUserId: user.id)),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.loyalty_outlined),
+            tooltip: l10n.loyaltyNavLabel,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => LoyaltyScreen(ownerUserId: user.id)),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.forum_outlined),
+            tooltip: l10n.messagingNavLabel,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => BusinessInboxScreen(ownerUserId: user.id)),
+            ),
+          ),
+          IconButton(
             icon: const Icon(Icons.settings_outlined),
             tooltip: l10n.settingsButtonTooltip,
             onPressed: () => Navigator.of(context).push(
@@ -83,13 +117,19 @@ class DashboardScreen extends ConsumerWidget {
             ]),
             child: ListView.separated(
             padding: const EdgeInsets.all(FactorySpacing.space4),
-            itemCount: providers.length + 2,
+            itemCount: providers.length + 3,
             separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
             itemBuilder: (context, index) {
               if (index == 0) {
                 return _OwnerOverviewHero(ownerUserId: user.id);
               }
-              if (index == providers.length + 1) {
+              if (index == 1) {
+                return _NeedsAttentionStrip(
+                  ownerUserId: user.id,
+                  subscription: subscriptionAsync.value,
+                );
+              }
+              if (index == providers.length + 2) {
                 final subscription = subscriptionAsync.value;
                 final atLimit = subscription != null && providers.length >= subscription.limits.maxProviders;
                 if (atLimit) {
@@ -102,7 +142,7 @@ class DashboardScreen extends ConsumerWidget {
                   onPressed: () => _openCreateSalonDialog(context, ref, user.id),
                 );
               }
-              final provider = providers[index - 1];
+              final provider = providers[index - 2];
               return _SalonCard(
                 provider: provider,
                 onTap: () => Navigator.of(context).push(
@@ -300,6 +340,134 @@ class _HeroCircle extends StatelessWidget {
     );
   }
 }
+
+/// Board 12 (v2 design audit) — the dashboard's central principle: "tell
+/// the business owner what needs attention and what action can generate
+/// value" instead of just totals. Both sources here are real and were
+/// already fully built server-side but never surfaced anywhere:
+/// [Subscription.gracePeriodEndsAt]/status (see BillingScreen's grace-period
+/// banner) and [ownerSmartActionsProvider] (Campaign Center's smart-actions
+/// endpoint, previously fetched by no screen at all).
+class _NeedsAttentionStrip extends ConsumerWidget {
+  const _NeedsAttentionStrip({required this.ownerUserId, required this.subscription});
+
+  final String ownerUserId;
+  final Subscription? subscription;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final textTheme = Theme.of(context).textTheme;
+    final actionsAsync = ref.watch(ownerSmartActionsProvider(ownerUserId));
+    final actions = actionsAsync.value ?? const <SmartActionItem>[];
+
+    final countsByType = <SmartActionType, int>{};
+    for (final action in actions) {
+      countsByType[action.type] = (countsByType[action.type] ?? 0) + 1;
+    }
+
+    void openCampaignCenter() => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => CampaignCenterScreen(ownerUserId: ownerUserId)),
+        );
+
+    final items = <_AttentionItem>[
+      if (subscription?.status == 'PAST_DUE')
+        _AttentionItem(
+          icon: Icons.warning_amber_rounded,
+          label: l10n.dashboardAttentionBillingPastDue,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const BillingScreen()),
+          ),
+        ),
+      // A fixed, priority-ish order (expiring/failed campaigns first, then
+      // customer-growth opportunities) rather than sorted by raw count —
+      // one urgent expiring campaign matters more than five long-inactive
+      // customers that have waited months already.
+      for (final type in SmartActionType.values)
+        if (countsByType[type] != null)
+          _AttentionItem(
+            icon: _smartActionIcon(type),
+            label: _smartActionLabel(l10n, type, countsByType[type]!),
+            onTap: openCampaignCenter,
+          ),
+    ];
+
+    if (items.isEmpty) {
+      // Still loading (actionsAsync not settled) shows nothing rather than
+      // a premature "all clear" that would flicker away once data arrives.
+      if (!actionsAsync.hasValue && subscription == null) {
+        return const SizedBox.shrink();
+      }
+      return Text(
+        l10n.dashboardAttentionAllClear,
+        style: textTheme.bodySmall?.copyWith(color: context.factoryColors.textTertiary),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.dashboardNeedsAttentionTitle, style: textTheme.titleSmall),
+        const SizedBox(height: FactorySpacing.space2),
+        for (final item in items)
+          Padding(
+            padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
+            child: _AttentionCard(item: item),
+          ),
+      ],
+    );
+  }
+}
+
+class _AttentionItem {
+  const _AttentionItem({required this.icon, required this.label, required this.onTap});
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+}
+
+class _AttentionCard extends StatelessWidget {
+  const _AttentionCard({required this.item});
+
+  final _AttentionItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    return FactoryCard(
+      onTap: item.onTap,
+      child: Row(
+        children: [
+          Icon(item.icon, size: 20, color: colors.warning),
+          const SizedBox(width: FactorySpacing.space3),
+          Expanded(
+            child: Text(item.label, style: Theme.of(context).textTheme.bodyMedium),
+          ),
+          Icon(Icons.chevron_right, color: colors.textTertiary),
+        ],
+      ),
+    );
+  }
+}
+
+IconData _smartActionIcon(SmartActionType type) => switch (type) {
+      SmartActionType.campaignExpiringSoon => Icons.hourglass_bottom_rounded,
+      SmartActionType.failedCampaign => Icons.error_outline_rounded,
+      SmartActionType.retriableCampaign => Icons.replay_rounded,
+      SmartActionType.rebookingOpportunity => Icons.event_repeat_rounded,
+      SmartActionType.atRiskCustomer => Icons.person_off_outlined,
+      SmartActionType.longInactiveCustomer => Icons.person_search_outlined,
+    };
+
+String _smartActionLabel(AppLocalizations l10n, SmartActionType type, int count) => switch (type) {
+      SmartActionType.campaignExpiringSoon => l10n.dashboardAttentionCampaignExpiringSoon(count),
+      SmartActionType.failedCampaign => l10n.dashboardAttentionFailedCampaign(count),
+      SmartActionType.retriableCampaign => l10n.dashboardAttentionRetriableCampaign(count),
+      SmartActionType.rebookingOpportunity => l10n.dashboardAttentionRebookingOpportunity(count),
+      SmartActionType.atRiskCustomer => l10n.dashboardAttentionAtRiskCustomer(count),
+      SmartActionType.longInactiveCustomer => l10n.dashboardAttentionLongInactiveCustomer(count),
+    };
 
 /// Replaces the old 3-option `SegmentedButton` (beauty/auto/cleaning) with a
 /// dropdown sourced from the master catalog — a `SegmentedButton` doesn't

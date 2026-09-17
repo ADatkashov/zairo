@@ -6,6 +6,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
 import '../../data/models/subscription.dart';
+import '../../data/models/subscription_charge.dart';
 import '../providers/billing_providers.dart';
 
 /// The owner's tariff plan: current plan, its limits, how many businesses
@@ -51,6 +52,7 @@ class _BillingBody extends ConsumerStatefulWidget {
 
 class _BillingBodyState extends ConsumerState<_BillingBody> {
   bool _isSubmitting = false;
+  bool _isRetryingCharge = false;
   String? _error;
 
   @override
@@ -99,6 +101,14 @@ class _BillingBodyState extends ConsumerState<_BillingBody> {
             ],
           ),
         ),
+        if (subscription.status == 'PAST_DUE' && subscription.gracePeriodEndsAt != null) ...[
+          const SizedBox(height: FactorySpacing.space3),
+          _GracePeriodBanner(
+            gracePeriodEndsAt: subscription.gracePeriodEndsAt!,
+            isRetrying: _isRetryingCharge,
+            onFix: _retryCharge,
+          ),
+        ],
         const SizedBox(height: FactorySpacing.space4),
         Text(l10n.billingUsageSectionTitle, style: textTheme.titleSmall),
         const SizedBox(height: FactorySpacing.space2),
@@ -153,8 +163,38 @@ class _BillingBodyState extends ConsumerState<_BillingBody> {
             isLoading: _isSubmitting,
             onPressed: _isSubmitting ? null : _downgrade,
           ),
+        const SizedBox(height: FactorySpacing.space6),
+        Text(l10n.billingInvoicesSectionTitle, style: textTheme.titleSmall),
+        const SizedBox(height: FactorySpacing.space2),
+        const _InvoicesSection(),
       ],
     );
+  }
+
+  Future<void> _retryCharge() async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _isRetryingCharge = true);
+    try {
+      final updated = await ref.read(billingApiProvider).retryPastDueCharge();
+      ref.invalidate(mySubscriptionProvider);
+      ref.invalidate(myChargesProvider);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            updated.status == 'PAST_DUE'
+                ? l10n.billingGracePeriodFixFailed
+                : l10n.billingGracePeriodFixSucceeded,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.billingGracePeriodFixFailed)));
+    } finally {
+      if (mounted) setState(() => _isRetryingCharge = false);
+    }
   }
 
   Future<void> _upgrade() async {
@@ -192,6 +232,142 @@ class _BillingBodyState extends ConsumerState<_BillingBody> {
     } catch (e) {
       setState(() => _isSubmitting = false);
     }
+  }
+}
+
+/// Board 16 (v2 design audit) — surfaces [Subscription.gracePeriodEndsAt],
+/// which the model already carried but no screen ever rendered: an owner
+/// whose renewal charge failed had no way to know PRO was about to lapse.
+class _GracePeriodBanner extends StatelessWidget {
+  const _GracePeriodBanner({
+    required this.gracePeriodEndsAt,
+    required this.isRetrying,
+    required this.onFix,
+  });
+
+  final DateTime gracePeriodEndsAt;
+  final bool isRetrying;
+  final VoidCallback onFix;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final daysLeft = gracePeriodEndsAt.difference(DateTime.now()).inDays;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: FactorySpacing.space3,
+        vertical: FactorySpacing.space3,
+      ),
+      decoration: BoxDecoration(
+        color: colors.error.withValues(alpha: 0.08),
+        border: Border.all(color: colors.error.withValues(alpha: 0.3)),
+        borderRadius: FactoryRadius.mdRadius,
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning_amber_rounded, color: colors.error, size: 20),
+          const SizedBox(width: FactorySpacing.space2),
+          Expanded(
+            child: Text(
+              daysLeft <= 0
+                  ? l10n.billingGracePeriodExpiringToday
+                  : l10n.billingGracePeriodBanner(daysLeft),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: colors.error),
+            ),
+          ),
+          const SizedBox(width: FactorySpacing.space2),
+          FactoryButton(
+            label: l10n.billingGracePeriodFixButton,
+            variant: FactoryButtonVariant.danger,
+            isLoading: isRetrying,
+            onPressed: isRetrying ? null : onFix,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Board 16 (v2 design audit) — [SubscriptionCharge] rows existed in the
+/// backend already (the renewal job's own idempotency ledger); this is the
+/// first screen that reads them back for the owner.
+class _InvoicesSection extends ConsumerWidget {
+  const _InvoicesSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final chargesAsync = ref.watch(myChargesProvider);
+
+    return chargesAsync.when(
+      data: (charges) {
+        if (charges.isEmpty) {
+          return Text(
+            l10n.billingInvoicesEmpty,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+          );
+        }
+        return FactoryCard(
+          child: Column(
+            children: [
+              for (final charge in charges) ...[
+                if (charge != charges.first)
+                  const Divider(height: FactorySpacing.space5),
+                _InvoiceRow(charge: charge),
+              ],
+            ],
+          ),
+        );
+      },
+      loading: () => const LinearProgressIndicator(),
+      error: (error, stackTrace) => const SizedBox.shrink(),
+    );
+  }
+}
+
+class _InvoiceRow extends StatelessWidget {
+  const _InvoiceRow({required this.charge});
+
+  final SubscriptionCharge charge;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FactoryPriceText(
+              amount: charge.amount,
+              currencySymbol: charge.currency,
+              fontSize: 14,
+              weight: FontWeight.w600,
+            ),
+            Text(
+              _formatDate(charge.createdAt),
+              style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+            ),
+          ],
+        ),
+        FactoryBadge(
+          label: _invoiceStatusLabel(l10n, charge.status),
+          variant: _invoiceStatusVariant(charge.status),
+        ),
+      ],
+    );
   }
 }
 
@@ -233,3 +409,15 @@ FactoryBadgeVariant _statusVariant(String status) => switch (status) {
 
 String _formatDate(DateTime date) =>
     '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+String _invoiceStatusLabel(AppLocalizations l10n, String status) => switch (status) {
+      'SUCCEEDED' => l10n.billingInvoiceStatusSucceeded,
+      'FAILED' => l10n.billingInvoiceStatusFailed,
+      _ => l10n.billingInvoiceStatusPending,
+    };
+
+FactoryBadgeVariant _invoiceStatusVariant(String status) => switch (status) {
+      'SUCCEEDED' => FactoryBadgeVariant.available,
+      'FAILED' => FactoryBadgeVariant.error,
+      _ => FactoryBadgeVariant.neutral,
+    };

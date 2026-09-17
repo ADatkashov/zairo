@@ -12,6 +12,9 @@ public interface FavoriteRepository extends JpaRepository<Favorite, UUID> {
 
     List<Favorite> findByUserId(UUID userId);
 
+    /** Every customer who favorited this provider — smart-fill's "follows this business" candidate signal. */
+    List<Favorite> findByProviderId(UUID providerId);
+
     @Transactional
     void deleteByUserIdAndProviderId(UUID userId, UUID providerId);
 }

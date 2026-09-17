@@ -124,6 +124,11 @@ public class SubscriptionCharge {
         return failureReason;
     }
 
+    /** The Billing screen's invoice history (v2 design audit) sorts by this. */
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
     void markSucceeded(String providerReference, Instant now) {
         this.status = SubscriptionChargeStatus.SUCCEEDED;
         this.providerReference = providerReference;

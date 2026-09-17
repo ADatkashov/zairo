@@ -79,6 +79,18 @@ class _FakePaymentsApi extends PaymentsApi {
       createdAt: DateTime.now(),
     );
   }
+
+  @override
+  Future<Payment?> getPayment(String bookingId) async => lastChargedBookingId == null
+      ? null
+      : Payment(
+          id: 'payment-1',
+          bookingId: bookingId,
+          amount: 30,
+          currency: 'USD',
+          status: 'SUCCEEDED',
+          createdAt: DateTime.now(),
+        );
 }
 
 class _FakeBeautyApi extends BeautyApi {
@@ -272,7 +284,8 @@ void main() {
       'totalPrice': 30.0,
     });
     expect(fakePaymentsApi.lastChargedBookingId, 'booking-1');
-    expect(find.text('Booking confirmed and paid!'), findsOneWidget);
+    expect(find.text('Booking confirmed!'), findsOneWidget);
+    expect(find.text('Your spot at Test Salon is booked.'), findsOneWidget);
   });
 
   testWidgets('a beauty provider with masters requires picking one and books through the beauty endpoint',
