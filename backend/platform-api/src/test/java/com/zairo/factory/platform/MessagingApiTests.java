@@ -2,8 +2,14 @@ package com.zairo.factory.platform;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequest;
+import com.zairo.factory.booking.BookingDtos.CreateBookingRequest;
 import com.zairo.factory.platform.TestAuth.Registered;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
+import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -90,18 +96,22 @@ class MessagingApiTests {
         Map<?, ?> lastMessage = (Map<?, ?>) fullThread.getBody().get(2);
         assertThat(lastMessage.get("body")).isEqualTo("Yes, see you then!");
 
-        // Shows up in both inboxes.
+        // Shows up in both inboxes, each with the other side's display name
+        // resolved server-side (there's no client-usable "get user by id").
         ResponseEntity<List> customerInbox = restTemplate.exchange("/api/v1/conversations/mine", HttpMethod.GET,
                 new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), List.class);
         assertThat(customerInbox.getBody()).anySatisfy(entry -> {
             Map<?, ?> conversation = (Map<?, ?>) entry;
             assertThat(conversation.get("id")).isEqualTo(conversationId.toString());
+            assertThat(conversation.get("providerName")).isEqualTo("Chat Salon " + runId);
         });
 
         ResponseEntity<List> businessInbox = restTemplate.exchange(
                 "/api/v1/providers/" + providerId + "/conversations", HttpMethod.GET,
                 new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), List.class);
         assertThat(businessInbox.getBody()).hasSize(1);
+        Map<?, ?> businessInboxEntry = (Map<?, ?>) businessInbox.getBody().get(0);
+        assertThat(businessInboxEntry.get("customerDisplayName")).isEqualTo("Registered Customer");
 
         // A different owner can't read this business's inbox.
         ResponseEntity<Map> forbiddenInbox = restTemplate.exchange(
@@ -131,5 +141,73 @@ class MessagingApiTests {
                 HttpMethod.POST, new HttpEntity<>(Map.of("body", "   "), TestAuth.authHeaders(customer.accessToken())),
                 Map.class);
         assertThat(blankBody.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void messagingAboutABookingTagsTheMessageAndResolvesTheProviderFromTheBookingItself() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "chat-booking-owner-" + runId + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "chat-booking-customer-" + runId
+                + "@example.com");
+        Registered stranger = TestAuth.registerCustomer(restTemplate, "chat-booking-stranger-" + runId
+                + "@example.com");
+
+        var providerRequest = new CreateProviderRequest(owner.userId(), "Chat Booking Salon " + runId, "beauty");
+        UUID providerId = UUID.fromString(restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
+                new HttpEntity<>(providerRequest, TestAuth.authHeaders(owner.accessToken())), Map.class).getBody()
+                .get("id").toString());
+
+        var serviceRequest = new CreateServiceRequest("Chat Service", 30, new BigDecimal("20.00"), "USD");
+        UUID serviceId = UUID.fromString(restTemplate.exchange("/api/v1/providers/" + providerId + "/services",
+                HttpMethod.POST, new HttpEntity<>(serviceRequest, TestAuth.authHeaders(owner.accessToken())),
+                Map.class).getBody().get("id").toString());
+
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        var slotRequest = new CreateAvailabilitySlotRequest(start, start.plus(30, ChronoUnit.MINUTES));
+        UUID slotId = UUID.fromString(restTemplate.exchange("/api/v1/providers/" + providerId
+                + "/availability-slots", HttpMethod.POST,
+                new HttpEntity<>(slotRequest, TestAuth.authHeaders(owner.accessToken())), Map.class).getBody()
+                .get("id").toString());
+
+        var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("20.00"));
+        UUID bookingId = UUID.fromString(restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
+                new HttpEntity<>(bookingRequest, TestAuth.authHeaders(customer.accessToken())), Map.class).getBody()
+                .get("id").toString());
+
+        // A stranger who doesn't own this booking can't message "about" it.
+        ResponseEntity<Map> forbidden = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/messages",
+                HttpMethod.POST, new HttpEntity<>(Map.of("body", "not mine"),
+                        TestAuth.authHeaders(stranger.accessToken())), Map.class);
+        assertThat(forbidden.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        // An unknown booking is 404.
+        ResponseEntity<Map> notFound = restTemplate.exchange("/api/v1/bookings/" + UUID.randomUUID() + "/messages",
+                HttpMethod.POST, new HttpEntity<>(Map.of("body", "hello?"),
+                        TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(notFound.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        // The booking's own customer can, and the message carries the bookingId.
+        ResponseEntity<Map> sent = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/messages",
+                HttpMethod.POST, new HttpEntity<>(Map.of("body", "Can I reschedule this?"),
+                        TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(sent.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(sent.getBody().get("bookingId")).isEqualTo(bookingId.toString());
+
+        // It lands in the same (customer, provider) thread as any other message — resolved
+        // from the booking, not a separate per-booking conversation.
+        ResponseEntity<List> thread = restTemplate.exchange("/api/v1/providers/" + providerId + "/messages",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), List.class);
+        assertThat(thread.getBody()).hasSize(1);
+        Map<?, ?> onlyMessage = (Map<?, ?>) thread.getBody().get(0);
+        assertThat(onlyMessage.get("bookingId")).isEqualTo(bookingId.toString());
+
+        // A plain, non-booking message still has a null bookingId.
+        restTemplate.exchange("/api/v1/providers/" + providerId + "/messages", HttpMethod.POST,
+                new HttpEntity<>(Map.of("body", "unrelated question"), TestAuth.authHeaders(customer.accessToken())),
+                Map.class);
+        ResponseEntity<List> fullThread = restTemplate.exchange("/api/v1/providers/" + providerId + "/messages",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), List.class);
+        Map<?, ?> plainMessage = (Map<?, ?>) fullThread.getBody().get(1);
+        assertThat(plainMessage.get("bookingId")).isNull();
     }
 }

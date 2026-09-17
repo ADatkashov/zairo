@@ -5,6 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../booking/presentation/screens/provider_detail_screen.dart';
+import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../data/models/provider_search_result.dart';
 import '../providers/discovery_providers.dart';
 import '../providers/recent_searches_provider.dart';
@@ -138,47 +139,80 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           ),
                         );
 
-                    return RefreshIndicator(
-                      onRefresh: () =>
-                          ref.refresh(searchResultsProvider(query).future),
-                      child: columns == 1
-                          ? ListView.separated(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: FactorySpacing.space4,
-                                vertical: FactorySpacing.space2,
+                    return Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            FactorySpacing.space4,
+                            FactorySpacing.space2,
+                            FactorySpacing.space4,
+                            0,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                l10n.searchResultsCount(results.length),
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(color: colors.textTertiary),
                               ),
-                              itemCount: results.length,
-                              separatorBuilder: (_, _) =>
-                                  const SizedBox(height: FactorySpacing.space3),
-                              itemBuilder: (context, index) {
-                                final result = results[index];
-                                return ProviderCard(
-                                  result: result,
-                                  onTap: () => openProvider(result),
-                                );
-                              },
-                            )
-                          : GridView.builder(
-                              padding: const EdgeInsets.all(
-                                FactorySpacing.space4,
+                              _SortMenuButton(
+                                value: query.sort,
+                                onChanged: (sort) => setState(
+                                  () => _query = _query.copyWith(sort: sort),
+                                ),
                               ),
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: columns,
-                                    mainAxisSpacing: FactorySpacing.space4,
-                                    crossAxisSpacing: FactorySpacing.space4,
-                                    childAspectRatio: 0.78,
-                                  ),
-                              itemCount: results.length,
-                              itemBuilder: (context, index) {
-                                final result = results[index];
-                                return ProviderCard(
-                                  result: result,
-                                  layout: FactoryProviderCardLayout.vertical,
-                                  onTap: () => openProvider(result),
-                                );
-                              },
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: RefreshIndicator(
+                            onRefresh: () => ref.refresh(
+                              searchResultsProvider(query).future,
                             ),
+                            child: columns == 1
+                                ? ListView.separated(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: FactorySpacing.space4,
+                                      vertical: FactorySpacing.space2,
+                                    ),
+                                    itemCount: results.length,
+                                    separatorBuilder: (_, _) => const SizedBox(
+                                      height: FactorySpacing.space3,
+                                    ),
+                                    itemBuilder: (context, index) {
+                                      final result = results[index];
+                                      return ProviderCard(
+                                        result: result,
+                                        onTap: () => openProvider(result),
+                                      );
+                                    },
+                                  )
+                                : GridView.builder(
+                                    padding: const EdgeInsets.all(
+                                      FactorySpacing.space4,
+                                    ),
+                                    gridDelegate:
+                                        SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: columns,
+                                          mainAxisSpacing: FactorySpacing.space4,
+                                          crossAxisSpacing: FactorySpacing.space4,
+                                          childAspectRatio: 0.78,
+                                        ),
+                                    itemCount: results.length,
+                                    itemBuilder: (context, index) {
+                                      final result = results[index];
+                                      return ProviderCard(
+                                        result: result,
+                                        layout:
+                                            FactoryProviderCardLayout.vertical,
+                                        onTap: () => openProvider(result),
+                                      );
+                                    },
+                                  ),
+                          ),
+                        ),
+                      ],
                     );
                   },
                   loading: () => const FactoryLoadingState(),
@@ -276,6 +310,51 @@ class _RecentAndPopularSearches extends ConsumerWidget {
   }
 }
 
+/// Board 07 (v2 design audit) — sort previously lived only inside the
+/// filter sheet, several taps deep; this is the same [DiscoverySort]/
+/// [DiscoveryQuery] plumbing the filter sheet already used, just also
+/// reachable as a one-tap control above the results list.
+class _SortMenuButton extends StatelessWidget {
+  final DiscoverySort value;
+  final ValueChanged<DiscoverySort> onChanged;
+
+  const _SortMenuButton({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    return PopupMenuButton<DiscoverySort>(
+      initialValue: value,
+      onSelected: onChanged,
+      itemBuilder: (context) => [
+        for (final sort in DiscoverySort.values)
+          PopupMenuItem(value: sort, child: Text(_sortLabel(l10n, sort))),
+      ],
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            l10n.searchSortButtonLabel(_sortLabel(l10n, value)),
+            style: Theme.of(
+              context,
+            ).textTheme.labelMedium?.copyWith(color: colors.primary),
+          ),
+          Icon(Symbols.expand_more_rounded, size: 18, color: colors.primary),
+        ],
+      ),
+    );
+  }
+}
+
+String _sortLabel(AppLocalizations l10n, DiscoverySort sort) => switch (sort) {
+  DiscoverySort.recommended => l10n.searchSortRecommended,
+  DiscoverySort.priceAsc => l10n.searchSortPriceAsc,
+  DiscoverySort.priceDesc => l10n.searchSortPriceDesc,
+  DiscoverySort.distance => l10n.searchSortDistance,
+  DiscoverySort.rating => l10n.searchSortRating,
+};
+
 /// The filter form — presented as a bottom sheet (see [showFactoryBottomSheet]
 /// in build()), matching the design system's rule that filters live in a
 /// FilterSheet on mobile/tablet, not a centered dialog.
@@ -351,15 +430,28 @@ class _FilterSheetState extends State<_FilterSheet> {
             style: Theme.of(context).textTheme.labelLarge,
           ),
           const SizedBox(height: FactorySpacing.space2),
-          Wrap(
-            spacing: FactorySpacing.space2,
-            runSpacing: FactorySpacing.space2,
-            children: [
-              _verticalChip(l10n.searchFilterCategoryAll, null),
-              _verticalChip(l10n.discoveryVerticalBeauty, 'beauty'),
-              _verticalChip(l10n.discoveryVerticalAuto, 'auto'),
-              _verticalChip(l10n.discoveryVerticalCleaning, 'cleaning'),
-            ],
+          Consumer(
+            builder: (context, ref, _) {
+              final categoriesAsync = ref.watch(categoriesProvider);
+              final languageCode = Localizations.localeOf(context).languageCode;
+              // Board 07 (v2 design audit) — this used to hardcode exactly
+              // the three verticals that existed when this screen was first
+              // built (beauty/auto/cleaning), so a platform admin adding a
+              // new category — or deactivating an old one — never showed up
+              // here. Sourced from the same master catalog Home's category
+              // grid already reads, ACTIVE-only by construction (see
+              // CatalogController).
+              final categories = categoriesAsync.value ?? const [];
+              return Wrap(
+                spacing: FactorySpacing.space2,
+                runSpacing: FactorySpacing.space2,
+                children: [
+                  _verticalChip(l10n.searchFilterCategoryAll, null),
+                  for (final category in categories)
+                    _verticalChip(category.nameFor(languageCode), category.code),
+                ],
+              );
+            },
           ),
           const SizedBox(height: FactorySpacing.space4),
           Text(

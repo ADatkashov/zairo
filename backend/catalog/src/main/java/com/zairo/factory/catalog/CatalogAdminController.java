@@ -23,8 +23,10 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -50,6 +52,19 @@ public class CatalogAdminController {
     }
 
     // ---- Category ----------------------------------------------------
+
+    @Operation(summary = "List every category, any status", description = "Unlike GET /api/v1/categories "
+            + "(ACTIVE-only, unauthenticated), this includes INACTIVE/ARCHIVED — the taxonomy management screen's "
+            + "own list, so deactivating a category doesn't make it disappear from the screen that can reactivate "
+            + "it. Any authenticated platform role may read this, same as the audit log.")
+    @ApiResponse(responseCode = "200", description = "Every category")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/platform/categories")
+    public List<CategoryResponse> listAllCategories(HttpServletRequest httpRequest) {
+        PlatformCurrentAdmin.requireAdminId(httpRequest);
+        return catalogAdminService.listAllCategories();
+    }
 
     @Operation(summary = "Create a category")
     @ApiResponse(responseCode = "201", description = "Category created")
@@ -91,6 +106,20 @@ public class CatalogAdminController {
     }
 
     // ---- BusinessType --------------------------------------------------
+
+    @Operation(summary = "List a category's business types, any status", description = "The admin-only "
+            + "counterpart of GET /api/v1/categories/{id}/business-types — see listAllCategories.")
+    @ApiResponse(responseCode = "200", description = "Every business type under this category")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "404", description = "The category doesn't exist.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/platform/categories/{id}/business-types")
+    public List<BusinessTypeResponse> listAllBusinessTypes(@PathVariable UUID id,
+            HttpServletRequest httpRequest) {
+        PlatformCurrentAdmin.requireAdminId(httpRequest);
+        return catalogAdminService.listAllBusinessTypes(id);
+    }
 
     @Operation(summary = "Create a business type")
     @ApiResponse(responseCode = "201", description = "Business type created")
@@ -135,6 +164,19 @@ public class CatalogAdminController {
 
     // ---- Subsphere -------------------------------------------------------
 
+    @Operation(summary = "List a business type's subspheres, any status", description = "The admin-only "
+            + "counterpart of GET /api/v1/business-types/{id}/subspheres — see listAllCategories.")
+    @ApiResponse(responseCode = "200", description = "Every subsphere under this business type")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "404", description = "The business type doesn't exist.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/platform/business-types/{id}/subspheres")
+    public List<SubsphereResponse> listAllSubspheres(@PathVariable UUID id, HttpServletRequest httpRequest) {
+        PlatformCurrentAdmin.requireAdminId(httpRequest);
+        return catalogAdminService.listAllSubspheres(id);
+    }
+
     @Operation(summary = "Create a subsphere")
     @ApiResponse(responseCode = "201", description = "Subsphere created")
     @ApiResponse(responseCode = "404", description = "The parent business type doesn't exist.",
@@ -177,6 +219,20 @@ public class CatalogAdminController {
     }
 
     // ---- CatalogService --------------------------------------------------
+
+    @Operation(summary = "List a business type's catalog services, any status", description = "The admin-only "
+            + "counterpart of GET /api/v1/business-types/{id}/services — see listAllCategories.")
+    @ApiResponse(responseCode = "200", description = "Every catalog service under this business type")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "404", description = "The business type doesn't exist.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/platform/business-types/{id}/services")
+    public List<CatalogServiceResponse> listAllCatalogServices(@PathVariable UUID id,
+            HttpServletRequest httpRequest) {
+        PlatformCurrentAdmin.requireAdminId(httpRequest);
+        return catalogAdminService.listAllCatalogServices(id);
+    }
 
     @Operation(summary = "Create a catalog service")
     @ApiResponse(responseCode = "201", description = "Catalog service created")

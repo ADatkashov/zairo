@@ -1,7 +1,7 @@
 description = "Push and in-app notifications, triggered by domain events (e.g. BookingConfirmed) via in-process events."
 
 dependencies {
-    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.38")
+    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.55")
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -28,4 +28,19 @@ dependencies {
     // Only for PaymentRefundedEvent's type — same one-directional "listen
     // for the event" reasoning as the dependencies above.
     implementation(project(":payments"))
+
+    // Only for SmartFillOfferReadyEvent's type — same one-directional
+    // "listen for the event" reasoning as the dependencies above. The
+    // event carries its own denormalized provider/service/employee display
+    // strings, so this dependency is for the type alone, not to read
+    // smart-fill's data.
+    implementation(project(":smart-fill"))
+
+    // Only for RebookOfferReadyEvent's type — same one-directional "listen
+    // for the event" reasoning as the dependency above.
+    implementation(project(":rebook-engine"))
+
+    // Only for ReactivationOfferReadyEvent's type — same one-directional
+    // "listen for the event" reasoning as the dependency above.
+    implementation(project(":reactivation-engine"))
 }

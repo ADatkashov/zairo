@@ -15,9 +15,17 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.TestRestTemplate;
@@ -123,6 +131,72 @@ class SubscriptionApiTests {
         UUID overLimitSlot = createOpenSlot(owner, providerId, 30);
         ResponseEntity<Map> rejected = createBooking(customer, serviceId, overLimitSlot);
         assertThat(rejected.getStatusCode()).isEqualTo(HttpStatus.PAYMENT_REQUIRED);
+    }
+
+    /**
+     * Scenario F (Phase 0 stabilization): fills to 29/30 sequentially (not
+     * part of the race), then fires several concurrent requests at the
+     * 30th-and-beyond slots. Before {@code BookingService}'s advisory lock,
+     * a plain read-then-write count check let concurrent requests all read
+     * 29, all pass the quota check, and all commit — the FREE plan's cap
+     * could be exceeded by however many requests raced. Exactly one of
+     * these must succeed regardless of how many race for the last slot.
+     */
+    @Test
+    void concurrentBookingsAtTheFreeLimitCannotExceedThirtyPerMonth() throws Exception {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "sub-booking-race-" + runId + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "sub-booking-race-cust-" + runId
+                + "@example.com");
+        UUID providerId = createProvider(owner, "Booking Race Salon " + runId, "beauty");
+        UUID serviceId = createService(owner, providerId, "Quick Trim", new BigDecimal("10.00"));
+
+        for (int i = 0; i < 29; i++) {
+            UUID slotId = createOpenSlot(owner, providerId, i);
+            ResponseEntity<Map> response = createBooking(customer, serviceId, slotId);
+            assertThat(response.getStatusCode()).as("booking #%d", i + 1).isEqualTo(HttpStatus.CREATED);
+        }
+
+        int concurrentAttempts = 5;
+        List<UUID> raceSlots = new ArrayList<>();
+        for (int i = 0; i < concurrentAttempts; i++) {
+            raceSlots.add(createOpenSlot(owner, providerId, 29 + i));
+        }
+
+        ExecutorService pool = Executors.newFixedThreadPool(concurrentAttempts);
+        CountDownLatch ready = new CountDownLatch(concurrentAttempts);
+        CountDownLatch go = new CountDownLatch(1);
+        AtomicInteger created = new AtomicInteger();
+        AtomicInteger rejected = new AtomicInteger();
+
+        List<Callable<Void>> tasks = new ArrayList<>();
+        for (UUID slotId : raceSlots) {
+            tasks.add(() -> {
+                ready.countDown();
+                go.await();
+                ResponseEntity<Map> response = createBooking(customer, serviceId, slotId);
+                if (response.getStatusCode() == HttpStatus.CREATED) {
+                    created.incrementAndGet();
+                } else if (response.getStatusCode() == HttpStatus.PAYMENT_REQUIRED) {
+                    rejected.incrementAndGet();
+                }
+                return null;
+            });
+        }
+        List<Future<Void>> futures = new ArrayList<>();
+        for (Callable<Void> task : tasks) {
+            futures.add(pool.submit(task));
+        }
+        ready.await();
+        go.countDown();
+        for (Future<Void> future : futures) {
+            future.get(30, TimeUnit.SECONDS);
+        }
+        pool.shutdown();
+        assertThat(pool.awaitTermination(30, TimeUnit.SECONDS)).isTrue();
+
+        assertThat(created.get()).isEqualTo(1);
+        assertThat(rejected.get()).isEqualTo(concurrentAttempts - 1);
     }
 
     @Test

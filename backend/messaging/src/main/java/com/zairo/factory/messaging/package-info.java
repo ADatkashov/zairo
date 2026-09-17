@@ -7,5 +7,12 @@
  * (plain REST {@code GET}), not real-time — no WebSocket infrastructure
  * exists in this project yet, and polling is the simplest thing that
  * actually closes the gap.
+ *
+ * <p>A {@link com.zairo.factory.messaging.Message} may optionally carry the
+ * booking it's about — see {@link
+ * com.zairo.factory.messaging.MessagingService#sendAsCustomerForBooking} —
+ * so a customer messaging from a booking's detail screen gets a thread that
+ * shows which booking is being discussed, without a separate per-booking
+ * chat concept.
  */
 package com.zairo.factory.messaging;

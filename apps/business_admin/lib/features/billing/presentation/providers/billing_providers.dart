@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/billing_api.dart';
 import '../../data/models/subscription.dart';
+import '../../data/models/subscription_charge.dart';
 
 final billingApiProvider = Provider<BillingApi>((ref) {
   return BillingApi(ref.watch(dioClientProvider));
@@ -13,4 +14,10 @@ final billingApiProvider = Provider<BillingApi>((ref) {
 /// same as GET /subscriptions/me needs no id in its path.
 final mySubscriptionProvider = FutureProvider.autoDispose<Subscription>((ref) {
   return ref.watch(billingApiProvider).getMine();
+});
+
+/// The Billing screen's invoice history (v2 design audit) — same
+/// not-keyed-by-owner reasoning as [mySubscriptionProvider].
+final myChargesProvider = FutureProvider.autoDispose<List<SubscriptionCharge>>((ref) {
+  return ref.watch(billingApiProvider).listCharges();
 });

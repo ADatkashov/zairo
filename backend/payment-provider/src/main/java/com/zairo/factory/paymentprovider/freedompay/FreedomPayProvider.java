@@ -75,14 +75,20 @@ public class FreedomPayProvider implements PaymentProvider {
     @Override
     public PaymentInitiation createPayment(UUID paymentId, BigDecimal amount, String currency, String description,
             String successUrl, String failureUrl) {
-        Map<String, String> fields = baseFields(paymentId, amount, currency, description, successUrl, failureUrl);
+        Map<String, String> fields = baseFields(FreedomPayOrderIds.forBookingPayment(paymentId), paymentId, amount,
+                currency, description, successUrl, failureUrl);
         return initiate("init_payment.php", fields, paymentId);
     }
 
     @Override
     public PaymentInitiation createRecurringPayment(UUID paymentId, BigDecimal amount, String currency,
             String description, String successUrl, String failureUrl) {
-        Map<String, String> fields = baseFields(paymentId, amount, currency, description, successUrl, failureUrl);
+        // paymentId here is actually a subscriptions.SubscriptionCharge id
+        // (see SubscriptionService.upgradeToPro) -- must not share
+        // forBookingPayment's prefix, or the webhook can never resolve it
+        // back to the right table (see FreedomPayOrderIds' own doc comment).
+        Map<String, String> fields = baseFields(FreedomPayOrderIds.forSubscriptionCharge(paymentId), paymentId,
+                amount, currency, description, successUrl, failureUrl);
         // pg_recurring_start/pg_recurring_lifetime are real, documented
         // field names (ADR-0006) — their exact value semantics (lifetime
         // unit, whether "start" must be today) aren't spelled out anywhere
@@ -147,17 +153,18 @@ public class FreedomPayProvider implements PaymentProvider {
         return new RefundResult(ok, ok ? null : errorMessage(response));
     }
 
-    private Map<String, String> baseFields(UUID paymentId, BigDecimal amount, String currency, String description,
-            String successUrl, String failureUrl) {
+    private Map<String, String> baseFields(String orderId, UUID paymentId, BigDecimal amount, String currency,
+            String description, String successUrl, String failureUrl) {
         Map<String, String> fields = new HashMap<>();
         fields.put("pg_merchant_id", properties.merchantId());
         fields.put("pg_amount", amount.toPlainString());
         fields.put("pg_currency", currency);
         fields.put("pg_description", description);
-        // Format documented in ADR-0006's Webhook Architecture — lets the
-        // webhook handler route to the right domain object without an
-        // ambiguous lookup across two tables sharing the UUID space.
-        fields.put("pg_order_id", "booking-payment:" + paymentId);
+        // Format documented in ADR-0006's Webhook Architecture and
+        // FreedomPayOrderIds' own doc comment — lets the webhook handler
+        // route to the right domain object without an ambiguous lookup
+        // across two tables sharing the UUID space.
+        fields.put("pg_order_id", orderId);
         fields.put("pg_success_url", successUrl);
         fields.put("pg_failure_url", failureUrl);
         // Real, documented field (ADR-0006) — forwarded as our own

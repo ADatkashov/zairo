@@ -12,6 +12,9 @@ public interface CatalogServiceRepository extends JpaRepository<CatalogService, 
 
     List<CatalogService> findBySubsphereIdAndStatusOrderBySortOrderAsc(UUID subsphereId, TaxonomyStatus status);
 
+    /** The Platform Admin taxonomy screen's own list — every status, not just ACTIVE. */
+    List<CatalogService> findByBusinessTypeIdOrderBySortOrderAsc(UUID businessTypeId);
+
     // A derived findByNameKkContainingOrNameRuContainingOrNameEnContaining
     // method would work too, but doesn't read as clearly as this once
     // IgnoreCase is added on all three — one JPQL query with explicit

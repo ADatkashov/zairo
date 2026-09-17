@@ -12,6 +12,9 @@ import 'package:business_admin/features/beauty/presentation/providers/beauty_adm
 import 'package:business_admin/features/billing/data/billing_api.dart';
 import 'package:business_admin/features/billing/data/models/subscription.dart';
 import 'package:business_admin/features/billing/presentation/providers/billing_providers.dart';
+import 'package:business_admin/features/campaigns/data/api/campaign_center_api.dart';
+import 'package:business_admin/features/campaigns/data/models/campaign.dart';
+import 'package:business_admin/features/campaigns/presentation/providers/campaign_providers.dart';
 import 'package:business_admin/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:business_admin/features/salon/data/models/admin_booking.dart';
 import 'package:business_admin/features/salon/data/models/admin_provider.dart';
@@ -69,6 +72,14 @@ class _FakeSalonAdminApi extends SalonAdminApi {
   Future<List<AdminBooking>> listBookings(String providerId) async => const [];
 }
 
+class _FakeCampaignCenterApi extends CampaignCenterApi {
+  _FakeCampaignCenterApi() : super(DioClient(Dio()));
+
+  @override
+  Future<SmartActionsResponse> fetchSmartActions(String providerId) async =>
+      SmartActionsResponse(providerId: providerId, items: const []);
+}
+
 class _FakeBeautyAdminApi extends BeautyAdminApi {
   _FakeBeautyAdminApi() : super(DioClient(Dio()));
 
@@ -121,6 +132,7 @@ void main() {
         overrides: [
           salonAdminApiProvider.overrideWithValue(fakeApi),
           billingApiProvider.overrideWithValue(_FakeBillingApi()),
+          campaignCenterApiProvider.overrideWithValue(_FakeCampaignCenterApi()),
           authControllerProvider.overrideWith(_LoggedInOwnerController.new),
         ],
         child: MaterialApp(
@@ -153,6 +165,7 @@ void main() {
           salonAdminApiProvider.overrideWithValue(fakeApi),
           beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
           billingApiProvider.overrideWithValue(_FakeBillingApi()),
+          campaignCenterApiProvider.overrideWithValue(_FakeCampaignCenterApi()),
           authControllerProvider.overrideWith(_LoggedInOwnerController.new),
         ],
         child: MaterialApp(
@@ -186,6 +199,7 @@ void main() {
           salonAdminApiProvider.overrideWithValue(fakeApi),
           beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
           billingApiProvider.overrideWithValue(_FakeBillingApi('FREE')),
+          campaignCenterApiProvider.overrideWithValue(_FakeCampaignCenterApi()),
           authControllerProvider.overrideWith(_LoggedInOwnerController.new),
         ],
         child: MaterialApp(
@@ -243,6 +257,7 @@ void main() {
           salonAdminApiProvider.overrideWithValue(fakeApi),
           beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
           billingApiProvider.overrideWithValue(_FakeBillingApi()),
+          campaignCenterApiProvider.overrideWithValue(_FakeCampaignCenterApi()),
           authControllerProvider.overrideWith(_LoggedInOwnerController.new),
         ],
         child: MaterialApp(

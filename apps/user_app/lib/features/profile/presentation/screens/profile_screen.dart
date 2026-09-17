@@ -12,6 +12,9 @@ import '../../../auto/presentation/screens/vehicles_screen.dart';
 import '../../../booking/presentation/providers/booking_providers.dart';
 import '../../../favorites/presentation/providers/favorites_providers.dart';
 import '../../../favorites/presentation/screens/favorites_screen.dart';
+import '../../../loyalty/presentation/screens/my_redemptions_screen.dart';
+import '../../../loyalty/presentation/screens/my_rewards_screen.dart';
+import '../../../messaging/presentation/screens/conversations_screen.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
 import '../widgets/change_avatar_dialog.dart';
 import 'about_screen.dart';
@@ -197,6 +200,33 @@ class _LoggedInView extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: FactorySpacing.space6),
+        FactorySelectableTile(
+          title: l10n.messagesTitle,
+          leading: Icon(Symbols.forum_rounded, color: colors.textSecondary),
+          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const ConversationsScreen()),
+          ),
+        ),
+        const SizedBox(height: FactorySpacing.space2),
+        FactorySelectableTile(
+          title: l10n.myRewardsTitle,
+          leading: Icon(Symbols.redeem_rounded, color: colors.textSecondary),
+          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const MyRewardsScreen()),
+          ),
+        ),
+        const SizedBox(height: FactorySpacing.space2),
+        FactorySelectableTile(
+          title: l10n.loyaltyRedemptionsTitle,
+          leading: Icon(Symbols.confirmation_number_rounded, color: colors.textSecondary),
+          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const MyRedemptionsScreen()),
+          ),
+        ),
+        const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
           title: l10n.myVehiclesButton,
           leading: Icon(
