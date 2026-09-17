@@ -1199,5 +1199,121 @@
     "placeholders": {
       "date": {"type": "String"}
     }
+  },
+
+  "messagesTitle": "Messages",
+  "@messagesTitle": {
+    "description": "Profile's entry tile and ConversationsScreen's AppBar title for the messaging feature."
+  },
+
+  "conversationsLoggedOutPrompt": "Log in to see your messages",
+  "@conversationsLoggedOutPrompt": {
+    "description": "LoggedOutGate message on ConversationsScreen."
+  },
+
+  "conversationsEmptyTitle": "No conversations yet",
+  "@conversationsEmptyTitle": {
+    "description": "ConversationsScreen empty state title."
+  },
+
+  "conversationsEmptyMessage": "Message a business to start a conversation.",
+  "@conversationsEmptyMessage": {
+    "description": "ConversationsScreen empty state body."
+  },
+
+  "errorConversationsLoadFailed": "Couldn't load your conversations.",
+  "@errorConversationsLoadFailed": {
+    "description": "ConversationsScreen error state when the inbox fails to load."
+  },
+
+  "messagingUnknownBusinessName": "Business",
+  "@messagingUnknownBusinessName": {
+    "description": "Fallback name shown in place of a null providerName on a conversation row or thread title."
+  },
+
+  "messageProviderTooltip": "Message",
+  "@messageProviderTooltip": {
+    "description": "ProviderDetailScreen AppBar action opening a chat thread with this provider."
+  },
+
+  "chatThreadEmptyTitle": "No messages yet",
+  "@chatThreadEmptyTitle": {
+    "description": "ChatThreadScreen empty state title before any message has been sent."
+  },
+
+  "chatThreadEmptyMessage": "Send a message to start the conversation.",
+  "@chatThreadEmptyMessage": {
+    "description": "ChatThreadScreen empty state body."
+  },
+
+  "errorChatThreadLoadFailed": "Couldn't load this conversation.",
+  "@errorChatThreadLoadFailed": {
+    "description": "ChatThreadScreen error state when the thread fails to load."
+  },
+
+  "errorChatSendFailed": "Couldn't send your message: {error}",
+  "@errorChatSendFailed": {
+    "description": "Snackbar shown when sending a plain chat message fails.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "chatComposeLabel": "Message",
+  "@chatComposeLabel": {
+    "description": "Label on the chat thread's compose field and the message-about-a-booking dialog's field."
+  },
+
+  "chatBookingContextLabel": "About a booking",
+  "@chatBookingContextLabel": {
+    "description": "Non-interactive chip shown on a chat message tagged with a bookingId."
+  },
+
+  "messageAboutBookingButton": "Message about this booking",
+  "@messageAboutBookingButton": {
+    "description": "MyBookingsScreen booking card action opening the message-about-a-booking dialog."
+  },
+
+  "messageAboutBookingDialogTitle": "Message the business",
+  "@messageAboutBookingDialogTitle": {
+    "description": "Title of the message-about-a-booking compose dialog."
+  },
+
+  "messageAboutBookingCancelButton": "Cancel",
+  "@messageAboutBookingCancelButton": {
+    "description": "Message-about-a-booking dialog's cancel button."
+  },
+
+  "messageAboutBookingSendButton": "Send",
+  "@messageAboutBookingSendButton": {
+    "description": "Message-about-a-booking dialog's send button."
+  },
+
+  "messageAboutBookingEmptyError": "Write a message first.",
+  "@messageAboutBookingEmptyError": {
+    "description": "Message-about-a-booking dialog's inline error when Send is pressed with an empty body."
+  },
+
+  "messageAboutBookingSentMessage": "Message sent.",
+  "@messageAboutBookingSentMessage": {
+    "description": "Fallback success snackbar when the new conversation can't be matched in myInbox() after sending a message about a booking."
+  },
+
+  "errorMessagingNotYourBooking": "This isn't your booking.",
+  "@errorMessagingNotYourBooking": {
+    "description": "MessagingException message for a 403 from POST /bookings/{id}/messages."
+  },
+
+  "errorMessagingBookingNotFound": "This booking couldn't be found.",
+  "@errorMessagingBookingNotFound": {
+    "description": "MessagingException message for a 404 from POST /bookings/{id}/messages."
+  },
+
+  "errorMessagingGeneric": "Couldn't send your message: {error}",
+  "@errorMessagingGeneric": {
+    "description": "Fallback error message for the message-about-a-booking dialog on an unexpected failure.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
   }
 }
