@@ -705,5 +705,19 @@
   "automationAllowedHoursValidationError": "Рұқсат етілген сағаттардың екі өрісін де толтырыңыз немесе екеуін де бос қалдырыңыз.",
   "errorAutomationValidationFailed": "Енгізген мәндерді тексеріңіз.",
   "errorAutomationForbidden": "Бұл бизнестің автоматтандыру баптауларына қол жеткізу мүмкін емес.",
-  "errorAutomationActionFailed": "Бірдеңе дұрыс болмады: {error}"
+  "errorAutomationActionFailed": "Бірдеңе дұрыс болмады: {error}",
+
+  "messagingNavLabel": "Хабарламалар",
+  "businessInboxScreenTitle": "Кіріс хабарламалар",
+  "businessInboxSubtitle": "Клиенттеріңізбен хат-хабар алмасу.",
+  "businessInboxNoBusinesses": "Хат-хабарды көру үшін алдымен бизнес құрыңыз.",
+  "businessInboxEmpty": "Әзірге хат-хабар жоқ.",
+  "messagingUnknownCustomer": "Клиент",
+  "errorConversationsLoadFailed": "Хат-хабарды жүктеу мүмкін болмады: {error}",
+  "errorMessagesLoadFailed": "Хабарларды жүктеу мүмкін болмады: {error}",
+  "errorMessageSendFailed": "Хабарды жіберу мүмкін болмады: {error}",
+  "chatEmptyThread": "Әзірге хабарлар жоқ. Сәлемдесіңіз!",
+  "chatComposeHint": "Хабарды теріңіз",
+  "chatSendButtonTooltip": "Жіберу",
+  "chatBookingChipLabel": "Брондау туралы"
 }

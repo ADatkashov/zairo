@@ -9,6 +9,7 @@ import '../features/billing/presentation/screens/billing_screen.dart';
 import '../features/campaigns/presentation/screens/campaign_center_screen.dart';
 import '../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../features/loyalty/presentation/screens/loyalty_screen.dart';
+import '../features/messaging/presentation/screens/business_inbox_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
 import '../l10n/app_localizations.dart';
 
@@ -61,6 +62,11 @@ class _AdminShellState extends ConsumerState<AdminShell> {
         label: l10n.loyaltyNavLabel,
       ),
       AdminSidebarDestination(
+        icon: Icons.forum_outlined,
+        selectedIcon: Icons.forum_rounded,
+        label: l10n.messagingNavLabel,
+      ),
+      AdminSidebarDestination(
         icon: Icons.receipt_long_outlined,
         selectedIcon: Icons.receipt_long_rounded,
         label: l10n.billingScreenTitle,
@@ -88,6 +94,10 @@ class _AdminShellState extends ConsumerState<AdminShell> {
                 else
                   const SizedBox.shrink(),
                 if (ownerUserId != null) LoyaltyScreen(ownerUserId: ownerUserId) else const SizedBox.shrink(),
+                if (ownerUserId != null)
+                  BusinessInboxScreen(ownerUserId: ownerUserId)
+                else
+                  const SizedBox.shrink(),
                 const BillingScreen(),
                 const SettingsScreen(),
               ],

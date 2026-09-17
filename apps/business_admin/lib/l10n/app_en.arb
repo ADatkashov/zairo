@@ -2101,5 +2101,59 @@
   "@errorAutomationActionFailed": {
     "description": "AutomationException's message for any other response.",
     "placeholders": {"error": {"type": "String"}}
-  }
+  },
+
+  "messagingNavLabel": "Messages",
+  "@messagingNavLabel": {"description": "Sidebar/AppBar nav label for the business inbox top-level destination."},
+
+  "businessInboxScreenTitle": "Inbox",
+  "@businessInboxScreenTitle": {"description": "BusinessInboxScreen's AppBar title."},
+
+  "businessInboxSubtitle": "Conversations between you and your customers.",
+  "@businessInboxSubtitle": {"description": "BusinessInboxScreen's short explanatory subtitle under the title."},
+
+  "businessInboxNoBusinesses": "Create a business first to see its conversations.",
+  "@businessInboxNoBusinesses": {"description": "BusinessInboxScreen's empty state when the owner has no businesses yet."},
+
+  "businessInboxEmpty": "No conversations yet.",
+  "@businessInboxEmpty": {"description": "BusinessInboxScreen's empty state when the selected business has no conversations."},
+
+  "messagingUnknownCustomer": "Customer",
+  "@messagingUnknownCustomer": {"description": "Fallback shown in place of a conversation's customerDisplayName when the backend has none."},
+
+  "errorConversationsLoadFailed": "Couldn't load conversations: {error}",
+  "@errorConversationsLoadFailed": {
+    "description": "BusinessInboxScreen's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "errorMessagesLoadFailed": "Couldn't load messages: {error}",
+  "@errorMessagesLoadFailed": {
+    "description": "BusinessChatThreadScreen's error state message.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "errorMessageSendFailed": "Couldn't send message: {error}",
+  "@errorMessageSendFailed": {
+    "description": "Snackbar shown when replying in a conversation fails.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "chatEmptyThread": "No messages yet. Say hello!",
+  "@chatEmptyThread": {"description": "BusinessChatThreadScreen's empty state before the first message."},
+
+  "chatComposeHint": "Type a message",
+  "@chatComposeHint": {"description": "BusinessChatThreadScreen's compose field label."},
+
+  "chatSendButtonTooltip": "Send",
+  "@chatSendButtonTooltip": {"description": "BusinessChatThreadScreen's send button tooltip."},
+
+  "chatBookingChipLabel": "About a booking",
+  "@chatBookingChipLabel": {"description": "Non-interactive chip on a message that carries a bookingId -- it was sent from the customer's booking detail screen."}
 }
