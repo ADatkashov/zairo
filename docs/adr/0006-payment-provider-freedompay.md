@@ -618,3 +618,88 @@ Flutter-код) не содержит реального `FREEDOMPAY_SECRET_KEY`
    notify (`pg_sig` в ответе, как рисует диаграмма "Webhook Architecture"
    выше), или `pg_status=ok` без подписи достаточно останавливает ретраи?
    Реализовано без подписи ответа — `PaymentWebhookController`'s TODO.
+
+## Follow-up: chargeRecurring Confirmation Attempt (2026-09-18)
+
+Отдельная задача: реализовать `FreedomPayProvider.chargeRecurring` по
+подтверждённому контракту, либо, если контракт нельзя подтвердить —
+зафиксировать конкретный blocker вместо угадывания. Результат этого
+прохода: **контракт не подтверждён, `chargeRecurring` не реализован,
+`UnsupportedRecurringChargeException` оставлен без изменений.**
+
+**Что было предпринято:**
+- Полный повторный разбор текущей интеграции (`FreedomPayProvider`,
+  `FreedomPayHttpClient`, `FreedomPayProperties`, `FreedomPaySignature`,
+  `SubscriptionRenewalService`, `SubscriptionCharge`, этот ADR) — без новых
+  расхождений с кодом, всё по-прежнему соответствует описанному выше.
+- Проверка репозитория на любые ранее не замеченные материалы (sandbox
+  credentials, merchant-cabinet доступ, SDK-зависимость) — ничего не
+  найдено: `payment-provider/build.gradle.kts` не подключает никакого
+  FreedomPay SDK (чистый `java.net.http`, по дизайну), нет `.env.example`
+  или CI-секретов с реальными/sandbox значениями `FREEDOMPAY_*`.
+- Поиск в открытых источниках (WebSearch) по `docs.freedompay.kz` и
+  зеркалам (`freedompay.kg`, `freedompay.uz`, `freedompay.money`) —
+  **новая зацепка, не бывшая в первом проходе**: сниппеты поисковой
+  выдачи (несколько независимых запросов, согласованно) указывают на
+  метод с именем **`make_recurring_payment`** и параметром
+  **`pg_recurring_profile`** (значение — тот самый `pg_recurring_profile_id`,
+  который сегодня уже захватывается и сохраняется —
+  `SubscriptionService.upgradeToPro` читает `result.recurringProfileId()`
+  прямо из синхронного ответа `createRecurringPayment` (`init_payment.php`'s
+  `pg_recurring_profile_id`, распарсенного в `FreedomPayProvider.initiate`)
+  и сразу вызывает `SubscriptionCharge.assignRecurringProfileId` — не из
+  Result notify webhook'а, как рисовала диаграмма "Subscription
+  Architecture" выше изначально, но тот же результат: `recurring_profile_id`
+  уже на месте и готов быть переданным как `pg_recurring_profile`, когда
+  контракт `chargeRecurring` подтвердится).
+- Прямой fetch первоисточника (`docs.freedompay.kz/folder-2444932`
+  "Purchase", `docs.freedompay.kz/api-11620859` "Create payment",
+  зеркала на `freedompay.kg`/`freedompay.money`) — **заблокирован
+  egress-политикой этой сессии** (`EGRESS_BLOCKED`, все домены
+  `freedompay.*` не в allowlist исходящего трафика). Это подтверждённое
+  ограничение окружения (`/root/.ccr/README.md`: "403/407 — do not
+  retry or route around it, report the blocked host"), не временный сбой.
+
+**Почему это не считается подтверждением, достаточным для реализации:**
+поисковые сниппеты — это агрегированные пересказы страниц, не сам текст
+документации; они не дают (а) точный script-path (`make_recurring_payment`
+без подтверждённого `.php`-суффикса и точного пути относительно
+`api-url`, хотя это наиболее вероятная форма по аналогии с `init_payment.php`
+и `revoke.php`), (б) полный список обязательных `pg_*`-полей запроса
+(есть ли `pg_amount`/`pg_currency`/`pg_description`, как у остальных
+вызовов — вероятно, но не процитировано напрямую), (в) форму ответа
+(`pg_status`/`pg_result`, как у прочих вызовов — не процитировано), (г)
+схему подписи для конкретно этого script-name (весь остальной API
+подписан `MD5(script_name;поля;secret_key)` — по аналогии должно быть
+так же, но не подтверждено для этого метода отдельно), (д) поведение при
+повторном вызове (тот же контракт `pg_idempotency_key`, что и у
+`init_payment`, или другой). Реализация платёжного кода, двигающего
+реальные деньги, на пересказе поисковой выдачи вместо текста
+первоисточника — ровно тот риск (тихий двойной charge или тихий silent
+no-op), которого исходное решение `UnsupportedRecurringChargeException`
+явно избегает (см. класс-левел doc comment `FreedomPayProvider`).
+
+**Конкретный blocker и как его снять** (любой один из путей ниже
+подтверждает контракт до уровня, достаточного для реализации):
+1. Egress-доступ в этой или следующей сессии к `docs.freedompay.kz`
+   (или зеркалам `freedompay.kg`/`freedompay.uz`/`freedompay.money`) —
+   позволит напрямую прочитать страницу(ы) про recurring-списание и
+   процитировать точный контракт вместо пересказа поисковика.
+2. Доступ к merchant-кабинету Freedom Pay (sandbox или testing mode) —
+   даёт возможность реально вызвать `make_recurring_payment` (или как он
+   называется на самом деле) против тестового профиля и зафиксировать
+   контракт по факту ответа, не по документации вообще.
+3. Прямой ответ поддержки Freedom Pay на вопрос "точный запрос
+   повторного списания по `pg_recurring_profile_id`" — тот же вопрос,
+   что стоял в Open Questions #1 с самого начала этого ADR.
+4. Человек с доступом к документации вставляет точный текст
+   релевантной(ых) страниц в задачу — этого достаточно без сетевого
+   доступа вообще.
+
+**Что осталось нетронутым и почему это правильно:** `FreedomPayProvider.
+chargeRecurring` продолжает бросать `UnsupportedRecurringChargeException`
+без изменений в теле; `SubscriptionRenewalService` продолжает ловить это
+как `RuntimeException` → `PAST_DUE` (уже корректно, не новый код).
+Booking payment flow (`createPayment`, `getPaymentStatus`, `refund`,
+webhook-обработка) не тронут вообще — эта задача была строго
+scoped к `chargeRecurring`, изменений вне него нет.

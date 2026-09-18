@@ -33,7 +33,13 @@ import org.springframework.stereotype.Component;
  * <p><b>{@link #chargeRecurring} is not implemented</b> — Freedom Pay's real
  * request shape for charging a previously-saved recurring profile isn't
  * confirmed by any public documentation this integration could access (see
- * ADR-0006, Open Questions #1). Calling it throws {@link
+ * ADR-0006, Open Questions #1, and its "Follow-up: chargeRecurring
+ * Confirmation Attempt" section for the 2026-09-18 re-check: a specific
+ * lead — a {@code make_recurring_payment} script taking a {@code
+ * pg_recurring_profile} field — surfaced via web search, but this
+ * session's network policy blocked fetching docs.freedompay.kz itself to
+ * confirm it against primary source, so it is a lead, not a contract).
+ * Calling it throws {@link
  * UnsupportedRecurringChargeException} rather than guessing a shape that
  * might silently double-charge or silently no-op against the real API —
  * {@code SubscriptionRenewalService} already treats any {@code
