@@ -353,6 +353,154 @@ Freedom Pay: POST /revoke
 данных (сделано раньше в этой же сессии, до этого ADR) — реальный провайдер
 подключается под ту же структуру, не требует нового дизайна отказоустойчивости.
 
+**Обновлено (2026-09-18)**: диаграмма выше описывает состояние ДО durable
+refund outbox — `BookingCancelledPaymentListener` действительно вызывал
+`PaymentsService#refundPayment` напрямую, best-effort, только логируя отказ.
+Это заменено durable outbox-flow — см. новый раздел "Durable Refund Outbox"
+ниже для актуальной архитектуры. `PaymentsService#refundPayment` сам по себе
+не изменился и остаётся тем же синхронным admin-triggered retry-путём,
+который эта диаграмма всё ещё корректно описывает для `POST /payments/
+{id}/refund`.
+
+## Durable Refund Outbox (2026-09-18)
+
+Отдельная задача: у отменённой оплаченной Booking возврат не должен зависеть
+от того, был ли процесс приложения жив в момент вызова `PaymentProvider
+#refund`. До этого прохода `BookingCancelledPaymentListener` делал ровно это
+(запуск на `AFTER_COMMIT` + `REQUIRES_NEW`, вызов `PaymentsService
+#refundPayment` напрямую, отказ — только `log.error`, без retry) — то же
+семейство бага, которое Phase 0 уже закрыл для loyalty earning (см. выше в
+этом документе). Реализовано теми же принципами: durable outbox-таблица
+(`payment_refund_request`, `V63`), заполняемая **в той же транзакции**, что
+и факт, требующий возврата, плюс отдельный retrying worker.
+
+### Lifecycle и transaction boundaries
+
+```
+BookingService#cancelBooking (@Transactional)
+      │  booking → CANCELLED, слот освобождён
+      ▼
+BookingCancelledPaymentListener (plain @EventListener, joins эту же
+транзакцию — НЕ AFTER_COMMIT)
+      │  если у Booking была SUCCEEDED Payment:
+      │  создаёт PaymentRefundRequest(status=PENDING) + Payment → REFUND_PENDING
+      │  — атомарно с cancelBooking: либо оба коммита, либо ни одного
+      ▼
+commit
+      │
+      ▼
+PaymentRefundOutboxProcessor.onRefundRequestReady (@TransactionalEventListener
+AFTER_COMMIT) — eager nudge, latency-оптимизация для типичного случая, не
+единственный механизм durability (см. ниже)
+      ▼
+PaymentRefundOutboxItemProcessor#claim (REQUIRES_NEW, PESSIMISTIC_WRITE lock)
+      │  PENDING/RETRY(due)/PROCESSING(stale) → PROCESSING, commit
+      ▼
+PaymentProvider#refund(...)   ← ВНЕ любой транзакции, здесь и только здесь
+      │
+      ├─ success → applySuccess (REQUIRES_NEW): PaymentRefundRequest →
+      │  SUCCEEDED (terminal), Payment → REFUNDED, publish PaymentRefundedEvent
+      │  (тот же event, что loyalty/notifications уже слушают — без изменений
+      │  там)
+      └─ failure/exception → applyFailure (REQUIRES_NEW): attempts += 1,
+         status → RETRY, nextAttemptAt = now + backoff(attempts); при
+         attempts >= MAX_ATTEMPTS (8) → FAILED (terminal) + Payment →
+         REFUND_FAILED (та же admin-видимость, что и manual retry failure)
+```
+
+Второе место, создающее `PaymentRefundRequest` той же схемой — `race F` в
+`PaymentWebhookProcessor#applyTransition` (поздний webhook подтверждает
+оплату для уже `CANCELLED` booking): транзакция там уже открыта
+(`@Transactional`, не decoupled событием — как и раньше, см. "Webhook
+Architecture" выше), так что запись коммитится атомарно с `payment
+.markSucceeded`.
+
+**Почему сам provider-call вне транзакции**: durable-запись обязана быть
+атомарной с cancellation; сетевой вызов к Freedom Pay — нет, и не должен
+держать открытую транзакцию (и, что важнее, row lock) на всё время сетевого
+таймаута.
+
+### States
+
+`PENDING` → `PROCESSING` → (`SUCCEEDED` | `RETRY` → `PROCESSING` → ... |
+`FAILED`). `SUCCEEDED`/`FAILED` — terminal, `PaymentRefundRequest#isClaimable`
+возвращает `false` для обоих безусловно — ни retry, ни повторный provider-call
+после `SUCCEEDED` невозможны в принципе (не просто "маловероятны").
+
+### Retry policy
+
+Экспоненциальный backoff (30s, 60s, 120s, 240s, 480s, 960s, capped 1800s),
+`MAX_ATTEMPTS = 8` — сознательно НЕ плоский retry каждые 15s, как у
+`loyalty.LoyaltyOutboxProcessor` (там retry — дешёвая идемпотентная
+рекомпьютация; здесь — реальный сетевой вызов к внешнему платёжному
+провайдеру, долбить который каждые 15s при устойчивом сбое не помогает
+никому). Sweep (`@Scheduled(fixedDelay = 15_000)`) сам по себе работает на
+реальном wall-clock времени — backoff только решает, due ли конкретная
+строка на момент очередного прохода sweep.
+
+### Idempotency
+
+Три независимых уровня:
+1. **`payment_id unique`** (V63) — у одной Payment не может существовать
+   двух `PaymentRefundRequest` строк одновременно. Дубликат
+   `BookingCancelledEvent` (в норме невозможен — `cancelBooking`'s guard
+   делает отмену one-time transition) упал бы на этом constraint, откатив
+   всю транзакцию отмены — безопасный, а не тихий отказ.
+2. **`PESSIMISTIC_WRITE`-лок на claim** (`PaymentRefundRequestRepository
+   #lockById`) — тот же механизм, уже доказанный корректным для
+   `loyalty.LoyaltyRedemptionRepository#lockById` (см. `LoyaltyApiTests
+   .onlyOneOfTwoConcurrentRedemptionsForANearlyExhaustedBalanceSucceeds`).
+   Два конкурентных worker'а (или eager nudge, racing со scheduled sweep
+   за одну и ту же строку) не могут оба увидеть claimable-статус до того,
+   как один из них закоммитит `PROCESSING`.
+3. **`SUCCEEDED`/`FAILED` terminal** — `applySuccess`/`applyFailure` оба
+   перепроверяют `status == PROCESSING` под тем же локом перед тем, как
+   что-либо менять; повторный вызов на уже разрешённую строку — no-op.
+
+### Restart recovery
+
+`processing_started_at` + `STALE_PROCESSING_THRESHOLD` (5 минут, дольше
+15s-таймаута `FreedomPayHttpClient`) — строка, оставленная в `PROCESSING`
+крашнувшимся воркером, становится claimable снова после порога (см.
+`PaymentRefundRequest#isClaimable`, покрыто
+`PaymentRefundRequestTest.staleProcessingBecomesClaimableAgainPastTheThreshold_restartRecovery`).
+`PENDING`/`RETRY` строки просто переживают restart как обычные committed
+DB-строки — их не нужно "восстанавливать", они уже durable.
+
+### Provider-timeout / double-refund: подтверждённое ограничение, не выдумка
+
+**Freedom Pay's `/revoke.php` не несёт собственного confirmed idempotency-
+ключа** (в отличие от `pg_idempotency_key` на создании платежа — см.
+"Idempotency" выше в этом документе) — ADR-0006's Open Questions #3/#5 уже
+фиксировали, что этот вопрос открыт. Значит: если сетевой вызов к `/revoke
+.php` оборвался по таймауту (или воркер упал прямо во время запроса) и
+Factory не получила structured-ответ — этот код **не может достоверно
+отличить** "Freedom Pay точно не выполнила возврат" от "Freedom Pay возврат
+выполнила, но ответ потерян". Обе ветки (пойманное исключение из
+`paymentProvider.refund`, и структурный `RefundResult(false, ...)`)
+трактуются одинаково — retry до `MAX_ATTEMPTS` — потому что альтернатива
+("не ретраить при неопределённости") рискует навсегда не вернуть деньги
+клиенту, а это хуже управляемого, ограниченного (8 попыток) риска
+повторного списания. Это тот же класс ограничения, что и `chargeRecurring`
+(см. "Follow-up" выше) — снимается только прямым доступом к merchant-
+кабинету/поддержке Freedom Pay, не кодом. Не добавлен reconciliation-вызов
+через `getPaymentStatus` перед retry: этот endpoint подтверждённо
+возвращает только `pg_result` (success/failure/pending для ПЛАТЕЖА), не
+задокументированное поведение специфично для возврата — использовать его
+как "подтверждение уже выполненного возврата" было бы тем самым
+угадыванием контракта, которого эта задача явно требует избегать.
+
+### Диагностика FAILED-строки
+
+`GET /api/v1/platform/payments/refund-requests?status=FAILED`
+(`PaymentAdminController`) — attempts, lastError, provider/providerReference,
+createdAt/updatedAt для каждой dead-lettered строки. Тот же Payment также
+попадает в уже существующий `GET .../failed-refunds` (`status=
+REFUND_FAILED`) и его существующий manual retry (`POST /payments/{id}
+/refund`) — так что FAILED-строка не тупик: human operator может
+подтвердить состояние в Freedom Pay's мерчант-кабинете и вручную повторить
+через уже существующий admin-эндпоинт.
+
 ## Idempotency
 
 Два **разных** механизма, которые легко перепутать:

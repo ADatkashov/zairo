@@ -59,6 +59,10 @@ class TestPayments {
                     failureController.failNextRefund = false;
                     return new RefundResult(false, "simulated refund outage");
                 }
+                if (failureController.failRefundTimes.get() > 0) {
+                    failureController.failRefundTimes.decrementAndGet();
+                    return new RefundResult(false, "simulated refund outage");
+                }
                 return new RefundResult(true, null);
             }
 
@@ -89,5 +93,7 @@ class TestPayments {
         volatile boolean failNextCharge;
         volatile boolean throwOnNextCharge;
         volatile boolean failNextRefund;
+        /** Decrementing counter — the next N refund calls fail, then it resolves normally. For PaymentRefundOutboxApiTests. */
+        final java.util.concurrent.atomic.AtomicInteger failRefundTimes = new java.util.concurrent.atomic.AtomicInteger();
     }
 }
