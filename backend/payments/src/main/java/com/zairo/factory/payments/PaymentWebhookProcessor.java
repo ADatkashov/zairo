@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,22 +34,25 @@ class PaymentWebhookProcessor {
     private final PaymentWebhookEventRepository webhookEventRepository;
     private final PaymentWebhookEventRecorder eventRecorder;
     private final PaymentRepository paymentRepository;
+    private final PaymentRefundRequestRepository refundRequestRepository;
     private final BookingRepository bookingRepository;
     private final BookingService bookingService;
-    private final PaymentsService paymentsService;
     private final SubscriptionChargeWebhookService subscriptionChargeWebhookService;
+    private final ApplicationEventPublisher eventPublisher;
 
     PaymentWebhookProcessor(PaymentWebhookEventRepository webhookEventRepository,
             PaymentWebhookEventRecorder eventRecorder, PaymentRepository paymentRepository,
-            BookingRepository bookingRepository, BookingService bookingService, PaymentsService paymentsService,
-            SubscriptionChargeWebhookService subscriptionChargeWebhookService) {
+            PaymentRefundRequestRepository refundRequestRepository, BookingRepository bookingRepository,
+            BookingService bookingService, SubscriptionChargeWebhookService subscriptionChargeWebhookService,
+            ApplicationEventPublisher eventPublisher) {
         this.webhookEventRepository = webhookEventRepository;
         this.eventRecorder = eventRecorder;
         this.paymentRepository = paymentRepository;
+        this.refundRequestRepository = refundRequestRepository;
         this.bookingRepository = bookingRepository;
         this.bookingService = bookingService;
-        this.paymentsService = paymentsService;
         this.subscriptionChargeWebhookService = subscriptionChargeWebhookService;
+        this.eventPublisher = eventPublisher;
     }
 
     enum Outcome {
@@ -214,14 +218,18 @@ class PaymentWebhookProcessor {
             // late webhook confirmed the charge. There's nothing left to
             // confirm the customer into, so the money goes back rather than
             // silently being kept for a booking that no longer exists.
-            log.warn("Freedom Pay webhook: payment {} succeeded for already-cancelled booking {} — auto-refunding",
-                    payment.getId(), booking.getId());
-            try {
-                paymentsService.refundPayment(payment.getId());
-            } catch (RuntimeException e) {
-                log.error("Auto-refund failed for payment {} (booking {} already cancelled): {}", payment.getId(),
-                        booking.getId(), e.getMessage(), e);
-            }
+            // Durable refund request, same mechanism (and same doc comment)
+            // as BookingCancelledPaymentListener — this transaction is
+            // already open, so the row commits atomically with the
+            // markSucceeded write above.
+            log.warn("Freedom Pay webhook: payment {} succeeded for already-cancelled booking {} — "
+                    + "queuing refund", payment.getId(), booking.getId());
+            PaymentRefundRequest request = refundRequestRepository.save(new PaymentRefundRequest(UUID.randomUUID(),
+                    payment.getId(), payment.getBookingId(), payment.getAmount(), payment.getCurrency(),
+                    payment.getProvider(), payment.getProviderReference(), now));
+            payment.markRefundPending(now);
+            paymentRepository.save(payment);
+            eventPublisher.publishEvent(new PaymentRefundRequestReady(request.getId()));
         }
         // Any other booking status (already CONFIRMED/COMPLETED/NO_SHOW) is
         // a safe no-op — the payment is now durably SUCCEEDED either way.

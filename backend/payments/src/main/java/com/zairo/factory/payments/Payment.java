@@ -190,6 +190,23 @@ public class Payment {
         this.updatedAt = now;
     }
 
+    /**
+     * A durable {@link PaymentRefundRequest} now exists for this payment --
+     * see {@code BookingCancelledPaymentListener}/{@code
+     * PaymentWebhookProcessor}'s race-F handling. Doubles as a concurrency
+     * guard: {@code PaymentsService#refundPayment}'s own guard only accepts
+     * SUCCEEDED or REFUND_FAILED, so a payment sitting REFUND_PENDING can't
+     * also be picked up by the manual admin retry endpoint while the
+     * automatic outbox worker owns it -- the two paths hand off cleanly
+     * instead of racing (the worker's terminal FAILED state moves this to
+     * REFUND_FAILED, which is exactly when the manual path becomes valid
+     * again).
+     */
+    void markRefundPending(Instant now) {
+        this.status = PaymentStatus.REFUND_PENDING;
+        this.updatedAt = now;
+    }
+
     void markRefunded(Instant now) {
         this.status = PaymentStatus.REFUNDED;
         this.refundFailureReason = null;
