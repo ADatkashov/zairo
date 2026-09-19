@@ -4919,3 +4919,84 @@ workflow красный на `develop` уже 5+ мёрджей подряд, к
 PR #80 (`claude/campaign-center-smart-actions-5a092d` → `develop`),
 draft, подписка на события активна. Backend и Flutter запушены двумя
 коммитами. Мёрдж заблокирован инфраструктурной проблемой CI, не кодом.
+
+---
+
+## Маркетплейс-комиссия, выплаты бизнесу, reconciliation (2026-09-19)
+
+Задача: реализовать production-ready интеграцию с Freedom Pay так, чтобы
+ZAIRO получала marketplace-комиссию, а бизнес — свою долю после
+завершения услуги, без выдуманного Freedom Pay API. Аудит показал, что
+booking-платёж/webhook/refund уже полностью реализованы (ADR-0006,
+2026-08-28) — этой задачей **не создавался второй payment subsystem**,
+только слой поверх существующего `payments`-модуля.
+
+**Исследование Freedom Pay**: `freedompay.kz`/`docs.freedompay.kz`
+заблокированы egress-политикой этой сессии (`EGRESS_BLOCKED` от
+agent-proxy) — WebFetch не смог прочитать ни одну страницу напрямую.
+Все факты о marketplace/split/payout API взяты только из сниппетов
+поисковой выдачи (WebSearch) — заметно более слабая база, чем у
+ADR-0006. Честно задокументировано в новом ADR-0007 как ограничение
+исследования, не скрыто. Подтверждено: отдельный `test-api.freedompay.kz`
+хост существует для новой Gateway API (не для классического `pg_*`,
+который уже используется); есть `g2g/payout_status` эндпоинт, но поля
+самого запроса на выплату не найдены. **Решение**: не изобретать
+Freedom Pay-native split — ZAIRO остаётся единственным merchant of
+record (не изменилось), комиссия/выплата бизнесу — собственная
+бухгалтерия ZAIRO поверх уже подтверждённого single-merchant flow,
+выплата бизнесу — ручной банковский перевод, отмечаемый админом (честно
+не выдаётся за автоматический Freedom Pay payout).
+
+**Backend** (`backend/payments`, без новых модулей):
+- `PaymentAllocation` (payment_id PK) — комиссия/доля бизнеса, считается
+  один раз при `Payment.SUCCEEDED` (`CommissionCalculator`,
+  `payment.commission.rate`, по умолчанию 10%), fail-fast инвариант
+  `businessAmount + platformFee == amount`.
+- `BusinessPayout` (`BusinessPayoutStatus`: PAYABLE→PROCESSING→PAID/FAILED)
+  — создаётся только из `BookingCompletedEvent` (событие уже
+  существовало, слушателя не было), никогда при оплате.
+  `BusinessPayoutAdminController` (PLATFORM_ADMIN mark-processing/
+  mark-paid/mark-failed) + `BusinessPayoutController` (бизнес читает
+  только свои выплаты, `ProviderOwnership`).
+- Refund заблокирован (409), если payout уже PROCESSING/PAID.
+- `PaymentReconciliationService` — сверка `Payment.status` vs
+  `PaymentProvider.getPaymentStatus` (порт существовал, вызывающего кода
+  не было), никогда не исправляет молча.
+- V63 (`payment_allocation`, `business_payout`), `PAYMENT_COMMISSION_RATE`
+  через существующий `@ConfigurationProperties`-механизм, без секретов.
+- `platform-insights`: `RevenueSection` получил `platformCommission` —
+  отдельный тайл от MRR (раньше в `PRODUCT_PRODUCTION_ROADMAP.md`/
+  `PlatformInsightsDtos` было явно записано "монетизация только
+  подписка, комиссии с брони нет" — **это прямо противоречило задаче**;
+  обновил оба места явным продуктовым решением (та же практика, что
+  ADR-0006 применил к замене Kaspi Pay → Freedom Pay).
+- Тесты: `CommissionCalculatorTest`/`PaymentAllocationTest` (юнит,
+  без Spring) и `BusinessSettlementApiTests` (Testcontainers) — полный
+  цикл (оплата → allocation → complete → payout → mark-paid), изоляция
+  по владельцу, блокировка refund после payout, reconciliation MATCH.
+
+**Документация**: `docs/adr/0007-marketplace-commission-and-settlement.md`
+(решение + честные Open Questions), `docs/PAYMENTS_FREEDOM_PAY.md`,
+`docs/PAYMENT_STATE_MACHINE.md`, `docs/PAYMENT_RECONCILIATION.md`.
+
+**Flutter** (business_admin): новая секция "Выплаты"/Settlement на
+`SalonDetailScreen` (`_PayoutsSection`/`_PayoutAdminRow`, тот же паттерн,
+что `_BookingsSection`) — `AdminPayout`-модель, `SalonAdminApi.listPayouts`,
+`providerPayoutsProvider`. Локализация en/ru/kk. Только просмотр — бизнес
+не может сам отметить выплату оплаченной.
+
+**Независимая проверка** (Flutter SDK 3.47.5 склонирован отдельно в этой
+песочнице, не был предустановлен): `flutter analyze` — 0 новых замечаний
+(1 pre-existing, не в затронутых строках), `flutter test` — 86/86, без
+регрессий. Первый прогон `dart format` переформатировал существующие
+файлы целиком под другой line-length конвенции инструмента — эти правки
+отброшены (`git checkout`), сделаны заново вручную точечными правками,
+чтобы не тащить посторонний, не связанный с задачей diff (та же
+дисциплина, что в Campaign Center сессии выше). `pubspec.lock` и
+Windows generated plugin-файлы аналогично задрейфовали и откачены.
+
+**Backend**: `./gradlew build`/`./gradlew test` (кроме `:platform-api`)
+зелёные. Docker недоступен в этой песочнице — `platform-api`'s
+Testcontainers-тесты (включая новый `BusinessSettlementApiTests`)
+скомпилированы, но не запускались физически; тот же документированный
+лимит, что и в предыдущих сессиях.
