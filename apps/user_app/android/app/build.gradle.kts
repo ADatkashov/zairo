@@ -18,6 +18,15 @@ if (localPropertiesFile.exists()) {
 }
 val mapsApiKey: String = System.getenv("MAPS_API_KEY") ?: localProperties.getProperty("MAPS_API_KEY") ?: ""
 
+// Facebook Login (flutter_facebook_auth) — same env-var-first/
+// local.properties-fallback pattern as mapsApiKey. See
+// docs/authentication.md's "Provider configuration" section for where a
+// real Facebook App ID/Client Token come from; empty defaults keep the
+// build green with Facebook Login simply unusable until they're set.
+val facebookAppId: String = System.getenv("FACEBOOK_APP_ID") ?: localProperties.getProperty("FACEBOOK_APP_ID") ?: ""
+val facebookClientToken: String =
+    System.getenv("FACEBOOK_CLIENT_TOKEN") ?: localProperties.getProperty("FACEBOOK_CLIENT_TOKEN") ?: ""
+
 // Release signing — read from android/key.properties if present (created
 // locally by a dev, or written by CI from GitHub Secrets; see
 // docs/ci-cd.md's "Android release signing" section). Absent entirely,
@@ -62,6 +71,13 @@ android {
         // without a matching --dart-define=MAPS_API_KEY, so an empty
         // native key here is a safe default, not a broken build.
         manifestPlaceholders["mapsApiKey"] = mapsApiKey
+        manifestPlaceholders["facebookAppId"] = facebookAppId
+        manifestPlaceholders["facebookClientToken"] = facebookClientToken
+        // Must never be empty even when facebookAppId is (an empty
+        // android:scheme in an intent-filter's <data> is invalid) — "fb"
+        // alone is syntactically valid and simply matches no real redirect
+        // until a real App ID is configured.
+        manifestPlaceholders["fbLoginProtocolScheme"] = "fb$facebookAppId"
     }
 
     signingConfigs {

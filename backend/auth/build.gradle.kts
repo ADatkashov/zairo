@@ -19,9 +19,29 @@ dependencies {
     // Phase 2 step 1 — see SESSION_NOTES.md).
     implementation("org.springframework.security:spring-security-crypto:7.1.1")
 
+    // Explicit even though spring-boot-starter-web pulls it in transitively
+    // — GoogleIdTokenVerifierAdapter/FacebookGraphIdentityVerifier parse
+    // provider JSON responses with it directly, not just through Spring
+    // MVC's own (de)serialization.
+    implementation("com.fasterxml.jackson.core:jackson-databind")
+
     implementation("io.jsonwebtoken:jjwt-api:0.13.0")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.13.0")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.13.0")
+
+    // Phone normalization (PhoneNumberNormalizer) — no phone-parsing
+    // dependency existed anywhere in this codebase before multi-provider
+    // auth needed one (task spec §6: "проверь, нет ли уже подходящей
+    // зависимости" — there wasn't). Google's own libphonenumber is the de
+    // facto standard for this (also what Android's native phone-number
+    // input widgets are built on) rather than a hand-rolled regex, which
+    // international numbering plans would defeat. Google/Facebook token
+    // verification deliberately need no new dependency here — see
+    // GoogleIdTokenVerifierAdapter/FacebookGraphIdentityVerifier's own doc
+    // comments: both are plain java.net.http.HttpClient calls against a
+    // documented provider REST endpoint, the same convention
+    // payment-provider's FreedomPayHttpClient already established.
+    implementation("com.googlecode.libphonenumber:libphonenumber:8.13.55")
 
     // Registration creates the User row as part of the same transaction —
     // deliberate one-directional Gradle dependency on users, same
@@ -37,5 +57,6 @@ dependencies {
     // See PasswordResetRequestedEvent's doc comment.
 
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("org.assertj:assertj-core")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
