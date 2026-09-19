@@ -39,12 +39,19 @@ public final class PlatformInsightsDtos {
 
         public record RevenueSection(
                 @Schema(description = "SUM of succeeded SubscriptionCharge.amount this calendar month (UTC) — "
-                        + "subscription revenue only, deliberately NOT booking payment volume (GMV): Factory's "
-                        + "monetization is subscription-only, it takes no commission on bookings, so mixing the "
-                        + "two on one tile would misrepresent platform revenue.")
+                        + "subscription revenue, kept on its own tile rather than merged with platformCommission "
+                        + "below: they're two independent revenue lines (see ADR-0007), and GMV (sum of all "
+                        + "booking Payment.amount) is a marketplace-health metric, not revenue on either tile.")
                 BigDecimal mrr,
                 @Schema(description = "Null if there were no succeeded charges this month — nothing to report a currency for.")
-                String currency) {
+                String currency,
+                @Schema(description = "SUM of PaymentAllocation.platformFee this calendar month (UTC) — ZAIRO's "
+                        + "marketplace commission on booking payments (see ADR-0007/CommissionCalculator). "
+                        + "Introduced 2026-09-19 — Factory's monetization was subscription-only before that; see "
+                        + "docs/PRODUCT_PRODUCTION_ROADMAP.md section 9 for the superseded statement.")
+                BigDecimal platformCommission,
+                @Schema(description = "Null if there were no payment allocations this month — nothing to report a currency for.")
+                String platformCommissionCurrency) {
         }
     }
 }

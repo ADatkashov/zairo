@@ -35,4 +35,7 @@ dependencies {
     // second admin auth system — same directed dependency shape as
     // catalog -> platform-admin.
     implementation(project(":platform-admin"))
+
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }

@@ -24,9 +24,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class PaymentsController {
 
     private final PaymentsService paymentsService;
+    private final PaymentAllocationRepository allocationRepository;
 
-    public PaymentsController(PaymentsService paymentsService) {
+    public PaymentsController(PaymentsService paymentsService, PaymentAllocationRepository allocationRepository) {
         this.paymentsService = paymentsService;
+        this.allocationRepository = allocationRepository;
     }
 
     @Operation(summary = "Charge a booking", description = """
@@ -59,7 +61,7 @@ public class PaymentsController {
     public PaymentResponse createPayment(@Parameter(description = "The booking's id.") @PathVariable UUID bookingId,
             HttpServletRequest httpRequest) {
         UUID callerId = CurrentUser.requireUserId(httpRequest);
-        return PaymentResponse.from(paymentsService.createPayment(bookingId, callerId));
+        return toResponse(paymentsService.createPayment(bookingId, callerId));
     }
 
     @Operation(summary = "Get a booking's payment", description = "Restricted to the booking's own customer, "
@@ -77,7 +79,7 @@ public class PaymentsController {
             @Parameter(description = "The booking's id.") @PathVariable UUID bookingId,
             HttpServletRequest httpRequest) {
         UUID callerId = CurrentUser.requireUserId(httpRequest);
-        return PaymentResponse.from(paymentsService.getPaymentForBooking(bookingId, callerId));
+        return toResponse(paymentsService.getPaymentForBooking(bookingId, callerId));
     }
 
     @Operation(summary = "Refund a payment", description = "PLATFORM_ADMIN-only — same platform-admin "
@@ -98,6 +100,11 @@ public class PaymentsController {
     public PaymentResponse refund(@Parameter(description = "The payment's id.") @PathVariable UUID paymentId,
             HttpServletRequest httpRequest) {
         PlatformCurrentAdmin.requirePlatformAdmin(httpRequest);
-        return PaymentResponse.from(paymentsService.refundPayment(paymentId));
+        return toResponse(paymentsService.refundPayment(paymentId));
+    }
+
+    /** Attaches the commission split (see PaymentAllocation) when one exists — null fields until the payment SUCCEEDED. */
+    private PaymentResponse toResponse(Payment payment) {
+        return PaymentResponse.from(payment, allocationRepository.findByPaymentId(payment.getId()).orElse(null));
     }
 }

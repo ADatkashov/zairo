@@ -37,11 +37,13 @@ class PaymentWebhookProcessor {
     private final BookingService bookingService;
     private final PaymentsService paymentsService;
     private final SubscriptionChargeWebhookService subscriptionChargeWebhookService;
+    private final PaymentAllocationService paymentAllocationService;
 
     PaymentWebhookProcessor(PaymentWebhookEventRepository webhookEventRepository,
             PaymentWebhookEventRecorder eventRecorder, PaymentRepository paymentRepository,
             BookingRepository bookingRepository, BookingService bookingService, PaymentsService paymentsService,
-            SubscriptionChargeWebhookService subscriptionChargeWebhookService) {
+            SubscriptionChargeWebhookService subscriptionChargeWebhookService,
+            PaymentAllocationService paymentAllocationService) {
         this.webhookEventRepository = webhookEventRepository;
         this.eventRecorder = eventRecorder;
         this.paymentRepository = paymentRepository;
@@ -49,6 +51,7 @@ class PaymentWebhookProcessor {
         this.bookingService = bookingService;
         this.paymentsService = paymentsService;
         this.subscriptionChargeWebhookService = subscriptionChargeWebhookService;
+        this.paymentAllocationService = paymentAllocationService;
     }
 
     enum Outcome {
@@ -198,6 +201,7 @@ class PaymentWebhookProcessor {
 
         payment.markSucceeded(webhook.providerPaymentId(), now);
         paymentRepository.save(payment);
+        paymentAllocationService.ensureAllocation(payment);
 
         Booking booking = bookingRepository.findById(payment.getBookingId())
                 .orElseThrow(() -> new IllegalStateException("Payment " + payment.getId() + " has no booking "
