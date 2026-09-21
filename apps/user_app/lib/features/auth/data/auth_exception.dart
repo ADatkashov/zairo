@@ -9,6 +9,16 @@ enum AuthErrorKey {
   emailAlreadyRegistered,
   invalidCredentials,
   invalidResetToken,
+  // Multi-provider auth (see IdentityService on the backend — every one of
+  // these mirrors one of its named exceptions/status codes).
+  invalidProviderCredential,
+  invalidPhoneNumber,
+  invalidOtp,
+  otpExpired,
+  tooManyOtpAttempts,
+  otpResendCooldown,
+  tooManyOtpRequests,
+  identityAlreadyLinked,
 }
 
 class AuthException implements Exception {
@@ -20,6 +30,14 @@ class AuthException implements Exception {
         AuthErrorKey.emailAlreadyRegistered => l10n.errorAuthEmailAlreadyRegistered,
         AuthErrorKey.invalidCredentials => l10n.errorAuthInvalidCredentials,
         AuthErrorKey.invalidResetToken => l10n.errorAuthInvalidResetToken,
+        AuthErrorKey.invalidProviderCredential => l10n.errorAuthInvalidProviderCredential,
+        AuthErrorKey.invalidPhoneNumber => l10n.errorAuthInvalidPhoneNumber,
+        AuthErrorKey.invalidOtp => l10n.errorAuthInvalidOtp,
+        AuthErrorKey.otpExpired => l10n.errorAuthOtpExpired,
+        AuthErrorKey.tooManyOtpAttempts => l10n.errorAuthTooManyOtpAttempts,
+        AuthErrorKey.otpResendCooldown => l10n.errorAuthOtpResendCooldown,
+        AuthErrorKey.tooManyOtpRequests => l10n.errorAuthTooManyOtpRequests,
+        AuthErrorKey.identityAlreadyLinked => l10n.errorAuthIdentityAlreadyLinked,
       };
 
   @override

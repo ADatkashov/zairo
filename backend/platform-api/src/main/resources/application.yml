@@ -71,6 +71,32 @@ app:
     # Brute-force protection on /auth/login — see LoginAttemptLimiter.
     login-attempt-limit: 5
     login-lockout-minutes: 15
+  # Google/Facebook sign-in (see auth's GoogleIdTokenVerifierAdapter /
+  # FacebookGraphIdentityVerifier). No dev-default value for any of these —
+  # unlike app.jwt.secret above, there's no meaningful "dev secret" for an
+  # OAuth client id/app secret; local dev without them still works for
+  # every *other* login method, but POST /auth/google and /auth/facebook
+  # themselves need real values (see docs/authentication.md's "Provider
+  # configuration" section for exactly what to create and where to put it).
+  oauth:
+    google:
+      # Comma-separated: the Android client id, the iOS client id, and
+      # (optional) a web client id — every audience a real Google ID token
+      # from one of ZAIRO's own apps can carry. Blank means "accept any
+      # audience", which GoogleIdTokenVerifierAdapter only allows outside
+      # spring.profiles.active=prod (see ProductionSecretsValidator).
+      client-ids: ${GOOGLE_OAUTH_CLIENT_IDS:}
+    facebook:
+      app-id: ${FACEBOOK_APP_ID:}
+      app-secret: ${FACEBOOK_APP_SECRET:}
+  # Phone + OTP sign-in (see auth's PhoneOtpService). Tuned for a 6-digit
+  # SMS code: short-lived, a real resend cooldown, and a low hourly cap —
+  # see CLAUDE.md task spec §7's OTP abuse-protection requirements.
+  otp:
+    ttl-minutes: 5
+    resend-cooldown-seconds: 60
+    max-verify-attempts: 5
+    max-requests-per-hour: 5
   platform:
     # Single-market MVP assumption (Factory Blueprint §6) — no per-service
     # currency lookup yet. Booking is the one place this is read (Payment
