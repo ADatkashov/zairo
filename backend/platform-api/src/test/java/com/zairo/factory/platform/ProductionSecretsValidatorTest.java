@@ -20,7 +20,8 @@ class ProductionSecretsValidatorTest {
         MockEnvironment env = new MockEnvironment(); // no active profiles -- local dev/test default
         ProductionSecretsValidator validator = new ProductionSecretsValidator(env,
                 ProductionSecretsValidator.DEV_JWT_SECRET, ProductionSecretsValidator.DEV_PLATFORM_ADMIN_JWT_SECRET,
-                ProductionSecretsValidator.DEV_DB_PASSWORD, ProductionSecretsValidator.DEV_STORAGE_SECRET_KEY);
+                ProductionSecretsValidator.DEV_DB_PASSWORD, ProductionSecretsValidator.DEV_STORAGE_SECRET_KEY, "",
+                "", "");
 
         assertThatCode(validator::run).doesNotThrowAnyException();
     }
@@ -30,7 +31,8 @@ class ProductionSecretsValidatorTest {
         MockEnvironment env = new MockEnvironment();
         env.setActiveProfiles("prod");
         ProductionSecretsValidator validator = new ProductionSecretsValidator(env,
-                ProductionSecretsValidator.DEV_JWT_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET);
+                ProductionSecretsValidator.DEV_JWT_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET,
+                REAL_SECRET, REAL_SECRET);
 
         assertThatThrownBy(validator::run).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("JWT_SECRET").hasMessageContaining("dev-default");
@@ -41,7 +43,7 @@ class ProductionSecretsValidatorTest {
         MockEnvironment env = new MockEnvironment();
         env.setActiveProfiles("prod");
         ProductionSecretsValidator validator = new ProductionSecretsValidator(env, "", REAL_SECRET, REAL_SECRET,
-                REAL_SECRET);
+                REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET);
 
         assertThatThrownBy(validator::run).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("JWT_SECRET").hasMessageContaining("not set");
@@ -53,11 +55,14 @@ class ProductionSecretsValidatorTest {
         env.setActiveProfiles("prod");
         ProductionSecretsValidator validator = new ProductionSecretsValidator(env,
                 ProductionSecretsValidator.DEV_JWT_SECRET, ProductionSecretsValidator.DEV_PLATFORM_ADMIN_JWT_SECRET,
-                ProductionSecretsValidator.DEV_DB_PASSWORD, ProductionSecretsValidator.DEV_STORAGE_SECRET_KEY);
+                ProductionSecretsValidator.DEV_DB_PASSWORD, ProductionSecretsValidator.DEV_STORAGE_SECRET_KEY, "",
+                "", "");
 
         assertThatThrownBy(validator::run).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("JWT_SECRET").hasMessageContaining("PLATFORM_ADMIN_JWT_SECRET")
-                .hasMessageContaining("DB_PASSWORD").hasMessageContaining("MINIO_SECRET_KEY");
+                .hasMessageContaining("DB_PASSWORD").hasMessageContaining("MINIO_SECRET_KEY")
+                .hasMessageContaining("GOOGLE_OAUTH_CLIENT_IDS").hasMessageContaining("FACEBOOK_APP_ID")
+                .hasMessageContaining("FACEBOOK_APP_SECRET");
     }
 
     @Test
@@ -65,7 +70,7 @@ class ProductionSecretsValidatorTest {
         MockEnvironment env = new MockEnvironment();
         env.setActiveProfiles("prod");
         ProductionSecretsValidator validator = new ProductionSecretsValidator(env, REAL_SECRET, REAL_SECRET,
-                REAL_SECRET, REAL_SECRET);
+                REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET);
 
         assertThatCode(validator::run).doesNotThrowAnyException();
     }

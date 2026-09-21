@@ -1,0 +1,12 @@
+package com.zairo.factory.auth;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
+
+@ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+public class OtpResendCooldownException extends RuntimeException {
+
+    public OtpResendCooldownException(String message) {
+        super(message);
+    }
+}
