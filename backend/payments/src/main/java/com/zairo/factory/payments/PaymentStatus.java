@@ -8,11 +8,17 @@ public enum PaymentStatus {
     SUCCEEDED,
     FAILED,
     /**
-     * Defined for completeness (ADR-0006's Payment State Machine) but not
-     * currently reachable — Freedom Pay's {@code /revoke} appears to be a
-     * synchronous request/response, not webhook-confirmed (unconfirmed,
-     * see ADR-0006 Open Questions #3). Keeping the state avoids a second
-     * migration if refund turns out to be async after all.
+     * A durable {@link PaymentRefundRequest} exists for this payment and
+     * hasn't resolved yet — set as soon as the request row is created
+     * (atomically with the booking-cancellation or already-cancelled-
+     * booking-webhook write that caused it), cleared to REFUNDED or
+     * REFUND_FAILED once {@code PaymentRefundOutboxProcessor} resolves it.
+     * Originally defined for completeness only (ADR-0006's Payment State
+     * Machine noted Freedom Pay's {@code /revoke} appears to be synchronous
+     * request/response, not webhook-confirmed) — now genuinely reachable via
+     * the durable refund outbox (see ADR-0006's "Durable Refund Outbox"
+     * section), independently of whether the provider call itself is sync
+     * or webhook-confirmed.
      */
     REFUND_PENDING,
     REFUNDED,

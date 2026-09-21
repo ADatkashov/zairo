@@ -77,6 +77,34 @@ class PaymentAdminApiTests {
         });
     }
 
+    @Test
+    void listsRefundOutboxRequestsByStatusForAnyAuthenticatedPlatformRoleButNotForAnonymousCallers() {
+        String runId = UUID.randomUUID().toString();
+        BookingForPayment bookingForPayment = createBookingForPayment(runId, new BigDecimal("41.00"));
+        UUID bookingId = bookingForPayment.bookingId();
+        restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(bookingForPayment.customer().accessToken())), Map.class);
+        restTemplate.exchange("/api/v1/bookings/" + bookingId + "/cancel", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(bookingForPayment.customer().accessToken())), Map.class);
+
+        ResponseEntity<Map> unauthenticated = restTemplate.getForEntity(
+                "/api/v1/platform/payments/refund-requests?status=SUCCEEDED", Map.class);
+        assertThat(unauthenticated.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        var support = TestPlatformAuth.registerPlatformAdmin(restTemplate, platformAdminAccountRepository,
+                "refund-requests-support-" + runId + "@factory.internal", PlatformRole.PLATFORM_SUPPORT);
+        ResponseEntity<List> response = restTemplate.exchange(
+                "/api/v1/platform/payments/refund-requests?status=SUCCEEDED", HttpMethod.GET,
+                new HttpEntity<>(null, TestPlatformAuth.authHeaders(support.accessToken())), List.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).anySatisfy(entry -> {
+            Map<?, ?> refundRequest = (Map<?, ?>) entry;
+            assertThat(refundRequest.get("bookingId")).isEqualTo(bookingId.toString());
+            assertThat(refundRequest.get("status")).isEqualTo("SUCCEEDED");
+            assertThat(refundRequest.get("attempts")).isEqualTo(0);
+        });
+    }
+
     private record BookingForPayment(UUID bookingId, Registered customer) {
     }
 
