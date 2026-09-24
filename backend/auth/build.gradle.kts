@@ -41,7 +41,7 @@ dependencies {
     // comments: both are plain java.net.http.HttpClient calls against a
     // documented provider REST endpoint, the same convention
     // payment-provider's FreedomPayHttpClient already established.
-    implementation("com.googlecode.libphonenumber:libphonenumber:8.13.55")
+    implementation("com.googlecode.libphonenumber:libphonenumber:9.0.39")
 
     // Registration creates the User row as part of the same transaction —
     // deliberate one-directional Gradle dependency on users, same
