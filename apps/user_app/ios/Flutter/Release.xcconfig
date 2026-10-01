@@ -1,4 +1,7 @@
 #include "Generated.xcconfig"
 
-// See Debug.xcconfig's identical entry for why this exists.
+// See Debug.xcconfig's identical entries for why these exist.
 MAPS_API_KEY = $(MAPS_API_KEY)
+FACEBOOK_APP_ID = $(FACEBOOK_APP_ID)
+FACEBOOK_CLIENT_TOKEN = $(FACEBOOK_CLIENT_TOKEN)
+GOOGLE_REVERSED_CLIENT_ID = $(GOOGLE_REVERSED_CLIENT_ID)

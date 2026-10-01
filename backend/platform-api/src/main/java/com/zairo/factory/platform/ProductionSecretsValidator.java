@@ -48,16 +48,25 @@ class ProductionSecretsValidator {
     private final String platformAdminJwtSecret;
     private final String dbPassword;
     private final String storageSecretKey;
+    private final String googleClientIds;
+    private final String facebookAppId;
+    private final String facebookAppSecret;
 
     ProductionSecretsValidator(Environment environment, @Value("${app.jwt.secret}") String jwtSecret,
             @Value("${app.jwt.platform-admin-secret}") String platformAdminJwtSecret,
             @Value("${spring.datasource.password}") String dbPassword,
-            @Value("${app.storage.secret-key}") String storageSecretKey) {
+            @Value("${app.storage.secret-key}") String storageSecretKey,
+            @Value("${app.oauth.google.client-ids:}") String googleClientIds,
+            @Value("${app.oauth.facebook.app-id:}") String facebookAppId,
+            @Value("${app.oauth.facebook.app-secret:}") String facebookAppSecret) {
         this.environment = environment;
         this.jwtSecret = jwtSecret;
         this.platformAdminJwtSecret = platformAdminJwtSecret;
         this.dbPassword = dbPassword;
         this.storageSecretKey = storageSecretKey;
+        this.googleClientIds = googleClientIds;
+        this.facebookAppId = facebookAppId;
+        this.facebookAppSecret = facebookAppSecret;
     }
 
     @PostConstruct
@@ -72,11 +81,22 @@ class ProductionSecretsValidator {
         checkOverridden(problems, "DB_PASSWORD (spring.datasource.password)", dbPassword, DEV_DB_PASSWORD);
         checkOverridden(problems, "MINIO_SECRET_KEY (app.storage.secret-key)", storageSecretKey,
                 DEV_STORAGE_SECRET_KEY);
+        // No dev-default to compare against for these — they simply must
+        // not be blank in production. Blank Google client ids would make
+        // GoogleIdTokenVerifierAdapter accept a Google ID token issued to
+        // *any* app (no audience check at all); blank Facebook app
+        // credentials make FacebookGraphIdentityVerifier reject every
+        // token (safe, but means Facebook Login is silently broken) — the
+        // first is a security hole, the second a production incident, so
+        // both fail startup rather than either happening silently.
+        checkNotBlank(problems, "GOOGLE_OAUTH_CLIENT_IDS (app.oauth.google.client-ids)", googleClientIds);
+        checkNotBlank(problems, "FACEBOOK_APP_ID (app.oauth.facebook.app-id)", facebookAppId);
+        checkNotBlank(problems, "FACEBOOK_APP_SECRET (app.oauth.facebook.app-secret)", facebookAppSecret);
         if (!problems.isEmpty()) {
             throw new IllegalStateException(
                     "Refusing to start with spring.profiles.active=prod while still using a committed dev-default "
-                            + "secret. Set a real value via environment variable before deploying to production: "
-                            + String.join("; ", problems));
+                            + "secret, or missing required production configuration. Set a real value via "
+                            + "environment variable before deploying to production: " + String.join("; ", problems));
         }
     }
 
@@ -85,6 +105,12 @@ class ProductionSecretsValidator {
             problems.add(name + " is not set");
         } else if (actual.equals(devDefault)) {
             problems.add(name + " is still the committed dev-default value");
+        }
+    }
+
+    private static void checkNotBlank(List<String> problems, String name, String actual) {
+        if (actual == null || actual.isBlank()) {
+            problems.add(name + " is not set");
         }
     }
 }

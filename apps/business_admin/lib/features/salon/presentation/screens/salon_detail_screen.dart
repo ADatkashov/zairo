@@ -28,6 +28,7 @@ import '../../../staff/presentation/widgets/manage_staff_services_dialog.dart';
 import '../../../reviews/presentation/screens/reviews_screen.dart';
 import '../../../storage/presentation/providers/storage_providers.dart';
 import '../../data/models/admin_booking.dart';
+import '../../data/models/admin_payout.dart';
 import '../../data/models/admin_provider.dart';
 import '../../data/models/admin_service.dart';
 import '../providers/salon_providers.dart';
@@ -115,6 +116,7 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
           ref.invalidate(adminCleanersProvider);
           ref.invalidate(adminStaffProvider);
           ref.invalidate(providerBookingsProvider);
+          ref.invalidate(providerPayoutsProvider);
         },
         child: ListView(
           padding: const EdgeInsets.all(FactorySpacing.space4),
@@ -155,6 +157,8 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
             ],
             const SizedBox(height: FactorySpacing.space6),
             _BookingsSection(providerId: _provider.id),
+            const SizedBox(height: FactorySpacing.space6),
+            _PayoutsSection(providerId: _provider.id),
           ],
         ),
       ),
@@ -1591,6 +1595,104 @@ String _bookingStatusLabel(AppLocalizations l10n, String status) => switch (stat
       'CONFIRMED' => l10n.bookingStatusConfirmed,
       'COMPLETED' => l10n.bookingStatusCompleted,
       'CANCELLED' => l10n.bookingStatusCancelled,
+      _ => _capitalize(status),
+    };
+
+/// The business's own settlement visibility — see ADR-0007
+/// (docs/adr/0007-marketplace-commission-and-settlement.md). Read-only: a
+/// business can see what it's owed and whether it's been paid, but never
+/// marks its own payout PAID — that's a platform-admin-only action, done
+/// outside this app.
+class _PayoutsSection extends ConsumerWidget {
+  final String providerId;
+
+  const _PayoutsSection({required this.providerId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final payoutsAsync = ref.watch(providerPayoutsProvider(providerId));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        FactorySectionHeader(title: l10n.payoutsSectionTitle),
+        const SizedBox(height: FactorySpacing.space2),
+        payoutsAsync.when(
+          data: (payouts) {
+            if (payouts.isEmpty) {
+              return Text(
+                l10n.noPayoutsYet,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+              );
+            }
+            return Column(children: payouts.map((p) => _PayoutAdminRow(payout: p)).toList());
+          },
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
+            child: LinearProgressIndicator(),
+          ),
+          error: (error, stackTrace) => Text(l10n.errorPayoutsLoadFailed(error.toString())),
+        ),
+      ],
+    );
+  }
+}
+
+class _PayoutAdminRow extends StatelessWidget {
+  const _PayoutAdminRow({required this.payout});
+
+  final AdminPayout payout;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space2),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: colors.border))),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              FactoryPriceText(amount: payout.amount, fontSize: 14),
+              FactoryBadge(
+                label: _payoutStatusLabel(l10n, payout.status),
+                variant: _payoutStatusVariant(payout.status),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            payout.settledAt != null
+                ? formatMonthDayTime(l10n, payout.settledAt!.toLocal())
+                : formatMonthDayTime(l10n, payout.createdAt.toLocal()),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+FactoryBadgeVariant _payoutStatusVariant(String status) => switch (status) {
+      'PAID' => FactoryBadgeVariant.verified,
+      'PROCESSING' => FactoryBadgeVariant.limited,
+      'FAILED' => FactoryBadgeVariant.error,
+      _ => FactoryBadgeVariant.neutral,
+    };
+
+String _payoutStatusLabel(AppLocalizations l10n, String status) => switch (status) {
+      'PAYABLE' => l10n.payoutStatusPayable,
+      'PROCESSING' => l10n.payoutStatusProcessing,
+      'PAID' => l10n.payoutStatusPaid,
+      'FAILED' => l10n.payoutStatusFailed,
       _ => _capitalize(status),
     };
 
