@@ -3,6 +3,7 @@ package com.zairo.factory.services;
 import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.catalog.CatalogServiceRepository;
 import com.zairo.factory.providers.ProviderOwnership;
+import com.zairo.factory.users.UserRepository;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.LinkCatalogServiceRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.ServiceResponse;
@@ -36,12 +37,15 @@ public class ServiceOfferingController {
     private final ServiceOfferingRepository serviceOfferingRepository;
     private final ProviderOwnership providerOwnership;
     private final CatalogServiceRepository catalogServiceRepository;
+    private final UserRepository userRepository;
 
     public ServiceOfferingController(ServiceOfferingRepository serviceOfferingRepository,
-            ProviderOwnership providerOwnership, CatalogServiceRepository catalogServiceRepository) {
+            ProviderOwnership providerOwnership, CatalogServiceRepository catalogServiceRepository,
+            UserRepository userRepository) {
         this.serviceOfferingRepository = serviceOfferingRepository;
         this.providerOwnership = providerOwnership;
         this.catalogServiceRepository = catalogServiceRepository;
+        this.userRepository = userRepository;
     }
 
     @Operation(summary = "Add a service to a provider", description = "Owner-only. Created active by default.")
@@ -60,18 +64,41 @@ public class ServiceOfferingController {
         return ServiceResponse.from(serviceOfferingRepository.save(service));
     }
 
+    private String getUserCurrentCityCode(HttpServletRequest httpRequest) {
+        try {
+            UUID userId = CurrentUser.requireUserId(httpRequest);
+            return userRepository.findById(userId)
+                    .map(user -> user.getCurrentCityCode())
+                    .orElse(null);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     @Operation(summary = "List a provider's services", description = """
             Active services by default — a deactivated one (see DELETE below) drops out of both this \
             listing and Search. Pass `includeInactive=true` (used by Business Admin) to also see \
-            deactivated services alongside a way to reactivate them. No authentication required.""")
+            deactivated services alongside a way to reactivate them. \
+            For authenticated users, returns services from their selected city; \
+            for unauthenticated users, returns all services. No authentication required.""")
     @ApiResponse(responseCode = "200", description = "Matching services")
     @GetMapping("/api/v1/providers/{providerId}/services")
     public List<ServiceResponse> listByProvider(
             @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             @Parameter(description = "Include deactivated services too.")
-            @RequestParam(defaultValue = "false") boolean includeInactive) {
-        List<ServiceOffering> services = includeInactive ? serviceOfferingRepository.findByProviderId(providerId)
-                : serviceOfferingRepository.findByProviderIdAndActiveTrue(providerId);
+            @RequestParam(defaultValue = "false") boolean includeInactive,
+            HttpServletRequest httpRequest) {
+        List<ServiceOffering> services;
+        if (includeInactive) {
+            services = serviceOfferingRepository.findByProviderId(providerId);
+        } else {
+            String cityCode = getUserCurrentCityCode(httpRequest);
+            if (cityCode != null) {
+                services = serviceOfferingRepository.findByProviderIdAndCityCodeAndActiveTrue(providerId, cityCode);
+            } else {
+                services = serviceOfferingRepository.findByProviderIdAndActiveTrue(providerId);
+            }
+        }
         return services.stream().map(ServiceResponse::from).toList();
     }
 

@@ -11,7 +11,13 @@ public interface ServiceOfferingRepository extends JpaRepository<ServiceOffering
 
     List<ServiceOffering> findByProviderIdAndActiveTrue(UUID providerId);
 
+    List<ServiceOffering> findByProviderIdAndCityCodeAndActiveTrue(UUID providerId, String cityCode);
+
     List<ServiceOffering> findByTitleContainingIgnoreCaseAndActiveTrue(String title);
 
+    List<ServiceOffering> findByTitleContainingIgnoreCaseAndCityCodeAndActiveTrue(String title, String cityCode);
+
     List<ServiceOffering> findByCatalogServiceIdInAndActiveTrue(Collection<UUID> catalogServiceIds);
+
+    List<ServiceOffering> findByCatalogServiceIdInAndCityCodeAndActiveTrue(Collection<UUID> catalogServiceIds, String cityCode);
 }
