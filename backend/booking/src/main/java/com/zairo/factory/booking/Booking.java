@@ -94,6 +94,9 @@ public class Booking {
     @Column(name = "reminder_sent_at")
     private Instant reminderSentAt;
 
+    @Column(name = "city_code")
+    private String cityCode;
+
     /**
      * Optimistic lock — same reasoning as {@code AvailabilitySlot}/{@code
      * payments.Payment}: guards against {@link
@@ -113,12 +116,19 @@ public class Booking {
     public Booking(UUID id, UUID userId, UUID serviceId, UUID availabilitySlotId, BookingStatus status,
             BigDecimal totalPrice, String currency, Instant createdAt) {
         this(id, userId, serviceId, availabilitySlotId, status, totalPrice, currency, createdAt,
-                DepositType.NO_PAYMENT, null, null, null);
+                DepositType.NO_PAYMENT, null, null, null, null);
     }
 
     public Booking(UUID id, UUID userId, UUID serviceId, UUID availabilitySlotId, BookingStatus status,
             BigDecimal totalPrice, String currency, Instant createdAt, DepositType depositType,
             DepositValueType depositValueType, BigDecimal depositValue, BigDecimal depositAmount) {
+        this(id, userId, serviceId, availabilitySlotId, status, totalPrice, currency, createdAt,
+                depositType, depositValueType, depositValue, depositAmount, null);
+    }
+
+    public Booking(UUID id, UUID userId, UUID serviceId, UUID availabilitySlotId, BookingStatus status,
+            BigDecimal totalPrice, String currency, Instant createdAt, DepositType depositType,
+            DepositValueType depositValueType, BigDecimal depositValue, BigDecimal depositAmount, String cityCode) {
         this.id = id;
         this.userId = userId;
         this.serviceId = serviceId;
@@ -132,6 +142,7 @@ public class Booking {
         this.paidAmount = BigDecimal.ZERO;
         this.remainingAmount = totalPrice;
         this.createdAt = createdAt;
+        this.cityCode = cityCode;
     }
 
     public UUID getId() {
@@ -196,6 +207,10 @@ public class Booking {
 
     public BigDecimal getRemainingAmount() {
         return remainingAmount;
+    }
+
+    public String getCityCode() {
+        return cityCode;
     }
 
     void markReminderSent(Instant now) {

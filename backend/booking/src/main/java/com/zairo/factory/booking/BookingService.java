@@ -146,7 +146,7 @@ public class BookingService {
         Booking booking = new Booking(UUID.randomUUID(), userId, serviceId, availabilitySlotId,
                 BookingStatus.PENDING_PAYMENT, service.getPrice(), service.getCurrency(), Instant.now(),
                 settings.getDepositType(), settings.getDepositValueType(), settings.getDepositValue(),
-                depositAmount);
+                depositAmount, service.getCityCode());
         booking = bookingRepository.save(booking);
 
         eventPublisher.publishEvent(new BookingAttemptedEvent(userId, serviceId, slot.getProviderId(), true, null));
