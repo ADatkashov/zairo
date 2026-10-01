@@ -8,7 +8,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PaymentRepository extends JpaRepository<Payment, UUID> {
 
+    /** Get the first/main payment for a booking (backward compatibility) */
     Optional<Payment> findByBookingId(UUID bookingId);
+
+    /** Get all payments for a booking (new: supports multiple payments per booking) */
+    List<Payment> findAllByBookingId(UUID bookingId);
 
     List<Payment> findByBookingIdInAndStatus(Collection<UUID> bookingIds, PaymentStatus status);
 

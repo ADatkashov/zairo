@@ -1,5 +1,7 @@
 package com.zairo.factory.booking;
 
+import com.zairo.factory.payments.DepositType;
+import com.zairo.factory.payments.DepositValueType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
@@ -50,13 +52,21 @@ public final class BookingDtos {
             BookingStatus status,
             @Schema(example = "25.00") BigDecimal totalPrice,
             @Schema(example = "USD") String currency,
+            DepositType depositType,
+            DepositValueType depositValueType,
+            BigDecimal depositValue,
+            @Schema(description = "Amount required for deposit (if applicable)") BigDecimal depositAmount,
+            @Schema(description = "Total amount paid so far") BigDecimal paidAmount,
+            @Schema(description = "Remaining amount to be paid") BigDecimal remainingAmount,
             Instant createdAt,
             @Schema(description = "Null unless status is CANCELLED and the customer gave one.", example = "Change of plans")
             String cancellationReason) {
         static BookingResponse from(Booking booking) {
             return new BookingResponse(booking.getId(), booking.getUserId(), booking.getServiceId(),
                     booking.getAvailabilitySlotId(), booking.getStatus(), booking.getTotalPrice(),
-                    booking.getCurrency(), booking.getCreatedAt(), booking.getCancellationReason());
+                    booking.getCurrency(), booking.getDepositType(), booking.getDepositValueType(),
+                    booking.getDepositValue(), booking.getDepositAmount(), booking.getPaidAmount(),
+                    booking.getRemainingAmount(), booking.getCreatedAt(), booking.getCancellationReason());
         }
     }
 }
