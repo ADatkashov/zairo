@@ -70,34 +70,29 @@ App:
 
 Для добавления нового города в Казахстане:
 
-1. **Запустить backend для KZ** (если не запущен):
-   ```bash
-   ./scripts/run-backend.sh kz
-   ```
+### 1. Через Platform Admin интерфейс (для production)
 
-2. **API вызов для создания города** (или вручную в БД):
-   ```bash
-   curl -X POST http://localhost:8080/api/cities \
-     -H "Content-Type: application/json" \
-     -d '{
-       "code": "aktau",
-       "name": "Aktau",
-       "country_code": "KZ",
-       "timezone": "Asia/Almaty",
-       "currency": "KZT",
-       "latitude": 43.6577,
-       "longitude": 51.1694,
-       "default_search_radius_km": 50
-     }'
-   ```
+- Открыть Platform Admin панель
+- Перейти в **Cities Management**
+- Нажать **Add City** и заполнить форму
+- Сохранить
 
-3. **Готово!** Город появится в `GET /api/cities` и приложение может его использовать
+Город появится автоматически в API и доступном приложении.
 
-Или вручную в PostgreSQL:
+### 2. Для разработки (прямо в БД)
+
 ```sql
 INSERT INTO cities (id, code, name, country_code, timezone, currency, latitude, longitude, default_search_radius_km)
 VALUES (gen_random_uuid(), 'aktau', 'Aktau', 'KZ', 'Asia/Almaty', 'KZT', 43.6577, 51.1694, 50);
 ```
+
+### 3. Запустить приложение для нового города
+
+```bash
+./scripts/run-app.sh aktau
+```
+
+**Примечание:** API эндпоинт `POST /api/cities` доступен только для Platform Admin роли (см. auth/PlatformAdminController)
 
 ## Масштабирование на новые страны
 

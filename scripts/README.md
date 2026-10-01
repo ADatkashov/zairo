@@ -130,23 +130,30 @@ flutter run --dart-define=CITY=almaty
 
 ### Сценарий 3: Добавить новый город
 
+**Требуется роль Platform Admin**
+
 ```bash
-# 1. Создать конфиг города
-cat > config/cities/aktau.yml << 'EOF'
-app:
-  city:
-    code: aktau
-    name: "Aktau"
-    name_kk: "Ақтау"
-    country: "KZ"
-    latitude: 43.6577
-    longitude: 51.1694
-EOF
+# 1. Запустить backend для Казахстана (если не запущен)
+./scripts/start.sh kz
 
-# 2. Обновить countries/kz.yml - добавить город в список cities
+# 2. Открыть Platform Admin интерфейс и добавить город:
+#    - City Code: aktau
+#    - City Name: Aktau
+#    - Country: KZ
+#    - Timezone: Asia/Almaty
+#    - Currency: KZT
+#    - Latitude: 43.6577
+#    - Longitude: 51.1694
 
-# 3. Запустить
-./scripts/start.sh aktau
+# 3. Запустить приложение для нового города
+./scripts/run-app.sh aktau
+```
+
+**Или для разработки (вручную в БД):**
+```bash
+psql -h localhost -U app_factory -d app_factory_kz
+INSERT INTO cities (code, name, country_code, timezone, currency, latitude, longitude, default_search_radius_km)
+VALUES ('aktau', 'Aktau', 'KZ', 'Asia/Almaty', 'KZT', 43.6577, 51.1694, 50);
 ```
 
 ### Сценарий 4: Выход на новую страну (Россия)
