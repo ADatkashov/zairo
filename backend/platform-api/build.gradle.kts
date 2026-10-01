@@ -33,6 +33,7 @@ dependencies {
     implementation(project(":staff"))
     implementation(project(":storage"))
     implementation(project(":country"))
+    implementation(project(":city"))
     implementation(project(":money"))
     implementation(project(":payment-provider"))
     implementation(project(":deposit-policy"))

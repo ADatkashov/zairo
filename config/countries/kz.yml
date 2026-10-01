@@ -1,0 +1,46 @@
+# Kazakhstan Country Configuration
+# Базовая конфигурация для Казахстана
+
+country:
+  code: KZ
+  name: "Kazakhstan"
+  name_kk: "Қазақстан"
+  timezone: "Asia/Almaty"
+  currency: "KZT"
+
+infrastructure:
+  # All Kazakhstan cities share one infrastructure
+  database:
+    # Single Postgres instance for all KZ cities
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/app_factory_kz}
+    username: ${DB_USERNAME:app_factory}
+    password: ${DB_PASSWORD:app_factory}
+
+  storage:
+    # Single MinIO for all KZ cities
+    endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+    access-key: ${MINIO_ACCESS_KEY:app_factory}
+    secret-key: ${MINIO_SECRET_KEY:app_factory_secret}
+    bucket: ${MINIO_BUCKET:factory-media-kz}
+
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+
+payment:
+  # Kazakhstan-specific payment provider config
+  freedompay:
+    api-url: ${FREEDOMPAY_API_URL:https://api.freedompay.kz}
+    merchant-id: ${FREEDOMPAY_MERCHANT_ID:}
+    secret-key: ${FREEDOMPAY_SECRET_KEY:}
+
+localization:
+  default-language: kk
+  supported-languages:
+    - kk  # Kazakh
+    - ru  # Russian
+    - en  # English
+
+# NOTE: Cities are stored in database table 'cities', not in config files
+# See docs/city-configuration-integration.md for database schema
+# Add/update cities via API: POST /api/cities or via SQL INSERT
