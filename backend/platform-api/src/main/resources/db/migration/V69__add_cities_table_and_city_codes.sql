@@ -38,14 +38,10 @@ create index idx_booking_city_code on booking (city_code);
 create index idx_service_city_code on service (city_code);
 create index idx_review_city_code on review (city_code);
 
--- Insert all major cities for Kazakhstan (initially inactive, enable through Platform Admin as needed)
+-- Insert all major cities for Kazakhstan (all inactive by default, enable through Platform Admin as needed)
 insert into city (code, name, name_kk, country_code, timezone, currency, latitude, longitude, default_search_radius_km, active)
 values
-    -- Active by default (tier 1 cities)
-    ('almaty', 'Almaty', 'Алматы', 'KZ', 'Asia/Almaty', 'KZT', 43.238056, 77.064444, 50, true),
-    ('shymkent', 'Shymkent', 'Шымкент', 'KZ', 'Asia/Almaty', 'KZT', 42.309167, 69.596667, 50, true),
-
-    -- Major cities (inactive, to be enabled later)
+    ('almaty', 'Almaty', 'Алматы', 'KZ', 'Asia/Almaty', 'KZT', 43.238056, 77.064444, 50, false),
     ('almaty-region', 'Almaty Region', 'Түркістан облысы', 'KZ', 'Asia/Almaty', 'KZT', 45.000000, 77.500000, 50, false),
     ('aktau', 'Aktau', 'Ақтау', 'KZ', 'Asia/Almaty', 'KZT', 43.657700, 51.169400, 50, false),
     ('aktobe', 'Aktobe', 'Ақтөбе', 'KZ', 'Asia/Almaty', 'KZT', 50.283333, 57.166667, 50, false),
@@ -59,6 +55,7 @@ values
     ('petropavlovsk', 'Petropavlovsk', 'Петропавл', 'KZ', 'Asia/Almaty', 'KZT', 54.866667, 69.166667, 50, false),
     ('rudny', 'Rudny', 'Рудный', 'KZ', 'Asia/Almaty', 'KZT', 52.433333, 63.850000, 50, false),
     ('semey', 'Semey', 'Семей', 'KZ', 'Asia/Almaty', 'KZT', 50.416667, 80.250000, 50, false),
+    ('shymkent', 'Shymkent', 'Шымкент', 'KZ', 'Asia/Almaty', 'KZT', 42.309167, 69.596667, 50, false),
     ('taldykorgan', 'Taldykorgan', 'Талдықорған', 'KZ', 'Asia/Almaty', 'KZT', 45.766667, 78.366667, 50, false),
     ('taraz', 'Taraz', 'Тараз', 'KZ', 'Asia/Almaty', 'KZT', 42.900000, 71.366667, 50, false),
     ('temirtau', 'Temirtau', 'Теміртау', 'KZ', 'Asia/Almaty', 'KZT', 50.050000, 72.600000, 50, false),
