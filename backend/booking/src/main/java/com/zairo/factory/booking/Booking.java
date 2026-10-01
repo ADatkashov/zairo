@@ -1,8 +1,8 @@
 package com.zairo.factory.booking;
 
+import com.zairo.factory.depositpolicy.DepositType;
+import com.zairo.factory.depositpolicy.DepositValueType;
 import com.zairo.factory.money.Money;
-import com.zairo.factory.payments.DepositType;
-import com.zairo.factory.payments.DepositValueType;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
@@ -220,7 +220,16 @@ public class Booking {
         this.status = BookingStatus.NO_SHOW;
     }
 
-    void recordPayment(BigDecimal amount) {
+    /**
+     * Public (unlike the status mutators above, which only ever change
+     * through {@code BookingService} in this same package): {@code
+     * payments.PaymentsService} records a successful charge — online or an
+     * offline cash/card payment — directly against the Booking it already
+     * holds via {@code BookingRepository}, the same cross-module read/write
+     * trust booking already extends it for {@link #getDepositAmount()} and
+     * the other payment-tracking getters below.
+     */
+    public void recordPayment(BigDecimal amount) {
         if (amount != null && amount.compareTo(BigDecimal.ZERO) > 0) {
             this.paidAmount = this.paidAmount.add(amount);
             this.remainingAmount = this.totalPrice.amount().subtract(this.paidAmount);
@@ -231,7 +240,8 @@ public class Booking {
         return this.remainingAmount.compareTo(BigDecimal.ZERO) <= 0;
     }
 
-    boolean hasDepositBeenPaid() {
+    /** Public — see {@link #recordPayment}'s doc comment; payments checks this before confirming a booking. */
+    public boolean hasDepositBeenPaid() {
         if (this.depositType == DepositType.NO_PAYMENT) {
             return true;
         }

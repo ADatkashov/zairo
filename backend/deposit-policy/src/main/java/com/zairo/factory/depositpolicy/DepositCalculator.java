@@ -1,4 +1,4 @@
-package com.zairo.factory.payments;
+package com.zairo.factory.depositpolicy;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

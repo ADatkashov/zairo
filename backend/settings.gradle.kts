@@ -27,6 +27,7 @@ include(
     "country",
     "money",
     "payment-provider",
+    "deposit-policy",
     "subscriptions",
     "platform-admin",
     "catalog",

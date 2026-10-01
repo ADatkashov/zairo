@@ -1,5 +1,8 @@
 package com.zairo.factory.payments;
 
+import com.zairo.factory.depositpolicy.DepositType;
+import com.zairo.factory.depositpolicy.DepositValueType;
+import com.zairo.factory.depositpolicy.PaymentSettings;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.DecimalMax;
