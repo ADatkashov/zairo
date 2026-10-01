@@ -25,12 +25,13 @@ public class AuthService {
     private final PasswordResetTokenService passwordResetTokenService;
     private final ApplicationEventPublisher eventPublisher;
     private final LoginAttemptLimiter loginAttemptLimiter;
+    private final SessionIssuer sessionIssuer;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public AuthService(UserRepository userRepository, CredentialRepository credentialRepository,
             JwtService jwtService, RefreshTokenService refreshTokenService,
             PasswordResetTokenService passwordResetTokenService, ApplicationEventPublisher eventPublisher,
-            LoginAttemptLimiter loginAttemptLimiter) {
+            LoginAttemptLimiter loginAttemptLimiter, SessionIssuer sessionIssuer) {
         this.userRepository = userRepository;
         this.credentialRepository = credentialRepository;
         this.jwtService = jwtService;
@@ -38,6 +39,7 @@ public class AuthService {
         this.passwordResetTokenService = passwordResetTokenService;
         this.eventPublisher = eventPublisher;
         this.loginAttemptLimiter = loginAttemptLimiter;
+        this.sessionIssuer = sessionIssuer;
     }
 
     @Transactional
@@ -118,9 +120,7 @@ public class AuthService {
     }
 
     private TokenResponse issueTokens(User user) {
-        String accessToken = jwtService.issueAccessToken(user.getId(), user.getRole().name());
-        String refreshToken = refreshTokenService.issue(user.getId());
-        return new TokenResponse(accessToken, refreshToken, toSummary(user));
+        return sessionIssuer.issue(user);
     }
 
     /**
@@ -134,11 +134,33 @@ public class AuthService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User no longer exists"));
         user.updateAvatar(avatarUrl);
         userRepository.save(user);
-        return toSummary(user);
+        return SessionIssuer.toSummary(user);
+    }
+
+    /**
+     * Minimal profile completion for accounts that started without a
+     * displayName the person chose themselves, or without an email at all
+     * — e.g. a phone-only signup via IdentityService, which defaults
+     * displayName to the phone number and leaves email null. Either
+     * argument may be null/blank to leave that field unchanged (see
+     * User.updateProfile). Reuses this endpoint rather than a separate
+     * onboarding flow — see CLAUDE.md task spec §11's "не создавай
+     * отдельный onboarding framework, если он уже существует."
+     */
+    @Transactional
+    public UserSummary updateProfile(UUID userId, String displayName, String email) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User no longer exists"));
+        if (email != null && !email.isBlank() && !email.equals(user.getEmail())
+                && userRepository.findByEmail(email).isPresent()) {
+            throw new EmailAlreadyRegisteredException("Email already registered: " + email);
+        }
+        user.updateProfile(displayName, email);
+        userRepository.save(user);
+        return SessionIssuer.toSummary(user);
     }
 
     private static UserSummary toSummary(User user) {
-        return new UserSummary(user.getId(), user.getEmail(), user.getDisplayName(), user.getRole(),
-                user.getAvatarUrl());
+        return SessionIssuer.toSummary(user);
     }
 }

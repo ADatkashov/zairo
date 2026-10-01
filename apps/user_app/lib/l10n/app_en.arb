@@ -139,6 +139,121 @@
   "forgotPasswordSuccessMessage": "Password changed. Log in with your new password.",
   "@forgotPasswordSuccessMessage": {"description": "Snackbar shown after a successful password reset."},
 
+  "loginContinueWithGoogle": "Continue with Google",
+  "@loginContinueWithGoogle": {"description": "Login screen's Google sign-in button, and the linked-account row label on Security settings."},
+
+  "loginContinueWithFacebook": "Continue with Facebook",
+  "@loginContinueWithFacebook": {"description": "Login screen's Facebook sign-in button, and the linked-account row label on Security settings."},
+
+  "loginContinueWithPhone": "Continue with phone",
+  "@loginContinueWithPhone": {"description": "Login screen's phone sign-in button, and the linked-account row label on Security settings."},
+
+  "loginOrDivider": "or",
+  "@loginOrDivider": {"description": "Divider between the provider buttons and the email/password form on Login."},
+
+  "phoneLoginTitle": "Phone number",
+  "@phoneLoginTitle": {"description": "Phone entry screen's app bar title (phone sign-in flow, step 1)."},
+
+  "phoneLoginInstructions": "Enter your phone number and we'll text you a verification code.",
+  "@phoneLoginInstructions": {"description": "Phone entry screen's instructions."},
+
+  "phoneLoginContinueButton": "Continue",
+  "@phoneLoginContinueButton": {"description": "Phone entry screen's submit button."},
+
+  "otpTitle": "Verification code",
+  "@otpTitle": {"description": "OTP screen's app bar title (phone sign-in flow, step 2)."},
+
+  "otpInstructions": "Enter the 6-digit code we sent to {phone}.",
+  "@otpInstructions": {
+    "description": "OTP screen's instructions.",
+    "placeholders": {
+      "phone": {"type": "String"}
+    }
+  },
+
+  "otpCodeLabel": "6-digit code",
+  "@otpCodeLabel": {"description": "OTP screen's code text field label."},
+
+  "validationOtpCodeRequired": "Enter the 6-digit code",
+  "@validationOtpCodeRequired": {"description": "OTP code field validation error."},
+
+  "otpResendButton": "Resend code",
+  "@otpResendButton": {"description": "OTP screen's resend button, enabled once the countdown reaches zero."},
+
+  "otpResendCountdown": "Resend code in {seconds}s",
+  "@otpResendCountdown": {
+    "description": "OTP screen's resend button label while the countdown is still running.",
+    "placeholders": {
+      "seconds": {"type": "int"}
+    }
+  },
+
+  "otpVerifyButton": "Verify",
+  "@otpVerifyButton": {"description": "OTP screen's submit button."},
+
+  "identityLinkedMessage": "Linked to your account.",
+  "@identityLinkedMessage": {"description": "Snackbar shown after successfully linking a new sign-in method from Security settings."},
+
+  "biometricEnrollTitle": "Enable biometric login?",
+  "@biometricEnrollTitle": {"description": "Dialog shown right after a successful interactive login, offering to enable Face ID/fingerprint unlock."},
+
+  "biometricEnrollMessage": "Use Face ID or your fingerprint to unlock ZAIRO next time, instead of logging in again.",
+  "@biometricEnrollMessage": {"description": "Body text of the enable-biometric dialog."},
+
+  "biometricEnrollNotNow": "Not now",
+  "@biometricEnrollNotNow": {"description": "Decline button on the enable-biometric dialog."},
+
+  "biometricEnrollEnable": "Enable",
+  "@biometricEnrollEnable": {"description": "Accept button on the enable-biometric dialog."},
+
+  "securityTitle": "Security",
+  "@securityTitle": {"description": "Settings > Security row label, and the Security screen's app bar title."},
+
+  "securitySectionSubtitle": "Biometric login, linked accounts",
+  "@securitySectionSubtitle": {"description": "Settings > Security row subtitle."},
+
+  "securityBiometricSectionTitle": "Biometric login",
+  "@securityBiometricSectionTitle": {"description": "Security screen's biometric section heading."},
+
+  "securityBiometricUnavailable": "Biometric login isn't available on this device — no fingerprint or face is enrolled, or the hardware doesn't support it.",
+  "@securityBiometricUnavailable": {"description": "Shown instead of the toggle when BiometricAuthService.isAvailable() is false — task spec's graceful-fallback requirement."},
+
+  "securityBiometricToggleTitle": "Face ID / Fingerprint",
+  "@securityBiometricToggleTitle": {"description": "Security screen's biometric ON/OFF switch label."},
+
+  "securityBiometricToggleSubtitle": "Unlock ZAIRO instantly instead of logging in again",
+  "@securityBiometricToggleSubtitle": {"description": "Security screen's biometric switch subtitle."},
+
+  "securityLinkedAccountsSectionTitle": "Linked accounts",
+  "@securityLinkedAccountsSectionTitle": {"description": "Security screen's linked-sign-in-methods section heading."},
+
+  "securityLinkButton": "Link",
+  "@securityLinkButton": {"description": "Security screen's button to link a not-yet-linked provider."},
+
+  "errorAuthInvalidProviderCredential": "We couldn't verify that with Google/Facebook. Please try again.",
+  "@errorAuthInvalidProviderCredential": {"description": "401 from POST /auth/google, /auth/facebook, or their /identities/... link endpoints."},
+
+  "errorAuthInvalidPhoneNumber": "Enter a valid phone number.",
+  "@errorAuthInvalidPhoneNumber": {"description": "400 from POST /auth/phone/request-otp."},
+
+  "errorAuthInvalidOtp": "That code is incorrect. Please try again.",
+  "@errorAuthInvalidOtp": {"description": "401 from POST /auth/phone/verify-otp — wrong or already-used code."},
+
+  "errorAuthOtpExpired": "This code has expired. Request a new one.",
+  "@errorAuthOtpExpired": {"description": "401 from POST /auth/phone/verify-otp — the code's TTL passed."},
+
+  "errorAuthTooManyOtpAttempts": "Too many incorrect attempts. Request a new code.",
+  "@errorAuthTooManyOtpAttempts": {"description": "429 from POST /auth/phone/verify-otp."},
+
+  "errorAuthOtpResendCooldown": "Please wait a moment before requesting another code.",
+  "@errorAuthOtpResendCooldown": {"description": "429 from POST /auth/phone/request-otp — resend cooldown still active."},
+
+  "errorAuthTooManyOtpRequests": "Too many codes requested for this number. Please try again later.",
+  "@errorAuthTooManyOtpRequests": {"description": "429 from POST /auth/phone/request-otp — hourly cap reached."},
+
+  "errorAuthIdentityAlreadyLinked": "That account is already linked to a different ZAIRO user.",
+  "@errorAuthIdentityAlreadyLinked": {"description": "409 from the /auth/identities/... link endpoints."},
+
   "errorBookingSlotTaken": "This time slot was just booked by someone else. Please pick another one.",
   "@errorBookingSlotTaken": {"description": "409 from POST /bookings."},
 

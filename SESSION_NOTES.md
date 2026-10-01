@@ -4962,7 +4962,9 @@ record (не изменилось), комиссия/выплата бизнес
 - `PaymentReconciliationService` — сверка `Payment.status` vs
   `PaymentProvider.getPaymentStatus` (порт существовал, вызывающего кода
   не было), никогда не исправляет молча.
-- V63 (`payment_allocation`, `business_payout`), `PAYMENT_COMMISSION_RATE`
+- V65 (`payment_allocation`, `business_payout`; renumbered from V63 when merging
+  with `develop`'s parallel "Durable Refund Outbox" feature, which had taken
+  V63/V64 in the meantime — see this merge's own commit), `PAYMENT_COMMISSION_RATE`
   через существующий `@ConfigurationProperties`-механизм, без секретов.
 - `platform-insights`: `RevenueSection` получил `platformCommission` —
   отдельный тайл от MRR (раньше в `PRODUCT_PRODUCTION_ROADMAP.md`/

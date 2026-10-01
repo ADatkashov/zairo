@@ -7,6 +7,14 @@ class TokenStorage {
   static const _accessTokenKey = 'auth_access_token';
   static const _refreshTokenKey = 'auth_refresh_token';
 
+  // Biometric unlock is a *local gate* in front of the same refresh token
+  // above (see docs/authentication.md's "Biometric architecture" section)
+  // — this flag is the only extra state it needs: "should app restart
+  // require a successful biometric prompt before restoring the session
+  // stored above." No separate credential store, no biometric data ever
+  // written here — see BiometricAuthService's own doc comment.
+  static const _biometricEnabledKey = 'auth_biometric_enabled';
+
   final SecureStorageService _secureStorageService;
 
   TokenStorage(this._secureStorageService);
@@ -20,9 +28,26 @@ class TokenStorage {
 
   Future<String?> readRefreshToken() => _secureStorageService.read(_refreshTokenKey);
 
+  /// Clears everything, including the biometric-enabled flag — a logout
+  /// must not leave a stale "biometric unlock is on" setting pointing at
+  /// credentials that no longer exist (task spec §15: "Не делай так, чтобы
+  /// biometric toggle просто обходил logout").
   Future<void> clear() async {
     await _secureStorageService.delete(_accessTokenKey);
     await _secureStorageService.delete(_refreshTokenKey);
+    await _secureStorageService.delete(_biometricEnabledKey);
+  }
+
+  Future<void> setBiometricEnabled(bool enabled) async {
+    if (enabled) {
+      await _secureStorageService.write(_biometricEnabledKey, 'true');
+    } else {
+      await _secureStorageService.delete(_biometricEnabledKey);
+    }
+  }
+
+  Future<bool> isBiometricEnabled() async {
+    return await _secureStorageService.read(_biometricEnabledKey) == 'true';
   }
 }
 
