@@ -1,6 +1,8 @@
 package com.zairo.factory.booking;
 
 import com.zairo.factory.money.Money;
+import com.zairo.factory.payments.DepositType;
+import com.zairo.factory.payments.DepositValueType;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
@@ -55,6 +57,32 @@ public class Booking {
     })
     private Money totalPrice;
 
+    /** Payment policy for this booking — captured at creation time and immutable */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "deposit_type", nullable = false)
+    private DepositType depositType;
+
+    /** When depositType == DEPOSIT: whether depositValue is percentage or fixed amount */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "deposit_value_type")
+    private DepositValueType depositValueType;
+
+    /** When depositType == DEPOSIT: the percentage (0-100) or fixed amount value */
+    @Column(name = "deposit_value", precision = 10, scale = 2)
+    private BigDecimal depositValue;
+
+    /** Amount that must be paid as deposit (calculated based on depositType/depositValue) */
+    @Column(name = "deposit_amount", precision = 10, scale = 2)
+    private BigDecimal depositAmount;
+
+    /** Total amount paid so far (sum of all payments for this booking) */
+    @Column(name = "paid_amount", nullable = false, precision = 10, scale = 2)
+    private BigDecimal paidAmount;
+
+    /** Remaining amount to be paid (totalPrice - paidAmount) */
+    @Column(name = "remaining_amount", nullable = false, precision = 10, scale = 2)
+    private BigDecimal remainingAmount;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -84,12 +112,25 @@ public class Booking {
 
     public Booking(UUID id, UUID userId, UUID serviceId, UUID availabilitySlotId, BookingStatus status,
             BigDecimal totalPrice, String currency, Instant createdAt) {
+        this(id, userId, serviceId, availabilitySlotId, status, totalPrice, currency, createdAt,
+                DepositType.NO_PAYMENT, null, null, null);
+    }
+
+    public Booking(UUID id, UUID userId, UUID serviceId, UUID availabilitySlotId, BookingStatus status,
+            BigDecimal totalPrice, String currency, Instant createdAt, DepositType depositType,
+            DepositValueType depositValueType, BigDecimal depositValue, BigDecimal depositAmount) {
         this.id = id;
         this.userId = userId;
         this.serviceId = serviceId;
         this.availabilitySlotId = availabilitySlotId;
         this.status = status;
         this.totalPrice = new Money(totalPrice, currency);
+        this.depositType = depositType;
+        this.depositValueType = depositValueType;
+        this.depositValue = depositValue;
+        this.depositAmount = depositAmount != null ? depositAmount : BigDecimal.ZERO;
+        this.paidAmount = BigDecimal.ZERO;
+        this.remainingAmount = totalPrice;
         this.createdAt = createdAt;
     }
 
@@ -133,6 +174,30 @@ public class Booking {
         return reminderSentAt;
     }
 
+    public DepositType getDepositType() {
+        return depositType;
+    }
+
+    public DepositValueType getDepositValueType() {
+        return depositValueType;
+    }
+
+    public BigDecimal getDepositValue() {
+        return depositValue;
+    }
+
+    public BigDecimal getDepositAmount() {
+        return depositAmount;
+    }
+
+    public BigDecimal getPaidAmount() {
+        return paidAmount;
+    }
+
+    public BigDecimal getRemainingAmount() {
+        return remainingAmount;
+    }
+
     void markReminderSent(Instant now) {
         this.reminderSentAt = now;
     }
@@ -153,5 +218,29 @@ public class Booking {
 
     void markNoShow() {
         this.status = BookingStatus.NO_SHOW;
+    }
+
+    void recordPayment(BigDecimal amount) {
+        if (amount != null && amount.compareTo(BigDecimal.ZERO) > 0) {
+            this.paidAmount = this.paidAmount.add(amount);
+            this.remainingAmount = this.totalPrice.amount().subtract(this.paidAmount);
+        }
+    }
+
+    boolean isFullyPaid() {
+        return this.remainingAmount.compareTo(BigDecimal.ZERO) <= 0;
+    }
+
+    boolean hasDepositBeenPaid() {
+        if (this.depositType == DepositType.NO_PAYMENT) {
+            return true;
+        }
+        if (this.depositType == DepositType.FULL_PAYMENT) {
+            return this.isFullyPaid();
+        }
+        if (this.depositType == DepositType.DEPOSIT) {
+            return this.paidAmount.compareTo(this.depositAmount) >= 0;
+        }
+        return false;
     }
 }

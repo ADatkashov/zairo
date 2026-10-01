@@ -15,6 +15,7 @@ import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
+import org.springframework.util.Assert;
 
 /**
  * {@code providerReference} holds the provider's own payment id — Freedom
@@ -29,8 +30,13 @@ public class Payment {
     @Id
     private UUID id;
 
-    @Column(name = "booking_id", nullable = false, unique = true)
+    @Column(name = "booking_id", nullable = false)
     private UUID bookingId;
+
+    /** How this payment was made */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method", nullable = false)
+    private PaymentMethod paymentMethod;
 
     /**
      * Was two independent columns (amount + currency); now one Money value
@@ -102,11 +108,18 @@ public class Payment {
 
     public Payment(UUID id, UUID bookingId, BigDecimal amount, String currency, PaymentProviderName provider,
             Instant createdAt) {
+        this(id, bookingId, amount, currency, provider, PaymentMethod.ONLINE, createdAt);
+    }
+
+    public Payment(UUID id, UUID bookingId, BigDecimal amount, String currency, PaymentProviderName provider,
+            PaymentMethod paymentMethod, Instant createdAt) {
+        Assert.notNull(paymentMethod, "paymentMethod must not be null");
         this.id = id;
         this.bookingId = bookingId;
         this.amount = new Money(amount, currency);
         this.status = PaymentStatus.CREATED;
         this.provider = provider;
+        this.paymentMethod = paymentMethod;
         this.idempotencyKey = id;
         this.createdAt = createdAt;
         this.updatedAt = createdAt;
@@ -154,6 +167,10 @@ public class Payment {
 
     public String getFailureReason() {
         return failureReason;
+    }
+
+    public PaymentMethod getPaymentMethod() {
+        return paymentMethod;
     }
 
     public String getRefundFailureReason() {
