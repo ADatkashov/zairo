@@ -59,17 +59,26 @@ public class ServiceOffering {
     @Column(name = "catalog_service_id")
     private UUID catalogServiceId;
 
+    @Column(name = "city_code")
+    private String cityCode;
+
     protected ServiceOffering() {
     }
 
     public ServiceOffering(UUID id, UUID providerId, String title, int durationMinutes, BigDecimal price,
             String currency, boolean active) {
+        this(id, providerId, title, durationMinutes, price, currency, active, null);
+    }
+
+    public ServiceOffering(UUID id, UUID providerId, String title, int durationMinutes, BigDecimal price,
+            String currency, boolean active, String cityCode) {
         this.id = id;
         this.providerId = providerId;
         this.title = title;
         this.durationMinutes = durationMinutes;
         this.price = new Money(price, currency);
         this.active = active;
+        this.cityCode = cityCode;
     }
 
     public UUID getId() {
@@ -103,6 +112,10 @@ public class ServiceOffering {
 
     public UUID getCatalogServiceId() {
         return catalogServiceId;
+    }
+
+    public String getCityCode() {
+        return cityCode;
     }
 
     /** Nullable on purpose — passing null unlinks, matching how a "clear this field" action reads elsewhere. */

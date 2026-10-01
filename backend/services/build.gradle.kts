@@ -18,4 +18,7 @@ dependencies {
     // Validating a catalog-link target actually exists — see
     // ServiceOfferingController.linkCatalogService.
     implementation(project(":catalog"))
+
+    implementation(project(":city"))
+    implementation(project(":users"))
 }
