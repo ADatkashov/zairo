@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +37,12 @@ class PhoneOtpService {
     private final int maxAttempts;
     private final int maxRequestsPerHour;
 
+    // Explicit @Autowired is required here: with two constructors and
+    // neither a no-arg one, Spring can't infer which to use on its own —
+    // without this it fails bean creation at startup with "No default
+    // constructor found" (see git history for the exact incident). The
+    // other constructor below is a test-only seam Spring must never pick.
+    @Autowired
     PhoneOtpService(PhoneOtpRepository phoneOtpRepository, OtpSenderPort otpSender,
             @Value("${app.otp.ttl-minutes:5}") long ttlMinutes,
             @Value("${app.otp.resend-cooldown-seconds:60}") long resendCooldownSeconds,
