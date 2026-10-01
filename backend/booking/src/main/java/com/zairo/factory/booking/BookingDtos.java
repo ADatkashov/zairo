@@ -1,7 +1,7 @@
 package com.zairo.factory.booking;
 
-import com.zairo.factory.payments.DepositType;
-import com.zairo.factory.payments.DepositValueType;
+import com.zairo.factory.depositpolicy.DepositType;
+import com.zairo.factory.depositpolicy.DepositValueType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;

@@ -1,9 +1,8 @@
 package com.zairo.factory.booking;
 
-import com.zairo.factory.payments.DepositCalculator;
-import com.zairo.factory.payments.PaymentSettingsService;
-import com.zairo.factory.payments.PaymentSettings;
-import com.zairo.factory.payments.DepositType;
+import com.zairo.factory.depositpolicy.DepositCalculator;
+import com.zairo.factory.depositpolicy.PaymentSettings;
+import com.zairo.factory.depositpolicy.PaymentSettingsService;
 import com.zairo.factory.providers.Provider;
 import com.zairo.factory.providers.ProviderOwnership;
 import com.zairo.factory.providers.ProviderRepository;

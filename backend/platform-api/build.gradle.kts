@@ -35,6 +35,7 @@ dependencies {
     implementation(project(":country"))
     implementation(project(":money"))
     implementation(project(":payment-provider"))
+    implementation(project(":deposit-policy"))
     implementation(project(":subscriptions"))
     implementation(project(":platform-admin"))
     implementation(project(":catalog"))
