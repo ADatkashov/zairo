@@ -206,7 +206,7 @@ class ReviewSummaryServiceTest {
         UUID provider2 = UUID.randomUUID();
         UUID provider3 = UUID.randomUUID();
 
-        List<MockRepository.ProviderRatingRow> rows = List.of(
+        List<ReviewRepository.ProviderRatingRow> rows = List.of(
                 MockRepository.row(provider1).averageRating(5.0).reviewCount(1).globalAverageRating(3.5).build(),
                 MockRepository.row(provider2).averageRating(4.0).reviewCount(50).globalAverageRating(3.5).build(),
                 MockRepository.row(provider3).averageRating(3.0).reviewCount(100).globalAverageRating(3.5).build()
