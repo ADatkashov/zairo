@@ -4,6 +4,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class CityDtos {
 
+    public record SetCurrentCityRequest(
+            @JsonProperty("city_code")
+            String cityCode) {
+    }
+
     public record CityDto(
             String code,
             String name,

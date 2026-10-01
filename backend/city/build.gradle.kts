@@ -6,4 +6,6 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("jakarta.validation:jakarta.validation-api")
     implementation(project(":platform-admin"))
+    implementation(project(":users"))
+    implementation(project(":auth"))
 }
