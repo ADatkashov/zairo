@@ -1,5 +1,9 @@
 package com.zairo.factory.booking;
 
+import com.zairo.factory.payments.DepositCalculator;
+import com.zairo.factory.payments.PaymentSettingsService;
+import com.zairo.factory.payments.PaymentSettings;
+import com.zairo.factory.payments.DepositType;
 import com.zairo.factory.providers.Provider;
 import com.zairo.factory.providers.ProviderOwnership;
 import com.zairo.factory.providers.ProviderRepository;
@@ -30,11 +34,13 @@ public class BookingService {
     private final SubscriptionLimitService subscriptionLimitService;
     private final ApplicationEventPublisher eventPublisher;
     private final EntityManager entityManager;
+    private final PaymentSettingsService paymentSettingsService;
 
     public BookingService(AvailabilitySlotRepository availabilitySlotRepository, BookingRepository bookingRepository,
             ProviderRepository providerRepository, ServiceOfferingRepository serviceOfferingRepository,
             ProviderOwnership providerOwnership, SubscriptionLimitService subscriptionLimitService,
-            ApplicationEventPublisher eventPublisher, EntityManager entityManager) {
+            ApplicationEventPublisher eventPublisher, EntityManager entityManager,
+            PaymentSettingsService paymentSettingsService) {
         this.availabilitySlotRepository = availabilitySlotRepository;
         this.bookingRepository = bookingRepository;
         this.providerRepository = providerRepository;
@@ -43,6 +49,7 @@ public class BookingService {
         this.subscriptionLimitService = subscriptionLimitService;
         this.eventPublisher = eventPublisher;
         this.entityManager = entityManager;
+        this.paymentSettingsService = paymentSettingsService;
     }
 
     /**
@@ -128,8 +135,19 @@ public class BookingService {
         // every existing caller — BookingController and all four vertical
         // booking services (Auto/Beauty/Cleaning/Staff) — keeps compiling
         // unchanged; it no longer has any effect on the stored price.
+
+        // Load payment settings for this provider to capture them at booking time
+        PaymentSettings settings = paymentSettingsService.getOrCreateSettings(slot.getProviderId());
+
+        // Calculate deposit amount based on settings
+        BigDecimal depositAmount = DepositCalculator.calculateDepositAmount(
+                service.getPrice(), settings.getDepositType(), settings.getDepositValueType(),
+                settings.getDepositValue());
+
         Booking booking = new Booking(UUID.randomUUID(), userId, serviceId, availabilitySlotId,
-                BookingStatus.PENDING_PAYMENT, service.getPrice(), service.getCurrency(), Instant.now());
+                BookingStatus.PENDING_PAYMENT, service.getPrice(), service.getCurrency(), Instant.now(),
+                settings.getDepositType(), settings.getDepositValueType(), settings.getDepositValue(),
+                depositAmount);
         booking = bookingRepository.save(booking);
 
         eventPublisher.publishEvent(new BookingAttemptedEvent(userId, serviceId, slot.getProviderId(), true, null));

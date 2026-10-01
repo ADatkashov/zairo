@@ -45,6 +45,24 @@ dependencies:
   # upload (see pick_and_crop_image.dart).
   image_picker: ^1.2.3
   image_cropper: ^12.2.1
+  # Multi-provider auth (see features/auth). Google/Facebook only obtain a
+  # provider credential on-device — the backend is what actually verifies
+  # it (GoogleIdTokenVerifierAdapter/FacebookGraphIdentityVerifier); see
+  # docs/authentication.md for the required Android/iOS/backend
+  # configuration these two need before they work end-to-end.
+  google_sign_in: ^7.2.0
+  # flutter_facebook_auth's desktop variant (facebook_auth_desktop, pulled
+  # in for the linux/macos/windows targets this workspace's apps still
+  # carry folders for) has never tracked flutter_secure_storage past its
+  # 9.x/10.x majors, which conflicts with core_storage's ^11.0.0 — see the
+  # dependency_overrides entry below for how that's resolved.
+  flutter_facebook_auth: ^7.2.0
+  # Local biometric unlock (Face ID/Fingerprint) gating the already-
+  # securely-stored refresh token on app restart — see BiometricAuthService
+  # and docs/authentication.md's "Biometric architecture" section. Talks
+  # only to the platform's own biometric APIs; nothing biometric is ever
+  # sent to or stored by the backend.
+  local_auth: ^3.0.2
 
 dev_dependencies:
   flutter_test:
@@ -61,3 +79,14 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   generate: true
+
+# facebook_auth_desktop (flutter_facebook_auth's transitive desktop-platform
+# dependency — see the comment on flutter_facebook_auth above) pins
+# flutter_secure_storage to an old major that has no overlap with
+# core_storage's ^11.0.0. Overriding it here forces one resolved version
+# across the whole dependency graph instead of a version-solving conflict;
+# safe because this app never actually ships the desktop targets
+# facebook_auth_desktop's own code exercises — mobile Google/Facebook Login
+# is Android/iOS only (see docs/authentication.md).
+dependency_overrides:
+  flutter_secure_storage: ^11.0.0

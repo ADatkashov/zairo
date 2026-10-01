@@ -1,12 +1,15 @@
 package com.zairo.factory.auth;
 
+import com.zairo.factory.auth.AuthDtos.BiometricAuditRequest;
 import com.zairo.factory.auth.AuthDtos.ForgotPasswordRequest;
+import com.zairo.factory.auth.AuthDtos.IdentitiesResponse;
 import com.zairo.factory.auth.AuthDtos.LoginRequest;
 import com.zairo.factory.auth.AuthDtos.RefreshRequest;
 import com.zairo.factory.auth.AuthDtos.RegisterRequest;
 import com.zairo.factory.auth.AuthDtos.ResetPasswordRequest;
 import com.zairo.factory.auth.AuthDtos.TokenResponse;
 import com.zairo.factory.auth.AuthDtos.UpdateAvatarRequest;
+import com.zairo.factory.auth.AuthDtos.UpdateProfileRequest;
 import com.zairo.factory.auth.AuthDtos.UserSummary;
 import com.zairo.factory.users.User;
 import com.zairo.factory.users.UserRepository;
@@ -34,10 +37,15 @@ public class AuthController {
 
     private final AuthService authService;
     private final UserRepository userRepository;
+    private final IdentityService identityService;
+    private final AuthAuditLog auditLog;
 
-    public AuthController(AuthService authService, UserRepository userRepository) {
+    public AuthController(AuthService authService, UserRepository userRepository, IdentityService identityService,
+            AuthAuditLog auditLog) {
         this.authService = authService;
         this.userRepository = userRepository;
+        this.identityService = identityService;
+        this.auditLog = auditLog;
     }
 
     @Operation(summary = "Register a new account", description = """
@@ -134,5 +142,51 @@ public class AuthController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid access token");
         }
         return authService.updateAvatar(userId, request.avatarUrl());
+    }
+
+    @Operation(summary = "Complete/update the current user's profile", description = """
+            Fills in a displayName and/or email the caller didn't have yet — mainly for accounts created via \
+            Google/Facebook/phone (see POST /auth/google, /auth/facebook, /auth/phone/verify-otp) that started \
+            with a placeholder display name or no email at all. Either field may be omitted/blank to leave it \
+            unchanged.""")
+    @ApiResponse(responseCode = "200", description = "Profile updated")
+    @ApiResponse(responseCode = "400", ref = "BadRequest")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "409", description = "This email is already registered to another account.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @SecurityRequirement(name = "bearerAuth")
+    @PatchMapping("/api/v1/auth/me")
+    public UserSummary updateProfile(@Valid @RequestBody UpdateProfileRequest request,
+            HttpServletRequest httpRequest) {
+        return authService.updateProfile(CurrentUser.requireUserId(httpRequest), request.displayName(),
+                request.email());
+    }
+
+    @Operation(summary = "List the current user's linked sign-in methods", description = """
+            Every provider (GOOGLE, FACEBOOK, PHONE) currently linked to the caller's account, and when each was \
+            linked — powers a Settings > Security screen. Password/email is always available and isn't listed \
+            here (it isn't a linkable provider, it's the base account).""")
+    @ApiResponse(responseCode = "200", description = "The caller's linked identities")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/auth/identities")
+    public IdentitiesResponse listIdentities(HttpServletRequest httpRequest) {
+        UUID userId = CurrentUser.requireUserId(httpRequest);
+        return new IdentitiesResponse(identityService.listIdentities(userId));
+    }
+
+    @Operation(summary = "Record that the caller enabled/disabled biometric unlock on this device", description = """
+            Audit-only (see AuthAuditLog) — ZAIRO's backend never stores biometric enrollment or unlock state \
+            itself; Face ID/fingerprint unlock is entirely local to the device (see \
+            docs/authentication.md's Biometric architecture section). This call exists purely so a security \
+            event trail exists for "biometric enabled/disabled", matching every other login-adjacent event.""")
+    @ApiResponse(responseCode = "204", description = "Recorded")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/api/v1/auth/me/biometric-audit")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void auditBiometricToggle(@Valid @RequestBody BiometricAuditRequest request,
+            HttpServletRequest httpRequest) {
+        auditLog.biometricToggled(CurrentUser.requireUserId(httpRequest), Boolean.TRUE.equals(request.enabled()));
     }
 }

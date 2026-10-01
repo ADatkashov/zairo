@@ -1,22 +1,37 @@
 package com.zairo.factory.payments;
 
 import com.zairo.factory.booking.BookingCancelledEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.time.Clock;
+import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
- * Reacts to a cancelled booking by refunding its payment, if one succeeded —
- * same ADR-0002 in-process-event pattern booking already proved with
- * BookingConfirmedEvent (see notifications' BookingNotificationListener for
- * the other real consumer of these events). payments already has a
- * one-directional Gradle dependency on booking (reads
- * Booking/BookingRepository directly), so listening for a booking-published
- * event here adds no new coupling.
+ * Reacts to a cancelled booking by durably recording that its payment needs
+ * refunding -- see {@link PaymentRefundRequest}'s own doc comment for the
+ * full design, and {@code payments.PaymentWebhookProcessor}'s race-F
+ * handling for the other place a refund request gets created the same way.
+ * Same ADR-0002 in-process-event pattern booking already proved with
+ * BookingConfirmedEvent; payments already has a one-directional Gradle
+ * dependency on booking (reads Booking/BookingRepository directly
+ * elsewhere in this module), so listening for a booking-published event
+ * here adds no new coupling.
+ *
+ * <p>Deliberately a plain {@link EventListener}, not {@code
+ * @TransactionalEventListener(AFTER_COMMIT)}: it must run <em>inside</em>
+ * the same transaction as {@code BookingService#cancelBooking}'s own write
+ * (ADR-0002's synchronous in-process publish means that transaction is
+ * still open here), so the refund-request row commits atomically with the
+ * cancellation it's for. This class used to do the refund itself --
+ * AFTER_COMMIT, in a fresh REQUIRES_NEW transaction, calling {@code
+ * PaymentsService#refundPayment} directly and only logging a failure (see
+ * git history) -- a crash between the cancellation committing and that
+ * listener firing, or any transient Freedom Pay failure, silently lost the
+ * refund forever, with no retry. Now this class only ever does one cheap,
+ * unlikely-to-fail insert; the actual provider call is made durably and
+ * retried by {@code PaymentRefundOutboxProcessor}.
  *
  * <p>Nothing to refund is not an error: a booking cancelled before payment
  * was ever attempted, or one whose payment already failed, simply has no
@@ -25,45 +40,49 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Component
 class BookingCancelledPaymentListener {
 
-    private static final Logger log = LoggerFactory.getLogger(BookingCancelledPaymentListener.class);
-
     private final PaymentRepository paymentRepository;
-    private final PaymentsService paymentsService;
+    private final PaymentRefundRequestRepository refundRequestRepository;
+    private final ApplicationEventPublisher eventPublisher;
+    private final Clock clock;
 
-    BookingCancelledPaymentListener(PaymentRepository paymentRepository, PaymentsService paymentsService) {
+    BookingCancelledPaymentListener(PaymentRepository paymentRepository,
+            PaymentRefundRequestRepository refundRequestRepository, ApplicationEventPublisher eventPublisher,
+            Clock clock) {
         this.paymentRepository = paymentRepository;
-        this.paymentsService = paymentsService;
+        this.refundRequestRepository = refundRequestRepository;
+        this.eventPublisher = eventPublisher;
+        this.clock = clock;
     }
 
-    /**
-     * {@code REQUIRES_NEW}, not the default {@code REQUIRED}: this method
-     * runs inside the AFTER_COMMIT synchronization callback of the booking-
-     * cancellation transaction, which by this point has already committed
-     * but may still be thread-bound during Spring's own cleanup. Joining
-     * that transaction (the default) let {@link PaymentsService#refundPayment}
-     * appear to succeed — the returned entity showed REFUNDED — while the
-     * write was silently never durably committed. A genuinely new,
-     * independent transaction is required for a write inside a post-commit
-     * hook to actually persist.
-     */
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @EventListener
+    @Transactional
     void onBookingCancelled(BookingCancelledEvent event) {
         paymentRepository.findByBookingId(event.bookingId())
                 .filter(payment -> payment.getStatus() == PaymentStatus.SUCCEEDED)
-                .ifPresent(payment -> {
-                    try {
-                        paymentsService.refundPayment(payment.getId());
-                    } catch (RuntimeException e) {
-                        // Booking cancellation already committed by the time this
-                        // runs — a refund failure here can't roll that back, and
-                        // has no HTTP caller left to report to. Logged for a human
-                        // to reconcile manually until this project has a real
-                        // reconciliation/retry mechanism, which isn't warranted
-                        // before there's a real (non-mock) payment provider.
-                        log.error("Refund failed for cancelled booking {} (payment {}): {}", event.bookingId(),
-                                payment.getId(), e.getMessage(), e);
-                    }
-                });
+                .ifPresent(this::createRefundRequest);
+    }
+
+    /**
+     * {@code payment_id unique} (V63) is the real idempotency guarantee
+     * here, not this method -- a duplicate {@link BookingCancelledEvent} for
+     * the same booking isn't expected in normal operation ({@code
+     * cancelBooking}'s own status guard already makes cancellation a
+     * one-time transition), so this deliberately doesn't pre-check-then-
+     * insert or catch-and-swallow a constraint violation the way {@code
+     * PaymentWebhookEventRecorder} does for genuinely-expected duplicate
+     * webhook deliveries: if this ever did fire twice for the same payment,
+     * letting the second insert's constraint violation roll back the whole
+     * enclosing {@code cancelBooking} transaction is the correct, safe
+     * failure mode -- far better than silently creating a second refund
+     * request for the same money.
+     */
+    private void createRefundRequest(Payment payment) {
+        var now = clock.instant();
+        PaymentRefundRequest request = refundRequestRepository.save(new PaymentRefundRequest(UUID.randomUUID(),
+                payment.getId(), payment.getBookingId(), payment.getAmount(), payment.getCurrency(),
+                payment.getProvider(), payment.getProviderReference(), now));
+        payment.markRefundPending(now);
+        paymentRepository.save(payment);
+        eventPublisher.publishEvent(new PaymentRefundRequestReady(request.getId()));
     }
 }

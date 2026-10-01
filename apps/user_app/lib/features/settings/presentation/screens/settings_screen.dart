@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../../../app/locale/locale_controller.dart';
 import '../../../../app/theme/theme_provider.dart';
 import '../../../../l10n/app_localizations.dart';
+import 'security_settings_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -38,6 +39,14 @@ class SettingsScreen extends ConsumerWidget {
             subtitle: Text(_languageLabel(l10n, locale)),
             trailing: const Icon(Symbols.chevron_right_rounded),
             onTap: () => _openLanguagePicker(context, ref, l10n, locale),
+          ),
+          ListTile(
+            title: Text(l10n.securityTitle),
+            subtitle: Text(l10n.securitySectionSubtitle),
+            trailing: const Icon(Symbols.chevron_right_rounded),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SecuritySettingsScreen()),
+            ),
           ),
         ],
       ),

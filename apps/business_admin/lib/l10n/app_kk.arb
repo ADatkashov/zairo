@@ -128,6 +128,14 @@
   "bookingStatusCompleted": "Аяқталды",
   "bookingStatusCancelled": "Бас тартылды",
 
+  "payoutsSectionTitle": "Төлемдер",
+  "noPayoutsYet": "Әзірге төлемдер жоқ — олар брондау аяқталды деп белгіленгеннен кейін пайда болады.",
+  "errorPayoutsLoadFailed": "Төлемдерді жүктеу мүмкін болмады: {error}",
+  "payoutStatusPayable": "Төленуге тиіс",
+  "payoutStatusProcessing": "Өңделуде",
+  "payoutStatusPaid": "Төленді",
+  "payoutStatusFailed": "Сәтсіз аяқталды",
+
   "monthJan": "қаң",
   "monthFeb": "ақп",
   "monthMar": "нау",
