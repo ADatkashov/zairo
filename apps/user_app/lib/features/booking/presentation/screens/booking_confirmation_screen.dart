@@ -260,7 +260,7 @@ class _ConfirmationRow extends StatelessWidget {
 
 class _PaymentBreakdownItem extends StatelessWidget {
   final String label;
-  final int amount;
+  final double amount;
   final String description;
   final bool isHighlight;
 
@@ -286,7 +286,7 @@ class _PaymentBreakdownItem extends StatelessWidget {
               label,
               style: textTheme.bodyMedium?.copyWith(
                 fontWeight: isHighlight ? FontWeight.w600 : FontWeight.w500,
-                color: isHighlight ? colors.textPrimary : colors.textSecondary,
+                color: isHighlight ? colors.text : colors.textSecondary,
               ),
             ),
             FactoryPriceText(
@@ -310,9 +310,9 @@ class _PaymentBreakdownItem extends StatelessWidget {
 }
 
 class _PaymentBreakdownVisualizer extends StatelessWidget {
-  final int depositAmount;
-  final int remainingAmount;
-  final int totalAmount;
+  final double depositAmount;
+  final double remainingAmount;
+  final double totalAmount;
 
   const _PaymentBreakdownVisualizer({
     required this.depositAmount,
