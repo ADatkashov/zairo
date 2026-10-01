@@ -10,6 +10,9 @@
          screen's blue dot needs (see GoogleMapsRenderer's myLocationEnabled). -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <!-- Required by local_auth_android's BiometricPrompt-based authenticate()
+         call — see BiometricAuthService and docs/authentication.md. -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <application
         android:label="zairo"
         android:name="${applicationName}"
@@ -20,6 +23,16 @@
              is never selected anyway (see maps_providers.dart), so an
              empty key here is a safe default, not a broken one. -->
         <meta-data android:name="com.google.android.geo.API_KEY" android:value="${mapsApiKey}"/>
+        <!-- Facebook Login (flutter_facebook_auth) — real values come from
+             the FACEBOOK_APP_ID/FACEBOOK_CLIENT_TOKEN env vars, same
+             env-var-first/local.properties-fallback pattern as mapsApiKey
+             above (see build.gradle.kts). Empty by default: the Facebook
+             SDK simply fails every login attempt with an empty App ID
+             rather than crashing the build — see
+             docs/authentication.md's "Provider configuration" section for
+             where to get real values before Facebook Login works. -->
+        <meta-data android:name="com.facebook.sdk.ApplicationId" android:value="${facebookAppId}"/>
+        <meta-data android:name="com.facebook.sdk.ClientToken" android:value="${facebookClientToken}"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -54,6 +67,19 @@
             android:name="com.yalantis.ucrop.UCropActivity"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
+        <!-- Facebook Login's own required activities — standard Facebook
+             Android SDK boilerplate (facebook_app_id/fb_login_protocol_scheme
+             are the same Gradle-injected placeholders as above). -->
+        <activity android:name="com.facebook.FacebookActivity"
+            android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation"/>
+        <activity android:name="com.facebook.CustomTabActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="${fbLoginProtocolScheme}"/>
+            </intent-filter>
+        </activity>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

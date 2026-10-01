@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 
 import 'auth_exception.dart';
 import 'models/auth_tokens.dart';
+import 'models/identity_summary.dart';
 import 'models/user_summary.dart';
 
 /// Not final: tests substitute a subclass overriding these methods instead
@@ -103,5 +104,163 @@ class AuthApi {
       data: {'avatarUrl': avatarUrl},
     );
     return UserSummary.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// Either argument may be null/blank to leave that field unchanged — see
+  /// backend's AuthDtos.UpdateProfileRequest. Used to complete a profile
+  /// that started with a placeholder name/no email (Google/Facebook/phone
+  /// signup).
+  Future<UserSummary> updateProfile({String? displayName, String? email}) async {
+    try {
+      final response = await _dioClient.patch(
+        '/auth/me',
+        data: {'displayName': displayName, 'email': email},
+      );
+      return UserSummary.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 409) {
+        throw const AuthException(AuthErrorKey.emailAlreadyRegistered);
+      }
+      rethrow;
+    }
+  }
+
+  /// Signs in or registers with a Google ID token obtained on-device via
+  /// GoogleSignInService — see IdentityController.googleSignIn.
+  Future<AuthTokens> loginWithGoogle(String idToken) async {
+    try {
+      final response = await _dioClient.post('/auth/google', data: {'idToken': idToken});
+      return AuthTokens.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _mapProviderError(e);
+    }
+  }
+
+  /// Links a Google account to the already-authenticated caller.
+  Future<UserSummary> linkGoogle(String idToken) async {
+    try {
+      final response = await _dioClient.post('/auth/identities/google', data: {'idToken': idToken});
+      return UserSummary.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _mapProviderError(e);
+    }
+  }
+
+  /// Signs in or registers with a Facebook access token obtained on-device
+  /// via FacebookSignInService — see IdentityController.facebookSignIn.
+  Future<AuthTokens> loginWithFacebook(String accessToken) async {
+    try {
+      final response = await _dioClient.post('/auth/facebook', data: {'accessToken': accessToken});
+      return AuthTokens.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _mapProviderError(e);
+    }
+  }
+
+  /// Links a Facebook account to the already-authenticated caller.
+  Future<UserSummary> linkFacebook(String accessToken) async {
+    try {
+      final response = await _dioClient.post('/auth/identities/facebook', data: {'accessToken': accessToken});
+      return UserSummary.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _mapProviderError(e);
+    }
+  }
+
+  /// [phone] is sent exactly as typed — the backend normalizes it (see
+  /// PhoneNumberNormalizer). Always resolves, whether or not this phone is
+  /// already registered — see IdentityService.requestPhoneOtp's doc
+  /// comment. Only rate-limiting fails, as [AuthErrorKey.otpResendCooldown]
+  /// / [AuthErrorKey.tooManyOtpRequests] / [AuthErrorKey.invalidPhoneNumber].
+  Future<void> requestPhoneOtp(String phone) async {
+    try {
+      await _dioClient.post('/auth/phone/request-otp', data: {'phone': phone});
+    } on DioException catch (e) {
+      throw _mapOtpRequestError(e);
+    }
+  }
+
+  /// Verifies the 6-digit code and signs in/registers.
+  Future<AuthTokens> verifyPhoneOtp({required String phone, required String code}) async {
+    try {
+      final response = await _dioClient.post(
+        '/auth/phone/verify-otp',
+        data: {'phone': phone, 'code': code},
+      );
+      return AuthTokens.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _mapOtpVerifyError(e);
+    }
+  }
+
+  /// Verifies the 6-digit code and links this phone to the already-
+  /// authenticated caller.
+  Future<UserSummary> linkPhone({required String phone, required String code}) async {
+    try {
+      final response = await _dioClient.post(
+        '/auth/identities/phone/verify-otp',
+        data: {'phone': phone, 'code': code},
+      );
+      return UserSummary.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _mapOtpVerifyError(e);
+    }
+  }
+
+  /// Every sign-in method currently linked to the caller's own account —
+  /// powers Settings > Security.
+  Future<List<IdentitySummary>> listIdentities() async {
+    final response = await _dioClient.get('/auth/identities');
+    final identities = (response.data as Map<String, dynamic>)['identities'] as List<dynamic>;
+    return identities.map((e) => IdentitySummary.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Audit-only — see AuthController.auditBiometricToggle. Never blocks the
+  /// local biometric enable/disable flow: callers should fire-and-forget
+  /// this (a failed audit call is not a reason to fail enabling biometrics
+  /// on-device).
+  Future<void> auditBiometricToggle(bool enabled) async {
+    await _dioClient.post('/auth/me/biometric-audit', data: {'enabled': enabled});
+  }
+
+  AuthException _mapProviderError(DioException e) {
+    final status = e.response?.statusCode;
+    if (status == 401) return const AuthException(AuthErrorKey.invalidProviderCredential);
+    if (status == 409) return const AuthException(AuthErrorKey.emailAlreadyRegistered);
+    return AuthException(AuthErrorKey.invalidProviderCredential);
+  }
+
+  AuthException _mapOtpRequestError(DioException e) {
+    final status = e.response?.statusCode;
+    if (status == 400) return const AuthException(AuthErrorKey.invalidPhoneNumber);
+    if (status == 429) {
+      return _messageContains(e, 'wait')
+          ? const AuthException(AuthErrorKey.otpResendCooldown)
+          : const AuthException(AuthErrorKey.tooManyOtpRequests);
+    }
+    return const AuthException(AuthErrorKey.invalidPhoneNumber);
+  }
+
+  AuthException _mapOtpVerifyError(DioException e) {
+    final status = e.response?.statusCode;
+    if (status == 401) {
+      return _messageContains(e, 'expired')
+          ? const AuthException(AuthErrorKey.otpExpired)
+          : const AuthException(AuthErrorKey.invalidOtp);
+    }
+    if (status == 429) return const AuthException(AuthErrorKey.tooManyOtpAttempts);
+    if (status == 409) return const AuthException(AuthErrorKey.identityAlreadyLinked);
+    return const AuthException(AuthErrorKey.invalidOtp);
+  }
+
+  /// Backend's ApiError.message text is stable enough to key off for
+  /// disambiguating two exceptions that deliberately share one HTTP status
+  /// (see e.g. InvalidOtpException/OtpExpiredException, both 401) — a
+  /// pragmatic alternative to adding a machine-readable error code to
+  /// every ApiError this codebase throws, which no other endpoint does
+  /// either.
+  bool _messageContains(DioException e, String needle) {
+    final message = e.response?.data is Map ? (e.response?.data as Map)['message'] : null;
+    return message is String && message.toLowerCase().contains(needle);
   }
 }

@@ -6,3 +6,11 @@
 // Info.plist's MAPS_API_KEY entry and AppDelegate.swift's guarded
 // GMSServices.provideAPIKey call, which no-ops when this is empty.
 MAPS_API_KEY = $(MAPS_API_KEY)
+
+// Facebook Login (flutter_facebook_auth) / Google Sign-In — same pattern
+// as MAPS_API_KEY above. See Info.plist's FacebookAppID/FacebookClientToken/
+// CFBundleURLTypes entries and docs/authentication.md's "Provider
+// configuration" section for where real values come from.
+FACEBOOK_APP_ID = $(FACEBOOK_APP_ID)
+FACEBOOK_CLIENT_TOKEN = $(FACEBOOK_CLIENT_TOKEN)
+GOOGLE_REVERSED_CLIENT_ID = $(GOOGLE_REVERSED_CLIENT_ID)
