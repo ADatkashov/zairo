@@ -103,46 +103,43 @@ class BookingConfirmationScreen extends StatelessWidget {
                         const Divider(height: FactorySpacing.space6),
                         if (booking.depositAmount != null &&
                             booking.remainingAmount != null) ...[
-                          Text(
-                            l10n.paymentBreakdownTitle,
-                            style: textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: colors.textTertiary,
+                          Container(
+                            padding: const EdgeInsets.all(FactorySpacing.space3),
+                            decoration: BoxDecoration(
+                              color: colors.surfaceAlt,
+                              borderRadius: FactoryRadius.mdRadius,
+                              border: Border.all(color: colors.border),
                             ),
-                          ),
-                          const SizedBox(height: FactorySpacing.space2),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                l10n.paymentDepositAmount,
-                                style: textTheme.bodyMedium,
-                              ),
-                              FactoryPriceText(
-                                amount: booking.depositAmount!,
-                                fontSize: 14,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: FactorySpacing.space1),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                l10n.paymentRemainingAmount,
-                                style: textTheme.bodyMedium,
-                              ),
-                              FactoryPriceText(
-                                amount: booking.remainingAmount!,
-                                fontSize: 14,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: FactorySpacing.space2),
-                          Text(
-                            l10n.paymentRemainingInfo,
-                            style: textTheme.bodySmall?.copyWith(
-                              color: colors.textTertiary,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  l10n.paymentBreakdownTitle,
+                                  style: textTheme.bodySmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: colors.textTertiary,
+                                  ),
+                                ),
+                                const SizedBox(height: FactorySpacing.space3),
+                                _PaymentBreakdownItem(
+                                  label: l10n.paymentDepositAmount,
+                                  amount: booking.depositAmount!,
+                                  description: 'Due now',
+                                  isHighlight: true,
+                                ),
+                                const SizedBox(height: FactorySpacing.space2),
+                                _PaymentBreakdownItem(
+                                  label: l10n.paymentRemainingAmount,
+                                  amount: booking.remainingAmount!,
+                                  description: l10n.paymentRemainingInfo,
+                                ),
+                                const SizedBox(height: FactorySpacing.space2),
+                                _PaymentBreakdownVisualizer(
+                                  depositAmount: booking.depositAmount!,
+                                  remainingAmount: booking.remainingAmount!,
+                                  totalAmount: booking.totalPrice,
+                                ),
+                              ],
                             ),
                           ),
                           const Divider(height: FactorySpacing.space6),
@@ -255,6 +252,121 @@ class _ConfirmationRow extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PaymentBreakdownItem extends StatelessWidget {
+  final String label;
+  final int amount;
+  final String description;
+  final bool isHighlight;
+
+  const _PaymentBreakdownItem({
+    required this.label,
+    required this.amount,
+    required this.description,
+    this.isHighlight = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: textTheme.bodyMedium?.copyWith(
+                fontWeight: isHighlight ? FontWeight.w600 : FontWeight.w500,
+                color: isHighlight ? colors.textPrimary : colors.textSecondary,
+              ),
+            ),
+            FactoryPriceText(
+              amount: amount,
+              fontSize: 14,
+              weight: isHighlight ? FontWeight.w700 : FontWeight.w600,
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          description,
+          style: textTheme.bodySmall?.copyWith(
+            color: colors.textTertiary,
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PaymentBreakdownVisualizer extends StatelessWidget {
+  final int depositAmount;
+  final int remainingAmount;
+  final int totalAmount;
+
+  const _PaymentBreakdownVisualizer({
+    required this.depositAmount,
+    required this.remainingAmount,
+    required this.totalAmount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    final depositPercentage = totalAmount > 0 ? (depositAmount / totalAmount) * 100 : 0.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Row(
+            children: [
+              Expanded(
+                flex: depositPercentage.toInt().clamp(0, 100),
+                child: Container(
+                  height: 20,
+                  color: colors.primary,
+                ),
+              ),
+              Expanded(
+                flex: (100 - depositPercentage.toInt()).clamp(0, 100),
+                child: Container(
+                  height: 20,
+                  color: colors.surfaceAlt,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Now (${depositPercentage.toStringAsFixed(0)}%)',
+              style: textTheme.labelSmall?.copyWith(
+                color: colors.textSecondary,
+              ),
+            ),
+            Text(
+              'On service day',
+              style: textTheme.labelSmall?.copyWith(
+                color: colors.textSecondary,
+              ),
+            ),
+          ],
         ),
       ],
     );
