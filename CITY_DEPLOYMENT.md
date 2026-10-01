@@ -71,24 +71,25 @@ curl http://localhost:8080/api/cities
 
 ## Добавить новый город в Казахстан
 
-### Вариант 1: Через API
+**Требуется роль: Platform Admin**
 
-```bash
-curl -X POST http://localhost:8080/api/cities \
-  -H "Content-Type: application/json" \
-  -d '{
-    "code": "aktau",
-    "name": "Aktau",
-    "country_code": "KZ",
-    "timezone": "Asia/Almaty",
-    "currency": "KZT",
-    "latitude": 43.6577,
-    "longitude": 51.1694,
-    "default_search_radius_km": 50
-  }'
-```
+### Через Platform Admin интерфейс
 
-### Вариант 2: Вручную в PostgreSQL
+1. Открыть Platform Admin панель
+2. Перейти в **Cities Management** (или аналогичный раздел)
+3. Нажать **Add City**
+4. Заполнить форму:
+   - City Code: `aktau`
+   - City Name: `Aktau`
+   - Country: `KZ` (Казахстан)
+   - Timezone: `Asia/Almaty`
+   - Currency: `KZT`
+   - Latitude: `43.6577`
+   - Longitude: `51.1694`
+   - Default Search Radius: `50` км
+5. Сохранить
+
+### Для разработки (вручную в БД)
 
 ```sql
 psql -h localhost -U app_factory -d app_factory_kz

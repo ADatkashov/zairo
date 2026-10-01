@@ -140,7 +140,90 @@ public class CityInitializer {
 }
 ```
 
-### 4. Добавить фильтрацию по городу в Controllers
+### 4. Создать контроллер для управления городами (Platform Admin)
+
+**Файл:** `backend/platformadmin/src/main/java/com/zairo/factory/platformadmin/CityAdminController.java`
+
+```java
+@RestController
+@RequestMapping("/api/admin/cities")
+@RequiredArgsConstructor
+@PlatformAdminRequired  // Only Platform Admins can access
+public class CityAdminController {
+    
+    private final CityService cityService;
+    
+    // Get all cities
+    @GetMapping
+    public ResponseEntity<List<CityDto>> listCities(
+        @RequestParam(required = false) String country
+    ) {
+        List<City> cities = cityService.findByCountry(country);
+        return ResponseEntity.ok(cities.stream()
+            .map(CityDto::fromEntity)
+            .collect(Collectors.toList()));
+    }
+    
+    // Create new city
+    @PostMapping
+    public ResponseEntity<CityDto> createCity(@RequestBody CreateCityRequest request) {
+        City city = cityService.createCity(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(CityDto.fromEntity(city));
+    }
+    
+    // Update city
+    @PutMapping("/{code}")
+    public ResponseEntity<CityDto> updateCity(
+        @PathVariable String code,
+        @RequestBody UpdateCityRequest request
+    ) {
+        City city = cityService.updateCity(code, request);
+        return ResponseEntity.ok(CityDto.fromEntity(city));
+    }
+    
+    // Delete city
+    @DeleteMapping("/{code}")
+    public ResponseEntity<Void> deleteCity(@PathVariable String code) {
+        cityService.deleteCity(code);
+        return ResponseEntity.noContent().build();
+    }
+}
+```
+
+**Контроллер для публичного API:**
+
+**Файл:** `backend/core/src/main/java/com/zairo/factory/core/cities/CityController.java`
+
+```java
+@RestController
+@RequestMapping("/api/cities")
+@RequiredArgsConstructor
+public class CityController {
+    
+    private final CityService cityService;
+    
+    // Get all active cities
+    @GetMapping
+    public ResponseEntity<List<CityDto>> listCities(
+        @RequestParam(required = false) String country
+    ) {
+        List<City> cities = cityService.findActiveByCountry(country);
+        return ResponseEntity.ok(cities.stream()
+            .map(CityDto::fromEntity)
+            .collect(Collectors.toList()));
+    }
+    
+    // Get city by code
+    @GetMapping("/{code}")
+    public ResponseEntity<CityDto> getCity(@PathVariable String code) {
+        City city = cityService.findByCode(code);
+        return ResponseEntity.ok(CityDto.fromEntity(city));
+    }
+}
+```
+
+### 5. Добавить фильтрацию по городу в обычные Controllers
 
 **Пример:** `backend/providers/src/main/java/com/zairo/factory/providers/ProviderController.java`
 
@@ -168,26 +251,59 @@ public class ProviderController {
 }
 ```
 
-### 5. Database Schema Changes
+### 6. Database Schema Changes
 
-Добавить `city_code` колонку в таблицы, которые должны быть привязаны к городам:
+**Новая миграция:** `backend/platform-api/src/main/resources/db/migration/Vxx__add_cities_and_city_code.sql`
 
 ```sql
--- Add city_code to providers
+-- Create cities table
+CREATE TABLE cities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code VARCHAR(255) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    name_kk VARCHAR(255),
+    country_code VARCHAR(2) NOT NULL,
+    timezone VARCHAR(255) NOT NULL DEFAULT 'Asia/Almaty',
+    currency VARCHAR(3) NOT NULL DEFAULT 'KZT',
+    latitude DECIMAL(10, 8),
+    longitude DECIMAL(11, 8),
+    default_search_radius_km INTEGER DEFAULT 50,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_cities_country ON cities(country_code);
+CREATE INDEX idx_cities_active ON cities(active);
+
+-- Add city_code to other tables
+ALTER TABLE businesses ADD COLUMN city_code VARCHAR(255);
 ALTER TABLE providers ADD COLUMN city_code VARCHAR(255);
-CREATE INDEX idx_providers_city ON providers(city_code);
-
--- Add city_code to services
 ALTER TABLE services ADD COLUMN city_code VARCHAR(255);
-CREATE INDEX idx_services_city ON services(city_code);
-
--- Add city_code to bookings
 ALTER TABLE bookings ADD COLUMN city_code VARCHAR(255);
+
+-- Add foreign key constraints
+ALTER TABLE businesses ADD CONSTRAINT fk_businesses_city 
+    FOREIGN KEY (city_code) REFERENCES cities(code);
+ALTER TABLE providers ADD CONSTRAINT fk_providers_city 
+    FOREIGN KEY (city_code) REFERENCES cities(code);
+ALTER TABLE services ADD CONSTRAINT fk_services_city 
+    FOREIGN KEY (city_code) REFERENCES cities(code);
+ALTER TABLE bookings ADD CONSTRAINT fk_bookings_city 
+    FOREIGN KEY (city_code) REFERENCES cities(code);
+
+-- Create indexes for city filtering
+CREATE INDEX idx_businesses_city ON businesses(city_code);
+CREATE INDEX idx_providers_city ON providers(city_code);
+CREATE INDEX idx_services_city ON services(city_code);
 CREATE INDEX idx_bookings_city ON bookings(city_code);
 
--- Add city_code to businesses
-ALTER TABLE businesses ADD COLUMN city_code VARCHAR(255);
-CREATE INDEX idx_businesses_city ON businesses(city_code);
+-- Insert initial cities for Kazakhstan
+INSERT INTO cities (code, name, name_kk, country_code, timezone, currency, latitude, longitude, default_search_radius_km)
+VALUES 
+    ('almaty', 'Almaty', 'Алматы', 'KZ', 'Asia/Almaty', 'KZT', 43.2380, 77.0640, 50),
+    ('almaty-region', 'Almaty Region', 'Түркістан облысы', 'KZ', 'Asia/Almaty', 'KZT', 45.0000, 77.5000, 100),
+    ('shymkent', 'Shymkent', 'Шымкент', 'KZ', 'Asia/Almaty', 'KZT', 42.3087, 69.5957, 50);
 ```
 
 ## Frontend Integration
@@ -385,22 +501,41 @@ void main() {
 ## API Endpoints для работы с городами
 
 ```
-GET  /api/cities              - Список всех доступных городов
-GET  /api/cities/:code        - Конфиг конкретного города
-POST /api/cities              - Создать новый город (admin)
+GET  /api/cities                     - Список всех доступных городов (public)
+GET  /api/cities/:code               - Конфиг конкретного города (public)
+POST /api/admin/cities               - Создать новый город (Platform Admin only)
+PUT  /api/admin/cities/:code         - Обновить город (Platform Admin only)
+DELETE /api/admin/cities/:code       - Удалить город (Platform Admin only)
 ```
+
+**Примечание:** POST/PUT/DELETE требуют Platform Admin роли. Реализовать через `@PlatformAdminRequired` аннотацию или проверку в контроллере.
 
 ## Migration Checklist
 
-- [ ] Создать City entity и repository
-- [ ] Добавить CityInitializer для загрузки городов из конфигов
-- [ ] Добавить city_code колонку в основные таблицы (providers, services, bookings, businesses)
-- [ ] Обновить queries для фильтрации по city_code
-- [ ] Создать CityProvider в Flutter
-- [ ] Скопировать конфиги в assets Flutter приложений
-- [ ] Обновить API endpoints для поддержки фильтрации по городам
+### Backend
+- [ ] Создать миграцию `Vxx__add_cities_and_city_code.sql` с таблицей cities
+- [ ] Создать City JPA entity (`backend/core/src/main/java/.../cities/City.java`)
+- [ ] Создать CityRepository (extends JpaRepository)
+- [ ] Создать CityService для управления городами
+- [ ] Создать CityAdminController (`/api/admin/cities/*` — Platform Admin only)
+- [ ] Создать CityController (`/api/cities/*` — public)
+- [ ] Добавить `@PlatformAdminRequired` аннотацию на admin endpoints
+- [ ] Обновить запросы в других сервисах для фильтрации по city_code
 - [ ] Добавить тесты для city-specific логики
-- [ ] Документировать в API (OpenAPI/Swagger)
+- [ ] Документировать в OpenAPI/Swagger
+
+### Frontend
+- [ ] Добавить API клиент для получения списка городов (`CityApi`)
+- [ ] Создать CityProvider (GetIt) для инъекции city
+- [ ] Создать UI для выбора города (если нужен)
+- [ ] Инициализировать CityProvider при старте приложения
+- [ ] Обновить экраны для использования текущего города
+- [ ] Добавить тесты
+
+### Безопасность
+- [ ] Убедиться что POST/PUT/DELETE `/api/admin/cities/*` требуют Platform Admin роль
+- [ ] Убедиться что обычные пользователи могут только читать города через `/api/cities`
+- [ ] Добавить логирование операций с городами в audit log
 
 ## Future Improvements
 
