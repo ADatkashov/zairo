@@ -29,9 +29,15 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
      * is a chain of indexed equi-joins, not an unbounded cross join.
      * Providers with zero reviews simply don't appear in the result —
      * callers treat "absent" as "no rating yet", not as zero.
+     *
+     * Also computes the global average (across all requested providers) for
+     * Bayesian rating calculation — see {@link ReviewSummaryService} for usage.
      */
     @Query(value = """
-            select s.provider_id as providerId, avg(r.rating) as averageRating, count(*) as reviewCount
+            select s.provider_id as providerId,
+                   avg(r.rating) as averageRating,
+                   count(*) as reviewCount,
+                   (select avg(r2.rating) from review r2) as globalAverageRating
             from review r
             join booking b on b.id = r.booking_id
             join availability_slot s on s.id = b.availability_slot_id
@@ -46,6 +52,8 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
         double getAverageRating();
 
         long getReviewCount();
+
+        Double getGlobalAverageRating();
     }
 
     /**

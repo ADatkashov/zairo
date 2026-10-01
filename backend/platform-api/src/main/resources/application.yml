@@ -273,6 +273,19 @@ reactivation:
   # Rebook's since these are colder leads by construction.
   base-probability: ${REACTIVATION_BASE_PROBABILITY:0.15}
 
+# Rating system configuration (see reviews' ReviewSummaryService,
+# ProviderRatingSummary, and search's SearchService for usage).
+rating:
+  # Bayesian rating for ranking: minimum review count threshold to avoid
+  # single-review bias. A provider with fewer reviews gets pulled toward the
+  # global average. This value (m) controls how much weight the global average
+  # has: (n / (n + m)) * providerRating + (m / (n + m)) * globalRating.
+  # Higher m = more conservative: single 5-star review still gets ranked low.
+  # Lower m = more aggressive: new providers rank higher sooner.
+  # Production default: 25 (a provider needs ~25 reviews to fully trust their own average).
+  bayesian:
+    min-reviews-for-confidence: ${RATING_BAYESIAN_MIN_REVIEWS:25}
+
 management:
   endpoints:
     web:
