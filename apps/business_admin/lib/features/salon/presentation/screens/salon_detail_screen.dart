@@ -1846,7 +1846,7 @@ class _DepositPercentageGuide extends StatelessWidget {
               '$percentage%',
               style: textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.w600,
-                color: colors.textPrimary,
+                color: colors.text,
               ),
             ),
           ],
