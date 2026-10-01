@@ -292,6 +292,37 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
             ],
           ),
           const SizedBox(height: FactorySpacing.space1),
+          if (booking.depositAmount != null && booking.remainingAmount != null) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  l10n.paymentDepositAmount,
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: colors.textTertiary),
+                ),
+                FactoryPriceText(
+                  amount: booking.depositAmount!,
+                  fontSize: 12,
+                ),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  l10n.paymentRemainingAmount,
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: colors.textTertiary),
+                ),
+                FactoryPriceText(
+                  amount: booking.remainingAmount!,
+                  fontSize: 12,
+                ),
+              ],
+            ),
+            const SizedBox(height: FactorySpacing.space1),
+          ],
           Text(
             l10n.bookedOnLabel(
               formatMonthDayTime(l10n, booking.createdAt.toLocal()),

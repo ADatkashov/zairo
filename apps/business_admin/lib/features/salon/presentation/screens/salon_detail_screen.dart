@@ -158,6 +158,8 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
             const SizedBox(height: FactorySpacing.space6),
             _BookingsSection(providerId: _provider.id),
             const SizedBox(height: FactorySpacing.space6),
+            _BookingSettingsSection(providerId: _provider.id),
+            const SizedBox(height: FactorySpacing.space6),
             _PayoutsSection(providerId: _provider.id),
           ],
         ),
@@ -1695,6 +1697,107 @@ String _payoutStatusLabel(AppLocalizations l10n, String status) => switch (statu
       'FAILED' => l10n.payoutStatusFailed,
       _ => _capitalize(status),
     };
+
+class _BookingSettingsSection extends StatefulWidget {
+  final String providerId;
+
+  const _BookingSettingsSection({required this.providerId});
+
+  @override
+  State<_BookingSettingsSection> createState() => _BookingSettingsSectionState();
+}
+
+class _BookingSettingsSectionState extends State<_BookingSettingsSection> {
+  late final _depositPercentageController = TextEditingController(text: '0');
+  bool _isEditing = false;
+
+  @override
+  void dispose() {
+    _depositPercentageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        FactorySectionHeader(title: l10n.bookingSettingsTitle),
+        const SizedBox(height: FactorySpacing.space3),
+        FactoryCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.depositPercentageLabel,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+              const SizedBox(height: FactorySpacing.space2),
+              FactoryTextField(
+                controller: _depositPercentageController,
+                label: l10n.depositPercentageLabel,
+                hint: l10n.depositPercentageHint,
+                keyboardType: const TextInputType.numberWithOptions(decimal: false),
+                enabled: !_isEditing,
+              ),
+              const SizedBox(height: FactorySpacing.space2),
+              Text(
+                l10n.depositPercentageHint,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: context.factoryColors.textTertiary,
+                    ),
+              ),
+              const SizedBox(height: FactorySpacing.space3),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FactoryButton(
+                  label: l10n.saveButton,
+                  isLoading: _isEditing,
+                  onPressed: _isEditing ? null : _save,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _save() async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _isEditing = true);
+    try {
+      final value = int.tryParse(_depositPercentageController.text.trim()) ?? 0;
+      if (value < 0 || value > 100) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n.validationPercentageRange,
+            ),
+          ),
+        );
+        setState(() => _isEditing = false);
+        return;
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.depositPercentageSaved)),
+      );
+      setState(() => _isEditing = false);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.errorSaveBusinessFailed(e.toString()))),
+      );
+      setState(() => _isEditing = false);
+    }
+  }
+}
 
 String _initialsFor(String name) {
   final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();

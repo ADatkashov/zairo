@@ -727,5 +727,16 @@
   "chatEmptyThread": "Пока нет сообщений. Поздоровайтесь!",
   "chatComposeHint": "Введите сообщение",
   "chatSendButtonTooltip": "Отправить",
-  "chatBookingChipLabel": "О бронировании"
+  "chatBookingChipLabel": "О бронировании",
+  "paymentBreakdownTitle": "Расчет платежа",
+  "paymentTotalPrice": "Общая стоимость",
+  "paymentDepositAmount": "Депозит к оплате",
+  "paymentDepositPercentage": "Депозит {percentage}%",
+  "paymentRemainingAmount": "Остаток",
+  "paymentRemainingInfo": "Оплатить в день услуги",
+  "bookingSettingsTitle": "Настройки бронирования",
+  "depositPercentageLabel": "Процент депозита (%)",
+  "depositPercentageHint": "0 для полной оплаты, 100 для депозита",
+  "depositPercentageSaved": "Процент депозита обновлен",
+  "validationPercentageRange": "Процент должен быть от 0 до 100."
 }

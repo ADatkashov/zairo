@@ -101,12 +101,60 @@ class BookingConfirmationScreen extends StatelessWidget {
                               : formatMonthDayTime(l10n, slotStartsAt!.toLocal()),
                         ),
                         const Divider(height: FactorySpacing.space6),
+                        if (booking.depositAmount != null &&
+                            booking.remainingAmount != null) ...[
+                          Text(
+                            l10n.paymentBreakdownTitle,
+                            style: textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: colors.textTertiary,
+                            ),
+                          ),
+                          const SizedBox(height: FactorySpacing.space2),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                l10n.paymentDepositAmount,
+                                style: textTheme.bodyMedium,
+                              ),
+                              FactoryPriceText(
+                                amount: booking.depositAmount!,
+                                fontSize: 14,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: FactorySpacing.space1),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                l10n.paymentRemainingAmount,
+                                style: textTheme.bodyMedium,
+                              ),
+                              FactoryPriceText(
+                                amount: booking.remainingAmount!,
+                                fontSize: 14,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: FactorySpacing.space2),
+                          Text(
+                            l10n.paymentRemainingInfo,
+                            style: textTheme.bodySmall?.copyWith(
+                              color: colors.textTertiary,
+                            ),
+                          ),
+                          const Divider(height: FactorySpacing.space6),
+                        ],
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
                               l10n.bookingConfirmationTotalLabel,
-                              style: textTheme.bodyMedium,
+                              style: textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             FactoryPriceText(
                               amount: booking.totalPrice,

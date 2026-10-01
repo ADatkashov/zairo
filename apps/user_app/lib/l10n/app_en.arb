@@ -1430,5 +1430,68 @@
     "placeholders": {
       "error": {"type": "String"}
     }
+  },
+
+  "paymentBreakdownTitle": "Payment breakdown",
+  "@paymentBreakdownTitle": {"description": "Section header for payment breakdown details."},
+
+  "paymentTotalPrice": "Total price",
+  "@paymentTotalPrice": {"description": "Label for the full service price."},
+
+  "paymentDepositAmount": "Deposit due now",
+  "@paymentDepositAmount": {"description": "Label for the deposit amount to be paid immediately."},
+
+  "paymentDepositPercentage": "{percentage}% deposit",
+  "@paymentDepositPercentage": {
+    "description": "Display of deposit as percentage",
+    "placeholders": {
+      "percentage": {"type": "int"}
+    }
+  },
+
+  "paymentRemainingAmount": "Remaining balance",
+  "@paymentRemainingAmount": {"description": "Label for the remaining amount to be paid later."},
+
+  "paymentRemainingInfo": "Pay on the day of service",
+  "@paymentRemainingInfo": {"description": "Note explaining when remaining balance should be paid."},
+
+  "paymentMethodsTitle": "Payment methods",
+  "@paymentMethodsTitle": {"description": "Section header for payment method options."},
+
+  "paymentMethodOnline": "Online payment",
+  "@paymentMethodOnline": {"description": "Option for paying online."},
+
+  "paymentMethodCash": "Cash on arrival",
+  "@paymentMethodCash": {"description": "Option for paying with cash at time of service."},
+
+  "paymentStatusPending": "Pending",
+  "@paymentStatusPending": {"description": "Payment status for pending transactions."},
+
+  "paymentStatusProcessing": "Processing",
+  "@paymentStatusProcessing": {"description": "Payment status for transactions being processed."},
+
+  "bookingConfirmationPaidLabel": "Paid: {amount}",
+  "@bookingConfirmationPaidLabel": {
+    "description": "Shows amount paid in confirmation",
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+
+  "bookingConfirmationRemainingLabel": "Remaining: {amount}",
+  "@bookingConfirmationRemainingLabel": {
+    "description": "Shows remaining amount due in confirmation",
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+
+  "bookingPaymentInstructions": "A {amount} deposit has been charged. The remaining {remaining} can be paid cash or online on the day of service.",
+  "@bookingPaymentInstructions": {
+    "description": "Instructions displayed on booking confirmation for partial payment bookings",
+    "placeholders": {
+      "amount": {"type": "String"},
+      "remaining": {"type": "String"}
+    }
   }
 }
