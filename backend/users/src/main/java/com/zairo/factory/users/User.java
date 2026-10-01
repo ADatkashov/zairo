@@ -78,4 +78,36 @@ public class User {
     public void updateAvatar(String avatarUrl) {
         this.avatarUrl = avatarUrl;
     }
+
+    /**
+     * Profile completion for an account created via Google/Facebook/phone
+     * (see auth.IdentityService) that started without one or both of these
+     * — e.g. a phone-only signup has no email, a Facebook signup that
+     * didn't grant the email permission has no email either. Either
+     * argument may be null/blank to leave that field unchanged; email
+     * uniqueness is enforced by the caller (auth.AuthService) before this
+     * is called, same division of responsibility as everywhere else in
+     * this class.
+     */
+    public void updateProfile(String displayName, String email) {
+        if (displayName != null && !displayName.isBlank()) {
+            this.displayName = displayName;
+        }
+        if (email != null && !email.isBlank()) {
+            this.email = email;
+        }
+    }
+
+    /**
+     * Keeps the display-only {@code phone} column (used by UserResponse,
+     * not for authentication — see V63 migration's doc comment) in sync
+     * once a PHONE identity is linked. Never overwrites an existing value:
+     * the identity table, not this column, is the source of truth for
+     * "which phone can this user log in with".
+     */
+    public void adoptPhoneIfMissing(String normalizedPhone) {
+        if (this.phone == null || this.phone.isBlank()) {
+            this.phone = normalizedPhone;
+        }
+    }
 }

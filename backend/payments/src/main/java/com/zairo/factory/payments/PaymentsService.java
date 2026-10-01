@@ -11,7 +11,9 @@ import com.zairo.factory.paymentprovider.PaymentProvider;
 import com.zairo.factory.paymentprovider.PaymentProvider.PaymentInitiation;
 import com.zairo.factory.paymentprovider.PaymentProviderName;
 import com.zairo.factory.providers.ProviderOwnership;
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -31,6 +33,8 @@ public class PaymentsService {
     private final PaymentProviderName providerName;
     private final ProviderOwnership providerOwnership;
     private final ApplicationEventPublisher eventPublisher;
+    private final PaymentAllocationService paymentAllocationService;
+    private final BusinessPayoutRepository businessPayoutRepository;
     private final String successUrl;
     private final String failureUrl;
 
@@ -38,6 +42,7 @@ public class PaymentsService {
             AvailabilitySlotRepository availabilitySlotRepository, BookingService bookingService,
             PaymentProvider paymentProvider, @Value("${payment.provider:mock}") String providerName,
             ProviderOwnership providerOwnership, ApplicationEventPublisher eventPublisher,
+            PaymentAllocationService paymentAllocationService, BusinessPayoutRepository businessPayoutRepository,
             @Value("${payment.return.success-url:}") String successUrl,
             @Value("${payment.return.failure-url:}") String failureUrl) {
         this.paymentRepository = paymentRepository;
@@ -48,26 +53,22 @@ public class PaymentsService {
         this.providerName = PaymentProviderName.valueOf(providerName.toUpperCase());
         this.providerOwnership = providerOwnership;
         this.eventPublisher = eventPublisher;
+        this.paymentAllocationService = paymentAllocationService;
+        this.businessPayoutRepository = businessPayoutRepository;
         this.successUrl = successUrl;
         this.failureUrl = failureUrl;
     }
 
     /**
-     * One payment per booking for now — full totalPrice, not a partial
-     * deposit percentage. Splitting "deposit vs full payment" is a
-     * business policy decision deferred until there's a real product
-     * requirement for it (see SESSION_NOTES.md).
+     * Create an online payment for a booking. If the booking has a deposit
+     * requirement, the payment amount will be the deposit. Otherwise, it will
+     * be the full booking amount.
      *
-     * <p>A booking whose only existing payment is FAILED retries against
-     * that <em>same</em> row rather than inserting a new one — both
-     * because {@code booking_id} is unique on the payment table (a second
-     * insert would 500) and, more importantly, because reusing the row
-     * keeps {@code paymentId} stable across retries, which is exactly the
-     * idempotency key {@link PaymentProvider} promises a real provider
-     * (see its doc comment) — minting a fresh id per retry would silently
-     * defeat that guarantee. A FAILED retry never trips the status guard
-     * below: {@code BookingService.cancelUnpaidBooking}'s own doc comment
-     * confirms the booking stays PENDING_PAYMENT through exactly this case.
+     * <p>Multiple payments can be created for a single booking (one online
+     * payment for deposit, then later payments for balance via other methods).
+     *
+     * <p>A FAILED payment can be retried using the same payment row — keeps
+     * paymentId stable across retries for idempotency with the provider.
      */
     @Transactional
     public Payment createPayment(UUID bookingId, UUID callerId) {
@@ -81,20 +82,24 @@ public class PaymentsService {
                     + booking.getStatus() + ")");
         }
 
-        Payment payment = paymentRepository.findByBookingId(bookingId).map(existing -> {
-            if (existing.getStatus() != PaymentStatus.FAILED) {
-                throw new PaymentConflictException("Booking already has a payment: " + bookingId);
+        // Determine payment amount: if there's a deposit, charge the deposit; otherwise charge the full amount
+        BigDecimal paymentAmount = booking.getDepositAmount().compareTo(BigDecimal.ZERO) > 0 ?
+                booking.getDepositAmount() : booking.getTotalPrice();
+
+        // Try to reuse a failed ONLINE payment for this booking
+        List<Payment> existingPayments = paymentRepository.findAllByBookingId(bookingId);
+        Payment payment = null;
+        for (Payment existing : existingPayments) {
+            if (existing.getStatus() == PaymentStatus.FAILED && existing.getPaymentMethod() == PaymentMethod.ONLINE) {
+                payment = existing;
+                break;
             }
-            return existing;
-        }).orElseGet(() -> {
-            // The booking's own currency, not an independently configured
-            // default — see Money migration notes (SESSION_NOTES.md): two
-            // separately-configured "USD" defaults that happened to agree
-            // were a real latent bug (they could silently diverge), not a
-            // feature.
-            return paymentRepository.save(new Payment(UUID.randomUUID(), bookingId, booking.getTotalPrice(),
-                    booking.getCurrency(), providerName, Instant.now()));
-        });
+        }
+
+        if (payment == null) {
+            payment = paymentRepository.save(new Payment(UUID.randomUUID(), bookingId, paymentAmount,
+                    booking.getCurrency(), providerName, PaymentMethod.ONLINE, Instant.now()));
+        }
 
         charge(payment);
         return paymentRepository.save(payment);
@@ -118,6 +123,54 @@ public class PaymentsService {
         return paymentRepository.findByBookingId(bookingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "No payment for booking: " + bookingId));
+    }
+
+    /**
+     * Record a payment made through a non-online method (cash, card at location, etc).
+     * This is used by the business to record payments they received outside of ZAIRO.
+     */
+    @Transactional
+    public Payment recordOfflinePayment(UUID bookingId, BigDecimal amount, PaymentMethod method, UUID callerId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
+                        + bookingId));
+        requireProviderOwner(booking, callerId);
+
+        if (method == PaymentMethod.ONLINE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Use createPayment() for ONLINE payments");
+        }
+
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Payment amount must be positive");
+        }
+
+        // Create a payment record for this offline payment
+        Payment payment = new Payment(UUID.randomUUID(), bookingId, amount, booking.getCurrency(),
+                PaymentProviderName.MOCK, method, Instant.now());
+        payment = paymentRepository.save(payment);
+
+        // Immediately mark as succeeded since it's already been paid offline
+        payment.markSucceeded(null, Instant.now());
+        payment = paymentRepository.save(payment);
+
+        // Update booking paid amount
+        booking.recordPayment(amount);
+        bookingRepository.save(booking);
+
+        // If booking's deposit is now satisfied and status is still PENDING_PAYMENT, confirm it
+        if (booking.getStatus() == BookingStatus.PENDING_PAYMENT && booking.hasDepositBeenPaid()) {
+            bookingService.confirmAfterPayment(bookingId);
+        }
+
+        return payment;
+    }
+
+    private void requireProviderOwner(Booking booking, UUID callerId) {
+        AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Availability slot not found: " + booking.getAvailabilitySlotId()));
+        providerOwnership.requireOwner(slot.getProviderId(), callerId);
     }
 
     /** See {@link #getPaymentForBooking} and {@code BookingController.getById}'s own doc comment. */
@@ -160,7 +213,17 @@ public class PaymentsService {
         switch (result.status()) {
             case SUCCEEDED -> {
                 payment.markSucceeded(result.providerPaymentId(), Instant.now());
-                bookingService.confirmAfterPayment(payment.getBookingId());
+                // Record the payment in the booking
+                Booking booking = bookingRepository.findById(payment.getBookingId()).orElse(null);
+                if (booking != null) {
+                    booking.recordPayment(payment.getAmount());
+                    bookingRepository.save(booking);
+                }
+                paymentAllocationService.ensureAllocation(payment);
+                // Only confirm if deposit is fully paid (or no deposit required)
+                if (booking != null && booking.hasDepositBeenPaid()) {
+                    bookingService.confirmAfterPayment(payment.getBookingId());
+                }
             }
             case FAILED -> payment.markFailed(result.failureReason(), Instant.now());
             case PENDING -> payment.markPending(result.providerPaymentId(), result.checkoutUrl(), Instant.now());
@@ -184,6 +247,20 @@ public class PaymentsService {
             throw new PaymentConflictException("Only a succeeded payment can be refunded: " + paymentId
                     + " (status=" + payment.getStatus() + ")");
         }
+
+        // Once the business's share is PROCESSING/PAID, the money is
+        // leaving (or has left) ZAIRO's control for a bank transfer this
+        // codebase has no confirmed provider-side reversal for (ADR-0007,
+        // Open Questions) — refunding the customer here would not claw
+        // that back. Blocked, not silently allowed; see docs/PAYMENT_STATE_MACHINE.md
+        // ("SETTLED -> REFUNDED only through a supported provider reversal").
+        businessPayoutRepository.findByPaymentId(paymentId).ifPresent(payout -> {
+            if (payout.getStatus() == BusinessPayoutStatus.PROCESSING || payout.getStatus() == BusinessPayoutStatus.PAID) {
+                throw new PaymentConflictException("Cannot refund payment " + paymentId
+                        + ": its business payout is already " + payout.getStatus()
+                        + " — requires manual reconciliation, not a customer-facing refund");
+            }
+        });
 
         PaymentProvider.RefundResult result = paymentProvider.refund(payment.getId(), payment.getProviderReference(),
                 payment.getAmount());

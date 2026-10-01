@@ -15,6 +15,7 @@ import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
+import org.springframework.util.Assert;
 
 /**
  * {@code providerReference} holds the provider's own payment id — Freedom
@@ -29,8 +30,13 @@ public class Payment {
     @Id
     private UUID id;
 
-    @Column(name = "booking_id", nullable = false, unique = true)
+    @Column(name = "booking_id", nullable = false)
     private UUID bookingId;
+
+    /** How this payment was made */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method", nullable = false)
+    private PaymentMethod paymentMethod;
 
     /**
      * Was two independent columns (amount + currency); now one Money value
@@ -102,11 +108,18 @@ public class Payment {
 
     public Payment(UUID id, UUID bookingId, BigDecimal amount, String currency, PaymentProviderName provider,
             Instant createdAt) {
+        this(id, bookingId, amount, currency, provider, PaymentMethod.ONLINE, createdAt);
+    }
+
+    public Payment(UUID id, UUID bookingId, BigDecimal amount, String currency, PaymentProviderName provider,
+            PaymentMethod paymentMethod, Instant createdAt) {
+        Assert.notNull(paymentMethod, "paymentMethod must not be null");
         this.id = id;
         this.bookingId = bookingId;
         this.amount = new Money(amount, currency);
         this.status = PaymentStatus.CREATED;
         this.provider = provider;
+        this.paymentMethod = paymentMethod;
         this.idempotencyKey = id;
         this.createdAt = createdAt;
         this.updatedAt = createdAt;
@@ -156,6 +169,10 @@ public class Payment {
         return failureReason;
     }
 
+    public PaymentMethod getPaymentMethod() {
+        return paymentMethod;
+    }
+
     public String getRefundFailureReason() {
         return refundFailureReason;
     }
@@ -187,6 +204,23 @@ public class Payment {
         this.status = PaymentStatus.FAILED;
         this.failureReason = failureReason;
         this.checkoutUrl = null;
+        this.updatedAt = now;
+    }
+
+    /**
+     * A durable {@link PaymentRefundRequest} now exists for this payment --
+     * see {@code BookingCancelledPaymentListener}/{@code
+     * PaymentWebhookProcessor}'s race-F handling. Doubles as a concurrency
+     * guard: {@code PaymentsService#refundPayment}'s own guard only accepts
+     * SUCCEEDED or REFUND_FAILED, so a payment sitting REFUND_PENDING can't
+     * also be picked up by the manual admin retry endpoint while the
+     * automatic outbox worker owns it -- the two paths hand off cleanly
+     * instead of racing (the worker's terminal FAILED state moves this to
+     * REFUND_FAILED, which is exactly when the manual path becomes valid
+     * again).
+     */
+    void markRefundPending(Instant now) {
+        this.status = PaymentStatus.REFUND_PENDING;
         this.updatedAt = now;
     }
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
 import '../../data/models/admin_booking.dart';
+import '../../data/models/admin_payout.dart';
 import '../../data/models/admin_provider.dart';
 import '../../data/models/admin_service.dart';
 import '../../data/models/admin_slot.dart';
@@ -35,6 +36,12 @@ final providerSlotsProvider = FutureProvider.autoDispose.family<List<AdminSlot>,
 
 final providerBookingsProvider = FutureProvider.autoDispose.family<List<AdminBooking>, String>((ref, providerId) {
   return ref.watch(salonAdminApiProvider).listBookings(providerId);
+});
+
+/// Settlement visibility — see ADR-0007. Ordered most-recent first by the
+/// backend; this provider does no re-sorting/filtering of its own.
+final providerPayoutsProvider = FutureProvider.autoDispose.family<List<AdminPayout>, String>((ref, providerId) {
+  return ref.watch(salonAdminApiProvider).listPayouts(providerId);
 });
 
 final providerDashboardMetricsProvider =
