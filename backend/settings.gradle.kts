@@ -25,6 +25,7 @@ include(
     "staff",
     "storage",
     "country",
+    "city",
     "money",
     "payment-provider",
     "deposit-policy",
