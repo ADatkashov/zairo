@@ -2,6 +2,8 @@ package com.zairo.factory.platforminsights;
 
 import com.zairo.factory.booking.BookingRepository;
 import com.zairo.factory.booking.BookingStatus;
+import com.zairo.factory.payments.PaymentAllocation;
+import com.zairo.factory.payments.PaymentAllocationRepository;
 import com.zairo.factory.payments.PaymentRepository;
 import com.zairo.factory.payments.PaymentStatus;
 import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformDashboardMetrics;
@@ -26,6 +28,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.time.temporal.TemporalAdjusters;
+import java.util.List;
 import org.springframework.stereotype.Service;
 
 /**
@@ -42,16 +45,19 @@ public class PlatformInsightsService {
     private final SubscriptionChargeRepository subscriptionChargeRepository;
     private final BookingRepository bookingRepository;
     private final PaymentRepository paymentRepository;
+    private final PaymentAllocationRepository paymentAllocationRepository;
 
     public PlatformInsightsService(UserRepository userRepository, ProviderRepository providerRepository,
             SubscriptionRepository subscriptionRepository, SubscriptionChargeRepository subscriptionChargeRepository,
-            BookingRepository bookingRepository, PaymentRepository paymentRepository) {
+            BookingRepository bookingRepository, PaymentRepository paymentRepository,
+            PaymentAllocationRepository paymentAllocationRepository) {
         this.userRepository = userRepository;
         this.providerRepository = providerRepository;
         this.subscriptionRepository = subscriptionRepository;
         this.subscriptionChargeRepository = subscriptionChargeRepository;
         this.bookingRepository = bookingRepository;
         this.paymentRepository = paymentRepository;
+        this.paymentAllocationRepository = paymentAllocationRepository;
     }
 
     public PlatformDashboardMetrics dashboardMetrics() {
@@ -95,7 +101,15 @@ public class PlatformInsightsService {
         BigDecimal mrr = chargesThisMonth.stream().map(charge -> charge.getAmount())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         String currency = chargesThisMonth.isEmpty() ? null : chargesThisMonth.get(0).getCurrency();
-        RevenueSection revenue = new RevenueSection(mrr, currency);
+
+        List<PaymentAllocation> allocationsThisMonth = paymentAllocationRepository.findByCreatedAtBetween(
+                startOfMonth, startOfNextMonth);
+        BigDecimal platformCommission = allocationsThisMonth.stream().map(PaymentAllocation::getPlatformFee)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        String platformCommissionCurrency = allocationsThisMonth.isEmpty() ? null
+                : allocationsThisMonth.get(0).getCurrency();
+
+        RevenueSection revenue = new RevenueSection(mrr, currency, platformCommission, platformCommissionCurrency);
 
         return new PlatformDashboardMetrics(users, businesses, subscriptions, bookings, payments, revenue);
     }

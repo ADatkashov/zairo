@@ -723,6 +723,26 @@
   "bookingStatusCancelled": "Cancelled",
   "@bookingStatusConfirmed": {"description": "Booking status badge label for CONFIRMED."},
 
+  "payoutsSectionTitle": "Settlement",
+  "@payoutsSectionTitle": {"description": "Salon detail screen's business-payout/settlement section header."},
+
+  "noPayoutsYet": "No settlements yet — payouts appear once a booking is marked complete.",
+  "@noPayoutsYet": {"description": "Payouts section empty state."},
+
+  "errorPayoutsLoadFailed": "Failed to load settlements: {error}",
+  "@errorPayoutsLoadFailed": {
+    "description": "Payouts section error state.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "payoutStatusPayable": "Payable",
+  "payoutStatusProcessing": "Processing",
+  "payoutStatusPaid": "Paid",
+  "payoutStatusFailed": "Failed",
+  "@payoutStatusPayable": {"description": "Business payout status badge label for PAYABLE."},
+
   "monthJan": "Jan",
   "monthFeb": "Feb",
   "monthMar": "Mar",
