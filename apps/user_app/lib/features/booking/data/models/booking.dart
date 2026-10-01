@@ -7,6 +7,8 @@ class Booking {
   final String availabilitySlotId;
   final String status;
   final double totalPrice;
+  final double? depositAmount;
+  final double? remainingAmount;
   final DateTime createdAt;
 
   const Booking({
@@ -16,6 +18,8 @@ class Booking {
     required this.availabilitySlotId,
     required this.status,
     required this.totalPrice,
+    this.depositAmount,
+    this.remainingAmount,
     required this.createdAt,
   });
 
@@ -27,6 +31,12 @@ class Booking {
       availabilitySlotId: json['availabilitySlotId'] as String,
       status: json['status'] as String,
       totalPrice: (json['totalPrice'] as num).toDouble(),
+      depositAmount: json['depositAmount'] != null
+          ? (json['depositAmount'] as num).toDouble()
+          : null,
+      remainingAmount: json['remainingAmount'] != null
+          ? (json['remainingAmount'] as num).toDouble()
+          : null,
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
   }

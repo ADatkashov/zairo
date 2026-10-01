@@ -414,5 +414,19 @@
   "messageAboutBookingSentMessage": "Сообщение отправлено.",
   "errorMessagingNotYourBooking": "Это не ваша запись.",
   "errorMessagingBookingNotFound": "Эта запись не найдена.",
-  "errorMessagingGeneric": "Не удалось отправить сообщение: {error}"
+  "errorMessagingGeneric": "Не удалось отправить сообщение: {error}",
+  "paymentBreakdownTitle": "Расчет платежа",
+  "paymentTotalPrice": "Общая стоимость",
+  "paymentDepositAmount": "Депозит к оплате",
+  "paymentDepositPercentage": "Депозит {percentage}%",
+  "paymentRemainingAmount": "Остаток",
+  "paymentRemainingInfo": "Оплатить в день услуги",
+  "paymentMethodsTitle": "Способы оплаты",
+  "paymentMethodOnline": "Онлайн-платеж",
+  "paymentMethodCash": "Наличный расчет",
+  "paymentStatusPending": "Ожидание",
+  "paymentStatusProcessing": "Обработка",
+  "bookingConfirmationPaidLabel": "Оплачено: {amount}",
+  "bookingConfirmationRemainingLabel": "Остаток: {amount}",
+  "bookingPaymentInstructions": "Депозит {amount} списан со счета. Оставшаяся сумма {remaining} может быть оплачена наличными или онлайн в день услуги."
 }
