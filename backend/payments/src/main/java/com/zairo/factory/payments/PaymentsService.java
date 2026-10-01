@@ -31,6 +31,8 @@ public class PaymentsService {
     private final PaymentProviderName providerName;
     private final ProviderOwnership providerOwnership;
     private final ApplicationEventPublisher eventPublisher;
+    private final PaymentAllocationService paymentAllocationService;
+    private final BusinessPayoutRepository businessPayoutRepository;
     private final String successUrl;
     private final String failureUrl;
 
@@ -38,6 +40,7 @@ public class PaymentsService {
             AvailabilitySlotRepository availabilitySlotRepository, BookingService bookingService,
             PaymentProvider paymentProvider, @Value("${payment.provider:mock}") String providerName,
             ProviderOwnership providerOwnership, ApplicationEventPublisher eventPublisher,
+            PaymentAllocationService paymentAllocationService, BusinessPayoutRepository businessPayoutRepository,
             @Value("${payment.return.success-url:}") String successUrl,
             @Value("${payment.return.failure-url:}") String failureUrl) {
         this.paymentRepository = paymentRepository;
@@ -48,6 +51,8 @@ public class PaymentsService {
         this.providerName = PaymentProviderName.valueOf(providerName.toUpperCase());
         this.providerOwnership = providerOwnership;
         this.eventPublisher = eventPublisher;
+        this.paymentAllocationService = paymentAllocationService;
+        this.businessPayoutRepository = businessPayoutRepository;
         this.successUrl = successUrl;
         this.failureUrl = failureUrl;
     }
@@ -160,6 +165,7 @@ public class PaymentsService {
         switch (result.status()) {
             case SUCCEEDED -> {
                 payment.markSucceeded(result.providerPaymentId(), Instant.now());
+                paymentAllocationService.ensureAllocation(payment);
                 bookingService.confirmAfterPayment(payment.getBookingId());
             }
             case FAILED -> payment.markFailed(result.failureReason(), Instant.now());
@@ -184,6 +190,20 @@ public class PaymentsService {
             throw new PaymentConflictException("Only a succeeded payment can be refunded: " + paymentId
                     + " (status=" + payment.getStatus() + ")");
         }
+
+        // Once the business's share is PROCESSING/PAID, the money is
+        // leaving (or has left) ZAIRO's control for a bank transfer this
+        // codebase has no confirmed provider-side reversal for (ADR-0007,
+        // Open Questions) — refunding the customer here would not claw
+        // that back. Blocked, not silently allowed; see docs/PAYMENT_STATE_MACHINE.md
+        // ("SETTLED -> REFUNDED only through a supported provider reversal").
+        businessPayoutRepository.findByPaymentId(paymentId).ifPresent(payout -> {
+            if (payout.getStatus() == BusinessPayoutStatus.PROCESSING || payout.getStatus() == BusinessPayoutStatus.PAID) {
+                throw new PaymentConflictException("Cannot refund payment " + paymentId
+                        + ": its business payout is already " + payout.getStatus()
+                        + " — requires manual reconciliation, not a customer-facing refund");
+            }
+        });
 
         PaymentProvider.RefundResult result = paymentProvider.refund(payment.getId(), payment.getProviderReference(),
                 payment.getAmount());

@@ -35,12 +35,39 @@ public final class PaymentDtos {
             @Schema(description = "How many refund attempts have failed for this payment, ever (not reset by an "
                     + "eventual success).")
             int refundAttempts,
-            Instant createdAt) {
+            Instant createdAt,
+            @Schema(description = "The business's (Provider's) share of this payment — only set once the payment "
+                    + "has SUCCEEDED (see PaymentAllocation). Never trust a client-supplied value for this: it is "
+                    + "always computed server-side from the booking's own price, never from the request.",
+                    example = "13500.00")
+            BigDecimal businessAmount,
+            @Schema(description = "ZAIRO's marketplace commission on this payment — only set once the payment "
+                    + "has SUCCEEDED.", example = "1500.00")
+            BigDecimal platformFee) {
         static PaymentResponse from(Payment payment) {
+            return from(payment, null);
+        }
+
+        static PaymentResponse from(Payment payment, PaymentAllocation allocation) {
             return new PaymentResponse(payment.getId(), payment.getBookingId(), payment.getAmount(),
                     payment.getCurrency(), payment.getStatus(), payment.getProvider(),
                     payment.getProviderReference(), payment.getCheckoutUrl(), payment.getFailureReason(),
-                    payment.getRefundFailureReason(), payment.getRefundAttempts(), payment.getCreatedAt());
+                    payment.getRefundFailureReason(), payment.getRefundAttempts(), payment.getCreatedAt(),
+                    allocation == null ? null : allocation.getBusinessAmount(),
+                    allocation == null ? null : allocation.getPlatformFee());
+        }
+    }
+
+    public record ReconciliationResponse(
+            PaymentReconciliationService.Outcome outcome,
+            @Schema(description = "Payment.status in ZAIRO's own database.") PaymentStatus localStatus,
+            @Schema(description = "What the payment provider itself reports right now — null if the payment "
+                    + "never reached the provider (no providerReference yet).")
+            com.zairo.factory.paymentprovider.PaymentProvider.InitiationStatus providerStatus,
+            String providerReference) {
+        static ReconciliationResponse from(PaymentReconciliationService.Result result) {
+            return new ReconciliationResponse(result.outcome(), result.localStatus(), result.providerStatus(),
+                    result.providerReference());
         }
     }
 

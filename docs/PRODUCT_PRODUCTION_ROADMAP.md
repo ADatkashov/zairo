@@ -367,7 +367,7 @@ Backend: изменений не требуется. Геокодировани�
 - **Subscriptions**: FREE vs PRO count, active, cancelled (COUNT по `Subscription.plan/status`).
 - **Bookings**: today/week/month, completed/cancelled (COUNT по `Booking.status` + `createdAt`).
 - **Payments**: successful/failed/pending, refunds (COUNT по `Payment.status`).
-- **Revenue**: MRR = SUM активных `SubscriptionCharge.amount` за период. **Важная бизнес-оговорка**: модель монетизации — только подписка, платформа не берёт комиссию с брони. Значит GMV (сумма всех Payment по броням) — это метрика здоровья маркетплейса, **не** доход платформы; смешивать их на одном тайле дашборда будет вводить в заблуждение.
+- **Revenue**: MRR = SUM активных `SubscriptionCharge.amount` за период. **Эта оговорка обновлена (2026-09-19, см. ADR-0007) — раньше здесь было записано "модель монетизации — только подписка, платформа не берёт комиссию с брони".** Прямым продуктовым решением введена вторая, независимая линия дохода: маркетплейс-комиссия ZAIRO с каждой оплаченной брони (`payment.commission.rate`, по умолчанию 10% — см. `PaymentAllocation`/`CommissionCalculator`). Revenue-дашборду теперь нужны **обе** линии отдельно, не смешанными: MRR (подписки, как раньше) **плюс** сумма `PaymentAllocation.platformFee` за период (комиссия с брони) — GMV (сумма `Payment.amount`) остаётся метрикой здоровья маркетплейса, не доходом, но `platformFee` из того же GMV — уже реальный доход платформы и должен считаться отдельным тайлом, не внутри GMV.
 - **Top businesses/services/categories**: GROUP BY на Booking — нормально на масштабе пилота, может потребовать индекса/кеша при росте (не сейчас).
 
 ### Требует новой модели данных (раздел 10 — analytics_event)
