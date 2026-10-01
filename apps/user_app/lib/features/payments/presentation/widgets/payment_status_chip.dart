@@ -20,19 +20,24 @@ class PaymentStatusChip extends ConsumerWidget {
       data: (payment) {
         if (payment == null) return const SizedBox.shrink();
         final l10n = AppLocalizations.of(context)!;
+        final colors = context.factoryColors;
         final statusLabel = _label(l10n, payment.status);
         final typeLabel = _typeLabel(l10n, payment.paymentType);
         final fullLabel =
             typeLabel.isNotEmpty ? '$typeLabel - $statusLabel' : statusLabel;
 
+        final variant = switch (payment.status) {
+          'SUCCEEDED' => FactoryBadgeVariant.available,
+          'FAILED' => FactoryBadgeVariant.error,
+          'REFUNDED' => FactoryBadgeVariant.limited,
+          'PROCESSING' => FactoryBadgeVariant.neutral,
+          'PENDING' => FactoryBadgeVariant.limited,
+          _ => FactoryBadgeVariant.neutral,
+        };
+
         return FactoryBadge(
           label: l10n.paymentLabel(fullLabel),
-          variant: switch (payment.status) {
-            'SUCCEEDED' => FactoryBadgeVariant.available,
-            'FAILED' => FactoryBadgeVariant.error,
-            'REFUNDED' => FactoryBadgeVariant.limited,
-            _ => FactoryBadgeVariant.neutral,
-          },
+          variant: variant,
         );
       },
       loading: () => const SizedBox.shrink(),
