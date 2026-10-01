@@ -1,6 +1,7 @@
 package com.zairo.factory.payments;
 
 import com.zairo.factory.auth.CurrentUser;
+import com.zairo.factory.payments.OfflinePaymentDtos.RecordPaymentRequest;
 import com.zairo.factory.payments.PaymentDtos.PaymentResponse;
 import com.zairo.factory.platformadmin.PlatformCurrentAdmin;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,11 +12,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -101,6 +104,30 @@ public class PaymentsController {
             HttpServletRequest httpRequest) {
         PlatformCurrentAdmin.requirePlatformAdmin(httpRequest);
         return toResponse(paymentsService.refundPayment(paymentId));
+    }
+
+    @Operation(summary = "Record an offline payment", description = """
+            Record a payment made through a non-online method (cash, card at location, etc).
+            Restricted to the owner of the provider the booking's slot belongs to.
+
+            This endpoint allows businesses to record payments they received outside of ZAIRO's
+            payment provider. Once recorded, it updates the booking's payment status accordingly.""")
+    @ApiResponse(responseCode = "201", description = "Payment recorded successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid payment method or amount",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "The caller is not the owner of the provider",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @ApiResponse(responseCode = "404", ref = "NotFound", description = "The booking doesn't exist")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/api/v1/bookings/{bookingId}/offline-payment")
+    @ResponseStatus(HttpStatus.CREATED)
+    public OfflinePaymentDtos.PaymentResponse recordOfflinePayment(
+            @Parameter(description = "The booking's id.") @PathVariable UUID bookingId,
+            @Valid @RequestBody RecordPaymentRequest request, HttpServletRequest httpRequest) {
+        UUID callerId = CurrentUser.requireUserId(httpRequest);
+        Payment payment = paymentsService.recordOfflinePayment(bookingId, request.amount(), request.method(), callerId);
+        return OfflinePaymentDtos.PaymentResponse.from(payment);
     }
 
     /** Attaches the commission split (see PaymentAllocation) when one exists — null fields until the payment SUCCEEDED. */
