@@ -38,9 +38,30 @@ create index idx_booking_city_code on booking (city_code);
 create index idx_service_city_code on service (city_code);
 create index idx_review_city_code on review (city_code);
 
--- Insert initial cities for Kazakhstan
-insert into city (code, name, name_kk, country_code, latitude, longitude, default_search_radius_km, active)
+-- Insert all major cities for Kazakhstan (initially inactive, enable through Platform Admin as needed)
+insert into city (code, name, name_kk, country_code, timezone, currency, latitude, longitude, default_search_radius_km, active)
 values
-    ('almaty', 'Almaty', 'Алматы', 'KZ', 43.238056, 77.064444, 50, true),
-    ('almaty-region', 'Almaty Region', 'Түркістан облысы', 'KZ', 45.000000, 77.500000, 50, true),
-    ('shymkent', 'Shymkent', 'Шымкент', 'KZ', 42.309167, 69.596667, 50, true);
+    -- Active by default (tier 1 cities)
+    ('almaty', 'Almaty', 'Алматы', 'KZ', 'Asia/Almaty', 'KZT', 43.238056, 77.064444, 50, true),
+    ('shymkent', 'Shymkent', 'Шымкент', 'KZ', 'Asia/Almaty', 'KZT', 42.309167, 69.596667, 50, true),
+
+    -- Major cities (inactive, to be enabled later)
+    ('almaty-region', 'Almaty Region', 'Түркістан облысы', 'KZ', 'Asia/Almaty', 'KZT', 45.000000, 77.500000, 50, false),
+    ('aktau', 'Aktau', 'Ақтау', 'KZ', 'Asia/Almaty', 'KZT', 43.657700, 51.169400, 50, false),
+    ('aktobe', 'Aktobe', 'Ақтөбе', 'KZ', 'Asia/Almaty', 'KZT', 50.283333, 57.166667, 50, false),
+    ('atyrau', 'Atyrau', 'Атырау', 'KZ', 'Asia/Almaty', 'KZT', 43.700000, 51.300000, 50, false),
+    ('karaganda', 'Karaganda', 'Қарағанды', 'KZ', 'Asia/Almaty', 'KZT', 49.800000, 73.100000, 50, false),
+    ('kokshetau', 'Kokshetau', 'Қоқшетау', 'KZ', 'Asia/Almaty', 'KZT', 52.283333, 75.450000, 50, false),
+    ('kostanay', 'Kostanay', 'Қостанай', 'KZ', 'Asia/Almaty', 'KZT', 53.200000, 63.630000, 50, false),
+    ('lisakovsk', 'Lisakovsk', 'Лисаковск', 'KZ', 'Asia/Almaty', 'KZT', 52.966667, 62.433333, 50, false),
+    ('oral', 'Oral', 'Орал', 'KZ', 'Asia/Almaty', 'KZT', 51.366667, 51.366667, 50, false),
+    ('pavlodar', 'Pavlodar', 'Павлодар', 'KZ', 'Asia/Almaty', 'KZT', 52.283333, 76.933333, 50, false),
+    ('petropavlovsk', 'Petropavlovsk', 'Петропавл', 'KZ', 'Asia/Almaty', 'KZT', 54.866667, 69.166667, 50, false),
+    ('rudny', 'Rudny', 'Рудный', 'KZ', 'Asia/Almaty', 'KZT', 52.433333, 63.850000, 50, false),
+    ('semey', 'Semey', 'Семей', 'KZ', 'Asia/Almaty', 'KZT', 50.416667, 80.250000, 50, false),
+    ('taldykorgan', 'Taldykorgan', 'Талдықорған', 'KZ', 'Asia/Almaty', 'KZT', 45.766667, 78.366667, 50, false),
+    ('taraz', 'Taraz', 'Тараз', 'KZ', 'Asia/Almaty', 'KZT', 42.900000, 71.366667, 50, false),
+    ('temirtau', 'Temirtau', 'Теміртау', 'KZ', 'Asia/Almaty', 'KZT', 50.050000, 72.600000, 50, false),
+    ('turkestan', 'Turkestan', 'Түркістан', 'KZ', 'Asia/Almaty', 'KZT', 43.266667, 68.283333, 50, false),
+    ('uralsk', 'Uralsk', 'Орал', 'KZ', 'Asia/Almaty', 'KZT', 51.233333, 51.400000, 50, false),
+    ('ust-kamenogorsk', 'Ust-Kamenogorsk', 'Өскемен', 'KZ', 'Asia/Almaty', 'KZT', 49.983333, 82.616667, 50, false);
