@@ -154,8 +154,13 @@ class PaymentsApiTests {
                 HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
         assertThat(cancelResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-        // BookingCancelledPaymentListener (AFTER_COMMIT, REQUIRES_NEW) already
-        // ran synchronously by the time the cancel response comes back.
+        // BookingCancelledPaymentListener durably records the refund intent
+        // in the same transaction as the cancellation, then
+        // PaymentRefundOutboxProcessor's eager AFTER_COMMIT nudge resolves
+        // it against the (always-succeeds, no real latency) mock provider —
+        // already done synchronously by the time the cancel response comes
+        // back. See PaymentRefundOutboxApiTests for the durable-retry/
+        // backoff/dead-letter coverage this class doesn't repeat.
         ResponseEntity<Map> paymentAfterCancel = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
                 HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
         assertThat(paymentAfterCancel.getBody().get("status")).isEqualTo("REFUNDED");

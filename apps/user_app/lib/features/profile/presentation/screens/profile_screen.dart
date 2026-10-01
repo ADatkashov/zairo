@@ -102,7 +102,7 @@ class _LoggedOutView extends StatelessWidget {
 class _LoggedInView extends ConsumerWidget {
   final String userId;
   final String displayName;
-  final String email;
+  final String? email;
   final String? avatarUrl;
 
   const _LoggedInView({
@@ -160,12 +160,13 @@ class _LoggedInView extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: FactorySpacing.space1),
-        Center(
-          child: Text(
-            email,
-            style: textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
+        if (email != null)
+          Center(
+            child: Text(
+              email!,
+              style: textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
+            ),
           ),
-        ),
         const SizedBox(height: FactorySpacing.space6),
         FactoryCard(
           child: Row(

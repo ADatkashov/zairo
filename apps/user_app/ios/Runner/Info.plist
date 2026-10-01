@@ -16,6 +16,47 @@
 	<string>Factory needs access to your photo library to set your profile photo.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Factory needs access to your camera to take a profile photo.</string>
+	<!-- Required by local_auth_darwin before it may show the Face ID prompt
+	     at all — see BiometricAuthService and docs/authentication.md. -->
+	<key>NSFaceIDUsageDescription</key>
+	<string>ZAIRO uses Face ID to quickly and securely unlock your session.</string>
+	<!-- Facebook Login (flutter_facebook_auth) — sourced from the
+	     FACEBOOK_APP_ID/FACEBOOK_CLIENT_TOKEN build settings (see
+	     Debug/Release.xcconfig), never hardcoded. Empty by default: the
+	     Facebook SDK simply fails every login attempt rather than the
+	     build failing — see docs/authentication.md's "Provider
+	     configuration" section for where real values come from. -->
+	<key>FacebookAppID</key>
+	<string>$(FACEBOOK_APP_ID)</string>
+	<key>FacebookClientToken</key>
+	<string>$(FACEBOOK_CLIENT_TOKEN)</string>
+	<key>FacebookDisplayName</key>
+	<string>ZAIRO</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>fbapi</string>
+		<string>fb-messenger-share-api</string>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<!-- Facebook's redirect back into the app after login. -->
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fb$(FACEBOOK_APP_ID)</string>
+			</array>
+		</dict>
+		<!-- Google Sign-In's redirect back into the app — the value is the
+		     iOS OAuth client's "reversed client ID" (see
+		     docs/authentication.md), sourced from GOOGLE_REVERSED_CLIENT_ID
+		     the same way as FACEBOOK_APP_ID above. -->
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
+			</array>
+		</dict>
+	</array>
 	<!-- Sourced from the MAPS_API_KEY build setting (see Debug/Release.xcconfig)
 	     — never hardcoded, empty by default. Read in AppDelegate.swift. -->
 	<key>MAPS_API_KEY</key>

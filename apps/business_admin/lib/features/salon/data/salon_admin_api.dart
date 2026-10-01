@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 
 import '../../billing/data/billing_exception.dart';
 import 'models/admin_booking.dart';
+import 'models/admin_payout.dart';
 import 'models/admin_provider.dart';
 import 'models/admin_service.dart';
 import 'models/admin_slot.dart';
@@ -244,6 +245,16 @@ class SalonAdminApi {
   Future<AdminBooking> completeBooking(String bookingId) async {
     final response = await _dioClient.post('/bookings/$bookingId/complete');
     return AdminBooking.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// The business's own settlement/payout visibility — see
+  /// backend's BusinessPayoutController (owner-only; a business can never
+  /// see another business's payouts). One row per COMPLETED booking whose
+  /// share is payable; a cancelled/refunded booking never has one at all.
+  Future<List<AdminPayout>> listPayouts(String providerId) async {
+    final response = await _dioClient.get('/providers/$providerId/payouts');
+    final data = response.data as List<dynamic>;
+    return data.map((e) => AdminPayout.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   Future<DashboardMetrics> fetchDashboardMetrics(String providerId) async {

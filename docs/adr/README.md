@@ -9,5 +9,6 @@
 - [0004 — Пересмотр 0003 после Auto vertical: решение не меняется](0004-revisit-multitenant-isolation-after-auto-vertical.md)
 - [0005 — `@Scheduled`-джобы для биллинга подписок](0005-scheduled-jobs-for-subscription-billing.md)
 - [0006 — Платёжная интеграция Freedom Pay](0006-payment-provider-freedompay.md)
+- [0007 — Комиссия маркетплейса, выплаты бизнесу и reconciliation](0007-marketplace-commission-and-settlement.md)
 
 ERD доменной модели, на которую опираются эти решения: `../erd/core-domain.md`.

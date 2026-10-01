@@ -128,6 +128,14 @@
   "bookingStatusCompleted": "Завершено",
   "bookingStatusCancelled": "Отменено",
 
+  "payoutsSectionTitle": "Выплаты",
+  "noPayoutsYet": "Пока нет выплат — они появляются после отметки брони как завершённой.",
+  "errorPayoutsLoadFailed": "Не удалось загрузить выплаты: {error}",
+  "payoutStatusPayable": "К выплате",
+  "payoutStatusProcessing": "В обработке",
+  "payoutStatusPaid": "Выплачено",
+  "payoutStatusFailed": "Не удалось",
+
   "monthJan": "янв",
   "monthFeb": "фев",
   "monthMar": "мар",
