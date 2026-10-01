@@ -3,6 +3,8 @@ package com.zairo.factory.city;
 import com.zairo.factory.city.CityDtos.CreateCityRequest;
 import com.zairo.factory.city.CityDtos.CityDto;
 import com.zairo.factory.city.CityDtos.UpdateCityRequest;
+import com.zairo.factory.users.User;
+import com.zairo.factory.users.UserRepository;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -13,9 +15,11 @@ import org.springframework.web.server.ResponseStatusException;
 public class CityService {
 
     private final CityRepository cityRepository;
+    private final UserRepository userRepository;
 
-    public CityService(CityRepository cityRepository) {
+    public CityService(CityRepository cityRepository, UserRepository userRepository) {
         this.cityRepository = cityRepository;
+        this.userRepository = userRepository;
     }
 
     public List<CityDto> getAllCities() {
@@ -85,5 +89,35 @@ public class CityService {
         City city = cityRepository.findByCode(code)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "City not found: " + code));
         cityRepository.delete(city);
+    }
+
+    public CityDto setUserCurrentCity(UUID userId, String cityCode) {
+        City city = cityRepository.findByCode(cityCode)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "City not found: " + cityCode));
+
+        if (!city.getActive()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Cannot select inactive city. Please contact support.");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        user.setCurrentCityCode(cityCode);
+        userRepository.save(user);
+
+        return CityDtos.toDto(city);
+    }
+
+    public CityDto getUserCurrentCity(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (user.getCurrentCityCode() == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "User has not selected a city yet");
+        }
+
+        return getCityByCode(user.getCurrentCityCode());
     }
 }
