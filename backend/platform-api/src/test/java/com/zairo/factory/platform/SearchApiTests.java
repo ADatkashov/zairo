@@ -259,6 +259,50 @@ class SearchApiTests {
     }
 
     @Test
+    void bayesianRankingPreventsSingleReviewBias() {
+        // This test documents the Bayesian rating behavior:
+        // A provider with 1 five-star review should NOT rank higher than
+        // a provider with many moderate reviews, even though raw 5.0 > 4.5.
+        String runId = UUID.randomUUID().toString();
+        String vertical = "beauty-bayesian-" + runId;
+        Registered owner = TestAuth.registerOwner(restTemplate, "bayesian-owner-" + runId + "@example.com");
+        TestAuth.upgradeToPro(restTemplate, owner);
+
+        // Provider A: Many moderate reviews (establishes track record)
+        UUID manyModerate = createProvider(owner, "Many Moderate Reviews " + runId, vertical);
+        createService(owner, manyModerate, "Cut", new BigDecimal("20.00"));
+        for (int i = 0; i < 30; i++) {
+            reviewProviderWithBooking(owner, manyModerate, 4); // 30x 4-star
+        }
+        approve(manyModerate);
+
+        // Provider B: Single five-star review (unproven)
+        UUID singleFivestar = createProvider(owner, "Single Five Star " + runId, vertical);
+        createService(owner, singleFivestar, "Cut", new BigDecimal("20.00"));
+        reviewProviderWithBooking(owner, singleFivestar, 5); // Only 1x 5-star
+        approve(singleFivestar);
+
+        // When sorted by RATING (Bayesian), manyModerate should rank higher
+        // despite its raw rating (4.0) being lower than singleFivestar (5.0).
+        List<Map> byRating = search(new SearchParams(vertical).sort(SearchSort.RATING));
+        List<UUID> ratingOrder = byRating.stream()
+                .map(r -> UUID.fromString(r.get("id").toString()))
+                .toList();
+
+        assertThat(ratingOrder).containsExactly(manyModerate, singleFivestar);
+
+        // Verify that BOTH raw ratings are displayed correctly
+        Map manyModerateResult = byRating.get(0);
+        Map singleFivestarResult = byRating.get(1);
+
+        assertThat(((Number) manyModerateResult.get("averageRating")).doubleValue()).isEqualTo(4.0);
+        assertThat(((Number) manyModerateResult.get("reviewCount")).longValue()).isEqualTo(30L);
+
+        assertThat(((Number) singleFivestarResult.get("averageRating")).doubleValue()).isEqualTo(5.0);
+        assertThat(((Number) singleFivestarResult.get("reviewCount")).longValue()).isEqualTo(1L);
+    }
+
+    @Test
     void filtersByBusinessTypeIdMoreSpecificallyThanVertical() {
         String runId = UUID.randomUUID().toString();
         Registered owner = TestAuth.registerOwner(restTemplate, "btype-owner-" + runId + "@example.com");
