@@ -64,14 +64,18 @@ class GoogleIdTokenVerifierAdapter implements GoogleIdTokenVerifierPort {
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
-    private final ObjectMapper objectMapper;
+    // Built directly rather than injected: Spring Boot 4.1's auto-configured
+    // ObjectMapper bean is the new Jackson 3 (tools.jackson.databind) type,
+    // not this classic Jackson 2 (com.fasterxml.jackson.databind) one — see
+    // git history for the exact "no qualifying bean" startup failure this
+    // caused. This class only does ad-hoc readTree() parsing of Google's
+    // tokeninfo response, with no need for Spring's managed configuration.
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final List<String> audiences;
     private final String tokenInfoUrl;
 
-    GoogleIdTokenVerifierAdapter(ObjectMapper objectMapper,
-            @Value("${app.oauth.google.client-ids:}") String clientIdsCsv,
+    GoogleIdTokenVerifierAdapter(@Value("${app.oauth.google.client-ids:}") String clientIdsCsv,
             @Value("${app.oauth.google.tokeninfo-url:https://oauth2.googleapis.com/tokeninfo}") String tokenInfoUrl) {
-        this.objectMapper = objectMapper;
         this.audiences = Arrays.stream(clientIdsCsv.split(",")).map(String::trim).filter(id -> !id.isEmpty()).toList();
         this.tokenInfoUrl = tokenInfoUrl;
     }

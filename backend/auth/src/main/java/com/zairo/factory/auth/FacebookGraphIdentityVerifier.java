@@ -52,15 +52,17 @@ class FacebookGraphIdentityVerifier implements FacebookIdentityVerifierPort {
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
-    private final ObjectMapper objectMapper;
+    // Built directly rather than injected — see GoogleIdTokenVerifierAdapter's
+    // identical field for why: Spring Boot 4.1 only auto-configures a Jackson
+    // 3 ObjectMapper bean, not this classic Jackson 2 one.
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final String appId;
     private final String appAccessToken;
     private final String graphApiBaseUrl;
 
-    FacebookGraphIdentityVerifier(ObjectMapper objectMapper, @Value("${app.oauth.facebook.app-id:}") String appId,
+    FacebookGraphIdentityVerifier(@Value("${app.oauth.facebook.app-id:}") String appId,
             @Value("${app.oauth.facebook.app-secret:}") String appSecret,
             @Value("${app.oauth.facebook.graph-api-base-url:https://graph.facebook.com}") String graphApiBaseUrl) {
-        this.objectMapper = objectMapper;
         this.appId = appId;
         this.appAccessToken = appId + "|" + appSecret;
         this.graphApiBaseUrl = graphApiBaseUrl;
