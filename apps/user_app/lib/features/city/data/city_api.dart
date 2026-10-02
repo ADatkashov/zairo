@@ -31,4 +31,16 @@ class CityApi {
     );
     return City.fromJson(response.data as Map<String, dynamic>);
   }
+
+  /// Get nearest city by coordinates
+  Future<City> getNearestCity(double latitude, double longitude) async {
+    final response = await _dioClient.get(
+      '/cities/nearest',
+      queryParameters: {
+        'latitude': latitude,
+        'longitude': longitude,
+      },
+    );
+    return City.fromJson(response.data as Map<String, dynamic>);
+  }
 }
