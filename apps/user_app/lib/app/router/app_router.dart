@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/booking/presentation/screens/my_bookings_screen.dart';
+import '../../features/city/presentation/screens/city_selection_screen.dart';
 import '../../features/discovery/presentation/screens/home_screen.dart';
 import '../../features/discovery/presentation/screens/search_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
@@ -27,6 +28,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     routes: [
+      GoRoute(
+        path: '/city-selection',
+        builder: (context, state) => const CitySelectionScreen(),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return MainWrapper(navigationShell: navigationShell);

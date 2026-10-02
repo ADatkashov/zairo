@@ -1493,5 +1493,8 @@
       "amount": {"type": "String"},
       "remaining": {"type": "String"}
     }
-  }
+  },
+
+  "selectCity": "Select City",
+  "@selectCity": {"description": "Title for the city selection screen."}
 }

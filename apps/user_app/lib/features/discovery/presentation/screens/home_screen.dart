@@ -13,6 +13,7 @@ import '../../../booking/presentation/screens/provider_detail_screen.dart';
 import '../../../catalog/presentation/category_icon.dart';
 import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../../catalog/presentation/screens/all_categories_screen.dart';
+import '../../../city/presentation/providers/city_providers.dart';
 import '../../../maps/presentation/providers/maps_providers.dart';
 import '../../../notifications/presentation/providers/notifications_providers.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
@@ -42,6 +43,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final currentCityAsync = ref.watch(userCurrentCityProvider);
     final query = DiscoveryQuery(vertical: _vertical);
     final resultsAsync = ref.watch(searchResultsProvider(query));
     final locationAsync = ref.watch(currentLocationProvider);
@@ -49,6 +51,104 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
+    return currentCityAsync.when(
+      data: (currentCity) {
+        if (currentCity == null) {
+          return _buildCitySelectionPrompt(context, l10n, colors);
+        }
+        return _buildHomeContent(
+          context,
+          l10n,
+          query,
+          resultsAsync,
+          locationAsync,
+          user,
+          colors,
+          textTheme,
+        );
+      },
+      loading: () => Scaffold(
+        backgroundColor: colors.bg,
+        body: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, stackTrace) => Scaffold(
+        backgroundColor: colors.bg,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(FactorySpacing.space4),
+            child: FactoryErrorState(
+              message: l10n.errorHomeFeedLoadFailed,
+              onRetry: () => ref.invalidate(userCurrentCityProvider),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCitySelectionPrompt(
+    BuildContext context,
+    AppLocalizations l10n,
+    FactoryColors colors,
+  ) {
+    return Scaffold(
+      backgroundColor: colors.bg,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(FactorySpacing.space4),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Symbols.location_on_rounded,
+                size: 64,
+                color: colors.primary,
+              ),
+              const SizedBox(height: FactorySpacing.space5),
+              Text(
+                l10n.selectCity,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: colors.text,
+                      fontWeight: FontWeight.w600,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: FactorySpacing.space3),
+              Text(
+                l10n.homeLocationUnknown,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: FactorySpacing.space5),
+              ElevatedButton(
+                onPressed: () => context.push('/city-selection'),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: FactorySpacing.space4,
+                    vertical: FactorySpacing.space2,
+                  ),
+                  child: Text(l10n.selectCity),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHomeContent(
+    BuildContext context,
+    AppLocalizations l10n,
+    DiscoveryQuery query,
+    AsyncValue<List<ProviderSearchResult>> resultsAsync,
+    AsyncValue<LocationData?> locationAsync,
+    User? user,
+    FactoryColors colors,
+    TextTheme textTheme,
+  ) {
     return Scaffold(
       backgroundColor: colors.bg,
       body: SafeArea(
@@ -144,10 +244,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     )
                   else
                     SizedBox(
-                      // Tall enough for a title + meta row + a footer that
-                      // may wrap to two lines (see ProviderCard's Wrap
-                      // footer — a long availability label doesn't always
-                      // fit next to the price on one line).
                       height: 220,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
