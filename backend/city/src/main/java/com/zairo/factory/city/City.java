@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -35,11 +36,11 @@ public class City {
     @Column(nullable = false, length = 3)
     private String currency;
 
-    @Column(columnDefinition = "decimal(10, 8)")
-    private Double latitude;
+    @Column(columnDefinition = "numeric(10, 8)")
+    private BigDecimal latitude;
 
-    @Column(columnDefinition = "decimal(11, 8)")
-    private Double longitude;
+    @Column(columnDefinition = "numeric(11, 8)")
+    private BigDecimal longitude;
 
     @Column(name = "default_search_radius_km")
     private Integer defaultSearchRadiusKm;
@@ -57,7 +58,7 @@ public class City {
     }
 
     public City(String code, String name, String nameKk, String countryCode, String timezone, String currency,
-            Double latitude, Double longitude, Integer defaultSearchRadiusKm, Boolean active) {
+            BigDecimal latitude, BigDecimal longitude, Integer defaultSearchRadiusKm, Boolean active) {
         this.code = code;
         this.name = name;
         this.nameKk = nameKk;
@@ -124,8 +125,8 @@ public class City {
         return updatedAt;
     }
 
-    public void update(String name, String nameKk, String timezone, String currency, Double latitude,
-            Double longitude, Integer defaultSearchRadiusKm, Boolean active) {
+    public void update(String name, String nameKk, String timezone, String currency, BigDecimal latitude,
+            BigDecimal longitude, Integer defaultSearchRadiusKm, Boolean active) {
         this.name = name;
         this.nameKk = nameKk;
         this.timezone = timezone;
