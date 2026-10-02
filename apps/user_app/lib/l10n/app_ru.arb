@@ -428,5 +428,6 @@
   "paymentStatusProcessing": "Обработка",
   "bookingConfirmationPaidLabel": "Оплачено: {amount}",
   "bookingConfirmationRemainingLabel": "Остаток: {amount}",
-  "bookingPaymentInstructions": "Депозит {amount} списан со счета. Оставшаяся сумма {remaining} может быть оплачена наличными или онлайн в день услуги."
+  "bookingPaymentInstructions": "Депозит {amount} списан со счета. Оставшаяся сумма {remaining} может быть оплачена наличными или онлайн в день услуги.",
+  "selectCity": "Выберите город"
 }
