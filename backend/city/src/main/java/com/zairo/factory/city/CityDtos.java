@@ -1,6 +1,7 @@
 package com.zairo.factory.city;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.math.BigDecimal;
 
 public class CityDtos {
 
@@ -18,8 +19,8 @@ public class CityDtos {
             String countryCode,
             String timezone,
             String currency,
-            Double latitude,
-            Double longitude,
+            BigDecimal latitude,
+            BigDecimal longitude,
             @JsonProperty("default_search_radius_km")
             Integer defaultSearchRadiusKm,
             Boolean active) {
@@ -34,8 +35,8 @@ public class CityDtos {
             String countryCode,
             String timezone,
             String currency,
-            Double latitude,
-            Double longitude,
+            BigDecimal latitude,
+            BigDecimal longitude,
             @JsonProperty("default_search_radius_km")
             Integer defaultSearchRadiusKm) {
     }
@@ -46,8 +47,8 @@ public class CityDtos {
             String nameKk,
             String timezone,
             String currency,
-            Double latitude,
-            Double longitude,
+            BigDecimal latitude,
+            BigDecimal longitude,
             @JsonProperty("default_search_radius_km")
             Integer defaultSearchRadiusKm,
             Boolean active) {
