@@ -35,10 +35,10 @@ public class City {
     @Column(nullable = false, length = 3)
     private String currency;
 
-    @Column
+    @Column(columnDefinition = "decimal(10, 8)")
     private Double latitude;
 
-    @Column
+    @Column(columnDefinition = "decimal(11, 8)")
     private Double longitude;
 
     @Column(name = "default_search_radius_km")
