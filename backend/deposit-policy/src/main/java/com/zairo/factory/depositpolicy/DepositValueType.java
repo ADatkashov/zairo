@@ -1,4 +1,4 @@
-package com.zairo.factory.payments;
+package com.zairo.factory.depositpolicy;
 
 /**
  * When deposit type is DEPOSIT, how is the deposit amount calculated?

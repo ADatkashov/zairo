@@ -44,11 +44,14 @@ public final class ServiceOfferingDtos {
             boolean active,
             @Schema(description = "The catalog.CatalogService this offering is linked to, if any — see "
                     + "PATCH /services/{id}/catalog-link.", example = "550e8400-e29b-41d4-a716-446655440000")
-            UUID catalogServiceId) {
+            UUID catalogServiceId,
+            @Schema(description = "City code where this service is offered (e.g., 'almaty', 'shymkent').",
+                    example = "almaty")
+            String cityCode) {
         static ServiceResponse from(ServiceOffering service) {
             return new ServiceResponse(service.getId(), service.getProviderId(), service.getTitle(),
                     service.getDurationMinutes(), service.getPrice(), service.getCurrency(), service.isActive(),
-                    service.getCatalogServiceId());
+                    service.getCatalogServiceId(), service.getCityCode());
         }
     }
 

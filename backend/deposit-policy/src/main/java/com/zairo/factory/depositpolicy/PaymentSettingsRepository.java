@@ -1,4 +1,4 @@
-package com.zairo.factory.payments;
+package com.zairo.factory.depositpolicy;
 
 import java.util.Optional;
 import java.util.UUID;

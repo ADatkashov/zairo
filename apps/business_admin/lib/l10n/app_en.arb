@@ -2175,5 +2175,52 @@
   "@chatSendButtonTooltip": {"description": "BusinessChatThreadScreen's send button tooltip."},
 
   "chatBookingChipLabel": "About a booking",
-  "@chatBookingChipLabel": {"description": "Non-interactive chip on a message that carries a bookingId -- it was sent from the customer's booking detail screen."}
+  "@chatBookingChipLabel": {"description": "Non-interactive chip on a message that carries a bookingId -- it was sent from the customer's booking detail screen."},
+
+  "paymentBreakdownTitle": "Payment breakdown",
+  "@paymentBreakdownTitle": {"description": "Section header for payment breakdown details."},
+
+  "paymentTotalPrice": "Total price",
+  "@paymentTotalPrice": {"description": "Label for the full service price."},
+
+  "paymentDepositAmount": "Deposit due now",
+  "@paymentDepositAmount": {"description": "Label for the deposit amount to be paid immediately."},
+
+  "paymentDepositPercentage": "{percentage}% deposit",
+  "@paymentDepositPercentage": {
+    "description": "Display of deposit as percentage",
+    "placeholders": {
+      "percentage": {"type": "int"}
+    }
+  },
+
+  "paymentRemainingAmount": "Remaining balance",
+  "@paymentRemainingAmount": {"description": "Label for the remaining amount to be paid later."},
+
+  "paymentRemainingInfo": "Pay on the day of service",
+  "@paymentRemainingInfo": {"description": "Note explaining when remaining balance should be paid."},
+
+  "bookingSettingsTitle": "Booking settings",
+  "@bookingSettingsTitle": {"description": "Header for booking configuration section."},
+
+  "depositPercentageLabel": "Deposit percentage (%)",
+  "@depositPercentageLabel": {"description": "Label for deposit percentage input field."},
+
+  "depositPercentageHint": "0 for full payment, 100 for deposit only",
+  "@depositPercentageHint": {"description": "Helper text for deposit percentage field."},
+
+  "depositPercentageSaved": "Deposit percentage updated",
+  "@depositPercentageSaved": {"description": "Success message after saving deposit percentage."},
+
+  "validationPercentageRange": "Percentage must be between 0 and 100.",
+  "@validationPercentageRange": {"description": "Validation error for percentage input."},
+
+  "selectCity": "Select City",
+  "@selectCity": {"description": "Label for city selection dropdown in business creation dialog."},
+
+  "noCitiesAvailable": "No cities available",
+  "@noCitiesAvailable": {"description": "Message shown when no cities are available for selection."},
+
+  "errorLoadingCities": "Error loading cities",
+  "@errorLoadingCities": {"description": "Error message shown when cities fail to load."}
 }

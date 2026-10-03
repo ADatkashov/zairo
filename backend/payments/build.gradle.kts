@@ -4,11 +4,18 @@ dependencies {
     compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.55")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("jakarta.validation:jakarta.validation-api")
 
     // Needs to read the booking being paid for (amount, existence) — same
     // one-directional dependency pattern as reviews -> booking.
     implementation(project(":booking"))
     implementation(project(":money"))
+
+    // PaymentSettingsController/Service expose and enforce each provider's
+    // deposit policy (DepositType/PaymentSettings) — now a separate
+    // dependency-free module, shared with booking, so booking can also
+    // depend on it without looping back through payments -> booking.
+    implementation(project(":deposit-policy"))
 
     // Charging/reading a booking's payment is restricted to that booking's
     // own customer or its provider's own owner — same "who is this caller"

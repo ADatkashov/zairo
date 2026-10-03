@@ -354,7 +354,7 @@ packages:
     source: hosted
     version: "4.9.2"
   image_cropper:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: image_cropper
       sha256: "95782c9068ff09b95a5ece6a2b5fb31b18d8e544d79ebfa7bdafc08df39b3440"
@@ -378,7 +378,7 @@ packages:
     source: hosted
     version: "8.0.0"
   image_picker:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: image_picker
       sha256: d8402284df184bc05f4a2210c6c23983b0720f4cd87cbd05c5390a78af602667
@@ -816,4 +816,4 @@ packages:
     version: "3.1.3"
 sdks:
   dart: ">=3.13.0 <4.0.0"
-  flutter: ">=3.38.4"
+  flutter: ">=3.44.0"

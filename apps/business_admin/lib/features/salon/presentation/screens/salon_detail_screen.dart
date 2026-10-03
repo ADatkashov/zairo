@@ -158,6 +158,8 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
             const SizedBox(height: FactorySpacing.space6),
             _BookingsSection(providerId: _provider.id),
             const SizedBox(height: FactorySpacing.space6),
+            _BookingSettingsSection(providerId: _provider.id),
+            const SizedBox(height: FactorySpacing.space6),
             _PayoutsSection(providerId: _provider.id),
           ],
         ),
@@ -1695,6 +1697,185 @@ String _payoutStatusLabel(AppLocalizations l10n, String status) => switch (statu
       'FAILED' => l10n.payoutStatusFailed,
       _ => _capitalize(status),
     };
+
+class _BookingSettingsSection extends StatefulWidget {
+  final String providerId;
+
+  const _BookingSettingsSection({required this.providerId});
+
+  @override
+  State<_BookingSettingsSection> createState() => _BookingSettingsSectionState();
+}
+
+class _BookingSettingsSectionState extends State<_BookingSettingsSection> {
+  late final _depositPercentageController = TextEditingController(text: '0');
+  bool _isEditing = false;
+  String? _fieldError;
+
+  @override
+  void dispose() {
+    _depositPercentageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        FactorySectionHeader(title: l10n.bookingSettingsTitle),
+        const SizedBox(height: FactorySpacing.space3),
+        FactoryCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.depositPercentageLabel,
+                style: textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: FactorySpacing.space2),
+              FactoryTextField(
+                controller: _depositPercentageController,
+                label: l10n.depositPercentageLabel,
+                hint: l10n.depositPercentageHint,
+                keyboardType: const TextInputType.numberWithOptions(decimal: false),
+                enabled: !_isEditing,
+                errorText: _fieldError,
+                onChanged: (_) {
+                  if (_fieldError != null) {
+                    setState(() => _fieldError = null);
+                  }
+                },
+              ),
+              const SizedBox(height: FactorySpacing.space2),
+              Text(
+                l10n.depositPercentageHint,
+                style: textTheme.bodySmall?.copyWith(
+                  color: colors.textTertiary,
+                ),
+              ),
+              const SizedBox(height: FactorySpacing.space3),
+              _DepositPercentageGuide(
+                percentage: int.tryParse(_depositPercentageController.text.trim()) ?? 0,
+              ),
+              const SizedBox(height: FactorySpacing.space3),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FactoryButton(
+                  label: l10n.saveButton,
+                  isLoading: _isEditing,
+                  onPressed: _isEditing ? null : _save,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _save() async {
+    final l10n = AppLocalizations.of(context)!;
+    final value = int.tryParse(_depositPercentageController.text.trim()) ?? 0;
+
+    if (value < 0 || value > 100) {
+      setState(() => _fieldError = l10n.validationPercentageRange);
+      return;
+    }
+
+    setState(() => _isEditing = true);
+    try {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.depositPercentageSaved)),
+      );
+      setState(() {
+        _isEditing = false;
+        _fieldError = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.errorSaveBusinessFailed(e.toString()))),
+      );
+      setState(() => _isEditing = false);
+    }
+  }
+}
+
+class _DepositPercentageGuide extends StatelessWidget {
+  final int percentage;
+
+  const _DepositPercentageGuide({required this.percentage});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: percentage / 100.0,
+                  minHeight: 8,
+                  backgroundColor: colors.surfaceAlt,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    percentage == 0
+                      ? colors.textTertiary
+                      : percentage < 50
+                        ? colors.warning
+                        : colors.success,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: FactorySpacing.space2),
+            Text(
+              '$percentage%',
+              style: textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colors.text,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: FactorySpacing.space2),
+        Text(
+          _descriptionForPercentage(percentage),
+          style: textTheme.bodySmall?.copyWith(
+            color: colors.textTertiary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _descriptionForPercentage(int percentage) {
+    if (percentage == 0) {
+      return 'No deposit required. Full payment due on the day of service.';
+    } else if (percentage < 50) {
+      return 'Customer pays $percentage% upfront ($percentage USD for \$100 service), remainder due on service day.';
+    } else if (percentage == 50) {
+      return 'Customer pays 50% upfront, remainder due on service day.';
+    } else if (percentage < 100) {
+      return 'Customer pays $percentage% upfront, remainder due on service day.';
+    } else {
+      return 'Full payment required upfront.';
+    }
+  }
+}
 
 String _initialsFor(String name) {
   final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
