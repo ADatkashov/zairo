@@ -738,5 +738,8 @@
   "depositPercentageLabel": "Процент депозита (%)",
   "depositPercentageHint": "0 для полной оплаты, 100 для депозита",
   "depositPercentageSaved": "Процент депозита обновлен",
-  "validationPercentageRange": "Процент должен быть от 0 до 100."
+  "validationPercentageRange": "Процент должен быть от 0 до 100.",
+  "selectCity": "Выберите город",
+  "noCitiesAvailable": "Нет доступных городов",
+  "errorLoadingCities": "Ошибка при загрузке городов"
 }

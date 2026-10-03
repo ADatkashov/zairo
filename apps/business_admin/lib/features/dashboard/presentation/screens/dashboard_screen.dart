@@ -15,6 +15,7 @@ import '../../../campaigns/presentation/providers/campaign_providers.dart';
 import '../../../campaigns/presentation/screens/campaign_center_screen.dart';
 import '../../../catalog/presentation/category_icon.dart';
 import '../../../catalog/presentation/providers/catalog_providers.dart';
+import '../../../city/presentation/providers/city_providers.dart';
 import '../../../loyalty/presentation/screens/loyalty_screen.dart';
 import '../../../messaging/presentation/screens/business_inbox_screen.dart';
 import '../../../salon/data/models/admin_provider.dart';
@@ -171,24 +172,59 @@ class DashboardScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final nameController = TextEditingController();
     String vertical = 'beauty';
+    String? selectedCity;
     final created = await showFactoryDialog<bool>(
       context: context,
       title: l10n.addBusinessDialogTitle,
       content: StatefulBuilder(
-        builder: (context, setDialogState) => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            FactoryTextField(
-              controller: nameController,
-              label: l10n.businessNameLabel,
-            ),
-            const SizedBox(height: FactorySpacing.space3),
-            _CategoryPicker(
-              value: vertical,
-              onChanged: (v) => setDialogState(() => vertical = v),
-            ),
-          ],
-        ),
+        builder: (context, setDialogState) {
+          final citiesAsync = ref.watch(activeCitiesProvider);
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FactoryTextField(
+                controller: nameController,
+                label: l10n.businessNameLabel,
+              ),
+              const SizedBox(height: FactorySpacing.space3),
+              _CategoryPicker(
+                value: vertical,
+                onChanged: (v) => setDialogState(() => vertical = v),
+              ),
+              const SizedBox(height: FactorySpacing.space3),
+              citiesAsync.when(
+                data: (cities) {
+                  if (cities.isEmpty) {
+                    return Text(l10n.noCitiesAvailable);
+                  }
+                  if (selectedCity == null && cities.isNotEmpty) {
+                    selectedCity = cities.first.code;
+                  }
+                  return DropdownButtonFormField<String>(
+                    value: selectedCity,
+                    decoration: InputDecoration(
+                      labelText: l10n.selectCity,
+                      border: const OutlineInputBorder(),
+                    ),
+                    items: cities
+                        .map((city) => DropdownMenuItem(
+                              value: city.code,
+                              child: Text(city.name),
+                            ))
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setDialogState(() => selectedCity = value);
+                      }
+                    },
+                  );
+                },
+                loading: () => const CircularProgressIndicator(),
+                error: (error, _) => Text('${l10n.errorLoadingCities}: $error'),
+              ),
+            ],
+          );
+        },
       ),
       actions: [
         FactoryButton(
@@ -200,12 +236,13 @@ class DashboardScreen extends ConsumerWidget {
           builder: (context) => FactoryButton(
             label: l10n.createButton,
             onPressed: () async {
-              if (nameController.text.trim().isEmpty) return;
+              if (nameController.text.trim().isEmpty || selectedCity == null) return;
               try {
                 await ref.read(salonAdminApiProvider).createProvider(
                       ownerUserId: ownerUserId,
                       name: nameController.text.trim(),
                       vertical: vertical,
+                      cityCode: selectedCity!,
                     );
                 if (context.mounted) Navigator.of(context).pop(true);
               } on BillingException catch (e) {
