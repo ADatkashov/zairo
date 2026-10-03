@@ -20,14 +20,24 @@ class PaymentStatusChip extends ConsumerWidget {
       data: (payment) {
         if (payment == null) return const SizedBox.shrink();
         final l10n = AppLocalizations.of(context)!;
+        final colors = context.factoryColors;
+        final statusLabel = _label(l10n, payment.status);
+        final typeLabel = _typeLabel(l10n, payment.paymentType);
+        final fullLabel =
+            typeLabel.isNotEmpty ? '$typeLabel - $statusLabel' : statusLabel;
+
+        final variant = switch (payment.status) {
+          'SUCCEEDED' => FactoryBadgeVariant.available,
+          'FAILED' => FactoryBadgeVariant.error,
+          'REFUNDED' => FactoryBadgeVariant.limited,
+          'PROCESSING' => FactoryBadgeVariant.neutral,
+          'PENDING' => FactoryBadgeVariant.limited,
+          _ => FactoryBadgeVariant.neutral,
+        };
+
         return FactoryBadge(
-          label: l10n.paymentLabel(_label(l10n, payment.status)),
-          variant: switch (payment.status) {
-            'SUCCEEDED' => FactoryBadgeVariant.available,
-            'FAILED' => FactoryBadgeVariant.error,
-            'REFUNDED' => FactoryBadgeVariant.limited,
-            _ => FactoryBadgeVariant.neutral,
-          },
+          label: l10n.paymentLabel(fullLabel),
+          variant: variant,
         );
       },
       loading: () => const SizedBox.shrink(),
@@ -40,5 +50,14 @@ String _label(AppLocalizations l10n, String status) => switch (status) {
       'SUCCEEDED' => l10n.paymentStatusSucceeded,
       'FAILED' => l10n.paymentStatusFailed,
       'REFUNDED' => l10n.paymentStatusRefunded,
+      'PENDING' => l10n.paymentStatusPending,
+      'PROCESSING' => l10n.paymentStatusProcessing,
       _ => status.isEmpty ? status : '${status[0]}${status.substring(1).toLowerCase()}',
+    };
+
+String _typeLabel(AppLocalizations l10n, String? paymentType) => switch (paymentType) {
+      'DEPOSIT' => 'Deposit',
+      'FULL' => 'Full Payment',
+      'REMAINING' => 'Remaining',
+      _ => '',
     };

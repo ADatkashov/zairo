@@ -34,6 +34,9 @@ public class User {
     @Column(name = "avatar_url")
     private String avatarUrl;
 
+    @Column(name = "current_city_code")
+    private String currentCityCode;
+
     protected User() {
     }
 
@@ -74,9 +77,18 @@ public class User {
         return avatarUrl;
     }
 
+    public String getCurrentCityCode() {
+        return currentCityCode;
+    }
+
     /** Null/blank removes the avatar — see AuthDtos.UpdateAvatarRequest. */
     public void updateAvatar(String avatarUrl) {
         this.avatarUrl = avatarUrl;
+    }
+
+    /** Set user's current city for booking services in that city. */
+    public void setCurrentCityCode(String currentCityCode) {
+        this.currentCityCode = currentCityCode;
     }
 
     /**

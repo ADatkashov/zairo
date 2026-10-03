@@ -1,4 +1,4 @@
-package com.zairo.factory.payments;
+package com.zairo.factory.depositpolicy;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -54,7 +54,11 @@ class DepositCalculatorTest {
     void testZeroPercentageDeposit() {
         BigDecimal amount = DepositCalculator.calculateDepositAmount(
                 new BigDecimal("1000"), DepositType.DEPOSIT, DepositValueType.PERCENTAGE, new BigDecimal("0"));
-        assertEquals(BigDecimal.ZERO, amount);
+        // Same scale-2 convention as every other DEPOSIT branch (see
+        // testDepositPercentage et al.) — unlike BigDecimal.ZERO (scale 0),
+        // which fails assertEquals's scale-sensitive BigDecimal#equals even
+        // though the value is the same.
+        assertEquals(new BigDecimal("0.00"), amount);
     }
 
     @Test

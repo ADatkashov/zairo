@@ -25,4 +25,6 @@ dependencies {
     // loyalty's LoyaltyAdminController already has for its Customers tab) —
     // one-directional (reviews -> users), no cycle.
     implementation(project(":users"))
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }

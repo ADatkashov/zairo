@@ -25,4 +25,7 @@ dependencies {
     // machinery wholesale instead of a second admin auth system, same
     // directed dependency shape as catalog -> platform-admin.
     implementation(project(":platform-admin"))
+
+    // City management for multi-city support — providers are linked to cities
+    implementation(project(":city"))
 }
