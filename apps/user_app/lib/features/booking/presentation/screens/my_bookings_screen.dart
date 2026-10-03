@@ -292,6 +292,55 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
             ],
           ),
           const SizedBox(height: FactorySpacing.space1),
+          if (booking.depositAmount != null && booking.remainingAmount != null) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(
+                vertical: FactorySpacing.space1,
+                horizontal: FactorySpacing.space2,
+              ),
+              decoration: BoxDecoration(
+                color: colors.surfaceAlt,
+                borderRadius: FactoryRadius.mdRadius,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        l10n.paymentDepositAmount,
+                        style: Theme.of(context).textTheme.bodySmall
+                            ?.copyWith(color: colors.textSecondary, fontSize: 11),
+                      ),
+                      FactoryPriceText(
+                        amount: booking.depositAmount!,
+                        fontSize: 12,
+                        weight: FontWeight.w600,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        l10n.paymentRemainingAmount,
+                        style: Theme.of(context).textTheme.bodySmall
+                            ?.copyWith(color: colors.textSecondary, fontSize: 11),
+                      ),
+                      FactoryPriceText(
+                        amount: booking.remainingAmount!,
+                        fontSize: 12,
+                        weight: FontWeight.w600,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: FactorySpacing.space1),
+          ],
           Text(
             l10n.bookedOnLabel(
               formatMonthDayTime(l10n, booking.createdAt.toLocal()),

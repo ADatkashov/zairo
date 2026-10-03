@@ -13,6 +13,7 @@ import '../../../booking/presentation/screens/provider_detail_screen.dart';
 import '../../../catalog/presentation/category_icon.dart';
 import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../../catalog/presentation/screens/all_categories_screen.dart';
+import '../../../city/presentation/providers/city_providers.dart';
 import '../../../maps/presentation/providers/maps_providers.dart';
 import '../../../notifications/presentation/providers/notifications_providers.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
@@ -49,6 +50,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
+    return _buildHomeContent(
+      context,
+      l10n,
+      query,
+      resultsAsync,
+      locationAsync,
+      user,
+      colors,
+      textTheme,
+    );
+  }
+
+  Widget _buildHomeContent(
+    BuildContext context,
+    AppLocalizations l10n,
+    DiscoveryQuery query,
+    AsyncValue<List<ProviderSearchResult>> resultsAsync,
+    AsyncValue<LocationData?> locationAsync,
+    User? user,
+    FactoryColors colors,
+    TextTheme textTheme,
+  ) {
     return Scaffold(
       backgroundColor: colors.bg,
       body: SafeArea(
@@ -144,10 +167,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     )
                   else
                     SizedBox(
-                      // Tall enough for a title + meta row + a footer that
-                      // may wrap to two lines (see ProviderCard's Wrap
-                      // footer — a long availability label doesn't always
-                      // fit next to the price on one line).
                       height: 220,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,

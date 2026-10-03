@@ -15,6 +15,14 @@ dependencies {
     implementation(project(":auth"))
     implementation(project(":money"))
 
+    // Booking captures a provider's deposit policy on itself at creation
+    // time (Booking.depositType/depositValueType/depositAmount) — see
+    // BookingService.createBooking. Depends on the dependency-free
+    // deposit-policy module directly, not on payments itself, to avoid a
+    // cycle: payments already depends on booking (to read the booking
+    // being charged), so booking -> payments would loop back.
+    implementation(project(":deposit-policy"))
+
     // Creating a booking is gated by the owner's subscription plan's
     // monthly booking-count limit — see SubscriptionLimitService.
     implementation(project(":subscriptions"))

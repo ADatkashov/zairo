@@ -8,6 +8,7 @@ class Payment {
   final String status;
   final String? providerReference;
   final String? failureReason;
+  final String? paymentType; // DEPOSIT, FULL, REMAINING
   final DateTime createdAt;
 
   const Payment({
@@ -18,6 +19,7 @@ class Payment {
     required this.status,
     this.providerReference,
     this.failureReason,
+    this.paymentType,
     required this.createdAt,
   });
 
@@ -30,6 +32,7 @@ class Payment {
       status: json['status'] as String,
       providerReference: json['providerReference'] as String?,
       failureReason: json['failureReason'] as String?,
+      paymentType: json['paymentType'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
   }
