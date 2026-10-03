@@ -2213,5 +2213,14 @@
   "@depositPercentageSaved": {"description": "Success message after saving deposit percentage."},
 
   "validationPercentageRange": "Percentage must be between 0 and 100.",
-  "@validationPercentageRange": {"description": "Validation error for percentage input."}
+  "@validationPercentageRange": {"description": "Validation error for percentage input."},
+
+  "selectCity": "Select City",
+  "@selectCity": {"description": "Label for city selection dropdown in business creation dialog."},
+
+  "noCitiesAvailable": "No cities available",
+  "@noCitiesAvailable": {"description": "Message shown when no cities are available for selection."},
+
+  "errorLoadingCities": "Error loading cities",
+  "@errorLoadingCities": {"description": "Error message shown when cities fail to load."}
 }

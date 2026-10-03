@@ -31,11 +31,17 @@ class SalonAdminApi {
     required String ownerUserId,
     required String name,
     required String vertical,
+    required String cityCode,
   }) async {
     try {
       final response = await _dioClient.post(
         '/providers',
-        data: {'ownerUserId': ownerUserId, 'name': name, 'vertical': vertical},
+        data: {
+          'ownerUserId': ownerUserId,
+          'name': name,
+          'vertical': vertical,
+          'cityCode': cityCode,
+        },
       );
       return AdminProvider.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
