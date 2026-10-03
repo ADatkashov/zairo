@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * The single place every exception this API can throw turns into an
@@ -77,6 +78,18 @@ class GlobalExceptionHandler {
     ResponseEntity<ApiError> handleMaxUploadSize(HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(ApiError.of(413, "Payload Too Large",
                 "File exceeds the maximum upload size (10MB)", request.getRequestURI()));
+    }
+
+    // Spring MVC throws this for any unmatched path — most commonly a
+    // browser's unsolicited GET /favicon.ico — as a plain RuntimeException
+    // with no @ResponseStatus (its 404 lives on ErrorResponse#getStatusCode
+    // instead), so without this handler it fell through all the way to
+    // handleUnexpected below: logged at ERROR with a full stack trace and
+    // returned to the client as a 500, for what's actually a routine 404.
+    @ExceptionHandler(NoResourceFoundException.class)
+    ResponseEntity<ApiError> handleNoResource(HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiError.of(404, "Not Found", "No such endpoint or resource", request.getRequestURI()));
     }
 
     @ExceptionHandler(ResponseStatusException.class)

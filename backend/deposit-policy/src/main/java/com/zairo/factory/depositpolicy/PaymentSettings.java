@@ -1,4 +1,4 @@
-package com.zairo.factory.payments;
+package com.zairo.factory.depositpolicy;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

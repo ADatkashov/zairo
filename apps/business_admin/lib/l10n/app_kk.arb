@@ -727,5 +727,8 @@
   "chatEmptyThread": "Әзірге хабарлар жоқ. Сәлемдесіңіз!",
   "chatComposeHint": "Хабарды теріңіз",
   "chatSendButtonTooltip": "Жіберу",
-  "chatBookingChipLabel": "Брондау туралы"
+  "chatBookingChipLabel": "Брондау туралы",
+  "selectCity": "Қаланы таңдаңыз",
+  "noCitiesAvailable": "Қол жетімді қалалар жоқ",
+  "errorLoadingCities": "Қалалар жүктелуінде қате"
 }

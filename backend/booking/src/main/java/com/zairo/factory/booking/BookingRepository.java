@@ -11,6 +11,8 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
     List<Booking> findByUserId(UUID userId);
 
+    List<Booking> findByUserIdAndCityCode(UUID userId, String cityCode);
+
     /**
      * Every booking (any status, any provider) for a whole set of
      * candidate users in one query -- {@code smartfill.CandidateFinder}'s

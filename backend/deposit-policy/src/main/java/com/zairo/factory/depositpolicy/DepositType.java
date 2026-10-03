@@ -1,4 +1,4 @@
-package com.zairo.factory.payments;
+package com.zairo.factory.depositpolicy;
 
 /**
  * Type of deposit required for a booking.

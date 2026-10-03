@@ -162,10 +162,25 @@ public class SearchService {
                     .reversed();
             case DISTANCE ->
                 Comparator.comparing(r -> r.distanceKm() == null ? Double.MAX_VALUE : r.distanceKm());
-            // No reviews yet sorts last, not first/zero — see the class doc comment.
-            case RATING -> Comparator
-                    .comparing((ProviderSearchResult r) -> r.averageRating() == null ? -1.0 : r.averageRating())
-                    .reversed();
+            // Bayesian ranking: providers with few reviews get pulled toward global average,
+            // preventing single-review 5-star from outranking established providers.
+            // Tie-breaker: raw rating, then review count, then provider id for stability.
+            case RATING -> {
+                yield Comparator
+                        .comparingDouble((ProviderSearchResult r) -> {
+                            ProviderRatingSummary summary = ratings.get(r.id());
+                            return summary != null ? summary.bayesianRating() : -1.0;
+                        }).reversed()
+                        .thenComparingDouble((ProviderSearchResult r) -> {
+                            ProviderRatingSummary summary = ratings.get(r.id());
+                            return summary != null && summary.averageRating() > 0 ? summary.averageRating() : -1.0;
+                        }).reversed()
+                        .thenComparingLong((ProviderSearchResult r) -> {
+                            ProviderRatingSummary summary = ratings.get(r.id());
+                            return summary != null ? summary.reviewCount() : -1;
+                        }).reversed()
+                        .thenComparing(ProviderSearchResult::id);
+            }
             case RECOMMENDED -> Comparator.comparing(ProviderSearchResult::hasOpenAvailability).reversed()
                     .thenComparing(r -> r.distanceKm() == null ? Double.MAX_VALUE : r.distanceKm())
                     .thenComparing(r -> r.minPrice() == null ? BigDecimal.valueOf(Long.MAX_VALUE) : r.minPrice());
