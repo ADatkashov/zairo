@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -99,5 +100,18 @@ public class CityController {
             HttpServletRequest httpRequest) {
         UUID userId = CurrentUser.requireUserId(httpRequest);
         return cityService.setUserCurrentCity(userId, request.cityCode());
+    }
+
+    @Operation(summary = "Find nearest active city by coordinates", description = "Returns the nearest active city to the provided latitude/longitude coordinates. "
+            + "Used by the app to auto-detect user's nearest city based on their location.")
+    @ApiResponse(responseCode = "200", description = "Nearest city")
+    @ApiResponse(responseCode = "404", description = "No active cities available")
+    @GetMapping("/nearest")
+    public CityDto getNearestCity(
+            @Parameter(description = "Latitude coordinate", example = "43.2384")
+            @RequestParam double latitude,
+            @Parameter(description = "Longitude coordinate", example = "77.0644")
+            @RequestParam double longitude) {
+        return cityService.getNearestCity(latitude, longitude);
     }
 }
