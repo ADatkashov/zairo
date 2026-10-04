@@ -8,4 +8,5 @@ dependencies {
     implementation(project(":platform-admin"))
     implementation(project(":users"))
     implementation(project(":auth"))
+    implementation(project(":country"))
 }

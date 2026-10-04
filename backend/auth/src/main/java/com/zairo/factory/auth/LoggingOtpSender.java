@@ -2,11 +2,13 @@ package com.zairo.factory.auth;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 
 /**
- * Logs the OTP instead of sending it over SMS — this project has no real
- * SMS provider account/credentials yet, same situation as {@code
+ * Logs the OTP instead of sending it over SMS — used whenever no real SMS
+ * provider is configured (see {@link TwilioOtpSender}, active once
+ * {@code app.sms.twilio.account-sid} is set), same situation as {@code
  * notifications.LoggingEmailNotificationProvider} for password-reset
  * emails. Not a pretend-success mock: it genuinely delivers to a real sink
  * (the server log), which is enough for local development and CI — a
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Component;
  * see AuthAuditLog's own doc comment.
  */
 @Component
+@ConditionalOnExpression("'${app.sms.twilio.account-sid:}'.length() == 0 and '${app.otp.mock-code:}'.length() == 0")
 class LoggingOtpSender implements OtpSenderPort {
 
     private static final Logger log = LoggerFactory.getLogger(LoggingOtpSender.class);

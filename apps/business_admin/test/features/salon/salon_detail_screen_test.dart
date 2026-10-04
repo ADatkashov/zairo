@@ -454,7 +454,7 @@ void main() {
 
     await tester.enterText(find.widgetWithText(TextField, 'Title'), 'Haircut');
     await tester.enterText(find.widgetWithText(TextField, 'Duration (minutes)'), '30');
-    await tester.enterText(find.widgetWithText(TextField, 'Price (USD)'), '25');
+    await tester.enterText(find.widgetWithText(TextField, 'Price (₸)'), '25');
     await tester.tap(find.widgetWithText(FilledButton, 'Add'));
     await tester.pumpAndSettle();
 
@@ -463,7 +463,7 @@ void main() {
       'title': 'Haircut',
       'durationMinutes': 30,
       'price': 25.0,
-      'currency': 'USD',
+      'currency': 'KZT',
     });
     expect(find.text('Haircut'), findsOneWidget);
   });
@@ -498,7 +498,7 @@ void main() {
 
     expect(find.widgetWithText(TextField, 'Title'), findsOneWidget);
     await tester.enterText(find.widgetWithText(TextField, 'Title'), 'Haircut & Style');
-    await tester.enterText(find.widgetWithText(TextField, 'Price (USD)'), '35');
+    await tester.enterText(find.widgetWithText(TextField, 'Price (\$)'), '35');
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));
     await tester.pumpAndSettle();
 
@@ -958,6 +958,49 @@ void main() {
     expect(find.text('Haircut'), findsOneWidget);
   });
 
+  testWidgets('the owner can choose "No prepayment" and it is saved as 0%', (tester) async {
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    final fakeApi = _FakeSalonAdminApiWithDeposit(storedPercentage: 10);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(fakeApi),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SalonDetailScreen(provider: _provider),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // All three options are visible, and the stored 10% shows as a deposit.
+    final noPrepayment = find.text('No prepayment');
+    await tester.ensureVisible(noPrepayment);
+    await tester.pumpAndSettle();
+    expect(find.text('Deposit'), findsOneWidget);
+    expect(find.text('Full payment'), findsOneWidget);
+    expect(find.widgetWithText(TextField, '10'), findsOneWidget);
+
+    await tester.tap(noPrepayment);
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextField, '10'), findsNothing);
+
+    final save = find.widgetWithText(FactoryButton, 'Save');
+    await tester.ensureVisible(save.last);
+    await tester.pumpAndSettle();
+    await tester.tap(save.last);
+    await tester.pumpAndSettle();
+
+    expect(fakeApi.savedPercentage, 0);
+  });
+
   testWidgets('shows the dashboard empty state when there is no booking history yet', (tester) async {
     final fakeApi = _FakeSalonAdminApi();
 
@@ -988,4 +1031,19 @@ class _FakeSalonAdminApiWithDashboardMetrics extends _FakeSalonAdminApi {
 
   @override
   Future<DashboardMetrics> fetchDashboardMetrics(String providerId) async => _metrics;
+}
+
+class _FakeSalonAdminApiWithDeposit extends _FakeSalonAdminApi {
+  _FakeSalonAdminApiWithDeposit({required this.storedPercentage});
+
+  final int storedPercentage;
+  int? savedPercentage;
+
+  @override
+  Future<int> getDepositPercentage(String providerId) async => storedPercentage;
+
+  @override
+  Future<void> setDepositPercentage(String providerId, int percentage) async {
+    savedPercentage = percentage;
+  }
 }

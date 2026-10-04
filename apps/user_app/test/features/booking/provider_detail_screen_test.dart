@@ -34,8 +34,15 @@ class _FakeBookingApi extends BookingApi {
   final List<AvailabilitySlot> _slots;
   Map<String, dynamic>? lastBookingCall;
 
+  /// What `GET /bookings/{id}` returns — the full body, including the deposit
+  /// the vertical booking endpoints leave out.
+  Booking? bookingFromGet;
+
   @override
   Future<List<AvailabilitySlot>> listAvailabilitySlots(String providerId) async => _slots;
+
+  @override
+  Future<Booking> getBooking(String bookingId) async => bookingFromGet ?? (throw StateError('no booking'));
 
   @override
   Future<Booking> createBooking({
@@ -311,7 +318,18 @@ void main() {
       endsAt: DateTime(2026, 1, 1, 10, 30),
       status: 'OPEN',
     );
-    final fakeBookingApi = _FakeBookingApi([slot]);
+    final fakeBookingApi = _FakeBookingApi([slot])
+      ..bookingFromGet = Booking(
+        id: 'beauty-booking-1',
+        userId: 'user-1',
+        serviceId: 'service-1',
+        availabilitySlotId: 'slot-1',
+        status: 'PENDING_PAYMENT',
+        totalPrice: 30,
+        depositAmount: 3,
+        remainingAmount: 30,
+        createdAt: DateTime(2026, 1, 1),
+      );
     final fakeBeautyApi = _FakeBeautyApi(const [
       Master(id: 'master-1', providerId: 'provider-3', displayName: 'Jamie Stylist', active: true),
     ]);
@@ -374,6 +392,12 @@ void main() {
     });
     expect(fakeBookingApi.lastBookingCall, isNull);
     expect(fakePaymentsApi.lastChargedBookingId, 'beauty-booking-1');
+
+    // The beauty endpoint's own response has no deposit; the confirmation must
+    // still show the real 10% due now, not "0 now".
+    expect(find.text('Due now'), findsOneWidget);
+    expect(find.text('3 ₸'), findsOneWidget);
+    expect(find.text('27 ₸'), findsOneWidget);
   });
 
   testWidgets(

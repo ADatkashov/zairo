@@ -36,6 +36,9 @@ class PhoneOtpService {
     private final Duration resendCooldown;
     private final int maxAttempts;
     private final int maxRequestsPerHour;
+    private final int maxRequestsPerIpPerHour;
+    private final int dailySendCap;
+    private final String mockCode; // blank = real random codes
 
     // Explicit @Autowired is required here: with two constructors and
     // neither a no-arg one, Spring can't infer which to use on its own —
@@ -47,14 +50,29 @@ class PhoneOtpService {
             @Value("${app.otp.ttl-minutes:5}") long ttlMinutes,
             @Value("${app.otp.resend-cooldown-seconds:60}") long resendCooldownSeconds,
             @Value("${app.otp.max-verify-attempts:5}") int maxAttempts,
-            @Value("${app.otp.max-requests-per-hour:5}") int maxRequestsPerHour) {
+            @Value("${app.otp.max-requests-per-hour:5}") int maxRequestsPerHour,
+            @Value("${app.otp.max-requests-per-ip-per-hour:20}") int maxRequestsPerIpPerHour,
+            @Value("${app.otp.daily-send-cap:3000}") int dailySendCap,
+            @Value("${app.otp.mock-code:}") String mockCode) {
         this(phoneOtpRepository, otpSender, Clock.systemUTC(), ttlMinutes, resendCooldownSeconds, maxAttempts,
-                maxRequestsPerHour);
+                maxRequestsPerHour, maxRequestsPerIpPerHour, dailySendCap, mockCode);
+    }
+
+    /** Test-only seam with the IP/daily limits effectively off — see PhoneOtpServiceTest. */
+    PhoneOtpService(PhoneOtpRepository phoneOtpRepository, OtpSenderPort otpSender, Clock clock, long ttlMinutes,
+            long resendCooldownSeconds, int maxAttempts, int maxRequestsPerHour) {
+        this(phoneOtpRepository, otpSender, clock, ttlMinutes, resendCooldownSeconds, maxAttempts,
+                maxRequestsPerHour, Integer.MAX_VALUE, Integer.MAX_VALUE, "");
     }
 
     /** Test-only seam — see PhoneOtpServiceTest, which needs to fast-forward past expiry/cooldown without sleeping. */
     PhoneOtpService(PhoneOtpRepository phoneOtpRepository, OtpSenderPort otpSender, Clock clock, long ttlMinutes,
-            long resendCooldownSeconds, int maxAttempts, int maxRequestsPerHour) {
+            long resendCooldownSeconds, int maxAttempts, int maxRequestsPerHour, int maxRequestsPerIpPerHour,
+            int dailySendCap, String mockCode) {
+        if (mockCode != null && !mockCode.isBlank() && !mockCode.matches("\\d{6}")) {
+            throw new IllegalStateException("app.otp.mock-code (OTP_MOCK_CODE) must be exactly 6 digits");
+        }
+        this.mockCode = mockCode == null ? "" : mockCode.trim();
         this.phoneOtpRepository = phoneOtpRepository;
         this.otpSender = otpSender;
         this.clock = clock;
@@ -62,6 +80,8 @@ class PhoneOtpService {
         this.resendCooldown = Duration.ofSeconds(resendCooldownSeconds);
         this.maxAttempts = maxAttempts;
         this.maxRequestsPerHour = maxRequestsPerHour;
+        this.maxRequestsPerIpPerHour = maxRequestsPerIpPerHour;
+        this.dailySendCap = dailySendCap;
     }
 
     /**
@@ -70,6 +90,19 @@ class PhoneOtpService {
      */
     @Transactional
     void requestOtp(String e164Phone) {
+        requestOtp(e164Phone, null);
+    }
+
+    /**
+     * Besides the per-phone cooldown/hourly cap, two limits that bound SMS
+     * spend against pumping fraud (bots requesting codes for many numbers):
+     * a per-IP hourly cap and a platform-wide daily cap. {@code clientIp} may
+     * be null (unknown) — then only the per-phone and daily limits apply.
+     *
+     * @throws OtpTemporarilyUnavailableException the platform-wide daily SMS cap is reached.
+     */
+    @Transactional
+    void requestOtp(String e164Phone, String clientIp) {
         Instant now = Instant.now(clock);
         Optional<PhoneOtp> last = phoneOtpRepository.findTopByPhoneOrderByCreatedAtDesc(e164Phone);
         if (last.isPresent() && last.get().getCreatedAt().plus(resendCooldown).isAfter(now)) {
@@ -80,8 +113,16 @@ class PhoneOtpService {
             throw new TooManyOtpRequestsException("Too many codes requested for this phone — try again later");
         }
 
+        if (clientIp != null && phoneOtpRepository.countByRequestIpAndCreatedAtAfter(clientIp,
+                now.minus(Duration.ofHours(1))) >= maxRequestsPerIpPerHour) {
+            throw new TooManyOtpRequestsException("Too many codes requested from this network — try again later");
+        }
+        if (phoneOtpRepository.countByCreatedAtAfter(now.minus(Duration.ofDays(1))) >= dailySendCap) {
+            throw new OtpTemporarilyUnavailableException("SMS codes are temporarily unavailable — try again later");
+        }
+
         String code = generateCode();
-        PhoneOtp otp = new PhoneOtp(UUID.randomUUID(), e164Phone, hash(code), now.plus(ttl), now);
+        PhoneOtp otp = new PhoneOtp(UUID.randomUUID(), e164Phone, hash(code), now.plus(ttl), now, clientIp);
         phoneOtpRepository.save(otp);
         otpSender.send(e164Phone, code);
     }
@@ -129,6 +170,9 @@ class PhoneOtpService {
     }
 
     private String generateCode() {
+        if (!mockCode.isEmpty()) {
+            return mockCode;
+        }
         int value = secureRandom.nextInt(CODE_UPPER_BOUND);
         return String.format("%0" + CODE_LENGTH + "d", value);
     }

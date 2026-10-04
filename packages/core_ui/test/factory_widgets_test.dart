@@ -772,4 +772,31 @@ void main() {
     expect(find.text('Filters'), findsOneWidget);
     expect(find.byType(FactoryBottomSheet), findsOneWidget);
   });
+
+  group('currency display', () {
+    Future<void> pumpPrice(WidgetTester tester, Widget price) => tester.pumpWidget(
+          MaterialApp(theme: factoryLightTheme(), home: Scaffold(body: price)),
+        );
+
+    testWidgets('an ISO code is shown as its symbol, never as the raw code', (tester) async {
+      await pumpPrice(tester, const FactoryPriceText(amount: 12400, currencySymbol: 'KZT'));
+      expect(find.text('12 400 ₸'), findsOneWidget);
+
+      await pumpPrice(tester, const FactoryPriceText(amount: 12400, currencySymbol: 'USD'));
+      expect(find.text('12 400 \$'), findsOneWidget);
+    });
+
+    testWidgets('no currency falls back to the platform market (tenge)', (tester) async {
+      await pumpPrice(tester, const FactoryPriceText(amount: 500));
+      expect(find.text('500 ₸'), findsOneWidget);
+    });
+
+    test('formatFactoryMoney resolves codes, other markets and a missing currency', () {
+      expect(formatFactoryMoney(12400, 'KZT'), '12 400 ₸');
+      expect(formatFactoryMoney(12400, 'RUB'), '12 400 ₽');
+      expect(formatFactoryMoney(12400, 'UZS'), "12 400 so'm");
+      expect(formatFactoryMoney(12400, null), '12 400 ₸');
+      expect(formatFactoryMoney(12400, 'XYZ'), '12 400 XYZ');
+    });
+  });
 }

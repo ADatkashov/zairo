@@ -45,4 +45,14 @@ class PhoneNumberNormalizer {
             throw new InvalidPhoneNumberException("Not a valid phone number: " + rawPhone);
         }
     }
+
+    /** ISO region ("KZ", "RU", ...) of an already-normalized E.164 number, or null if it can't be determined. */
+    String regionOf(String e164Phone) {
+        try {
+            String region = phoneNumberUtil.getRegionCodeForNumber(phoneNumberUtil.parse(e164Phone, DEFAULT_REGION));
+            return region == null || "ZZ".equals(region) ? null : region;
+        } catch (NumberParseException e) {
+            return null;
+        }
+    }
 }
