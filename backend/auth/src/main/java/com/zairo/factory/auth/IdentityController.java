@@ -79,7 +79,7 @@ public class IdentityController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @PostMapping("/api/v1/auth/google")
     public TokenResponse googleSignIn(@Valid @RequestBody GoogleAuthRequest request) {
-        return identityService.loginOrRegisterWithGoogle(request.idToken());
+        return identityService.loginOrRegisterWithGoogle(request.idToken(), request.role());
     }
 
     @Operation(summary = "Link a Google account to the current user", description = "Attaches a verified Google "
@@ -111,7 +111,7 @@ public class IdentityController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @PostMapping("/api/v1/auth/apple")
     public TokenResponse appleSignIn(@Valid @RequestBody AppleAuthRequest request) {
-        return identityService.loginOrRegisterWithApple(request.identityToken(), request.displayName());
+        return identityService.loginOrRegisterWithApple(request.identityToken(), request.displayName(), request.role());
     }
 
     @Operation(summary = "Link an Apple account to the current user")
@@ -237,7 +237,7 @@ public class IdentityController {
     @PostMapping("/api/v1/auth/phone/register")
     public TokenResponse phoneRegister(@Valid @RequestBody PhoneRegisterRequest request) {
         return identityService.registerWithPhone(request.phone(), request.code(), request.displayName(),
-                request.password());
+                request.password(), request.role());
     }
 
     @Operation(summary = "Forgot password: set a new one with an SMS code", description = "Request the code with "
