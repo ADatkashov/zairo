@@ -1,17 +1,27 @@
 version: 2.1
 
-orbs:
-  flutter: circleci/flutter@2.1.1
-
 jobs:
   build-android-apk:
-    executor:
-      name: flutter/default
-      tag: stable
+    docker:
+      - image: circleci/android:api-31-node
     resource_class: large
+    environment:
+      FLUTTER_HOME: /opt/flutter
+      PATH: /opt/flutter/bin:/opt/flutter/bin/cache/dart-sdk/bin:$PATH
     steps:
       - checkout
-      - flutter/install_flutter_and_pub
+      - run:
+          name: Install Flutter
+          command: |
+            cd /opt
+            git clone https://github.com/flutter/flutter.git
+            cd flutter
+            git checkout stable
+      - run:
+          name: Install Dependencies
+          working_directory: apps/user_app
+          command: |
+            flutter pub get
       - run:
           name: Build Flutter APK
           working_directory: apps/user_app
@@ -23,29 +33,39 @@ jobs:
       - run:
           name: Upload APK to Google Play Console
           command: |
-            # Install bundletool
-            wget https://github.com/google/bundletool/releases/latest/download/bundletool-all.jar -O bundletool.jar
+            apt-get update && apt-get install -y wget default-jre
+            cd apps/user_app
 
-            # Upload to internal testing track
+            # Upload APK using bundletool
+            wget -q https://github.com/google/bundletool/releases/latest/download/bundletool-all.jar -O bundletool.jar
+
             java -jar bundletool.jar upload-apk \
-              --bundle-config=./apps/user_app/build/app/outputs/flutter-apk/app-release.apk \
-              --ks=${ANDROID_KEYSTORE} \
-              --ks-pass=pass:${ANDROID_KEYSTORE_PASSWORD} \
-              --ks-key-alias=${ANDROID_KEY_ALIAS} \
-              --key-pass=pass:${ANDROID_KEY_PASSWORD} \
+              --apk-paths=build/app/outputs/flutter-apk/app-release.apk \
               --service-account-json=<(echo ${GCLOUD_SERVICE_ACCOUNT_CREDENTIALS})
       - store_artifacts:
           path: apps/user_app/build/app/outputs/flutter-apk/app-release.apk
           destination: app-release.apk
 
   build-for-testing:
-    executor:
-      name: flutter/default
-      tag: stable
+    docker:
+      - image: circleci/android:api-31-node
     resource_class: medium
+    environment:
+      FLUTTER_HOME: /opt/flutter
+      PATH: /opt/flutter/bin:/opt/flutter/bin/cache/dart-sdk/bin:$PATH
     steps:
       - checkout
-      - flutter/install_flutter_and_pub
+      - run:
+          name: Install Flutter
+          command: |
+            cd /opt
+            git clone https://github.com/flutter/flutter.git
+            cd flutter
+            git checkout stable
+      - run:
+          name: Install Dependencies
+          working_directory: apps/user_app
+          command: flutter pub get
       - run:
           name: Run Flutter Tests
           working_directory: apps/user_app
