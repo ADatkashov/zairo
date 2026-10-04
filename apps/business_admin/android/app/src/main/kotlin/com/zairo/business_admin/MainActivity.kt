@@ -1,5 +1,7 @@
 package com.zairo.business_admin
 
-import io.flutter.embedding.android.FlutterActivity
+// FlutterFragmentActivity, not plain FlutterActivity — required by local_auth's
+// BiometricPrompt (it needs a FragmentActivity), same as the consumer app.
+import io.flutter.embedding.android.FlutterFragmentActivity
 
-class MainActivity : FlutterActivity()
+class MainActivity : FlutterFragmentActivity()

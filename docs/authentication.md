@@ -404,8 +404,17 @@ The business app signs in the same ways as the consumer app: phone first
 role of a **new** account: the app sends `role: PROVIDER_OWNER` (phone register,
 `/auth/google`, `/auth/apple`), the consumer app sends nothing (= `CUSTOMER`).
 `ADMIN` is rejected on every path, and an existing account keeps its role — so a
-customer who signs in to the business app stays a `CUSTOMER`. Not ported from the
-consumer app: biometric unlock and the Settings > Security screen.
+customer who signs in to the business app stays a `CUSTOMER`.
+
+Biometric unlock (fingerprint / Face ID) works as in the consumer app: right
+after an interactive sign-in the owner home offers to enable it once
+(`BiometricOfferHost`; a silent session restore never offers), the toggle lives in
+Settings > Security (shown only when signed in), and with it on every cold start
+asks for the fingerprint before the stored session is restored. Nothing biometric
+reaches the backend (only the audit call). Android needs `FlutterFragmentActivity`
++ `USE_BIOMETRIC` and iOS `NSFaceIDUsageDescription` — all added. Not ported from
+the consumer app: the linked-accounts section of Security (adding Google/Apple/
+phone to an existing account).
 
 Extra configuration this needs (on top of the consumer app's):
 - Backend `GOOGLE_OAUTH_CLIENT_IDS`: also list the business app's OAuth client

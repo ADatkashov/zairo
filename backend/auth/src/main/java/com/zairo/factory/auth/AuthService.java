@@ -148,7 +148,9 @@ public class AuthService {
      * отдельный onboarding framework, если он уже существует."
      */
     @Transactional
-    public UserSummary updateProfile(UUID userId, String displayName, String email) {
+    public UserSummary updateProfile(UUID userId, AuthDtos.UpdateProfileRequest request) {
+        String displayName = request.displayName();
+        String email = request.email();
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User no longer exists"));
         if (email != null && !email.isBlank() && !email.equals(user.getEmail())
@@ -156,6 +158,8 @@ public class AuthService {
             throw new EmailAlreadyRegisteredException("Email already registered: " + email);
         }
         user.updateProfile(displayName, email);
+        user.updatePersonalDetails(request.birthDate(), Boolean.TRUE.equals(request.clearBirthDate()),
+                request.gender(), request.marketingConsent());
         userRepository.save(user);
         return SessionIssuer.toSummary(user);
     }
