@@ -1,12 +1,13 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../app/locale/locale_controller.dart';
+import '../../../../app/router/app_routes.dart';
 import '../../../../app/theme/theme_provider.dart';
 import '../../../../l10n/app_localizations.dart';
-import 'security_settings_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -44,9 +45,7 @@ class SettingsScreen extends ConsumerWidget {
             title: Text(l10n.securityTitle),
             subtitle: Text(l10n.securitySectionSubtitle),
             trailing: const Icon(Symbols.chevron_right_rounded),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SecuritySettingsScreen()),
-            ),
+            onTap: () => context.push(AppRoutes.securitySettings),
           ),
         ],
       ),
