@@ -43,12 +43,6 @@ dependencies {
     // payment-provider's FreedomPayHttpClient already established.
     implementation("com.googlecode.libphonenumber:libphonenumber:9.0.39")
 
-    // Passkeys (WebAuthn): Yubico's reference server library does all the
-    // protocol/crypto verification (challenge, origin, RP id hash, signature,
-    // sign counter) — see PasskeyService. Hand-rolling WebAuthn verification
-    // is exactly the kind of custom cryptography this codebase avoids.
-    implementation("com.yubico:webauthn-server-core:2.9.0")
-
     // Registration creates the User row as part of the same transaction —
     // deliberate one-directional Gradle dependency on users, same
     // justification as reviews -> booking: this isn't just an id

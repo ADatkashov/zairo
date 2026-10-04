@@ -142,39 +142,6 @@ public final class AuthDtos {
             String password) {
     }
 
-    public record PasskeyAvailabilityResponse(
-            @Schema(description = "Passkeys are configured on this server (app.passkey.rp-id is set).") boolean enabled) {
-    }
-
-    public record PasskeyCeremonyResponse(
-            @Schema(description = "Send back with the finish call.") UUID ceremonyId,
-            @Schema(description = "WebAuthn PublicKeyCredentialCreationOptions / RequestOptions (the inner "
-                    + "`publicKey` object) to hand to the platform authenticator.")
-            java.util.Map<String, Object> options) {
-    }
-
-    public record PasskeyRegisterFinishRequest(
-            @NotNull UUID ceremonyId,
-            @NotNull @Schema(description = "The PublicKeyCredential JSON produced by the authenticator "
-                    + "(id, rawId, type, response.clientDataJSON, response.attestationObject).")
-            java.util.Map<String, Object> credential,
-            @Size(max = 100) @Schema(description = "A label for this passkey, e.g. the device name.",
-                    example = "iPhone 15") String name) {
-    }
-
-    public record PasskeyLoginFinishRequest(
-            @NotNull UUID ceremonyId,
-            @NotNull @Schema(description = "The PublicKeyCredential JSON produced by the authenticator "
-                    + "(id, rawId, type, response.clientDataJSON/authenticatorData/signature/userHandle).")
-            java.util.Map<String, Object> credential) {
-    }
-
-    public record PasskeySummary(UUID id, String name, Instant createdAt, Instant lastUsedAt) {
-    }
-
-    public record PasskeysResponse(List<PasskeySummary> passkeys) {
-    }
-
     public record IdentitySummary(
             @Schema(description = "Which sign-in method this is.") IdentityProvider provider,
             Instant linkedAt) {
