@@ -73,5 +73,18 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- Google Sign-In's redirect back into the app: the iOS OAuth client's
+	     "reversed client ID" (see docs/authentication.md), sourced from the
+	     GOOGLE_REVERSED_CLIENT_ID build setting (see Debug/Release.xcconfig),
+	     the same way the consumer app does. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
