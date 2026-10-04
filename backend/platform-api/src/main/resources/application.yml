@@ -94,23 +94,6 @@ app:
     facebook:
       app-id: ${FACEBOOK_APP_ID:}
       app-secret: ${FACEBOOK_APP_SECRET:}
-  # Passkeys (WebAuthn). Leave PASSKEY_RP_ID unset to turn passkeys off (the
-  # app then hides the buttons). The RP id is the domain passkeys are bound
-  # to and is PERMANENT: changing it later orphans every registered passkey.
-  # It must be a domain the backend answers on (e.g. api.example.com), since
-  # the backend serves /.well-known/apple-app-site-association and
-  # /.well-known/assetlinks.json itself.
-  passkey:
-    rp-id: ${PASSKEY_RP_ID:}
-    rp-name: ${PASSKEY_RP_NAME:ZAIRO}
-    # iOS: "<Apple TeamID>.<bundle id>", comma-separated (e.g. ABCDE12345.com.zairo).
-    apple-app-ids: ${PASSKEY_APPLE_APP_IDS:}
-    android-package: ${PASSKEY_ANDROID_PACKAGE:com.zairo}
-    # SHA-256 fingerprints (AA:BB:...) of the Android app signing certificate(s),
-    # comma-separated: debug + release/Play App Signing. Also derives the
-    # android:apk-key-hash origins accepted by WebAuthn verification.
-    android-sha256-fingerprints: ${PASSKEY_ANDROID_SHA256_FINGERPRINTS:}
-    extra-origins: ${PASSKEY_EXTRA_ORIGINS:}
   # SMS delivery for phone OTP (see auth's TwilioOtpSender). Leave
   # TWILIO_ACCOUNT_SID unset and the code is only written to the server log
   # (LoggingOtpSender) — fine for local dev/CI, never for real users. Set
