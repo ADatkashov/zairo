@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../core/formatting/initials.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../auth/data/models/user_summary.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../auth/presentation/screens/register_screen.dart';
@@ -19,6 +20,7 @@ import '../../../messaging/presentation/screens/conversations_screen.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
 import '../widgets/change_avatar_dialog.dart';
 import 'about_screen.dart';
+import 'edit_profile_screen.dart';
 import 'support_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -45,12 +47,7 @@ class ProfileScreen extends ConsumerWidget {
       body: authState.when(
         data: (user) => user == null
             ? const _LoggedOutView()
-            : _LoggedInView(
-                userId: user.id,
-                displayName: user.displayName,
-                email: user.email,
-                avatarUrl: user.avatarUrl,
-              ),
+            : _LoggedInView(user: user),
         loading: () => const FactoryLoadingState(),
         error: (error, stackTrace) => Center(
           child: Padding(
@@ -101,20 +98,16 @@ class _LoggedOutView extends StatelessWidget {
 }
 
 class _LoggedInView extends ConsumerWidget {
-  final String userId;
-  final String displayName;
-  final String? email;
-  final String? avatarUrl;
+  final UserSummary user;
 
-  const _LoggedInView({
-    required this.userId,
-    required this.displayName,
-    required this.email,
-    this.avatarUrl,
-  });
+  const _LoggedInView({required this.user});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final userId = user.id;
+    final displayName = user.displayName;
+    final email = user.email;
+    final avatarUrl = user.avatarUrl;
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
@@ -164,7 +157,7 @@ class _LoggedInView extends ConsumerWidget {
         if (email != null)
           Center(
             child: Text(
-              email!,
+              email,
               style: textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
             ),
           ),
@@ -211,6 +204,22 @@ class _LoggedInView extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: FactorySpacing.space6),
+        FactorySelectableTile(
+          title: l10n.editProfileButton,
+          // Nudge to fill in the birthday: it powers greetings and bonuses.
+          subtitle: user.birthDate == null
+              ? Text(
+                  l10n.editProfileBirthdayPrompt,
+                  style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+                )
+              : null,
+          leading: Icon(Symbols.edit_rounded, color: colors.textSecondary),
+          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => EditProfileScreen(user: user)),
+          ),
+        ),
+        const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
           title: l10n.messagesTitle,
           leading: Icon(Symbols.forum_rounded, color: colors.textSecondary),
