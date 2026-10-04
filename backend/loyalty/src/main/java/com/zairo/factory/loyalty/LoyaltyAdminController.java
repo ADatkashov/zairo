@@ -35,6 +35,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -57,11 +58,13 @@ public class LoyaltyAdminController {
     private final LoyaltyCustomerInsightsService customerInsightsService;
     private final ProviderOwnership providerOwnership;
     private final UserRepository userRepository;
+    private final LoyaltyBirthdayService birthdayService;
 
     public LoyaltyAdminController(LoyaltyProgramService programService, LoyaltyRewardService rewardService,
             LoyaltyRedemptionService redemptionService, LoyaltyLedgerService ledgerService,
             LoyaltyDashboardService dashboardService, LoyaltyCustomerInsightsService customerInsightsService,
-            ProviderOwnership providerOwnership, UserRepository userRepository) {
+            ProviderOwnership providerOwnership, UserRepository userRepository,
+            LoyaltyBirthdayService birthdayService) {
         this.programService = programService;
         this.rewardService = rewardService;
         this.redemptionService = redemptionService;
@@ -70,6 +73,7 @@ public class LoyaltyAdminController {
         this.customerInsightsService = customerInsightsService;
         this.providerOwnership = providerOwnership;
         this.userRepository = userRepository;
+        this.birthdayService = birthdayService;
     }
 
     // ---- Settings ----
@@ -97,7 +101,8 @@ public class LoyaltyAdminController {
                 request.firstBookingBonusPoints(), request.repeatVisitBonusPoints(), request.repeatVisitThreshold(),
                 request.reviewBonusPoints(), request.pointsPerCurrencyUnitRedemption(), request.minRedemptionPoints(),
                 request.maxRedemptionPointsPerBooking(), request.pointsExpireEnabled(),
-                request.pointsExpirationMonths(), request.dailyEarningPointsCap(), request.monthlyEarningPointsCap());
+                request.pointsExpirationMonths(), request.dailyEarningPointsCap(), request.monthlyEarningPointsCap(),
+                request.birthdayBonusPoints());
         return LoyaltyAdminDtos.LoyaltySettingsResponse.from(program);
     }
 
@@ -150,6 +155,26 @@ public class LoyaltyAdminController {
     public OverviewResponse getOverview(@PathVariable UUID providerId, HttpServletRequest httpRequest) {
         providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         return OverviewResponse.from(dashboardService.getOverview(providerId));
+    }
+
+    // ---- Birthdays ----
+
+    @Operation(summary = "Members with a birthday coming up", description =
+            "Members who opted in to greetings and gave a birth date, soonest first (today included). Month/day only "
+                    + "-- never the birth year. bonusPoints is what the program grants on the birthday (0 = none); "
+                    + "bonusAwarded is true once today's bonus was granted.")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/business/{providerId}/loyalty/birthdays")
+    public List<LoyaltyAdminDtos.BirthdayResponse> getBirthdays(@PathVariable UUID providerId,
+            @RequestParam(defaultValue = "30") int days, HttpServletRequest httpRequest) {
+        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
+        int window = Math.max(0, Math.min(days, 366));
+        LoyaltyProgram program = programService.getOrCreateDraft(providerId, "Loyalty Rewards");
+        int bonus = program.isEnabled() ? program.getBirthdayBonusPoints() : 0;
+        return birthdayService.upcoming(providerId, window).stream()
+                .map(b -> new LoyaltyAdminDtos.BirthdayResponse(b.userId(), b.displayName(),
+                        b.date().getMonthValue(), b.date().getDayOfMonth(), b.daysUntil(), bonus, b.bonusAwarded()))
+                .toList();
     }
 
     // ---- Customers ----

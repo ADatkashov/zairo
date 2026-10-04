@@ -25,6 +25,10 @@ class LoyaltySettings {
   final int? dailyEarningPointsCap;
   final int? monthlyEarningPointsCap;
 
+  /// Points granted on a member's birthday (opted-in members only). 0 = the
+  /// business doesn't give one.
+  final int birthdayBonusPoints;
+
   const LoyaltySettings({
     required this.providerId,
     required this.enabled,
@@ -43,6 +47,7 @@ class LoyaltySettings {
     this.pointsExpirationMonths,
     this.dailyEarningPointsCap,
     this.monthlyEarningPointsCap,
+    this.birthdayBonusPoints = 0,
   });
 
   factory LoyaltySettings.fromJson(Map<String, dynamic> json) {
@@ -64,6 +69,7 @@ class LoyaltySettings {
       pointsExpirationMonths: (json['pointsExpirationMonths'] as num?)?.toInt(),
       dailyEarningPointsCap: (json['dailyEarningPointsCap'] as num?)?.toInt(),
       monthlyEarningPointsCap: (json['monthlyEarningPointsCap'] as num?)?.toInt(),
+      birthdayBonusPoints: (json['birthdayBonusPoints'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -86,6 +92,7 @@ class LoyaltySettings {
         'pointsExpirationMonths': pointsExpirationMonths,
         'dailyEarningPointsCap': dailyEarningPointsCap,
         'monthlyEarningPointsCap': monthlyEarningPointsCap,
+        'birthdayBonusPoints': birthdayBonusPoints,
       };
 
   LoyaltySettings copyWith({
@@ -112,6 +119,7 @@ class LoyaltySettings {
     bool clearDailyEarningPointsCap = false,
     int? monthlyEarningPointsCap,
     bool clearMonthlyEarningPointsCap = false,
+    int? birthdayBonusPoints,
   }) {
     return LoyaltySettings(
       providerId: providerId,
@@ -138,6 +146,7 @@ class LoyaltySettings {
           clearDailyEarningPointsCap ? null : (dailyEarningPointsCap ?? this.dailyEarningPointsCap),
       monthlyEarningPointsCap:
           clearMonthlyEarningPointsCap ? null : (monthlyEarningPointsCap ?? this.monthlyEarningPointsCap),
+      birthdayBonusPoints: birthdayBonusPoints ?? this.birthdayBonusPoints,
     );
   }
 }
