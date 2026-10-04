@@ -344,7 +344,8 @@ in.
 | Variable | Used by | Required in production? |
 |---|---|---|
 | `GOOGLE_OAUTH_CLIENT_IDS` | `GoogleIdTokenVerifierAdapter` — comma-separated Android/iOS/(optional web) OAuth client IDs from [Google Cloud Console](https://console.cloud.google.com/apis/credentials) | Yes — `ProductionSecretsValidator` refuses to boot under `spring.profiles.active=prod` without it |
-| `FACEBOOK_APP_ID` / `FACEBOOK_APP_SECRET` | `FacebookGraphIdentityVerifier` — from [Facebook for Developers](https://developers.facebook.com/apps/) → your app → Settings > Basic | Yes — same startup guard |
+| `APPLE_CLIENT_IDS` | `AppleIdTokenVerifierAdapter` — comma-separated audiences of Sign in with Apple identity tokens: the iOS bundle id (`com.zairo`), plus a Services ID if Android/web is added | Yes — same startup guard (blank would accept an Apple token issued to any app) |
+| `FACEBOOK_APP_ID` / `FACEBOOK_APP_SECRET` | `FacebookGraphIdentityVerifier` — from [Facebook for Developers](https://developers.facebook.com/apps/) → your app → Settings > Basic | No longer required — Facebook sign-in isn't offered in the app (the backend endpoint remains but rejects every token without these) |
 
 `app.otp.*` (TTL, cooldown, attempt/request limits) already have sane
 defaults and need no external account to work.

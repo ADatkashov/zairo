@@ -2,6 +2,7 @@ package com.zairo.factory.platform;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.zairo.factory.auth.AuthDtos.AppleAuthRequest;
 import com.zairo.factory.auth.AuthDtos.FacebookAuthRequest;
 import com.zairo.factory.auth.AuthDtos.GoogleAuthRequest;
 import com.zairo.factory.auth.AuthDtos.LinkWithPasswordRequest;
@@ -409,6 +410,42 @@ class IdentityApiTests {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().get("displayName")).isEqualTo("Real Name");
         assertThat(response.getBody().get("email")).isEqualTo(email);
+    }
+
+    // ---- Apple ------------------------------------------------------------
+
+    @Test
+    void appleSignInCreatesAnAccountThenLogsIntoTheSameOneAndUsesTheSuppliedName() {
+        String token = TestIdentityProviders.appleToken("apple-sub-" + UUID.randomUUID(), null, false);
+
+        Map<?, ?> first = restTemplate.postForEntity("/api/v1/auth/apple",
+                new AppleAuthRequest(token, "Dana Apple"), Map.class).getBody();
+        Map<?, ?> second = restTemplate.postForEntity("/api/v1/auth/apple",
+                new AppleAuthRequest(token, null), Map.class).getBody();
+
+        assertThat(((Map<?, ?>) first.get("user")).get("displayName")).isEqualTo("Dana Apple");
+        assertThat(userId(second)).isEqualTo(userId(first));
+    }
+
+    @Test
+    void appleSignInRejectsAnInvalidCredential() {
+        ResponseEntity<Map> response = restTemplate.postForEntity("/api/v1/auth/apple",
+                new AppleAuthRequest("invalid", null), Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void appleWithTheSameVerifiedEmailJoinsTheGoogleCreatedAccount() {
+        String email = "apple-one-" + UUID.randomUUID() + "@example.com";
+        Map<?, ?> viaGoogle = restTemplate.postForEntity("/api/v1/auth/google", new GoogleAuthRequest(
+                TestIdentityProviders.googleToken("g-" + UUID.randomUUID(), email, true, "Same Person")),
+                Map.class).getBody();
+
+        Map<?, ?> viaApple = restTemplate.postForEntity("/api/v1/auth/apple", new AppleAuthRequest(
+                TestIdentityProviders.appleToken("a-" + UUID.randomUUID(), email, true), null), Map.class).getBody();
+
+        assertThat(userId(viaApple)).isEqualTo(userId(viaGoogle));
     }
 
     // ---- Phone + password, one account across methods -----------------------------
