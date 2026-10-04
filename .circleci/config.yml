@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   build-android-apk:
     docker:
-      - image: circleci/android:api-31-node
+      - image: cimg/android:2024.01
     resource_class: large
     environment:
       FLUTTER_HOME: /opt/flutter
@@ -48,7 +48,7 @@ jobs:
 
   build-for-testing:
     docker:
-      - image: circleci/android:api-31-node
+      - image: cimg/android:2024.01
     resource_class: medium
     environment:
       FLUTTER_HOME: /opt/flutter
