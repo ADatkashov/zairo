@@ -32,6 +32,6 @@ class SessionIssuer {
 
     static UserSummary toSummary(User user) {
         return new UserSummary(user.getId(), user.getEmail(), user.getDisplayName(), user.getRole(),
-                user.getAvatarUrl());
+                user.getAvatarUrl(), user.getBirthDate(), user.getGender(), user.isMarketingConsent());
     }
 }

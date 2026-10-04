@@ -87,7 +87,8 @@ jobs:
               --build-name=1.0.0 \
               --build-number=${CIRCLE_BUILD_NUM} \
               --dart-define=API_BASE_URL="$API_BASE_URL" \
-              --dart-define=MAPS_API_KEY="${MAPS_API_KEY:-}"
+              --dart-define=MAPS_API_KEY="${MAPS_API_KEY:-}" \
+              --dart-define=GOOGLE_OAUTH_SERVER_CLIENT_ID="${GOOGLE_OAUTH_SERVER_CLIENT_ID:-}"
       - store_artifacts:
           path: << parameters.app_dir >>/build/app/outputs/flutter-apk/app-release.apk
           destination: << parameters.artifact_name >>

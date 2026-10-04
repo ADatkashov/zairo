@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../data/auth_exception.dart';
+import '../auth_navigation.dart';
 import '../providers/auth_providers.dart';
 import '../widgets/enable_biometric_prompt.dart';
 import '../widgets/sms_mock_hint.dart';
@@ -179,7 +180,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     if (authState.value != null) {
       await maybeOfferEnableBiometric(context, ref);
       if (!mounted) return;
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      popAuthFlow(context);
     } else {
       setState(() => _isSubmitting = false);
     }

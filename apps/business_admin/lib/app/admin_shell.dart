@@ -12,6 +12,7 @@ import '../features/loyalty/presentation/screens/loyalty_screen.dart';
 import '../features/messaging/presentation/screens/business_inbox_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
 import '../l10n/app_localizations.dart';
+import 'admin_more_screen.dart';
 
 /// The desktop answer to this app's mobile linear push-navigation
 /// (see AuthGate's comment on why there's no router/shell there) — the
@@ -87,7 +88,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
             child: IndexedStack(
               index: _selectedIndex,
               children: [
-                const DashboardScreen(),
+                const DashboardScreen(showNavActions: false),
                 if (ownerUserId != null) CampaignCenterScreen(ownerUserId: ownerUserId) else const SizedBox.shrink(),
                 if (ownerUserId != null)
                   AutomationCenterScreen(ownerUserId: ownerUserId)
@@ -265,6 +266,72 @@ class ResponsiveOwnerHome extends StatelessWidget {
   Widget build(BuildContext context) {
     return FactoryBreakpoints.of(context) == FactoryScreenSize.desktop
         ? const AdminShell()
-        : const DashboardScreen();
+        : const MobileAdminShell();
+  }
+}
+
+/// Phone/tablet shell: a bottom bar with the four destinations an owner
+/// reaches for daily (Dashboard, Messages, Campaigns, Loyalty) plus "More"
+/// for the rest. Replaces the row of six unlabeled AppBar icons the Dashboard
+/// used to carry, which didn't fit a narrow screen.
+///
+/// Like [AdminShell], each tab keeps its own Scaffold/AppBar. Tabs are built
+/// the first time they are opened (not all at startup) and then kept alive.
+class MobileAdminShell extends ConsumerStatefulWidget {
+  const MobileAdminShell({super.key});
+
+  @override
+  ConsumerState<MobileAdminShell> createState() => _MobileAdminShellState();
+}
+
+class _MobileAdminShellState extends ConsumerState<MobileAdminShell> {
+  int _selectedIndex = 0;
+  final Set<int> _opened = {0};
+
+  void _select(int index) => setState(() {
+    _selectedIndex = index;
+    _opened.add(index);
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final ownerUserId = ref.watch(authControllerProvider).value?.id;
+
+    final tabs = <Widget Function()>[
+      () => const DashboardScreen(showNavActions: false),
+      () => ownerUserId == null ? const SizedBox.shrink() : BusinessInboxScreen(ownerUserId: ownerUserId),
+      () => ownerUserId == null ? const SizedBox.shrink() : CampaignCenterScreen(ownerUserId: ownerUserId),
+      () => ownerUserId == null ? const SizedBox.shrink() : LoyaltyScreen(ownerUserId: ownerUserId),
+      () => const AdminMoreScreen(),
+    ];
+
+    // Back from any other tab returns to the Dashboard first; only from the
+    // Dashboard does it leave the app.
+    return PopScope(
+      canPop: _selectedIndex == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _select(0);
+      },
+      child: Scaffold(
+        body: IndexedStack(
+          index: _selectedIndex,
+          children: [
+            for (var i = 0; i < tabs.length; i++) _opened.contains(i) ? tabs[i]() : const SizedBox.shrink(),
+          ],
+        ),
+        bottomNavigationBar: FactoryBottomNavigation(
+          selectedIndex: _selectedIndex,
+          onDestinationSelected: _select,
+          destinations: [
+            FactoryNavDestination(icon: Icons.dashboard_rounded, label: l10n.navDashboard),
+            FactoryNavDestination(icon: Icons.forum_rounded, label: l10n.messagingNavLabel),
+            FactoryNavDestination(icon: Icons.campaign_rounded, label: l10n.campaignCenterNavLabel),
+            FactoryNavDestination(icon: Icons.loyalty_rounded, label: l10n.loyaltyNavLabel),
+            FactoryNavDestination(icon: Icons.more_horiz_rounded, label: l10n.navMore),
+          ],
+        ),
+      ),
+    );
   }
 }

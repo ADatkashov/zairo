@@ -7,6 +7,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -43,6 +44,20 @@ public class User {
 
     @Column(name = "current_city_code")
     private String currentCityCode;
+
+    @Column(name = "birth_date")
+    private LocalDate birthDate;
+
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+
+    /** Opt-in to birthday greetings, bonuses and offers — see V75. */
+    @Column(name = "marketing_consent", nullable = false)
+    private boolean marketingConsent;
+
+    /** Set when the owner deleted their account -- every personal field is wiped, see {@link #anonymize}. */
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
 
     protected User() {
     }
@@ -96,6 +111,45 @@ public class User {
         return currentCityCode;
     }
 
+    public LocalDate getBirthDate() {
+        return birthDate;
+    }
+
+    public Gender getGender() {
+        return gender;
+    }
+
+    public boolean isMarketingConsent() {
+        return marketingConsent;
+    }
+
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
+
+    public Instant getDeletedAt() {
+        return deletedAt;
+    }
+
+    /**
+     * Account deletion: wipes every personal field but keeps the row, so bookings, payments, reviews, messages and
+     * the loyalty ledger that reference this user keep their integrity (businesses still need their own history) --
+     * they just show "Deleted user" from now on. Irreversible. Credentials/identities/tokens and other modules'
+     * personal data are removed separately by auth.AuthService; the email is freed so it can register again.
+     */
+    public void anonymize(String placeholderName, Instant now) {
+        this.email = null;
+        this.phone = null;
+        this.emailVerified = false;
+        this.displayName = placeholderName;
+        this.avatarUrl = null;
+        this.currentCityCode = null;
+        this.birthDate = null;
+        this.gender = null;
+        this.marketingConsent = false;
+        this.deletedAt = now;
+    }
+
     /** Null/blank removes the avatar — see AuthDtos.UpdateAvatarRequest. */
     public void updateAvatar(String avatarUrl) {
         this.avatarUrl = avatarUrl;
@@ -122,6 +176,26 @@ public class User {
         }
         if (email != null && !email.isBlank()) {
             this.email = email;
+        }
+    }
+
+    /**
+     * Personal details edited from the profile screen. Null arguments leave
+     * the field unchanged; {@code clearBirthDate} is the explicit way to
+     * remove a previously entered birthday (null can't mean both).
+     */
+    public void updatePersonalDetails(LocalDate birthDate, boolean clearBirthDate, Gender gender,
+            Boolean marketingConsent) {
+        if (clearBirthDate) {
+            this.birthDate = null;
+        } else if (birthDate != null) {
+            this.birthDate = birthDate;
+        }
+        if (gender != null) {
+            this.gender = gender == Gender.NOT_SPECIFIED ? null : gender;
+        }
+        if (marketingConsent != null) {
+            this.marketingConsent = marketingConsent;
         }
     }
 

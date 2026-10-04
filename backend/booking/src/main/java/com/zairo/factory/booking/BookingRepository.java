@@ -27,6 +27,15 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     /** BookingPaymentTimeoutJob's sweep target — a booking that's sat unpaid past the configured timeout. */
     List<Booking> findByStatusAndCreatedAtBefore(BookingStatus status, Instant cutoff);
 
+    /** Account deletion guard: this user's bookings that are still live and whose slot hasn't started yet. */
+    @Query(value = """
+            select count(*) from booking b
+            join availability_slot s on s.id = b.availability_slot_id
+            where b.user_id = :userId and b.status in ('PENDING', 'PENDING_PAYMENT', 'CONFIRMED')
+              and s.starts_at > :now
+            """, nativeQuery = true)
+    long countUpcomingActiveByUserId(@Param("userId") UUID userId, @Param("now") Instant now);
+
     /**
      * BookingReminderJob's target — a CONFIRMED booking whose slot starts
      * within the given window and hasn't been reminded about yet. A native

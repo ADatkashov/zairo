@@ -7,6 +7,7 @@ import com.zairo.factory.users.User;
 import com.zairo.factory.users.UserRepository;
 import com.zairo.factory.users.UserRole;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
@@ -26,12 +27,17 @@ public class AuthService {
     private final ApplicationEventPublisher eventPublisher;
     private final LoginAttemptLimiter loginAttemptLimiter;
     private final SessionIssuer sessionIssuer;
+    private final UserIdentityRepository identityRepository;
+    private final List<AccountDeletionGuard> deletionGuards;
+    private final List<AccountDataEraser> dataErasers;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public AuthService(UserRepository userRepository, CredentialRepository credentialRepository,
             JwtService jwtService, RefreshTokenService refreshTokenService,
             PasswordResetTokenService passwordResetTokenService, ApplicationEventPublisher eventPublisher,
-            LoginAttemptLimiter loginAttemptLimiter, SessionIssuer sessionIssuer) {
+            LoginAttemptLimiter loginAttemptLimiter, SessionIssuer sessionIssuer,
+            UserIdentityRepository identityRepository, List<AccountDeletionGuard> deletionGuards,
+            List<AccountDataEraser> dataErasers) {
         this.userRepository = userRepository;
         this.credentialRepository = credentialRepository;
         this.jwtService = jwtService;
@@ -40,6 +46,9 @@ public class AuthService {
         this.eventPublisher = eventPublisher;
         this.loginAttemptLimiter = loginAttemptLimiter;
         this.sessionIssuer = sessionIssuer;
+        this.identityRepository = identityRepository;
+        this.deletionGuards = deletionGuards;
+        this.dataErasers = dataErasers;
     }
 
     @Transactional
@@ -130,7 +139,7 @@ public class AuthService {
      */
     @Transactional
     public UserSummary updateAvatar(UUID userId, String avatarUrl) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findById(userId).filter(u -> !u.isDeleted())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User no longer exists"));
         user.updateAvatar(avatarUrl);
         userRepository.save(user);
@@ -148,16 +157,59 @@ public class AuthService {
      * отдельный onboarding framework, если он уже существует."
      */
     @Transactional
-    public UserSummary updateProfile(UUID userId, String displayName, String email) {
-        User user = userRepository.findById(userId)
+    public UserSummary updateProfile(UUID userId, AuthDtos.UpdateProfileRequest request) {
+        String displayName = request.displayName();
+        String email = request.email();
+        User user = userRepository.findById(userId).filter(u -> !u.isDeleted())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User no longer exists"));
         if (email != null && !email.isBlank() && !email.equals(user.getEmail())
                 && userRepository.findByEmail(email).isPresent()) {
             throw new EmailAlreadyRegisteredException("Email already registered: " + email);
         }
         user.updateProfile(displayName, email);
+        user.updatePersonalDetails(request.birthDate(), Boolean.TRUE.equals(request.clearBirthDate()),
+                request.gender(), request.marketingConsent());
         userRepository.save(user);
         return SessionIssuer.toSummary(user);
+    }
+
+    /**
+     * Deletes the caller's account (irreversible): see {@link User#anonymize}. Refuses -- 409 with a reason the user
+     * can act on -- while a module's {@link AccountDeletionGuard} objects (upcoming bookings, owned businesses). The
+     * password (when the account has one) and a typed "DELETE" are both required, so a stolen access token alone
+     * can't wipe an account. Sign-in methods, refresh tokens and every module's personal data go with it, in one
+     * transaction; the email/phone/Google/Facebook/Apple identity is freed so it can register again from scratch.
+     */
+    @Transactional
+    public void deleteAccount(UUID userId, String password, String confirmation) {
+        User user = userRepository.findById(userId).filter(u -> !u.isDeleted())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User no longer exists"));
+        if (user.isDeleted()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User no longer exists");
+        }
+        if (!"DELETE".equals(confirmation)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Type DELETE to confirm account deletion");
+        }
+        Credential credential = credentialRepository.findByUserId(userId).orElse(null);
+        if (credential != null && (password == null
+                || !passwordEncoder.matches(password, credential.getPasswordHash()))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Incorrect password");
+        }
+        for (AccountDeletionGuard guard : deletionGuards) {
+            guard.blockingReason(userId).ifPresent(reason -> {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, reason);
+            });
+        }
+
+        for (AccountDataEraser eraser : dataErasers) {
+            eraser.eraseDataOf(userId);
+        }
+        refreshTokenService.revokeAllForUser(userId);
+        passwordResetTokenService.deleteAllForUser(userId);
+        credentialRepository.deleteByUserId(userId);
+        identityRepository.deleteByUserId(userId);
+        user.anonymize("Deleted user", Instant.now());
+        userRepository.save(user);
     }
 
     private static UserSummary toSummary(User user) {

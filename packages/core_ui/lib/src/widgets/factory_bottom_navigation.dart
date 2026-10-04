@@ -59,11 +59,16 @@ class FactoryBottomNavigation extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
+            // Flexible (loose): with four short labels every item keeps its
+            // natural width exactly as before; with five or longer labels the
+            // items shrink and the label ellipsizes instead of overflowing.
             for (var i = 0; i < destinations.length; i++)
-              _NavItem(
-                destination: destinations[i],
-                isSelected: i == selectedIndex,
-                onTap: () => onDestinationSelected(i),
+              Flexible(
+                child: _NavItem(
+                  destination: destinations[i],
+                  isSelected: i == selectedIndex,
+                  onTap: () => onDestinationSelected(i),
+                ),
               ),
           ],
         ),
@@ -119,6 +124,8 @@ class _NavItem extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     destination.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelSmall
                         ?.copyWith(fontSize: 10, color: color),
                   ),
