@@ -472,5 +472,20 @@
   "linkAccountConfirm": "Подключить",
   "linkAccountCancel": "Отмена",
   "loginContinueWithApple": "Продолжить через Apple",
-  "smsMockHint": "Тестовый режим: реальное SMS не отправляется. Введите код {code}."
+  "smsMockHint": "Тестовый режим: реальное SMS не отправляется. Введите код {code}.",
+  "editProfileTitle": "Редактировать профиль",
+  "editProfileButton": "Редактировать профиль",
+  "editProfileBirthdayPrompt": "Добавьте день рождения и получите подарок",
+  "editProfileBirthdayLabel": "Дата рождения",
+  "editProfileBirthdayHint": "Чтобы бизнесы могли поздравить вас и начислить бонусы ко дню рождения.",
+  "editProfileBirthdayNotSet": "Не указана",
+  "editProfileBirthdayClear": "Удалить дату рождения",
+  "editProfileGenderLabel": "Пол",
+  "editProfileGenderFemale": "Женский",
+  "editProfileGenderMale": "Мужской",
+  "editProfileGenderNotSpecified": "Не указывать",
+  "editProfileMarketingTitle": "Поздравления и предложения",
+  "editProfileMarketingSubtitle": "Поздравления с днём рождения, бонусы и специальные предложения от бизнесов, которые вы посещаете.",
+  "editProfileSave": "Сохранить",
+  "editProfileSaved": "Профиль обновлён"
 }

@@ -1,13 +1,16 @@
 package com.zairo.factory.auth;
 
+import com.zairo.factory.users.Gender;
 import com.zairo.factory.users.UserRole;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -55,7 +58,10 @@ public final class AuthDtos {
             @Schema(example = "aigerim@example.com") String email,
             @Schema(example = "Aigerim Bekova") String displayName,
             UserRole role,
-            @Schema(example = "http://localhost:8080/api/v1/uploads/a1b2c3d4.jpg") String avatarUrl) {
+            @Schema(example = "http://localhost:8080/api/v1/uploads/a1b2c3d4.jpg") String avatarUrl,
+            @Schema(example = "1995-04-23", description = "Null when the customer hasn't entered it.") LocalDate birthDate,
+            @Schema(description = "Null = not specified.") Gender gender,
+            @Schema(description = "Opted in to birthday greetings, bonuses and offers.") boolean marketingConsent) {
     }
 
     public record UpdateAvatarRequest(
@@ -69,7 +75,12 @@ public final class AuthDtos {
             @Size(max = 255) @Schema(description = "Null/blank leaves the current display name unchanged.",
                     example = "Aigerim Bekova") String displayName,
             @Email @Size(max = 255) @Schema(description = "Null/blank leaves the current email unchanged. Rejected "
-                    + "with 409 if another account already uses it.", example = "aigerim@example.com") String email) {
+                    + "with 409 if another account already uses it.", example = "aigerim@example.com") String email,
+            @Past @Schema(description = "Null leaves the current birth date unchanged (see clearBirthDate).",
+                    example = "1995-04-23") LocalDate birthDate,
+            @Schema(description = "True removes the stored birth date.") Boolean clearBirthDate,
+            @Schema(description = "Null leaves unchanged; NOT_SPECIFIED clears it.") Gender gender,
+            @Schema(description = "Null leaves unchanged.") Boolean marketingConsent) {
     }
 
     public record GoogleAuthRequest(
