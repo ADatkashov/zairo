@@ -2,6 +2,12 @@ package com.zairo.factory.auth;
 
 import com.zairo.factory.auth.AuthDtos.FacebookAuthRequest;
 import com.zairo.factory.auth.AuthDtos.GoogleAuthRequest;
+import com.zairo.factory.auth.AuthDtos.LinkWithPasswordRequest;
+import com.zairo.factory.auth.AuthDtos.PhonePasswordLoginRequest;
+import com.zairo.factory.auth.AuthDtos.PhoneRegisterRequest;
+import com.zairo.factory.auth.AuthDtos.PhoneResetPasswordRequest;
+import com.zairo.factory.auth.AuthDtos.PhoneStatusRequest;
+import com.zairo.factory.auth.AuthDtos.PhoneStatusResponse;
 import com.zairo.factory.auth.AuthDtos.RequestPhoneOtpRequest;
 import com.zairo.factory.auth.AuthDtos.TokenResponse;
 import com.zairo.factory.auth.AuthDtos.UserSummary;
@@ -157,5 +163,62 @@ public class IdentityController {
     public UserSummary linkPhone(@Valid @RequestBody VerifyPhoneOtpRequest request, HttpServletRequest httpRequest) {
         UUID userId = CurrentUser.requireUserId(httpRequest);
         return identityService.linkPhone(userId, request.phone(), request.code());
+    }
+
+    @Operation(summary = "Is this phone already registered, and does it have a password?", description = """
+            Drives the phone sign-in screen: registered + password -> ask for the password; otherwise -> \
+            SMS registration. Intentionally reveals registration status (product requirement).""")
+    @ApiResponse(responseCode = "200", description = "Status of this phone number")
+    @ApiResponse(responseCode = "400", description = "Not a valid, dialable phone number.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @PostMapping("/api/v1/auth/phone/status")
+    public PhoneStatusResponse phoneStatus(@Valid @RequestBody PhoneStatusRequest request) {
+        return identityService.phoneStatus(request.phone());
+    }
+
+    @Operation(summary = "Sign in with phone + password (no SMS)")
+    @ApiResponse(responseCode = "200", description = "Signed in")
+    @ApiResponse(responseCode = "401", description = "Wrong phone or password.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @ApiResponse(responseCode = "429", description = "Too many failed attempts - temporarily locked out.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @PostMapping("/api/v1/auth/phone/login")
+    public TokenResponse phoneLogin(@Valid @RequestBody PhonePasswordLoginRequest request) {
+        return identityService.loginWithPhonePassword(request.phone(), request.password());
+    }
+
+    @Operation(summary = "Register with a phone: SMS code + name + password", description = "Request the code with "
+            + "POST /auth/phone/request-otp first. 409 if this phone already has an account.")
+    @ApiResponse(responseCode = "200", description = "Account created and signed in")
+    @ApiResponse(responseCode = "401", description = "Wrong/already-used code.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @ApiResponse(responseCode = "409", description = "This phone already has an account.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @PostMapping("/api/v1/auth/phone/register")
+    public TokenResponse phoneRegister(@Valid @RequestBody PhoneRegisterRequest request) {
+        return identityService.registerWithPhone(request.phone(), request.code(), request.displayName(),
+                request.password());
+    }
+
+    @Operation(summary = "Forgot password: set a new one with an SMS code", description = "Request the code with "
+            + "POST /auth/phone/request-otp first. Also sets a first password for an account that has none.")
+    @ApiResponse(responseCode = "204", description = "Password changed; other sessions revoked")
+    @ApiResponse(responseCode = "401", description = "Wrong/already-used code, or no account for this phone.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @PostMapping("/api/v1/auth/phone/reset-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void phoneResetPassword(@Valid @RequestBody PhoneResetPasswordRequest request) {
+        identityService.resetPasswordWithPhone(request.phone(), request.code(), request.newPassword());
+    }
+
+    @Operation(summary = "Connect Google/Facebook to the existing account that owns the same email", description = """
+            The answer to a 409 ACCOUNT_LINK_REQUIRED from POST /auth/google or /auth/facebook: proves ownership \
+            with the existing account's password, then attaches the provider identity to it and signs in.""")
+    @ApiResponse(responseCode = "200", description = "Linked and signed in")
+    @ApiResponse(responseCode = "401", description = "Wrong password or invalid provider credential.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @PostMapping("/api/v1/auth/identities/link-with-password")
+    public TokenResponse linkWithPassword(@Valid @RequestBody LinkWithPasswordRequest request) {
+        return identityService.linkProviderWithPassword(request.provider(), request.token(), request.password());
     }
 }

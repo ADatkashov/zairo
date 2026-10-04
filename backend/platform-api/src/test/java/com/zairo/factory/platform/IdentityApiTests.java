@@ -4,7 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.zairo.factory.auth.AuthDtos.FacebookAuthRequest;
 import com.zairo.factory.auth.AuthDtos.GoogleAuthRequest;
+import com.zairo.factory.auth.AuthDtos.LinkWithPasswordRequest;
+import com.zairo.factory.auth.AuthDtos.PhonePasswordLoginRequest;
+import com.zairo.factory.auth.AuthDtos.PhoneRegisterRequest;
+import com.zairo.factory.auth.AuthDtos.PhoneResetPasswordRequest;
+import com.zairo.factory.auth.AuthDtos.PhoneStatusRequest;
 import com.zairo.factory.auth.AuthDtos.RegisterRequest;
+import com.zairo.factory.auth.IdentityProvider;
 import com.zairo.factory.auth.AuthDtos.RequestPhoneOtpRequest;
 import com.zairo.factory.auth.AuthDtos.UpdateProfileRequest;
 import com.zairo.factory.auth.AuthDtos.VerifyPhoneOtpRequest;
@@ -391,6 +397,120 @@ class IdentityApiTests {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().get("displayName")).isEqualTo("Real Name");
         assertThat(response.getBody().get("email")).isEqualTo(email);
+    }
+
+    // ---- Phone + password, one account across methods -----------------------------
+
+    private Map<?, ?> registerPhoneWithPassword(String phone, String name, String password) {
+        restTemplate.postForEntity("/api/v1/auth/phone/request-otp", new RequestPhoneOtpRequest(phone), Void.class);
+        return restTemplate.postForEntity("/api/v1/auth/phone/register",
+                new PhoneRegisterRequest(phone, capturedOtps.byPhone.get(phone), name, password), Map.class)
+                .getBody();
+    }
+
+    @Test
+    void phoneStatusThenRegisterThenPasswordLoginWithoutAnotherSms() {
+        String phone = uniqueKzPhone();
+        Map<?, ?> before = restTemplate.postForEntity("/api/v1/auth/phone/status", new PhoneStatusRequest(phone),
+                Map.class).getBody();
+        assertThat(before.get("registered")).isEqualTo(false);
+
+        Map<?, ?> registered = registerPhoneWithPassword(phone, "Aigerim", "password123");
+        assertThat(((Map<?, ?>) registered.get("user")).get("displayName")).isEqualTo("Aigerim");
+
+        Map<?, ?> after = restTemplate.postForEntity("/api/v1/auth/phone/status", new PhoneStatusRequest(phone),
+                Map.class).getBody();
+        assertThat(after.get("registered")).isEqualTo(true);
+        assertThat(after.get("hasPassword")).isEqualTo(true);
+
+        ResponseEntity<Map> login = restTemplate.postForEntity("/api/v1/auth/phone/login",
+                new PhonePasswordLoginRequest(phone, "password123"), Map.class);
+        assertThat(login.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(userId(login.getBody())).isEqualTo(userId(registered));
+    }
+
+    @Test
+    void phonePasswordLoginRejectsAWrongPassword() {
+        String phone = uniqueKzPhone();
+        registerPhoneWithPassword(phone, "Askar", "password123");
+
+        ResponseEntity<Map> login = restTemplate.postForEntity("/api/v1/auth/phone/login",
+                new PhonePasswordLoginRequest(phone, "wrong-password"), Map.class);
+
+        assertThat(login.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void registeringAPhoneThatAlreadyHasAnAccountIsRejected() {
+        String phone = uniqueKzPhone();
+        registerPhoneWithPassword(phone, "First", "password123");
+        restTemplate.postForEntity("/api/v1/auth/phone/request-otp", new RequestPhoneOtpRequest(phone), Void.class);
+
+        ResponseEntity<Map> second = restTemplate.postForEntity("/api/v1/auth/phone/register",
+                new PhoneRegisterRequest(phone, capturedOtps.byPhone.get(phone), "Second", "password456"), Map.class);
+
+        assertThat(second.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    void forgotPasswordIsResetBySmsAndTheNewPasswordWorks() {
+        String phone = uniqueKzPhone();
+        registerPhoneWithPassword(phone, "Dana", "password123");
+
+        restTemplate.postForEntity("/api/v1/auth/phone/request-otp", new RequestPhoneOtpRequest(phone), Void.class);
+        ResponseEntity<Void> reset = restTemplate.postForEntity("/api/v1/auth/phone/reset-password",
+                new PhoneResetPasswordRequest(phone, capturedOtps.byPhone.get(phone), "brandNewPass1"), Void.class);
+        assertThat(reset.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+        assertThat(restTemplate.postForEntity("/api/v1/auth/phone/login",
+                new PhonePasswordLoginRequest(phone, "password123"), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(restTemplate.postForEntity("/api/v1/auth/phone/login",
+                new PhonePasswordLoginRequest(phone, "brandNewPass1"), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    void facebookWithTheSameVerifiedEmailJoinsTheGoogleCreatedAccount() {
+        String email = "one-customer-" + UUID.randomUUID() + "@example.com";
+        Map<?, ?> viaGoogle = restTemplate.postForEntity("/api/v1/auth/google", new GoogleAuthRequest(
+                TestIdentityProviders.googleToken("g-" + UUID.randomUUID(), email, true, "Same Person")),
+                Map.class).getBody();
+
+        // The fake Facebook token has no emailVerified flag: it always counts as verified (see TestIdentityProviders).
+        Map<?, ?> viaFacebook = restTemplate.postForEntity("/api/v1/auth/facebook", new FacebookAuthRequest(
+                TestIdentityProviders.facebookToken("f-" + UUID.randomUUID(), email, "Same Person")),
+                Map.class).getBody();
+
+        assertThat(userId(viaFacebook)).isEqualTo(userId(viaGoogle));
+    }
+
+    @Test
+    void googleWithAnEmailRegisteredByPasswordNeedsThatPasswordToConnect() {
+        String email = "pw-first-" + UUID.randomUUID() + "@example.com";
+        Map<?, ?> registered = restTemplate.postForEntity("/api/v1/auth/register",
+                new RegisterRequest(email, "password123", "Existing", "+1900000003", UserRole.CUSTOMER), Map.class)
+                .getBody();
+        String token = TestIdentityProviders.googleToken("g-" + UUID.randomUUID(), email, true, "Existing");
+
+        ResponseEntity<Map> blocked = restTemplate.postForEntity("/api/v1/auth/google",
+                new GoogleAuthRequest(token), Map.class);
+        assertThat(blocked.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(blocked.getBody().get("message").toString()).startsWith("ACCOUNT_LINK_REQUIRED");
+
+        assertThat(restTemplate.postForEntity("/api/v1/auth/identities/link-with-password",
+                new LinkWithPasswordRequest(IdentityProvider.GOOGLE, token, "wrong-password"), Map.class)
+                .getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        ResponseEntity<Map> linked = restTemplate.postForEntity("/api/v1/auth/identities/link-with-password",
+                new LinkWithPasswordRequest(IdentityProvider.GOOGLE, token, "password123"), Map.class);
+        assertThat(linked.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(userId(linked.getBody())).isEqualTo(userId(registered));
+
+        // Now linked: plain Google sign-in lands on the same account.
+        Map<?, ?> again = restTemplate.postForEntity("/api/v1/auth/google", new GoogleAuthRequest(token), Map.class)
+                .getBody();
+        assertThat(userId(again)).isEqualTo(userId(registered));
     }
 
     private static String userId(Map<?, ?> tokenResponseBody) {

@@ -21,6 +21,13 @@ public class User {
 
     private String phone;
 
+    /**
+     * True only when {@link #email} was vouched for by a provider (Google/
+     * Facebook) — see V73. Never set from a typed-in registration email.
+     */
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified;
+
     @Column(name = "display_name", nullable = false)
     private String displayName;
 
@@ -55,6 +62,14 @@ public class User {
 
     public String getEmail() {
         return email;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public void markEmailVerified() {
+        this.emailVerified = true;
     }
 
     public String getPhone() {
