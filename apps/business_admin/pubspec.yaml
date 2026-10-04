@@ -33,6 +33,9 @@ dependencies:
   # only obtain a credential on-device; the backend verifies it.
   google_sign_in: ^7.2.0
   sign_in_with_apple: ^7.0.1
+  # Local biometric unlock (fingerprint / Face ID) gating the stored refresh token
+  # on app restart — same as the consumer app; nothing biometric reaches the backend.
+  local_auth: ^3.0.2
 
 dev_dependencies:
   flutter_test:

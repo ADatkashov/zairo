@@ -4,6 +4,7 @@ import 'package:core_network/core_network.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/auth_api.dart';
+import '../../data/biometric_auth_service.dart';
 import '../../data/google_sign_in_service.dart';
 import '../../data/models/phone_status.dart';
 import '../../data/models/sms_mode.dart';
@@ -21,6 +22,21 @@ final authApiProvider = Provider<AuthApi>((ref) {
 class AuthController extends AsyncNotifier<UserSummary?> {
   @override
   Future<UserSummary?> build() async {
+    final storage = ref.watch(tokenStorageProvider);
+    if (await storage.isBiometricEnabled()) {
+      // Gates the already-securely-stored refresh token behind a biometric
+      // prompt on every cold start. Nothing biometric is ever sent to the
+      // backend; this only decides whether *this device* reads what is already
+      // stored locally. A declined/failed prompt is treated as logged out for
+      // this launch (the person can still log in normally, or relaunch to retry);
+      // it never skips the prompt and restores the session anyway.
+      final unlocked = await ref
+          .watch(biometricAuthServiceProvider)
+          .authenticate(reason: 'Unlock ZAIRO Business');
+      if (!unlocked) {
+        return null;
+      }
+    }
     return _restoreSession();
   }
 
@@ -153,17 +169,69 @@ class AuthController extends AsyncNotifier<UserSummary?> {
     state = const AsyncValue.data(null);
   }
 
+  Future<bool> isBiometricAvailable() => ref.read(biometricAuthServiceProvider).isAvailable();
+
+  Future<bool> isBiometricEnabled() => ref.read(tokenStorageProvider).isBiometricEnabled();
+
+  /// Prompts once (proves the enrolled person is actually present, not just
+  /// that the hardware exists) before turning the toggle on.
+  Future<bool> enableBiometric() async {
+    final confirmed = await ref
+        .read(biometricAuthServiceProvider)
+        .authenticate(reason: 'Confirm it\'s you to enable biometric unlock');
+    if (!confirmed) return false;
+    await ref.read(tokenStorageProvider).setBiometricEnabled(true);
+    unawaited(_auditBiometricToggle(true));
+    return true;
+  }
+
+  Future<void> disableBiometric() async {
+    await ref.read(tokenStorageProvider).setBiometricEnabled(false);
+    unawaited(_auditBiometricToggle(false));
+  }
+
+  Future<void> _auditBiometricToggle(bool enabled) async {
+    try {
+      await ref.read(authApiProvider).auditBiometricToggle(enabled);
+    } catch (_) {
+      // Audit-only — never lets a network hiccup undo a local toggle the person
+      // already confirmed with their own biometric.
+    }
+  }
+
   /// Pass null to remove the avatar.
   Future<void> updateAvatar(String? avatarUrl) async {
     final updated = await ref.read(authApiProvider).updateAvatar(avatarUrl);
     state = AsyncValue.data(updated);
   }
 
+  /// Only interactive sign-ins come through here (a silent session restore
+  /// saves its tokens itself), so this is also where "offer to enable biometric
+  /// unlock" is requested — see BiometricOfferHost.
   Future<void> _applyTokens(AuthTokens tokens) async {
     await ref.read(tokenStorageProvider).save(tokens);
     ref.read(authTokenHolderProvider).update(tokens.accessToken);
+    ref.read(biometricOfferPendingProvider.notifier).request();
   }
 }
+
+/// True right after an interactive sign-in, until the logged-in home has offered
+/// (or skipped) the "enable fingerprint?" prompt.
+class BiometricOfferNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void request() => state = true;
+
+  /// Returns whether an offer was pending, and clears it.
+  bool take() {
+    final pending = state;
+    state = false;
+    return pending;
+  }
+}
+
+final biometricOfferPendingProvider = NotifierProvider<BiometricOfferNotifier, bool>(BiometricOfferNotifier.new);
 
 final authControllerProvider = AsyncNotifierProvider<AuthController, UserSummary?>(AuthController.new);
 
