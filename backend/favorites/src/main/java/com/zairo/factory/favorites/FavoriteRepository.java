@@ -17,4 +17,7 @@ public interface FavoriteRepository extends JpaRepository<Favorite, UUID> {
 
     @Transactional
     void deleteByUserIdAndProviderId(UUID userId, UUID providerId);
+
+    /** Account deletion. */
+    void deleteByUserId(UUID userId);
 }
