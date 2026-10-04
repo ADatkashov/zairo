@@ -360,6 +360,19 @@ to send real SMS through Twilio (`TwilioOtpSender`):
 | `TWILIO_FROM` | A Twilio phone number in E.164 (e.g. `+1415...`) that can text Kazakhstan/your target countries. |
 | `TWILIO_MESSAGING_SERVICE_SID` | Alternative to `TWILIO_FROM` (starts with `MG`); wins if both are set. |
 
+SMS abuse limits (against SMS-pumping fraud; all in `application.yml`'s `app.otp`):
+
+| Setting (env var) | Default | Meaning |
+|---|---|---|
+| `max-requests-per-hour` | 5 | codes per phone number per hour (plus a 60 s resend cooldown) |
+| `max-requests-per-ip-per-hour` (`OTP_MAX_REQUESTS_PER_IP_PER_HOUR`) | 20 | codes per client IP per hour, across all numbers |
+| `daily-send-cap` (`OTP_DAILY_SEND_CAP`) | 3000 | platform-wide codes per 24 h; once reached, requests get 503 (circuit breaker) |
+| `allowed-countries` (`OTP_ALLOWED_COUNTRIES`) | `KZ` | ISO countries SMS is sent to (comma-separated, empty = any). `+7` is shared: 7xx = KZ, 9xx = RU |
+| `trusted-proxy-hops` (`OTP_TRUSTED_PROXY_HOPS`) | 1 | reverse proxies in front of the app that append to `X-Forwarded-For` (0 if exposed directly) — needed to find the real client IP |
+
+Set `OTP_DAILY_SEND_CAP` to your real traffic and SMS budget, and widen
+`OTP_ALLOWED_COUNTRIES` when you open another market. Also set a spending cap in Twilio itself.
+
 In production (`spring.profiles.active=prod`) Twilio is required: `ProductionSecretsValidator`
 refuses to start without `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` and one of
 `TWILIO_FROM` / `TWILIO_MESSAGING_SERVICE_SID` (otherwise codes would only exist in the server log).

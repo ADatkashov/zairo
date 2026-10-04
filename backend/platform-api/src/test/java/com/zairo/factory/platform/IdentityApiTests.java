@@ -50,7 +50,8 @@ import org.springframework.http.ResponseEntity;
         // test (e.g. verifyingTheSamePhoneTwiceLogsIntoTheSameAccount) stay
         // deterministic without sleeping. PhoneOtpServiceTest is what
         // actually exercises the real cooldown value.
-        properties = "app.otp.resend-cooldown-seconds=0")
+        properties = {"app.otp.resend-cooldown-seconds=0", "app.otp.max-requests-per-ip-per-hour=100000",
+                "app.otp.daily-send-cap=1000000"})
 @AutoConfigureTestRestTemplate
 @Import({TestcontainersConfiguration.class, TestNotifications.class, TestIdentityProviders.class})
 class IdentityApiTests {
@@ -328,6 +329,17 @@ class IdentityApiTests {
                 new VerifyPhoneOtpRequest(phone, code), Map.class);
 
         assertThat(replay.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void aPhoneFromAnUnsupportedCountryGetsNoSms() {
+        String usPhone = "+12024561111"; // valid number, but not in app.otp.allowed-countries (KZ by default)
+
+        ResponseEntity<Map> response = restTemplate.postForEntity("/api/v1/auth/phone/request-otp",
+                new RequestPhoneOtpRequest(usPhone), Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(capturedOtps.byPhone.get(usPhone)).isNull();
     }
 
     @Test
