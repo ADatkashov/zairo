@@ -476,5 +476,16 @@
   "errorAuthPhoneCountryNotSupported": "Бұл елдің нөмірлеріне SMS кодтары әлі қолжетімсіз.",
   "profileLogOutConfirmTitle": "Аккаунттан шығасыз ба?",
   "profileLogOutConfirmMessage": "Жазылымдарыңызды, таңдаулыларыңызды және хабарламаларыңызды көру үшін қайта кіру керек.",
-  "profileLogOutStayButton": "Қалу"
+  "profileLogOutStayButton": "Қалу",
+  "deleteAccountTitle": "Аккаунтты жою",
+  "deleteAccountSubtitle": "Аккаунт пен жеке деректерді біржола өшіру",
+  "deleteAccountWarning": "Бұл әрекетті қайтару мүмкін емес.",
+  "deleteAccountWhatIsDeleted": "Атыңыз, email, телефон, фото, туған күн, кіру тәсілдері, таңдаулылар, сақталған көліктер мен хабарландырулар өшіріледі, барлық құрылғыдан шығарыласыз.",
+  "deleteAccountWhatStays": "Бұрынғы жазылулар, төлемдер, пікірлер мен хабарламалар сіз барған бизнестерде қалады, бірақ «Жойылған пайдаланушы» болып көрінеді. Пайдаланылмаған лоялділік ұпайлары жоғалады. Алдағы жазылулар болса немесе бизнесіңіз болса, аккаунтты жою мүмкін емес.",
+  "deleteAccountPasswordLabel": "Құпиясөз",
+  "deleteAccountPasswordHint": "Құпиясөз қоймаған болсаңыз, бос қалдырыңыз.",
+  "deleteAccountConfirmLabel": "Растау үшін {word} деп жазыңыз",
+  "deleteAccountButton": "Аккаунтымды жою",
+  "deleteAccountWrongPassword": "Құпиясөз қате.",
+  "deleteAccountDone": "Аккаунтыңыз жойылды"
 }

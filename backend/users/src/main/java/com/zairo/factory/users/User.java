@@ -55,6 +55,10 @@ public class User {
     @Column(name = "marketing_consent", nullable = false)
     private boolean marketingConsent;
 
+    /** Set when the owner deleted their account -- every personal field is wiped, see {@link #anonymize}. */
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
     protected User() {
     }
 
@@ -117,6 +121,33 @@ public class User {
 
     public boolean isMarketingConsent() {
         return marketingConsent;
+    }
+
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
+
+    public Instant getDeletedAt() {
+        return deletedAt;
+    }
+
+    /**
+     * Account deletion: wipes every personal field but keeps the row, so bookings, payments, reviews, messages and
+     * the loyalty ledger that reference this user keep their integrity (businesses still need their own history) --
+     * they just show "Deleted user" from now on. Irreversible. Credentials/identities/tokens and other modules'
+     * personal data are removed separately by auth.AuthService; the email is freed so it can register again.
+     */
+    public void anonymize(String placeholderName, Instant now) {
+        this.email = null;
+        this.phone = null;
+        this.emailVerified = false;
+        this.displayName = placeholderName;
+        this.avatarUrl = null;
+        this.currentCityCode = null;
+        this.birthDate = null;
+        this.gender = null;
+        this.marketingConsent = false;
+        this.deletedAt = now;
     }
 
     /** Null/blank removes the avatar — see AuthDtos.UpdateAvatarRequest. */
