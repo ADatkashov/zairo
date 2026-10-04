@@ -810,6 +810,14 @@
   "securityBiometricToggleSubtitle": "Қайта кірмей-ақ ZAIRO құлпын лезде ашу",
   "securityBiometricToggleTitle": "Face ID / саусақ ізі",
   "securityBiometricUnavailable": "Бұл құрылғыда биометриялық кіру қолжетімсіз — саусақ ізі немесе бет тіркелмеген, немесе құрылғы бұны қолдамайды.",
-  "securitySectionSubtitle": "Саусақ ізімен немесе Face ID арқылы кіру",
-  "securityTitle": "Қауіпсіздік"
+  "securitySectionSubtitle": "Биометриялық кіру, байланысқан аккаунттар",
+  "securityTitle": "Қауіпсіздік",
+  "identityLinkedMessage": "Аккаунтыңызға тіркелді.",
+  "otpInstructions": "{phone} нөіріне жіберілген 6 таңбалы кодты енгізіңіз.",
+  "otpResendCountdown": "Кодты қайта жіберу: {seconds} с",
+  "otpTitle": "Растау коды",
+  "otpVerifyButton": "Растау",
+  "phoneLoginTitle": "Телефон нөірі",
+  "securityLinkButton": "Тіркеу",
+  "securityLinkedAccountsSectionTitle": "Тіркелген аккаунттар"
 }

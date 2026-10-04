@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 
 import 'auth_exception.dart';
 import 'models/auth_tokens.dart';
+import 'models/identity_summary.dart';
 import 'models/phone_status.dart';
 import 'models/sms_mode.dart';
 import 'models/user_summary.dart';
@@ -129,6 +130,45 @@ class AuthApi {
       if (status == 429) throw const AuthException(AuthErrorKey.tooManyLoginAttempts);
       if (status == 401) throw const AuthException(AuthErrorKey.invalidCredentials);
       throw _mapProviderError(e);
+    }
+  }
+
+  // ---- Linked accounts: add a sign-in method to the signed-in owner's account --
+
+  Future<List<IdentitySummary>> listIdentities() async {
+    final response = await _dioClient.get('/auth/identities');
+    final identities = (response.data as Map<String, dynamic>)['identities'] as List<dynamic>;
+    return identities.map((e) => IdentitySummary.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<UserSummary> linkGoogle(String idToken) async {
+    try {
+      final response = await _dioClient.post('/auth/identities/google', data: {'idToken': idToken});
+      return UserSummary.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _mapProviderError(e);
+    }
+  }
+
+  Future<UserSummary> linkApple(String identityToken) async {
+    try {
+      final response = await _dioClient.post('/auth/identities/apple', data: {'identityToken': identityToken});
+      return UserSummary.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _mapProviderError(e);
+    }
+  }
+
+  /// Verifies the SMS [code] and links this phone to the signed-in account.
+  Future<UserSummary> linkPhone({required String phone, required String code}) async {
+    try {
+      final response = await _dioClient.post(
+        '/auth/identities/phone/verify-otp',
+        data: {'phone': phone, 'code': code},
+      );
+      return UserSummary.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _mapOtpVerifyError(e);
     }
   }
 
