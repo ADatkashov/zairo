@@ -61,6 +61,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
   late final TextEditingController _repeatVisitBonusController;
   late final TextEditingController _repeatVisitThresholdController;
   late final TextEditingController _reviewBonusController;
+  late final TextEditingController _birthdayBonusController;
   late final TextEditingController _redemptionRateController;
   late final TextEditingController _minRedemptionController;
   late final TextEditingController _maxRedemptionPerBookingController;
@@ -84,6 +85,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     _repeatVisitBonusController = TextEditingController(text: '${s.repeatVisitBonusPoints}');
     _repeatVisitThresholdController = TextEditingController(text: '${s.repeatVisitThreshold}');
     _reviewBonusController = TextEditingController(text: '${s.reviewBonusPoints}');
+    _birthdayBonusController = TextEditingController(text: '${s.birthdayBonusPoints}');
     _redemptionRateController =
         TextEditingController(text: s.pointsPerCurrencyUnitRedemption == null ? '' : _formatNum(s.pointsPerCurrencyUnitRedemption!));
     _minRedemptionController = TextEditingController(text: s.minRedemptionPoints?.toString() ?? '');
@@ -105,6 +107,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     _repeatVisitBonusController.dispose();
     _repeatVisitThresholdController.dispose();
     _reviewBonusController.dispose();
+    _birthdayBonusController.dispose();
     _redemptionRateController.dispose();
     _minRedemptionController.dispose();
     _maxRedemptionPerBookingController.dispose();
@@ -193,6 +196,13 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                 controller: _reviewBonusController,
                 enabled: !_isSubmitting,
                 label: l10n.loyaltySettingsReviewBonusLabel,
+              ),
+              const SizedBox(height: FactorySpacing.space3),
+              _NumberField(
+                controller: _birthdayBonusController,
+                enabled: !_isSubmitting,
+                label: l10n.loyaltySettingsBirthdayBonusLabel,
+                hint: l10n.loyaltySettingsBirthdayBonusHint,
               ),
             ],
           ),
@@ -301,6 +311,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     final repeatVisitBonus = int.tryParse(_repeatVisitBonusController.text.trim());
     final repeatVisitThreshold = int.tryParse(_repeatVisitThresholdController.text.trim());
     final reviewBonus = int.tryParse(_reviewBonusController.text.trim());
+    final birthdayBonus = int.tryParse(_birthdayBonusController.text.trim());
 
     if (name.isEmpty ||
         fixedPoints == null ||
@@ -314,7 +325,9 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
         repeatVisitThreshold == null ||
         repeatVisitThreshold < 2 ||
         reviewBonus == null ||
-        reviewBonus < 0) {
+        reviewBonus < 0 ||
+        birthdayBonus == null ||
+        birthdayBonus < 0) {
       setState(() => _error = l10n.loyaltySettingsValidationError);
       return;
     }
@@ -344,6 +357,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
       pointsExpirationMonths: _pointsExpireEnabled ? int.tryParse(_expirationMonthsController.text.trim()) : null,
       dailyEarningPointsCap: int.tryParse(_dailyCapController.text.trim()),
       monthlyEarningPointsCap: int.tryParse(_monthlyCapController.text.trim()),
+      birthdayBonusPoints: birthdayBonus,
     );
 
     setState(() {

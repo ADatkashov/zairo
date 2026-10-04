@@ -172,6 +172,21 @@ public class NotificationService {
         recordInApp(recipientUserId, InAppNotificationType.REACTIVATION_OFFER, title, body);
     }
 
+    /**
+     * Birthday greeting. A phone-only account has no email, so the email is skipped (not an error) and the in-app
+     * notification still goes out.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void sendBirthdayBonusNotification(UUID recipientUserId, String toEmail, String providerName, int points) {
+        String title = "Happy birthday!";
+        String body = providerName + " congratulates you and gives you " + points
+                + " bonus points as a birthday gift. Treat yourself!";
+        if (toEmail != null && !toEmail.isBlank()) {
+            emailProvider.send(toEmail, title, body);
+        }
+        recordInApp(recipientUserId, InAppNotificationType.BIRTHDAY_BONUS, title, body);
+    }
+
     private void recordInApp(UUID recipientUserId, InAppNotificationType type, String title, String body) {
         inAppNotificationRepository.save(
                 new InAppNotification(UUID.randomUUID(), recipientUserId, type, title, body, Instant.now()));

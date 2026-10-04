@@ -811,6 +811,17 @@
   "smsMockHint": "Тестовый режим: реальное SMS не отправляется. Введите код {code}.",
   "validationOtpCodeRequired": "Введите 6-значный код",
   "validationResetCodeRequired": "Введите код сброса",
+  "loyaltyTabBirthdays": "Именинники",
+  "loyaltySettingsBirthdayBonusLabel": "Бонус на день рождения (баллы)",
+  "loyaltySettingsBirthdayBonusHint": "Начисляется автоматически в день рождения участника, если он согласился на поздравления. 0 — выключено.",
+  "loyaltyBirthdaysIntro": "Участники, согласившиеся на поздравления, с днём рождения в ближайшие {days} дн.",
+  "loyaltyBirthdaysEmpty": "Ближайших дней рождения нет. Участники появятся здесь, когда укажут дату рождения и согласятся на поздравления в приложении.",
+  "loyaltyBirthdaysToday": "Сегодня",
+  "loyaltyBirthdaysTomorrow": "Завтра",
+  "loyaltyBirthdaysInDays": "Через {days} дн.",
+  "loyaltyBirthdaysBonusAwarded": "+{points} баллов начислено",
+  "loyaltyBirthdaysBonusPending": "+{points} баллов в этот день",
+  "errorLoyaltyBirthdaysLoadFailed": "Не удалось загрузить именинников: {error}",
   "biometricEnrollEnable": "Включить",
   "biometricEnrollMessage": "Используйте Face ID или отпечаток пальца, чтобы в следующий раз разблокировать ZAIRO без повторного входа.",
   "biometricEnrollNotNow": "Не сейчас",
@@ -828,5 +839,8 @@
   "otpVerifyButton": "Подтвердить",
   "phoneLoginTitle": "Номер телефона",
   "securityLinkButton": "Привязать",
-  "securityLinkedAccountsSectionTitle": "Привязанные аккаунты"
+  "securityLinkedAccountsSectionTitle": "Привязанные аккаунты",
+  "logOutConfirmTitle": "Выйти из аккаунта?",
+  "logOutConfirmMessage": "Чтобы управлять бизнесом, нужно будет войти заново.",
+  "logOutStayButton": "Остаться"
 }

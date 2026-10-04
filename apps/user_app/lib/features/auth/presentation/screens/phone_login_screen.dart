@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../data/auth_exception.dart';
+import '../auth_navigation.dart';
 import '../providers/auth_providers.dart';
 import 'otp_screen.dart';
 import 'phone_otp_password_screen.dart';
@@ -108,9 +109,7 @@ class _PhoneLoginFormState extends ConsumerState<PhoneLoginForm> {
         await controller.requestPhoneOtp(phone);
         if (!mounted) return;
         setState(() => _isSubmitting = false);
-        await Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => OtpScreen(phone: phone, linking: true)),
-        );
+        await pushAuthScreen(context, OtpScreen(phone: phone, linking: true));
         return;
       }
       // Sign-in: an existing account with a password just asks for it (no
@@ -120,19 +119,13 @@ class _PhoneLoginFormState extends ConsumerState<PhoneLoginForm> {
       if (!mounted) return;
       if (status.registered && status.hasPassword) {
         setState(() => _isSubmitting = false);
-        await Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => PhonePasswordScreen(phone: phone)),
-        );
+        await pushAuthScreen(context, PhonePasswordScreen(phone: phone));
         return;
       }
       await controller.requestPhoneOtp(phone);
       if (!mounted) return;
       setState(() => _isSubmitting = false);
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => PhoneOtpPasswordScreen(phone: phone, isNewAccount: !status.registered),
-        ),
-      );
+      await pushAuthScreen(context, PhoneOtpPasswordScreen(phone: phone, isNewAccount: !status.registered));
     } on AuthException catch (e) {
       if (!mounted) return;
       setState(() {

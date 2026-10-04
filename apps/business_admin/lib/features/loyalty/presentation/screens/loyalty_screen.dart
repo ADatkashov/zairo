@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../salon/data/models/admin_provider.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
+import 'loyalty_birthdays_screen.dart';
 import 'loyalty_customers_screen.dart';
 import 'loyalty_milestones_screen.dart';
 import 'loyalty_overview_screen.dart';
@@ -98,6 +99,7 @@ class _LoyaltyBody extends StatelessWidget {
       Tab(text: l10n.loyaltyTabSettings),
       Tab(text: l10n.loyaltyTabRewards),
       Tab(text: l10n.loyaltyTabCustomers),
+      Tab(text: l10n.loyaltyTabBirthdays),
       Tab(text: l10n.loyaltyTabRedemptions),
       Tab(text: l10n.loyaltyTabMilestones),
       Tab(text: l10n.loyaltyTabTiers),
@@ -107,6 +109,7 @@ class _LoyaltyBody extends StatelessWidget {
       LoyaltySettingsScreen(providerId: providerId),
       LoyaltyRewardsScreen(providerId: providerId),
       LoyaltyCustomersScreen(providerId: providerId),
+      LoyaltyBirthdaysScreen(providerId: providerId),
       LoyaltyRedemptionsScreen(providerId: providerId),
       LoyaltyMilestonesScreen(providerId: providerId),
       LoyaltyTiersScreen(providerId: providerId),

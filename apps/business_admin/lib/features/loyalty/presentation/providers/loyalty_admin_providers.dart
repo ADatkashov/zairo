@@ -2,6 +2,7 @@ import 'package:core_network/core_network.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/api/loyalty_admin_api.dart';
+import '../../data/models/loyalty_birthday.dart';
 import '../../data/models/loyalty_customer.dart';
 import '../../data/models/loyalty_milestone.dart';
 import '../../data/models/loyalty_overview.dart';
@@ -17,6 +18,12 @@ final loyaltyAdminApiProvider = Provider<LoyaltyAdminApi>((ref) {
 
 final loyaltySettingsProvider = FutureProvider.autoDispose.family<LoyaltySettings, String>((ref, providerId) {
   return ref.watch(loyaltyAdminApiProvider).fetchSettings(providerId);
+});
+
+/// Upcoming birthdays of opted-in members, keyed by (providerId, days).
+final loyaltyBirthdaysProvider =
+    FutureProvider.autoDispose.family<List<LoyaltyBirthday>, (String providerId, int days)>((ref, key) {
+  return ref.watch(loyaltyAdminApiProvider).fetchBirthdays(key.$1, days: key.$2);
 });
 
 final loyaltyMilestonesProvider =
