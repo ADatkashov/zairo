@@ -6,6 +6,8 @@ import '../../../../l10n/app_localizations.dart';
 import '../../data/auth_exception.dart';
 import '../providers/auth_providers.dart';
 import 'otp_screen.dart';
+import 'phone_otp_password_screen.dart';
+import 'phone_password_screen.dart';
 
 /// Screen 1 of the phone flow (task spec §11): "+7 ___ ___ __ __" ->
 /// Continue -> requests an OTP -> pushes [OtpScreen] for screen 2. [linking]
@@ -100,11 +102,36 @@ class _PhoneLoginFormState extends ConsumerState<PhoneLoginForm> {
       _error = null;
     });
     try {
-      await ref.read(authControllerProvider.notifier).requestPhoneOtp(phone);
+      final controller = ref.read(authControllerProvider.notifier);
+      if (widget.linking) {
+        // Adding a phone to the signed-in account: always SMS-verified.
+        await controller.requestPhoneOtp(phone);
+        if (!mounted) return;
+        setState(() => _isSubmitting = false);
+        await Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => OtpScreen(phone: phone, linking: true)),
+        );
+        return;
+      }
+      // Sign-in: an existing account with a password just asks for it (no
+      // SMS). SMS is only for first registration, or for an account that
+      // has no password yet.
+      final status = await controller.phoneStatus(phone);
+      if (!mounted) return;
+      if (status.registered && status.hasPassword) {
+        setState(() => _isSubmitting = false);
+        await Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => PhonePasswordScreen(phone: phone)),
+        );
+        return;
+      }
+      await controller.requestPhoneOtp(phone);
       if (!mounted) return;
       setState(() => _isSubmitting = false);
       await Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => OtpScreen(phone: phone, linking: widget.linking)),
+        MaterialPageRoute(
+          builder: (_) => PhoneOtpPasswordScreen(phone: phone, isNewAccount: !status.registered),
+        ),
       );
     } on AuthException catch (e) {
       if (!mounted) return;

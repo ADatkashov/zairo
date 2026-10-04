@@ -180,6 +180,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final idToken = await ref.read(googleSignInServiceProvider).signIn();
       if (idToken == null) return; // Canceled — nothing to show.
       await ref.read(authControllerProvider.notifier).loginWithGoogle(idToken);
+      await _offerLinkIfRequired('GOOGLE', idToken);
     } finally {
       if (mounted) setState(() => _isProviderSigningIn = false);
     }
@@ -191,9 +192,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final accessToken = await ref.read(facebookSignInServiceProvider).signIn();
       if (accessToken == null) return; // Canceled — nothing to show.
       await ref.read(authControllerProvider.notifier).loginWithFacebook(accessToken);
+      await _offerLinkIfRequired('FACEBOOK', accessToken);
     } finally {
       if (mounted) setState(() => _isProviderSigningIn = false);
     }
+  }
+
+  /// The provider's verified email already belongs to an account that was
+  /// registered with a typed-in email + password: ask for that password
+  /// before connecting, so nobody can take over an account just by knowing
+  /// (or pre-registering) its email.
+  Future<void> _offerLinkIfRequired(String provider, String token) async {
+    final error = ref.read(authControllerProvider).error;
+    if (error is! AuthException || error.key != AuthErrorKey.accountLinkRequired || !mounted) return;
+    final password = await showDialog<String>(
+      context: context,
+      builder: (_) => const _LinkAccountDialog(),
+    );
+    if (password == null || !mounted) return;
+    await ref
+        .read(authControllerProvider.notifier)
+        .linkProviderWithPassword(provider: provider, token: token, password: password);
   }
 
   Future<void> _finishLogin() async {
@@ -205,5 +224,47 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     await Future.delayed(const Duration(milliseconds: 300));
     if (!mounted) return;
     Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+}
+
+class _LinkAccountDialog extends StatefulWidget {
+  const _LinkAccountDialog();
+
+  @override
+  State<_LinkAccountDialog> createState() => _LinkAccountDialogState();
+}
+
+class _LinkAccountDialogState extends State<_LinkAccountDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AlertDialog(
+      title: Text(l10n.linkAccountTitle),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(l10n.linkAccountBody),
+          const SizedBox(height: FactorySpacing.space3),
+          FactoryTextField(controller: _controller, label: l10n.passwordLabel, obscureText: true),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(l10n.linkAccountCancel)),
+        TextButton(
+          onPressed: () {
+            if (_controller.text.isNotEmpty) Navigator.of(context).pop(_controller.text);
+          },
+          child: Text(l10n.linkAccountConfirm),
+        ),
+      ],
+    );
   }
 }
