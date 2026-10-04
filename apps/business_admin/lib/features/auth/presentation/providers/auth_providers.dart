@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_api.dart';
 import '../../data/biometric_auth_service.dart';
 import '../../data/google_sign_in_service.dart';
+import '../../data/models/identity_summary.dart';
 import '../../data/models/phone_status.dart';
 import '../../data/models/sms_mode.dart';
 import '../../data/models/auth_tokens.dart';
@@ -124,6 +125,23 @@ class AuthController extends AsyncNotifier<UserSummary?> {
     await _signedIn(await ref
         .read(authApiProvider)
         .linkProviderWithPassword(provider: provider, token: token, password: password));
+  }
+
+  // ---- Linked accounts (signed-in only; they keep the caller's own tokens and
+  // just refresh the cached UserSummary, e.g. a newly adopted phone number) ----
+
+  Future<List<IdentitySummary>> listIdentities() => ref.read(authApiProvider).listIdentities();
+
+  Future<void> linkGoogle(String idToken) async {
+    state = AsyncValue.data(await ref.read(authApiProvider).linkGoogle(idToken));
+  }
+
+  Future<void> linkApple(String identityToken) async {
+    state = AsyncValue.data(await ref.read(authApiProvider).linkApple(identityToken));
+  }
+
+  Future<void> linkPhone({required String phone, required String code}) async {
+    state = AsyncValue.data(await ref.read(authApiProvider).linkPhone(phone: phone, code: code));
   }
 
   Future<PhoneStatus> phoneStatus(String phone) => ref.read(authApiProvider).phoneStatus(phone);

@@ -412,9 +412,14 @@ after an interactive sign-in the owner home offers to enable it once
 Settings > Security (shown only when signed in), and with it on every cold start
 asks for the fingerprint before the stored session is restored. Nothing biometric
 reaches the backend (only the audit call). Android needs `FlutterFragmentActivity`
-+ `USE_BIOMETRIC` and iOS `NSFaceIDUsageDescription` — all added. Not ported from
-the consumer app: the linked-accounts section of Security (adding Google/Apple/
-phone to an existing account).
++ `USE_BIOMETRIC` and iOS `NSFaceIDUsageDescription` — all added.
+
+Settings > Security also has **Linked accounts**: which sign-in methods the owner's
+account has (Google, Apple on iOS, phone) and a Link button for the missing ones —
+Google/Apple through the same on-device flow, phone through an SMS code (number,
+then code; with `OTP_MOCK_CODE` the code is shown on screen). A method already
+linked to a *different* account is refused. Nothing in the consumer app's Security
+screen is missing from the business app any more.
 
 Extra configuration this needs (on top of the consumer app's):
 - Backend `GOOGLE_OAUTH_CLIENT_IDS`: also list the business app's OAuth client
