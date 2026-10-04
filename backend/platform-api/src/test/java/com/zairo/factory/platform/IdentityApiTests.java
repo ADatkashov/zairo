@@ -332,6 +332,63 @@ class IdentityApiTests {
         assertThat(replay.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
+    // ---- Business app: new accounts are PROVIDER_OWNER ------------------------------
+
+    private static String roleOf(Map<?, ?> tokenResponseBody) {
+        return ((Map<?, ?>) tokenResponseBody.get("user")).get("role").toString();
+    }
+
+    @Test
+    void phoneRegistrationCanCreateAProviderOwnerAndDefaultsToCustomer() {
+        String ownerPhone = uniqueKzPhone();
+        restTemplate.postForEntity("/api/v1/auth/phone/request-otp", new RequestPhoneOtpRequest(ownerPhone), Void.class);
+        Map<?, ?> owner = restTemplate.postForEntity("/api/v1/auth/phone/register", new PhoneRegisterRequest(ownerPhone,
+                capturedOtps.byPhone.get(ownerPhone), "Salon Owner", "password123", UserRole.PROVIDER_OWNER), Map.class)
+                .getBody();
+        assertThat(roleOf(owner)).isEqualTo("PROVIDER_OWNER");
+
+        Map<?, ?> customer = registerPhoneWithPassword(uniqueKzPhone(), "Plain Customer", "password123");
+        assertThat(roleOf(customer)).isEqualTo("CUSTOMER");
+    }
+
+    @Test
+    void googleAndAppleCanCreateProviderOwners() {
+        Map<?, ?> viaGoogle = restTemplate.postForEntity("/api/v1/auth/google", new GoogleAuthRequest(
+                TestIdentityProviders.googleToken("g-" + UUID.randomUUID(), null, false, "G Owner"),
+                UserRole.PROVIDER_OWNER), Map.class).getBody();
+        Map<?, ?> viaApple = restTemplate.postForEntity("/api/v1/auth/apple", new AppleAuthRequest(
+                TestIdentityProviders.appleToken("a-" + UUID.randomUUID(), null, false), "A Owner",
+                UserRole.PROVIDER_OWNER), Map.class).getBody();
+
+        assertThat(roleOf(viaGoogle)).isEqualTo("PROVIDER_OWNER");
+        assertThat(roleOf(viaApple)).isEqualTo("PROVIDER_OWNER");
+    }
+
+    @Test
+    void anExistingAccountKeepsItsRoleWhenItSignsInFromTheOtherApp() {
+        String token = TestIdentityProviders.googleToken("g-" + UUID.randomUUID(), null, false, "Customer First");
+        restTemplate.postForEntity("/api/v1/auth/google", new GoogleAuthRequest(token), Map.class);
+
+        Map<?, ?> again = restTemplate.postForEntity("/api/v1/auth/google",
+                new GoogleAuthRequest(token, UserRole.PROVIDER_OWNER), Map.class).getBody();
+
+        assertThat(roleOf(again)).isEqualTo("CUSTOMER");
+    }
+
+    @Test
+    void theAdminRoleCannotBeSelfAssignedThroughAnySignInMethod() {
+        ResponseEntity<Map> google = restTemplate.postForEntity("/api/v1/auth/google", new GoogleAuthRequest(
+                TestIdentityProviders.googleToken("g-" + UUID.randomUUID(), null, false, "Sneaky"), UserRole.ADMIN),
+                Map.class);
+        String phone = uniqueKzPhone();
+        restTemplate.postForEntity("/api/v1/auth/phone/request-otp", new RequestPhoneOtpRequest(phone), Void.class);
+        ResponseEntity<Map> viaPhone = restTemplate.postForEntity("/api/v1/auth/phone/register", new PhoneRegisterRequest(
+                phone, capturedOtps.byPhone.get(phone), "Sneaky", "password123", UserRole.ADMIN), Map.class);
+
+        assertThat(google.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(viaPhone.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
     @Test
     void smsIsNotMockedByDefault() {
         Map<?, ?> mode = restTemplate.getForEntity("/api/v1/auth/phone/sms-mode", Map.class).getBody();
