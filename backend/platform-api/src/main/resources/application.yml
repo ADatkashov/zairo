@@ -89,6 +89,17 @@ app:
     facebook:
       app-id: ${FACEBOOK_APP_ID:}
       app-secret: ${FACEBOOK_APP_SECRET:}
+  # SMS delivery for phone OTP (see auth's TwilioOtpSender). Leave
+  # TWILIO_ACCOUNT_SID unset and the code is only written to the server log
+  # (LoggingOtpSender) — fine for local dev/CI, never for real users. Set
+  # TWILIO_AUTH_TOKEN plus either TWILIO_FROM (a Twilio number, E.164) or
+  # TWILIO_MESSAGING_SERVICE_SID.
+  sms:
+    twilio:
+      account-sid: ${TWILIO_ACCOUNT_SID:}
+      auth-token: ${TWILIO_AUTH_TOKEN:}
+      from: ${TWILIO_FROM:}
+      messaging-service-sid: ${TWILIO_MESSAGING_SERVICE_SID:}
   # Phone + OTP sign-in (see auth's PhoneOtpService). Tuned for a 6-digit
   # SMS code: short-lived, a real resend cooldown, and a low hourly cap —
   # see CLAUDE.md task spec §7's OTP abuse-protection requirements.
