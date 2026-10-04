@@ -108,6 +108,8 @@ class _BookingsListState extends ConsumerState<_BookingsList> {
                       icon: Symbols.calendar_month_rounded,
                       title: l10n.bookingsEmptyTitle,
                       message: l10n.bookingsEmptyMessage,
+                      actionLabel: l10n.bookingsFindServiceButton,
+                      onAction: () => context.go(AppRoutes.search()),
                     ),
                   ),
                 ),
@@ -140,14 +142,28 @@ class _BookingsListState extends ConsumerState<_BookingsList> {
                         physics: const AlwaysScrollableScrollPhysics(),
                         children: [
                           Padding(
-                            padding: const EdgeInsets.all(FactorySpacing.space4),
-                            child: Text(
-                              l10n.bookingsEmptyMessage,
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: context.factoryColors.textTertiary,
-                                  ),
+                            padding: const EdgeInsets.all(FactorySpacing.space6),
+                            child: FactoryEmptyState(
+                              icon: Symbols.calendar_month_rounded,
+                              title: switch (_tab) {
+                                _BookingsTab.upcoming => l10n.bookingsTabUpcoming,
+                                _BookingsTab.completed =>
+                                  l10n.bookingsTabCompleted,
+                                _BookingsTab.cancelled =>
+                                  l10n.bookingsTabCancelled,
+                              },
+                              message: switch (_tab) {
+                                _BookingsTab.upcoming =>
+                                  l10n.bookingsTabEmptyUpcoming,
+                                _BookingsTab.completed =>
+                                  l10n.bookingsTabEmptyCompleted,
+                                _BookingsTab.cancelled =>
+                                  l10n.bookingsTabEmptyCancelled,
+                              },
+                              actionLabel: _tab == _BookingsTab.upcoming
+                                  ? l10n.bookingsFindServiceButton
+                                  : null,
+                              onAction: () => context.go(AppRoutes.search()),
                             ),
                           ),
                         ],

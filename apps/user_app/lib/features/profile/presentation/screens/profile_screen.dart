@@ -204,6 +204,17 @@ class _LoggedInView extends ConsumerWidget {
             MaterialPageRoute(builder: (_) => EditProfileScreen(user: user)),
           ),
         ),
+        const SizedBox(height: FactorySpacing.space5),
+        FactorySectionHeader(title: l10n.profileSectionActivity),
+        const SizedBox(height: FactorySpacing.space3),
+        // The stat tile above also opens Favorites, but it reads as a counter,
+        // not a button — a list row is where people look for it.
+        FactorySelectableTile(
+          title: l10n.myFavoritesTitle,
+          leading: Icon(Symbols.favorite_rounded, color: colors.textSecondary),
+          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
+          onTap: () => context.push(AppRoutes.favorites),
+        ),
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
           title: l10n.messagesTitle,
@@ -238,7 +249,9 @@ class _LoggedInView extends ConsumerWidget {
           ),
           onTap: () => context.push(AppRoutes.vehicles),
         ),
-        const SizedBox(height: FactorySpacing.space2),
+        const SizedBox(height: FactorySpacing.space5),
+        FactorySectionHeader(title: l10n.profileSectionHelp),
+        const SizedBox(height: FactorySpacing.space3),
         FactorySelectableTile(
           title: l10n.supportTitle,
           leading: Icon(
