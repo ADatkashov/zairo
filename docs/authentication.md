@@ -360,6 +360,10 @@ to send real SMS through Twilio (`TwilioOtpSender`):
 | `TWILIO_FROM` | A Twilio phone number in E.164 (e.g. `+1415...`) that can text Kazakhstan/your target countries. |
 | `TWILIO_MESSAGING_SERVICE_SID` | Alternative to `TWILIO_FROM` (starts with `MG`); wins if both are set. |
 
+In production (`spring.profiles.active=prod`) Twilio is required: `ProductionSecretsValidator`
+refuses to start without `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` and one of
+`TWILIO_FROM` / `TWILIO_MESSAGING_SERVICE_SID` (otherwise codes would only exist in the server log).
+
 Note: for some countries (incl. Kazakhstan) Twilio may require a registered
 alphanumeric sender ID or a messaging service — check Twilio's country
 guidelines if messages are not delivered.
