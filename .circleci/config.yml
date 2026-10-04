@@ -2,18 +2,18 @@ version: 2.1
 
 jobs:
   build-android-apk:
-    docker:
-      - image: cimg/android:2024.01
+    machine:
+      image: ubuntu-2204:current
     resource_class: large
     environment:
-      FLUTTER_HOME: /opt/flutter
-      PATH: /opt/flutter/bin:/opt/flutter/bin/cache/dart-sdk/bin:$PATH
+      FLUTTER_HOME: /home/circleci/flutter
+      PATH: /home/circleci/flutter/bin:/home/circleci/flutter/bin/cache/dart-sdk/bin:$PATH
     steps:
       - checkout
       - run:
           name: Install Flutter
           command: |
-            cd /opt
+            cd $HOME
             git clone https://github.com/flutter/flutter.git
             cd flutter
             git checkout stable
@@ -47,18 +47,18 @@ jobs:
           destination: app-release.apk
 
   build-for-testing:
-    docker:
-      - image: cimg/android:2024.01
+    machine:
+      image: ubuntu-2204:current
     resource_class: medium
     environment:
-      FLUTTER_HOME: /opt/flutter
-      PATH: /opt/flutter/bin:/opt/flutter/bin/cache/dart-sdk/bin:$PATH
+      FLUTTER_HOME: /home/circleci/flutter
+      PATH: /home/circleci/flutter/bin:/home/circleci/flutter/bin/cache/dart-sdk/bin:$PATH
     steps:
       - checkout
       - run:
           name: Install Flutter
           command: |
-            cd /opt
+            cd $HOME
             git clone https://github.com/flutter/flutter.git
             cd flutter
             git checkout stable
