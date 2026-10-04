@@ -29,10 +29,25 @@ final nearestCityProvider = FutureProvider<City?>((ref) async {
   }
 });
 
+/// City picked by the user that could not be persisted on the backend
+/// (guests have no account to store it on).
+class LocalCityOverride extends Notifier<City?> {
+  @override
+  City? build() => null;
+
+  void set(City? city) => state = city;
+}
+
+final localCityOverrideProvider =
+    NotifierProvider<LocalCityOverride, City?>(LocalCityOverride.new);
+
 /// Current user's selected city — tries to get from backend first,
 /// falls back to nearest city based on location if not set
 final userCurrentCityProvider = FutureProvider<City?>((ref) async {
   final api = ref.watch(cityApiProvider);
+  // Manual choice made while the backend could not store it (e.g. guest).
+  final override = ref.watch(localCityOverrideProvider);
+  if (override != null) return override;
   try {
     return await api.getUserCurrentCity();
   } catch (e) {
@@ -70,8 +85,17 @@ class CitySelectionNotifier extends AsyncNotifier<City?> {
     final api = ref.watch(cityApiProvider);
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      final city = await api.setUserCurrentCity(cityCode);
-      return city;
+      try {
+        final city = await api.setUserCurrentCity(cityCode);
+        ref.read(localCityOverrideProvider.notifier).set(null);
+        return city;
+      } catch (_) {
+        // Not persisted (guest / offline): keep the choice locally.
+        final cities = await ref.read(activeCitiesProvider.future);
+        final city = cities.firstWhere((c) => c.code == cityCode);
+        ref.read(localCityOverrideProvider.notifier).set(city);
+        return city;
+      }
     });
   }
 }

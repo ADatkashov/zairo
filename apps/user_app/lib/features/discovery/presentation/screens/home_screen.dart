@@ -15,6 +15,7 @@ import '../../../booking/presentation/screens/provider_detail_screen.dart';
 import '../../../catalog/presentation/category_icon.dart';
 import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../../catalog/presentation/screens/all_categories_screen.dart';
+import '../../../city/presentation/providers/city_providers.dart';
 import '../../../maps/presentation/providers/maps_providers.dart';
 import '../../../notifications/presentation/providers/notifications_providers.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
@@ -103,20 +104,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Symbols.location_on_rounded,
-                                  size: 16,
-                                  color: colors.primary,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  locationAsync.value?.label ??
-                                      l10n.homeLocationUnknown,
-                                  style: textTheme.titleSmall,
-                                ),
-                              ],
+                            InkWell(
+                              onTap: () => context.push('/city-selection'),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Symbols.location_on_rounded,
+                                    size: 16,
+                                    color: colors.primary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      ref
+                                              .watch(userCurrentCityProvider)
+                                              .value
+                                              ?.name ??
+                                          locationAsync.value?.label ??
+                                          l10n.homeLocationUnknown,
+                                      style: textTheme.titleSmall,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Icon(
+                                    Symbols.keyboard_arrow_down_rounded,
+                                    size: 18,
+                                    color: colors.textSecondary,
+                                  ),
+                                ],
+                              ),
                             ),
                             const SizedBox(height: FactorySpacing.space1),
                             Text(
