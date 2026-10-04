@@ -290,7 +290,6 @@ void main() {
 
   testWidgets(
       'a beauty provider with masters requires picking one and books through the beauty endpoint',
-      skip: 'Widget tap interaction issue in test environment',
       (tester) async {
     final slot = AvailabilitySlot(
       id: 'slot-1',
@@ -363,11 +362,12 @@ void main() {
     });
     expect(fakeBookingApi.lastBookingCall, isNull);
     expect(fakePaymentsApi.lastChargedBookingId, 'beauty-booking-1');
-  });
+  },
+  skip: true,
+  );
 
   testWidgets(
       'an auto provider with mechanics requires picking a mechanic and vehicle, and books through the auto endpoint',
-      skip: 'Widget tap interaction issue in test environment',
       (tester) async {
     final slot = AvailabilitySlot(
       id: 'slot-1',
@@ -451,7 +451,9 @@ void main() {
     });
     expect(fakeBookingApi.lastBookingCall, isNull);
     expect(fakePaymentsApi.lastChargedBookingId, 'auto-booking-1');
-  });
+  },
+  skip: true,
+  );
 
   testWidgets(
       'a provider in a category with no dedicated staff module requires picking a staff member and books '
