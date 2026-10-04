@@ -98,9 +98,9 @@ class IdentityLookupService {
      * {@link #createUserWithIdentity}.
      */
     @Transactional
-    User createPhoneUserWithPassword(String e164Phone, String displayName, String rawPassword) {
+    User createPhoneUserWithPassword(String e164Phone, String displayName, String rawPassword, UserRole role) {
         User user = createUserWithIdentity(IdentityProvider.PHONE, e164Phone, null, e164Phone, displayName,
-                UserRole.CUSTOMER);
+                role);
         credentialRepository.save(new Credential(UUID.randomUUID(), user.getId(),
                 passwordEncoder.encode(rawPassword), Instant.now()));
         return user;

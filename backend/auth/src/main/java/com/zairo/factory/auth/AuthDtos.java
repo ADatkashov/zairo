@@ -86,7 +86,15 @@ public final class AuthDtos {
     public record GoogleAuthRequest(
             @NotBlank @Schema(description = "The Google ID token (JWT credential) obtained on-device via Google "
                     + "Sign-In — never a Google access token. Verified server-side against Google's own public "
-                    + "keys; see docs/authentication.md.") String idToken) {
+                    + "keys; see docs/authentication.md.") String idToken,
+            @Schema(description = "Role for a NEW account created by this call: CUSTOMER (default; the consumer app) or "
+                    + "PROVIDER_OWNER (the business app). ADMIN is rejected. Ignored when the person already has an "
+                    + "account - an existing account's role never changes.", example = "PROVIDER_OWNER")
+            com.zairo.factory.users.UserRole role) {
+
+        public GoogleAuthRequest(String idToken) {
+            this(idToken, null);
+        }
     }
 
     public record AppleAuthRequest(
@@ -95,7 +103,15 @@ public final class AuthDtos {
             String identityToken,
             @Size(max = 255) @Schema(description = "Optional: Apple only gives the person's name to the app, never "
                     + "inside the token, and only on the very first sign-in. Used as display name when this "
-                    + "creates a new account; ignored otherwise.", example = "Aigerim Bekova") String displayName) {
+                    + "creates a new account; ignored otherwise.", example = "Aigerim Bekova") String displayName,
+            @Schema(description = "Role for a NEW account created by this call: CUSTOMER (default; the consumer app) or "
+                    + "PROVIDER_OWNER (the business app). ADMIN is rejected. Ignored when the person already has an "
+                    + "account - an existing account's role never changes.", example = "PROVIDER_OWNER")
+            com.zairo.factory.users.UserRole role) {
+
+        public AppleAuthRequest(String identityToken, String displayName) {
+            this(identityToken, displayName, null);
+        }
     }
 
     public record FacebookAuthRequest(
@@ -135,7 +151,15 @@ public final class AuthDtos {
             @NotBlank @Pattern(regexp = "\\d{6}") @Schema(description = "The 6-digit code just sent by SMS.",
                     example = "482913") String code,
             @NotBlank @Size(max = 255) @Schema(example = "Aigerim Bekova") String displayName,
-            @NotBlank @Size(min = 8) @Schema(example = "Password123", minLength = 8) String password) {
+            @NotBlank @Size(min = 8) @Schema(example = "Password123", minLength = 8) String password,
+            @Schema(description = "Role for a NEW account created by this call: CUSTOMER (default; the consumer app) or "
+                    + "PROVIDER_OWNER (the business app). ADMIN is rejected. Ignored when the person already has an "
+                    + "account - an existing account's role never changes.", example = "PROVIDER_OWNER")
+            com.zairo.factory.users.UserRole role) {
+
+        public PhoneRegisterRequest(String phone, String code, String displayName, String password) {
+            this(phone, code, displayName, password, null);
+        }
     }
 
     public record PhoneResetPasswordRequest(

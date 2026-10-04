@@ -487,5 +487,6 @@
   "editProfileMarketingTitle": "Поздравления и предложения",
   "editProfileMarketingSubtitle": "Поздравления с днём рождения, бонусы и специальные предложения от бизнесов, которые вы посещаете.",
   "editProfileSave": "Сохранить",
-  "editProfileSaved": "Профиль обновлён"
+  "editProfileSaved": "Профиль обновлён",
+  "errorAuthPhoneCountryNotSupported": "SMS-коды для номеров этой страны пока недоступны."
 }

@@ -376,7 +376,11 @@ class AuthApi {
 
   AuthException _mapOtpRequestError(DioException e) {
     final status = e.response?.statusCode;
-    if (status == 400) return const AuthException(AuthErrorKey.invalidPhoneNumber);
+    if (status == 400) {
+      return _messageContains(e, 'not supported')
+          ? const AuthException(AuthErrorKey.phoneCountryNotSupported)
+          : const AuthException(AuthErrorKey.invalidPhoneNumber);
+    }
     if (status == 429) {
       return _messageContains(e, 'wait')
           ? const AuthException(AuthErrorKey.otpResendCooldown)

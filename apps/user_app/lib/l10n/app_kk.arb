@@ -472,5 +472,6 @@
   "editProfileMarketingTitle": "Құттықтаулар мен ұсыныстар",
   "editProfileMarketingSubtitle": "Өзіңіз барған бизнестерден туған күн құттықтаулары, бонустар және арнайы ұсыныстар.",
   "editProfileSave": "Сақтау",
-  "editProfileSaved": "Профиль жаңартылды"
+  "editProfileSaved": "Профиль жаңартылды",
+  "errorAuthPhoneCountryNotSupported": "Бұл елдің нөмірлеріне SMS кодтары әлі қолжетімсіз."
 }
