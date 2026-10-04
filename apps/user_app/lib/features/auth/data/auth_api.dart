@@ -5,6 +5,7 @@ import 'auth_exception.dart';
 import 'models/auth_tokens.dart';
 import 'models/identity_summary.dart';
 import 'models/phone_status.dart';
+import 'models/sms_mode.dart';
 import 'models/user_summary.dart';
 
 /// Not final: tests substitute a subclass overriding these methods instead
@@ -231,6 +232,13 @@ class AuthApi {
     } on DioException catch (e) {
       throw _mapOtpVerifyError(e);
     }
+  }
+
+  /// Whether the server mocks SMS (pre-production) — the OTP screens then
+  /// show the fixed code instead of waiting for a text message.
+  Future<SmsMode> smsMode() async {
+    final response = await _dioClient.get('/auth/phone/sms-mode');
+    return SmsMode.fromJson(response.data as Map<String, dynamic>);
   }
 
   /// Which screen the phone sign-in shows next: the password prompt for an

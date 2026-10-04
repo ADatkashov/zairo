@@ -142,6 +142,12 @@ public final class AuthDtos {
             String password) {
     }
 
+    public record SmsModeResponse(
+            @Schema(description = "SMS codes are mocked (no real SMS is sent) - pre-production only.") boolean mock,
+            @Schema(description = "The fixed code that works for every phone while mock is true; null otherwise.")
+            String mockCode) {
+    }
+
     public record IdentitySummary(
             @Schema(description = "Which sign-in method this is.") IdentityProvider provider,
             Instant linkedAt) {

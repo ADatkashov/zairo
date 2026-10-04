@@ -361,6 +361,19 @@ to send real SMS through Twilio (`TwilioOtpSender`):
 | `TWILIO_FROM` | A Twilio phone number in E.164 (e.g. `+1415...`) that can text Kazakhstan/your target countries. |
 | `TWILIO_MESSAGING_SERVICE_SID` | Alternative to `TWILIO_FROM` (starts with `MG`); wins if both are set. |
 
+**Pre-production SMS mock (`OTP_MOCK_CODE`).** To try phone sign-in end to end
+before an SMS provider exists, set `OTP_MOCK_CODE` to any 6 digits (e.g. `123456`).
+Then no SMS is sent (`MockOtpSender`), every phone number gets that one fixed
+code, and the app shows "Test mode ... Enter the code 123456" on the code screens
+(it learns this from `GET /auth/phone/sms-mode`). Everything else — rate limits,
+single-use codes, passwords — works as usual. To go live: **unset
+`OTP_MOCK_CODE`** and configure Twilio; nothing else changes (with the mock off
+and no Twilio, the dev log sender is used). **Not secure:** while it is on,
+anyone who knows a phone number can sign in as that user (or reset its password)
+with the fixed code. The `prod` profile normally refuses to start without Twilio;
+with `OTP_MOCK_CODE` set it starts anyway (to allow a deployed test environment)
+and logs a loud error at startup.
+
 SMS abuse limits (against SMS-pumping fraud; all in `application.yml`'s `app.otp`):
 
 | Setting (env var) | Default | Meaning |

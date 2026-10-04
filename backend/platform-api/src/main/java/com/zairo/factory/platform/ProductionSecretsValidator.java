@@ -3,6 +3,8 @@ package com.zairo.factory.platform;
 import jakarta.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
@@ -43,6 +45,8 @@ class ProductionSecretsValidator {
     static final String DEV_DB_PASSWORD = "app_factory";
     static final String DEV_STORAGE_SECRET_KEY = "app_factory_secret";
 
+    private static final Logger log = LoggerFactory.getLogger(ProductionSecretsValidator.class);
+
     private final Environment environment;
     private final String jwtSecret;
     private final String platformAdminJwtSecret;
@@ -54,6 +58,7 @@ class ProductionSecretsValidator {
     private final String twilioAuthToken;
     private final String twilioFrom;
     private final String twilioMessagingServiceSid;
+    private final String otpMockCode;
 
     ProductionSecretsValidator(Environment environment, @Value("${app.jwt.secret}") String jwtSecret,
             @Value("${app.jwt.platform-admin-secret}") String platformAdminJwtSecret,
@@ -64,7 +69,8 @@ class ProductionSecretsValidator {
             @Value("${app.sms.twilio.account-sid:}") String twilioAccountSid,
             @Value("${app.sms.twilio.auth-token:}") String twilioAuthToken,
             @Value("${app.sms.twilio.from:}") String twilioFrom,
-            @Value("${app.sms.twilio.messaging-service-sid:}") String twilioMessagingServiceSid) {
+            @Value("${app.sms.twilio.messaging-service-sid:}") String twilioMessagingServiceSid,
+            @Value("${app.otp.mock-code:}") String otpMockCode) {
         this.environment = environment;
         this.jwtSecret = jwtSecret;
         this.platformAdminJwtSecret = platformAdminJwtSecret;
@@ -76,6 +82,7 @@ class ProductionSecretsValidator {
         this.twilioAuthToken = twilioAuthToken;
         this.twilioFrom = twilioFrom;
         this.twilioMessagingServiceSid = twilioMessagingServiceSid;
+        this.otpMockCode = otpMockCode;
     }
 
     @PostConstruct
@@ -100,15 +107,25 @@ class ProductionSecretsValidator {
         // Same security hole as blank Google ids: with no audience configured,
         // an Apple identity token issued to *any* app would be accepted.
         checkNotBlank(problems, "APPLE_CLIENT_IDS (app.oauth.apple.client-ids)", appleClientIds);
-        // Without Twilio, phone-OTP codes are only written to the server log
-        // (LoggingOtpSender) -- real users would never receive an SMS, and
-        // anyone with log access could read every login code.
-        checkNotBlank(problems, "TWILIO_ACCOUNT_SID (app.sms.twilio.account-sid)", twilioAccountSid);
-        checkNotBlank(problems, "TWILIO_AUTH_TOKEN (app.sms.twilio.auth-token)", twilioAuthToken);
-        if ((twilioFrom == null || twilioFrom.isBlank())
-                && (twilioMessagingServiceSid == null || twilioMessagingServiceSid.isBlank())) {
-            problems.add("TWILIO_FROM (app.sms.twilio.from) or TWILIO_MESSAGING_SERVICE_SID "
-                    + "(app.sms.twilio.messaging-service-sid) is not set");
+        boolean smsMocked = otpMockCode != null && !otpMockCode.isBlank();
+        if (smsMocked) {
+            // Allowed on purpose, for a deployed pre-production test environment
+            // that has no SMS provider yet -- but it makes every phone account
+            // sign-in-able with one known code, so say so loudly.
+            log.error("!!! OTP_MOCK_CODE is set under the prod profile: phone sign-in uses the fixed code {} and NO real "
+                    + "SMS is sent. Anyone who knows a phone number can log in as that user. Unset OTP_MOCK_CODE and "
+                    + "configure Twilio before real users arrive. !!!", otpMockCode);
+        } else {
+            // Without Twilio, phone-OTP codes are only written to the server log
+            // (LoggingOtpSender) -- real users would never receive an SMS, and
+            // anyone with log access could read every login code.
+            checkNotBlank(problems, "TWILIO_ACCOUNT_SID (app.sms.twilio.account-sid)", twilioAccountSid);
+            checkNotBlank(problems, "TWILIO_AUTH_TOKEN (app.sms.twilio.auth-token)", twilioAuthToken);
+            if ((twilioFrom == null || twilioFrom.isBlank())
+                    && (twilioMessagingServiceSid == null || twilioMessagingServiceSid.isBlank())) {
+                problems.add("TWILIO_FROM (app.sms.twilio.from) or TWILIO_MESSAGING_SERVICE_SID "
+                        + "(app.sms.twilio.messaging-service-sid) is not set");
+            }
         }
         if (!problems.isEmpty()) {
             throw new IllegalStateException(

@@ -35,7 +35,30 @@ class PhoneOtpServiceTest {
     }
 
     private PhoneOtpService newLimitedService(int maxRequestsPerIpPerHour, int dailySendCap) {
-        return new PhoneOtpService(repository, sender, clock, 5, 0, 5, 100, maxRequestsPerIpPerHour, dailySendCap);
+        return new PhoneOtpService(repository, sender, clock, 5, 0, 5, 100, maxRequestsPerIpPerHour, dailySendCap, "");
+    }
+
+    @Test
+    void aMockCodeIsIssuedForEveryPhoneAndVerifiesNormally() {
+        PhoneOtpService service = new PhoneOtpService(repository, sender, clock, 5, 0, 5, 100,
+                Integer.MAX_VALUE, Integer.MAX_VALUE, "123456");
+
+        service.requestOtp("+77001111111");
+        assertThat(sender.lastCode).isEqualTo("123456");
+        service.requestOtp("+77002222222");
+        assertThat(sender.lastCode).isEqualTo("123456");
+
+        service.verify("+77001111111", "123456"); // accepted
+        assertThatThrownBy(() -> service.verify("+77001111111", "123456"))
+                .isInstanceOf(InvalidOtpException.class); // still single-use
+        assertThatThrownBy(() -> service.verify("+77002222222", "654321"))
+                .isInstanceOf(InvalidOtpException.class); // other codes still rejected
+    }
+
+    @Test
+    void aMalformedMockCodeIsRejectedAtStartup() {
+        assertThatThrownBy(() -> new PhoneOtpService(repository, sender, clock, 5, 0, 5, 100,
+                Integer.MAX_VALUE, Integer.MAX_VALUE, "12ab")).isInstanceOf(IllegalStateException.class);
     }
 
     @Test

@@ -10,6 +10,7 @@ import '../../data/google_sign_in_service.dart';
 import '../../data/models/auth_tokens.dart';
 import '../../data/models/identity_summary.dart';
 import '../../data/models/phone_status.dart';
+import '../../data/models/sms_mode.dart';
 import '../../data/models/user_summary.dart';
 import '../../data/token_storage.dart';
 
@@ -298,3 +299,13 @@ class AuthController extends AsyncNotifier<UserSummary?> {
 }
 
 final authControllerProvider = AsyncNotifierProvider<AuthController, UserSummary?>(AuthController.new);
+
+/// Whether SMS is mocked on the server. Any failure means "real SMS" — the
+/// hint is only ever an extra, never a reason to block the flow.
+final smsModeProvider = FutureProvider<SmsMode>((ref) async {
+  try {
+    return await ref.watch(authApiProvider).smsMode();
+  } catch (_) {
+    return SmsMode.real;
+  }
+});
