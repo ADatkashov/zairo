@@ -225,6 +225,10 @@ Future<void> tapVisible(WidgetTester tester, Finder finder) async {
 
 void main() {
   testWidgets('selecting a service and slot enables booking and submits the right data', (tester) async {
+    // Tall viewport: the price summary bar would otherwise cover the slot chips.
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
     final slot = AvailabilitySlot(
       id: 'slot-1',
       providerId: 'provider-1',
@@ -460,6 +464,10 @@ void main() {
   testWidgets(
       'a provider in a category with no dedicated staff module requires picking a staff member and books '
       'through the generic staff endpoint', (tester) async {
+    // Tall viewport: the price summary bar would otherwise cover the slot chips.
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
     final slot = AvailabilitySlot(
       id: 'slot-1',
       providerId: 'provider-5',
