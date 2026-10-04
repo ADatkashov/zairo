@@ -1,10 +1,11 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../../app/router/app_routes.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../booking/presentation/screens/provider_detail_screen.dart';
 import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../data/models/provider_search_result.dart';
 import '../providers/discovery_providers.dart';
@@ -132,12 +133,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       FactoryScreenSize.desktop => 3,
                     };
                     void openProvider(ProviderSearchResult result) =>
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                ProviderDetailScreen(provider: result),
-                          ),
-                        );
+                        context.push(AppRoutes.provider(result.id), extra: result);
 
                     return Column(
                       children: [

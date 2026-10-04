@@ -1,8 +1,10 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../../app/router/app_routes.dart';
 import '../../../../core/formatting/month_day_time.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
@@ -359,12 +361,10 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
     }
     if (!mounted) return;
     if (matched != null) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ChatThreadScreen(
-            providerId: matched!.providerId,
-            providerName: matched.providerName ?? l10n.messagingUnknownBusinessName,
-          ),
+      context.push(
+        AppRoutes.chat(
+          matched.providerId,
+          providerName: matched.providerName ?? l10n.messagingUnknownBusinessName,
         ),
       );
       return;

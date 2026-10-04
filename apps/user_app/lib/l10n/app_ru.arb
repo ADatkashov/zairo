@@ -491,5 +491,7 @@
   "errorAuthPhoneCountryNotSupported": "SMS-коды для номеров этой страны пока недоступны.",
   "profileLogOutConfirmTitle": "Выйти из аккаунта?",
   "profileLogOutConfirmMessage": "Чтобы снова увидеть записи, избранное и сообщения, нужно будет войти заново.",
-  "profileLogOutStayButton": "Остаться"
+  "profileLogOutStayButton": "Остаться",
+  "providerNotFoundTitle": "Бизнес не найден",
+  "providerNotFoundMessage": "Возможно, он удалён или недоступен в вашем городе."
 }
