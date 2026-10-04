@@ -431,10 +431,6 @@
   "bookingPaymentInstructions": "Депозит {amount} списан со счета. Оставшаяся сумма {remaining} может быть оплачена наличными или онлайн в день услуги.",
   "selectCity": "Выберите город",
 
-  "bookingPayFreeTitle": "Бесплатная запись",
-
-  "bookingPayFreeBody": "Сейчас платить не нужно — оплата на месте в день услуги.",
-
   "bookingPayFullTitle": "Полная оплата",
 
   "bookingPayFullBody": "Полная стоимость оплачивается онлайн при записи.",
@@ -459,5 +455,7 @@
 
   "weekdaySat": "Сб",
 
-  "weekdaySun": "Вс"
+  "weekdaySun": "Вс",
+
+  "bookingPayDueNow": "К оплате сейчас"
 }

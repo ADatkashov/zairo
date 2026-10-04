@@ -1498,12 +1498,6 @@
   "selectCity": "Select City",
   "@selectCity": {"description": "Title for the city selection screen."},
 
-  "bookingPayFreeTitle": "Free booking",
-  "@bookingPayFreeTitle": {"description": "Title when nothing is charged online."},
-
-  "bookingPayFreeBody": "Nothing to pay now — you pay at the venue on the day of service.",
-  "@bookingPayFreeBody": {"description": "Explains a free-to-book appointment."},
-
   "bookingPayFullTitle": "Full payment",
   "@bookingPayFullTitle": {"description": "Title when the whole price is charged online."},
 
@@ -1541,5 +1535,8 @@
   "@weekdaySat": {"description": "Short Sat label for the day picker."},
 
   "weekdaySun": "Sun",
-  "@weekdaySun": {"description": "Short Sun label for the day picker."}
+  "@weekdaySun": {"description": "Short Sun label for the day picker."},
+
+  "bookingPayDueNow": "Due now",
+  "@bookingPayDueNow": {"description": "Label for the amount charged at booking time; shown even when it is zero."}
 }
