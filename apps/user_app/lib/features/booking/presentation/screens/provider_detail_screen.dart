@@ -703,44 +703,25 @@ class _BookingCta extends StatelessWidget {
     }
     final suffixStyle = textTheme.bodySmall?.copyWith(color: colors.textSecondary);
     return [
-      switch (p.mode) {
-        PaymentMode.free => Text(
-            l10n.bookingPayFreeTitle,
-            style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: colors.success),
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
+          FactoryPriceText(
+            amount: p.dueNow,
+            currencySymbol: service.currency,
+            fontSize: 18,
+            weight: FontWeight.w800,
+            color: colors.text,
           ),
-        PaymentMode.deposit => Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              FactoryPriceText(
-                amount: p.dueNow,
-                currencySymbol: service.currency,
-                fontSize: 18,
-                weight: FontWeight.w800,
-                color: colors.text,
-              ),
-              const SizedBox(width: FactorySpacing.space1),
-              Text(l10n.bookingCtaDueNow, style: suffixStyle),
-            ],
+          const SizedBox(width: FactorySpacing.space1),
+          Text(
+            p.mode == PaymentMode.full ? l10n.bookingCtaFullPayment : l10n.bookingCtaDueNow,
+            style: suffixStyle,
           ),
-        PaymentMode.full => Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              FactoryPriceText(
-                amount: p.total,
-                currencySymbol: service.currency,
-                fontSize: 18,
-                weight: FontWeight.w800,
-                color: colors.text,
-              ),
-              const SizedBox(width: FactorySpacing.space1),
-              Text(l10n.bookingCtaFullPayment, style: suffixStyle),
-            ],
-          ),
-      },
+        ],
+      ),
       if (p.mode != PaymentMode.full)
         Row(
           mainAxisSize: MainAxisSize.min,
