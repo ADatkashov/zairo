@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../data/auth_exception.dart';
+import '../auth_navigation.dart';
 import '../providers/auth_providers.dart';
 
 /// Always registers as CUSTOMER — provider-owner accounts are a
@@ -39,7 +40,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     ref.listen(authControllerProvider, (previous, next) {
       if (next.hasValue && next.value != null) {
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        popAuthFlow(context);
       }
     });
 
