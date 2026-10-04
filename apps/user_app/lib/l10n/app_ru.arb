@@ -472,5 +472,6 @@
   "linkAccountConfirm": "Подключить",
   "linkAccountCancel": "Отмена",
   "loginContinueWithApple": "Продолжить через Apple",
-  "smsMockHint": "Тестовый режим: реальное SMS не отправляется. Введите код {code}."
+  "smsMockHint": "Тестовый режим: реальное SMS не отправляется. Введите код {code}.",
+  "errorAuthPhoneCountryNotSupported": "SMS-коды для номеров этой страны пока недоступны."
 }

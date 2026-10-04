@@ -1568,5 +1568,7 @@
   "loginContinueWithApple": "Continue with Apple",
   "@loginContinueWithApple": {"description": "Apple sign-in button tooltip on Login, and the linked-account row label on Security settings."},
   "smsMockHint": "Test mode: no real SMS is sent. Enter the code {code}.",
-  "@smsMockHint": {"description": "Pre-production only: shown on the SMS code screens while the server mocks SMS (OTP_MOCK_CODE).", "placeholders": {"code": {"type": "String"}}}
+  "@smsMockHint": {"description": "Pre-production only: shown on the SMS code screens while the server mocks SMS (OTP_MOCK_CODE).", "placeholders": {"code": {"type": "String"}}},
+  "errorAuthPhoneCountryNotSupported": "SMS codes are not available for numbers from this country yet.",
+  "@errorAuthPhoneCountryNotSupported": {"description": "SMS code requested for a phone number from a country that is not enabled (app.otp.allowed-countries)."}
 }
