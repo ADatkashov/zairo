@@ -16,6 +16,9 @@ class LoyaltyBirthday {
   /// True once today's bonus was granted (only ever true for [daysUntil] 0).
   final bool bonusAwarded;
 
+  /// True once the owner already sent a manual greeting today (one a day).
+  final bool greetedToday;
+
   const LoyaltyBirthday({
     required this.userId,
     required this.displayName,
@@ -24,6 +27,7 @@ class LoyaltyBirthday {
     required this.daysUntil,
     required this.bonusPoints,
     required this.bonusAwarded,
+    this.greetedToday = false,
   });
 
   factory LoyaltyBirthday.fromJson(Map<String, dynamic> json) {
@@ -35,6 +39,7 @@ class LoyaltyBirthday {
       daysUntil: (json['daysUntil'] as num).toInt(),
       bonusPoints: (json['bonusPoints'] as num).toInt(),
       bonusAwarded: json['bonusAwarded'] as bool? ?? false,
+      greetedToday: json['greetedToday'] as bool? ?? false,
     );
   }
 }
