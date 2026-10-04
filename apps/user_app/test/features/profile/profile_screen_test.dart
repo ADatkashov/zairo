@@ -14,6 +14,7 @@ import 'package:zairo/features/booking/presentation/providers/booking_providers.
 import 'package:zairo/features/favorites/data/favorites_api.dart';
 import 'package:zairo/features/favorites/data/models/favorite_provider.dart';
 import 'package:zairo/features/favorites/presentation/providers/favorites_providers.dart';
+import 'package:zairo/features/favorites/presentation/screens/favorites_screen.dart';
 import 'package:zairo/features/profile/presentation/screens/profile_screen.dart';
 import 'package:zairo/l10n/app_localizations.dart';
 
@@ -125,10 +126,24 @@ void main() {
       favoritedAt: DateTime(2026, 1, 1),
     );
 
-    await tester.pumpWidget(_wrap(
-      _LoggedInAuthController(),
-      extraOverrides: [favoritesApiProvider.overrideWithValue(_FakeFavoritesApi([favorite]))],
-    ));
+    final router = GoRouter(routes: [
+      GoRoute(path: '/', builder: (_, _) => const ProfileScreen()),
+      GoRoute(path: '/favorites', builder: (_, _) => const FavoritesScreen()),
+    ]);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+          favoritesApiProvider.overrideWithValue(_FakeFavoritesApi([favorite])),
+        ],
+        child: MaterialApp.router(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('My favorites'));

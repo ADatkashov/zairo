@@ -476,5 +476,7 @@
   "errorAuthPhoneCountryNotSupported": "Бұл елдің нөмірлеріне SMS кодтары әлі қолжетімсіз.",
   "profileLogOutConfirmTitle": "Аккаунттан шығасыз ба?",
   "profileLogOutConfirmMessage": "Жазылымдарыңызды, таңдаулыларыңызды және хабарламаларыңызды көру үшін қайта кіру керек.",
-  "profileLogOutStayButton": "Қалу"
+  "profileLogOutStayButton": "Қалу",
+  "providerNotFoundTitle": "Бизнес табылмады",
+  "providerNotFoundMessage": "Ол жойылған немесе сіздің қалаңызда қолжетімсіз болуы мүмкін."
 }
