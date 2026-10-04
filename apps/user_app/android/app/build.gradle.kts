@@ -42,8 +42,9 @@ if (hasReleaseSigning) {
 
 android {
     namespace = "com.zairo"
-    // flutter_secure_storage requires compileSdk 37+; flutter.compileSdkVersion (36) is too low.
-    compileSdk = 37
+    // Use compileSdk 36; Platform 37 not available in CircleCI environment.
+    // flutter_secure_storage works with 36.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
