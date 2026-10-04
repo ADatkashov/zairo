@@ -20,6 +20,8 @@ class FactorySearchField extends StatelessWidget {
     this.filterSemanticLabel = 'Filters',
     this.filterActive = false,
     this.autofocus = false,
+    this.onCleared,
+    this.clearSemanticLabel = 'Clear',
   });
 
   final TextEditingController? controller;
@@ -41,6 +43,46 @@ class FactorySearchField extends StatelessWidget {
   final bool filterActive;
 
   final bool autofocus;
+
+  /// When set (and a [controller] is given), a clear button appears inside
+  /// the field while it holds text. It empties the controller, then calls
+  /// this so the caller can drop the query it was filtering by.
+  final VoidCallback? onCleared;
+
+  /// Same localization convention as [filterSemanticLabel].
+  final String clearSemanticLabel;
+
+  Widget? _suffix(BuildContext context) {
+    final filter = onFilterTap == null
+        ? null
+        : FactoryIconButton(
+            icon: Symbols.tune_rounded,
+            onPressed: onFilterTap,
+            semanticLabel: filterSemanticLabel,
+            isActive: filterActive,
+          );
+    final controller = this.controller;
+    if (onCleared == null || controller == null) return filter;
+
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (context, value, _) {
+        final clear = value.text.isEmpty
+            ? null
+            : FactoryIconButton(
+                icon: Symbols.close_rounded,
+                onPressed: () {
+                  controller.clear();
+                  onCleared!();
+                },
+                semanticLabel: clearSemanticLabel,
+              );
+        if (clear == null) return filter ?? const SizedBox.shrink();
+        if (filter == null) return clear;
+        return Row(mainAxisSize: MainAxisSize.min, children: [clear, filter]);
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,14 +128,7 @@ class FactorySearchField extends StatelessWidget {
               Symbols.search_rounded,
               color: colors.textTertiary,
             ),
-            suffixIcon: onFilterTap != null
-                ? FactoryIconButton(
-                    icon: Symbols.tune_rounded,
-                    onPressed: onFilterTap,
-                    semanticLabel: filterSemanticLabel,
-                    isActive: filterActive,
-                  )
-                : null,
+            suffixIcon: _suffix(context),
           ),
         ),
       ),

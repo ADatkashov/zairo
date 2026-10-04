@@ -7,6 +7,19 @@
 /// (booking, chat compose bar), and the tab underneath keeps its state.
 abstract final class AppRoutes {
   static const citySelection = '/city-selection';
+
+  /// The Search tab, optionally pre-filtered (`/search?category=beauty&q=…`).
+  static String search({String? category, String? query}) {
+    final params = <String, String>{
+      if (category != null && category.isNotEmpty) 'category': category,
+      if (query != null && query.isNotEmpty) 'q': query,
+    };
+    return Uri(
+      path: '/search',
+      queryParameters: params.isEmpty ? null : params,
+    ).toString();
+  }
+
   static const notifications = '/notifications';
   static const favorites = '/favorites';
   static const messages = '/messages';

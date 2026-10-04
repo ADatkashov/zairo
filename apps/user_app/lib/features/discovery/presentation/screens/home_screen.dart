@@ -150,7 +150,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ],
                   ),
                   const SizedBox(height: FactorySpacing.space4),
-                  _SearchEntry(onTap: () => context.go('/search')),
+                  _SearchEntry(onTap: () => context.go(AppRoutes.search(category: _vertical))),
                   const SizedBox(height: FactorySpacing.space4),
                   Text(l10n.homeCategoriesTitle, style: textTheme.titleSmall),
                   const SizedBox(height: FactorySpacing.space3),
@@ -162,7 +162,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const SizedBox(height: FactorySpacing.space5),
                     _AvailabilityHero(
                       count: openCount,
-                      onViewAll: () => context.go('/search'),
+                      onViewAll: () => context.go(AppRoutes.search(category: _vertical)),
                     ),
                   ],
                   if (user != null) ...[
@@ -173,7 +173,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   FactorySectionHeader(
                     title: l10n.homeTopRatedTitle,
                     actionLabel: l10n.homeSeeAll,
-                    onActionTap: () => context.go('/search'),
+                    onActionTap: () => context.go(AppRoutes.search(category: _vertical)),
                   ),
                   const SizedBox(height: FactorySpacing.space3),
                   if (topRated.isEmpty)
