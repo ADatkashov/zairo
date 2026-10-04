@@ -7,6 +7,8 @@
 	<!-- Required by image_picker before it may request photo library/camera
 	     access at all — iOS silently refuses the permission prompt without
 	     these (used by the avatar/photo change flows). -->
+	<key>NSFaceIDUsageDescription</key>
+	<string>ZAIRO Business uses Face ID to quickly and securely unlock your session.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Business Admin needs access to your photo library to set a profile or staff photo.</string>
 	<key>NSCameraUsageDescription</key>

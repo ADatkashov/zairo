@@ -5,6 +5,7 @@
          so without it here a release APK build produces a package that
          cannot make a single network request, regardless of baseUrl. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <application
         android:label="business_admin"
         android:name="${applicationName}"
