@@ -736,9 +736,7 @@
   "paymentRemainingInfo": "Оплатить в день услуги",
   "bookingSettingsTitle": "Настройки бронирования",
   "depositPercentageLabel": "Процент депозита (%)",
-  "depositPercentageHint": "0 для полной оплаты, 100 для депозита",
   "depositPercentageSaved": "Процент депозита обновлен",
-  "validationPercentageRange": "Процент должен быть от 0 до 100.",
   "selectCity": "Выберите город",
   "noCitiesAvailable": "Нет доступных городов",
   "errorLoadingCities": "Ошибка при загрузке городов",
@@ -747,5 +745,23 @@
 
   "slotsDaysShowAll": "Показать все дни (ещё {count})",
 
-  "slotsDaysShowLess": "Свернуть дни"
+  "slotsDaysShowLess": "Свернуть дни",
+
+  "depositModeTitle": "Когда клиент платит?",
+
+  "depositModeNone": "Без предоплаты",
+
+  "depositModeNoneHint": "Клиент записывается бесплатно и платит вам на месте.",
+
+  "depositModeDeposit": "Депозит",
+
+  "depositModeDepositHint": "Часть суммы в процентах оплачивается онлайн при записи, остальное на месте.",
+
+  "depositModeFull": "Полная оплата",
+
+  "depositModeFullHint": "Вся стоимость оплачивается онлайн при записи.",
+
+  "depositPercentageRangeHint": "От 1 до 99. Остаток клиент платит на месте.",
+
+  "validationDepositPercentageRange": "Введите процент от 1 до 99."
 }

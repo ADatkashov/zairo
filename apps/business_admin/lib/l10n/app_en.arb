@@ -2206,14 +2206,8 @@
   "depositPercentageLabel": "Deposit percentage (%)",
   "@depositPercentageLabel": {"description": "Label for deposit percentage input field."},
 
-  "depositPercentageHint": "0 for full payment, 100 for deposit only",
-  "@depositPercentageHint": {"description": "Helper text for deposit percentage field."},
-
   "depositPercentageSaved": "Deposit percentage updated",
   "@depositPercentageSaved": {"description": "Success message after saving deposit percentage."},
-
-  "validationPercentageRange": "Percentage must be between 0 and 100.",
-  "@validationPercentageRange": {"description": "Validation error for percentage input."},
 
   "selectCity": "Select City",
   "@selectCity": {"description": "Label for city selection dropdown in business creation dialog."},
@@ -2231,5 +2225,32 @@
   "@slotsDaysShowAll": {"description": "Button that reveals the remaining days of availability.", "placeholders": {"count": {"type": "int"}}},
 
   "slotsDaysShowLess": "Show fewer days",
-  "@slotsDaysShowLess": {"description": "Button that collapses the availability list back to the first days."}
+  "@slotsDaysShowLess": {"description": "Button that collapses the availability list back to the first days."},
+
+  "depositModeTitle": "When does the customer pay?",
+  "@depositModeTitle": {"description": "Deposit settings for the salon owner."},
+
+  "depositModeNone": "No prepayment",
+  "@depositModeNone": {"description": "Deposit settings for the salon owner."},
+
+  "depositModeNoneHint": "The customer books for free and pays you at the venue.",
+  "@depositModeNoneHint": {"description": "Deposit settings for the salon owner."},
+
+  "depositModeDeposit": "Deposit",
+  "@depositModeDeposit": {"description": "Deposit settings for the salon owner."},
+
+  "depositModeDepositHint": "A percentage is paid online when booking; the rest at the venue.",
+  "@depositModeDepositHint": {"description": "Deposit settings for the salon owner."},
+
+  "depositModeFull": "Full payment",
+  "@depositModeFull": {"description": "Deposit settings for the salon owner."},
+
+  "depositModeFullHint": "The whole price is paid online when booking.",
+  "@depositModeFullHint": {"description": "Deposit settings for the salon owner."},
+
+  "depositPercentageRangeHint": "From 1 to 99. The rest is paid at the venue.",
+  "@depositPercentageRangeHint": {"description": "Deposit settings for the salon owner."},
+
+  "validationDepositPercentageRange": "Enter a percentage from 1 to 99.",
+  "@validationDepositPercentageRange": {"description": "Deposit settings for the salon owner."}
 }
