@@ -456,5 +456,6 @@
   "linkAccountBody": "Бұл email-мен аккаунт бар. Осы кіру тәсілін қосу үшін оның құпиясөзін енгізіңіз.",
   "linkAccountConfirm": "Қосу",
   "linkAccountCancel": "Бас тарту",
-  "loginContinueWithApple": "Apple арқылы жалғастыру"
+  "loginContinueWithApple": "Apple арқылы жалғастыру",
+  "smsMockHint": "Сынақ режимі: нақты SMS жіберілмейді. {code} кодын енгізіңіз."
 }

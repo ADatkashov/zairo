@@ -10,6 +10,7 @@ import com.zairo.factory.auth.AuthDtos.PhoneResetPasswordRequest;
 import com.zairo.factory.auth.AuthDtos.PhoneStatusRequest;
 import com.zairo.factory.auth.AuthDtos.PhoneStatusResponse;
 import com.zairo.factory.auth.AuthDtos.RequestPhoneOtpRequest;
+import com.zairo.factory.auth.AuthDtos.SmsModeResponse;
 import com.zairo.factory.auth.AuthDtos.TokenResponse;
 import com.zairo.factory.auth.AuthDtos.UserSummary;
 import com.zairo.factory.auth.AuthDtos.VerifyPhoneOtpRequest;
@@ -24,6 +25,7 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -50,11 +52,14 @@ public class IdentityController {
 
     private final IdentityService identityService;
     private final int trustedProxyHops;
+    private final String mockSmsCode;
 
     public IdentityController(IdentityService identityService,
-            @Value("${app.otp.trusted-proxy-hops:1}") int trustedProxyHops) {
+            @Value("${app.otp.trusted-proxy-hops:1}") int trustedProxyHops,
+            @Value("${app.otp.mock-code:}") String mockSmsCode) {
         this.identityService = identityService;
         this.trustedProxyHops = trustedProxyHops;
+        this.mockSmsCode = mockSmsCode == null ? "" : mockSmsCode.trim();
     }
 
     @Operation(summary = "Sign in or register with Google", description = """
@@ -255,5 +260,13 @@ public class IdentityController {
     @PostMapping("/api/v1/auth/identities/link-with-password")
     public TokenResponse linkWithPassword(@Valid @RequestBody LinkWithPasswordRequest request) {
         return identityService.linkProviderWithPassword(request.provider(), request.token(), request.password());
+    }
+
+    @Operation(summary = "Are SMS codes mocked on this server?", description = "Pre-production switch (OTP_MOCK_CODE): "
+            + "while true, no real SMS is sent and `mockCode` works for every phone; the app shows it on screen.")
+    @ApiResponse(responseCode = "200", description = "Current SMS mode")
+    @GetMapping("/api/v1/auth/phone/sms-mode")
+    public SmsModeResponse smsMode() {
+        return mockSmsCode.isEmpty() ? new SmsModeResponse(false, null) : new SmsModeResponse(true, mockSmsCode);
     }
 }

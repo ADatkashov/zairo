@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
  * see AuthAuditLog's own doc comment.
  */
 @Component
-@ConditionalOnExpression("'${app.sms.twilio.account-sid:}'.length() == 0")
+@ConditionalOnExpression("'${app.sms.twilio.account-sid:}'.length() == 0 and '${app.otp.mock-code:}'.length() == 0")
 class LoggingOtpSender implements OtpSenderPort {
 
     private static final Logger log = LoggerFactory.getLogger(LoggingOtpSender.class);
