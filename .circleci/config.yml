@@ -48,6 +48,10 @@ jobs:
           command: |
             flutter pub get
       - run:
+          name: Generate Build Files
+          working_directory: apps/user_app
+          command: flutter pub run build_runner build --delete-conflicting-outputs
+      - run:
           name: Build Flutter APK
           working_directory: apps/user_app
           command: |
@@ -55,20 +59,6 @@ jobs:
               --release \
               --build-name=1.0.0 \
               --build-number=${CIRCLE_BUILD_NUM}
-      - run:
-          name: Upload APK to Google Play Console
-          command: |
-            cd apps/user_app
-
-            # Download bundletool
-            mkdir -p bundletool-dir
-            cd bundletool-dir
-            wget -q https://github.com/google/bundletool/releases/latest/download/bundletool-all.jar -O bundletool.jar
-
-            # Upload APK using bundletool
-            java -jar bundletool.jar upload-apk \
-              --apk-paths=../build/app/outputs/flutter-apk/app-release.apk \
-              --service-account-json=<(echo ${GCLOUD_SERVICE_ACCOUNT_CREDENTIALS})
       - store_artifacts:
           path: apps/user_app/build/app/outputs/flutter-apk/app-release.apk
           destination: app-release.apk
