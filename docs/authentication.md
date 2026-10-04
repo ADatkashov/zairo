@@ -347,10 +347,22 @@ in.
 | `FACEBOOK_APP_ID` / `FACEBOOK_APP_SECRET` | `FacebookGraphIdentityVerifier` — from [Facebook for Developers](https://developers.facebook.com/apps/) → your app → Settings > Basic | Yes — same startup guard |
 
 `app.otp.*` (TTL, cooldown, attempt/request limits) already have sane
-defaults and need no external account to work — `LoggingOtpSender` is a
-real, working delivery channel for local dev (reads the code from the
-server log) but should be replaced with a real SMS provider (implement
-`OtpSenderPort`) before this ships to real phone numbers.
+defaults and need no external account to work.
+
+SMS delivery: without Twilio configured, `LoggingOtpSender` only writes the
+code to the server log (local dev/CI) — no real SMS reaches a phone. Set these
+to send real SMS through Twilio (`TwilioOtpSender`):
+
+| Variable | Notes |
+|---|---|
+| `TWILIO_ACCOUNT_SID` | Twilio Console > Account Info. Setting it switches delivery from the log to Twilio. |
+| `TWILIO_AUTH_TOKEN` | Same place. Required once the SID is set (startup fails otherwise). |
+| `TWILIO_FROM` | A Twilio phone number in E.164 (e.g. `+1415...`) that can text Kazakhstan/your target countries. |
+| `TWILIO_MESSAGING_SERVICE_SID` | Alternative to `TWILIO_FROM` (starts with `MG`); wins if both are set. |
+
+Note: for some countries (incl. Kazakhstan) Twilio may require a registered
+alphanumeric sender ID or a messaging service — check Twilio's country
+guidelines if messages are not delivered.
 
 ### Flutter (`apps/user_app`)
 
