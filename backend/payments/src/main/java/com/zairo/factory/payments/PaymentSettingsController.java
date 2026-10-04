@@ -3,6 +3,7 @@ package com.zairo.factory.payments;
 import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.depositpolicy.PaymentSettings;
 import com.zairo.factory.depositpolicy.PaymentSettingsService;
+import com.zairo.factory.payments.PaymentSettingsDtos.DepositPolicyResponse;
 import com.zairo.factory.payments.PaymentSettingsDtos.PaymentSettingsResponse;
 import com.zairo.factory.payments.PaymentSettingsDtos.UpdatePaymentSettingsRequest;
 import com.zairo.factory.providers.ProviderOwnership;
@@ -38,6 +39,14 @@ public class PaymentSettingsController {
         providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         PaymentSettings settings = paymentSettingsService.getOrCreateSettings(providerId);
         return PaymentSettingsResponse.from(settings);
+    }
+
+    @GetMapping("/public")
+    @Operation(summary = "Get a provider's deposit policy (customer-facing)", description = "Lets a customer see how much is charged up front before booking. No authentication required; a provider with no settings yet reports NO_PAYMENT.")
+    public DepositPolicyResponse getPublicDepositPolicy(@RequestParam UUID providerId) {
+        return paymentSettingsService.findSettings(providerId)
+                .map(DepositPolicyResponse::from)
+                .orElseGet(DepositPolicyResponse::none);
     }
 
     @PutMapping

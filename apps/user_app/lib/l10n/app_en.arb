@@ -1496,5 +1496,29 @@
   },
 
   "selectCity": "Select City",
-  "@selectCity": {"description": "Title for the city selection screen."}
+  "@selectCity": {"description": "Title for the city selection screen."},
+
+  "bookingPayFreeTitle": "Free booking",
+  "@bookingPayFreeTitle": {"description": "Title when nothing is charged online."},
+
+  "bookingPayFreeBody": "Nothing to pay now — you pay at the venue on the day of service.",
+  "@bookingPayFreeBody": {"description": "Explains a free-to-book appointment."},
+
+  "bookingPayFullTitle": "Full payment",
+  "@bookingPayFullTitle": {"description": "Title when the whole price is charged online."},
+
+  "bookingPayFullBody": "The full price is paid online when you book.",
+  "@bookingPayFullBody": {"description": "Explains a full-prepayment booking."},
+
+  "bookingPayServicePrice": "Service price",
+  "@bookingPayServicePrice": {"description": "Label for the full service price."},
+
+  "bookingPayAtVenue": "Pay at the venue",
+  "@bookingPayAtVenue": {"description": "Label for the part paid at the venue."},
+
+  "bookingCtaDueNow": "due now",
+  "@bookingCtaDueNow": {"description": "Short suffix next to the amount charged at booking."},
+
+  "bookingCtaFullPayment": "full payment",
+  "@bookingCtaFullPayment": {"description": "Short suffix next to a fully prepaid amount."}
 }

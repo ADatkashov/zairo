@@ -27,6 +27,12 @@ public class PaymentSettingsService {
                 .orElseGet(() -> createDefaultSettings(providerId));
     }
 
+    /** Read-only lookup that never creates the default row (safe for public reads). */
+    @Transactional(readOnly = true)
+    public java.util.Optional<PaymentSettings> findSettings(UUID providerId) {
+        return paymentSettingsRepository.findByProviderId(providerId);
+    }
+
     private PaymentSettings createDefaultSettings(UUID providerId) {
         PaymentSettings settings = new PaymentSettings(UUID.randomUUID(), providerId, Instant.now());
         return paymentSettingsRepository.save(settings);

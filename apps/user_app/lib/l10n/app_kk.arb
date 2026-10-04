@@ -414,5 +414,21 @@
   "messageAboutBookingSentMessage": "Хабарлама жіберілді.",
   "errorMessagingNotYourBooking": "Бұл сіздің жазбаңыз емес.",
   "errorMessagingBookingNotFound": "Бұл жазба табылмады.",
-  "errorMessagingGeneric": "Хабарламаңызды жіберу мүмкін болмады: {error}"
+  "errorMessagingGeneric": "Хабарламаңызды жіберу мүмкін болмады: {error}",
+
+  "bookingPayFreeTitle": "Тегін жазылу",
+
+  "bookingPayFreeBody": "Қазір төлеудің қажеті жоқ — төлем қызмет күні орнында жасалады.",
+
+  "bookingPayFullTitle": "Толық төлем",
+
+  "bookingPayFullBody": "Толық құн жазылу кезінде онлайн төленеді.",
+
+  "bookingPayServicePrice": "Қызмет құны",
+
+  "bookingPayAtVenue": "Орнында төлеу",
+
+  "bookingCtaDueNow": "қазір төленеді",
+
+  "bookingCtaFullPayment": "толық төлем"
 }

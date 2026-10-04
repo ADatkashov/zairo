@@ -5,6 +5,7 @@ import 'booking_exception.dart';
 import 'models/availability_slot.dart';
 import 'models/book_again_suggestion.dart';
 import 'models/booking.dart';
+import 'models/payment_plan.dart';
 
 /// Not final: tests substitute a subclass overriding these methods instead
 /// of mocking Dio — same pattern as DiscoveryApi/AuthApi.
@@ -17,6 +18,20 @@ class BookingApi {
     final response = await _dioClient.get('/providers/$providerId/availability-slots');
     final data = response.data as List<dynamic>;
     return data.map((e) => AvailabilitySlot.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Null when the policy can't be read — callers treat that as "unknown" and
+  /// must not invent a charge.
+  Future<DepositPolicy?> getDepositPolicy(String providerId) async {
+    try {
+      final response = await _dioClient.get(
+        '/payment-settings/public',
+        queryParameters: {'providerId': providerId},
+      );
+      return DepositPolicy.fromJson(response.data as Map<String, dynamic>);
+    } on DioException {
+      return null;
+    }
   }
 
   Future<Booking> createBooking({
