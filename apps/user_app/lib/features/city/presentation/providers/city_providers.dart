@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod/riverpod.dart';
 import 'package:core_network/core_network.dart';
 
 import '../../data/city_api.dart';
@@ -51,30 +50,32 @@ final userCurrentCityProvider = FutureProvider<City?>((ref) async {
   }
 });
 
-/// State notifier for managing city selection
-class CitySelectionNotifier extends StateNotifier<AsyncValue<City?>> {
-  final CityApi _api;
-
-  CitySelectionNotifier(this._api) : super(const AsyncValue.loading()) {
-    _loadCurrentCity();
+/// Async notifier for managing city selection
+class CitySelectionNotifier extends AsyncNotifier<City?> {
+  @override
+  Future<City?> build() async {
+    return _loadCurrentCity();
   }
 
-  Future<void> _loadCurrentCity() async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() => _api.getUserCurrentCity().onError((e, st) => null));
+  Future<City?> _loadCurrentCity() async {
+    final api = ref.watch(cityApiProvider);
+    try {
+      return await api.getUserCurrentCity();
+    } catch (e) {
+      return null;
+    }
   }
 
   Future<void> selectCity(String cityCode) async {
+    final api = ref.watch(cityApiProvider);
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      final city = await _api.setUserCurrentCity(cityCode);
+      final city = await api.setUserCurrentCity(cityCode);
       return city;
     });
   }
 }
 
-final citySelectionProvider =
-    StateNotifierProvider<CitySelectionNotifier, AsyncValue<City?>>((ref) {
-  final api = ref.watch(cityApiProvider);
-  return CitySelectionNotifier(api);
-});
+final citySelectionProvider = AsyncNotifierProvider<CitySelectionNotifier, City?>(
+  CitySelectionNotifier.new,
+);
