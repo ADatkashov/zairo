@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../l10n/app_localizations.dart';
+import '../../../auth/presentation/auth_navigation.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../providers/favorites_providers.dart';
@@ -32,9 +33,7 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton> {
       return IconButton(
         icon: const Icon(Symbols.favorite_rounded),
         tooltip: l10n.favoriteAddTooltip,
-        onPressed: () =>
-            Navigator.of(context)
-                .push(MaterialPageRoute(builder: (_) => const LoginScreen())),
+        onPressed: () => pushAuthScreen(context, const LoginScreen()),
       );
     }
 

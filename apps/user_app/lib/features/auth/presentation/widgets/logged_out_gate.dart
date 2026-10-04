@@ -2,6 +2,7 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../l10n/app_localizations.dart';
+import '../auth_navigation.dart';
 import '../screens/login_screen.dart';
 
 /// Shown in place of a tab's content when it's reached directly (bottom nav)
@@ -41,9 +42,7 @@ class LoggedOutGate extends StatelessWidget {
             const SizedBox(height: FactorySpacing.space5),
             FactoryButton(
               label: l10n.loginTitle,
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-              ),
+              onPressed: () => pushAuthScreen(context, const LoginScreen()),
             ),
           ],
         ),

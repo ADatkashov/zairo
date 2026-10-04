@@ -810,5 +810,8 @@
   "resetCodeLabel": "Код сброса",
   "smsMockHint": "Тестовый режим: реальное SMS не отправляется. Введите код {code}.",
   "validationOtpCodeRequired": "Введите 6-значный код",
-  "validationResetCodeRequired": "Введите код сброса"
+  "validationResetCodeRequired": "Введите код сброса",
+  "logOutConfirmTitle": "Выйти из аккаунта?",
+  "logOutConfirmMessage": "Чтобы управлять бизнесом, нужно будет войти заново.",
+  "logOutStayButton": "Остаться"
 }

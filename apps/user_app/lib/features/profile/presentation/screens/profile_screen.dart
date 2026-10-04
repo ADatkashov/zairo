@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../core/formatting/initials.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../auth/presentation/auth_navigation.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../auth/presentation/screens/register_screen.dart';
@@ -83,15 +84,12 @@ class _LoggedOutView extends StatelessWidget {
               title: l10n.profileLoggedOutTitle,
               message: l10n.profileLoggedOutPrompt,
               actionLabel: l10n.loginTitle,
-              onAction: () => Navigator.of(context)
-                  .push(MaterialPageRoute(builder: (_) => const LoginScreen())),
+              onAction: () => pushAuthScreen(context, const LoginScreen()),
             ),
             FactoryButton(
               label: l10n.profileCreateAccount,
               variant: FactoryButtonVariant.text,
-              onPressed: () => Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const RegisterScreen())),
+              onPressed: () => pushAuthScreen(context, const RegisterScreen()),
             ),
           ],
         ),
@@ -279,11 +277,39 @@ class _LoggedInView extends ConsumerWidget {
                   .push(MaterialPageRoute(builder: (_) => const AboutScreen())),
         ),
         const SizedBox(height: FactorySpacing.space6),
-        _LogOutButton(
-          onPressed: () => ref.read(authControllerProvider.notifier).logout(),
-        ),
+        _LogOutButton(onPressed: () => _confirmLogOut(context, ref)),
       ],
     );
+  }
+}
+
+/// One tap on the log-out pill used to end the session at once; it now asks
+/// first (the pill sits at the end of a long scroll, easy to hit by accident).
+Future<void> _confirmLogOut(BuildContext context, WidgetRef ref) async {
+  final l10n = AppLocalizations.of(context)!;
+  final confirmed = await showFactoryDialog<bool>(
+    context: context,
+    title: l10n.profileLogOutConfirmTitle,
+    message: l10n.profileLogOutConfirmMessage,
+    actions: [
+      Builder(
+        builder: (dialogContext) => FactoryButton(
+          label: l10n.profileLogOutStayButton,
+          variant: FactoryButtonVariant.text,
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+        ),
+      ),
+      Builder(
+        builder: (dialogContext) => FactoryButton(
+          label: l10n.profileLogOut,
+          variant: FactoryButtonVariant.danger,
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+        ),
+      ),
+    ],
+  );
+  if (confirmed == true) {
+    ref.read(authControllerProvider.notifier).logout();
   }
 }
 

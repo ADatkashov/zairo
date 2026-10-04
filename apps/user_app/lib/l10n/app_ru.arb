@@ -473,5 +473,8 @@
   "linkAccountCancel": "Отмена",
   "loginContinueWithApple": "Продолжить через Apple",
   "smsMockHint": "Тестовый режим: реальное SMS не отправляется. Введите код {code}.",
-  "errorAuthPhoneCountryNotSupported": "SMS-коды для номеров этой страны пока недоступны."
+  "errorAuthPhoneCountryNotSupported": "SMS-коды для номеров этой страны пока недоступны.",
+  "profileLogOutConfirmTitle": "Выйти из аккаунта?",
+  "profileLogOutConfirmMessage": "Чтобы снова увидеть записи, избранное и сообщения, нужно будет войти заново.",
+  "profileLogOutStayButton": "Остаться"
 }
