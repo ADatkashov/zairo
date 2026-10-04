@@ -21,6 +21,47 @@ class SalonAdminApi {
 
   SalonAdminApi(this._dioClient);
 
+  /// Returns the deposit percentage (0-100) new bookings at [providerId] will
+  /// require. NO_PAYMENT → 0, FULL_PAYMENT → 100.
+  Future<int> getDepositPercentage(String providerId) async {
+    final response = await _dioClient.get(
+      '/payment-settings',
+      queryParameters: {'providerId': providerId},
+    );
+    final data = response.data as Map<String, dynamic>;
+    switch (data['depositType']) {
+      case 'FULL_PAYMENT':
+        return 100;
+      case 'DEPOSIT':
+        if (data['depositValueType'] == 'PERCENTAGE') {
+          return (data['depositValue'] as num).round();
+        }
+        return 0;
+      default:
+        return 0;
+    }
+  }
+
+  Future<void> setDepositPercentage(String providerId, int percentage) async {
+    final Map<String, dynamic> body;
+    if (percentage <= 0) {
+      body = {'depositType': 'NO_PAYMENT'};
+    } else if (percentage >= 100) {
+      body = {'depositType': 'FULL_PAYMENT'};
+    } else {
+      body = {
+        'depositType': 'DEPOSIT',
+        'depositValueType': 'PERCENTAGE',
+        'depositValue': percentage,
+      };
+    }
+    await _dioClient.put(
+      '/payment-settings',
+      queryParameters: {'providerId': providerId},
+      data: body,
+    );
+  }
+
   Future<List<AdminProvider>> listMyProviders(String ownerUserId) async {
     final response = await _dioClient.get('/users/$ownerUserId/providers');
     final data = response.data as List<dynamic>;

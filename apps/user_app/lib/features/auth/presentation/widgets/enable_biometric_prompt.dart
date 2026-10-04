@@ -25,17 +25,20 @@ Future<void> maybeOfferEnableBiometric(BuildContext context, WidgetRef ref) asyn
   final l10n = AppLocalizations.of(context)!;
   if (!context.mounted) return;
 
+  // showDialog uses the root navigator, but this context sits inside a tab's
+  // nested navigator — pop must target the root one or it closes the screen
+  // underneath instead of the dialog.
   final accepted = await showFactoryDialog<bool>(
     context: context,
     title: l10n.biometricEnrollTitle,
     message: l10n.biometricEnrollMessage,
     actions: [
       TextButton(
-        onPressed: () => Navigator.of(context).pop(false),
+        onPressed: () => Navigator.of(context, rootNavigator: true).pop(false),
         child: Text(l10n.biometricEnrollNotNow),
       ),
       FilledButton(
-        onPressed: () => Navigator.of(context).pop(true),
+        onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
         child: Text(l10n.biometricEnrollEnable),
       ),
     ],

@@ -1,8 +1,6 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:core_ui/core_ui.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_cropper/image_cropper.dart';
@@ -1700,19 +1698,37 @@ String _payoutStatusLabel(AppLocalizations l10n, String status) => switch (statu
       _ => _capitalize(status),
     };
 
-class _BookingSettingsSection extends StatefulWidget {
+class _BookingSettingsSection extends ConsumerStatefulWidget {
   final String providerId;
 
   const _BookingSettingsSection({required this.providerId});
 
   @override
-  State<_BookingSettingsSection> createState() => _BookingSettingsSectionState();
+  ConsumerState<_BookingSettingsSection> createState() => _BookingSettingsSectionState();
 }
 
-class _BookingSettingsSectionState extends State<_BookingSettingsSection> {
+class _BookingSettingsSectionState extends ConsumerState<_BookingSettingsSection> {
   late final _depositPercentageController = TextEditingController(text: '0');
-  bool _isEditing = false;
+  bool _isEditing = true;
   String? _fieldError;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final value = await ref.read(salonAdminApiProvider).getDepositPercentage(widget.providerId);
+      if (!mounted) return;
+      setState(() => _depositPercentageController.text = '$value');
+    } catch (_) {
+      // Keep the default; the owner can still enter and save a value.
+    } finally {
+      if (mounted) setState(() => _isEditing = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -1795,20 +1811,7 @@ class _BookingSettingsSectionState extends State<_BookingSettingsSection> {
     try {
       if (!mounted) return;
 
-      final dio = Dio();
-      final response = await dio.put(
-        'https://zairo-backend.onrender.com/api/v1/payment-settings',
-        queryParameters: {'providerId': widget.providerId},
-        data: {
-          'depositType': 'DEPOSIT',
-          'depositValueType': 'PERCENTAGE',
-          'depositValue': value,
-        },
-      );
-
-      if (response.statusCode != 200) {
-        throw Exception('Failed to save: ${response.statusCode}');
-      }
+      await ref.read(salonAdminApiProvider).setDepositPercentage(widget.providerId, value);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
