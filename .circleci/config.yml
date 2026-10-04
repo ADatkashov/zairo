@@ -2,9 +2,8 @@ version: 2.1
 
 jobs:
   build-android-apk:
-    machine:
-      image: ubuntu-2204:2024.10
-    resource_class: large
+    docker:
+      - image: circleci/android:api-30
     environment:
       FLUTTER_HOME: /home/circleci/flutter
       PATH: /home/circleci/flutter/bin:/home/circleci/flutter/bin/cache/dart-sdk/bin:$PATH
@@ -33,23 +32,24 @@ jobs:
       - run:
           name: Upload APK to Google Play Console
           command: |
-            sudo apt-get update && sudo apt-get install -y wget default-jre
             cd apps/user_app
 
-            # Upload APK using bundletool
+            # Download bundletool
+            mkdir -p bundletool-dir
+            cd bundletool-dir
             wget -q https://github.com/google/bundletool/releases/latest/download/bundletool-all.jar -O bundletool.jar
 
+            # Upload APK using bundletool
             java -jar bundletool.jar upload-apk \
-              --apk-paths=build/app/outputs/flutter-apk/app-release.apk \
+              --apk-paths=../build/app/outputs/flutter-apk/app-release.apk \
               --service-account-json=<(echo ${GCLOUD_SERVICE_ACCOUNT_CREDENTIALS})
       - store_artifacts:
           path: apps/user_app/build/app/outputs/flutter-apk/app-release.apk
           destination: app-release.apk
 
   build-for-testing:
-    machine:
-      image: ubuntu-2204:2024.10
-    resource_class: medium
+    docker:
+      - image: circleci/android:api-30
     environment:
       FLUTTER_HOME: /home/circleci/flutter
       PATH: /home/circleci/flutter/bin:/home/circleci/flutter/bin/cache/dart-sdk/bin:$PATH
