@@ -1,6 +1,7 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/data/auth_exception.dart';
@@ -89,6 +90,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context)!;
     final navigator = Navigator.of(context);
+    final router = GoRouter.maybeOf(context);
     final messenger = ScaffoldMessenger.of(context);
     final password = _passwordController.text;
     setState(() {
@@ -101,7 +103,12 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
             confirmation: deleteAccountConfirmationWord,
           );
       messenger.showSnackBar(SnackBar(content: Text(l10n.deleteAccountDone)));
-      navigator.popUntil((route) => route.isFirst);
+      // Signed out: leave Settings and every screen above the tabs, back to Home.
+      if (router != null) {
+        router.go('/');
+      } else {
+        navigator.popUntil((route) => route.isFirst);
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {

@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../../app/router/app_routes.dart';
 import '../../../../core/formatting/month_day_time.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../discovery/data/models/service_summary.dart';
-import '../../../loyalty/presentation/screens/business_loyalty_screen.dart';
 import '../../../payments/presentation/widgets/payment_status_chip.dart';
 import '../../data/models/booking.dart';
 import '../providers/booking_providers.dart';
@@ -136,12 +136,10 @@ class BookingConfirmationScreen extends StatelessWidget {
                       variant: FactoryButtonVariant.secondary,
                       icon: Symbols.workspace_premium_rounded,
                       label: l10n.loyaltyEntryTileTitle,
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => BusinessLoyaltyScreen(
-                            providerId: providerId,
-                            providerName: providerName,
-                          ),
+                      onPressed: () => context.push(
+                        AppRoutes.loyalty(
+                          providerId,
+                          providerName: providerName,
                         ),
                       ),
                     ),
