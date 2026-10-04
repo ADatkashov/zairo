@@ -821,5 +821,15 @@
   "loyaltyBirthdaysInDays": "Через {days} дн.",
   "loyaltyBirthdaysBonusAwarded": "+{points} баллов начислено",
   "loyaltyBirthdaysBonusPending": "+{points} баллов в этот день",
-  "errorLoyaltyBirthdaysLoadFailed": "Не удалось загрузить именинников: {error}"
+  "errorLoyaltyBirthdaysLoadFailed": "Не удалось загрузить именинников: {error}",
+  "biometricEnrollEnable": "Включить",
+  "biometricEnrollMessage": "Используйте Face ID или отпечаток пальца, чтобы в следующий раз разблокировать ZAIRO без повторного входа.",
+  "biometricEnrollNotNow": "Не сейчас",
+  "biometricEnrollTitle": "Включить биометрический вход?",
+  "securityBiometricSectionTitle": "Биометрический вход",
+  "securityBiometricToggleSubtitle": "Мгновенная разблокировка ZAIRO без повторного входа",
+  "securityBiometricToggleTitle": "Face ID / отпечаток пальца",
+  "securityBiometricUnavailable": "Биометрический вход недоступен на этом устройстве — не зарегистрирован отпечаток или лицо, либо оборудование это не поддерживает.",
+  "securitySectionSubtitle": "Вход по отпечатку или Face ID",
+  "securityTitle": "Безопасность"
 }

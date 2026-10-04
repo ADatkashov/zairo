@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/auth/presentation/providers/auth_providers.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
+import '../features/auth/presentation/widgets/biometric_offer_host.dart';
 import '../features/moderation/presentation/screens/moderation_screen.dart';
 import 'admin_shell.dart';
 
@@ -26,7 +27,8 @@ class AuthGate extends ConsumerWidget {
     return authState.when(
       data: (user) {
         if (user == null) return const LoginScreen();
-        return user.role == 'ADMIN' ? const ModerationScreen() : const ResponsiveOwnerHome();
+        final home = user.role == 'ADMIN' ? const ModerationScreen() : const ResponsiveOwnerHome();
+        return BiometricOfferHost(child: home);
       },
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, stackTrace) => const LoginScreen(),
