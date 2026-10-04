@@ -214,8 +214,21 @@ class _LoggedInAuthController extends AuthController {
   }
 }
 
+/// Scrolls [finder] clear of the sticky "Book" bar and the bottom edge before
+/// tapping it. `scrollUntilVisible` stops as soon as a widget is merely on
+/// screen, which can leave it underneath the bar (a tap there silently misses).
+Future<void> tapVisible(WidgetTester tester, Finder finder) async {
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
+}
+
 void main() {
   testWidgets('selecting a service and slot enables booking and submits the right data', (tester) async {
+    // Tall viewport: the price summary bar would otherwise cover the slot chips.
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
     final slot = AvailabilitySlot(
       id: 'slot-1',
       providerId: 'provider-1',
@@ -267,9 +280,9 @@ void main() {
     final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');
     expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNull);
 
-    await tester.tap(find.text('Haircut'));
+    await tapVisible(tester, find.text('Haircut'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('10:00'));
+    await tapVisible(tester, find.text('10:00'));
     await tester.pumpAndSettle();
 
     expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNotNull);
@@ -336,16 +349,15 @@ void main() {
     expect(find.text('Jamie Stylist'), findsOneWidget);
 
     final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');
-    await tester.tap(find.text('Haircut'));
+    await tapVisible(tester, find.text('Haircut'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('10:00'), 200);
-    await tester.tap(find.text('10:00'));
+    await tapVisible(tester, find.text('10:00'));
     await tester.pumpAndSettle();
 
     // Service + slot picked, but no master yet -> still disabled.
     expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNull);
 
-    await tester.tap(find.text('Jamie Stylist'));
+    await tapVisible(tester, find.text('Jamie Stylist'));
     await tester.pumpAndSettle();
 
     expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNotNull);
@@ -362,9 +374,7 @@ void main() {
     });
     expect(fakeBookingApi.lastBookingCall, isNull);
     expect(fakePaymentsApi.lastChargedBookingId, 'beauty-booking-1');
-  },
-  skip: true,
-  );
+  });
 
   testWidgets(
       'an auto provider with mechanics requires picking a mechanic and vehicle, and books through the auto endpoint',
@@ -420,20 +430,18 @@ void main() {
     expect(find.text('Toyota Camry (2019)'), findsOneWidget);
 
     final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');
-    await tester.tap(find.text('Yerlan Mechanic'));
+    await tapVisible(tester, find.text('Yerlan Mechanic'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Toyota Camry (2019)'));
+    await tapVisible(tester, find.text('Toyota Camry (2019)'));
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(find.text('Oil Change'), 200);
-    await tester.tap(find.text('Oil Change'));
+    await tapVisible(tester, find.text('Oil Change'));
     await tester.pumpAndSettle();
 
     // Mechanic + vehicle + service picked, but no slot yet -> still disabled.
     expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNull);
 
-    await tester.scrollUntilVisible(find.text('10:00'), 200);
-    await tester.tap(find.text('10:00'));
+    await tapVisible(tester, find.text('10:00'));
     await tester.pumpAndSettle();
 
     expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNotNull);
@@ -451,13 +459,15 @@ void main() {
     });
     expect(fakeBookingApi.lastBookingCall, isNull);
     expect(fakePaymentsApi.lastChargedBookingId, 'auto-booking-1');
-  },
-  skip: true,
-  );
+  });
 
   testWidgets(
       'a provider in a category with no dedicated staff module requires picking a staff member and books '
       'through the generic staff endpoint', (tester) async {
+    // Tall viewport: the price summary bar would otherwise cover the slot chips.
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
     final slot = AvailabilitySlot(
       id: 'slot-1',
       providerId: 'provider-5',
@@ -503,16 +513,15 @@ void main() {
     expect(find.text('Dr. Aliya'), findsOneWidget);
 
     final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');
-    await tester.tap(find.text('Checkup'));
+    await tapVisible(tester, find.text('Checkup'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('10:00'), 200);
-    await tester.tap(find.text('10:00'));
+    await tapVisible(tester, find.text('10:00'));
     await tester.pumpAndSettle();
 
     // Service + slot picked, but no staff member yet -> still disabled.
     expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNull);
 
-    await tester.tap(find.text('Dr. Aliya'));
+    await tapVisible(tester, find.text('Dr. Aliya'));
     await tester.pumpAndSettle();
 
     expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNotNull);
