@@ -2,6 +2,7 @@ import 'package:core_network/core_network.dart';
 import 'package:dio/dio.dart';
 
 import '../loyalty_admin_exception.dart';
+import '../models/loyalty_birthday.dart';
 import '../models/loyalty_customer.dart';
 import '../models/loyalty_milestone.dart';
 import '../models/loyalty_overview.dart';
@@ -34,6 +35,19 @@ class LoyaltyAdminApi {
         final response =
             await _dioClient.put('/business/$providerId/loyalty/settings', data: settings.toUpdateJson());
         return LoyaltySettings.fromJson(response.data as Map<String, dynamic>);
+      });
+
+  // ---- Birthdays ----
+
+  /// Opted-in members whose birthday is within the next [days] days, soonest first.
+  Future<List<LoyaltyBirthday>> fetchBirthdays(String providerId, {int days = 30}) => _run(() async {
+        final response = await _dioClient.get(
+          '/business/$providerId/loyalty/birthdays',
+          queryParameters: {'days': days},
+        );
+        return (response.data as List<dynamic>)
+            .map((e) => LoyaltyBirthday.fromJson(e as Map<String, dynamic>))
+            .toList();
       });
 
   // ---- Milestones ----

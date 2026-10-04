@@ -36,7 +36,7 @@ class LoyaltyLedgerServiceComputeExpiryTest {
     private LoyaltyProgram programWithExpiration(boolean enabled, Integer months) {
         LoyaltyProgram program = new LoyaltyProgram(UUID.randomUUID(), UUID.randomUUID(), "Test Program", now);
         program.applySettings(true, "Test Program", null, 0, BigDecimal.ZERO, 0, 0, 2, 0, null, null, null, enabled,
-                months, null, null, now);
+                months, null, null, 0, now);
         return program;
     }
 }

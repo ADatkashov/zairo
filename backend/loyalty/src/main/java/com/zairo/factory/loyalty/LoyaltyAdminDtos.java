@@ -16,7 +16,7 @@ public final class LoyaltyAdminDtos {
             int repeatVisitBonusPoints, int repeatVisitThreshold, int reviewBonusPoints,
             BigDecimal pointsPerCurrencyUnitRedemption, Integer minRedemptionPoints,
             Integer maxRedemptionPointsPerBooking, boolean pointsExpireEnabled, Integer pointsExpirationMonths,
-            Integer dailyEarningPointsCap, Integer monthlyEarningPointsCap) {
+            Integer dailyEarningPointsCap, Integer monthlyEarningPointsCap, int birthdayBonusPoints) {
 
         static LoyaltySettingsResponse from(LoyaltyProgram p) {
             return new LoyaltySettingsResponse(p.getProviderId(), p.isEnabled(), p.getName(), p.getDescription(),
@@ -24,7 +24,8 @@ public final class LoyaltyAdminDtos {
                     p.getRepeatVisitBonusPoints(), p.getRepeatVisitThreshold(), p.getReviewBonusPoints(),
                     p.getPointsPerCurrencyUnitRedemption(), p.getMinRedemptionPoints(),
                     p.getMaxRedemptionPointsPerBooking(), p.isPointsExpireEnabled(), p.getPointsExpirationMonths(),
-                    p.getDailyEarningPointsCap(), p.getMonthlyEarningPointsCap());
+                    p.getDailyEarningPointsCap(), p.getMonthlyEarningPointsCap(),
+                    p.getBirthdayBonusPoints());
         }
     }
 
@@ -33,7 +34,15 @@ public final class LoyaltyAdminDtos {
             int repeatVisitBonusPoints, int repeatVisitThreshold, int reviewBonusPoints,
             BigDecimal pointsPerCurrencyUnitRedemption, Integer minRedemptionPoints,
             Integer maxRedemptionPointsPerBooking, boolean pointsExpireEnabled, Integer pointsExpirationMonths,
-            Integer dailyEarningPointsCap, Integer monthlyEarningPointsCap) {
+            Integer dailyEarningPointsCap, Integer monthlyEarningPointsCap, int birthdayBonusPoints) {
+    }
+
+    /**
+     * One opted-in member with a birthday coming up. Month/day only -- the birth year (age) is deliberately not
+     * exposed to the business.
+     */
+    public record BirthdayResponse(UUID userId, String displayName, int month, int day, int daysUntil,
+            int bonusPoints, boolean bonusAwarded) {
     }
 
     public record MilestoneResponse(UUID id, int visitsRequired, int pointsAwarded, String label) {
