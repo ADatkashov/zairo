@@ -37,7 +37,7 @@ jobs:
             yes | /home/android/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
 
             # Install required SDK components
-            /home/android/cmdline-tools/latest/bin/sdkmanager "platforms;android-37" "build-tools;36.0.0" "ndk;27.0.11902837"
+            /home/android/cmdline-tools/latest/bin/sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;27.0.11902837"
       - run:
           name: Install Dependencies
           working_directory: apps/user_app
