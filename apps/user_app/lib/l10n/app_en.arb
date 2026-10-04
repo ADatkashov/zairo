@@ -1610,5 +1610,21 @@
   "providerNotFoundTitle": "Business not found",
   "@providerNotFoundTitle": {"description": "Title when a provider link (/provider/:id) points at a business that isn't listed."},
   "providerNotFoundMessage": "This business may have been removed or is not available in your city.",
-  "@providerNotFoundMessage": {"description": "Body under the 'Business not found' title."}
+  "@providerNotFoundMessage": {"description": "Body under the 'Business not found' title."},
+  "searchClearButton": "Clear search",
+  "@searchClearButton": {"description": "Semantic label of the clear (x) button inside the Search field."},
+  "searchResetFilters": "Reset search and filters",
+  "@searchResetFilters": {"description": "Button in the empty Search results that clears the query and every filter."},
+  "bookingsFindServiceButton": "Find a service",
+  "@bookingsFindServiceButton": {"description": "Empty Bookings state: jumps to the Search tab."},
+  "bookingsTabEmptyUpcoming": "No upcoming bookings. Pick a service and a time that suits you.",
+  "@bookingsTabEmptyUpcoming": {"description": "Empty 'Upcoming' tab of My bookings."},
+  "bookingsTabEmptyCompleted": "Completed visits will show up here.",
+  "@bookingsTabEmptyCompleted": {"description": "Empty 'Completed' tab of My bookings."},
+  "bookingsTabEmptyCancelled": "You have no cancelled bookings.",
+  "@bookingsTabEmptyCancelled": {"description": "Empty 'Cancelled' tab of My bookings."},
+  "profileSectionActivity": "My activity",
+  "@profileSectionActivity": {"description": "Profile list group header: favorites, messages, rewards, coupons, vehicles."},
+  "profileSectionHelp": "Help",
+  "@profileSectionHelp": {"description": "Profile list group header: support and about."}
 }

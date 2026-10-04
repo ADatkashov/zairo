@@ -493,5 +493,13 @@
   "profileLogOutConfirmMessage": "Чтобы снова увидеть записи, избранное и сообщения, нужно будет войти заново.",
   "profileLogOutStayButton": "Остаться",
   "providerNotFoundTitle": "Бизнес не найден",
-  "providerNotFoundMessage": "Возможно, он удалён или недоступен в вашем городе."
+  "providerNotFoundMessage": "Возможно, он удалён или недоступен в вашем городе.",
+  "searchClearButton": "Очистить поиск",
+  "searchResetFilters": "Сбросить поиск и фильтры",
+  "bookingsFindServiceButton": "Найти услугу",
+  "bookingsTabEmptyUpcoming": "Предстоящих записей нет. Выберите услугу и удобное время.",
+  "bookingsTabEmptyCompleted": "Здесь появятся завершённые визиты.",
+  "bookingsTabEmptyCancelled": "Отменённых записей нет.",
+  "profileSectionActivity": "Моя активность",
+  "profileSectionHelp": "Помощь"
 }

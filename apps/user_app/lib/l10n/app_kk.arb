@@ -478,5 +478,13 @@
   "profileLogOutConfirmMessage": "Жазылымдарыңызды, таңдаулыларыңызды және хабарламаларыңызды көру үшін қайта кіру керек.",
   "profileLogOutStayButton": "Қалу",
   "providerNotFoundTitle": "Бизнес табылмады",
-  "providerNotFoundMessage": "Ол жойылған немесе сіздің қалаңызда қолжетімсіз болуы мүмкін."
+  "providerNotFoundMessage": "Ол жойылған немесе сіздің қалаңызда қолжетімсіз болуы мүмкін.",
+  "searchClearButton": "Іздеуді тазалау",
+  "searchResetFilters": "Іздеу мен сүзгілерді қалпына келтіру",
+  "bookingsFindServiceButton": "Қызмет табу",
+  "bookingsTabEmptyUpcoming": "Алдағы жазылымдар жоқ. Қызмет пен ыңғайлы уақытты таңдаңыз.",
+  "bookingsTabEmptyCompleted": "Аяқталған визиттер осында көрінеді.",
+  "bookingsTabEmptyCancelled": "Бас тартылған жазылымдар жоқ.",
+  "profileSectionActivity": "Менің белсенділігім",
+  "profileSectionHelp": "Көмек"
 }

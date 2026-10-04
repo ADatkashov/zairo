@@ -23,6 +23,7 @@ import '../../features/settings/presentation/screens/security_settings_screen.da
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../l10n/app_localizations.dart';
 import 'app_routes.dart';
+import '../widgets/scroll_to_top_on_tab_reselect.dart';
 import 'route_screens.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -142,7 +143,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/',
-                builder: (context, state) => const HomeScreen(),
+                builder: (context, state) => const ScrollToTopOnTabReselect(
+                  tabIndex: 0,
+                  child: HomeScreen(),
+                ),
               ),
             ],
           ),
@@ -151,7 +155,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/search',
-                builder: (context, state) => const SearchScreen(),
+                builder: (context, state) => ScrollToTopOnTabReselect(
+                  tabIndex: 1,
+                  child: SearchScreen(
+                    initialVertical: state.uri.queryParameters['category'],
+                    initialQuery: state.uri.queryParameters['q'],
+                  ),
+                ),
               ),
             ],
           ),
@@ -160,7 +170,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/bookings',
-                builder: (context, state) => const MyBookingsScreen(),
+                builder: (context, state) => const ScrollToTopOnTabReselect(
+                  tabIndex: 2,
+                  child: MyBookingsScreen(),
+                ),
               ),
             ],
           ),
@@ -169,7 +182,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/profile',
-                builder: (context, state) => const ProfileScreen(),
+                builder: (context, state) => const ScrollToTopOnTabReselect(
+                  tabIndex: 3,
+                  child: ProfileScreen(),
+                ),
               ),
             ],
           ),

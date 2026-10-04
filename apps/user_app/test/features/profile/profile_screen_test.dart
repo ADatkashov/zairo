@@ -111,7 +111,7 @@ void main() {
 
     expect(find.text('1'), findsNWidgets(2));
     expect(find.text('My bookings'), findsOneWidget);
-    expect(find.text('My favorites'), findsOneWidget);
+    expect(find.widgetWithText(FactoryStatTile, 'My favorites'), findsOneWidget);
   });
 
   testWidgets('tapping the favorites stat tile opens the favorites list (no longer a bottom-nav tab)',
@@ -146,7 +146,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('My favorites'));
+    await tester.tap(find.widgetWithText(FactoryStatTile, 'My favorites'));
     await tester.pumpAndSettle();
 
     expect(find.text('Salon'), findsOneWidget);
