@@ -656,6 +656,7 @@ class _CreateSalonForm extends ConsumerStatefulWidget {
 class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
   final _nameController = TextEditingController();
   String _vertical = 'beauty';
+  String? _cityCode;
   bool _isSubmitting = false;
   String? _error;
 
@@ -670,6 +671,7 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
+    final citiesAsync = ref.watch(activeCitiesProvider);
 
     return Center(
       child: Padding(
@@ -696,6 +698,29 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
               value: _vertical,
               onChanged: _isSubmitting ? (_) {} : (v) => setState(() => _vertical = v),
             ),
+            const SizedBox(height: FactorySpacing.space3),
+            citiesAsync.when(
+              data: (cities) {
+                if (cities.isEmpty) return Text(l10n.noCitiesAvailable);
+                return DropdownButtonFormField<String>(
+                  value: _cityCode ?? cities.first.code,
+                  decoration: InputDecoration(
+                    labelText: l10n.selectCity,
+                    border: const OutlineInputBorder(),
+                  ),
+                  items: cities
+                      .map((city) => DropdownMenuItem(value: city.code, child: Text(city.name)))
+                      .toList(),
+                  onChanged: _isSubmitting
+                      ? null
+                      : (value) {
+                          if (value != null) setState(() => _cityCode = value);
+                        },
+                );
+              },
+              loading: () => const CircularProgressIndicator(),
+              error: (error, _) => Text('${l10n.errorLoadingCities}: $error'),
+            ),
             const SizedBox(height: FactorySpacing.space4),
             if (_error != null)
               Padding(
@@ -719,6 +744,11 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
       setState(() => _error = l10n.validationBusinessNameRequired);
       return;
     }
+    final cityCode = _cityCode ?? ref.read(activeCitiesProvider).value?.firstOrNull?.code;
+    if (cityCode == null) {
+      setState(() => _error = l10n.noCitiesAvailable);
+      return;
+    }
     setState(() {
       _isSubmitting = true;
       _error = null;
@@ -728,6 +758,7 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
             ownerUserId: widget.ownerUserId,
             name: _nameController.text.trim(),
             vertical: _vertical,
+            cityCode: cityCode,
           );
       ref.invalidate(myProvidersProvider(widget.ownerUserId));
     } catch (e) {

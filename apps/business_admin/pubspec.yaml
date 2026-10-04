@@ -28,6 +28,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.3
+  json_annotation: ^4.12.0
 
 dev_dependencies:
   flutter_test:
@@ -37,6 +38,8 @@ dev_dependencies:
   # for fake subclasses — the app itself only touches it through core_storage.
   flutter_secure_storage: ^11.2.0
   flutter_launcher_icons: ^0.14.4
+  build_runner: ^2.16.1
+  json_serializable: ^6.14.1
 
 flutter:
   uses-material-design: true
