@@ -422,12 +422,12 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               onPressed:
                   (_selectedServiceId != null &&
                       _selectedSlotId != null &&
-                      !mastersAsync.isLoading &&
-                      !mechanicsAsync.isLoading &&
-                      !vehiclesAsync.isLoading &&
-                      !cleanersAsync.isLoading &&
-                      !staffAsync.isLoading &&
-                      !slotsAsync.isLoading &&
+                      mastersAsync.hasValue &&
+                      mechanicsAsync.hasValue &&
+                      vehiclesAsync.hasValue &&
+                      cleanersAsync.hasValue &&
+                      staffAsync.hasValue &&
+                      slotsAsync.hasValue &&
                       (masters.isEmpty || _selectedMasterId != null) &&
                       (mechanics.isEmpty || _selectedMechanicId != null) &&
                       (!requiresVehicleSelection ||
