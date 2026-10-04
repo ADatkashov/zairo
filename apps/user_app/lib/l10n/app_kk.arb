@@ -56,6 +56,7 @@
 
   "loginContinueWithGoogle": "Google арқылы жалғастыру",
   "loginContinueWithFacebook": "Facebook арқылы жалғастыру",
+  "loginContinueWithEmail": "E-mail арқылы жалғастыру",
   "loginContinueWithPhone": "Телефон нөірі арқылы жалғастыру",
   "loginOrDivider": "немесе",
   "phoneLoginTitle": "Телефон нөірі",
@@ -81,7 +82,7 @@
   "securityBiometricToggleSubtitle": "Қайта кірмей-ақ ZAIRO құлпын лезде ашу",
   "securityLinkedAccountsSectionTitle": "Тіркелген аккаунттар",
   "securityLinkButton": "Тіркеу",
-  "errorAuthInvalidProviderCredential": "Google/Facebook арқылы растай алмадық. Қайта көріңіз.",
+  "errorAuthInvalidProviderCredential": "Google/Apple арқылы растай алмадық. Қайта көріңіз.",
   "errorAuthInvalidPhoneNumber": "Жарамды телефон нөірін енгізіңіз.",
   "errorAuthInvalidOtp": "Код дұрыс емес. Қайта көріңіз.",
   "errorAuthOtpExpired": "Кодтың мерзімі өтті. Жаңа код сұраңыз.",
@@ -442,5 +443,19 @@
 
   "weekdaySun": "Жс",
 
-  "bookingPayDueNow": "Қазір төленеді"
+  "bookingPayDueNow": "Қазір төленеді",
+  "errorAuthAccountLinkRequired": "Бұл email-мен аккаунт бар. Қосу үшін оның құпиясөзін енгізіңіз.",
+  "errorAuthTooManyLoginAttempts": "Сәтсіз әрекеттер тым көп. Кейінірек көріңіз.",
+  "phonePasswordTitle": "Құпиясөзді енгізіңіз",
+  "phonePasswordInstructions": "{phone} үшін құпиясөзді енгізіңіз.",
+  "phoneForgotPassword": "Құпиясөзді ұмыттыңыз ба? SMS кодын алу",
+  "phoneResetTitle": "Құпиясөзді қалпына келтіру",
+  "phoneRegisterInstructions": "{phone} нөміріне 6 таңбалы код жібердік. Кодты, атыңызды және құпиясөзді енгізіңіз.",
+  "phoneResetInstructions": "{phone} нөміріне 6 таңбалы код жібердік. Кодты енгізіп, жаңа құпиясөз қойыңыз.",
+  "linkAccountTitle": "Аккаунтты қосу",
+  "linkAccountBody": "Бұл email-мен аккаунт бар. Осы кіру тәсілін қосу үшін оның құпиясөзін енгізіңіз.",
+  "linkAccountConfirm": "Қосу",
+  "linkAccountCancel": "Бас тарту",
+  "loginContinueWithApple": "Apple арқылы жалғастыру",
+  "smsMockHint": "Сынақ режимі: нақты SMS жіберілмейді. {code} кодын енгізіңіз."
 }

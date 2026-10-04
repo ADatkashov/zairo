@@ -19,6 +19,8 @@ enum AuthErrorKey {
   otpResendCooldown,
   tooManyOtpRequests,
   identityAlreadyLinked,
+  accountLinkRequired,
+  tooManyLoginAttempts,
 }
 
 class AuthException implements Exception {
@@ -38,6 +40,8 @@ class AuthException implements Exception {
         AuthErrorKey.otpResendCooldown => l10n.errorAuthOtpResendCooldown,
         AuthErrorKey.tooManyOtpRequests => l10n.errorAuthTooManyOtpRequests,
         AuthErrorKey.identityAlreadyLinked => l10n.errorAuthIdentityAlreadyLinked,
+        AuthErrorKey.accountLinkRequired => l10n.errorAuthAccountLinkRequired,
+        AuthErrorKey.tooManyLoginAttempts => l10n.errorAuthTooManyLoginAttempts,
       };
 
   @override

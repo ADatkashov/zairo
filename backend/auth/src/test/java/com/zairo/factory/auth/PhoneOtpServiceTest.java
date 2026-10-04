@@ -34,6 +34,58 @@ class PhoneOtpServiceTest {
                 maxRequestsPerHour);
     }
 
+    private PhoneOtpService newLimitedService(int maxRequestsPerIpPerHour, int dailySendCap) {
+        return new PhoneOtpService(repository, sender, clock, 5, 0, 5, 100, maxRequestsPerIpPerHour, dailySendCap, "");
+    }
+
+    @Test
+    void aMockCodeIsIssuedForEveryPhoneAndVerifiesNormally() {
+        PhoneOtpService service = new PhoneOtpService(repository, sender, clock, 5, 0, 5, 100,
+                Integer.MAX_VALUE, Integer.MAX_VALUE, "123456");
+
+        service.requestOtp("+77001111111");
+        assertThat(sender.lastCode).isEqualTo("123456");
+        service.requestOtp("+77002222222");
+        assertThat(sender.lastCode).isEqualTo("123456");
+
+        service.verify("+77001111111", "123456"); // accepted
+        assertThatThrownBy(() -> service.verify("+77001111111", "123456"))
+                .isInstanceOf(InvalidOtpException.class); // still single-use
+        assertThatThrownBy(() -> service.verify("+77002222222", "654321"))
+                .isInstanceOf(InvalidOtpException.class); // other codes still rejected
+    }
+
+    @Test
+    void aMalformedMockCodeIsRejectedAtStartup() {
+        assertThatThrownBy(() -> new PhoneOtpService(repository, sender, clock, 5, 0, 5, 100,
+                Integer.MAX_VALUE, Integer.MAX_VALUE, "12ab")).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void oneIpCannotRequestCodesForManyPhonesPastItsHourlyCap() {
+        PhoneOtpService service = newLimitedService(2, 1000);
+        service.requestOtp("+77001111111", "1.2.3.4");
+        service.requestOtp("+77002222222", "1.2.3.4");
+
+        assertThatThrownBy(() -> service.requestOtp("+77003333333", "1.2.3.4"))
+                .isInstanceOf(TooManyOtpRequestsException.class);
+        // A different IP is unaffected, and the window slides.
+        service.requestOtp("+77003333333", "5.6.7.8");
+        clock.advanceBy(Duration.ofHours(1).plusSeconds(1));
+        service.requestOtp("+77004444444", "1.2.3.4");
+    }
+
+    @Test
+    void theDailyCapStopsAllSendingOnceReached() {
+        PhoneOtpService service = newLimitedService(100, 2);
+        service.requestOtp("+77001111111", "1.2.3.4");
+        service.requestOtp("+77002222222", "5.6.7.8");
+
+        assertThatThrownBy(() -> service.requestOtp("+77003333333", "9.9.9.9"))
+                .isInstanceOf(OtpTemporarilyUnavailableException.class);
+        assertThat(sender.sent).hasSize(2);
+    }
+
     @Test
     void requestingSendsASixDigitCodeAndVerifyAcceptsIt() {
         PhoneOtpService service = newService(5, 60, 5, 5);
@@ -153,10 +205,12 @@ class PhoneOtpServiceTest {
 
     private static final class CapturingOtpSender implements OtpSenderPort {
         private String lastCode;
+        private final java.util.List<String> sent = new java.util.ArrayList<>();
 
         @Override
         public void send(String e164Phone, String code) {
             this.lastCode = code;
+            this.sent.add(e164Phone);
         }
     }
 
@@ -209,6 +263,18 @@ class PhoneOtpServiceTest {
             return rows.values().stream()
                     .filter(o -> o.getPhone().equals(phone) && o.getCreatedAt().isAfter(since))
                     .count();
+        }
+
+        @Override
+        public long countByRequestIpAndCreatedAtAfter(String requestIp, Instant since) {
+            return rows.values().stream()
+                    .filter(o -> requestIp.equals(o.getRequestIp()) && o.getCreatedAt().isAfter(since))
+                    .count();
+        }
+
+        @Override
+        public long countByCreatedAtAfter(Instant since) {
+            return rows.values().stream().filter(o -> o.getCreatedAt().isAfter(since)).count();
         }
 
         @Override

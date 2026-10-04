@@ -319,7 +319,7 @@ class _StatsRow extends ConsumerWidget {
           FactoryStatTile(label: l10n.campaignKpiActive, value: '${stats.activeCampaigns}'),
           FactoryStatTile(
             label: l10n.campaignKpiRecoveredRevenue,
-            value: '${formatFactoryAmount(stats.totalRecoveredRevenue)} ${stats.currency ?? ''}'.trim(),
+            value: formatFactoryMoney(stats.totalRecoveredRevenue, stats.currency),
           ),
           FactoryStatTile(label: l10n.campaignKpiConversionRate, value: '${(stats.conversionRate * 100).round()}%'),
           FactoryStatTile(label: l10n.campaignKpiNeedsAttention, value: '${stats.campaignsRequiringAttention}'),
