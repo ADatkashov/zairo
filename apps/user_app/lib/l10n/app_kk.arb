@@ -56,6 +56,7 @@
 
   "loginContinueWithGoogle": "Google арқылы жалғастыру",
   "loginContinueWithFacebook": "Facebook арқылы жалғастыру",
+  "loginContinueWithEmail": "E-mail арқылы жалғастыру",
   "loginContinueWithPhone": "Телефон нөірі арқылы жалғастыру",
   "loginOrDivider": "немесе",
   "phoneLoginTitle": "Телефон нөірі",

@@ -13,16 +13,37 @@ import 'otp_screen.dart';
 /// "add phone to my existing account" (Settings > Security) — both share
 /// this exact same UI, only what happens after a successful verification
 /// differs (see OtpScreen).
-class PhoneLoginScreen extends ConsumerStatefulWidget {
+class PhoneLoginScreen extends StatelessWidget {
   const PhoneLoginScreen({super.key, this.linking = false});
 
   final bool linking;
 
   @override
-  ConsumerState<PhoneLoginScreen> createState() => _PhoneLoginScreenState();
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Scaffold(
+      appBar: FactoryAppBar(title: l10n.phoneLoginTitle),
+      body: Padding(
+        padding: const EdgeInsets.all(FactorySpacing.space4),
+        child: ListView(children: [PhoneLoginForm(linking: linking)]),
+      ),
+    );
+  }
 }
 
-class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
+/// The phone-number form itself (instructions, field, Continue). Shared by
+/// [PhoneLoginScreen] and the root LoginScreen, where it is the default
+/// sign-in method. A [Column], not a ListView, so it can sit inside either.
+class PhoneLoginForm extends ConsumerStatefulWidget {
+  const PhoneLoginForm({super.key, this.linking = false});
+
+  final bool linking;
+
+  @override
+  ConsumerState<PhoneLoginForm> createState() => _PhoneLoginFormState();
+}
+
+class _PhoneLoginFormState extends ConsumerState<PhoneLoginForm> {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController(text: '+7 ');
   bool _isSubmitting = false;
@@ -38,39 +59,34 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      appBar: FactoryAppBar(title: l10n.phoneLoginTitle),
-      body: Padding(
-        padding: const EdgeInsets.all(FactorySpacing.space4),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              Text(l10n.phoneLoginInstructions),
-              const SizedBox(height: FactorySpacing.space4),
-              FactoryTextField(
-                controller: _phoneController,
-                label: l10n.registerPhoneLabel,
-                hint: '+7 700 123 45 67',
-                keyboardType: TextInputType.phone,
-                validator: (value) => (value == null || value.trim().length < 8)
-                    ? l10n.validationPhoneRequired
-                    : null,
-              ),
-              const SizedBox(height: FactorySpacing.space5),
-              if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
-                  child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-                ),
-              FactoryButton(
-                label: l10n.phoneLoginContinueButton,
-                isLoading: _isSubmitting,
-                onPressed: _isSubmitting ? null : _submit,
-              ),
-            ],
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(l10n.phoneLoginInstructions),
+          const SizedBox(height: FactorySpacing.space4),
+          FactoryTextField(
+            controller: _phoneController,
+            label: l10n.registerPhoneLabel,
+            hint: '+7 700 123 45 67',
+            keyboardType: TextInputType.phone,
+            validator: (value) => (value == null || value.trim().length < 8)
+                ? l10n.validationPhoneRequired
+                : null,
           ),
-        ),
+          const SizedBox(height: FactorySpacing.space5),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
+              child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            ),
+          FactoryButton(
+            label: l10n.phoneLoginContinueButton,
+            isLoading: _isSubmitting,
+            onPressed: _isSubmitting ? null : _submit,
+          ),
+        ],
       ),
     );
   }

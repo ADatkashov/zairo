@@ -145,6 +145,8 @@
   "loginContinueWithFacebook": "Continue with Facebook",
   "@loginContinueWithFacebook": {"description": "Login screen's Facebook sign-in button, and the linked-account row label on Security settings."},
 
+  "loginContinueWithEmail": "Continue with email",
+  "@loginContinueWithEmail": {"description": "Tooltip of the round email button on Login."},
   "loginContinueWithPhone": "Continue with phone",
   "@loginContinueWithPhone": {"description": "Login screen's phone sign-in button, and the linked-account row label on Security settings."},
 
