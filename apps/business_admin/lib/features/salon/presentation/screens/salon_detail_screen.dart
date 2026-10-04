@@ -1800,8 +1800,11 @@ class _BookingSettingsSection extends ConsumerStatefulWidget {
   ConsumerState<_BookingSettingsSection> createState() => _BookingSettingsSectionState();
 }
 
+enum _DepositMode { none, deposit, full }
+
 class _BookingSettingsSectionState extends ConsumerState<_BookingSettingsSection> {
-  late final _depositPercentageController = TextEditingController(text: '0');
+  late final _depositPercentageController = TextEditingController(text: '10');
+  _DepositMode _mode = _DepositMode.none;
   bool _isEditing = true;
   String? _fieldError;
 
@@ -1815,9 +1818,18 @@ class _BookingSettingsSectionState extends ConsumerState<_BookingSettingsSection
     try {
       final value = await ref.read(salonAdminApiProvider).getDepositPercentage(widget.providerId);
       if (!mounted) return;
-      setState(() => _depositPercentageController.text = '$value');
+      setState(() {
+        if (value <= 0) {
+          _mode = _DepositMode.none;
+        } else if (value >= 100) {
+          _mode = _DepositMode.full;
+        } else {
+          _mode = _DepositMode.deposit;
+          _depositPercentageController.text = '$value';
+        }
+      });
     } catch (_) {
-      // Keep the default; the owner can still enter and save a value.
+      // Keep the default; the owner can still pick an option and save it.
     } finally {
       if (mounted) setState(() => _isEditing = false);
     }
@@ -1829,10 +1841,38 @@ class _BookingSettingsSectionState extends ConsumerState<_BookingSettingsSection
     super.dispose();
   }
 
+  /// 0 = no prepayment, 100 = full payment, 1-99 = deposit — the same scale
+  /// the backend stores.
+  int get _effectivePercentage => switch (_mode) {
+        _DepositMode.none => 0,
+        _DepositMode.full => 100,
+        _DepositMode.deposit => int.tryParse(_depositPercentageController.text.trim()) ?? 0,
+      };
+
+  Widget _modeTile(String title, String subtitle, _DepositMode mode) {
+    final colors = context.factoryColors;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
+      child: FactorySelectableTile(
+        title: title,
+        subtitle: Text(
+          subtitle,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+        ),
+        selected: _mode == mode,
+        onTap: _isEditing
+            ? null
+            : () => setState(() {
+                  _mode = mode;
+                  _fieldError = null;
+                }),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
     return Column(
@@ -1845,36 +1885,27 @@ class _BookingSettingsSectionState extends ConsumerState<_BookingSettingsSection
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                l10n.depositPercentageLabel,
-                style: textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                l10n.depositModeTitle,
+                style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: FactorySpacing.space2),
-              FactoryTextField(
-                controller: _depositPercentageController,
-                label: l10n.depositPercentageLabel,
-                hint: l10n.depositPercentageHint,
-                keyboardType: const TextInputType.numberWithOptions(decimal: false),
-                enabled: !_isEditing,
-                errorText: _fieldError,
-                onChanged: (_) {
-                  if (_fieldError != null) {
-                    setState(() => _fieldError = null);
-                  }
-                },
-              ),
-              const SizedBox(height: FactorySpacing.space2),
-              Text(
-                l10n.depositPercentageHint,
-                style: textTheme.bodySmall?.copyWith(
-                  color: colors.textTertiary,
+              _modeTile(l10n.depositModeNone, l10n.depositModeNoneHint, _DepositMode.none),
+              _modeTile(l10n.depositModeDeposit, l10n.depositModeDepositHint, _DepositMode.deposit),
+              _modeTile(l10n.depositModeFull, l10n.depositModeFullHint, _DepositMode.full),
+              if (_mode == _DepositMode.deposit) ...[
+                const SizedBox(height: FactorySpacing.space1),
+                FactoryTextField(
+                  controller: _depositPercentageController,
+                  label: l10n.depositPercentageLabel,
+                  hint: l10n.depositPercentageRangeHint,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: false),
+                  enabled: !_isEditing,
+                  errorText: _fieldError,
+                  onChanged: (_) => setState(() => _fieldError = null),
                 ),
-              ),
+              ],
               const SizedBox(height: FactorySpacing.space3),
-              _DepositPercentageGuide(
-                percentage: int.tryParse(_depositPercentageController.text.trim()) ?? 0,
-              ),
+              _DepositPercentageGuide(percentage: _effectivePercentage),
               const SizedBox(height: FactorySpacing.space3),
               Align(
                 alignment: Alignment.centerRight,
@@ -1893,17 +1924,15 @@ class _BookingSettingsSectionState extends ConsumerState<_BookingSettingsSection
 
   Future<void> _save() async {
     final l10n = AppLocalizations.of(context)!;
-    final value = int.tryParse(_depositPercentageController.text.trim()) ?? 0;
+    final value = _effectivePercentage;
 
-    if (value < 0 || value > 100) {
-      setState(() => _fieldError = l10n.validationPercentageRange);
+    if (_mode == _DepositMode.deposit && (value < 1 || value > 99)) {
+      setState(() => _fieldError = l10n.validationDepositPercentageRange);
       return;
     }
 
     setState(() => _isEditing = true);
     try {
-      if (!mounted) return;
-
       await ref.read(salonAdminApiProvider).setDepositPercentage(widget.providerId, value);
 
       if (!mounted) return;

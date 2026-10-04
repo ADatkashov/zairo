@@ -427,6 +427,15 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     );
   }
 
+  Future<Booking> _withPaymentAmounts(Booking created) async {
+    if (created.depositAmount != null) return created;
+    try {
+      return await ref.read(bookingApiProvider).getBooking(created.id);
+    } catch (_) {
+      return created;
+    }
+  }
+
   /// Null while the deposit policy is loading or unreadable — the CTA then
   /// falls back to the plain price rather than claiming "free" on a guess.
   PaymentPlan? _paymentPlan() {
@@ -518,7 +527,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       // condition above) — route through the matching vertical booking
       // endpoint so its own rules are enforced server-side; otherwise use
       // Core's plain booking flow, unchanged from before verticals existed.
-      final Booking booking;
+      Booking booking;
       if (_selectedMechanicId != null) {
         booking = await ref
             .read(autoApiProvider)
@@ -570,6 +579,11 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               totalPrice: service.price,
             );
       }
+
+      // The beauty/auto/cleaning/staff endpoints return a slimmer body with no
+      // deposit figures, so re-read the booking from the generic endpoint —
+      // otherwise the confirmation can't tell a deposit from "pay at venue".
+      booking = await _withPaymentAmounts(booking);
 
       // Charged right after booking creation, in the same flow — see
       // SESSION_NOTES.md for why this isn't gated behind a webhook yet

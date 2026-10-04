@@ -59,6 +59,11 @@ class BookingApi {
     }
   }
 
+  Future<Booking> getBooking(String bookingId) async {
+    final response = await _dioClient.get('/bookings/$bookingId');
+    return Booking.fromJson(response.data as Map<String, dynamic>);
+  }
+
   Future<List<Booking>> listMyBookings(String userId) async {
     final response = await _dioClient.get('/users/$userId/bookings');
     final data = response.data as List<dynamic>;

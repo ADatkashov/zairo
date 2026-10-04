@@ -8,7 +8,6 @@ import '../../../discovery/data/models/service_summary.dart';
 import '../../../loyalty/presentation/screens/business_loyalty_screen.dart';
 import '../../../payments/presentation/widgets/payment_status_chip.dart';
 import '../../data/models/booking.dart';
-import '../../data/models/payment_plan.dart';
 import '../widgets/booking_payment_summary.dart';
 import 'my_bookings_screen.dart';
 
@@ -103,12 +102,7 @@ class BookingConfirmationScreen extends StatelessWidget {
                               : formatMonthDayTime(l10n, slotStartsAt!.toLocal()),
                         ),
                         const Divider(height: FactorySpacing.space6),
-                        BookingPaymentSummary(
-                          plan: PaymentPlan.fromAmounts(
-                            total: booking.totalPrice,
-                            deposit: booking.depositAmount,
-                          ),
-                        ),
+                        BookingAmounts(booking: booking),
                         const SizedBox(height: FactorySpacing.space2),
                         Align(
                           alignment: Alignment.centerLeft,
