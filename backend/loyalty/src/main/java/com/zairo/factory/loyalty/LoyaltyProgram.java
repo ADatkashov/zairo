@@ -65,6 +65,10 @@ public class LoyaltyProgram {
     @Column(name = "review_bonus_points", nullable = false)
     private int reviewBonusPoints;
 
+    /** Awarded once a year, on the member's birthday (opted-in members only). Zero disables it. */
+    @Column(name = "birthday_bonus_points", nullable = false)
+    private int birthdayBonusPoints;
+
     /**
      * Informational only -- surfaced to the business when pricing a new
      * reward (e.g. "customers redeem about 10 points per 1 spent"); never
@@ -120,6 +124,7 @@ public class LoyaltyProgram {
         this.repeatVisitBonusPoints = 0;
         this.repeatVisitThreshold = 2;
         this.reviewBonusPoints = 0;
+        this.birthdayBonusPoints = 0;
         this.pointsExpireEnabled = false;
         this.createdAt = now;
         this.updatedAt = now;
@@ -130,7 +135,7 @@ public class LoyaltyProgram {
             int repeatVisitThreshold, int reviewBonusPoints, BigDecimal pointsPerCurrencyUnitRedemption,
             Integer minRedemptionPoints, Integer maxRedemptionPointsPerBooking, boolean pointsExpireEnabled,
             Integer pointsExpirationMonths, Integer dailyEarningPointsCap, Integer monthlyEarningPointsCap,
-            Instant now) {
+            int birthdayBonusPoints, Instant now) {
         this.enabled = enabled;
         this.name = name;
         this.description = description;
@@ -147,6 +152,7 @@ public class LoyaltyProgram {
         this.pointsExpirationMonths = pointsExpirationMonths;
         this.dailyEarningPointsCap = dailyEarningPointsCap;
         this.monthlyEarningPointsCap = monthlyEarningPointsCap;
+        this.birthdayBonusPoints = birthdayBonusPoints;
         this.updatedAt = now;
     }
 
@@ -192,6 +198,10 @@ public class LoyaltyProgram {
 
     public int getReviewBonusPoints() {
         return reviewBonusPoints;
+    }
+
+    public int getBirthdayBonusPoints() {
+        return birthdayBonusPoints;
     }
 
     public BigDecimal getPointsPerCurrencyUnitRedemption() {
