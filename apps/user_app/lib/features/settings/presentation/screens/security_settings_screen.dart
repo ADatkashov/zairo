@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/app_localizations.dart';
-import '../../../auth/data/facebook_sign_in_service.dart';
+import '../../../auth/data/apple_sign_in_service.dart';
 import '../../../auth/data/google_sign_in_service.dart';
 import '../../../auth/data/models/identity_summary.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
@@ -122,15 +122,16 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
                       child: Text(l10n.securityLinkButton),
                     ),
             ),
-            ListTile(
-              title: Text(l10n.loginContinueWithFacebook),
-              trailing: _isLinked('FACEBOOK')
-                  ? Icon(Icons.check_circle, color: colors.primary)
-                  : TextButton(
-                      onPressed: _isLinking ? null : _linkFacebook,
-                      child: Text(l10n.securityLinkButton),
-                    ),
-            ),
+            if (ref.watch(appleSignInAvailableProvider).value ?? false)
+              ListTile(
+                title: Text(l10n.loginContinueWithApple),
+                trailing: _isLinked('APPLE')
+                    ? Icon(Icons.check_circle, color: colors.primary)
+                    : TextButton(
+                        onPressed: _isLinking ? null : _linkApple,
+                        child: Text(l10n.securityLinkButton),
+                      ),
+              ),
             ListTile(
               title: Text(l10n.loginContinueWithPhone),
               trailing: _isLinked('PHONE')
@@ -187,16 +188,16 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
     }
   }
 
-  Future<void> _linkFacebook() async {
+  Future<void> _linkApple() async {
     setState(() {
       _isLinking = true;
       _linkError = null;
     });
     final l10n = AppLocalizations.of(context)!;
     try {
-      final accessToken = await ref.read(facebookSignInServiceProvider).signIn();
-      if (accessToken == null) return;
-      await ref.read(authControllerProvider.notifier).linkFacebook(accessToken);
+      final result = await ref.read(appleSignInServiceProvider).signIn();
+      if (result == null) return;
+      await ref.read(authControllerProvider.notifier).linkApple(result.identityToken);
       await _loadIdentities();
     } catch (e) {
       if (mounted) setState(() => _linkError = l10n.errorAuthGeneric(e.toString()));

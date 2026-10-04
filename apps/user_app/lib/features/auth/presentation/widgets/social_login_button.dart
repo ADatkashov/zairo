@@ -98,3 +98,19 @@ class FacebookLogo extends StatelessWidget {
     );
   }
 }
+
+/// Apple's logo glyph (Material has no Apple icon; U+F8FF renders as the
+/// Apple logo on Apple platforms, where this button is the only place shown).
+class AppleLogo extends StatelessWidget {
+  const AppleLogo({super.key, this.size = 28});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      '\uF8FF',
+      style: TextStyle(fontSize: size, height: 1, color: Theme.of(context).colorScheme.onSurface),
+    );
+  }
+}

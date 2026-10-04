@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../data/auth_exception.dart';
-import '../../data/facebook_sign_in_service.dart';
+import '../../data/apple_sign_in_service.dart';
 import '../../data/google_sign_in_service.dart';
 import '../providers/auth_providers.dart';
 import '../widgets/enable_biometric_prompt.dart';
@@ -25,9 +25,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  /// Set only while a provider button (Google/Facebook) is mid-flow — kept
+  /// Set only while a provider button (Google/Apple) is mid-flow — kept
   /// separate from [authControllerProvider]'s own loading state because
-  /// GoogleSignInService/FacebookSignInService's native UI runs *before*
+  /// GoogleSignInService/AppleSignInService's native UI runs *before*
   /// authControllerProvider ever enters loading (it only starts once a
   /// credential comes back), so relying on authState.isLoading alone would
   /// leave the button not visibly busy while the native picker is open.
@@ -49,6 +49,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final l10n = AppLocalizations.of(context)!;
     final authState = ref.watch(authControllerProvider);
     final isLoading = authState.isLoading || _isProviderSigningIn;
+    final showApple = ref.watch(appleSignInAvailableProvider).value ?? false;
 
     ref.listen(authControllerProvider, (previous, next) {
       if (next.hasValue && next.value != null) {
@@ -105,12 +106,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     onPressed: isLoading ? null : _signInWithGoogle,
                     child: const GoogleLogo(),
                   ),
-                  const SizedBox(width: FactorySpacing.space4),
-                  SocialLoginButton(
-                    tooltip: l10n.loginContinueWithFacebook,
-                    onPressed: isLoading ? null : _signInWithFacebook,
-                    child: const FacebookLogo(),
-                  ),
+                  if (showApple) ...[
+                    const SizedBox(width: FactorySpacing.space4),
+                    SocialLoginButton(
+                      tooltip: l10n.loginContinueWithApple,
+                      onPressed: isLoading ? null : _signInWithApple,
+                      child: const AppleLogo(),
+                    ),
+                  ],
                   const SizedBox(width: FactorySpacing.space4),
                   SocialLoginButton(
                     tooltip: _showEmailForm ? l10n.loginContinueWithPhone : l10n.loginContinueWithEmail,
@@ -186,13 +189,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  Future<void> _signInWithFacebook() async {
+  Future<void> _signInWithApple() async {
     setState(() => _isProviderSigningIn = true);
     try {
-      final accessToken = await ref.read(facebookSignInServiceProvider).signIn();
-      if (accessToken == null) return; // Canceled — nothing to show.
-      await ref.read(authControllerProvider.notifier).loginWithFacebook(accessToken);
-      await _offerLinkIfRequired('FACEBOOK', accessToken);
+      final result = await ref.read(appleSignInServiceProvider).signIn();
+      if (result == null) return; // Canceled — nothing to show.
+      await ref
+          .read(authControllerProvider.notifier)
+          .loginWithApple(result.identityToken, displayName: result.displayName);
+      await _offerLinkIfRequired('APPLE', result.identityToken);
     } finally {
       if (mounted) setState(() => _isProviderSigningIn = false);
     }

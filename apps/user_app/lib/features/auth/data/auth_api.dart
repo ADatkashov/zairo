@@ -147,6 +147,31 @@ class AuthApi {
     }
   }
 
+  /// Signs in or registers with a Sign in with Apple identity token — see
+  /// IdentityController.appleSignIn. [displayName] is only used when this
+  /// creates a new account.
+  Future<AuthTokens> loginWithApple(String identityToken, {String? displayName}) async {
+    try {
+      final response = await _dioClient.post(
+        '/auth/apple',
+        data: {'identityToken': identityToken, 'displayName': displayName},
+      );
+      return AuthTokens.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _mapProviderError(e);
+    }
+  }
+
+  /// Links an Apple account to the already-authenticated caller.
+  Future<UserSummary> linkApple(String identityToken) async {
+    try {
+      final response = await _dioClient.post('/auth/identities/apple', data: {'identityToken': identityToken});
+      return UserSummary.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _mapProviderError(e);
+    }
+  }
+
   /// Signs in or registers with a Facebook access token obtained on-device
   /// via FacebookSignInService — see IdentityController.facebookSignIn.
   Future<AuthTokens> loginWithFacebook(String accessToken) async {

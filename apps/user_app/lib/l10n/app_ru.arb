@@ -82,7 +82,7 @@
   "securityBiometricToggleSubtitle": "Мгновенная разблокировка ZAIRO без повторного входа",
   "securityLinkedAccountsSectionTitle": "Привязанные аккаунты",
   "securityLinkButton": "Привязать",
-  "errorAuthInvalidProviderCredential": "Не удалось подтвердить вход через Google/Facebook. Попробуйте ещё раз.",
+  "errorAuthInvalidProviderCredential": "Не удалось подтвердить вход через Google/Apple. Попробуйте ещё раз.",
   "errorAuthInvalidPhoneNumber": "Введите корректный номер телефона.",
   "errorAuthInvalidOtp": "Неверный код. Попробуйте ещё раз.",
   "errorAuthOtpExpired": "Срок действия кода истёк. Запросите новый.",
@@ -470,5 +470,6 @@
   "linkAccountTitle": "Подключить аккаунт",
   "linkAccountBody": "Аккаунт с этим email уже существует. Введите его пароль, чтобы подключить к нему этот способ входа.",
   "linkAccountConfirm": "Подключить",
-  "linkAccountCancel": "Отмена"
+  "linkAccountCancel": "Отмена",
+  "loginContinueWithApple": "Продолжить через Apple"
 }

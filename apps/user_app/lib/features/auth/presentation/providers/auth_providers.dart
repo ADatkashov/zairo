@@ -124,6 +124,15 @@ class AuthController extends AsyncNotifier<UserSummary?> {
     });
   }
 
+  Future<void> loginWithApple(String identityToken, {String? displayName}) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final tokens = await ref.read(authApiProvider).loginWithApple(identityToken, displayName: displayName);
+      await _applyTokens(tokens);
+      return tokens.user;
+    });
+  }
+
   Future<void> loginWithFacebook(String accessToken) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -205,6 +214,11 @@ class AuthController extends AsyncNotifier<UserSummary?> {
   /// number/email — see User.adoptPhoneIfMissing on the backend).
   Future<void> linkGoogle(String idToken) async {
     final updated = await ref.read(authApiProvider).linkGoogle(idToken);
+    state = AsyncValue.data(updated);
+  }
+
+  Future<void> linkApple(String identityToken) async {
+    final updated = await ref.read(authApiProvider).linkApple(identityToken);
     state = AsyncValue.data(updated);
   }
 
