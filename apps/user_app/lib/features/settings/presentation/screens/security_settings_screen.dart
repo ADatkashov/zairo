@@ -154,12 +154,18 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
     final controller = ref.read(authControllerProvider.notifier);
     if (value) {
       final enabled = await controller.enableBiometric();
-      if (!mounted) return;
-      setState(() => _biometricEnabled = enabled);
+      if (mounted) {
+        setState(() => _biometricEnabled = enabled);
+      }
+      // If biometric wasn't enabled (user cancelled), reload state
+      if (!enabled && mounted) {
+        await _loadBiometricState();
+      }
     } else {
       await controller.disableBiometric();
-      if (!mounted) return;
-      setState(() => _biometricEnabled = false);
+      if (mounted) {
+        setState(() => _biometricEnabled = false);
+      }
     }
   }
 

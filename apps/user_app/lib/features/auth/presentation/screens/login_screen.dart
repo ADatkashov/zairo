@@ -190,7 +190,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _finishLogin() async {
-    await maybeOfferEnableBiometric(context, ref);
+    if (mounted) {
+      await maybeOfferEnableBiometric(context, ref);
+    }
+    if (!mounted) return;
+    // Add a small delay to ensure dialog is fully processed before navigation
+    await Future.delayed(const Duration(milliseconds: 300));
     if (!mounted) return;
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
