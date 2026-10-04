@@ -6,7 +6,8 @@ jobs:
       - image: ubuntu:jammy
     environment:
       FLUTTER_HOME: /home/flutter
-      PATH: /home/flutter/bin:/home/flutter/bin/cache/dart-sdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      ANDROID_HOME: /home/android
+      PATH: /home/flutter/bin:/home/flutter/bin/cache/dart-sdk/bin:/home/android/cmdline-tools/latest/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     steps:
       - run:
           name: Install dependencies
@@ -23,6 +24,20 @@ jobs:
             git checkout stable
             export PATH=/home/flutter/bin:/home/flutter/bin/cache/dart-sdk/bin:$PATH
             flutter doctor
+      - run:
+          name: Install Android SDK
+          command: |
+            mkdir -p /home/android/cmdline-tools
+            cd /tmp
+            wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+            unzip -q commandlinetools-linux-9477386_latest.zip
+            mv cmdline-tools /home/android/cmdline-tools/latest
+
+            # Accept licenses
+            yes | /home/android/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
+
+            # Install required SDK components
+            /home/android/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;35.0.0" "ndk;27.0.11902837"
       - run:
           name: Install Dependencies
           working_directory: apps/user_app
