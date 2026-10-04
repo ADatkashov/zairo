@@ -1,0 +1,74 @@
+version: 2.1
+
+orbs:
+  flutter: circleci/flutter@2.1.1
+
+jobs:
+  build-android-apk:
+    executor:
+      name: flutter/default
+      tag: stable
+    resource_class: large
+    steps:
+      - checkout
+      - flutter/install_flutter_and_pub
+      - run:
+          name: Build Flutter APK
+          working_directory: apps/user_app
+          command: |
+            flutter build apk \
+              --release \
+              --build-name=1.0.0 \
+              --build-number=${CIRCLE_BUILD_NUM}
+      - run:
+          name: Upload APK to Google Play Console
+          command: |
+            # Install bundletool
+            wget https://github.com/google/bundletool/releases/latest/download/bundletool-all.jar -O bundletool.jar
+
+            # Upload to internal testing track
+            java -jar bundletool.jar upload-apk \
+              --bundle-config=./apps/user_app/build/app/outputs/flutter-apk/app-release.apk \
+              --ks=${ANDROID_KEYSTORE} \
+              --ks-pass=pass:${ANDROID_KEYSTORE_PASSWORD} \
+              --ks-key-alias=${ANDROID_KEY_ALIAS} \
+              --key-pass=pass:${ANDROID_KEY_PASSWORD} \
+              --service-account-json=<(echo ${GCLOUD_SERVICE_ACCOUNT_CREDENTIALS})
+      - store_artifacts:
+          path: apps/user_app/build/app/outputs/flutter-apk/app-release.apk
+          destination: app-release.apk
+
+  build-for-testing:
+    executor:
+      name: flutter/default
+      tag: stable
+    resource_class: medium
+    steps:
+      - checkout
+      - flutter/install_flutter_and_pub
+      - run:
+          name: Run Flutter Tests
+          working_directory: apps/user_app
+          command: flutter test
+      - run:
+          name: Analyze Flutter Code
+          working_directory: apps/user_app
+          command: flutter analyze
+
+workflows:
+  flutter-ci:
+    jobs:
+      - build-for-testing:
+          filters:
+            branches:
+              only:
+                - develop
+                - test
+                - master
+      - build-android-apk:
+          filters:
+            branches:
+              only:
+                - master
+          requires:
+            - build-for-testing
