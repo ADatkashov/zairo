@@ -3,14 +3,16 @@ version: 2.1
 jobs:
   build-android-apk:
     docker:
-      - image: circleci/android:api-30
+      - image: ubuntu:jammy
     environment:
-      FLUTTER_HOME: /home/circleci/flutter
-      PATH: /home/circleci/flutter/bin:/home/circleci/flutter/bin/cache/dart-sdk/bin:$PATH
+      FLUTTER_HOME: /home/flutter
+      PATH: /home/flutter/bin:/home/flutter/bin/cache/dart-sdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     steps:
       - run:
-          name: Install SSH
-          command: apt-get update && apt-get install -y openssh-client
+          name: Install dependencies
+          command: |
+            apt-get update
+            apt-get install -y git openssh-client curl wget unzip openjdk-11-jdk-headless
       - checkout
       - run:
           name: Install Flutter
@@ -52,14 +54,16 @@ jobs:
 
   build-for-testing:
     docker:
-      - image: circleci/android:api-30
+      - image: ubuntu:jammy
     environment:
-      FLUTTER_HOME: /home/circleci/flutter
-      PATH: /home/circleci/flutter/bin:/home/circleci/flutter/bin/cache/dart-sdk/bin:$PATH
+      FLUTTER_HOME: /home/flutter
+      PATH: /home/flutter/bin:/home/flutter/bin/cache/dart-sdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     steps:
       - run:
-          name: Install SSH
-          command: apt-get update && apt-get install -y openssh-client
+          name: Install dependencies
+          command: |
+            apt-get update
+            apt-get install -y git openssh-client curl wget unzip openjdk-11-jdk-headless
       - checkout
       - run:
           name: Install Flutter
