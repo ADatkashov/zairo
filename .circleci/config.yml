@@ -9,6 +9,9 @@ jobs:
       FLUTTER_HOME: /home/circleci/flutter
       PATH: /home/circleci/flutter/bin:/home/circleci/flutter/bin/cache/dart-sdk/bin:$PATH
     steps:
+      - run:
+          name: Install SSH
+          command: apt-get update && apt-get install -y openssh-client openssh-server
       - checkout
       - run:
           name: Install Flutter
@@ -54,6 +57,9 @@ jobs:
       FLUTTER_HOME: /home/circleci/flutter
       PATH: /home/circleci/flutter/bin:/home/circleci/flutter/bin/cache/dart-sdk/bin:$PATH
     steps:
+      - run:
+          name: Install SSH
+          command: apt-get update && apt-get install -y openssh-client openssh-server
       - checkout
       - run:
           name: Install Flutter
