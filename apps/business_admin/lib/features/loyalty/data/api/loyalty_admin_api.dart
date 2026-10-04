@@ -50,6 +50,17 @@ class LoyaltyAdminApi {
             .toList();
       });
 
+  /// Greets a member by hand: an optional personal [message] and an optional
+  /// gift of [bonusPoints] (0-1000). Backend: 409 if the member didn't agree to
+  /// greetings, was already greeted today, or points are requested while the
+  /// program is off.
+  Future<void> sendGreeting(String providerId, String userId, {String? message, int? bonusPoints}) => _run(() async {
+        await _dioClient.post(
+          '/business/$providerId/loyalty/customers/$userId/greet',
+          data: {'message': message, 'bonusPoints': bonusPoints},
+        );
+      });
+
   // ---- Milestones ----
 
   Future<List<LoyaltyMilestone>> fetchMilestones(String providerId) => _run(() async {

@@ -834,5 +834,15 @@
   "securityTitle": "Безопасность",
   "logOutConfirmTitle": "Выйти из аккаунта?",
   "logOutConfirmMessage": "Чтобы управлять бизнесом, нужно будет войти заново.",
-  "logOutStayButton": "Остаться"
+  "logOutStayButton": "Остаться",
+  "loyaltyGreetingButton": "Поздравить",
+  "loyaltyGreetingAlreadySent": "Поздравлен сегодня",
+  "loyaltyGreetingDialogTitle": "Поздравить: {name}",
+  "loyaltyGreetingMessageLabel": "Сообщение (необязательно)",
+  "loyaltyGreetingMessageHint": "Оставьте пустым — уйдёт стандартное поздравление.",
+  "loyaltyGreetingPointsLabel": "Баллы в подарок (необязательно)",
+  "loyaltyGreetingPointsHint": "От 0 до {max}. Пусто — только поздравление.",
+  "loyaltyGreetingPointsError": "Введите целое число от 0 до {max}.",
+  "loyaltyGreetingSendButton": "Отправить",
+  "loyaltyGreetingSent": "Поздравление отправлено"
 }

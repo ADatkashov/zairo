@@ -20,4 +20,6 @@ public enum InAppNotificationType {
     REACTIVATION_OFFER,
     /** A birthday greeting with the points the business just granted -- see loyalty.BirthdayBonusAwardedEvent. */
     BIRTHDAY_BONUS,
+    /** A greeting an owner sent by hand -- see loyalty.ManualGreetingSentEvent. */
+    GREETING,
 }

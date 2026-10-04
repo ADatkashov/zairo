@@ -27,21 +27,25 @@ public class LoyaltyBirthdayService {
     private final LoyaltyLedgerService ledgerService;
     private final ProviderRepository providerRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final LoyaltyGreetingService greetingService;
     private final Clock clock;
 
     public LoyaltyBirthdayService(LoyaltyAccountRepository accountRepository,
             LoyaltyProgramRepository programRepository, LoyaltyLedgerService ledgerService,
-            ProviderRepository providerRepository, ApplicationEventPublisher eventPublisher, Clock clock) {
+            ProviderRepository providerRepository, ApplicationEventPublisher eventPublisher,
+            LoyaltyGreetingService greetingService, Clock clock) {
         this.accountRepository = accountRepository;
         this.programRepository = programRepository;
         this.ledgerService = ledgerService;
         this.providerRepository = providerRepository;
         this.eventPublisher = eventPublisher;
+        this.greetingService = greetingService;
         this.clock = clock;
     }
 
     /** One opted-in member whose birthday is within the requested window. */
-    public record UpcomingBirthday(UUID userId, String displayName, LocalDate date, int daysUntil, boolean bonusAwarded) {
+    public record UpcomingBirthday(UUID userId, String displayName, LocalDate date, int daysUntil, boolean bonusAwarded,
+            boolean greetedToday) {
     }
 
     /**
@@ -85,7 +89,8 @@ public class LoyaltyBirthdayService {
             int daysUntil = (int) java.time.temporal.ChronoUnit.DAYS.between(today, next);
             boolean awarded = daysUntil == 0 && ledgerService.hasEarning(providerId, member.getUserId(),
                     LoyaltyReferenceType.BIRTHDAY_BONUS, referenceId(member.getUserId(), today.getYear()));
-            return new UpcomingBirthday(member.getUserId(), member.getDisplayName(), next, daysUntil, awarded);
+            return new UpcomingBirthday(member.getUserId(), member.getDisplayName(), next, daysUntil, awarded,
+                    greetingService.greetedToday(providerId, member.getUserId()));
         }).filter(b -> b.daysUntil() <= days).sorted(Comparator.comparingInt(UpcomingBirthday::daysUntil)
                 .thenComparing(UpcomingBirthday::displayName, Comparator.nullsLast(String::compareToIgnoreCase)))
                 .toList();
