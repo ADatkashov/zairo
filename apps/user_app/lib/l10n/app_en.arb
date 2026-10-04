@@ -1600,5 +1600,11 @@
   "editProfileSaved": "Profile updated",
   "@editProfileSaved": {"description": "Snackbar after the profile was saved."},
   "errorAuthPhoneCountryNotSupported": "SMS codes are not available for numbers from this country yet.",
-  "@errorAuthPhoneCountryNotSupported": {"description": "SMS code requested for a phone number from a country that is not enabled (app.otp.allowed-countries)."}
+  "@errorAuthPhoneCountryNotSupported": {"description": "SMS code requested for a phone number from a country that is not enabled (app.otp.allowed-countries)."},
+  "profileLogOutConfirmTitle": "Log out of your account?",
+  "@profileLogOutConfirmTitle": {"description": "Title of the log-out confirmation dialog."},
+  "profileLogOutConfirmMessage": "You'll need to sign in again to see your bookings, favorites and messages.",
+  "@profileLogOutConfirmMessage": {"description": "Body of the log-out confirmation dialog."},
+  "profileLogOutStayButton": "Stay signed in",
+  "@profileLogOutStayButton": {"description": "Dialog button that cancels logging out."}
 }

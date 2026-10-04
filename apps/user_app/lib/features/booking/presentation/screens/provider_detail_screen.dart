@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../../../core/formatting/initials.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/data/models/user_summary.dart';
+import '../../../auth/presentation/auth_navigation.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../auto/data/auto_exception.dart';
@@ -105,7 +106,9 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
         : const AsyncValue.data(<Staff>[]);
     final staffMembers = staffAsync.value ?? const <Staff>[];
 
-    return Scaffold(
+    // Back is blocked while the booking request is in flight so a swipe
+    // can't leave the user guessing whether it went through.
+    final scaffold = Scaffold(
       backgroundColor: colors.bg,
       appBar: FactoryAppBar(
         title: widget.provider.name,
@@ -425,6 +428,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
         ),
       ),
     );
+    return PopScope(canPop: !_isBooking, child: scaffold);
   }
 
   Future<Booking> _withPaymentAmounts(Booking created) async {
@@ -456,9 +460,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
   /// LoginScreen instead of silently failing or disabling the action.
   void _openMessageThread(UserSummary? currentUser) {
     if (currentUser == null) {
-      Navigator.of(
-        context,
-      ).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
+      pushAuthScreen(context, const LoginScreen());
       return;
     }
     Navigator.of(context).push(
@@ -499,8 +501,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     if (currentUser == null) {
       setState(() => _isBooking = false);
       if (!mounted) return;
-      await Navigator.of(context)
-          .push(MaterialPageRoute(builder: (_) => const LoginScreen()));
+      await pushAuthScreen(context, const LoginScreen());
       return;
     }
 

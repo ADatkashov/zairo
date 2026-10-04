@@ -2365,5 +2365,11 @@
   "securitySectionSubtitle": "Biometric login",
   "@securitySectionSubtitle": {"description": "Settings > Security row subtitle."},
   "securityTitle": "Security",
-  "@securityTitle": {"description": "Settings > Security row label, and the Security screen's app bar title."}
+  "@securityTitle": {"description": "Settings > Security row label, and the Security screen's app bar title."},
+  "logOutConfirmTitle": "Log out?",
+  "@logOutConfirmTitle": {"description": "Title of the log-out confirmation dialog."},
+  "logOutConfirmMessage": "You'll need to sign in again to manage your business.",
+  "@logOutConfirmMessage": {"description": "Body of the log-out confirmation dialog."},
+  "logOutStayButton": "Stay signed in",
+  "@logOutStayButton": {"description": "Dialog button that cancels logging out."}
 }

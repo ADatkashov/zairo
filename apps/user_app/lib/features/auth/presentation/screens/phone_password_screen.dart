@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../data/auth_exception.dart';
+import '../auth_navigation.dart';
 import '../providers/auth_providers.dart';
 import '../widgets/enable_biometric_prompt.dart';
 import 'phone_otp_password_screen.dart';
@@ -101,7 +102,7 @@ class _PhonePasswordScreenState extends ConsumerState<PhonePasswordScreen> {
     if (authState.value != null) {
       await maybeOfferEnableBiometric(context, ref);
       if (!mounted) return;
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      popAuthFlow(context);
     } else {
       setState(() => _isSubmitting = false);
     }
@@ -117,9 +118,7 @@ class _PhonePasswordScreenState extends ConsumerState<PhonePasswordScreen> {
       await ref.read(authControllerProvider.notifier).requestPhoneOtp(widget.phone);
       if (!mounted) return;
       setState(() => _isSendingCode = false);
-      await Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => PhoneOtpPasswordScreen(phone: widget.phone, isNewAccount: false)),
-      );
+      await pushAuthScreen(context, PhoneOtpPasswordScreen(phone: widget.phone, isNewAccount: false));
     } on AuthException catch (e) {
       if (!mounted) return;
       setState(() {
