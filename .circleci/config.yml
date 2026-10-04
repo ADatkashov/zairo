@@ -107,6 +107,8 @@ workflows:
           filters:
             branches:
               only:
+                - develop
+                - test
                 - master
           requires:
             - build-for-testing
