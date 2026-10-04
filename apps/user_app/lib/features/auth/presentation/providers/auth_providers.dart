@@ -9,6 +9,7 @@ import '../../data/facebook_sign_in_service.dart';
 import '../../data/google_sign_in_service.dart';
 import '../../data/models/auth_tokens.dart';
 import '../../data/models/identity_summary.dart';
+import '../../data/models/phone_status.dart';
 import '../../data/models/user_summary.dart';
 import '../../data/token_storage.dart';
 
@@ -123,6 +124,15 @@ class AuthController extends AsyncNotifier<UserSummary?> {
     });
   }
 
+  Future<void> loginWithApple(String identityToken, {String? displayName}) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final tokens = await ref.read(authApiProvider).loginWithApple(identityToken, displayName: displayName);
+      await _applyTokens(tokens);
+      return tokens.user;
+    });
+  }
+
   Future<void> loginWithFacebook(String accessToken) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -143,12 +153,72 @@ class AuthController extends AsyncNotifier<UserSummary?> {
     });
   }
 
+  Future<PhoneStatus> phoneStatus(String phone) => ref.read(authApiProvider).phoneStatus(phone);
+
+  Future<void> loginWithPhonePassword({required String phone, required String password}) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final tokens = await ref.read(authApiProvider).loginWithPhonePassword(phone: phone, password: password);
+      await _applyTokens(tokens);
+      return tokens.user;
+    });
+  }
+
+  Future<void> registerWithPhone({
+    required String phone,
+    required String code,
+    required String displayName,
+    required String password,
+  }) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final tokens = await ref.read(authApiProvider).registerWithPhone(
+            phone: phone,
+            code: code,
+            displayName: displayName,
+            password: password,
+          );
+      await _applyTokens(tokens);
+      return tokens.user;
+    });
+  }
+
+  /// Throws [AuthException] on a wrong/expired code; the caller then signs
+  /// in with the new password (see PhoneOtpPasswordScreen).
+  Future<void> resetPasswordWithPhone({
+    required String phone,
+    required String code,
+    required String newPassword,
+  }) =>
+      ref.read(authApiProvider).resetPasswordWithPhone(phone: phone, code: code, newPassword: newPassword);
+
+  /// Answer to AuthErrorKey.accountLinkRequired — [provider] is 'GOOGLE' or 'FACEBOOK'.
+  Future<void> linkProviderWithPassword({
+    required String provider,
+    required String token,
+    required String password,
+  }) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final tokens = await ref
+          .read(authApiProvider)
+          .linkProviderWithPassword(provider: provider, token: token, password: password);
+      await _applyTokens(tokens);
+      return tokens.user;
+    });
+  }
+
   /// Add-a-login-method flow — the caller must already be authenticated
   /// (see IdentityController.linkGoogle). Keeps the caller's own tokens;
   /// only refreshes the cached UserSummary (e.g. a newly-adopted phone
   /// number/email — see User.adoptPhoneIfMissing on the backend).
   Future<void> linkGoogle(String idToken) async {
     final updated = await ref.read(authApiProvider).linkGoogle(idToken);
+    state = AsyncValue.data(updated);
+  }
+
+  Future<void> linkApple(String identityToken) async {
+    final updated = await ref.read(authApiProvider).linkApple(identityToken);
     state = AsyncValue.data(updated);
   }
 

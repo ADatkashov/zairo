@@ -56,6 +56,7 @@
 
   "loginContinueWithGoogle": "Продолжить через Google",
   "loginContinueWithFacebook": "Продолжить через Facebook",
+  "loginContinueWithEmail": "Продолжить по e-mail",
   "loginContinueWithPhone": "Продолжить по номеру телефона",
   "loginOrDivider": "или",
   "phoneLoginTitle": "Номер телефона",
@@ -81,7 +82,7 @@
   "securityBiometricToggleSubtitle": "Мгновенная разблокировка ZAIRO без повторного входа",
   "securityLinkedAccountsSectionTitle": "Привязанные аккаунты",
   "securityLinkButton": "Привязать",
-  "errorAuthInvalidProviderCredential": "Не удалось подтвердить вход через Google/Facebook. Попробуйте ещё раз.",
+  "errorAuthInvalidProviderCredential": "Не удалось подтвердить вход через Google/Apple. Попробуйте ещё раз.",
   "errorAuthInvalidPhoneNumber": "Введите корректный номер телефона.",
   "errorAuthInvalidOtp": "Неверный код. Попробуйте ещё раз.",
   "errorAuthOtpExpired": "Срок действия кода истёк. Запросите новый.",
@@ -457,5 +458,18 @@
 
   "weekdaySun": "Вс",
 
-  "bookingPayDueNow": "К оплате сейчас"
+  "bookingPayDueNow": "К оплате сейчас",
+  "errorAuthAccountLinkRequired": "Аккаунт с этим email уже существует. Введите его пароль, чтобы подключить.",
+  "errorAuthTooManyLoginAttempts": "Слишком много неудачных попыток. Попробуйте позже.",
+  "phonePasswordTitle": "Введите пароль",
+  "phonePasswordInstructions": "Введите пароль для {phone}.",
+  "phoneForgotPassword": "Забыли пароль? Получить код по SMS",
+  "phoneResetTitle": "Сброс пароля",
+  "phoneRegisterInstructions": "Мы отправили 6-значный код на {phone}. Введите его, своё имя и пароль.",
+  "phoneResetInstructions": "Мы отправили 6-значный код на {phone}. Введите его и задайте новый пароль.",
+  "linkAccountTitle": "Подключить аккаунт",
+  "linkAccountBody": "Аккаунт с этим email уже существует. Введите его пароль, чтобы подключить к нему этот способ входа.",
+  "linkAccountConfirm": "Подключить",
+  "linkAccountCancel": "Отмена",
+  "loginContinueWithApple": "Продолжить через Apple"
 }

@@ -11,5 +11,6 @@ package com.zairo.factory.auth;
 public enum IdentityProvider {
     GOOGLE,
     FACEBOOK,
+    APPLE,
     PHONE
 }

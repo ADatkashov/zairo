@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'auth_exception.dart';
 import 'models/auth_tokens.dart';
 import 'models/identity_summary.dart';
+import 'models/phone_status.dart';
 import 'models/user_summary.dart';
 
 /// Not final: tests substitute a subclass overriding these methods instead
@@ -146,6 +147,31 @@ class AuthApi {
     }
   }
 
+  /// Signs in or registers with a Sign in with Apple identity token — see
+  /// IdentityController.appleSignIn. [displayName] is only used when this
+  /// creates a new account.
+  Future<AuthTokens> loginWithApple(String identityToken, {String? displayName}) async {
+    try {
+      final response = await _dioClient.post(
+        '/auth/apple',
+        data: {'identityToken': identityToken, 'displayName': displayName},
+      );
+      return AuthTokens.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _mapProviderError(e);
+    }
+  }
+
+  /// Links an Apple account to the already-authenticated caller.
+  Future<UserSummary> linkApple(String identityToken) async {
+    try {
+      final response = await _dioClient.post('/auth/identities/apple', data: {'identityToken': identityToken});
+      return UserSummary.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _mapProviderError(e);
+    }
+  }
+
   /// Signs in or registers with a Facebook access token obtained on-device
   /// via FacebookSignInService — see IdentityController.facebookSignIn.
   Future<AuthTokens> loginWithFacebook(String accessToken) async {
@@ -207,6 +233,96 @@ class AuthApi {
     }
   }
 
+  /// Which screen the phone sign-in shows next: the password prompt for an
+  /// existing account, or SMS registration — see IdentityService.phoneStatus
+  /// (it deliberately reveals whether a phone is registered).
+  Future<PhoneStatus> phoneStatus(String phone) async {
+    try {
+      final response = await _dioClient.post('/auth/phone/status', data: {'phone': phone});
+      return PhoneStatus.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _mapOtpRequestError(e);
+    }
+  }
+
+  /// Phone + password sign-in — no SMS.
+  Future<AuthTokens> loginWithPhonePassword({required String phone, required String password}) async {
+    try {
+      final response = await _dioClient.post(
+        '/auth/phone/login',
+        data: {'phone': phone, 'password': password},
+      );
+      return AuthTokens.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      if (status == 401) throw const AuthException(AuthErrorKey.invalidCredentials);
+      if (status == 429) throw const AuthException(AuthErrorKey.tooManyLoginAttempts);
+      rethrow;
+    }
+  }
+
+  /// First-time phone registration: SMS [code] + name + password.
+  Future<AuthTokens> registerWithPhone({
+    required String phone,
+    required String code,
+    required String displayName,
+    required String password,
+  }) async {
+    try {
+      final response = await _dioClient.post(
+        '/auth/phone/register',
+        data: {'phone': phone, 'code': code, 'displayName': displayName, 'password': password},
+      );
+      return AuthTokens.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _mapOtpVerifyError(e);
+    }
+  }
+
+  /// Forgot password (or first password for an account that has none):
+  /// the SMS [code] proves the phone.
+  Future<void> resetPasswordWithPhone({
+    required String phone,
+    required String code,
+    required String newPassword,
+  }) async {
+    try {
+      await _dioClient.post(
+        '/auth/phone/reset-password',
+        data: {'phone': phone, 'code': code, 'newPassword': newPassword},
+      );
+    } on DioException catch (e) {
+      throw _mapOtpVerifyError(e);
+    }
+  }
+
+  /// The answer to [AuthErrorKey.accountLinkRequired]: proves ownership of
+  /// the existing email account by its [password] and connects the
+  /// Google/Facebook sign-in ([provider] is 'GOOGLE' or 'FACEBOOK') to it.
+  Future<AuthTokens> linkProviderWithPassword({
+    required String provider,
+    required String token,
+    required String password,
+  }) async {
+    try {
+      final response = await _dioClient.post(
+        '/auth/identities/link-with-password',
+        data: {'provider': provider, 'token': token, 'password': password},
+      );
+      return AuthTokens.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      if (status == 429) throw const AuthException(AuthErrorKey.tooManyLoginAttempts);
+      if (status == 401) {
+        // Same status for "wrong password" and "bad provider token" — the
+        // provider token was just verified one step earlier, so a 401 here
+        // is almost always the password.
+        throw const AuthException(AuthErrorKey.invalidCredentials);
+      }
+      throw _mapProviderError(e);
+    }
+  }
+
   /// Every sign-in method currently linked to the caller's own account —
   /// powers Settings > Security.
   Future<List<IdentitySummary>> listIdentities() async {
@@ -226,7 +342,11 @@ class AuthApi {
   AuthException _mapProviderError(DioException e) {
     final status = e.response?.statusCode;
     if (status == 401) return const AuthException(AuthErrorKey.invalidProviderCredential);
-    if (status == 409) return const AuthException(AuthErrorKey.emailAlreadyRegistered);
+    if (status == 409) {
+      return _messageContains(e, 'account_link_required')
+          ? const AuthException(AuthErrorKey.accountLinkRequired)
+          : const AuthException(AuthErrorKey.emailAlreadyRegistered);
+    }
     return AuthException(AuthErrorKey.invalidProviderCredential);
   }
 

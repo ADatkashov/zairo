@@ -86,9 +86,25 @@ app:
       # audience", which GoogleIdTokenVerifierAdapter only allows outside
       # spring.profiles.active=prod (see ProductionSecretsValidator).
       client-ids: ${GOOGLE_OAUTH_CLIENT_IDS:}
+    apple:
+      # Comma-separated audiences of Sign in with Apple identity tokens: the
+      # iOS bundle id (and a Services ID if Android/web is added). Blank
+      # means "accept any audience", which is only allowed outside prod.
+      client-ids: ${APPLE_CLIENT_IDS:}
     facebook:
       app-id: ${FACEBOOK_APP_ID:}
       app-secret: ${FACEBOOK_APP_SECRET:}
+  # SMS delivery for phone OTP (see auth's TwilioOtpSender). Leave
+  # TWILIO_ACCOUNT_SID unset and the code is only written to the server log
+  # (LoggingOtpSender) — fine for local dev/CI, never for real users. Set
+  # TWILIO_AUTH_TOKEN plus either TWILIO_FROM (a Twilio number, E.164) or
+  # TWILIO_MESSAGING_SERVICE_SID.
+  sms:
+    twilio:
+      account-sid: ${TWILIO_ACCOUNT_SID:}
+      auth-token: ${TWILIO_AUTH_TOKEN:}
+      from: ${TWILIO_FROM:}
+      messaging-service-sid: ${TWILIO_MESSAGING_SERVICE_SID:}
   # Phone + OTP sign-in (see auth's PhoneOtpService). Tuned for a 6-digit
   # SMS code: short-lived, a real resend cooldown, and a low hourly cap —
   # see CLAUDE.md task spec §7's OTP abuse-protection requirements.
@@ -97,6 +113,19 @@ app:
     resend-cooldown-seconds: 60
     max-verify-attempts: 5
     max-requests-per-hour: 5
+    # SMS-pumping fraud limits (bots requesting codes for many numbers burn
+    # SMS budget): per client IP per hour, and a platform-wide daily cap that
+    # acts as a circuit breaker (503 once reached). Size the daily cap to
+    # your real traffic and SMS budget.
+    max-requests-per-ip-per-hour: ${OTP_MAX_REQUESTS_PER_IP_PER_HOUR:20}
+    daily-send-cap: ${OTP_DAILY_SEND_CAP:3000}
+    # SMS codes are only sent to these ISO country codes (comma-separated);
+    # empty = any country. +7 is shared: KZ for 7xx numbers, RU for 9xx.
+    allowed-countries: ${OTP_ALLOWED_COUNTRIES:KZ}
+    # How many reverse proxies in front of the app append to X-Forwarded-For
+    # (1 = one platform load balancer such as Render; 0 = ignore the header,
+    # app exposed directly). Used to find the real client IP for the per-IP limit.
+    trusted-proxy-hops: ${OTP_TRUSTED_PROXY_HOPS:1}
   platform:
     # Single-market MVP assumption (Factory Blueprint §6) — no per-service
     # currency lookup yet. Booking is the one place this is read (Payment
