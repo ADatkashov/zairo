@@ -1,8 +1,10 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../../app/router/app_routes.dart';
 import '../../../../core/formatting/initials.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/data/models/user_summary.dart';
@@ -24,9 +26,7 @@ import '../../../cleaning/presentation/providers/cleaning_providers.dart';
 import '../../../discovery/data/models/provider_search_result.dart';
 import '../../../discovery/data/models/service_summary.dart';
 import '../../../favorites/presentation/widgets/favorite_button.dart';
-import '../../../loyalty/presentation/screens/business_loyalty_screen.dart';
 import '../../../maps/presentation/screens/provider_map_screen.dart';
-import '../../../messaging/presentation/screens/chat_thread_screen.dart';
 import '../../../payments/data/payment_exception.dart';
 import '../../../payments/presentation/providers/payments_providers.dart';
 import '../../../staff/data/models/staff.dart';
@@ -221,12 +221,10 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                       variant: FactoryButtonVariant.secondary,
                       icon: Symbols.workspace_premium_rounded,
                       label: l10n.loyaltyEntryTileTitle,
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => BusinessLoyaltyScreen(
-                            providerId: widget.provider.id,
-                            providerName: widget.provider.name,
-                          ),
+                      onPressed: () => context.push(
+                        AppRoutes.loyalty(
+                          widget.provider.id,
+                          providerName: widget.provider.name,
                         ),
                       ),
                     ),
@@ -463,13 +461,8 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       pushAuthScreen(context, const LoginScreen());
       return;
     }
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ChatThreadScreen(
-          providerId: widget.provider.id,
-          providerName: widget.provider.name,
-        ),
-      ),
+    context.push(
+      AppRoutes.chat(widget.provider.id, providerName: widget.provider.name),
     );
   }
 

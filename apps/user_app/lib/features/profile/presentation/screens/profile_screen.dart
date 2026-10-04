@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../../app/router/app_routes.dart';
 import '../../../../core/formatting/initials.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/data/models/user_summary.dart';
@@ -11,18 +12,10 @@ import '../../../auth/presentation/auth_navigation.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../auth/presentation/screens/register_screen.dart';
-import '../../../auto/presentation/screens/vehicles_screen.dart';
 import '../../../booking/presentation/providers/booking_providers.dart';
 import '../../../favorites/presentation/providers/favorites_providers.dart';
-import '../../../favorites/presentation/screens/favorites_screen.dart';
-import '../../../loyalty/presentation/screens/my_redemptions_screen.dart';
-import '../../../loyalty/presentation/screens/my_rewards_screen.dart';
-import '../../../messaging/presentation/screens/conversations_screen.dart';
-import '../../../settings/presentation/screens/settings_screen.dart';
 import '../widgets/change_avatar_dialog.dart';
-import 'about_screen.dart';
 import 'edit_profile_screen.dart';
-import 'support_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -39,9 +32,7 @@ class ProfileScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Symbols.settings_rounded),
             tooltip: l10n.settingsButtonTooltip,
-            onPressed: () => Navigator.of(
-              context,
-            ).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
+            onPressed: () => context.push(AppRoutes.settings),
           ),
         ],
       ),
@@ -185,11 +176,7 @@ class _LoggedInView extends ConsumerWidget {
                   color: Colors.transparent,
                   child: InkWell(
                     borderRadius: FactoryRadius.mdRadius,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const FavoritesScreen(),
-                      ),
-                    ),
+                    onTap: () => context.push(AppRoutes.favorites),
                     child: FactoryStatTile(
                       value: favoritesCount?.toString() ?? '—',
                       label: l10n.myFavoritesTitle,
@@ -222,27 +209,21 @@ class _LoggedInView extends ConsumerWidget {
           title: l10n.messagesTitle,
           leading: Icon(Symbols.forum_rounded, color: colors.textSecondary),
           trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const ConversationsScreen()),
-          ),
+          onTap: () => context.push(AppRoutes.messages),
         ),
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
           title: l10n.myRewardsTitle,
           leading: Icon(Symbols.redeem_rounded, color: colors.textSecondary),
           trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const MyRewardsScreen()),
-          ),
+          onTap: () => context.push(AppRoutes.rewards),
         ),
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
           title: l10n.loyaltyRedemptionsTitle,
           leading: Icon(Symbols.confirmation_number_rounded, color: colors.textSecondary),
           trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const MyRedemptionsScreen()),
-          ),
+          onTap: () => context.push(AppRoutes.redemptions),
         ),
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
@@ -255,9 +236,7 @@ class _LoggedInView extends ConsumerWidget {
             Symbols.chevron_right_rounded,
             color: colors.textTertiary,
           ),
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => VehiclesScreen(userId: userId)),
-          ),
+          onTap: () => context.push(AppRoutes.vehicles),
         ),
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
@@ -270,8 +249,7 @@ class _LoggedInView extends ConsumerWidget {
             Symbols.chevron_right_rounded,
             color: colors.textTertiary,
           ),
-          onTap: () => Navigator.of(context)
-              .push(MaterialPageRoute(builder: (_) => const SupportScreen())),
+          onTap: () => context.push(AppRoutes.support),
         ),
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
@@ -281,9 +259,7 @@ class _LoggedInView extends ConsumerWidget {
             Symbols.chevron_right_rounded,
             color: colors.textTertiary,
           ),
-          onTap: () =>
-              Navigator.of(context)
-                  .push(MaterialPageRoute(builder: (_) => const AboutScreen())),
+          onTap: () => context.push(AppRoutes.about),
         ),
         const SizedBox(height: FactorySpacing.space6),
         _LogOutButton(onPressed: () => _confirmLogOut(context, ref)),

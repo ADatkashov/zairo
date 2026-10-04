@@ -1606,5 +1606,9 @@
   "profileLogOutConfirmMessage": "You'll need to sign in again to see your bookings, favorites and messages.",
   "@profileLogOutConfirmMessage": {"description": "Body of the log-out confirmation dialog."},
   "profileLogOutStayButton": "Stay signed in",
-  "@profileLogOutStayButton": {"description": "Dialog button that cancels logging out."}
+  "@profileLogOutStayButton": {"description": "Dialog button that cancels logging out."},
+  "providerNotFoundTitle": "Business not found",
+  "@providerNotFoundTitle": {"description": "Title when a provider link (/provider/:id) points at a business that isn't listed."},
+  "providerNotFoundMessage": "This business may have been removed or is not available in your city.",
+  "@providerNotFoundMessage": {"description": "Body under the 'Business not found' title."}
 }

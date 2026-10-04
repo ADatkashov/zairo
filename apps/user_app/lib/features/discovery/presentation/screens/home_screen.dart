@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../../app/router/app_routes.dart';
 import '../../../../core/formatting/initials.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../maps/data/geo_point.dart';
@@ -11,14 +12,12 @@ import '../../../auth/data/models/user_summary.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../booking/data/models/book_again_suggestion.dart';
 import '../../../booking/presentation/providers/booking_providers.dart';
-import '../../../booking/presentation/screens/provider_detail_screen.dart';
 import '../../../catalog/presentation/category_icon.dart';
 import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../../catalog/presentation/screens/all_categories_screen.dart';
 import '../../../city/presentation/providers/city_providers.dart';
 import '../../../maps/presentation/providers/maps_providers.dart';
 import '../../../notifications/presentation/providers/notifications_providers.dart';
-import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../data/models/provider_search_result.dart';
 import '../../data/models/service_summary.dart';
 import '../providers/discovery_providers.dart';
@@ -197,11 +196,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             result: result,
                             layout: FactoryProviderCardLayout.vertical,
                             width: 168,
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    ProviderDetailScreen(provider: result),
-                              ),
+                            onTap: () => context.push(
+                              AppRoutes.provider(result.id),
+                              extra: result,
                             ),
                           );
                         },
@@ -258,9 +255,7 @@ class _NotificationBellButton extends ConsumerWidget {
           child: IconButton(
             icon: Icon(Symbols.notifications_rounded, color: colors.text),
             tooltip: l10n.notificationBellTooltip,
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-            ),
+            onPressed: () => context.push(AppRoutes.notifications),
           ),
         ),
         if (unreadCount > 0)
@@ -481,27 +476,24 @@ class _BookAgainSection extends ConsumerWidget {
               final suggestion = suggestions[index];
               return _BookAgainCard(
                 suggestion: suggestion,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ProviderDetailScreen(
-                      provider: ProviderSearchResult(
-                        id: suggestion.providerId,
-                        name: suggestion.providerName,
-                        vertical: suggestion.vertical,
-                        status: 'ACTIVE',
-                        hasOpenAvailability: true,
-                        minPrice: suggestion.price,
-                        services: [
-                          ServiceSummary(
-                            id: suggestion.serviceId,
-                            title: suggestion.serviceTitle,
-                            durationMinutes: suggestion.durationMinutes,
-                            price: suggestion.price,
-                            currency: suggestion.currency,
-                          ),
-                        ],
+                onTap: () => context.push(
+                  AppRoutes.provider(suggestion.providerId),
+                  extra: ProviderSearchResult(
+                    id: suggestion.providerId,
+                    name: suggestion.providerName,
+                    vertical: suggestion.vertical,
+                    status: 'ACTIVE',
+                    hasOpenAvailability: true,
+                    minPrice: suggestion.price,
+                    services: [
+                      ServiceSummary(
+                        id: suggestion.serviceId,
+                        title: suggestion.serviceTitle,
+                        durationMinutes: suggestion.durationMinutes,
+                        price: suggestion.price,
+                        currency: suggestion.currency,
                       ),
-                    ),
+                    ],
                   ),
                 ),
               );
@@ -608,10 +600,9 @@ class _RecommendedSection extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
             child: _RecommendedRow(
               result: result,
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => ProviderDetailScreen(provider: result),
-                ),
+              onTap: () => context.push(
+                AppRoutes.provider(result.id),
+                extra: result,
               ),
             ),
           ),

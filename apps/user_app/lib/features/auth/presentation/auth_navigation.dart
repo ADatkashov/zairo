@@ -7,8 +7,12 @@ const authFlowRouteName = 'auth-flow';
 /// Pushes [screen] as a step of the auth chain. Always use this instead of a
 /// bare `MaterialPageRoute` for auth screens, so [popAuthFlow] can find where
 /// the chain starts.
+///
+/// Opens on the root navigator, i.e. full-screen above the tab shell (no
+/// bottom nav on a sign-in form). Sign-in is a transient flow that hands a
+/// result back to its caller, so it deliberately has no URL of its own.
 Future<T?> pushAuthScreen<T>(BuildContext context, Widget screen) {
-  return Navigator.of(context).push<T>(
+  return Navigator.of(context, rootNavigator: true).push<T>(
     MaterialPageRoute<T>(
       settings: const RouteSettings(name: authFlowRouteName),
       builder: (_) => screen,

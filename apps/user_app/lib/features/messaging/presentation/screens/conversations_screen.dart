@@ -1,8 +1,10 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../../app/router/app_routes.dart';
 import '../../../../core/formatting/initials.dart';
 import '../../../../core/formatting/month_day_time.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -10,7 +12,6 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/widgets/logged_out_gate.dart';
 import '../../data/models/conversation.dart';
 import '../providers/messaging_providers.dart';
-import 'chat_thread_screen.dart';
 
 /// The customer's inbox — one row per provider they've ever messaged.
 /// Pushed from Profile's "Messages" tile, same as Favorites, not its own
@@ -120,13 +121,8 @@ class _ConversationTile extends StatelessWidget {
     final providerName = conversation.providerName ?? l10n.messagingUnknownBusinessName;
 
     return FactoryCard(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ChatThreadScreen(
-            providerId: conversation.providerId,
-            providerName: providerName,
-          ),
-        ),
+      onTap: () => context.push(
+        AppRoutes.chat(conversation.providerId, providerName: providerName),
       ),
       child: Row(
         children: [
