@@ -623,6 +623,36 @@ void main() {
   });
 
   testWidgets(
+    'FactoryBottomNavigation fits five tabs with long labels on a phone width',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        _wrap(
+          FactoryBottomNavigation(
+            destinations: const [
+              FactoryNavDestination(icon: Icons.dashboard_rounded, label: 'Dashboard'),
+              FactoryNavDestination(icon: Icons.forum_rounded, label: 'Messages'),
+              FactoryNavDestination(icon: Icons.campaign_rounded, label: 'Campaign Center'),
+              FactoryNavDestination(icon: Icons.loyalty_rounded, label: 'Loyalty'),
+              FactoryNavDestination(icon: Icons.more_horiz_rounded, label: 'More'),
+            ],
+            selectedIndex: 0,
+            onDestinationSelected: (_) {},
+          ),
+        ),
+      );
+
+      // A RenderFlex overflow would be reported as a test exception.
+      expect(tester.takeException(), isNull);
+      expect(find.text('More'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'FactoryLoadingState shows an optional message alongside the spinner',
     (tester) async {
       await tester.pumpWidget(

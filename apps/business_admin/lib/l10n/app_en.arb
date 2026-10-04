@@ -2429,5 +2429,7 @@
   "loyaltyGreetingSendButton": "Send",
   "@loyaltyGreetingSendButton": {"description": "Loyalty manual greeting: loyaltyGreetingSendButton"},
   "loyaltyGreetingSent": "Greeting sent",
-  "@loyaltyGreetingSent": {"description": "Loyalty manual greeting: loyaltyGreetingSent"}
+  "@loyaltyGreetingSent": {"description": "Loyalty manual greeting: loyaltyGreetingSent"},
+  "navMore": "More",
+  "@navMore": {"description": "Bottom-nav label of the 'More' tab (Automation, Subscription, Settings)."}
 }

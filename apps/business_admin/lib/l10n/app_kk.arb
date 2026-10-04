@@ -843,5 +843,6 @@
   "loyaltyGreetingPointsHint": "0-ден {max}-ға дейін. Бос — тек құттықтау.",
   "loyaltyGreetingPointsError": "0-ден {max}-ға дейін бүтін сан енгізіңіз.",
   "loyaltyGreetingSendButton": "Жіберу",
-  "loyaltyGreetingSent": "Құттықтау жіберілді"
+  "loyaltyGreetingSent": "Құттықтау жіберілді",
+  "navMore": "Тағы"
 }
