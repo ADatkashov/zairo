@@ -13,7 +13,7 @@ jobs:
           name: Install dependencies
           command: |
             apt-get update
-            apt-get install -y git openssh-client curl wget unzip openjdk-11-jdk-headless
+            apt-get install -y git openssh-client curl wget unzip openjdk-17-jdk-headless
       - checkout
       - run:
           name: Install Flutter
@@ -80,7 +80,7 @@ jobs:
           name: Install dependencies
           command: |
             apt-get update
-            apt-get install -y git openssh-client curl wget unzip openjdk-11-jdk-headless
+            apt-get install -y git openssh-client curl wget unzip openjdk-17-jdk-headless
       - checkout
       - run:
           name: Install Flutter
