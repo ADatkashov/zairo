@@ -13,7 +13,7 @@ import 'package:flutter/material.dart';
 /// the same way a hand-rolled `TextFormField` would — it works exactly like
 /// a plain text field everywhere else, since `TextFormField` is a strict
 /// superset with no Form ancestor required.
-class FactoryTextField extends StatelessWidget {
+class FactoryTextField extends StatefulWidget {
   const FactoryTextField({
     super.key,
     required this.label,
@@ -59,26 +59,45 @@ class FactoryTextField extends StatelessWidget {
   final AutovalidateMode? autovalidateMode;
 
   @override
+  State<FactoryTextField> createState() => _FactoryTextFieldState();
+}
+
+class _FactoryTextFieldState extends State<FactoryTextField> {
+  bool _revealed = false;
+
+  @override
   Widget build(BuildContext context) {
+    final w = widget;
+    final hidden = w.obscureText && !_revealed;
+    // Password fields get a show/hide eye unless the caller supplied its own
+    // suffixIcon.
+    final suffix = w.suffixIcon ??
+        (w.obscureText
+            ? IconButton(
+                icon: Icon(_revealed ? Icons.visibility_off : Icons.visibility),
+                tooltip: _revealed ? 'Hide password' : 'Show password',
+                onPressed: () => setState(() => _revealed = !_revealed),
+              )
+            : null);
     return TextFormField(
-      controller: controller,
-      focusNode: focusNode,
-      enabled: enabled,
-      readOnly: readOnly,
-      obscureText: obscureText,
-      keyboardType: keyboardType,
-      textInputAction: textInputAction,
-      maxLines: obscureText ? 1 : maxLines,
-      onChanged: onChanged,
-      onFieldSubmitted: onSubmitted,
-      validator: validator,
-      autovalidateMode: autovalidateMode,
+      controller: w.controller,
+      focusNode: w.focusNode,
+      enabled: w.enabled,
+      readOnly: w.readOnly,
+      obscureText: hidden,
+      keyboardType: w.keyboardType,
+      textInputAction: w.textInputAction,
+      maxLines: w.obscureText ? 1 : w.maxLines,
+      onChanged: w.onChanged,
+      onFieldSubmitted: w.onSubmitted,
+      validator: w.validator,
+      autovalidateMode: w.autovalidateMode,
       decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        errorText: errorText,
-        prefixIcon: prefixIcon,
-        suffixIcon: suffixIcon,
+        labelText: w.label,
+        hintText: w.hint,
+        errorText: w.errorText,
+        prefixIcon: w.prefixIcon,
+        suffixIcon: suffix,
       ),
     );
   }
