@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/locale/locale_controller.dart';
 import '../../../../app/theme/theme_provider.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../billing/presentation/screens/billing_screen.dart';
+import 'security_settings_screen.dart';
 
 /// Mirrors apps/user_app's identical SettingsScreen — same layout, same
 /// providers, same behavior — just wired to this app's own l10n/providers.
@@ -18,6 +20,8 @@ class SettingsScreen extends ConsumerWidget {
     final themeMode =
         ref.watch(themeModeControllerProvider).value ?? ThemeMode.system;
     final locale = ref.watch(localeControllerProvider).value;
+    // Settings is also reachable from the login screen; Security only makes sense signed in.
+    final signedIn = ref.watch(authControllerProvider).value != null;
 
     return Scaffold(
       appBar: FactoryAppBar(title: l10n.settingsTitle),
@@ -41,6 +45,14 @@ class SettingsScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _openLanguagePicker(context, ref, l10n, locale),
           ),
+          if (signedIn)
+            ListTile(
+              title: Text(l10n.securityTitle),
+              subtitle: Text(l10n.securitySectionSubtitle),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (_) => const SecuritySettingsScreen())),
+            ),
           ListTile(
             title: Text(l10n.billingSettingsRowTitle),
             trailing: const Icon(Icons.chevron_right),
