@@ -48,7 +48,6 @@ public class IdentityService {
     private final SessionIssuer sessionIssuer;
     private final AuthAuditLog auditLog;
     private final LoginAttemptLimiter loginAttemptLimiter;
-    private final RefreshTokenService refreshTokenService;
     private final Set<String> allowedSmsCountries;
 
     IdentityService(UserRepository userRepository, IdentityLookupService identityLookupService,
@@ -56,7 +55,6 @@ public class IdentityService {
             GoogleIdTokenVerifierPort googleVerifier, FacebookIdentityVerifierPort facebookVerifier,
             AppleIdTokenVerifierPort appleVerifier,
             SessionIssuer sessionIssuer, AuthAuditLog auditLog, LoginAttemptLimiter loginAttemptLimiter,
-            RefreshTokenService refreshTokenService,
             @Value("${app.otp.allowed-countries:KZ}") String allowedSmsCountries) {
         this.userRepository = userRepository;
         this.identityLookupService = identityLookupService;
@@ -68,7 +66,6 @@ public class IdentityService {
         this.sessionIssuer = sessionIssuer;
         this.auditLog = auditLog;
         this.loginAttemptLimiter = loginAttemptLimiter;
-        this.refreshTokenService = refreshTokenService;
         this.allowedSmsCountries = Arrays.stream(allowedSmsCountries.split(","))
                 .map(String::trim).filter(c -> !c.isEmpty()).map(String::toUpperCase).collect(Collectors.toSet());
     }
@@ -249,8 +246,7 @@ public class IdentityService {
         verifyOtpOrAudit(phone, code);
         User user = identityLookupService.findExisting(IdentityProvider.PHONE, phone)
                 .orElseThrow(() -> new InvalidOtpException("Invalid or expired code"));
-        identityLookupService.setPassword(user.getId(), newPassword);
-        refreshTokenService.revokeAllForUser(user.getId());
+        identityLookupService.resetPasswordAndRevokeSessions(user.getId(), newPassword);
         loginAttemptLimiter.recordSuccess("phone:" + phone);
     }
 

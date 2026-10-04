@@ -89,14 +89,15 @@ class TwilioOtpSender implements OtpSenderPort {
             if (response.statusCode() / 100 != 2) {
                 log.error("Twilio rejected SMS to=***{} status={} body={}", lastFour(e164Phone), response.statusCode(),
                         response.body());
-                throw new IllegalStateException("SMS delivery failed (Twilio status " + response.statusCode() + ")");
+                throw new OtpTemporarilyUnavailableException("The SMS could not be sent - please try again later");
             }
             log.info("Twilio SMS sent to=***{}", lastFour(e164Phone));
         } catch (IOException e) {
-            throw new IllegalStateException("SMS delivery failed: " + e.getMessage(), e);
+            log.error("Twilio SMS request failed: {}", e.getMessage());
+            throw new OtpTemporarilyUnavailableException("The SMS could not be sent - please try again later");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("SMS delivery interrupted", e);
+            throw new OtpTemporarilyUnavailableException("The SMS could not be sent - please try again later");
         }
     }
 
