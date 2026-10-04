@@ -235,9 +235,31 @@ class AuthController extends AsyncNotifier<UserSummary?> {
 
   Future<List<IdentitySummary>> listIdentities() => ref.read(authApiProvider).listIdentities();
 
-  Future<void> updateProfile({String? displayName, String? email}) async {
-    final updated = await ref.read(authApiProvider).updateProfile(displayName: displayName, email: email);
+  Future<void> updateProfile({
+    String? displayName,
+    String? email,
+    DateTime? birthDate,
+    bool clearBirthDate = false,
+    String? gender,
+    bool? marketingConsent,
+  }) async {
+    final updated = await ref.read(authApiProvider).updateProfile(
+          displayName: displayName,
+          email: email,
+          birthDate: birthDate,
+          clearBirthDate: clearBirthDate,
+          gender: gender,
+          marketingConsent: marketingConsent,
+        );
     state = AsyncValue.data(updated);
+  }
+
+  /// Deletes the account on the server, then signs out locally exactly like
+  /// [logout] -- the tokens are worthless once the account is gone. Throws a
+  /// [DeleteAccountException] (and changes nothing locally) if the server refuses.
+  Future<void> deleteAccount({String? password, required String confirmation}) async {
+    await ref.read(authApiProvider).deleteAccount(password: password, confirmation: confirmation);
+    await logout();
   }
 
   Future<bool> isBiometricAvailable() => ref.read(biometricAuthServiceProvider).isAvailable();

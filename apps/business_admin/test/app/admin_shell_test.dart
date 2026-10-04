@@ -97,4 +97,36 @@ void main() {
     expect(find.byType(AdminSidebar), findsNothing);
     expect(find.text('You have no businesses yet'), findsOneWidget);
   });
+
+  testWidgets('phone width: a bottom bar replaces the AppBar icons, More lists the rest, back returns to Dashboard', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_wrap());
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MobileAdminShell), findsOneWidget);
+    for (final label in ['Dashboard', 'Messages', 'Campaign Center', 'Loyalty', 'More']) {
+      expect(find.text(label), findsWidgets, reason: label);
+    }
+    // The six unlabeled shortcut icons are gone; only log out is left.
+    expect(find.byIcon(Icons.campaign_outlined), findsNothing);
+    expect(find.byIcon(Icons.settings_outlined), findsNothing);
+    expect(find.byIcon(Icons.logout), findsOneWidget);
+
+    await tester.tap(find.text('More'));
+    await tester.pumpAndSettle();
+    expect(find.text('Subscription'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('You have no businesses yet'), findsNothing);
+
+    // System back leaves More for the Dashboard instead of closing the app.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('You have no businesses yet'), findsOneWidget);
+  });
 }

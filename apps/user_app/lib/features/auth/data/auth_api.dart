@@ -108,15 +108,31 @@ class AuthApi {
     return UserSummary.fromJson(response.data as Map<String, dynamic>);
   }
 
-  /// Either argument may be null/blank to leave that field unchanged — see
-  /// backend's AuthDtos.UpdateProfileRequest. Used to complete a profile
+  /// Every argument may be null to leave that field unchanged — see
+  /// backend's AuthDtos.UpdateProfileRequest. Used both to complete a profile
   /// that started with a placeholder name/no email (Google/Facebook/phone
-  /// signup).
-  Future<UserSummary> updateProfile({String? displayName, String? email}) async {
+  /// signup) and by the Edit Profile screen. [clearBirthDate] removes a stored
+  /// birth date (null alone means "unchanged"); [gender] 'NOT_SPECIFIED'
+  /// clears the stored gender.
+  Future<UserSummary> updateProfile({
+    String? displayName,
+    String? email,
+    DateTime? birthDate,
+    bool clearBirthDate = false,
+    String? gender,
+    bool? marketingConsent,
+  }) async {
     try {
       final response = await _dioClient.patch(
         '/auth/me',
-        data: {'displayName': displayName, 'email': email},
+        data: {
+          'displayName': displayName,
+          'email': email,
+          'birthDate': birthDate == null ? null : UserSummary.formatBirthDate(birthDate),
+          'clearBirthDate': clearBirthDate,
+          'gender': gender,
+          'marketingConsent': marketingConsent,
+        },
       );
       return UserSummary.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
@@ -124,6 +140,24 @@ class AuthApi {
         throw const AuthException(AuthErrorKey.emailAlreadyRegistered);
       }
       rethrow;
+    }
+  }
+
+  /// Irreversibly deletes the signed-in account -- see backend's
+  /// AuthService.deleteAccount. [password] is required when the account has
+  /// one; [confirmation] must be exactly `DELETE`.
+  Future<void> deleteAccount({String? password, required String confirmation}) async {
+    try {
+      await _dioClient.post(
+        '/auth/me/delete',
+        data: {'password': password, 'confirmation': confirmation},
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw DeleteAccountException(
+        statusCode: e.response?.statusCode,
+        serverMessage: data is Map && data['message'] is String ? data['message'] as String : null,
+      );
     }
   }
 
@@ -360,7 +394,11 @@ class AuthApi {
 
   AuthException _mapOtpRequestError(DioException e) {
     final status = e.response?.statusCode;
-    if (status == 400) return const AuthException(AuthErrorKey.invalidPhoneNumber);
+    if (status == 400) {
+      return _messageContains(e, 'not supported')
+          ? const AuthException(AuthErrorKey.phoneCountryNotSupported)
+          : const AuthException(AuthErrorKey.invalidPhoneNumber);
+    }
     if (status == 429) {
       return _messageContains(e, 'wait')
           ? const AuthException(AuthErrorKey.otpResendCooldown)

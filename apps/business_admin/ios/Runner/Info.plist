@@ -7,6 +7,8 @@
 	<!-- Required by image_picker before it may request photo library/camera
 	     access at all — iOS silently refuses the permission prompt without
 	     these (used by the avatar/photo change flows). -->
+	<key>NSFaceIDUsageDescription</key>
+	<string>ZAIRO Business uses Face ID to quickly and securely unlock your session.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Business Admin needs access to your photo library to set a profile or staff photo.</string>
 	<key>NSCameraUsageDescription</key>
@@ -72,6 +74,19 @@
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<!-- Google Sign-In's redirect back into the app: the iOS OAuth client's
+	     "reversed client ID" (see docs/authentication.md), sourced from the
+	     GOOGLE_REVERSED_CLIENT_ID build setting (see Debug/Release.xcconfig),
+	     the same way the consumer app does. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>

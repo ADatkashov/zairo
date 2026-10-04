@@ -8,6 +8,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CustomerProviderProfileRepository extends JpaRepository<CustomerProviderProfile, UUID> {
 
+    /** Account deletion: derived behaviour data about this customer. */
+    void deleteByUserId(UUID userId);
+
+
     Optional<CustomerProviderProfile> findByUserIdAndProviderId(UUID userId, UUID providerId);
 
     /**

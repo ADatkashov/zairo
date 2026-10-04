@@ -1,7 +1,14 @@
+import 'dart:async';
+
 import 'package:core_network/core_network.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/auth_api.dart';
+import '../../data/biometric_auth_service.dart';
+import '../../data/google_sign_in_service.dart';
+import '../../data/models/identity_summary.dart';
+import '../../data/models/phone_status.dart';
+import '../../data/models/sms_mode.dart';
 import '../../data/models/auth_tokens.dart';
 import '../../data/models/user_summary.dart';
 import '../../data/token_storage.dart';
@@ -16,6 +23,21 @@ final authApiProvider = Provider<AuthApi>((ref) {
 class AuthController extends AsyncNotifier<UserSummary?> {
   @override
   Future<UserSummary?> build() async {
+    final storage = ref.watch(tokenStorageProvider);
+    if (await storage.isBiometricEnabled()) {
+      // Gates the already-securely-stored refresh token behind a biometric
+      // prompt on every cold start. Nothing biometric is ever sent to the
+      // backend; this only decides whether *this device* reads what is already
+      // stored locally. A declined/failed prompt is treated as logged out for
+      // this launch (the person can still log in normally, or relaunch to retry);
+      // it never skips the prompt and restores the session anyway.
+      final unlocked = await ref
+          .watch(biometricAuthServiceProvider)
+          .authenticate(reason: 'Unlock ZAIRO Business');
+      if (!unlocked) {
+        return null;
+      }
+    }
     return _restoreSession();
   }
 
@@ -79,10 +101,120 @@ class AuthController extends AsyncNotifier<UserSummary?> {
     });
   }
 
+  // ---- Provider / phone sign-in ------------------------------------------------
+  //
+  // Unlike login()/register() above, these THROW (AuthException) on failure and
+  // only touch the controller state on success: they are driven from screens
+  // that must survive a failed attempt (an account-link dialog, an error under
+  // the field), and AuthGate would otherwise swap the login screen for a spinner
+  // and dispose it mid-flow.
+
+  Future<void> loginWithGoogle(String idToken) async {
+    await _signedIn(await ref.read(authApiProvider).loginWithGoogle(idToken));
+  }
+
+  Future<void> loginWithApple(String identityToken, {String? displayName}) async {
+    await _signedIn(await ref.read(authApiProvider).loginWithApple(identityToken, displayName: displayName));
+  }
+
+  Future<void> linkProviderWithPassword({
+    required String provider,
+    required String token,
+    required String password,
+  }) async {
+    await _signedIn(await ref
+        .read(authApiProvider)
+        .linkProviderWithPassword(provider: provider, token: token, password: password));
+  }
+
+  // ---- Linked accounts (signed-in only; they keep the caller's own tokens and
+  // just refresh the cached UserSummary, e.g. a newly adopted phone number) ----
+
+  Future<List<IdentitySummary>> listIdentities() => ref.read(authApiProvider).listIdentities();
+
+  Future<void> linkGoogle(String idToken) async {
+    state = AsyncValue.data(await ref.read(authApiProvider).linkGoogle(idToken));
+  }
+
+  Future<void> linkApple(String identityToken) async {
+    state = AsyncValue.data(await ref.read(authApiProvider).linkApple(identityToken));
+  }
+
+  Future<void> linkPhone({required String phone, required String code}) async {
+    state = AsyncValue.data(await ref.read(authApiProvider).linkPhone(phone: phone, code: code));
+  }
+
+  Future<PhoneStatus> phoneStatus(String phone) => ref.read(authApiProvider).phoneStatus(phone);
+
+  Future<void> requestPhoneOtp(String phone) => ref.read(authApiProvider).requestPhoneOtp(phone);
+
+  Future<void> loginWithPhonePassword({required String phone, required String password}) async {
+    await _signedIn(await ref.read(authApiProvider).loginWithPhonePassword(phone: phone, password: password));
+  }
+
+  Future<void> registerWithPhone({
+    required String phone,
+    required String code,
+    required String displayName,
+    required String password,
+  }) async {
+    await _signedIn(await ref.read(authApiProvider).registerWithPhone(
+          phone: phone,
+          code: code,
+          displayName: displayName,
+          password: password,
+        ));
+  }
+
+  Future<void> resetPasswordWithPhone({
+    required String phone,
+    required String code,
+    required String newPassword,
+  }) =>
+      ref.read(authApiProvider).resetPasswordWithPhone(phone: phone, code: code, newPassword: newPassword);
+
+  Future<void> _signedIn(AuthTokens tokens) async {
+    await _applyTokens(tokens);
+    state = AsyncValue.data(tokens.user);
+  }
+
   Future<void> logout() async {
     await ref.read(tokenStorageProvider).clear();
     ref.read(authTokenHolderProvider).update(null);
+    // Best effort: next "Continue with Google" shows the account chooser again
+    // instead of silently reusing the last account.
+    unawaited(ref.read(googleSignInServiceProvider).signOut().catchError((_) {}));
     state = const AsyncValue.data(null);
+  }
+
+  Future<bool> isBiometricAvailable() => ref.read(biometricAuthServiceProvider).isAvailable();
+
+  Future<bool> isBiometricEnabled() => ref.read(tokenStorageProvider).isBiometricEnabled();
+
+  /// Prompts once (proves the enrolled person is actually present, not just
+  /// that the hardware exists) before turning the toggle on.
+  Future<bool> enableBiometric() async {
+    final confirmed = await ref
+        .read(biometricAuthServiceProvider)
+        .authenticate(reason: 'Confirm it\'s you to enable biometric unlock');
+    if (!confirmed) return false;
+    await ref.read(tokenStorageProvider).setBiometricEnabled(true);
+    unawaited(_auditBiometricToggle(true));
+    return true;
+  }
+
+  Future<void> disableBiometric() async {
+    await ref.read(tokenStorageProvider).setBiometricEnabled(false);
+    unawaited(_auditBiometricToggle(false));
+  }
+
+  Future<void> _auditBiometricToggle(bool enabled) async {
+    try {
+      await ref.read(authApiProvider).auditBiometricToggle(enabled);
+    } catch (_) {
+      // Audit-only — never lets a network hiccup undo a local toggle the person
+      // already confirmed with their own biometric.
+    }
   }
 
   /// Pass null to remove the avatar.
@@ -91,10 +223,42 @@ class AuthController extends AsyncNotifier<UserSummary?> {
     state = AsyncValue.data(updated);
   }
 
+  /// Only interactive sign-ins come through here (a silent session restore
+  /// saves its tokens itself), so this is also where "offer to enable biometric
+  /// unlock" is requested — see BiometricOfferHost.
   Future<void> _applyTokens(AuthTokens tokens) async {
     await ref.read(tokenStorageProvider).save(tokens);
     ref.read(authTokenHolderProvider).update(tokens.accessToken);
+    ref.read(biometricOfferPendingProvider.notifier).request();
   }
 }
 
+/// True right after an interactive sign-in, until the logged-in home has offered
+/// (or skipped) the "enable fingerprint?" prompt.
+class BiometricOfferNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void request() => state = true;
+
+  /// Returns whether an offer was pending, and clears it.
+  bool take() {
+    final pending = state;
+    state = false;
+    return pending;
+  }
+}
+
+final biometricOfferPendingProvider = NotifierProvider<BiometricOfferNotifier, bool>(BiometricOfferNotifier.new);
+
 final authControllerProvider = AsyncNotifierProvider<AuthController, UserSummary?>(AuthController.new);
+
+/// Whether SMS is mocked on the server (pre-production). Any failure means
+/// "real SMS" — the hint is only ever an extra, never a reason to block a flow.
+final smsModeProvider = FutureProvider<SmsMode>((ref) async {
+  try {
+    return await ref.watch(authApiProvider).smsMode();
+  } catch (_) {
+    return SmsMode.real;
+  }
+});

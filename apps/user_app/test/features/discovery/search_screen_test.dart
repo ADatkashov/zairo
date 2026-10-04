@@ -496,4 +496,72 @@ void main() {
       expect(fakeApi.lastVertical, isNull);
     },
   );
+
+  testWidgets('a category carried in from Home is applied as the vertical filter',
+      (tester) async {
+    final api = _RecordingDiscoveryApi();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [discoveryApiProvider.overrideWithValue(api)],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SearchScreen(initialVertical: 'auto'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(api.lastVertical, 'auto');
+  });
+
+  testWidgets('empty results for a query offer to reset the search',
+      (tester) async {
+    final api = _RecordingDiscoveryApi();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [discoveryApiProvider.overrideWithValue(api)],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SearchScreen(initialVertical: 'auto'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(api.lastVertical, 'auto');
+
+    await tester.tap(find.text('Reset search and filters'));
+    await tester.pumpAndSettle();
+
+    expect(api.lastVertical, isNull);
+  });
+
+  testWidgets('the clear button empties the query', (tester) async {
+    final api = _RecordingDiscoveryApi();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [discoveryApiProvider.overrideWithValue(api)],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SearchScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'massage');
+    await tester.pump();
+    await tester.tap(find.byIcon(Symbols.close_rounded));
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, isEmpty);
+  });
 }

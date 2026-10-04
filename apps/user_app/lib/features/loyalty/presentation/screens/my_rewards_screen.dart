@@ -1,15 +1,16 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../../app/router/app_routes.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/widgets/logged_out_gate.dart';
 import '../../data/models/loyalty.dart';
 import '../providers/loyalty_providers.dart';
 import '../widgets/points_expiring_banner.dart';
-import 'business_loyalty_screen.dart';
 
 /// "My rewards across every business" -- pushed from Profile (see
 /// ProfileScreen's stat row), same navigation pattern as FavoritesScreen.
@@ -118,12 +119,10 @@ class _BusinessRow extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return FactoryCard(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => BusinessLoyaltyScreen(
-            providerId: business.providerId,
-            providerName: business.providerName,
-          ),
+      onTap: () => context.push(
+        AppRoutes.loyalty(
+          business.providerId,
+          providerName: business.providerName,
         ),
       ),
       child: Column(

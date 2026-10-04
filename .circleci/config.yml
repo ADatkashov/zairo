@@ -64,6 +64,21 @@ jobs:
               echo "no code generation in this app"
             fi
       - run:
+          # The default Docker executor has ~4 GB of RAM, but the apps'
+          # android/gradle.properties allow an 8 GB Gradle heap (fine on a
+          # developer machine). Gradle and the Kotlin daemon together then
+          # outgrow the container and the kernel kills the daemon mid-build
+          # ("Gradle build daemon disappeared unexpectedly"). Cap them here, for
+          # CI only: ~/.gradle/gradle.properties outranks the project's file.
+          name: Fit Gradle into the executor's memory
+          command: |
+            mkdir -p ~/.gradle
+            printf '%s\n' \
+              'org.gradle.jvmargs=-Xmx2g -XX:MaxMetaspaceSize=768m -XX:ReservedCodeCacheSize=256m -XX:+HeapDumpOnOutOfMemoryError' \
+              'kotlin.daemon.jvmargs=-Xmx1g' \
+              'org.gradle.workers.max=2' >> ~/.gradle/gradle.properties
+            cat ~/.gradle/gradle.properties
+      - run:
           name: Build Flutter APK
           working_directory: << parameters.app_dir >>
           command: |
@@ -72,7 +87,8 @@ jobs:
               --build-name=1.0.0 \
               --build-number=${CIRCLE_BUILD_NUM} \
               --dart-define=API_BASE_URL="$API_BASE_URL" \
-              --dart-define=MAPS_API_KEY="${MAPS_API_KEY:-}"
+              --dart-define=MAPS_API_KEY="${MAPS_API_KEY:-}" \
+              --dart-define=GOOGLE_OAUTH_SERVER_CLIENT_ID="${GOOGLE_OAUTH_SERVER_CLIENT_ID:-}"
       - store_artifacts:
           path: << parameters.app_dir >>/build/app/outputs/flutter-apk/app-release.apk
           destination: << parameters.artifact_name >>
