@@ -44,6 +44,7 @@ public class IdentityService {
     private final PhoneNumberNormalizer phoneNumberNormalizer;
     private final GoogleIdTokenVerifierPort googleVerifier;
     private final FacebookIdentityVerifierPort facebookVerifier;
+    private final AppleIdTokenVerifierPort appleVerifier;
     private final SessionIssuer sessionIssuer;
     private final AuthAuditLog auditLog;
     private final LoginAttemptLimiter loginAttemptLimiter;
@@ -53,6 +54,7 @@ public class IdentityService {
     IdentityService(UserRepository userRepository, IdentityLookupService identityLookupService,
             PhoneOtpService phoneOtpService, PhoneNumberNormalizer phoneNumberNormalizer,
             GoogleIdTokenVerifierPort googleVerifier, FacebookIdentityVerifierPort facebookVerifier,
+            AppleIdTokenVerifierPort appleVerifier,
             SessionIssuer sessionIssuer, AuthAuditLog auditLog, LoginAttemptLimiter loginAttemptLimiter,
             RefreshTokenService refreshTokenService,
             @Value("${app.otp.allowed-countries:KZ}") String allowedSmsCountries) {
@@ -62,6 +64,7 @@ public class IdentityService {
         this.phoneNumberNormalizer = phoneNumberNormalizer;
         this.googleVerifier = googleVerifier;
         this.facebookVerifier = facebookVerifier;
+        this.appleVerifier = appleVerifier;
         this.sessionIssuer = sessionIssuer;
         this.auditLog = auditLog;
         this.loginAttemptLimiter = loginAttemptLimiter;
@@ -90,6 +93,29 @@ public class IdentityService {
         });
         linkIdentity(currentUserId, IdentityProvider.GOOGLE, identity.subject(), null);
         auditLog.identityLinked(currentUserId, IdentityProvider.GOOGLE);
+        return SessionIssuer.toSummary(requireUser(currentUserId));
+    }
+
+    // ---- Apple ---------------------------------------------------------
+
+    public TokenResponse loginOrRegisterWithApple(String identityToken, String displayName) {
+        AppleIdTokenVerifierPort.VerifiedIdentity identity = appleVerifier.verify(identityToken).orElseThrow(() -> {
+            auditLog.loginFailed("APPLE", "invalid_credential");
+            return new InvalidProviderCredentialException("Invalid Apple credential");
+        });
+        User user = findOrCreateUser(IdentityProvider.APPLE, identity.subject(),
+                identity.emailVerified() ? identity.email() : null, null, displayName);
+        auditLog.loginSucceeded(user.getId(), "APPLE");
+        return sessionIssuer.issue(user);
+    }
+
+    public UserSummary linkApple(UUID currentUserId, String identityToken) {
+        AppleIdTokenVerifierPort.VerifiedIdentity identity = appleVerifier.verify(identityToken).orElseThrow(() -> {
+            auditLog.loginFailed("APPLE", "invalid_credential");
+            return new InvalidProviderCredentialException("Invalid Apple credential");
+        });
+        linkIdentity(currentUserId, IdentityProvider.APPLE, identity.subject(), null);
+        auditLog.identityLinked(currentUserId, IdentityProvider.APPLE);
         return SessionIssuer.toSummary(requireUser(currentUserId));
     }
 
@@ -250,6 +276,12 @@ public class IdentityService {
             case FACEBOOK -> {
                 VerifiedIdentity identity = facebookVerifier.verify(token)
                         .orElseThrow(() -> new InvalidProviderCredentialException("Invalid Facebook credential"));
+                subject = identity.subject();
+                email = identity.emailVerified() ? identity.email() : null;
+            }
+            case APPLE -> {
+                AppleIdTokenVerifierPort.VerifiedIdentity identity = appleVerifier.verify(token)
+                        .orElseThrow(() -> new InvalidProviderCredentialException("Invalid Apple credential"));
                 subject = identity.subject();
                 email = identity.emailVerified() ? identity.email() : null;
             }

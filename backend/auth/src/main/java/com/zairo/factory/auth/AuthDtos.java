@@ -78,6 +78,15 @@ public final class AuthDtos {
                     + "keys; see docs/authentication.md.") String idToken) {
     }
 
+    public record AppleAuthRequest(
+            @NotBlank @Schema(description = "The Sign in with Apple identity token (JWT) obtained on-device. "
+                    + "Verified server-side against Apple's published keys; see docs/authentication.md.")
+            String identityToken,
+            @Size(max = 255) @Schema(description = "Optional: Apple only gives the person's name to the app, never "
+                    + "inside the token, and only on the very first sign-in. Used as display name when this "
+                    + "creates a new account; ignored otherwise.", example = "Aigerim Bekova") String displayName) {
+    }
+
     public record FacebookAuthRequest(
             @NotBlank @Schema(description = "The Facebook user access token obtained on-device via the Facebook "
                     + "Login SDK. Verified server-side against the Graph API's debug_token endpoint; see "

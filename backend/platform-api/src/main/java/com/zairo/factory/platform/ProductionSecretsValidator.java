@@ -49,8 +49,7 @@ class ProductionSecretsValidator {
     private final String dbPassword;
     private final String storageSecretKey;
     private final String googleClientIds;
-    private final String facebookAppId;
-    private final String facebookAppSecret;
+    private final String appleClientIds;
     private final String twilioAccountSid;
     private final String twilioAuthToken;
     private final String twilioFrom;
@@ -61,8 +60,7 @@ class ProductionSecretsValidator {
             @Value("${spring.datasource.password}") String dbPassword,
             @Value("${app.storage.secret-key}") String storageSecretKey,
             @Value("${app.oauth.google.client-ids:}") String googleClientIds,
-            @Value("${app.oauth.facebook.app-id:}") String facebookAppId,
-            @Value("${app.oauth.facebook.app-secret:}") String facebookAppSecret,
+            @Value("${app.oauth.apple.client-ids:}") String appleClientIds,
             @Value("${app.sms.twilio.account-sid:}") String twilioAccountSid,
             @Value("${app.sms.twilio.auth-token:}") String twilioAuthToken,
             @Value("${app.sms.twilio.from:}") String twilioFrom,
@@ -73,8 +71,7 @@ class ProductionSecretsValidator {
         this.dbPassword = dbPassword;
         this.storageSecretKey = storageSecretKey;
         this.googleClientIds = googleClientIds;
-        this.facebookAppId = facebookAppId;
-        this.facebookAppSecret = facebookAppSecret;
+        this.appleClientIds = appleClientIds;
         this.twilioAccountSid = twilioAccountSid;
         this.twilioAuthToken = twilioAuthToken;
         this.twilioFrom = twilioFrom;
@@ -96,14 +93,13 @@ class ProductionSecretsValidator {
         // No dev-default to compare against for these — they simply must
         // not be blank in production. Blank Google client ids would make
         // GoogleIdTokenVerifierAdapter accept a Google ID token issued to
-        // *any* app (no audience check at all); blank Facebook app
-        // credentials make FacebookGraphIdentityVerifier reject every
-        // token (safe, but means Facebook Login is silently broken) — the
-        // first is a security hole, the second a production incident, so
-        // both fail startup rather than either happening silently.
+        // *any* app (no audience check at all). Facebook login is not
+        // offered any more, so its credentials are no longer required
+        // (FacebookGraphIdentityVerifier just rejects every token when blank).
         checkNotBlank(problems, "GOOGLE_OAUTH_CLIENT_IDS (app.oauth.google.client-ids)", googleClientIds);
-        checkNotBlank(problems, "FACEBOOK_APP_ID (app.oauth.facebook.app-id)", facebookAppId);
-        checkNotBlank(problems, "FACEBOOK_APP_SECRET (app.oauth.facebook.app-secret)", facebookAppSecret);
+        // Same security hole as blank Google ids: with no audience configured,
+        // an Apple identity token issued to *any* app would be accepted.
+        checkNotBlank(problems, "APPLE_CLIENT_IDS (app.oauth.apple.client-ids)", appleClientIds);
         // Without Twilio, phone-OTP codes are only written to the server log
         // (LoggingOtpSender) -- real users would never receive an SMS, and
         // anyone with log access could read every login code.

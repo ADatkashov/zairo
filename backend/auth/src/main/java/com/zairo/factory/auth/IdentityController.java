@@ -1,5 +1,6 @@
 package com.zairo.factory.auth;
 
+import com.zairo.factory.auth.AuthDtos.AppleAuthRequest;
 import com.zairo.factory.auth.AuthDtos.FacebookAuthRequest;
 import com.zairo.factory.auth.AuthDtos.GoogleAuthRequest;
 import com.zairo.factory.auth.AuthDtos.LinkWithPasswordRequest;
@@ -89,6 +90,36 @@ public class IdentityController {
     public UserSummary linkGoogle(@Valid @RequestBody GoogleAuthRequest request, HttpServletRequest httpRequest) {
         UUID userId = CurrentUser.requireUserId(httpRequest);
         return identityService.linkGoogle(userId, request.idToken());
+    }
+
+    @Operation(summary = "Sign in or register with Apple", description = """
+            Exchanges a Sign in with Apple identity token for a ZAIRO session - same shape as POST /auth/google. \
+            The token's signature, issuer, audience and expiry are verified server-side against Apple's published \
+            keys (see AppleIdTokenVerifierAdapter). A verified email that already belongs to another account is \
+            handled like Google: joined automatically if that email is verified, otherwise 409 \
+            ACCOUNT_LINK_REQUIRED.""")
+    @ApiResponse(responseCode = "200", description = "Signed in (existing or newly created account)")
+    @ApiResponse(responseCode = "400", ref = "BadRequest")
+    @ApiResponse(responseCode = "401", description = "Invalid, expired, or wrong-audience Apple credential.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @ApiResponse(responseCode = "409", description = "ACCOUNT_LINK_REQUIRED - confirm the existing account's password.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @PostMapping("/api/v1/auth/apple")
+    public TokenResponse appleSignIn(@Valid @RequestBody AppleAuthRequest request) {
+        return identityService.loginOrRegisterWithApple(request.identityToken(), request.displayName());
+    }
+
+    @Operation(summary = "Link an Apple account to the current user")
+    @ApiResponse(responseCode = "200", description = "Linked (or already was)")
+    @ApiResponse(responseCode = "400", ref = "BadRequest")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "409", description = "Already linked to a different account.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/api/v1/auth/identities/apple")
+    public UserSummary linkApple(@Valid @RequestBody AppleAuthRequest request, HttpServletRequest httpRequest) {
+        UUID userId = CurrentUser.requireUserId(httpRequest);
+        return identityService.linkApple(userId, request.identityToken());
     }
 
     @Operation(summary = "Sign in or register with Facebook", description = """

@@ -86,6 +86,11 @@ app:
       # audience", which GoogleIdTokenVerifierAdapter only allows outside
       # spring.profiles.active=prod (see ProductionSecretsValidator).
       client-ids: ${GOOGLE_OAUTH_CLIENT_IDS:}
+    apple:
+      # Comma-separated audiences of Sign in with Apple identity tokens: the
+      # iOS bundle id (and a Services ID if Android/web is added). Blank
+      # means "accept any audience", which is only allowed outside prod.
+      client-ids: ${APPLE_CLIENT_IDS:}
     facebook:
       app-id: ${FACEBOOK_APP_ID:}
       app-secret: ${FACEBOOK_APP_SECRET:}
