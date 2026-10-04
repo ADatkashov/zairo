@@ -43,4 +43,7 @@ dependencies {
     // Only for ReactivationOfferReadyEvent's type — same one-directional
     // "listen for the event" reasoning as the dependency above.
     implementation(project(":reactivation-engine"))
+
+    // BirthdayBonusAwardedEvent -> in-app/email greeting; one-directional like the engines above.
+    implementation(project(":loyalty"))
 }

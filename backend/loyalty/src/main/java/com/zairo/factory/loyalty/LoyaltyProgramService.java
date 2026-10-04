@@ -52,12 +52,12 @@ public class LoyaltyProgramService {
             int repeatVisitBonusPoints, int repeatVisitThreshold, int reviewBonusPoints,
             BigDecimal pointsPerCurrencyUnitRedemption, Integer minRedemptionPoints,
             Integer maxRedemptionPointsPerBooking, boolean pointsExpireEnabled, Integer pointsExpirationMonths,
-            Integer dailyEarningPointsCap, Integer monthlyEarningPointsCap) {
+            Integer dailyEarningPointsCap, Integer monthlyEarningPointsCap, int birthdayBonusPoints) {
         if (name == null || name.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Program name must not be blank");
         }
         if (fixedPointsPerBooking < 0 || firstBookingBonusPoints < 0 || repeatVisitBonusPoints < 0
-                || reviewBonusPoints < 0) {
+                || reviewBonusPoints < 0 || birthdayBonusPoints < 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Earning amounts must not be negative");
         }
         if (repeatVisitThreshold < 2) {
@@ -77,7 +77,7 @@ public class LoyaltyProgramService {
                 pointsPerCurrencyUnit == null ? BigDecimal.ZERO : pointsPerCurrencyUnit, firstBookingBonusPoints,
                 repeatVisitBonusPoints, repeatVisitThreshold, reviewBonusPoints, pointsPerCurrencyUnitRedemption,
                 minRedemptionPoints, maxRedemptionPointsPerBooking, pointsExpireEnabled, pointsExpirationMonths,
-                dailyEarningPointsCap, monthlyEarningPointsCap, clock.instant());
+                dailyEarningPointsCap, monthlyEarningPointsCap, birthdayBonusPoints, clock.instant());
         return programRepository.save(program);
     }
 

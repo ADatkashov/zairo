@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../auth/presentation/widgets/confirm_log_out.dart';
 import '../../../salon/data/models/admin_provider.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
@@ -37,7 +38,11 @@ class ModerationScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: l10n.logOutTooltip,
-            onPressed: () => ref.read(authControllerProvider.notifier).logout(),
+            onPressed: () async {
+              if (await confirmLogOut(context)) {
+                ref.read(authControllerProvider.notifier).logout();
+              }
+            },
           ),
         ],
       ),

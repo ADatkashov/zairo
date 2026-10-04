@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/widgets/change_avatar_dialog.dart';
+import '../../../auth/presentation/widgets/confirm_log_out.dart';
 import '../../../automation/presentation/screens/automation_center_screen.dart';
 import '../../../billing/data/billing_exception.dart';
 import '../../../billing/data/models/subscription.dart';
@@ -102,7 +103,11 @@ class DashboardScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: l10n.logOutTooltip,
-            onPressed: () => ref.read(authControllerProvider.notifier).logout(),
+            onPressed: () async {
+              if (await confirmLogOut(context)) {
+                ref.read(authControllerProvider.notifier).logout();
+              }
+            },
           ),
         ],
       ),
