@@ -1,6 +1,7 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../core/formatting/initials.dart';
@@ -172,10 +173,19 @@ class _LoggedInView extends ConsumerWidget {
           child: Row(
             children: [
               Expanded(
-                child: FactoryStatTile(
-                  value: bookingsCount?.toString() ?? '—',
-                  label: l10n.myBookingsTitle,
-                  icon: Symbols.calendar_month_rounded,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: FactoryRadius.mdRadius,
+                    // The Bookings tab already exists; switching to it keeps the
+                    // bottom nav instead of stacking a second copy of the screen.
+                    onTap: () => context.go('/bookings'),
+                    child: FactoryStatTile(
+                      value: bookingsCount?.toString() ?? '—',
+                      label: l10n.myBookingsTitle,
+                      icon: Symbols.calendar_month_rounded,
+                    ),
+                  ),
                 ),
               ),
               Container(width: 1, height: 36, color: colors.border),
