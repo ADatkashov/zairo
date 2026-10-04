@@ -408,7 +408,7 @@ class _CreateAdminDialogState extends ConsumerState<_CreateAdminDialog> {
             const SizedBox(height: FactorySpacing.space3),
             FactoryTextField(controller: _emailController, enabled: !_isSubmitting, label: 'Email'),
             const SizedBox(height: FactorySpacing.space3),
-            FactoryTextField(controller: _passwordController, enabled: !_isSubmitting, label: 'Temporary password'),
+            FactoryTextField(controller: _passwordController, enabled: !_isSubmitting, label: 'Temporary password', obscureText: true),
             const SizedBox(height: FactorySpacing.space3),
             DropdownButtonFormField<String>(
               initialValue: _role,

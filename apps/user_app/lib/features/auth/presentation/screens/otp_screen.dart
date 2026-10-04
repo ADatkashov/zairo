@@ -8,6 +8,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../data/auth_exception.dart';
 import '../providers/auth_providers.dart';
 import '../widgets/enable_biometric_prompt.dart';
+import '../widgets/sms_mock_hint.dart';
 
 /// Screen 2 of the phone flow (task spec §11): "Enter the 6-digit code" +
 /// resend countdown. [linking] false = sign in/register (pops to root, same
@@ -79,6 +80,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             children: [
               Text(l10n.otpInstructions(widget.phone)),
               const SizedBox(height: FactorySpacing.space4),
+              const SmsMockHint(),
               FactoryTextField(
                 controller: _codeController,
                 label: l10n.otpCodeLabel,

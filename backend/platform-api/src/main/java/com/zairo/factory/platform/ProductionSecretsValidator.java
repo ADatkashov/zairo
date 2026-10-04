@@ -3,6 +3,8 @@ package com.zairo.factory.platform;
 import jakarta.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
@@ -43,30 +45,44 @@ class ProductionSecretsValidator {
     static final String DEV_DB_PASSWORD = "app_factory";
     static final String DEV_STORAGE_SECRET_KEY = "app_factory_secret";
 
+    private static final Logger log = LoggerFactory.getLogger(ProductionSecretsValidator.class);
+
     private final Environment environment;
     private final String jwtSecret;
     private final String platformAdminJwtSecret;
     private final String dbPassword;
     private final String storageSecretKey;
     private final String googleClientIds;
-    private final String facebookAppId;
-    private final String facebookAppSecret;
+    private final String appleClientIds;
+    private final String twilioAccountSid;
+    private final String twilioAuthToken;
+    private final String twilioFrom;
+    private final String twilioMessagingServiceSid;
+    private final String otpMockCode;
 
     ProductionSecretsValidator(Environment environment, @Value("${app.jwt.secret}") String jwtSecret,
             @Value("${app.jwt.platform-admin-secret}") String platformAdminJwtSecret,
             @Value("${spring.datasource.password}") String dbPassword,
             @Value("${app.storage.secret-key}") String storageSecretKey,
             @Value("${app.oauth.google.client-ids:}") String googleClientIds,
-            @Value("${app.oauth.facebook.app-id:}") String facebookAppId,
-            @Value("${app.oauth.facebook.app-secret:}") String facebookAppSecret) {
+            @Value("${app.oauth.apple.client-ids:}") String appleClientIds,
+            @Value("${app.sms.twilio.account-sid:}") String twilioAccountSid,
+            @Value("${app.sms.twilio.auth-token:}") String twilioAuthToken,
+            @Value("${app.sms.twilio.from:}") String twilioFrom,
+            @Value("${app.sms.twilio.messaging-service-sid:}") String twilioMessagingServiceSid,
+            @Value("${app.otp.mock-code:}") String otpMockCode) {
         this.environment = environment;
         this.jwtSecret = jwtSecret;
         this.platformAdminJwtSecret = platformAdminJwtSecret;
         this.dbPassword = dbPassword;
         this.storageSecretKey = storageSecretKey;
         this.googleClientIds = googleClientIds;
-        this.facebookAppId = facebookAppId;
-        this.facebookAppSecret = facebookAppSecret;
+        this.appleClientIds = appleClientIds;
+        this.twilioAccountSid = twilioAccountSid;
+        this.twilioAuthToken = twilioAuthToken;
+        this.twilioFrom = twilioFrom;
+        this.twilioMessagingServiceSid = twilioMessagingServiceSid;
+        this.otpMockCode = otpMockCode;
     }
 
     @PostConstruct
@@ -84,14 +100,33 @@ class ProductionSecretsValidator {
         // No dev-default to compare against for these — they simply must
         // not be blank in production. Blank Google client ids would make
         // GoogleIdTokenVerifierAdapter accept a Google ID token issued to
-        // *any* app (no audience check at all); blank Facebook app
-        // credentials make FacebookGraphIdentityVerifier reject every
-        // token (safe, but means Facebook Login is silently broken) — the
-        // first is a security hole, the second a production incident, so
-        // both fail startup rather than either happening silently.
+        // *any* app (no audience check at all). Facebook login is not
+        // offered any more, so its credentials are no longer required
+        // (FacebookGraphIdentityVerifier just rejects every token when blank).
         checkNotBlank(problems, "GOOGLE_OAUTH_CLIENT_IDS (app.oauth.google.client-ids)", googleClientIds);
-        checkNotBlank(problems, "FACEBOOK_APP_ID (app.oauth.facebook.app-id)", facebookAppId);
-        checkNotBlank(problems, "FACEBOOK_APP_SECRET (app.oauth.facebook.app-secret)", facebookAppSecret);
+        // Same security hole as blank Google ids: with no audience configured,
+        // an Apple identity token issued to *any* app would be accepted.
+        checkNotBlank(problems, "APPLE_CLIENT_IDS (app.oauth.apple.client-ids)", appleClientIds);
+        boolean smsMocked = otpMockCode != null && !otpMockCode.isBlank();
+        if (smsMocked) {
+            // Allowed on purpose, for a deployed pre-production test environment
+            // that has no SMS provider yet -- but it makes every phone account
+            // sign-in-able with one known code, so say so loudly.
+            log.error("!!! OTP_MOCK_CODE is set under the prod profile: phone sign-in uses the fixed code {} and NO real "
+                    + "SMS is sent. Anyone who knows a phone number can log in as that user. Unset OTP_MOCK_CODE and "
+                    + "configure Twilio before real users arrive. !!!", otpMockCode);
+        } else {
+            // Without Twilio, phone-OTP codes are only written to the server log
+            // (LoggingOtpSender) -- real users would never receive an SMS, and
+            // anyone with log access could read every login code.
+            checkNotBlank(problems, "TWILIO_ACCOUNT_SID (app.sms.twilio.account-sid)", twilioAccountSid);
+            checkNotBlank(problems, "TWILIO_AUTH_TOKEN (app.sms.twilio.auth-token)", twilioAuthToken);
+            if ((twilioFrom == null || twilioFrom.isBlank())
+                    && (twilioMessagingServiceSid == null || twilioMessagingServiceSid.isBlank())) {
+                problems.add("TWILIO_FROM (app.sms.twilio.from) or TWILIO_MESSAGING_SERVICE_SID "
+                        + "(app.sms.twilio.messaging-service-sid) is not set");
+            }
+        }
         if (!problems.isEmpty()) {
             throw new IllegalStateException(
                     "Refusing to start with spring.profiles.active=prod while still using a committed dev-default "

@@ -344,13 +344,56 @@ in.
 | Variable | Used by | Required in production? |
 |---|---|---|
 | `GOOGLE_OAUTH_CLIENT_IDS` | `GoogleIdTokenVerifierAdapter` — comma-separated Android/iOS/(optional web) OAuth client IDs from [Google Cloud Console](https://console.cloud.google.com/apis/credentials) | Yes — `ProductionSecretsValidator` refuses to boot under `spring.profiles.active=prod` without it |
-| `FACEBOOK_APP_ID` / `FACEBOOK_APP_SECRET` | `FacebookGraphIdentityVerifier` — from [Facebook for Developers](https://developers.facebook.com/apps/) → your app → Settings > Basic | Yes — same startup guard |
+| `APPLE_CLIENT_IDS` | `AppleIdTokenVerifierAdapter` — comma-separated audiences of Sign in with Apple identity tokens: the iOS bundle id (`com.zairo`), plus a Services ID if Android/web is added | Yes — same startup guard (blank would accept an Apple token issued to any app) |
+| `FACEBOOK_APP_ID` / `FACEBOOK_APP_SECRET` | `FacebookGraphIdentityVerifier` — from [Facebook for Developers](https://developers.facebook.com/apps/) → your app → Settings > Basic | No longer required — Facebook sign-in isn't offered in the app (the backend endpoint remains but rejects every token without these) |
 
 `app.otp.*` (TTL, cooldown, attempt/request limits) already have sane
-defaults and need no external account to work — `LoggingOtpSender` is a
-real, working delivery channel for local dev (reads the code from the
-server log) but should be replaced with a real SMS provider (implement
-`OtpSenderPort`) before this ships to real phone numbers.
+defaults and need no external account to work.
+
+SMS delivery: without Twilio configured, `LoggingOtpSender` only writes the
+code to the server log (local dev/CI) — no real SMS reaches a phone. Set these
+to send real SMS through Twilio (`TwilioOtpSender`):
+
+| Variable | Notes |
+|---|---|
+| `TWILIO_ACCOUNT_SID` | Twilio Console > Account Info. Setting it switches delivery from the log to Twilio. |
+| `TWILIO_AUTH_TOKEN` | Same place. Required once the SID is set (startup fails otherwise). |
+| `TWILIO_FROM` | A Twilio phone number in E.164 (e.g. `+1415...`) that can text Kazakhstan/your target countries. |
+| `TWILIO_MESSAGING_SERVICE_SID` | Alternative to `TWILIO_FROM` (starts with `MG`); wins if both are set. |
+
+**Pre-production SMS mock (`OTP_MOCK_CODE`).** To try phone sign-in end to end
+before an SMS provider exists, set `OTP_MOCK_CODE` to any 6 digits (e.g. `123456`).
+Then no SMS is sent (`MockOtpSender`), every phone number gets that one fixed
+code, and the app shows "Test mode ... Enter the code 123456" on the code screens
+(it learns this from `GET /auth/phone/sms-mode`). Everything else — rate limits,
+single-use codes, passwords — works as usual. To go live: **unset
+`OTP_MOCK_CODE`** and configure Twilio; nothing else changes (with the mock off
+and no Twilio, the dev log sender is used). **Not secure:** while it is on,
+anyone who knows a phone number can sign in as that user (or reset its password)
+with the fixed code. The `prod` profile normally refuses to start without Twilio;
+with `OTP_MOCK_CODE` set it starts anyway (to allow a deployed test environment)
+and logs a loud error at startup.
+
+SMS abuse limits (against SMS-pumping fraud; all in `application.yml`'s `app.otp`):
+
+| Setting (env var) | Default | Meaning |
+|---|---|---|
+| `max-requests-per-hour` | 5 | codes per phone number per hour (plus a 60 s resend cooldown) |
+| `max-requests-per-ip-per-hour` (`OTP_MAX_REQUESTS_PER_IP_PER_HOUR`) | 20 | codes per client IP per hour, across all numbers |
+| `daily-send-cap` (`OTP_DAILY_SEND_CAP`) | 3000 | platform-wide codes per 24 h; once reached, requests get 503 (circuit breaker) |
+| `allowed-countries` (`OTP_ALLOWED_COUNTRIES`) | `KZ` | ISO countries SMS is sent to (comma-separated, empty = any). `+7` is shared: 7xx = KZ, 9xx = RU |
+| `trusted-proxy-hops` (`OTP_TRUSTED_PROXY_HOPS`) | 1 | reverse proxies in front of the app that append to `X-Forwarded-For` (0 if exposed directly) — needed to find the real client IP |
+
+Set `OTP_DAILY_SEND_CAP` to your real traffic and SMS budget, and widen
+`OTP_ALLOWED_COUNTRIES` when you open another market. Also set a spending cap in Twilio itself.
+
+In production (`spring.profiles.active=prod`) Twilio is required: `ProductionSecretsValidator`
+refuses to start without `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` and one of
+`TWILIO_FROM` / `TWILIO_MESSAGING_SERVICE_SID` (otherwise codes would only exist in the server log).
+
+Note: for some countries (incl. Kazakhstan) Twilio may require a registered
+alphanumeric sender ID or a messaging service — check Twilio's country
+guidelines if messages are not delivered.
 
 ### Flutter (`apps/user_app`)
 

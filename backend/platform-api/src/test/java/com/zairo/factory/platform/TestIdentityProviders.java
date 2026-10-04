@@ -2,6 +2,7 @@ package com.zairo.factory.platform;
 
 import com.zairo.factory.auth.FacebookIdentityVerifierPort;
 import com.zairo.factory.auth.FacebookIdentityVerifierPort.VerifiedIdentity;
+import com.zairo.factory.auth.AppleIdTokenVerifierPort;
 import com.zairo.factory.auth.GoogleIdTokenVerifierPort;
 import com.zairo.factory.auth.OtpSenderPort;
 import java.util.Map;
@@ -41,6 +42,11 @@ class TestIdentityProviders {
         return "FACEBOOK|" + subject + "|" + orEmpty(email) + "|" + orEmpty(name);
     }
 
+    /** Encodes a fake, self-describing Apple identity token. */
+    static String appleToken(String subject, String email, boolean emailVerified) {
+        return "APPLE|" + subject + "|" + orEmpty(email) + "|" + emailVerified;
+    }
+
     private static String orEmpty(String value) {
         return value == null ? "" : value;
     }
@@ -60,6 +66,23 @@ class TestIdentityProviders {
             boolean emailVerified = Boolean.parseBoolean(parts[3]);
             String name = parts[4].isEmpty() ? null : parts[4];
             return Optional.of(new GoogleIdTokenVerifierPort.VerifiedIdentity(parts[1], email, emailVerified, name));
+        };
+    }
+
+    @Bean
+    @Primary
+    AppleIdTokenVerifierPort testAppleIdTokenVerifierPort() {
+        return identityToken -> {
+            if (identityToken == null) {
+                return Optional.empty();
+            }
+            String[] parts = identityToken.split("\\|", -1);
+            if (parts.length != 4 || !"APPLE".equals(parts[0]) || parts[1].isBlank()) {
+                return Optional.empty();
+            }
+            String email = parts[2].isEmpty() ? null : parts[2];
+            return Optional.of(new AppleIdTokenVerifierPort.VerifiedIdentity(parts[1], email,
+                    Boolean.parseBoolean(parts[3])));
         };
     }
 

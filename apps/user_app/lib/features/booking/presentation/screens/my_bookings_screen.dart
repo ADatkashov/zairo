@@ -17,7 +17,6 @@ import '../../../payments/presentation/widgets/payment_status_chip.dart';
 import '../../../reviews/presentation/widgets/review_section.dart';
 import '../../data/booking_exception.dart';
 import '../../data/models/booking.dart';
-import '../../data/models/payment_plan.dart';
 import '../providers/booking_providers.dart';
 import '../widgets/booking_payment_summary.dart';
 
@@ -283,13 +282,7 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: BookingPaymentSummary(
-                  compact: true,
-                  plan: PaymentPlan.fromAmounts(
-                    total: booking.totalPrice,
-                    deposit: booking.depositAmount,
-                  ),
-                ),
+                child: BookingAmounts(booking: booking, compact: true),
               ),
               const SizedBox(width: FactorySpacing.space2),
               FactoryBadge(
