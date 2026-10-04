@@ -1995,29 +1995,8 @@ class _DepositPercentageGuide extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: FactorySpacing.space2),
-        Text(
-          _descriptionForPercentage(percentage),
-          style: textTheme.bodySmall?.copyWith(
-            color: colors.textTertiary,
-          ),
-        ),
       ],
     );
-  }
-
-  String _descriptionForPercentage(int percentage) {
-    if (percentage == 0) {
-      return 'No deposit required. Full payment due on the day of service.';
-    } else if (percentage < 50) {
-      return 'Customer pays $percentage% upfront ($percentage USD for \$100 service), remainder due on service day.';
-    } else if (percentage == 50) {
-      return 'Customer pays 50% upfront, remainder due on service day.';
-    } else if (percentage < 100) {
-      return 'Customer pays $percentage% upfront, remainder due on service day.';
-    } else {
-      return 'Full payment required upfront.';
-    }
   }
 }
 

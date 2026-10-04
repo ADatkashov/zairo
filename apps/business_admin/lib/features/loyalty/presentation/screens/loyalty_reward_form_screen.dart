@@ -56,7 +56,7 @@ class _LoyaltyRewardFormScreenState extends ConsumerState<LoyaltyRewardFormScree
     _descriptionController = TextEditingController(text: r?.description ?? '');
     _pointsCostController = TextEditingController(text: r?.pointsCost.toString() ?? '');
     _discountAmountController = TextEditingController(text: r?.discountAmount?.toString() ?? '');
-    _discountCurrencyController = TextEditingController(text: r?.discountCurrency ?? 'KZT');
+    _discountCurrencyController = TextEditingController(text: r?.discountCurrency ?? RegionDefaults.country.currency);
     _discountPercentageController = TextEditingController(text: r?.discountPercentage?.toString() ?? '');
     _maxRedemptionsController = TextEditingController(text: r?.maxRedemptions?.toString() ?? '');
     _termsController = TextEditingController(text: r?.terms ?? '');

@@ -323,7 +323,7 @@ class _OverviewContent extends StatelessWidget {
       children: [
         FactoryStatTile(
           label: l10n.analyticsKpiRevenue,
-          value: '${formatFactoryAmount(overview.totalRevenue)} ${overview.currency ?? ''}'.trim(),
+          value: formatFactoryMoney(overview.totalRevenue, overview.currency),
         ),
         FactoryStatTile(label: l10n.analyticsKpiBookings, value: '${overview.totalBookings}'),
         FactoryStatTile(
@@ -332,8 +332,7 @@ class _OverviewContent extends StatelessWidget {
         ),
         FactoryStatTile(
           label: l10n.analyticsKpiRevenueRecovered,
-          value: '${formatFactoryAmount(overview.revenueRecovered)} ${overview.revenueRecoveredCurrency ?? ''}'
-              .trim(),
+          value: formatFactoryMoney(overview.revenueRecovered, overview.revenueRecoveredCurrency),
         ),
         FactoryStatTile(label: l10n.analyticsCompletedBookingsLabel, value: '${overview.completedBookings}'),
         FactoryStatTile(label: l10n.analyticsUpcomingBookingsLabel, value: '${overview.upcomingBookings}'),
@@ -348,7 +347,7 @@ class _OverviewContent extends StatelessWidget {
         if (overview.averageBookingValue != null)
           FactoryStatTile(
             label: l10n.analyticsAverageBookingValueLabel,
-            value: '${formatFactoryAmount(overview.averageBookingValue!)} ${overview.currency ?? ''}'.trim(),
+            value: formatFactoryMoney(overview.averageBookingValue!, overview.currency),
           ),
       ],
     );
@@ -391,7 +390,7 @@ class _RevenueSection extends ConsumerWidget {
                     label: DateFormat.MMMd(locale).format(day.date),
                     value: day.amount,
                     maxValue: maxDaily,
-                    trailing: '${formatFactoryAmount(day.amount)} ${revenue.currency ?? ''}'.trim(),
+                    trailing: formatFactoryMoney(day.amount, revenue.currency),
                   ),
                 ),
                 if (revenue.revenueByService.isNotEmpty) ...[
@@ -540,7 +539,7 @@ class _SmartFillSection extends ConsumerWidget {
                     FactoryStatTile(label: l10n.analyticsRecoveryRateLabel, value: _pct(smartFill.recoveryRate)),
                     FactoryStatTile(
                       label: l10n.analyticsRecoveredRevenueLabel,
-                      value: '${formatFactoryAmount(smartFill.recoveredRevenue)} ${smartFill.currency ?? ''}'.trim(),
+                      value: formatFactoryMoney(smartFill.recoveredRevenue, smartFill.currency),
                     ),
                   ],
                 ),
@@ -613,8 +612,7 @@ class _CustomersSection extends ConsumerWidget {
                     if (customers.averageCustomerValue != null)
                       FactoryStatTile(
                         label: l10n.analyticsAverageCustomerValueLabel,
-                        value: '${formatFactoryAmount(customers.averageCustomerValue!)} ${customers.currency ?? ''}'
-                            .trim(),
+                        value: formatFactoryMoney(customers.averageCustomerValue!, customers.currency),
                       ),
                   ],
                 ),

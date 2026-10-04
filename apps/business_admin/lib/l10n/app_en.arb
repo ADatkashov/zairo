@@ -769,8 +769,6 @@
   "durationMinutesLabel": "Duration (minutes)",
   "@durationMinutesLabel": {"description": "Duration field label, shared by the service and slot dialogs."},
 
-  "priceUsdLabel": "Price (USD)",
-  "@priceUsdLabel": {"description": "Service dialog's price field label."},
 
   "validationServiceFields": "Enter a title, a positive duration, and a valid price",
   "@validationServiceFields": {"description": "Add/edit service dialog's validation error."},
@@ -2252,5 +2250,8 @@
   "@depositPercentageRangeHint": {"description": "Deposit settings for the salon owner."},
 
   "validationDepositPercentageRange": "Enter a percentage from 1 to 99.",
-  "@validationDepositPercentageRange": {"description": "Deposit settings for the salon owner."}
+  "@validationDepositPercentageRange": {"description": "Deposit settings for the salon owner."},
+
+  "priceLabel": "Price ({symbol})",
+  "@priceLabel": {"description": "Label for a service price field; the placeholder is the currency symbol of the market.", "placeholders": {"symbol": {"type": "String"}}}
 }
