@@ -1,15 +1,17 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../../app/router/app_routes.dart';
 import '../../../../core/formatting/month_day_time.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../discovery/data/models/service_summary.dart';
-import '../../../loyalty/presentation/screens/business_loyalty_screen.dart';
 import '../../../payments/presentation/widgets/payment_status_chip.dart';
 import '../../data/models/booking.dart';
+import '../providers/booking_providers.dart';
 import '../widgets/booking_payment_summary.dart';
-import 'my_bookings_screen.dart';
 
 /// Board 19 (v2 design audit) — the booking flow previously ended with a
 /// snackbar and a `pop()` back to Search/Home, which meant "was this
@@ -33,6 +35,22 @@ class BookingConfirmationScreen extends StatelessWidget {
     required this.service,
     required this.slotStartsAt,
   });
+
+  /// Leaves the confirmation for a *tab* ([location] is `/bookings` or `/`).
+  /// The confirmation sits on top of whichever tab started the booking, so it
+  /// is first popped off that tab's stack (otherwise it would still be there
+  /// when the user came back to the tab), then the shell switches branch —
+  /// which keeps the bottom nav in sync, unlike pushing a second copy of the
+  /// bookings screen.
+  void _leaveTo(BuildContext context, String location) {
+    final router = GoRouter.of(context);
+    // The Bookings tab stays alive in the shell's IndexedStack, so its
+    // autoDispose list would otherwise not include the booking just made.
+    ProviderScope.containerOf(context, listen: false)
+        .invalidate(myBookingsProvider(booking.userId));
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    router.go(location);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -118,12 +136,10 @@ class BookingConfirmationScreen extends StatelessWidget {
                       variant: FactoryButtonVariant.secondary,
                       icon: Symbols.workspace_premium_rounded,
                       label: l10n.loyaltyEntryTileTitle,
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => BusinessLoyaltyScreen(
-                            providerId: providerId,
-                            providerName: providerName,
-                          ),
+                      onPressed: () => context.push(
+                        AppRoutes.loyalty(
+                          providerId,
+                          providerName: providerName,
                         ),
                       ),
                     ),
@@ -139,18 +155,14 @@ class BookingConfirmationScreen extends StatelessWidget {
                     label: l10n.bookingConfirmationViewBookingsButton,
                     variant: FactoryButtonVariant.primary,
                     expand: true,
-                    onPressed: () => Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const MyBookingsScreen()),
-                      (route) => route.isFirst,
-                    ),
+                    onPressed: () => _leaveTo(context, '/bookings'),
                   ),
                   const SizedBox(height: FactorySpacing.space2),
                   FactoryButton(
                     label: l10n.bookingConfirmationBackHomeButton,
                     variant: FactoryButtonVariant.text,
                     expand: true,
-                    onPressed: () =>
-                        Navigator.of(context).popUntil((route) => route.isFirst),
+                    onPressed: () => _leaveTo(context, '/'),
                   ),
                 ],
               ),

@@ -1,8 +1,10 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../../app/router/app_routes.dart';
 import '../../../../core/formatting/month_day_time.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
@@ -106,6 +108,8 @@ class _BookingsListState extends ConsumerState<_BookingsList> {
                       icon: Symbols.calendar_month_rounded,
                       title: l10n.bookingsEmptyTitle,
                       message: l10n.bookingsEmptyMessage,
+                      actionLabel: l10n.bookingsFindServiceButton,
+                      onAction: () => context.go(AppRoutes.search()),
                     ),
                   ),
                 ),
@@ -138,14 +142,28 @@ class _BookingsListState extends ConsumerState<_BookingsList> {
                         physics: const AlwaysScrollableScrollPhysics(),
                         children: [
                           Padding(
-                            padding: const EdgeInsets.all(FactorySpacing.space4),
-                            child: Text(
-                              l10n.bookingsEmptyMessage,
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: context.factoryColors.textTertiary,
-                                  ),
+                            padding: const EdgeInsets.all(FactorySpacing.space6),
+                            child: FactoryEmptyState(
+                              icon: Symbols.calendar_month_rounded,
+                              title: switch (_tab) {
+                                _BookingsTab.upcoming => l10n.bookingsTabUpcoming,
+                                _BookingsTab.completed =>
+                                  l10n.bookingsTabCompleted,
+                                _BookingsTab.cancelled =>
+                                  l10n.bookingsTabCancelled,
+                              },
+                              message: switch (_tab) {
+                                _BookingsTab.upcoming =>
+                                  l10n.bookingsTabEmptyUpcoming,
+                                _BookingsTab.completed =>
+                                  l10n.bookingsTabEmptyCompleted,
+                                _BookingsTab.cancelled =>
+                                  l10n.bookingsTabEmptyCancelled,
+                              },
+                              actionLabel: _tab == _BookingsTab.upcoming
+                                  ? l10n.bookingsFindServiceButton
+                                  : null,
+                              onAction: () => context.go(AppRoutes.search()),
                             ),
                           ),
                         ],
@@ -359,12 +377,10 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
     }
     if (!mounted) return;
     if (matched != null) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ChatThreadScreen(
-            providerId: matched!.providerId,
-            providerName: matched.providerName ?? l10n.messagingUnknownBusinessName,
-          ),
+      context.push(
+        AppRoutes.chat(
+          matched.providerId,
+          providerName: matched.providerName ?? l10n.messagingUnknownBusinessName,
         ),
       );
       return;

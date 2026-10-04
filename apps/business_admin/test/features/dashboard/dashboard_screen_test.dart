@@ -4,6 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:business_admin/features/city/data/models/city.dart';
+import 'package:business_admin/features/city/presentation/providers/city_providers.dart';
 import 'package:business_admin/features/auth/data/models/user_summary.dart';
 import 'package:business_admin/features/auth/presentation/providers/auth_providers.dart';
 import 'package:business_admin/features/beauty/data/beauty_admin_api.dart';
@@ -55,8 +57,9 @@ class _FakeSalonAdminApi extends SalonAdminApi {
     required String ownerUserId,
     required String name,
     required String vertical,
+    required String cityCode,
   }) async {
-    lastCreateCall = {'ownerUserId': ownerUserId, 'name': name, 'vertical': vertical};
+    lastCreateCall = {'ownerUserId': ownerUserId, 'name': name, 'vertical': vertical, 'cityCode': cityCode};
     final created = AdminProvider(id: 'p-new', ownerUserId: ownerUserId, name: name, vertical: vertical, status: 'PENDING');
     _providers.add(created);
     return created;
@@ -134,6 +137,11 @@ void main() {
           billingApiProvider.overrideWithValue(_FakeBillingApi()),
           campaignCenterApiProvider.overrideWithValue(_FakeCampaignCenterApi()),
           authControllerProvider.overrideWith(_LoggedInOwnerController.new),
+          activeCitiesProvider.overrideWith(
+            (ref) async => [
+              City(code: 'almaty', name: 'Almaty', countryCode: 'KZ', timezone: 'Asia/Almaty', currency: 'KZT', active: true),
+            ],
+          ),
         ],
         child: MaterialApp(
           theme: factoryLightTheme(),
@@ -151,7 +159,7 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Create business'));
     await tester.pumpAndSettle();
 
-    expect(fakeApi.lastCreateCall, {'ownerUserId': 'owner-1', 'name': 'Glow Salon', 'vertical': 'beauty'});
+    expect(fakeApi.lastCreateCall, {'ownerUserId': 'owner-1', 'name': 'Glow Salon', 'vertical': 'beauty', 'cityCode': 'almaty'});
   });
 
   testWidgets('lists existing salons and opens the salon detail screen on tap', (tester) async {

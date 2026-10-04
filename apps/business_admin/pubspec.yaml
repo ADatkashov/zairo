@@ -29,6 +29,13 @@ dependencies:
     sdk: flutter
   intl: ^0.20.3
   json_annotation: ^4.12.0
+  # Sign-in methods shared with the consumer app: Google and Sign in with Apple
+  # only obtain a credential on-device; the backend verifies it.
+  google_sign_in: ^7.2.0
+  sign_in_with_apple: ^7.0.1
+  # Local biometric unlock (fingerprint / Face ID) gating the stored refresh token
+  # on app restart — same as the consumer app; nothing biometric reaches the backend.
+  local_auth: ^3.0.2
 
 dev_dependencies:
   flutter_test:

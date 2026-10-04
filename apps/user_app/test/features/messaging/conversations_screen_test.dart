@@ -4,12 +4,14 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:zairo/features/auth/data/models/user_summary.dart';
 import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/messaging/data/messaging_api.dart';
 import 'package:zairo/features/messaging/data/models/chat_message.dart';
 import 'package:zairo/features/messaging/data/models/conversation.dart';
 import 'package:zairo/features/messaging/presentation/providers/messaging_providers.dart';
+import 'package:zairo/features/messaging/presentation/screens/chat_thread_screen.dart';
 import 'package:zairo/features/messaging/presentation/screens/conversations_screen.dart';
 import 'package:zairo/l10n/app_localizations.dart';
 
@@ -102,11 +104,25 @@ void main() {
           ),
           authControllerProvider.overrideWith(_LoggedInAuthController.new),
         ],
-        child: MaterialApp(
+        child: MaterialApp.router(
           theme: factoryLightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const ConversationsScreen(),
+          routerConfig: GoRouter(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (_, _) => const ConversationsScreen(),
+              ),
+              GoRoute(
+                path: '/messages/:providerId',
+                builder: (_, state) => ChatThreadScreen(
+                  providerId: state.pathParameters['providerId']!,
+                  providerName: state.uri.queryParameters['name']!,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

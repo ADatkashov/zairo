@@ -1,1 +1,5 @@
 #include "Generated.xcconfig"
+
+// Google Sign-In (same pattern as the consumer app): see Info.plist's CFBundleURLTypes
+// and docs/authentication.md. Empty by default.
+GOOGLE_REVERSED_CLIENT_ID = $(GOOGLE_REVERSED_CLIENT_ID)

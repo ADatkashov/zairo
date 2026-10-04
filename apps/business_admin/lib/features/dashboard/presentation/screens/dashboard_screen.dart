@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/widgets/change_avatar_dialog.dart';
+import '../../../auth/presentation/widgets/confirm_log_out.dart';
 import '../../../automation/presentation/screens/automation_center_screen.dart';
 import '../../../billing/data/billing_exception.dart';
 import '../../../billing/data/models/subscription.dart';
@@ -32,7 +33,13 @@ import '../../../settings/presentation/screens/settings_screen.dart';
 /// with no app release. Beauty/auto/cleaning remain the only categories
 /// with real staff-management screens built so far (see SalonDetailScreen).
 class DashboardScreen extends ConsumerWidget {
-  const DashboardScreen({super.key});
+  const DashboardScreen({super.key, this.showNavActions = true});
+
+  /// The AppBar shortcuts to Campaigns / Automation / Loyalty / Messages /
+  /// Settings. The app shells (sidebar, bottom bar) already offer every one
+  /// of those destinations, so they pass false and only the avatar and the
+  /// log-out action remain.
+  final bool showNavActions;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -64,45 +71,51 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.campaign_outlined),
-            tooltip: l10n.campaignCenterNavLabel,
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => CampaignCenterScreen(ownerUserId: user.id)),
+          if (showNavActions) ...[
+            IconButton(
+              icon: const Icon(Icons.campaign_outlined),
+              tooltip: l10n.campaignCenterNavLabel,
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => CampaignCenterScreen(ownerUserId: user.id)),
+              ),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.bolt_outlined),
-            tooltip: l10n.automationCenterNavLabel,
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => AutomationCenterScreen(ownerUserId: user.id)),
+            IconButton(
+              icon: const Icon(Icons.bolt_outlined),
+              tooltip: l10n.automationCenterNavLabel,
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => AutomationCenterScreen(ownerUserId: user.id)),
+              ),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.loyalty_outlined),
-            tooltip: l10n.loyaltyNavLabel,
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => LoyaltyScreen(ownerUserId: user.id)),
+            IconButton(
+              icon: const Icon(Icons.loyalty_outlined),
+              tooltip: l10n.loyaltyNavLabel,
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => LoyaltyScreen(ownerUserId: user.id)),
+              ),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.forum_outlined),
-            tooltip: l10n.messagingNavLabel,
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => BusinessInboxScreen(ownerUserId: user.id)),
+            IconButton(
+              icon: const Icon(Icons.forum_outlined),
+              tooltip: l10n.messagingNavLabel,
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => BusinessInboxScreen(ownerUserId: user.id)),
+              ),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: l10n.settingsButtonTooltip,
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            IconButton(
+              icon: const Icon(Icons.settings_outlined),
+              tooltip: l10n.settingsButtonTooltip,
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              ),
             ),
-          ),
+          ],
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: l10n.logOutTooltip,
-            onPressed: () => ref.read(authControllerProvider.notifier).logout(),
+            onPressed: () async {
+              if (await confirmLogOut(context)) {
+                ref.read(authControllerProvider.notifier).logout();
+              }
+            },
           ),
         ],
       ),
@@ -673,8 +686,10 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
     final textTheme = Theme.of(context).textTheme;
     final citiesAsync = ref.watch(activeCitiesProvider);
 
+    // Scrollable: with the keyboard open on a phone this form is taller than
+    // the screen, and a bare Column overflowed instead of letting it scroll.
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(FactorySpacing.space6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
