@@ -812,5 +812,15 @@
   "loyaltyBirthdaysInDays": "{days} күннен кейін",
   "loyaltyBirthdaysBonusAwarded": "+{points} ұпай берілді",
   "loyaltyBirthdaysBonusPending": "+{points} ұпай сол күні",
-  "errorLoyaltyBirthdaysLoadFailed": "Туған күндерді жүктеу мүмкін болмады: {error}"
+  "errorLoyaltyBirthdaysLoadFailed": "Туған күндерді жүктеу мүмкін болмады: {error}",
+  "biometricEnrollEnable": "Қосу",
+  "biometricEnrollMessage": "Келесі жолы қайта кірмей, ZAIRO құлпын Face ID немесе саусақ ізімен ашыңыз.",
+  "biometricEnrollNotNow": "Қазір емес",
+  "biometricEnrollTitle": "Биометриялық кіруді қосу керек пе?",
+  "securityBiometricSectionTitle": "Биометриялық кіру",
+  "securityBiometricToggleSubtitle": "Қайта кірмей-ақ ZAIRO құлпын лезде ашу",
+  "securityBiometricToggleTitle": "Face ID / саусақ ізі",
+  "securityBiometricUnavailable": "Бұл құрылғыда биометриялық кіру қолжетімсіз — саусақ ізі немесе бет тіркелмеген, немесе құрылғы бұны қолдамайды.",
+  "securitySectionSubtitle": "Саусақ ізімен немесе Face ID арқылы кіру",
+  "securityTitle": "Қауіпсіздік"
 }

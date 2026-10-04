@@ -267,6 +267,13 @@ class AuthApi {
     return UserSummary.fromJson(response.data as Map<String, dynamic>);
   }
 
+  /// Audit-only — never blocks the local biometric enable/disable flow: callers
+  /// fire-and-forget (a failed audit call is no reason to fail enabling
+  /// biometrics on-device). The backend never stores biometric data.
+  Future<void> auditBiometricToggle(bool enabled) async {
+    await _dioClient.post('/auth/me/biometric-audit', data: {'enabled': enabled});
+  }
+
   /// Pass null to remove the avatar. [avatarUrl] should come from
   /// StorageApi.uploadBytes, not a user-typed URL.
   Future<UserSummary> updateAvatar(String? avatarUrl) async {
