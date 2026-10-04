@@ -443,5 +443,17 @@
 
   "weekdaySun": "Жс",
 
-  "bookingPayDueNow": "Қазір төленеді"
+  "bookingPayDueNow": "Қазір төленеді",
+  "errorAuthAccountLinkRequired": "Бұл email-мен аккаунт бар. Қосу үшін оның құпиясөзін енгізіңіз.",
+  "errorAuthTooManyLoginAttempts": "Сәтсіз әрекеттер тым көп. Кейінірек көріңіз.",
+  "phonePasswordTitle": "Құпиясөзді енгізіңіз",
+  "phonePasswordInstructions": "{phone} үшін құпиясөзді енгізіңіз.",
+  "phoneForgotPassword": "Құпиясөзді ұмыттыңыз ба? SMS кодын алу",
+  "phoneResetTitle": "Құпиясөзді қалпына келтіру",
+  "phoneRegisterInstructions": "{phone} нөміріне 6 таңбалы код жібердік. Кодты, атыңызды және құпиясөзді енгізіңіз.",
+  "phoneResetInstructions": "{phone} нөміріне 6 таңбалы код жібердік. Кодты енгізіп, жаңа құпиясөз қойыңыз.",
+  "linkAccountTitle": "Аккаунтты қосу",
+  "linkAccountBody": "Бұл email-мен аккаунт бар. Осы кіру тәсілін қосу үшін оның құпиясөзін енгізіңіз.",
+  "linkAccountConfirm": "Қосу",
+  "linkAccountCancel": "Бас тарту"
 }
