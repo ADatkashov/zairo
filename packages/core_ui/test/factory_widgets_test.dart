@@ -522,6 +522,36 @@ void main() {
     },
   );
 
+  testWidgets(
+    'FactorySearchField shows a clear button only while it holds text',
+    (tester) async {
+      final controller = TextEditingController();
+      addTearDown(controller.dispose);
+      var cleared = 0;
+      await tester.pumpWidget(
+        _wrap(
+          FactorySearchField(
+            controller: controller,
+            hint: 'Search salons',
+            onCleared: () => cleared++,
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Symbols.close_rounded), findsNothing);
+
+      await tester.enterText(find.byType(TextField), 'nails');
+      await tester.pump();
+      expect(find.byIcon(Symbols.close_rounded), findsOneWidget);
+
+      await tester.tap(find.byIcon(Symbols.close_rounded));
+      await tester.pump();
+      expect(controller.text, isEmpty);
+      expect(cleared, 1);
+      expect(find.byIcon(Symbols.close_rounded), findsNothing);
+    },
+  );
+
   testWidgets('FactoryCard calls onTap and renders its child', (tester) async {
     var tapped = false;
     await tester.pumpWidget(

@@ -158,6 +158,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('No bookings yet'), findsOneWidget);
+    expect(find.text('Find a service'), findsOneWidget);
   });
 
   testWidgets('lists bookings with status and price', (tester) async {
