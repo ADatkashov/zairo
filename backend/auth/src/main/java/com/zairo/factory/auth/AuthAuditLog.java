@@ -49,6 +49,14 @@ class AuthAuditLog {
         log.info("auth.identity.linked userId={} provider={}", userId, provider);
     }
 
+    void passkeyRegistered(UUID userId) {
+        log.info("auth.passkey.registered userId={}", userId);
+    }
+
+    void passkeyRemoved(UUID userId) {
+        log.info("auth.passkey.removed userId={}", userId);
+    }
+
     void biometricToggled(UUID userId, boolean enabled) {
         log.info("auth.biometric.{} userId={}", enabled ? "enabled" : "disabled", userId);
     }
