@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   build-android-apk:
     machine:
-      image: ubuntu-2204:202410-01
+      image: ubuntu-2204:2024.10
     resource_class: large
     environment:
       FLUTTER_HOME: /home/circleci/flutter
@@ -48,7 +48,7 @@ jobs:
 
   build-for-testing:
     machine:
-      image: ubuntu-2204:202410-01
+      image: ubuntu-2204:2024.10
     resource_class: medium
     environment:
       FLUTTER_HOME: /home/circleci/flutter
