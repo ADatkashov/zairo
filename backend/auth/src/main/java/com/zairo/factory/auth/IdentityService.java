@@ -6,6 +6,7 @@ import com.zairo.factory.auth.FacebookIdentityVerifierPort.VerifiedIdentity;
 import com.zairo.factory.users.User;
 import com.zairo.factory.users.UserRepository;
 import com.zairo.factory.users.UserRole;
+import com.zairo.factory.auth.AuthDtos.PhoneStatusResponse;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -20,11 +21,13 @@ import org.springframework.web.server.ResponseStatusException;
  * top of the single, existing identity model ({@link UserIdentity}) — see
  * CLAUDE.md task spec §2. Every path below ends the same way password login
  * does: a {@link User} row and a {@link SessionIssuer#issue} call. There is
- * no second user table, no per-provider shadow account, and no automatic
- * merging of two accounts just because they share an email (task spec §8)
- * — the only two ways two identities end up on the same {@code app_user}
- * are (a) they always were (created together) or (b) an authenticated user
- * explicitly called one of the {@code link*} methods below.
+ * no second user table and no per-provider shadow account. Two identities
+ * end up on the same {@code app_user} when (a) they were created together,
+ * (b) an authenticated user called one of the {@code link*} methods,
+ * (c) a provider-verified email matches an account whose email is already
+ * verified, or (d) the person proved ownership with that account's
+ * password ({@link #linkProviderWithPassword}). An email that was merely
+ * typed in is never enough by itself (account pre-hijacking).
  */
 @Service
 public class IdentityService {
@@ -39,11 +42,14 @@ public class IdentityService {
     private final FacebookIdentityVerifierPort facebookVerifier;
     private final SessionIssuer sessionIssuer;
     private final AuthAuditLog auditLog;
+    private final LoginAttemptLimiter loginAttemptLimiter;
+    private final RefreshTokenService refreshTokenService;
 
     IdentityService(UserRepository userRepository, IdentityLookupService identityLookupService,
             PhoneOtpService phoneOtpService, PhoneNumberNormalizer phoneNumberNormalizer,
             GoogleIdTokenVerifierPort googleVerifier, FacebookIdentityVerifierPort facebookVerifier,
-            SessionIssuer sessionIssuer, AuthAuditLog auditLog) {
+            SessionIssuer sessionIssuer, AuthAuditLog auditLog, LoginAttemptLimiter loginAttemptLimiter,
+            RefreshTokenService refreshTokenService) {
         this.userRepository = userRepository;
         this.identityLookupService = identityLookupService;
         this.phoneOtpService = phoneOtpService;
@@ -52,6 +58,8 @@ public class IdentityService {
         this.facebookVerifier = facebookVerifier;
         this.sessionIssuer = sessionIssuer;
         this.auditLog = auditLog;
+        this.loginAttemptLimiter = loginAttemptLimiter;
+        this.refreshTokenService = refreshTokenService;
     }
 
     // ---- Google ------------------------------------------------------
@@ -141,6 +149,114 @@ public class IdentityService {
         }
     }
 
+    // ---- Phone + password (SMS only for registration / forgotten password) -------
+
+    /**
+     * Tells the app which screen to show after a phone number is typed:
+     * a password prompt for an existing account, or the SMS registration
+     * flow. This deliberately reveals whether a phone is registered — the
+     * product asked for the "enter number, then password" UX every phone
+     * app has — so it is the one place that does; request-otp itself still
+     * doesn't.
+     */
+    public PhoneStatusResponse phoneStatus(String rawPhone) {
+        String phone = phoneNumberNormalizer.normalize(rawPhone);
+        Optional<User> user = identityLookupService.findExisting(IdentityProvider.PHONE, phone);
+        return new PhoneStatusResponse(user.isPresent(),
+                user.isPresent() && identityLookupService.hasPassword(user.get().getId()));
+    }
+
+    public TokenResponse loginWithPhonePassword(String rawPhone, String password) {
+        String phone = phoneNumberNormalizer.normalize(rawPhone);
+        String limiterKey = "phone:" + phone;
+        loginAttemptLimiter.checkNotLockedOut(limiterKey);
+        Optional<User> user = identityLookupService.findExisting(IdentityProvider.PHONE, phone);
+        if (user.isEmpty() || !identityLookupService.passwordMatches(user.get().getId(), password)) {
+            loginAttemptLimiter.recordFailure(limiterKey);
+            auditLog.loginFailed("PHONE_PASSWORD", "invalid_credentials");
+            throw new InvalidCredentialsException("Invalid phone or password");
+        }
+        loginAttemptLimiter.recordSuccess(limiterKey);
+        auditLog.loginSucceeded(user.get().getId(), "PHONE_PASSWORD");
+        return sessionIssuer.issue(user.get());
+    }
+
+    /** First-time registration: SMS code proves the phone, the person chooses their name and password. */
+    public TokenResponse registerWithPhone(String rawPhone, String code, String displayName, String password) {
+        String phone = phoneNumberNormalizer.normalize(rawPhone);
+        verifyOtpOrAudit(phone, code);
+        if (identityLookupService.findExisting(IdentityProvider.PHONE, phone).isPresent()) {
+            throw new IdentityAlreadyLinkedException("This phone already has an account - sign in with its password");
+        }
+        User user;
+        try {
+            user = identityLookupService.createPhoneUserWithPassword(phone, displayName.trim(), password);
+        } catch (DataIntegrityViolationException raceLoser) {
+            throw new IdentityAlreadyLinkedException("This phone already has an account - sign in with its password");
+        }
+        auditLog.loginSucceeded(user.getId(), "PHONE");
+        return sessionIssuer.issue(user);
+    }
+
+    /**
+     * Forgotten password (or an account that never had one): the SMS code
+     * proves the phone, which is a verified identity of exactly one
+     * account. Revokes other sessions, same as the email reset flow.
+     */
+    public void resetPasswordWithPhone(String rawPhone, String code, String newPassword) {
+        String phone = phoneNumberNormalizer.normalize(rawPhone);
+        verifyOtpOrAudit(phone, code);
+        User user = identityLookupService.findExisting(IdentityProvider.PHONE, phone)
+                .orElseThrow(() -> new InvalidOtpException("Invalid or expired code"));
+        identityLookupService.setPassword(user.getId(), newPassword);
+        refreshTokenService.revokeAllForUser(user.getId());
+        loginAttemptLimiter.recordSuccess("phone:" + phone);
+    }
+
+    // ---- Connecting Google/Facebook to an account that owns the same email ---
+
+    /**
+     * The answer to {@link AccountLinkRequiredException}: the person proves
+     * they own the existing (email+password) account by its password, and
+     * only then is the Google/Facebook identity attached to it. The email
+     * is now proven twice over (provider + password), so it is marked
+     * verified and later provider logins link without asking again.
+     */
+    public TokenResponse linkProviderWithPassword(IdentityProvider provider, String token, String password) {
+        String subject;
+        String email;
+        switch (provider) {
+            case GOOGLE -> {
+                GoogleIdTokenVerifierPort.VerifiedIdentity identity = googleVerifier.verify(token)
+                        .orElseThrow(() -> new InvalidProviderCredentialException("Invalid Google credential"));
+                subject = identity.subject();
+                email = identity.emailVerified() ? identity.email() : null;
+            }
+            case FACEBOOK -> {
+                VerifiedIdentity identity = facebookVerifier.verify(token)
+                        .orElseThrow(() -> new InvalidProviderCredentialException("Invalid Facebook credential"));
+                subject = identity.subject();
+                email = identity.emailVerified() ? identity.email() : null;
+            }
+            default -> throw new InvalidProviderCredentialException("Unsupported provider");
+        }
+        if (email == null) {
+            throw new InvalidProviderCredentialException("The provider did not confirm an email for this account");
+        }
+        String limiterKey = "link:" + email;
+        loginAttemptLimiter.checkNotLockedOut(limiterKey);
+        User owner = userRepository.findByEmail(email).orElse(null);
+        if (owner == null || !identityLookupService.passwordMatches(owner.getId(), password)) {
+            loginAttemptLimiter.recordFailure(limiterKey);
+            throw new InvalidCredentialsException("Invalid email or password");
+        }
+        loginAttemptLimiter.recordSuccess(limiterKey);
+        linkIdentity(owner.getId(), provider, subject, null);
+        identityLookupService.markEmailVerified(owner.getId());
+        auditLog.identityLinked(owner.getId(), provider);
+        return sessionIssuer.issue(owner);
+    }
+
     // ---- Shared ---------------------------------------------------------
 
     /** What's linked to the caller's own account, and when — for a Settings > Security screen. */
@@ -152,14 +268,34 @@ public class IdentityService {
 
     /**
      * Finds the user this identity already belongs to, or creates a new
-     * CUSTOMER account for it — never both merges with, nor silently
-     * attaches to, an unrelated existing account (task spec §8/§9).
+     * CUSTOMER account for it. The one case where a new identity joins an
+     * existing account on its own is a provider-verified email that an
+     * account already holds as a <i>verified</i> email (one customer, many
+     * sign-in methods); an unverified match needs the account's password
+     * first (see {@link AccountLinkRequiredException}), so nobody can
+     * inherit a login by pre-registering someone else's email.
      */
     private User findOrCreateUser(IdentityProvider provider, String subject, String verifiedEmail,
             String phoneForDisplay, String displayName) {
         Optional<User> existing = identityLookupService.findExisting(provider, subject);
         if (existing.isPresent()) {
             return existing.get();
+        }
+        if (verifiedEmail != null) {
+            Optional<User> sameEmail = userRepository.findByEmail(verifiedEmail);
+            if (sameEmail.isPresent()) {
+                User owner = sameEmail.get();
+                if (!owner.isEmailVerified()) {
+                    // Its email was only ever typed in, never proven: the
+                    // caller must confirm that account's password first.
+                    throw new AccountLinkRequiredException();
+                }
+                // Same customer: that email was already proven through
+                // another provider, so this identity joins the same account.
+                linkIdentity(owner.getId(), provider, subject, null);
+                auditLog.identityLinked(owner.getId(), provider);
+                return owner;
+            }
         }
         String name = displayName != null && !displayName.isBlank() ? displayName : FALLBACK_DISPLAY_NAME;
         try {
