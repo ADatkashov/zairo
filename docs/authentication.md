@@ -395,6 +395,31 @@ Note: for some countries (incl. Kazakhstan) Twilio may require a registered
 alphanumeric sender ID or a messaging service — check Twilio's country
 guidelines if messages are not delivered.
 
+### Business app (`apps/business_admin`)
+
+The business app signs in the same ways as the consumer app: phone first
+(password for an existing account, SMS only to register / reset — with the
+`OTP_MOCK_CODE` pre-production mock showing the code on screen), Google, Apple
+(iOS) and email. The same backend endpoints are used; the one difference is the
+role of a **new** account: the app sends `role: PROVIDER_OWNER` (phone register,
+`/auth/google`, `/auth/apple`), the consumer app sends nothing (= `CUSTOMER`).
+`ADMIN` is rejected on every path, and an existing account keeps its role — so a
+customer who signs in to the business app stays a `CUSTOMER`. Not ported from the
+consumer app: biometric unlock and the Settings > Security screen.
+
+Extra configuration this needs (on top of the consumer app's):
+- Backend `GOOGLE_OAUTH_CLIENT_IDS`: also list the business app's OAuth client
+  id(s) (Android `com.zairo.business_admin`, iOS `com.zairo.businessAdmin`).
+- Backend `APPLE_CLIENT_IDS`: also list `com.zairo.businessAdmin`.
+- Apple Developer: enable *Sign in with Apple* for App ID `com.zairo.businessAdmin`.
+- iOS build setting `GOOGLE_REVERSED_CLIENT_ID` (same as the consumer app, see
+  `ios/Flutter/*.xcconfig`); Android needs only the `GOOGLE_OAUTH_SERVER_CLIENT_ID`
+  dart-define.
+- CircleCI: set the project env var `GOOGLE_OAUTH_SERVER_CLIENT_ID` (the Google
+  *web* OAuth client id the backend verifies against) — `.circleci/config.yml`
+  now passes it to both APK builds; without it Google sign-in in a CI-built APK
+  fails.
+
 ### Flutter (`apps/user_app`)
 
 | What | Where | Notes |

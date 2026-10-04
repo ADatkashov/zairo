@@ -1598,5 +1598,7 @@
   "editProfileSave": "Save",
   "@editProfileSave": {"description": "Edit Profile save button."},
   "editProfileSaved": "Profile updated",
-  "@editProfileSaved": {"description": "Snackbar after the profile was saved."}
+  "@editProfileSaved": {"description": "Snackbar after the profile was saved."},
+  "errorAuthPhoneCountryNotSupported": "SMS codes are not available for numbers from this country yet.",
+  "@errorAuthPhoneCountryNotSupported": {"description": "SMS code requested for a phone number from a country that is not enabled (app.otp.allowed-countries)."}
 }

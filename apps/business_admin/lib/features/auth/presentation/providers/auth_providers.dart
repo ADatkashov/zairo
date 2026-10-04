@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:core_network/core_network.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/auth_api.dart';
+import '../../data/google_sign_in_service.dart';
+import '../../data/models/phone_status.dart';
+import '../../data/models/sms_mode.dart';
 import '../../data/models/auth_tokens.dart';
 import '../../data/models/user_summary.dart';
 import '../../data/token_storage.dart';
@@ -79,9 +84,72 @@ class AuthController extends AsyncNotifier<UserSummary?> {
     });
   }
 
+  // ---- Provider / phone sign-in ------------------------------------------------
+  //
+  // Unlike login()/register() above, these THROW (AuthException) on failure and
+  // only touch the controller state on success: they are driven from screens
+  // that must survive a failed attempt (an account-link dialog, an error under
+  // the field), and AuthGate would otherwise swap the login screen for a spinner
+  // and dispose it mid-flow.
+
+  Future<void> loginWithGoogle(String idToken) async {
+    await _signedIn(await ref.read(authApiProvider).loginWithGoogle(idToken));
+  }
+
+  Future<void> loginWithApple(String identityToken, {String? displayName}) async {
+    await _signedIn(await ref.read(authApiProvider).loginWithApple(identityToken, displayName: displayName));
+  }
+
+  Future<void> linkProviderWithPassword({
+    required String provider,
+    required String token,
+    required String password,
+  }) async {
+    await _signedIn(await ref
+        .read(authApiProvider)
+        .linkProviderWithPassword(provider: provider, token: token, password: password));
+  }
+
+  Future<PhoneStatus> phoneStatus(String phone) => ref.read(authApiProvider).phoneStatus(phone);
+
+  Future<void> requestPhoneOtp(String phone) => ref.read(authApiProvider).requestPhoneOtp(phone);
+
+  Future<void> loginWithPhonePassword({required String phone, required String password}) async {
+    await _signedIn(await ref.read(authApiProvider).loginWithPhonePassword(phone: phone, password: password));
+  }
+
+  Future<void> registerWithPhone({
+    required String phone,
+    required String code,
+    required String displayName,
+    required String password,
+  }) async {
+    await _signedIn(await ref.read(authApiProvider).registerWithPhone(
+          phone: phone,
+          code: code,
+          displayName: displayName,
+          password: password,
+        ));
+  }
+
+  Future<void> resetPasswordWithPhone({
+    required String phone,
+    required String code,
+    required String newPassword,
+  }) =>
+      ref.read(authApiProvider).resetPasswordWithPhone(phone: phone, code: code, newPassword: newPassword);
+
+  Future<void> _signedIn(AuthTokens tokens) async {
+    await _applyTokens(tokens);
+    state = AsyncValue.data(tokens.user);
+  }
+
   Future<void> logout() async {
     await ref.read(tokenStorageProvider).clear();
     ref.read(authTokenHolderProvider).update(null);
+    // Best effort: next "Continue with Google" shows the account chooser again
+    // instead of silently reusing the last account.
+    unawaited(ref.read(googleSignInServiceProvider).signOut().catchError((_) {}));
     state = const AsyncValue.data(null);
   }
 
@@ -98,3 +166,13 @@ class AuthController extends AsyncNotifier<UserSummary?> {
 }
 
 final authControllerProvider = AsyncNotifierProvider<AuthController, UserSummary?>(AuthController.new);
+
+/// Whether SMS is mocked on the server (pre-production). Any failure means
+/// "real SMS" — the hint is only ever an extra, never a reason to block a flow.
+final smsModeProvider = FutureProvider<SmsMode>((ref) async {
+  try {
+    return await ref.watch(authApiProvider).smsMode();
+  } catch (_) {
+    return SmsMode.real;
+  }
+});
