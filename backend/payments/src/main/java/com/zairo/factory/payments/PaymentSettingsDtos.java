@@ -35,4 +35,20 @@ public final class PaymentSettingsDtos {
                     settings.getDepositType(), settings.getDepositValueType(), settings.getDepositValue());
         }
     }
+
+    /** What a customer may see before booking: how much is charged up front. */
+    public record DepositPolicyResponse(
+            DepositType depositType,
+            DepositValueType depositValueType,
+            @Schema(description = "For PERCENTAGE: 0-100. For FIXED_AMOUNT: amount in booking currency")
+            BigDecimal depositValue) {
+        static DepositPolicyResponse from(PaymentSettings settings) {
+            return new DepositPolicyResponse(settings.getDepositType(), settings.getDepositValueType(),
+                    settings.getDepositValue());
+        }
+
+        static DepositPolicyResponse none() {
+            return new DepositPolicyResponse(DepositType.NO_PAYMENT, null, null);
+        }
+    }
 }

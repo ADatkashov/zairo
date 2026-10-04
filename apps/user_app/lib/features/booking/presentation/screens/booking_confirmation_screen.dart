@@ -8,6 +8,8 @@ import '../../../discovery/data/models/service_summary.dart';
 import '../../../loyalty/presentation/screens/business_loyalty_screen.dart';
 import '../../../payments/presentation/widgets/payment_status_chip.dart';
 import '../../data/models/booking.dart';
+import '../../data/models/payment_plan.dart';
+import '../widgets/booking_payment_summary.dart';
 import 'my_bookings_screen.dart';
 
 /// Board 19 (v2 design audit) — the booking flow previously ended with a
@@ -101,64 +103,11 @@ class BookingConfirmationScreen extends StatelessWidget {
                               : formatMonthDayTime(l10n, slotStartsAt!.toLocal()),
                         ),
                         const Divider(height: FactorySpacing.space6),
-                        if (booking.depositAmount != null &&
-                            booking.remainingAmount != null) ...[
-                          Container(
-                            padding: const EdgeInsets.all(FactorySpacing.space3),
-                            decoration: BoxDecoration(
-                              color: colors.surfaceAlt,
-                              borderRadius: FactoryRadius.mdRadius,
-                              border: Border.all(color: colors.border),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  l10n.paymentBreakdownTitle,
-                                  style: textTheme.bodySmall?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: colors.textTertiary,
-                                  ),
-                                ),
-                                const SizedBox(height: FactorySpacing.space3),
-                                _PaymentBreakdownItem(
-                                  label: l10n.paymentDepositAmount,
-                                  amount: booking.depositAmount!,
-                                  description: 'Due now',
-                                  isHighlight: true,
-                                ),
-                                const SizedBox(height: FactorySpacing.space2),
-                                _PaymentBreakdownItem(
-                                  label: l10n.paymentRemainingAmount,
-                                  amount: booking.remainingAmount!,
-                                  description: l10n.paymentRemainingInfo,
-                                ),
-                                const SizedBox(height: FactorySpacing.space2),
-                                _PaymentBreakdownVisualizer(
-                                  depositAmount: booking.depositAmount!,
-                                  remainingAmount: booking.remainingAmount!,
-                                  totalAmount: booking.totalPrice,
-                                ),
-                              ],
-                            ),
+                        BookingPaymentSummary(
+                          plan: PaymentPlan.fromAmounts(
+                            total: booking.totalPrice,
+                            deposit: booking.depositAmount,
                           ),
-                          const Divider(height: FactorySpacing.space6),
-                        ],
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              l10n.bookingConfirmationTotalLabel,
-                              style: textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            FactoryPriceText(
-                              amount: booking.totalPrice,
-                              fontSize: 16,
-                              weight: FontWeight.w700,
-                            ),
-                          ],
                         ),
                         const SizedBox(height: FactorySpacing.space2),
                         Align(
@@ -252,121 +201,6 @@ class _ConfirmationRow extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ],
-    );
-  }
-}
-
-class _PaymentBreakdownItem extends StatelessWidget {
-  final String label;
-  final double amount;
-  final String description;
-  final bool isHighlight;
-
-  const _PaymentBreakdownItem({
-    required this.label,
-    required this.amount,
-    required this.description,
-    this.isHighlight = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.factoryColors;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: textTheme.bodyMedium?.copyWith(
-                fontWeight: isHighlight ? FontWeight.w600 : FontWeight.w500,
-                color: isHighlight ? colors.text : colors.textSecondary,
-              ),
-            ),
-            FactoryPriceText(
-              amount: amount,
-              fontSize: 14,
-              weight: isHighlight ? FontWeight.w700 : FontWeight.w600,
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          description,
-          style: textTheme.bodySmall?.copyWith(
-            color: colors.textTertiary,
-            fontSize: 12,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _PaymentBreakdownVisualizer extends StatelessWidget {
-  final double depositAmount;
-  final double remainingAmount;
-  final double totalAmount;
-
-  const _PaymentBreakdownVisualizer({
-    required this.depositAmount,
-    required this.remainingAmount,
-    required this.totalAmount,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.factoryColors;
-    final textTheme = Theme.of(context).textTheme;
-    final depositPercentage = totalAmount > 0 ? (depositAmount / totalAmount) * 100 : 0.0;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: Row(
-            children: [
-              Expanded(
-                flex: depositPercentage.toInt().clamp(0, 100),
-                child: Container(
-                  height: 20,
-                  color: colors.primary,
-                ),
-              ),
-              Expanded(
-                flex: (100 - depositPercentage.toInt()).clamp(0, 100),
-                child: Container(
-                  height: 20,
-                  color: colors.surfaceAlt,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Now (${depositPercentage.toStringAsFixed(0)}%)',
-              style: textTheme.labelSmall?.copyWith(
-                color: colors.textSecondary,
-              ),
-            ),
-            Text(
-              'On service day',
-              style: textTheme.labelSmall?.copyWith(
-                color: colors.textSecondary,
-              ),
-            ),
-          ],
         ),
       ],
     );

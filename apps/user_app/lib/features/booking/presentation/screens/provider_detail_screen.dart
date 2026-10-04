@@ -35,6 +35,7 @@ import '../../../staff/presentation/providers/staff_providers.dart';
 import '../../data/booking_exception.dart';
 import '../../data/models/availability_slot.dart';
 import '../../data/models/booking.dart';
+import '../../data/models/payment_plan.dart';
 import '../providers/booking_providers.dart';
 import 'booking_confirmation_screen.dart';
 
@@ -418,6 +419,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
             ),
             _BookingCta(
               selectedService: _selectedService(),
+              plan: _paymentPlan(),
               isLoading: _isBooking,
               onPressed:
                   (_selectedServiceId != null &&
@@ -436,6 +438,15 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
         ),
       ),
     );
+  }
+
+  /// Null while the deposit policy is loading or unreadable — the CTA then
+  /// falls back to the plain price rather than claiming "free" on a guess.
+  PaymentPlan? _paymentPlan() {
+    final service = _selectedService();
+    final policy = ref.watch(depositPolicyProvider(widget.provider.id)).value;
+    if (service == null || policy == null) return null;
+    return PaymentPlan.fromPolicy(policy, service.price);
   }
 
   ServiceSummary? _selectedService() {
@@ -677,13 +688,88 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
 class _BookingCta extends StatelessWidget {
   const _BookingCta({
     required this.selectedService,
+    required this.plan,
     required this.isLoading,
     required this.onPressed,
   });
 
   final ServiceSummary? selectedService;
+  final PaymentPlan? plan;
   final bool isLoading;
   final VoidCallback? onPressed;
+
+  /// What the customer is charged *now* leads; the full service price only
+  /// leads when no deposit policy is known.
+  List<Widget> _paymentLines(BuildContext context, AppLocalizations l10n, FactoryColors colors) {
+    final service = selectedService!;
+    final textTheme = Theme.of(context).textTheme;
+    final p = plan;
+    if (p == null) {
+      return [
+        FactoryPriceText(
+          amount: service.price,
+          currencySymbol: service.currency,
+          fontSize: 16,
+          color: colors.text,
+        ),
+      ];
+    }
+    final suffixStyle = textTheme.bodySmall?.copyWith(color: colors.textSecondary);
+    return [
+      switch (p.mode) {
+        PaymentMode.free => Text(
+            l10n.bookingPayFreeTitle,
+            style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: colors.success),
+          ),
+        PaymentMode.deposit => Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              FactoryPriceText(
+                amount: p.dueNow,
+                currencySymbol: service.currency,
+                fontSize: 18,
+                weight: FontWeight.w800,
+                color: colors.text,
+              ),
+              const SizedBox(width: FactorySpacing.space1),
+              Text(l10n.bookingCtaDueNow, style: suffixStyle),
+            ],
+          ),
+        PaymentMode.full => Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              FactoryPriceText(
+                amount: p.total,
+                currencySymbol: service.currency,
+                fontSize: 18,
+                weight: FontWeight.w800,
+                color: colors.text,
+              ),
+              const SizedBox(width: FactorySpacing.space1),
+              Text(l10n.bookingCtaFullPayment, style: suffixStyle),
+            ],
+          ),
+      },
+      if (p.mode != PaymentMode.full)
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('${l10n.bookingPayAtVenue}: ', style: suffixStyle),
+            FactoryPriceText(
+              amount: p.atVenue,
+              currencySymbol: service.currency,
+              fontSize: 12,
+              weight: FontWeight.w500,
+              color: colors.textSecondary,
+            ),
+          ],
+        ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -715,12 +801,7 @@ class _BookingCta extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodySmall
                         ?.copyWith(color: colors.textTertiary),
                   ),
-                  FactoryPriceText(
-                    amount: selectedService!.price,
-                    currencySymbol: selectedService!.currency,
-                    fontSize: 16,
-                    color: colors.text,
-                  ),
+                  ..._paymentLines(context, l10n, colors),
                 ],
               ),
             ),

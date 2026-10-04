@@ -17,7 +17,9 @@ import '../../../payments/presentation/widgets/payment_status_chip.dart';
 import '../../../reviews/presentation/widgets/review_section.dart';
 import '../../data/booking_exception.dart';
 import '../../data/models/booking.dart';
+import '../../data/models/payment_plan.dart';
 import '../providers/booking_providers.dart';
+import '../widgets/booking_payment_summary.dart';
 
 /// Reached directly from the bottom nav (a peer tab to Home/Search/
 /// Favorites/Profile, not only pushed after already being logged in), so
@@ -280,67 +282,23 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              FactoryPriceText(
-                amount: booking.totalPrice,
-                fontSize: 16,
-                weight: FontWeight.w700,
+              Expanded(
+                child: BookingPaymentSummary(
+                  compact: true,
+                  plan: PaymentPlan.fromAmounts(
+                    total: booking.totalPrice,
+                    deposit: booking.depositAmount,
+                  ),
+                ),
               ),
+              const SizedBox(width: FactorySpacing.space2),
               FactoryBadge(
                 label: _statusLabel(l10n, booking.status),
                 variant: _statusVariant(booking.status),
               ),
             ],
           ),
-          const SizedBox(height: FactorySpacing.space1),
-          if (booking.depositAmount != null && booking.remainingAmount != null) ...[
-            Container(
-              padding: const EdgeInsets.symmetric(
-                vertical: FactorySpacing.space1,
-                horizontal: FactorySpacing.space2,
-              ),
-              decoration: BoxDecoration(
-                color: colors.surfaceAlt,
-                borderRadius: FactoryRadius.mdRadius,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        l10n.paymentDepositAmount,
-                        style: Theme.of(context).textTheme.bodySmall
-                            ?.copyWith(color: colors.textSecondary, fontSize: 11),
-                      ),
-                      FactoryPriceText(
-                        amount: booking.depositAmount!,
-                        fontSize: 12,
-                        weight: FontWeight.w600,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        l10n.paymentRemainingAmount,
-                        style: Theme.of(context).textTheme.bodySmall
-                            ?.copyWith(color: colors.textSecondary, fontSize: 11),
-                      ),
-                      FactoryPriceText(
-                        amount: booking.remainingAmount!,
-                        fontSize: 12,
-                        weight: FontWeight.w600,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: FactorySpacing.space1),
-          ],
+          const SizedBox(height: FactorySpacing.space2),
           Text(
             l10n.bookedOnLabel(
               formatMonthDayTime(l10n, booking.createdAt.toLocal()),

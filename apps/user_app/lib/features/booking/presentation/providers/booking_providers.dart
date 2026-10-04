@@ -5,6 +5,7 @@ import '../../data/booking_api.dart';
 import '../../data/models/availability_slot.dart';
 import '../../data/models/book_again_suggestion.dart';
 import '../../data/models/booking.dart';
+import '../../data/models/payment_plan.dart';
 
 final bookingApiProvider = Provider<BookingApi>((ref) {
   return BookingApi(ref.watch(dioClientProvider));
@@ -22,4 +23,8 @@ final myBookingsProvider = FutureProvider.autoDispose.family<List<Booking>, Stri
 final bookAgainSuggestionsProvider =
     FutureProvider.autoDispose.family<List<BookAgainSuggestion>, String>((ref, userId) {
   return ref.watch(bookingApiProvider).listBookAgainSuggestions(userId);
+});
+
+final depositPolicyProvider = FutureProvider.autoDispose.family<DepositPolicy?, String>((ref, providerId) {
+  return ref.watch(bookingApiProvider).getDepositPolicy(providerId);
 });
