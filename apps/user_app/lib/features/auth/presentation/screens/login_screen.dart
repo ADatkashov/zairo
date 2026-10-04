@@ -6,6 +6,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../data/auth_exception.dart';
 import '../../data/apple_sign_in_service.dart';
 import '../../data/google_sign_in_service.dart';
+import '../auth_navigation.dart';
 import '../providers/auth_providers.dart';
 import '../widgets/enable_biometric_prompt.dart';
 import '../widgets/social_login_button.dart';
@@ -143,9 +144,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 variant: FactoryButtonVariant.text,
                 onPressed: isLoading
                     ? null
-                    : () => Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                        ),
+                    : () => pushAuthScreen(context, const RegisterScreen()),
               ),
               if (_showEmailForm)
                 FactoryButton(
@@ -153,9 +152,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   variant: FactoryButtonVariant.text,
                   onPressed: isLoading
                       ? null
-                      : () => Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
-                          ),
+                      : () => pushAuthScreen(context, const ForgotPasswordScreen()),
                 ),
             ],
           ),
@@ -228,7 +225,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     // Add a small delay to ensure dialog is fully processed before navigation
     await Future.delayed(const Duration(milliseconds: 300));
     if (!mounted) return;
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    popAuthFlow(context);
   }
 }
 

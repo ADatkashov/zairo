@@ -2345,5 +2345,11 @@
   "validationOtpCodeRequired": "Enter the 6-digit code",
   "@validationOtpCodeRequired": {"description": "OTP code field validation error."},
   "validationResetCodeRequired": "Enter the reset code",
-  "@validationResetCodeRequired": {"description": "Reset-code field validation error."}
+  "@validationResetCodeRequired": {"description": "Reset-code field validation error."},
+  "logOutConfirmTitle": "Log out?",
+  "@logOutConfirmTitle": {"description": "Title of the log-out confirmation dialog."},
+  "logOutConfirmMessage": "You'll need to sign in again to manage your business.",
+  "@logOutConfirmMessage": {"description": "Body of the log-out confirmation dialog."},
+  "logOutStayButton": "Stay signed in",
+  "@logOutStayButton": {"description": "Dialog button that cancels logging out."}
 }

@@ -458,5 +458,8 @@
   "linkAccountCancel": "Бас тарту",
   "loginContinueWithApple": "Apple арқылы жалғастыру",
   "smsMockHint": "Сынақ режимі: нақты SMS жіберілмейді. {code} кодын енгізіңіз.",
-  "errorAuthPhoneCountryNotSupported": "Бұл елдің нөмірлеріне SMS кодтары әлі қолжетімсіз."
+  "errorAuthPhoneCountryNotSupported": "Бұл елдің нөмірлеріне SMS кодтары әлі қолжетімсіз.",
+  "profileLogOutConfirmTitle": "Аккаунттан шығасыз ба?",
+  "profileLogOutConfirmMessage": "Жазылымдарыңызды, таңдаулыларыңызды және хабарламаларыңызды көру үшін қайта кіру керек.",
+  "profileLogOutStayButton": "Қалу"
 }
