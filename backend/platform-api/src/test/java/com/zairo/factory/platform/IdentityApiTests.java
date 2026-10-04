@@ -15,7 +15,9 @@ import com.zairo.factory.auth.IdentityProvider;
 import com.zairo.factory.auth.AuthDtos.RequestPhoneOtpRequest;
 import com.zairo.factory.auth.AuthDtos.UpdateProfileRequest;
 import com.zairo.factory.auth.AuthDtos.VerifyPhoneOtpRequest;
+import com.zairo.factory.users.Gender;
 import com.zairo.factory.users.UserRole;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -469,12 +471,58 @@ class IdentityApiTests {
         String email = "completed-" + UUID.randomUUID() + "@example.com";
 
         ResponseEntity<Map> response = restTemplate.exchange("/api/v1/auth/me", HttpMethod.PATCH,
-                new HttpEntity<>(new UpdateProfileRequest("Real Name", email), TestAuth.authHeaders(accessToken)),
+                new HttpEntity<>(new UpdateProfileRequest("Real Name", email, null, null, null, null),
+                        TestAuth.authHeaders(accessToken)),
                 Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().get("displayName")).isEqualTo("Real Name");
         assertThat(response.getBody().get("email")).isEqualTo(email);
+    }
+
+    @Test
+    void personalDetailsCanBeSetKeptAndCleared() {
+        String phone = uniqueKzPhone();
+        restTemplate.postForEntity("/api/v1/auth/phone/request-otp", new RequestPhoneOtpRequest(phone), Void.class);
+        Map<?, ?> tokens = restTemplate.postForEntity("/api/v1/auth/phone/verify-otp",
+                new VerifyPhoneOtpRequest(phone, capturedOtps.byPhone.get(phone)), Map.class).getBody();
+        var headers = TestAuth.authHeaders(tokens.get("accessToken").toString());
+
+        ResponseEntity<Map> set = restTemplate.exchange("/api/v1/auth/me", HttpMethod.PATCH,
+                new HttpEntity<>(new UpdateProfileRequest(null, null, LocalDate.of(1995, 4, 23), null,
+                        Gender.FEMALE, true), headers), Map.class);
+        assertThat(set.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(set.getBody().get("birthDate")).isEqualTo("1995-04-23");
+        assertThat(set.getBody().get("gender")).isEqualTo("FEMALE");
+        assertThat(set.getBody().get("marketingConsent")).isEqualTo(true);
+
+        // A later edit that only touches the name leaves the personal details alone.
+        ResponseEntity<Map> renamed = restTemplate.exchange("/api/v1/auth/me", HttpMethod.PATCH,
+                new HttpEntity<>(new UpdateProfileRequest("New Name", null, null, null, null, null), headers),
+                Map.class);
+        assertThat(renamed.getBody().get("birthDate")).isEqualTo("1995-04-23");
+        assertThat(renamed.getBody().get("marketingConsent")).isEqualTo(true);
+
+        ResponseEntity<Map> cleared = restTemplate.exchange("/api/v1/auth/me", HttpMethod.PATCH,
+                new HttpEntity<>(new UpdateProfileRequest(null, null, null, true, Gender.NOT_SPECIFIED, false),
+                        headers), Map.class);
+        assertThat(cleared.getBody().get("birthDate")).isNull();
+        assertThat(cleared.getBody().get("gender")).isNull();
+        assertThat(cleared.getBody().get("marketingConsent")).isEqualTo(false);
+    }
+
+    @Test
+    void aBirthDateInTheFutureIsRejected() {
+        String phone = uniqueKzPhone();
+        restTemplate.postForEntity("/api/v1/auth/phone/request-otp", new RequestPhoneOtpRequest(phone), Void.class);
+        Map<?, ?> tokens = restTemplate.postForEntity("/api/v1/auth/phone/verify-otp",
+                new VerifyPhoneOtpRequest(phone, capturedOtps.byPhone.get(phone)), Map.class).getBody();
+
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/auth/me", HttpMethod.PATCH,
+                new HttpEntity<>(new UpdateProfileRequest(null, null, LocalDate.now().plusDays(1), null, null, null),
+                        TestAuth.authHeaders(tokens.get("accessToken").toString())), Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     // ---- Apple ------------------------------------------------------------

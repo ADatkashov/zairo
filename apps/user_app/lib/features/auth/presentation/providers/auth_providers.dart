@@ -235,8 +235,22 @@ class AuthController extends AsyncNotifier<UserSummary?> {
 
   Future<List<IdentitySummary>> listIdentities() => ref.read(authApiProvider).listIdentities();
 
-  Future<void> updateProfile({String? displayName, String? email}) async {
-    final updated = await ref.read(authApiProvider).updateProfile(displayName: displayName, email: email);
+  Future<void> updateProfile({
+    String? displayName,
+    String? email,
+    DateTime? birthDate,
+    bool clearBirthDate = false,
+    String? gender,
+    bool? marketingConsent,
+  }) async {
+    final updated = await ref.read(authApiProvider).updateProfile(
+          displayName: displayName,
+          email: email,
+          birthDate: birthDate,
+          clearBirthDate: clearBirthDate,
+          gender: gender,
+          marketingConsent: marketingConsent,
+        );
     state = AsyncValue.data(updated);
   }
 
