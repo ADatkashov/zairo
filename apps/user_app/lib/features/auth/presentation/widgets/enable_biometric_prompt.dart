@@ -11,14 +11,20 @@ import '../providers/auth_providers.dart';
 /// biometrics aren't available on this device (task spec §14's "graceful
 /// fallback": never offer a toggle that can't work) or already enabled.
 Future<void> maybeOfferEnableBiometric(BuildContext context, WidgetRef ref) async {
+  if (!context.mounted) return;
+
   final controller = ref.read(authControllerProvider.notifier);
   final available = await controller.isBiometricAvailable();
   if (!available) return;
+  if (!context.mounted) return;
+
   final alreadyEnabled = await controller.isBiometricEnabled();
   if (alreadyEnabled) return;
   if (!context.mounted) return;
 
   final l10n = AppLocalizations.of(context)!;
+  if (!context.mounted) return;
+
   final accepted = await showFactoryDialog<bool>(
     context: context,
     title: l10n.biometricEnrollTitle,
@@ -35,7 +41,7 @@ Future<void> maybeOfferEnableBiometric(BuildContext context, WidgetRef ref) asyn
     ],
   );
 
-  if (accepted == true) {
+  if (accepted == true && context.mounted) {
     await controller.enableBiometric();
   }
 }
