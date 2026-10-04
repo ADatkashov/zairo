@@ -7,6 +7,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../data/models/loyalty_birthday.dart';
 import '../providers/loyalty_admin_providers.dart';
+import '../widgets/loyalty_greeting_dialog.dart';
 
 /// Members who opted in to greetings and have a birthday in the next 30
 /// days, soonest first. If the program grants a birthday bonus the backend
@@ -63,7 +64,22 @@ class LoyaltyBirthdaysScreen extends ConsumerWidget {
               )
             else
               for (final birthday in birthdays) ...[
-                _BirthdayRow(birthday: birthday),
+                _BirthdayRow(
+                  birthday: birthday,
+                  onGreet: () async {
+                    final sent = await showLoyaltyGreetingDialog(
+                      context,
+                      providerId: providerId,
+                      userId: birthday.userId,
+                      displayName: birthday.displayName,
+                    );
+                    if (sent == true && context.mounted) {
+                      ref.invalidate(loyaltyBirthdaysProvider(key));
+                      ref.invalidate(loyaltyCustomersProvider);
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.loyaltyGreetingSent)));
+                    }
+                  },
+                ),
                 const SizedBox(height: FactorySpacing.space3),
               ],
           ],
@@ -75,8 +91,9 @@ class LoyaltyBirthdaysScreen extends ConsumerWidget {
 
 class _BirthdayRow extends StatelessWidget {
   final LoyaltyBirthday birthday;
+  final VoidCallback onGreet;
 
-  const _BirthdayRow({required this.birthday});
+  const _BirthdayRow({required this.birthday, required this.onGreet});
 
   @override
   Widget build(BuildContext context) {
@@ -107,13 +124,29 @@ class _BirthdayRow extends StatelessWidget {
               ],
             ),
           ),
-          if (birthday.bonusPoints > 0)
-            Text(
-              birthday.bonusAwarded
-                  ? l10n.loyaltyBirthdaysBonusAwarded(birthday.bonusPoints)
-                  : l10n.loyaltyBirthdaysBonusPending(birthday.bonusPoints),
-              style: textTheme.labelMedium?.copyWith(color: colors.textSecondary),
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (birthday.bonusPoints > 0)
+                Text(
+                  birthday.bonusAwarded
+                      ? l10n.loyaltyBirthdaysBonusAwarded(birthday.bonusPoints)
+                      : l10n.loyaltyBirthdaysBonusPending(birthday.bonusPoints),
+                  style: textTheme.labelMedium?.copyWith(color: colors.textSecondary),
+                ),
+              const SizedBox(height: FactorySpacing.space1),
+              birthday.greetedToday
+                  ? Text(
+                      l10n.loyaltyGreetingAlreadySent,
+                      style: textTheme.labelMedium?.copyWith(color: colors.textTertiary),
+                    )
+                  : TextButton.icon(
+                      onPressed: onGreet,
+                      icon: const Icon(Symbols.celebration_rounded, size: 18),
+                      label: Text(l10n.loyaltyGreetingButton),
+                    ),
+            ],
+          ),
         ],
       ),
     );

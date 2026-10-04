@@ -12,6 +12,7 @@ void main() {
       'daysUntil': 0,
       'bonusPoints': 100,
       'bonusAwarded': true,
+      'greetedToday': true,
     });
 
     expect(b.userId, 'u1');
@@ -19,6 +20,7 @@ void main() {
     expect((b.month, b.day, b.daysUntil), (4, 23, 0));
     expect(b.bonusPoints, 100);
     expect(b.bonusAwarded, isTrue);
+    expect(b.greetedToday, isTrue);
   });
 
   test('LoyaltySettings reads birthdayBonusPoints, defaulting to 0 when absent', () {

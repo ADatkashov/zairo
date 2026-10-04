@@ -59,12 +59,13 @@ public class LoyaltyAdminController {
     private final ProviderOwnership providerOwnership;
     private final UserRepository userRepository;
     private final LoyaltyBirthdayService birthdayService;
+    private final LoyaltyGreetingService greetingService;
 
     public LoyaltyAdminController(LoyaltyProgramService programService, LoyaltyRewardService rewardService,
             LoyaltyRedemptionService redemptionService, LoyaltyLedgerService ledgerService,
             LoyaltyDashboardService dashboardService, LoyaltyCustomerInsightsService customerInsightsService,
             ProviderOwnership providerOwnership, UserRepository userRepository,
-            LoyaltyBirthdayService birthdayService) {
+            LoyaltyBirthdayService birthdayService, LoyaltyGreetingService greetingService) {
         this.programService = programService;
         this.rewardService = rewardService;
         this.redemptionService = redemptionService;
@@ -74,6 +75,7 @@ public class LoyaltyAdminController {
         this.providerOwnership = providerOwnership;
         this.userRepository = userRepository;
         this.birthdayService = birthdayService;
+        this.greetingService = greetingService;
     }
 
     // ---- Settings ----
@@ -173,8 +175,27 @@ public class LoyaltyAdminController {
         int bonus = program.isEnabled() ? program.getBirthdayBonusPoints() : 0;
         return birthdayService.upcoming(providerId, window).stream()
                 .map(b -> new LoyaltyAdminDtos.BirthdayResponse(b.userId(), b.displayName(),
-                        b.date().getMonthValue(), b.date().getDayOfMonth(), b.daysUntil(), bonus, b.bonusAwarded()))
+                        b.date().getMonthValue(), b.date().getDayOfMonth(), b.daysUntil(), bonus, b.bonusAwarded(),
+                        b.greetedToday()))
                 .toList();
+    }
+
+    @Operation(summary = "Greet a member by hand, optionally with bonus points", description = """
+            Sends the member an in-app notification (and an email if they have one) with an optional personal \
+            message, and optionally credits up to 1000 bonus points (recorded as an auditable ADJUSTMENT naming \
+            the acting owner). Only members who agreed to greetings can be greeted: 409 otherwise, 409 if they \
+            were already greeted today, and 409 if points are requested while the program is off.""")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/api/v1/business/{providerId}/loyalty/customers/{userId}/greet")
+    @ResponseStatus(HttpStatus.CREATED)
+    public LoyaltyAdminDtos.GreetingResponse greet(@PathVariable UUID providerId, @PathVariable UUID userId,
+            @RequestBody LoyaltyAdminDtos.SendGreetingRequest request, HttpServletRequest httpRequest) {
+        UUID ownerId = CurrentUser.requireUserId(httpRequest);
+        providerOwnership.requireOwner(providerId, ownerId);
+        LoyaltyGreeting greeting = greetingService.send(providerId, userId, ownerId, request.message(),
+                request.bonusPoints() == null ? 0 : request.bonusPoints());
+        return new LoyaltyAdminDtos.GreetingResponse(greeting.getId(), greeting.getBonusPoints(),
+                greeting.getCreatedAt());
     }
 
     // ---- Customers ----

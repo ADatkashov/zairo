@@ -825,5 +825,15 @@
   "securityTitle": "Қауіпсіздік",
   "logOutConfirmTitle": "Аккаунттан шығасыз ба?",
   "logOutConfirmMessage": "Бизнесті басқару үшін қайта кіру керек.",
-  "logOutStayButton": "Қалу"
+  "logOutStayButton": "Қалу",
+  "loyaltyGreetingButton": "Құттықтау",
+  "loyaltyGreetingAlreadySent": "Бүгін құттықталды",
+  "loyaltyGreetingDialogTitle": "Құттықтау: {name}",
+  "loyaltyGreetingMessageLabel": "Хабарлама (міндетті емес)",
+  "loyaltyGreetingMessageHint": "Бос қалдырсаңыз, стандартты құттықтау жіберіледі.",
+  "loyaltyGreetingPointsLabel": "Сыйлыққа ұпай (міндетті емес)",
+  "loyaltyGreetingPointsHint": "0-ден {max}-ға дейін. Бос — тек құттықтау.",
+  "loyaltyGreetingPointsError": "0-ден {max}-ға дейін бүтін сан енгізіңіз.",
+  "loyaltyGreetingSendButton": "Жіберу",
+  "loyaltyGreetingSent": "Құттықтау жіберілді"
 }

@@ -662,6 +662,71 @@ class LoyaltyApiTests {
         assertThat(balanceOf(providerId, customer.userId())).isEqualTo(10);
     }
 
+    private ResponseEntity<Map> greet(Registered owner, UUID providerId, UUID userId, String message,
+            Integer bonusPoints) {
+        Map<String, Object> body = new java.util.HashMap<>();
+        body.put("message", message);
+        body.put("bonusPoints", bonusPoints);
+        return restTemplate.exchange("/api/v1/business/" + providerId + "/loyalty/customers/" + userId + "/greet",
+                HttpMethod.POST, new HttpEntity<>(body, TestAuth.authHeaders(owner.accessToken())), Map.class);
+    }
+
+    @Test
+    void anOwnerCanGreetAnOptedInMemberOnceADayWithAGiftOfPoints() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "loy-greet-owner-" + runId + "@example.com");
+        Registered optedIn = TestAuth.registerCustomer(restTemplate, "loy-greet-in-" + runId + "@example.com");
+        Registered optedOut = TestAuth.registerCustomer(restTemplate, "loy-greet-out-" + runId + "@example.com");
+        Registered otherOwner = TestAuth.registerOwner(restTemplate, "loy-greet-other-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Loyalty Greeting Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Haircut", new BigDecimal("40.00"));
+        enableProgram(owner, providerId, settingsWithBirthdayBonus(10, 0));
+        completeVisit(owner, optedIn, providerId, serviceId, Instant.now().minus(2, ChronoUnit.DAYS));
+        completeVisit(owner, optedOut, providerId, serviceId, Instant.now().minus(1, ChronoUnit.DAYS));
+        setBirthday(optedIn, LocalDate.now(ZoneOffset.UTC).minusYears(30), true);
+        setBirthday(optedOut, LocalDate.now(ZoneOffset.UTC).minusYears(30), false);
+
+        // Not opted in -> refused; nothing moves.
+        assertThat(greet(owner, providerId, optedOut.userId(), "Happy birthday!", 50).getStatusCode())
+                .isEqualTo(HttpStatus.CONFLICT);
+        // Over the cap -> 400.
+        assertThat(greet(owner, providerId, optedIn.userId(), null, 1001).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+        // Somebody else's business -> not allowed.
+        assertThat(greet(otherOwner, providerId, optedIn.userId(), null, 5).getStatusCode().is2xxSuccessful())
+                .isFalse();
+
+        ResponseEntity<Map> sent = greet(owner, providerId, optedIn.userId(), "Come in for a treat!", 50);
+        assertThat(sent.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(sent.getBody().get("bonusPoints")).isEqualTo(50);
+        assertThat(balanceOf(providerId, optedIn.userId())).isEqualTo(60); // 10 from the visit + 50 gift
+
+        // A second greeting the same day is refused and does not pay twice.
+        assertThat(greet(owner, providerId, optedIn.userId(), null, 50).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(balanceOf(providerId, optedIn.userId())).isEqualTo(60);
+
+        ResponseEntity<List> birthdays = restTemplate.exchange("/api/v1/business/" + providerId
+                + "/loyalty/birthdays?days=1", HttpMethod.GET,
+                new HttpEntity<>(TestAuth.authHeaders(owner.accessToken())), List.class);
+        assertThat(((Map<?, ?>) birthdays.getBody().get(0)).get("greetedToday")).isEqualTo(true);
+    }
+
+    @Test
+    void aTextOnlyGreetingNeedsNoPointsAndNoProgram() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "loy-greet0-owner-" + runId + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "loy-greet0-cust-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Loyalty TextGreeting Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Wash", new BigDecimal("10.00"));
+        enableProgram(owner, providerId, settingsWithBirthdayBonus(10, 0));
+        completeVisit(owner, customer, providerId, serviceId, Instant.now().minus(1, ChronoUnit.DAYS));
+        setBirthday(customer, LocalDate.now(ZoneOffset.UTC).minusYears(25), true);
+
+        assertThat(greet(owner, providerId, customer.userId(), "Warm wishes!", null).getStatusCode())
+                .isEqualTo(HttpStatus.CREATED);
+        assertThat(balanceOf(providerId, customer.userId())).isEqualTo(10); // unchanged
+    }
+
     private int balanceOf(UUID providerId, UUID userId) {
         return accountRepository.findByProviderIdAndUserId(providerId, userId).map(a -> a.getPointsBalance())
                 .orElse(0);
