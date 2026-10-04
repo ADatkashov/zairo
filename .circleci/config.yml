@@ -123,9 +123,7 @@ workflows:
           filters:
             branches:
               only:
-                - develop
                 - test
-                - master
       - build-android-apk:
           name: build-android-apk-user
           app_dir: apps/user_app
@@ -133,7 +131,7 @@ workflows:
           filters:
             branches:
               only:
-                - develop
+                - test
           requires:
             - build-for-testing
       - build-android-apk:
@@ -143,6 +141,6 @@ workflows:
           filters:
             branches:
               only:
-                - develop
+                - test
           requires:
             - build-for-testing
