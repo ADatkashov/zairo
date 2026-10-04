@@ -78,6 +78,15 @@ public final class AuthDtos {
                     + "keys; see docs/authentication.md.") String idToken) {
     }
 
+    public record AppleAuthRequest(
+            @NotBlank @Schema(description = "The Sign in with Apple identity token (JWT) obtained on-device. "
+                    + "Verified server-side against Apple's published keys; see docs/authentication.md.")
+            String identityToken,
+            @Size(max = 255) @Schema(description = "Optional: Apple only gives the person's name to the app, never "
+                    + "inside the token, and only on the very first sign-in. Used as display name when this "
+                    + "creates a new account; ignored otherwise.", example = "Aigerim Bekova") String displayName) {
+    }
+
     public record FacebookAuthRequest(
             @NotBlank @Schema(description = "The Facebook user access token obtained on-device via the Facebook "
                     + "Login SDK. Verified server-side against the Graph API's debug_token endpoint; see "
@@ -93,6 +102,44 @@ public final class AuthDtos {
             @NotBlank @Schema(example = "+7 700 123 45 67") String phone,
             @NotBlank @Pattern(regexp = "\\d{6}") @Schema(description = "The 6-digit code just sent by SMS.",
                     example = "482913") String code) {
+    }
+
+    public record PhoneStatusRequest(
+            @NotBlank @Schema(example = "+7 700 123 45 67") String phone) {
+    }
+
+    public record PhoneStatusResponse(
+            @Schema(description = "A ZAIRO account is already reachable through this phone.") boolean registered,
+            @Schema(description = "That account has a password, so sign-in asks for it instead of an SMS code.")
+            boolean hasPassword) {
+    }
+
+    public record PhonePasswordLoginRequest(
+            @NotBlank @Schema(example = "+7 700 123 45 67") String phone,
+            @NotBlank @Schema(example = "Password123") String password) {
+    }
+
+    public record PhoneRegisterRequest(
+            @NotBlank @Schema(example = "+7 700 123 45 67") String phone,
+            @NotBlank @Pattern(regexp = "\\d{6}") @Schema(description = "The 6-digit code just sent by SMS.",
+                    example = "482913") String code,
+            @NotBlank @Size(max = 255) @Schema(example = "Aigerim Bekova") String displayName,
+            @NotBlank @Size(min = 8) @Schema(example = "Password123", minLength = 8) String password) {
+    }
+
+    public record PhoneResetPasswordRequest(
+            @NotBlank @Schema(example = "+7 700 123 45 67") String phone,
+            @NotBlank @Pattern(regexp = "\\d{6}") @Schema(description = "The 6-digit code just sent by SMS.",
+                    example = "482913") String code,
+            @NotBlank @Size(min = 8) @Schema(example = "NewPassword456", minLength = 8) String newPassword) {
+    }
+
+    public record LinkWithPasswordRequest(
+            @NotNull @Schema(description = "GOOGLE or FACEBOOK.") IdentityProvider provider,
+            @NotBlank @Schema(description = "The Google ID token / Facebook access token from the sign-in that "
+                    + "was answered with 409 ACCOUNT_LINK_REQUIRED.") String token,
+            @NotBlank @Schema(description = "Password of the existing account that owns the provider's email.")
+            String password) {
     }
 
     public record IdentitySummary(
