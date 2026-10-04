@@ -81,6 +81,10 @@ jobs:
           working_directory: apps/user_app
           command: flutter pub get
       - run:
+          name: Generate Build Files
+          working_directory: apps/user_app
+          command: flutter pub run build_runner build --delete-conflicting-outputs
+      - run:
           name: Run Flutter Tests
           working_directory: apps/user_app
           command: flutter test
