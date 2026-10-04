@@ -82,7 +82,7 @@
   "securityBiometricToggleSubtitle": "Қайта кірмей-ақ ZAIRO құлпын лезде ашу",
   "securityLinkedAccountsSectionTitle": "Тіркелген аккаунттар",
   "securityLinkButton": "Тіркеу",
-  "errorAuthInvalidProviderCredential": "Google/Facebook арқылы растай алмадық. Қайта көріңіз.",
+  "errorAuthInvalidProviderCredential": "Google/Apple арқылы растай алмадық. Қайта көріңіз.",
   "errorAuthInvalidPhoneNumber": "Жарамды телефон нөірін енгізіңіз.",
   "errorAuthInvalidOtp": "Код дұрыс емес. Қайта көріңіз.",
   "errorAuthOtpExpired": "Кодтың мерзімі өтті. Жаңа код сұраңыз.",
@@ -455,5 +455,6 @@
   "linkAccountTitle": "Аккаунтты қосу",
   "linkAccountBody": "Бұл email-мен аккаунт бар. Осы кіру тәсілін қосу үшін оның құпиясөзін енгізіңіз.",
   "linkAccountConfirm": "Қосу",
-  "linkAccountCancel": "Бас тарту"
+  "linkAccountCancel": "Бас тарту",
+  "loginContinueWithApple": "Apple арқылы жалғастыру"
 }
