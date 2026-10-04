@@ -4,7 +4,6 @@ import 'package:dio/dio.dart';
 import 'auth_exception.dart';
 import 'models/auth_tokens.dart';
 import 'models/identity_summary.dart';
-import 'models/passkey_info.dart';
 import 'models/phone_status.dart';
 import 'models/user_summary.dart';
 
@@ -321,66 +320,6 @@ class AuthApi {
         throw const AuthException(AuthErrorKey.invalidCredentials);
       }
       throw _mapProviderError(e);
-    }
-  }
-
-  /// Whether the backend has passkeys configured (app.passkey.rp-id) — the
-  /// app hides every passkey button when it does not.
-  Future<bool> passkeysEnabled() async {
-    final response = await _dioClient.get('/auth/passkeys/availability');
-    return (response.data as Map<String, dynamic>)['enabled'] as bool? ?? false;
-  }
-
-  Future<PasskeyCeremony> passkeyRegisterStart() => _passkeyCall(() async {
-        final response = await _dioClient.post('/auth/passkeys/register/start');
-        return PasskeyCeremony.fromJson(response.data as Map<String, dynamic>);
-      });
-
-  Future<PasskeyInfo> passkeyRegisterFinish({
-    required String ceremonyId,
-    required Map<String, dynamic> credential,
-    String? name,
-  }) =>
-      _passkeyCall(() async {
-        final response = await _dioClient.post(
-          '/auth/passkeys/register/finish',
-          data: {'ceremonyId': ceremonyId, 'credential': credential, 'name': name},
-        );
-        return PasskeyInfo.fromJson(response.data as Map<String, dynamic>);
-      });
-
-  Future<PasskeyCeremony> passkeyLoginStart() => _passkeyCall(() async {
-        final response = await _dioClient.post('/auth/passkeys/login/start');
-        return PasskeyCeremony.fromJson(response.data as Map<String, dynamic>);
-      });
-
-  Future<AuthTokens> passkeyLoginFinish({
-    required String ceremonyId,
-    required Map<String, dynamic> credential,
-  }) =>
-      _passkeyCall(() async {
-        final response = await _dioClient.post(
-          '/auth/passkeys/login/finish',
-          data: {'ceremonyId': ceremonyId, 'credential': credential},
-        );
-        return AuthTokens.fromJson(response.data as Map<String, dynamic>);
-      });
-
-  Future<List<PasskeyInfo>> listPasskeys() async {
-    final response = await _dioClient.get('/auth/passkeys');
-    final items = (response.data as Map<String, dynamic>)['passkeys'] as List<dynamic>;
-    return items.map((e) => PasskeyInfo.fromJson(e as Map<String, dynamic>)).toList();
-  }
-
-  Future<void> deletePasskey(String id) async {
-    await _dioClient.delete('/auth/passkeys/$id');
-  }
-
-  Future<T> _passkeyCall<T>(Future<T> Function() call) async {
-    try {
-      return await call();
-    } on DioException {
-      throw const AuthException(AuthErrorKey.passkeyFailed);
     }
   }
 

@@ -1566,17 +1566,5 @@
   "linkAccountCancel": "Cancel",
   "@linkAccountCancel": {"description": "Phone auth / account linking flow."},
   "loginContinueWithApple": "Continue with Apple",
-  "@loginContinueWithApple": {"description": "Apple sign-in button tooltip on Login, and the linked-account row label on Security settings."},
-  "loginContinueWithPasskey": "Sign in with a passkey",
-  "@loginContinueWithPasskey": {"description": "Passkeys (login screen / Security settings)."},
-  "errorAuthPasskeyFailed": "Couldn't use the passkey. Try again or choose another sign-in method.",
-  "@errorAuthPasskeyFailed": {"description": "Passkeys (login screen / Security settings)."},
-  "securityPasskeysSectionTitle": "Passkeys",
-  "@securityPasskeysSectionTitle": {"description": "Passkeys (login screen / Security settings)."},
-  "securityPasskeyAddButton": "Add a passkey on this device",
-  "@securityPasskeyAddButton": {"description": "Passkeys (login screen / Security settings)."},
-  "securityPasskeyAddedMessage": "Passkey added",
-  "@securityPasskeyAddedMessage": {"description": "Passkeys (login screen / Security settings)."},
-  "securityPasskeyRemoveTooltip": "Remove passkey",
-  "@securityPasskeyRemoveTooltip": {"description": "Passkeys (login screen / Security settings)."}
+  "@loginContinueWithApple": {"description": "Apple sign-in button tooltip on Login, and the linked-account row label on Security settings."}
 }

@@ -456,11 +456,5 @@
   "linkAccountBody": "Бұл email-мен аккаунт бар. Осы кіру тәсілін қосу үшін оның құпиясөзін енгізіңіз.",
   "linkAccountConfirm": "Қосу",
   "linkAccountCancel": "Бас тарту",
-  "loginContinueWithApple": "Apple арқылы жалғастыру",
-  "loginContinueWithPasskey": "Passkey арқылы кіру",
-  "errorAuthPasskeyFailed": "Passkey қолдану мүмкін болмады. Қайта көріңіз немесе басқа тәсілді таңдаңыз.",
-  "securityPasskeysSectionTitle": "Passkey",
-  "securityPasskeyAddButton": "Осы құрылғыда passkey қосу",
-  "securityPasskeyAddedMessage": "Passkey қосылды",
-  "securityPasskeyRemoveTooltip": "Passkey жою"
+  "loginContinueWithApple": "Apple арқылы жалғастыру"
 }

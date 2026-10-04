@@ -21,7 +21,6 @@ enum AuthErrorKey {
   identityAlreadyLinked,
   accountLinkRequired,
   tooManyLoginAttempts,
-  passkeyFailed,
 }
 
 class AuthException implements Exception {
@@ -43,7 +42,6 @@ class AuthException implements Exception {
         AuthErrorKey.identityAlreadyLinked => l10n.errorAuthIdentityAlreadyLinked,
         AuthErrorKey.accountLinkRequired => l10n.errorAuthAccountLinkRequired,
         AuthErrorKey.tooManyLoginAttempts => l10n.errorAuthTooManyLoginAttempts,
-        AuthErrorKey.passkeyFailed => l10n.errorAuthPasskeyFailed,
       };
 
   @override
