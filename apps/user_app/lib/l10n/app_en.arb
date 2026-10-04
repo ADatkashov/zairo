@@ -1566,5 +1566,7 @@
   "linkAccountCancel": "Cancel",
   "@linkAccountCancel": {"description": "Phone auth / account linking flow."},
   "loginContinueWithApple": "Continue with Apple",
-  "@loginContinueWithApple": {"description": "Apple sign-in button tooltip on Login, and the linked-account row label on Security settings."}
+  "@loginContinueWithApple": {"description": "Apple sign-in button tooltip on Login, and the linked-account row label on Security settings."},
+  "smsMockHint": "Test mode: no real SMS is sent. Enter the code {code}.",
+  "@smsMockHint": {"description": "Pre-production only: shown on the SMS code screens while the server mocks SMS (OTP_MOCK_CODE).", "placeholders": {"code": {"type": "String"}}}
 }

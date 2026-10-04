@@ -333,6 +333,14 @@ class IdentityApiTests {
     }
 
     @Test
+    void smsIsNotMockedByDefault() {
+        Map<?, ?> mode = restTemplate.getForEntity("/api/v1/auth/phone/sms-mode", Map.class).getBody();
+
+        assertThat(mode.get("mock")).isEqualTo(false);
+        assertThat(mode.get("mockCode")).isNull();
+    }
+
+    @Test
     void aPhoneFromAnUnsupportedCountryGetsNoSms() {
         String usPhone = "+12024561111"; // valid number, but not in app.otp.allowed-countries (KZ by default)
 

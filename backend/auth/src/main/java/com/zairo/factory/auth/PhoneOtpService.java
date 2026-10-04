@@ -38,6 +38,7 @@ class PhoneOtpService {
     private final int maxRequestsPerHour;
     private final int maxRequestsPerIpPerHour;
     private final int dailySendCap;
+    private final String mockCode; // blank = real random codes
 
     // Explicit @Autowired is required here: with two constructors and
     // neither a no-arg one, Spring can't infer which to use on its own —
@@ -51,22 +52,27 @@ class PhoneOtpService {
             @Value("${app.otp.max-verify-attempts:5}") int maxAttempts,
             @Value("${app.otp.max-requests-per-hour:5}") int maxRequestsPerHour,
             @Value("${app.otp.max-requests-per-ip-per-hour:20}") int maxRequestsPerIpPerHour,
-            @Value("${app.otp.daily-send-cap:3000}") int dailySendCap) {
+            @Value("${app.otp.daily-send-cap:3000}") int dailySendCap,
+            @Value("${app.otp.mock-code:}") String mockCode) {
         this(phoneOtpRepository, otpSender, Clock.systemUTC(), ttlMinutes, resendCooldownSeconds, maxAttempts,
-                maxRequestsPerHour, maxRequestsPerIpPerHour, dailySendCap);
+                maxRequestsPerHour, maxRequestsPerIpPerHour, dailySendCap, mockCode);
     }
 
     /** Test-only seam with the IP/daily limits effectively off — see PhoneOtpServiceTest. */
     PhoneOtpService(PhoneOtpRepository phoneOtpRepository, OtpSenderPort otpSender, Clock clock, long ttlMinutes,
             long resendCooldownSeconds, int maxAttempts, int maxRequestsPerHour) {
         this(phoneOtpRepository, otpSender, clock, ttlMinutes, resendCooldownSeconds, maxAttempts,
-                maxRequestsPerHour, Integer.MAX_VALUE, Integer.MAX_VALUE);
+                maxRequestsPerHour, Integer.MAX_VALUE, Integer.MAX_VALUE, "");
     }
 
     /** Test-only seam — see PhoneOtpServiceTest, which needs to fast-forward past expiry/cooldown without sleeping. */
     PhoneOtpService(PhoneOtpRepository phoneOtpRepository, OtpSenderPort otpSender, Clock clock, long ttlMinutes,
             long resendCooldownSeconds, int maxAttempts, int maxRequestsPerHour, int maxRequestsPerIpPerHour,
-            int dailySendCap) {
+            int dailySendCap, String mockCode) {
+        if (mockCode != null && !mockCode.isBlank() && !mockCode.matches("\\d{6}")) {
+            throw new IllegalStateException("app.otp.mock-code (OTP_MOCK_CODE) must be exactly 6 digits");
+        }
+        this.mockCode = mockCode == null ? "" : mockCode.trim();
         this.phoneOtpRepository = phoneOtpRepository;
         this.otpSender = otpSender;
         this.clock = clock;
@@ -164,6 +170,9 @@ class PhoneOtpService {
     }
 
     private String generateCode() {
+        if (!mockCode.isEmpty()) {
+            return mockCode;
+        }
         int value = secureRandom.nextInt(CODE_UPPER_BOUND);
         return String.format("%0" + CODE_LENGTH + "d", value);
     }
