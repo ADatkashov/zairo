@@ -1,13 +1,13 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:core_network/core_network.dart';
 
 import '../../../../core/formatting/initials.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../maps/data/geo_point.dart';
+import '../../../auth/data/models/user_summary.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../booking/data/models/book_again_suggestion.dart';
 import '../../../booking/presentation/providers/booking_providers.dart';
@@ -69,8 +69,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     AppLocalizations l10n,
     DiscoveryQuery query,
     AsyncValue<List<ProviderSearchResult>> resultsAsync,
-    AsyncValue<LocationData?> locationAsync,
-    User? user,
+    AsyncValue<GeoPoint?> locationAsync,
+    UserSummary? user,
     FactoryColors colors,
     TextTheme textTheme,
   ) {
