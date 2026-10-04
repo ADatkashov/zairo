@@ -90,3 +90,10 @@ File → Open → C:\app\zairo\apps\business_admin
 `path:`-зависимости в `pubspec.yaml` каждого приложения и появляются в
 Project-панели автоматически при открытии `apps/user_app` или
 `apps/business_admin`.
+
+
+# CI/CD Migration (2026-10-04)
+- GitHub Actions: Disabled (workflows moved to .yml.disabled)
+- Backend: Auto-deploying via Render on commit
+- Status: Testing Render auto-deploy trigger
+

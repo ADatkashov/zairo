@@ -129,8 +129,8 @@ public class CityService {
 
         City nearest = activeCities.stream()
                 .min((c1, c2) -> Double.compare(
-                        calculateDistance(latitude, longitude, c1.getLatitude(), c1.getLongitude()),
-                        calculateDistance(latitude, longitude, c2.getLatitude(), c2.getLongitude())))
+                        calculateDistance(latitude, longitude, c1.getLatitude().doubleValue(), c1.getLongitude().doubleValue()),
+                        calculateDistance(latitude, longitude, c2.getLatitude().doubleValue(), c2.getLongitude().doubleValue())))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No cities found"));
 
         return CityDtos.toDto(nearest);
