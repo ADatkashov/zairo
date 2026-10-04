@@ -2222,5 +2222,14 @@
   "@noCitiesAvailable": {"description": "Message shown when no cities are available for selection."},
 
   "errorLoadingCities": "Error loading cities",
-  "@errorLoadingCities": {"description": "Error message shown when cities fail to load."}
+  "@errorLoadingCities": {"description": "Error message shown when cities fail to load."},
+
+  "slotsDaySummary": "{open} open · {booked} booked",
+  "@slotsDaySummary": {"description": "Per-day summary of open and booked time slots.", "placeholders": {"open": {"type": "int"}, "booked": {"type": "int"}}},
+
+  "slotsDaysShowAll": "Show all days ({count} more)",
+  "@slotsDaysShowAll": {"description": "Button that reveals the remaining days of availability.", "placeholders": {"count": {"type": "int"}}},
+
+  "slotsDaysShowLess": "Show fewer days",
+  "@slotsDaysShowLess": {"description": "Button that collapses the availability list back to the first days."}
 }

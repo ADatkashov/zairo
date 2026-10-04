@@ -430,5 +430,19 @@
 
   "bookingCtaDueNow": "қазір төленеді",
 
-  "bookingCtaFullPayment": "толық төлем"
+  "bookingCtaFullPayment": "толық төлем",
+
+  "weekdayMon": "Дс",
+
+  "weekdayTue": "Сс",
+
+  "weekdayWed": "Ср",
+
+  "weekdayThu": "Бс",
+
+  "weekdayFri": "Жм",
+
+  "weekdaySat": "Сб",
+
+  "weekdaySun": "Жс"
 }

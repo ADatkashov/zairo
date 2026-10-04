@@ -741,5 +741,11 @@
   "validationPercentageRange": "Процент должен быть от 0 до 100.",
   "selectCity": "Выберите город",
   "noCitiesAvailable": "Нет доступных городов",
-  "errorLoadingCities": "Ошибка при загрузке городов"
+  "errorLoadingCities": "Ошибка при загрузке городов",
+
+  "slotsDaySummary": "{open} свободно · {booked} занято",
+
+  "slotsDaysShowAll": "Показать все дни (ещё {count})",
+
+  "slotsDaysShowLess": "Свернуть дни"
 }

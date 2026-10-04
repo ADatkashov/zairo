@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../core/formatting/initials.dart';
-import '../../../../core/formatting/month_day_time.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/data/models/user_summary.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
@@ -37,6 +36,7 @@ import '../../data/models/availability_slot.dart';
 import '../../data/models/booking.dart';
 import '../../data/models/payment_plan.dart';
 import '../providers/booking_providers.dart';
+import '../widgets/day_slot_picker.dart';
 import 'booking_confirmation_screen.dart';
 
 /// Categories with their own hardcoded staff module (Master/Mechanic/
@@ -386,24 +386,11 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                           message: l10n.noOpenTimesMessage,
                         );
                       }
-                      return Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: openSlots
-                            .map(
-                              (slot) => FactoryTimeSlot(
-                                label: formatMonthDayTime(
-                                  l10n,
-                                  slot.startsAt.toLocal(),
-                                ),
-                                state: _selectedSlotId == slot.id
-                                    ? FactoryTimeSlotState.selected
-                                    : FactoryTimeSlotState.available,
-                                onTap: () =>
-                                    setState(() => _selectedSlotId = slot.id),
-                              ),
-                            )
-                            .toList(),
+                      return DaySlotPicker(
+                        slots: openSlots,
+                        selectedSlotId: _selectedSlotId,
+                        onSelected: (id) =>
+                            setState(() => _selectedSlotId = id),
                       );
                     },
                     loading: () => const FactoryLoadingState(),

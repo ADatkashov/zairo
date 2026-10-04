@@ -31,6 +31,7 @@ import '../../data/models/admin_booking.dart';
 import '../../data/models/admin_payout.dart';
 import '../../data/models/admin_provider.dart';
 import '../../data/models/admin_service.dart';
+import '../../data/models/admin_slot.dart';
 import '../providers/salon_providers.dart';
 import '../widgets/add_service_dialog.dart';
 import '../widgets/add_slot_dialog.dart';
@@ -751,13 +752,25 @@ class _ServiceAdminRow extends StatelessWidget {
   }
 }
 
-class _AvailabilitySection extends ConsumerWidget {
+class _AvailabilitySection extends ConsumerStatefulWidget {
   final String providerId;
 
   const _AvailabilitySection({required this.providerId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_AvailabilitySection> createState() => _AvailabilitySectionState();
+}
+
+class _AvailabilitySectionState extends ConsumerState<_AvailabilitySection> {
+  /// A recurring schedule can span weeks; show the nearest days and let the
+  /// owner expand the rest instead of rendering hundreds of chips at once.
+  static const _initialDays = 7;
+  bool _showAll = false;
+
+  String get providerId => widget.providerId;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final slotsAsync = ref.watch(providerSlotsProvider(providerId));
@@ -804,27 +817,32 @@ class _AvailabilitySection extends ConsumerWidget {
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
               );
             }
-            return Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              // Only an OPEN slot can be removed (see backend's
-              // AvailabilitySlotController.delete()) — a booked one keeps
-              // its chip but with no delete affordance.
-              children: slots
-                  .map((s) => Chip(
-                        label: Text(
-                          s.status == 'OPEN'
-                              ? formatMonthDayTime(l10n, s.startsAt.toLocal())
-                              : '${formatMonthDayTime(l10n, s.startsAt.toLocal())} · ${_capitalize(s.status)}',
-                        ),
-                        onDeleted: s.status == 'OPEN'
-                            ? () async {
-                                await ref.read(salonAdminApiProvider).deleteSlot(s.id);
-                                ref.invalidate(providerSlotsProvider(providerId));
-                              }
-                            : null,
-                      ))
-                  .toList(),
+            final byDay = groupByLocalDay<AdminSlot>(slots, (s) => s.startsAt);
+            final days = byDay.keys.toList();
+            final shown = _showAll ? days : days.take(_initialDays).toList();
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var i = 0; i < shown.length; i++)
+                  _DaySlots(
+                    key: ValueKey(shown[i]),
+                    day: shown[i],
+                    slots: byDay[shown[i]]!,
+                    initiallyExpanded: i == 0,
+                    onDelete: (slot) async {
+                      await ref.read(salonAdminApiProvider).deleteSlot(slot.id);
+                      ref.invalidate(providerSlotsProvider(providerId));
+                    },
+                  ),
+                if (days.length > _initialDays)
+                  FactoryButton(
+                    label: _showAll
+                        ? l10n.slotsDaysShowLess
+                        : l10n.slotsDaysShowAll(days.length - _initialDays),
+                    variant: FactoryButtonVariant.text,
+                    onPressed: () => setState(() => _showAll = !_showAll),
+                  ),
+              ],
             );
           },
           loading: () => const Padding(
@@ -834,6 +852,81 @@ class _AvailabilitySection extends ConsumerWidget {
           error: (error, stackTrace) => Text(l10n.errorAvailabilityLoadFailed(error.toString())),
         ),
       ],
+    );
+  }
+}
+
+/// One day of availability: collapsed to "6 open · 2 booked", expanded to the
+/// day's times.
+class _DaySlots extends StatelessWidget {
+  final DateTime day;
+  final List<AdminSlot> slots;
+  final bool initiallyExpanded;
+  final Future<void> Function(AdminSlot slot) onDelete;
+
+  const _DaySlots({
+    super.key,
+    required this.day,
+    required this.slots,
+    required this.initiallyExpanded,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final open = slots.where((s) => s.status == 'OPEN').length;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: FactorySpacing.space2),
+      decoration: BoxDecoration(
+        border: Border.all(color: colors.border),
+        borderRadius: FactoryRadius.mdRadius,
+      ),
+      child: ClipRRect(
+        borderRadius: FactoryRadius.mdRadius,
+        child: ExpansionTile(
+          initiallyExpanded: initiallyExpanded,
+          shape: const Border(),
+          collapsedShape: const Border(),
+          title: Text(
+            formatWeekdayMonthDay(l10n, day),
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          subtitle: Text(
+            l10n.slotsDaySummary(open, slots.length - open),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+          ),
+          childrenPadding: const EdgeInsets.fromLTRB(
+            FactorySpacing.space3,
+            0,
+            FactorySpacing.space3,
+            FactorySpacing.space3,
+          ),
+          expandedAlignment: Alignment.centerLeft,
+          children: [
+            // Only an OPEN slot can be removed (see backend's
+            // AvailabilitySlotController.delete()) — a booked one keeps
+            // its chip but with no delete affordance.
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final s in slots)
+                  Chip(
+                    label: Text(
+                      s.status == 'OPEN'
+                          ? formatHourMinute(s.startsAt.toLocal())
+                          : '${formatHourMinute(s.startsAt.toLocal())} · ${_capitalize(s.status)}',
+                    ),
+                    onDeleted: s.status == 'OPEN' ? () => onDelete(s) : null,
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
