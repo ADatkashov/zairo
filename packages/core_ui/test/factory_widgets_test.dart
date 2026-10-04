@@ -522,6 +522,36 @@ void main() {
     },
   );
 
+  testWidgets(
+    'FactorySearchField shows a clear button only while it holds text',
+    (tester) async {
+      final controller = TextEditingController();
+      addTearDown(controller.dispose);
+      var cleared = 0;
+      await tester.pumpWidget(
+        _wrap(
+          FactorySearchField(
+            controller: controller,
+            hint: 'Search salons',
+            onCleared: () => cleared++,
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Symbols.close_rounded), findsNothing);
+
+      await tester.enterText(find.byType(TextField), 'nails');
+      await tester.pump();
+      expect(find.byIcon(Symbols.close_rounded), findsOneWidget);
+
+      await tester.tap(find.byIcon(Symbols.close_rounded));
+      await tester.pump();
+      expect(controller.text, isEmpty);
+      expect(cleared, 1);
+      expect(find.byIcon(Symbols.close_rounded), findsNothing);
+    },
+  );
+
   testWidgets('FactoryCard calls onTap and renders its child', (tester) async {
     var tapped = false;
     await tester.pumpWidget(
@@ -591,6 +621,36 @@ void main() {
     await tester.tap(find.text('Search'));
     expect(selected, 1);
   });
+
+  testWidgets(
+    'FactoryBottomNavigation fits five tabs with long labels on a phone width',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        _wrap(
+          FactoryBottomNavigation(
+            destinations: const [
+              FactoryNavDestination(icon: Icons.dashboard_rounded, label: 'Dashboard'),
+              FactoryNavDestination(icon: Icons.forum_rounded, label: 'Messages'),
+              FactoryNavDestination(icon: Icons.campaign_rounded, label: 'Campaign Center'),
+              FactoryNavDestination(icon: Icons.loyalty_rounded, label: 'Loyalty'),
+              FactoryNavDestination(icon: Icons.more_horiz_rounded, label: 'More'),
+            ],
+            selectedIndex: 0,
+            onDestinationSelected: (_) {},
+          ),
+        ),
+      );
+
+      // A RenderFlex overflow would be reported as a test exception.
+      expect(tester.takeException(), isNull);
+      expect(find.text('More'), findsOneWidget);
+    },
+  );
 
   testWidgets(
     'FactoryLoadingState shows an optional message alongside the spinner',

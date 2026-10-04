@@ -1,12 +1,13 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../../app/router/app_routes.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/widgets/logged_out_gate.dart';
-import '../../../booking/presentation/screens/provider_detail_screen.dart';
 import '../../../discovery/data/models/provider_search_result.dart';
 import '../../../discovery/presentation/widgets/provider_card.dart';
 import '../../data/models/favorite_provider.dart';
@@ -178,11 +179,9 @@ class _FavoritesList extends ConsumerWidget {
                   return ProviderCard(
                     result: asSearchResult,
                     layout: FactoryProviderCardLayout.vertical,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            ProviderDetailScreen(provider: asSearchResult),
-                      ),
+                    onTap: () => context.push(
+                      AppRoutes.provider(asSearchResult.id),
+                      extra: asSearchResult,
                     ),
                   );
                 },

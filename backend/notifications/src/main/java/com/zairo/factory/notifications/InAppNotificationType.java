@@ -18,4 +18,8 @@ public enum InAppNotificationType {
     REBOOK_OFFER,
     /** A Lost Customer Recovery win-back nudge -- see reactivationengine.ReactivationOfferReadyEvent. */
     REACTIVATION_OFFER,
+    /** A birthday greeting with the points the business just granted -- see loyalty.BirthdayBonusAwardedEvent. */
+    BIRTHDAY_BONUS,
+    /** A greeting an owner sent by hand -- see loyalty.ManualGreetingSentEvent. */
+    GREETING,
 }

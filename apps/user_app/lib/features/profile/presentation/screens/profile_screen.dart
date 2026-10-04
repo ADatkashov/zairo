@@ -4,22 +4,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../../app/router/app_routes.dart';
 import '../../../../core/formatting/initials.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../auth/data/models/user_summary.dart';
+import '../../../auth/presentation/auth_navigation.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../auth/presentation/screens/register_screen.dart';
-import '../../../auto/presentation/screens/vehicles_screen.dart';
 import '../../../booking/presentation/providers/booking_providers.dart';
 import '../../../favorites/presentation/providers/favorites_providers.dart';
-import '../../../favorites/presentation/screens/favorites_screen.dart';
-import '../../../loyalty/presentation/screens/my_redemptions_screen.dart';
-import '../../../loyalty/presentation/screens/my_rewards_screen.dart';
-import '../../../messaging/presentation/screens/conversations_screen.dart';
-import '../../../settings/presentation/screens/settings_screen.dart';
 import '../widgets/change_avatar_dialog.dart';
-import 'about_screen.dart';
-import 'support_screen.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -36,21 +32,14 @@ class ProfileScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Symbols.settings_rounded),
             tooltip: l10n.settingsButtonTooltip,
-            onPressed: () => Navigator.of(
-              context,
-            ).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
+            onPressed: () => context.push(AppRoutes.settings),
           ),
         ],
       ),
       body: authState.when(
         data: (user) => user == null
             ? const _LoggedOutView()
-            : _LoggedInView(
-                userId: user.id,
-                displayName: user.displayName,
-                email: user.email,
-                avatarUrl: user.avatarUrl,
-              ),
+            : _LoggedInView(user: user),
         loading: () => const FactoryLoadingState(),
         error: (error, stackTrace) => Center(
           child: Padding(
@@ -83,15 +72,12 @@ class _LoggedOutView extends StatelessWidget {
               title: l10n.profileLoggedOutTitle,
               message: l10n.profileLoggedOutPrompt,
               actionLabel: l10n.loginTitle,
-              onAction: () => Navigator.of(context)
-                  .push(MaterialPageRoute(builder: (_) => const LoginScreen())),
+              onAction: () => pushAuthScreen(context, const LoginScreen()),
             ),
             FactoryButton(
               label: l10n.profileCreateAccount,
               variant: FactoryButtonVariant.text,
-              onPressed: () => Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const RegisterScreen())),
+              onPressed: () => pushAuthScreen(context, const RegisterScreen()),
             ),
           ],
         ),
@@ -101,20 +87,16 @@ class _LoggedOutView extends StatelessWidget {
 }
 
 class _LoggedInView extends ConsumerWidget {
-  final String userId;
-  final String displayName;
-  final String? email;
-  final String? avatarUrl;
+  final UserSummary user;
 
-  const _LoggedInView({
-    required this.userId,
-    required this.displayName,
-    required this.email,
-    this.avatarUrl,
-  });
+  const _LoggedInView({required this.user});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final userId = user.id;
+    final displayName = user.displayName;
+    final email = user.email;
+    final avatarUrl = user.avatarUrl;
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
@@ -164,7 +146,7 @@ class _LoggedInView extends ConsumerWidget {
         if (email != null)
           Center(
             child: Text(
-              email!,
+              email,
               style: textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
             ),
           ),
@@ -194,11 +176,7 @@ class _LoggedInView extends ConsumerWidget {
                   color: Colors.transparent,
                   child: InkWell(
                     borderRadius: FactoryRadius.mdRadius,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const FavoritesScreen(),
-                      ),
-                    ),
+                    onTap: () => context.push(AppRoutes.favorites),
                     child: FactoryStatTile(
                       value: favoritesCount?.toString() ?? '—',
                       label: l10n.myFavoritesTitle,
@@ -212,30 +190,51 @@ class _LoggedInView extends ConsumerWidget {
         ),
         const SizedBox(height: FactorySpacing.space6),
         FactorySelectableTile(
+          title: l10n.editProfileButton,
+          // Nudge to fill in the birthday: it powers greetings and bonuses.
+          subtitle: user.birthDate == null
+              ? Text(
+                  l10n.editProfileBirthdayPrompt,
+                  style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+                )
+              : null,
+          leading: Icon(Symbols.edit_rounded, color: colors.textSecondary),
+          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => EditProfileScreen(user: user)),
+          ),
+        ),
+        const SizedBox(height: FactorySpacing.space5),
+        FactorySectionHeader(title: l10n.profileSectionActivity),
+        const SizedBox(height: FactorySpacing.space3),
+        // The stat tile above also opens Favorites, but it reads as a counter,
+        // not a button — a list row is where people look for it.
+        FactorySelectableTile(
+          title: l10n.myFavoritesTitle,
+          leading: Icon(Symbols.favorite_rounded, color: colors.textSecondary),
+          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
+          onTap: () => context.push(AppRoutes.favorites),
+        ),
+        const SizedBox(height: FactorySpacing.space2),
+        FactorySelectableTile(
           title: l10n.messagesTitle,
           leading: Icon(Symbols.forum_rounded, color: colors.textSecondary),
           trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const ConversationsScreen()),
-          ),
+          onTap: () => context.push(AppRoutes.messages),
         ),
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
           title: l10n.myRewardsTitle,
           leading: Icon(Symbols.redeem_rounded, color: colors.textSecondary),
           trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const MyRewardsScreen()),
-          ),
+          onTap: () => context.push(AppRoutes.rewards),
         ),
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
           title: l10n.loyaltyRedemptionsTitle,
           leading: Icon(Symbols.confirmation_number_rounded, color: colors.textSecondary),
           trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const MyRedemptionsScreen()),
-          ),
+          onTap: () => context.push(AppRoutes.redemptions),
         ),
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
@@ -248,11 +247,11 @@ class _LoggedInView extends ConsumerWidget {
             Symbols.chevron_right_rounded,
             color: colors.textTertiary,
           ),
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => VehiclesScreen(userId: userId)),
-          ),
+          onTap: () => context.push(AppRoutes.vehicles),
         ),
-        const SizedBox(height: FactorySpacing.space2),
+        const SizedBox(height: FactorySpacing.space5),
+        FactorySectionHeader(title: l10n.profileSectionHelp),
+        const SizedBox(height: FactorySpacing.space3),
         FactorySelectableTile(
           title: l10n.supportTitle,
           leading: Icon(
@@ -263,8 +262,7 @@ class _LoggedInView extends ConsumerWidget {
             Symbols.chevron_right_rounded,
             color: colors.textTertiary,
           ),
-          onTap: () => Navigator.of(context)
-              .push(MaterialPageRoute(builder: (_) => const SupportScreen())),
+          onTap: () => context.push(AppRoutes.support),
         ),
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
@@ -274,16 +272,42 @@ class _LoggedInView extends ConsumerWidget {
             Symbols.chevron_right_rounded,
             color: colors.textTertiary,
           ),
-          onTap: () =>
-              Navigator.of(context)
-                  .push(MaterialPageRoute(builder: (_) => const AboutScreen())),
+          onTap: () => context.push(AppRoutes.about),
         ),
         const SizedBox(height: FactorySpacing.space6),
-        _LogOutButton(
-          onPressed: () => ref.read(authControllerProvider.notifier).logout(),
-        ),
+        _LogOutButton(onPressed: () => _confirmLogOut(context, ref)),
       ],
     );
+  }
+}
+
+/// One tap on the log-out pill used to end the session at once; it now asks
+/// first (the pill sits at the end of a long scroll, easy to hit by accident).
+Future<void> _confirmLogOut(BuildContext context, WidgetRef ref) async {
+  final l10n = AppLocalizations.of(context)!;
+  final confirmed = await showFactoryDialog<bool>(
+    context: context,
+    title: l10n.profileLogOutConfirmTitle,
+    message: l10n.profileLogOutConfirmMessage,
+    actions: [
+      Builder(
+        builder: (dialogContext) => FactoryButton(
+          label: l10n.profileLogOutStayButton,
+          variant: FactoryButtonVariant.text,
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+        ),
+      ),
+      Builder(
+        builder: (dialogContext) => FactoryButton(
+          label: l10n.profileLogOut,
+          variant: FactoryButtonVariant.danger,
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+        ),
+      ),
+    ],
+  );
+  if (confirmed == true) {
+    ref.read(authControllerProvider.notifier).logout();
   }
 }
 

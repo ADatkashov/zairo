@@ -49,6 +49,12 @@ public class LoyaltyLedgerService {
                 .orElse(null);
     }
 
+    /** Read-only: has this exact (type, reference) already been recorded for the account? */
+    public boolean hasEarning(UUID providerId, UUID userId, LoyaltyReferenceType referenceType, UUID referenceId) {
+        return transactionRepository.existsByProviderIdAndUserIdAndReferenceTypeAndReferenceId(providerId, userId,
+                referenceType, referenceId);
+    }
+
     @Transactional
     public LoyaltyAccount getOrCreateAccount(UUID providerId, UUID userId) {
         return accountRepository.findByProviderIdAndUserId(providerId, userId).orElseGet(() -> {

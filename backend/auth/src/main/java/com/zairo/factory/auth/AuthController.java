@@ -8,6 +8,7 @@ import com.zairo.factory.auth.AuthDtos.RefreshRequest;
 import com.zairo.factory.auth.AuthDtos.RegisterRequest;
 import com.zairo.factory.auth.AuthDtos.ResetPasswordRequest;
 import com.zairo.factory.auth.AuthDtos.TokenResponse;
+import com.zairo.factory.auth.AuthDtos.DeleteAccountRequest;
 import com.zairo.factory.auth.AuthDtos.UpdateAvatarRequest;
 import com.zairo.factory.auth.AuthDtos.UpdateProfileRequest;
 import com.zairo.factory.auth.AuthDtos.UserSummary;
@@ -124,9 +125,28 @@ public class AuthController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid access token");
         }
         User user = userRepository.findById(userId)
+                .filter(u -> !u.isDeleted())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User no longer exists"));
-        return new UserSummary(user.getId(), user.getEmail(), user.getDisplayName(), user.getRole(),
-                user.getAvatarUrl());
+        return SessionIssuer.toSummary(user);
+    }
+
+    @Operation(summary = "Delete the current user's account", description = """
+            Irreversible. Wipes the caller's personal data (name, email, phone, avatar, birthday, sign-in methods, \
+            favorites, saved vehicles, notifications...) and anonymizes the account; bookings, payments, reviews, \
+            messages and loyalty history stay for the businesses involved, shown as "Deleted user". Requires the \
+            password (if the account has one) and confirmation=DELETE. 409 with a reason while the user still has \
+            upcoming bookings or owns a business; 403 for a wrong password.""")
+    @ApiResponse(responseCode = "204", description = "Account deleted")
+    @ApiResponse(responseCode = "400", ref = "BadRequest")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "Incorrect password.")
+    @ApiResponse(responseCode = "409", description = "Deletion is blocked; the message says why.")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/api/v1/auth/me/delete")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteAccount(@Valid @RequestBody DeleteAccountRequest request, HttpServletRequest httpRequest) {
+        authService.deleteAccount(CurrentUser.requireUserId(httpRequest), request.password(),
+                request.confirmation());
     }
 
     @Operation(summary = "Update the current user's avatar", description = "Upload the image via POST /uploads "
@@ -145,10 +165,11 @@ public class AuthController {
     }
 
     @Operation(summary = "Complete/update the current user's profile", description = """
-            Fills in a displayName and/or email the caller didn't have yet — mainly for accounts created via \
+            Edits the caller's own profile: display name, email, birth date, gender and marketing consent \
+            (birthday greetings / bonuses / offers). Also used to complete accounts created via \
             Google/Facebook/phone (see POST /auth/google, /auth/facebook, /auth/phone/verify-otp) that started \
-            with a placeholder display name or no email at all. Either field may be omitted/blank to leave it \
-            unchanged.""")
+            with a placeholder display name or no email at all. Every field may be omitted/null to leave it \
+            unchanged; send clearBirthDate=true to remove the birth date.""")
     @ApiResponse(responseCode = "200", description = "Profile updated")
     @ApiResponse(responseCode = "400", ref = "BadRequest")
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
@@ -158,8 +179,7 @@ public class AuthController {
     @PatchMapping("/api/v1/auth/me")
     public UserSummary updateProfile(@Valid @RequestBody UpdateProfileRequest request,
             HttpServletRequest httpRequest) {
-        return authService.updateProfile(CurrentUser.requireUserId(httpRequest), request.displayName(),
-                request.email());
+        return authService.updateProfile(CurrentUser.requireUserId(httpRequest), request);
     }
 
     @Operation(summary = "List the current user's linked sign-in methods", description = """

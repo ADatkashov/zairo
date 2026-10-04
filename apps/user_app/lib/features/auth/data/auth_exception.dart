@@ -21,6 +21,20 @@ enum AuthErrorKey {
   identityAlreadyLinked,
   accountLinkRequired,
   tooManyLoginAttempts,
+  phoneCountryNotSupported,
+}
+
+/// A failed `POST /auth/me/delete`: 403 = wrong/missing password, 409 = deletion
+/// is blocked (upcoming bookings, owns a business) and [serverMessage] says why
+/// in words the user can act on, 400 = the typed confirmation was wrong.
+class DeleteAccountException implements Exception {
+  final int? statusCode;
+  final String? serverMessage;
+
+  const DeleteAccountException({this.statusCode, this.serverMessage});
+
+  @override
+  String toString() => 'DeleteAccountException($statusCode, $serverMessage)';
 }
 
 class AuthException implements Exception {
@@ -42,6 +56,7 @@ class AuthException implements Exception {
         AuthErrorKey.identityAlreadyLinked => l10n.errorAuthIdentityAlreadyLinked,
         AuthErrorKey.accountLinkRequired => l10n.errorAuthAccountLinkRequired,
         AuthErrorKey.tooManyLoginAttempts => l10n.errorAuthTooManyLoginAttempts,
+        AuthErrorKey.phoneCountryNotSupported => l10n.errorAuthPhoneCountryNotSupported,
       };
 
   @override

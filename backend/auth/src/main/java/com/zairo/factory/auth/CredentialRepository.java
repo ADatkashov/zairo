@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface CredentialRepository extends JpaRepository<Credential, UUID> {
 
     Optional<Credential> findByUserId(UUID userId);
+
+    void deleteByUserId(UUID userId);
 }

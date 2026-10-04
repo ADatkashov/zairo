@@ -73,12 +73,17 @@ public class IdentityService {
     // ---- Google ------------------------------------------------------
 
     public TokenResponse loginOrRegisterWithGoogle(String idToken) {
+        return loginOrRegisterWithGoogle(idToken, null);
+    }
+
+    public TokenResponse loginOrRegisterWithGoogle(String idToken, UserRole requestedRole) {
+        UserRole role = resolveNewAccountRole(requestedRole);
         GoogleIdTokenVerifierPort.VerifiedIdentity identity = googleVerifier.verify(idToken).orElseThrow(() -> {
             auditLog.loginFailed("GOOGLE", "invalid_credential");
             return new InvalidProviderCredentialException("Invalid Google credential");
         });
         User user = findOrCreateUser(IdentityProvider.GOOGLE, identity.subject(),
-                identity.emailVerified() ? identity.email() : null, null, identity.displayName());
+                identity.emailVerified() ? identity.email() : null, null, identity.displayName(), role);
         auditLog.loginSucceeded(user.getId(), "GOOGLE");
         return sessionIssuer.issue(user);
     }
@@ -96,12 +101,17 @@ public class IdentityService {
     // ---- Apple ---------------------------------------------------------
 
     public TokenResponse loginOrRegisterWithApple(String identityToken, String displayName) {
+        return loginOrRegisterWithApple(identityToken, displayName, null);
+    }
+
+    public TokenResponse loginOrRegisterWithApple(String identityToken, String displayName, UserRole requestedRole) {
+        UserRole role = resolveNewAccountRole(requestedRole);
         AppleIdTokenVerifierPort.VerifiedIdentity identity = appleVerifier.verify(identityToken).orElseThrow(() -> {
             auditLog.loginFailed("APPLE", "invalid_credential");
             return new InvalidProviderCredentialException("Invalid Apple credential");
         });
         User user = findOrCreateUser(IdentityProvider.APPLE, identity.subject(),
-                identity.emailVerified() ? identity.email() : null, null, displayName);
+                identity.emailVerified() ? identity.email() : null, null, displayName, role);
         auditLog.loginSucceeded(user.getId(), "APPLE");
         return sessionIssuer.issue(user);
     }
@@ -124,7 +134,8 @@ public class IdentityService {
             return new InvalidProviderCredentialException("Invalid Facebook credential");
         });
         User user = findOrCreateUser(IdentityProvider.FACEBOOK, identity.subject(),
-                identity.emailVerified() ? identity.email() : null, null, identity.displayName());
+                identity.emailVerified() ? identity.email() : null, null, identity.displayName(),
+                UserRole.CUSTOMER);
         auditLog.loginSucceeded(user.getId(), "FACEBOOK");
         return sessionIssuer.issue(user);
     }
@@ -165,7 +176,7 @@ public class IdentityService {
     public TokenResponse loginOrRegisterWithPhone(String rawPhone, String code) {
         String phone = phoneNumberNormalizer.normalize(rawPhone);
         verifyOtpOrAudit(phone, code);
-        User user = findOrCreateUser(IdentityProvider.PHONE, phone, null, phone, phone);
+        User user = findOrCreateUser(IdentityProvider.PHONE, phone, null, phone, phone, UserRole.CUSTOMER);
         auditLog.loginSucceeded(user.getId(), "PHONE");
         return sessionIssuer.issue(user);
     }
@@ -221,6 +232,12 @@ public class IdentityService {
 
     /** First-time registration: SMS code proves the phone, the person chooses their name and password. */
     public TokenResponse registerWithPhone(String rawPhone, String code, String displayName, String password) {
+        return registerWithPhone(rawPhone, code, displayName, password, null);
+    }
+
+    public TokenResponse registerWithPhone(String rawPhone, String code, String displayName, String password,
+            UserRole requestedRole) {
+        UserRole role = resolveNewAccountRole(requestedRole);
         String phone = phoneNumberNormalizer.normalize(rawPhone);
         verifyOtpOrAudit(phone, code);
         if (identityLookupService.findExisting(IdentityProvider.PHONE, phone).isPresent()) {
@@ -228,7 +245,7 @@ public class IdentityService {
         }
         User user;
         try {
-            user = identityLookupService.createPhoneUserWithPassword(phone, displayName.trim(), password);
+            user = identityLookupService.createPhoneUserWithPassword(phone, displayName.trim(), password, role);
         } catch (DataIntegrityViolationException raceLoser) {
             throw new IdentityAlreadyLinkedException("This phone already has an account - sign in with its password");
         }
@@ -319,7 +336,7 @@ public class IdentityService {
      * inherit a login by pre-registering someone else's email.
      */
     private User findOrCreateUser(IdentityProvider provider, String subject, String verifiedEmail,
-            String phoneForDisplay, String displayName) {
+            String phoneForDisplay, String displayName, UserRole role) {
         Optional<User> existing = identityLookupService.findExisting(provider, subject);
         if (existing.isPresent()) {
             return existing.get();
@@ -343,7 +360,7 @@ public class IdentityService {
         String name = displayName != null && !displayName.isBlank() ? displayName : FALLBACK_DISPLAY_NAME;
         try {
             return identityLookupService.createUserWithIdentity(provider, subject, verifiedEmail, phoneForDisplay,
-                    name, UserRole.CUSTOMER);
+                    name, role);
         } catch (DataIntegrityViolationException raceLoser) {
             // A concurrent first-time login for this exact identity won
             // the race and committed first (see IdentityLookupService's
@@ -373,6 +390,21 @@ public class IdentityService {
             throw new IdentityAlreadyLinkedException(
                     "This " + provider + " identity is already linked to another account");
         }
+    }
+
+    /**
+     * The role a NEW account gets: CUSTOMER by default (the consumer app) or
+     * PROVIDER_OWNER (the business app). ADMIN is never self-assignable, same
+     * rule as email registration. An existing account's role is never touched.
+     */
+    private static UserRole resolveNewAccountRole(UserRole requested) {
+        if (requested == null) {
+            return UserRole.CUSTOMER;
+        }
+        if (requested == UserRole.ADMIN) {
+            throw new AdminRoleNotSelfAssignableException("Cannot self-register with the ADMIN role");
+        }
+        return requested;
     }
 
     private User requireUser(UUID userId) {
