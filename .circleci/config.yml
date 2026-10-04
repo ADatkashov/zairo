@@ -3,15 +3,12 @@ version: 2.1
 jobs:
   build-android-apk:
     machine:
-      image: ubuntu-2204:current
+      image: ubuntu-2404:2024.10
     resource_class: large
     environment:
       FLUTTER_HOME: /home/circleci/flutter
       PATH: /home/circleci/flutter/bin:/home/circleci/flutter/bin/cache/dart-sdk/bin:$PATH
     steps:
-      - run:
-          name: Install SSH
-          command: apt-get update && apt-get install -y openssh-client openssh-server
       - checkout
       - run:
           name: Install Flutter
@@ -36,7 +33,7 @@ jobs:
       - run:
           name: Upload APK to Google Play Console
           command: |
-            apt-get update && apt-get install -y wget default-jre
+            sudo apt-get update && sudo apt-get install -y wget default-jre
             cd apps/user_app
 
             # Upload APK using bundletool
@@ -51,15 +48,12 @@ jobs:
 
   build-for-testing:
     machine:
-      image: ubuntu-2204:current
+      image: ubuntu-2404:2024.10
     resource_class: medium
     environment:
       FLUTTER_HOME: /home/circleci/flutter
       PATH: /home/circleci/flutter/bin:/home/circleci/flutter/bin/cache/dart-sdk/bin:$PATH
     steps:
-      - run:
-          name: Install SSH
-          command: apt-get update && apt-get install -y openssh-client openssh-server
       - checkout
       - run:
           name: Install Flutter
