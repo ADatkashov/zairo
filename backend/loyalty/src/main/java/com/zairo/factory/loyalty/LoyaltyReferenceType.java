@@ -32,5 +32,10 @@ public enum LoyaltyReferenceType {
      * most one per booking, enforced by a unique index (see V59), same
      * idempotency shape as the earning rules it undoes.
      */
-    PAYMENT_REFUND_REVERSAL
+    PAYMENT_REFUND_REVERSAL,
+    /**
+     * referenceId = a deterministic id derived from (user, year) -- see {@link LoyaltyBirthdayService}. At most one
+     * per member per year, enforced by a unique index (V76).
+     */
+    BIRTHDAY_BONUS
 }

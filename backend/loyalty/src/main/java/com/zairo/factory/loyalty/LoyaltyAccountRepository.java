@@ -50,6 +50,35 @@ public interface LoyaltyAccountRepository extends JpaRepository<LoyaltyAccount, 
     Optional<LoyaltyAccount> lockByProviderIdAndUserId(@Param("providerId") UUID providerId,
             @Param("userId") UUID userId);
 
+    /** A loyalty member who opted in to greetings and has a birth date on file -- see V75. */
+    interface BirthdayMember {
+        UUID getUserId();
+
+        String getDisplayName();
+
+        java.time.LocalDate getBirthDate();
+    }
+
+    /**
+     * Members of this business whose birthday falls in {@code month} on a day-of-month in
+     * [{@code dayFrom}, {@code dayTo}] -- opted-in members only (users.marketing_consent). The range is wider than one
+     * day only for the 29-Feb-in-a-non-leap-year case, see {@link BirthdayCalendar#dayRangeForToday}.
+     */
+    @Query(value = "select u.id as userId, u.display_name as displayName, u.birth_date as birthDate "
+            + "from loyalty_account a join app_user u on u.id = a.user_id "
+            + "where a.provider_id = :providerId and u.marketing_consent = true and u.birth_date is not null "
+            + "and extract(month from u.birth_date) = :month "
+            + "and extract(day from u.birth_date) between :dayFrom and :dayTo", nativeQuery = true)
+    List<BirthdayMember> findBirthdayMembers(@Param("providerId") UUID providerId, @Param("month") int month,
+            @Param("dayFrom") int dayFrom, @Param("dayTo") int dayTo);
+
+    /** Every opted-in member with a birth date -- the pool the "upcoming birthdays" list filters in memory. */
+    @Query(value = "select u.id as userId, u.display_name as displayName, u.birth_date as birthDate "
+            + "from loyalty_account a join app_user u on u.id = a.user_id "
+            + "where a.provider_id = :providerId and u.marketing_consent = true and u.birth_date is not null",
+            nativeQuery = true)
+    List<BirthdayMember> findAllBirthdayMembers(@Param("providerId") UUID providerId);
+
     long countByProviderId(UUID providerId);
 
     @Query("select count(a) from LoyaltyAccount a where a.providerId = :providerId and a.lastActivityAt >= :since")

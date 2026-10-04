@@ -62,7 +62,8 @@ void main() {
       final json = settings.toUpdateJson();
 
       expect(json.containsKey('providerId'), isFalse);
-      expect(json.length, 16);
+      expect(json.length, 17);
+      expect(json['birthdayBonusPoints'], 0);
       expect(json['enabled'], isTrue);
       expect(json['name'], 'Glow Rewards');
       expect(json['description'], isNull);

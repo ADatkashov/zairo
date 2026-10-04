@@ -801,5 +801,16 @@
   "resetCodeLabel": "Қалпына келтіру коды",
   "smsMockHint": "Сынақ режимі: нақты SMS жіберілмейді. {code} кодын енгізіңіз.",
   "validationOtpCodeRequired": "6 таңбалы кодты енгізіңіз",
-  "validationResetCodeRequired": "Қалпына келтіру кодын енгізіңіз"
+  "validationResetCodeRequired": "Қалпына келтіру кодын енгізіңіз",
+  "loyaltyTabBirthdays": "Туған күндер",
+  "loyaltySettingsBirthdayBonusLabel": "Туған күн бонусы (ұпай)",
+  "loyaltySettingsBirthdayBonusHint": "Қатысушы құттықтауға келіскен болса, туған күнінде автоматты түрде беріледі. 0 — өшірулі.",
+  "loyaltyBirthdaysIntro": "Құттықтауға келіскен, алдағы {days} күнде туған күні бар қатысушылар.",
+  "loyaltyBirthdaysEmpty": "Жақын арада туған күндер жоқ. Қатысушылар қосымшада туған күнін көрсетіп, құттықтауға келіскенде осында шығады.",
+  "loyaltyBirthdaysToday": "Бүгін",
+  "loyaltyBirthdaysTomorrow": "Ертең",
+  "loyaltyBirthdaysInDays": "{days} күннен кейін",
+  "loyaltyBirthdaysBonusAwarded": "+{points} ұпай берілді",
+  "loyaltyBirthdaysBonusPending": "+{points} ұпай сол күні",
+  "errorLoyaltyBirthdaysLoadFailed": "Туған күндерді жүктеу мүмкін болмады: {error}"
 }
