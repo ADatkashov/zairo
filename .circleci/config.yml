@@ -1,0 +1,112 @@
+version: 2.1
+
+jobs:
+  build-android-apk:
+    docker:
+      - image: ubuntu:jammy
+    environment:
+      FLUTTER_HOME: /home/flutter
+      PATH: /home/flutter/bin:/home/flutter/bin/cache/dart-sdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    steps:
+      - run:
+          name: Install dependencies
+          command: |
+            apt-get update
+            apt-get install -y git openssh-client curl wget unzip openjdk-11-jdk-headless
+      - checkout
+      - run:
+          name: Install Flutter
+          command: |
+            mkdir -p /home/flutter
+            git clone https://github.com/flutter/flutter.git /home/flutter
+            cd /home/flutter
+            git checkout stable
+            export PATH=/home/flutter/bin:/home/flutter/bin/cache/dart-sdk/bin:$PATH
+            flutter doctor
+      - run:
+          name: Install Dependencies
+          working_directory: apps/user_app
+          command: |
+            flutter pub get
+      - run:
+          name: Build Flutter APK
+          working_directory: apps/user_app
+          command: |
+            flutter build apk \
+              --release \
+              --build-name=1.0.0 \
+              --build-number=${CIRCLE_BUILD_NUM}
+      - run:
+          name: Upload APK to Google Play Console
+          command: |
+            cd apps/user_app
+
+            # Download bundletool
+            mkdir -p bundletool-dir
+            cd bundletool-dir
+            wget -q https://github.com/google/bundletool/releases/latest/download/bundletool-all.jar -O bundletool.jar
+
+            # Upload APK using bundletool
+            java -jar bundletool.jar upload-apk \
+              --apk-paths=../build/app/outputs/flutter-apk/app-release.apk \
+              --service-account-json=<(echo ${GCLOUD_SERVICE_ACCOUNT_CREDENTIALS})
+      - store_artifacts:
+          path: apps/user_app/build/app/outputs/flutter-apk/app-release.apk
+          destination: app-release.apk
+
+  build-for-testing:
+    docker:
+      - image: ubuntu:jammy
+    environment:
+      FLUTTER_HOME: /home/flutter
+      PATH: /home/flutter/bin:/home/flutter/bin/cache/dart-sdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    steps:
+      - run:
+          name: Install dependencies
+          command: |
+            apt-get update
+            apt-get install -y git openssh-client curl wget unzip openjdk-11-jdk-headless
+      - checkout
+      - run:
+          name: Install Flutter
+          command: |
+            mkdir -p /home/flutter
+            git clone https://github.com/flutter/flutter.git /home/flutter
+            cd /home/flutter
+            git checkout stable
+            export PATH=/home/flutter/bin:/home/flutter/bin/cache/dart-sdk/bin:$PATH
+            flutter doctor
+      - run:
+          name: Install Dependencies
+          working_directory: apps/user_app
+          command: flutter pub get
+      - run:
+          name: Generate Build Files
+          working_directory: apps/user_app
+          command: flutter pub run build_runner build --delete-conflicting-outputs
+      - run:
+          name: Run Flutter Tests
+          working_directory: apps/user_app
+          command: flutter test
+      - run:
+          name: Analyze Flutter Code
+          working_directory: apps/user_app
+          command: flutter analyze
+
+workflows:
+  flutter-ci:
+    jobs:
+      - build-for-testing:
+          filters:
+            branches:
+              only:
+                - develop
+                - test
+                - master
+      - build-android-apk:
+          filters:
+            branches:
+              only:
+                - master
+          requires:
+            - build-for-testing
