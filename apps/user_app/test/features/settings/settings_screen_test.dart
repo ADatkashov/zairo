@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zairo/app/locale/locale_controller.dart';
+import 'package:zairo/features/auth/data/models/user_summary.dart';
+import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/settings/presentation/screens/settings_screen.dart';
 import 'package:zairo/l10n/app_localizations.dart';
 
@@ -23,6 +25,11 @@ class _InMemorySecureStorageService extends SecureStorageService {
 
   @override
   Future<void> deleteAll() async => _store.clear();
+}
+
+class _LoggedOutAuthController extends AuthController {
+  @override
+  Future<UserSummary?> build() async => null;
 }
 
 /// Mirrors app.dart's exact locale wiring (localeControllerProvider ->
@@ -51,7 +58,10 @@ void main() {
       final storage = _InMemorySecureStorageService();
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [secureStorageServiceProvider.overrideWithValue(storage)],
+          overrides: [
+            secureStorageServiceProvider.overrideWithValue(storage),
+            authControllerProvider.overrideWith(_LoggedOutAuthController.new),
+          ],
           child: const _TestApp(),
         ),
       );

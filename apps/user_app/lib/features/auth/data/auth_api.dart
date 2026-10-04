@@ -143,6 +143,24 @@ class AuthApi {
     }
   }
 
+  /// Irreversibly deletes the signed-in account -- see backend's
+  /// AuthService.deleteAccount. [password] is required when the account has
+  /// one; [confirmation] must be exactly `DELETE`.
+  Future<void> deleteAccount({String? password, required String confirmation}) async {
+    try {
+      await _dioClient.post(
+        '/auth/me/delete',
+        data: {'password': password, 'confirmation': confirmation},
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw DeleteAccountException(
+        statusCode: e.response?.statusCode,
+        serverMessage: data is Map && data['message'] is String ? data['message'] as String : null,
+      );
+    }
+  }
+
   /// Signs in or registers with a Google ID token obtained on-device via
   /// GoogleSignInService — see IdentityController.googleSignIn.
   Future<AuthTokens> loginWithGoogle(String idToken) async {

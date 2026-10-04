@@ -36,6 +36,11 @@ class PasswordResetTokenService {
      * first, so requesting a new code invalidates an older, unused one
      * rather than leaving two live at once.
      */
+    /** Account deletion: drops any outstanding reset code. Runs inside the caller's transaction. */
+    void deleteAllForUser(UUID userId) {
+        passwordResetTokenRepository.deleteByUserId(userId);
+    }
+
     @Transactional
     String issue(UUID userId) {
         passwordResetTokenRepository.deleteByUserId(userId);
