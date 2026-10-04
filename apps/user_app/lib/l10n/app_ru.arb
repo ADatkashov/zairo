@@ -502,5 +502,15 @@
   "deleteAccountConfirmLabel": "Введите {word} для подтверждения",
   "deleteAccountButton": "Удалить мой аккаунт",
   "deleteAccountWrongPassword": "Неверный пароль.",
-  "deleteAccountDone": "Ваш аккаунт удалён"
+  "deleteAccountDone": "Ваш аккаунт удалён",
+  "providerNotFoundTitle": "Бизнес не найден",
+  "providerNotFoundMessage": "Возможно, он удалён или недоступен в вашем городе.",
+  "searchClearButton": "Очистить поиск",
+  "searchResetFilters": "Сбросить поиск и фильтры",
+  "bookingsFindServiceButton": "Найти услугу",
+  "bookingsTabEmptyUpcoming": "Предстоящих записей нет. Выберите услугу и удобное время.",
+  "bookingsTabEmptyCompleted": "Здесь появятся завершённые визиты.",
+  "bookingsTabEmptyCancelled": "Отменённых записей нет.",
+  "profileSectionActivity": "Моя активность",
+  "profileSectionHelp": "Помощь"
 }

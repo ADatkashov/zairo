@@ -1,10 +1,11 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../../app/router/app_routes.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../booking/presentation/screens/provider_detail_screen.dart';
 import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../data/models/provider_search_result.dart';
 import '../providers/discovery_providers.dart';
@@ -25,15 +26,47 @@ List<String> _popularSearches(AppLocalizations l10n) => [
 
 /// The Search tab — GET /api/v1/search/providers.
 class SearchScreen extends ConsumerStatefulWidget {
-  const SearchScreen({super.key});
+  const SearchScreen({super.key, this.initialVertical, this.initialQuery});
+
+  /// Category / text carried in from Home (`/search?category=…&q=…`), so
+  /// "see all" and the search entry keep what the user had just picked.
+  final String? initialVertical;
+  final String? initialQuery;
 
   @override
   ConsumerState<SearchScreen> createState() => _SearchScreenState();
 }
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
-  final _searchController = TextEditingController();
-  DiscoveryQuery _query = const DiscoveryQuery();
+  late final TextEditingController _searchController = TextEditingController(
+    text: widget.initialQuery,
+  );
+  late DiscoveryQuery _query = DiscoveryQuery(
+    vertical: widget.initialVertical,
+    query: widget.initialQuery,
+  );
+
+  /// The tab lives in an IndexedStack, so this State outlives navigations
+  /// back to `/search`: a new category/query from Home arrives here.
+  @override
+  void didUpdateWidget(SearchScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialVertical != oldWidget.initialVertical) {
+      setState(
+        () => _query = widget.initialVertical == null
+            ? _query.copyWith(clearVertical: true)
+            : _query.copyWith(vertical: widget.initialVertical),
+      );
+    }
+    if (widget.initialQuery != oldWidget.initialQuery) {
+      _runSearch(widget.initialQuery ?? '');
+    }
+  }
+
+  void _resetAll() {
+    _searchController.clear();
+    setState(() => _query = const DiscoveryQuery());
+  }
 
   @override
   void dispose() {
@@ -86,8 +119,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 child: FactorySearchField(
                   controller: _searchController,
                   hint: l10n.searchHint,
-                  autofocus: true,
                   onSubmitted: _runSearch,
+                  onCleared: () => _runSearch(''),
+                  clearSemanticLabel: l10n.searchClearButton,
                   filterSemanticLabel: l10n.searchFiltersButton,
                   filterActive: _filterActive,
                   onFilterTap: () async {
@@ -122,6 +156,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                             message: query.query == null
                                 ? l10n.searchEmptyMessageDefault
                                 : l10n.searchEmptyMessageQuery,
+                            actionLabel: query.query != null || _filterActive
+                                ? l10n.searchResetFilters
+                                : null,
+                            onAction: _resetAll,
                           ),
                         ),
                       );
@@ -132,12 +170,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       FactoryScreenSize.desktop => 3,
                     };
                     void openProvider(ProviderSearchResult result) =>
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                ProviderDetailScreen(provider: result),
-                          ),
-                        );
+                        context.push(AppRoutes.provider(result.id), extra: result);
 
                     return Column(
                       children: [
