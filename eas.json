@@ -1,0 +1,34 @@
+{
+  "cli": {
+    "version": ">= 9.0.0"
+  },
+  "build": {
+    "production": {
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "buildType": "archive"
+      }
+    },
+    "preview": {
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "buildType": "simulator"
+      }
+    },
+    "development": {
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "buildType": "simulator"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
