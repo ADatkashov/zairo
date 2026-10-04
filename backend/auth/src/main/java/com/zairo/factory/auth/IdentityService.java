@@ -8,6 +8,10 @@ import com.zairo.factory.users.UserRepository;
 import com.zairo.factory.users.UserRole;
 import com.zairo.factory.auth.AuthDtos.PhoneStatusResponse;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Value;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -44,12 +48,14 @@ public class IdentityService {
     private final AuthAuditLog auditLog;
     private final LoginAttemptLimiter loginAttemptLimiter;
     private final RefreshTokenService refreshTokenService;
+    private final Set<String> allowedSmsCountries;
 
     IdentityService(UserRepository userRepository, IdentityLookupService identityLookupService,
             PhoneOtpService phoneOtpService, PhoneNumberNormalizer phoneNumberNormalizer,
             GoogleIdTokenVerifierPort googleVerifier, FacebookIdentityVerifierPort facebookVerifier,
             SessionIssuer sessionIssuer, AuthAuditLog auditLog, LoginAttemptLimiter loginAttemptLimiter,
-            RefreshTokenService refreshTokenService) {
+            RefreshTokenService refreshTokenService,
+            @Value("${app.otp.allowed-countries:KZ}") String allowedSmsCountries) {
         this.userRepository = userRepository;
         this.identityLookupService = identityLookupService;
         this.phoneOtpService = phoneOtpService;
@@ -60,6 +66,8 @@ public class IdentityService {
         this.auditLog = auditLog;
         this.loginAttemptLimiter = loginAttemptLimiter;
         this.refreshTokenService = refreshTokenService;
+        this.allowedSmsCountries = Arrays.stream(allowedSmsCountries.split(","))
+                .map(String::trim).filter(c -> !c.isEmpty()).map(String::toUpperCase).collect(Collectors.toSet());
     }
 
     // ---- Google ------------------------------------------------------
@@ -118,9 +126,16 @@ public class IdentityService {
      * surfaced, because they're about this phone number being hammered,
      * not about whether it's registered.
      */
-    public void requestPhoneOtp(String rawPhone) {
+    public void requestPhoneOtp(String rawPhone, String clientIp) {
         String phone = phoneNumberNormalizer.normalize(rawPhone);
-        phoneOtpService.requestOtp(phone);
+        // SMS is only sent to configured countries — the main defence
+        // against SMS-pumping fraud via premium/foreign numbers. Empty
+        // list means "any country".
+        String region = phoneNumberNormalizer.regionOf(phone);
+        if (!allowedSmsCountries.isEmpty() && (region == null || !allowedSmsCountries.contains(region))) {
+            throw new PhoneCountryNotSupportedException("Phone numbers from this country are not supported yet");
+        }
+        phoneOtpService.requestOtp(phone, clientIp);
         auditLog.otpRequested();
     }
 

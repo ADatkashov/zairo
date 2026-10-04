@@ -38,7 +38,16 @@ public class PhoneOtp {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    /** Client IP that requested this code (null for requests with no known IP) — see PhoneOtpService's limits. */
+    @Column(name = "request_ip")
+    private String requestIp;
+
     protected PhoneOtp() {
+    }
+
+    PhoneOtp(UUID id, String phone, String codeHash, Instant expiresAt, Instant createdAt, String requestIp) {
+        this(id, phone, codeHash, expiresAt, createdAt);
+        this.requestIp = requestIp;
     }
 
     PhoneOtp(UUID id, String phone, String codeHash, Instant expiresAt, Instant createdAt) {
@@ -72,6 +81,10 @@ public class PhoneOtp {
 
     public Instant getConsumedAt() {
         return consumedAt;
+    }
+
+    public String getRequestIp() {
+        return requestIp;
     }
 
     public Instant getCreatedAt() {

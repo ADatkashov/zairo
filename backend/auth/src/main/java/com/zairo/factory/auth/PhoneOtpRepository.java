@@ -24,6 +24,10 @@ interface PhoneOtpRepository extends Repository<PhoneOtp, UUID> {
 
     long countByPhoneAndCreatedAtAfter(String phone, Instant since);
 
+    long countByRequestIpAndCreatedAtAfter(String requestIp, Instant since);
+
+    long countByCreatedAtAfter(Instant since);
+
     /**
      * Atomic, race-safe consumption: two concurrent verify calls for the
      * same code both read {@code consumedAt == null}, but only one {@code

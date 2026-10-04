@@ -21,6 +21,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -47,9 +48,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class IdentityController {
 
     private final IdentityService identityService;
+    private final int trustedProxyHops;
 
-    public IdentityController(IdentityService identityService) {
+    public IdentityController(IdentityService identityService,
+            @Value("${app.otp.trusted-proxy-hops:1}") int trustedProxyHops) {
         this.identityService = identityService;
+        this.trustedProxyHops = trustedProxyHops;
     }
 
     @Operation(summary = "Sign in or register with Google", description = """
@@ -129,8 +133,8 @@ public class IdentityController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @PostMapping("/api/v1/auth/phone/request-otp")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void requestPhoneOtp(@Valid @RequestBody RequestPhoneOtpRequest request) {
-        identityService.requestPhoneOtp(request.phone());
+    public void requestPhoneOtp(@Valid @RequestBody RequestPhoneOtpRequest request, HttpServletRequest httpRequest) {
+        identityService.requestPhoneOtp(request.phone(), ClientIp.of(httpRequest, trustedProxyHops));
     }
 
     @Operation(summary = "Verify a phone OTP and sign in or register", description = """
