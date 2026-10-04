@@ -11,4 +11,6 @@ public interface CityRepository extends JpaRepository<City, UUID> {
     List<City> findByCountryCode(String countryCode);
 
     List<City> findByCountryCodeAndActiveTrue(String countryCode);
+
+    List<City> findByActiveTrue();
 }
