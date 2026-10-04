@@ -48,6 +48,6 @@ void main() {
       );
       await tester.pumpAndSettle();
     },
-    skip: 'Depends on full app initialization with unmocked backend providers',
+    skip: true,
   );
 }
