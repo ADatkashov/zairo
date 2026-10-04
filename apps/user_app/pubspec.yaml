@@ -55,6 +55,10 @@ dependencies:
   # verifies it against Apple's keys (AppleIdTokenVerifierAdapter). Required by
   # App Store rule 4.8 because Google sign-in is offered.
   sign_in_with_apple: ^7.0.1
+  # Passkeys (WebAuthn): the platform authenticator creates/uses the passkey; the
+  # backend (PasskeyService, Yubico webauthn-server) verifies everything. Needs
+  # the RP-id domain association set up — see docs/authentication.md.
+  passkeys: ^2.23.1
   # flutter_facebook_auth's desktop variant (facebook_auth_desktop, pulled
   # in for the linux/macos/windows targets this workspace's apps still
   # carry folders for) has never tracked flutter_secure_storage past its

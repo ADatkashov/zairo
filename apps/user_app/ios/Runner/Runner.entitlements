@@ -4,6 +4,13 @@
 <dict>
 	<!-- Sign in with Apple. The capability must also be enabled for the
 	     App ID (com.zairo) in the Apple Developer portal. -->
+	<!-- Passkeys: the domain comes from PASSKEY_RP_ID (ios/Flutter/*.xcconfig) and
+	     must match the backend's PASSKEY_RP_ID; the backend serves the
+	     apple-app-site-association file for it. -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>webcredentials:$(PASSKEY_RP_ID)</string>
+	</array>
 	<key>com.apple.developer.applesignin</key>
 	<array>
 		<string>Default</string>

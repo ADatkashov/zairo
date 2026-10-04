@@ -14,3 +14,6 @@ MAPS_API_KEY = $(MAPS_API_KEY)
 FACEBOOK_APP_ID = $(FACEBOOK_APP_ID)
 FACEBOOK_CLIENT_TOKEN = $(FACEBOOK_CLIENT_TOKEN)
 GOOGLE_REVERSED_CLIENT_ID = $(GOOGLE_REVERSED_CLIENT_ID)
+
+// Passkeys' relying-party domain (must equal the backend's PASSKEY_RP_ID). Permanent once passkeys exist.
+PASSKEY_RP_ID = zairo-backend.onrender.com

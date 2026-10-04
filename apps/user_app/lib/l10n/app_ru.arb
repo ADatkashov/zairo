@@ -471,5 +471,11 @@
   "linkAccountBody": "Аккаунт с этим email уже существует. Введите его пароль, чтобы подключить к нему этот способ входа.",
   "linkAccountConfirm": "Подключить",
   "linkAccountCancel": "Отмена",
-  "loginContinueWithApple": "Продолжить через Apple"
+  "loginContinueWithApple": "Продолжить через Apple",
+  "loginContinueWithPasskey": "Войти с помощью passkey",
+  "errorAuthPasskeyFailed": "Не удалось использовать passkey. Попробуйте ещё раз или выберите другой способ входа.",
+  "securityPasskeysSectionTitle": "Passkey",
+  "securityPasskeyAddButton": "Добавить passkey на этом устройстве",
+  "securityPasskeyAddedMessage": "Passkey добавлен",
+  "securityPasskeyRemoveTooltip": "Удалить passkey"
 }
