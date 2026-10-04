@@ -2,6 +2,11 @@ version: 2.1
 
 jobs:
   build-android-apk:
+    parameters:
+      app_dir:
+        type: string
+      artifact_name:
+        type: string
     docker:
       - image: ubuntu:jammy
     environment:
@@ -44,24 +49,28 @@ jobs:
             ls -la /home/android/platforms
       - run:
           name: Install Dependencies
-          working_directory: apps/user_app
-          command: |
-            flutter pub get
+          working_directory: << parameters.app_dir >>
+          command: flutter pub get
       - run:
           name: Generate Build Files
-          working_directory: apps/user_app
-          command: flutter pub run build_runner build --delete-conflicting-outputs
+          working_directory: << parameters.app_dir >>
+          command: |
+            if grep -q build_runner pubspec.yaml; then
+              flutter pub run build_runner build --delete-conflicting-outputs
+            else
+              echo "no code generation in this app"
+            fi
       - run:
           name: Build Flutter APK
-          working_directory: apps/user_app
+          working_directory: << parameters.app_dir >>
           command: |
             flutter build apk \
               --release \
               --build-name=1.0.0 \
               --build-number=${CIRCLE_BUILD_NUM}
       - store_artifacts:
-          path: apps/user_app/build/app/outputs/flutter-apk/app-release.apk
-          destination: app-release.apk
+          path: << parameters.app_dir >>/build/app/outputs/flutter-apk/app-release.apk
+          destination: << parameters.artifact_name >>
 
   build-for-testing:
     docker:
@@ -113,6 +122,19 @@ workflows:
                 - test
                 - master
       - build-android-apk:
+          name: build-android-apk-user
+          app_dir: apps/user_app
+          artifact_name: user-app-release.apk
+          filters:
+            branches:
+              only:
+                - develop
+          requires:
+            - build-for-testing
+      - build-android-apk:
+          name: build-android-apk-business
+          app_dir: apps/business_admin
+          artifact_name: business-admin-release.apk
           filters:
             branches:
               only:
