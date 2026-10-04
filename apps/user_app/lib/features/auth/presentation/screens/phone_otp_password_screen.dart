@@ -6,6 +6,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../data/auth_exception.dart';
 import '../providers/auth_providers.dart';
 import '../widgets/enable_biometric_prompt.dart';
+import '../widgets/sms_mock_hint.dart';
 
 /// The only phone screens that involve an SMS code:
 /// - [isNewAccount] true: first registration — code, name, password.
@@ -54,6 +55,7 @@ class _PhoneOtpPasswordScreenState extends ConsumerState<PhoneOtpPasswordScreen>
                   ? l10n.phoneRegisterInstructions(widget.phone)
                   : l10n.phoneResetInstructions(widget.phone)),
               const SizedBox(height: FactorySpacing.space4),
+              const SmsMockHint(),
               FactoryTextField(
                 controller: _codeController,
                 label: l10n.otpCodeLabel,
