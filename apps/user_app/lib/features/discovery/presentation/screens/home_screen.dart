@@ -15,7 +15,6 @@ import '../../../booking/presentation/screens/provider_detail_screen.dart';
 import '../../../catalog/presentation/category_icon.dart';
 import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../../catalog/presentation/screens/all_categories_screen.dart';
-import '../../../city/presentation/providers/city_providers.dart';
 import '../../../maps/presentation/providers/maps_providers.dart';
 import '../../../notifications/presentation/providers/notifications_providers.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
