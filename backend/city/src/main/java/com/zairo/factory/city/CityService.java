@@ -120,4 +120,30 @@ public class CityService {
 
         return getCityByCode(user.getCurrentCityCode());
     }
+
+    public CityDto getNearestCity(double latitude, double longitude) {
+        List<City> activeCities = cityRepository.findByActiveTrue();
+        if (activeCities.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No active cities available");
+        }
+
+        City nearest = activeCities.stream()
+                .min((c1, c2) -> Double.compare(
+                        calculateDistance(latitude, longitude, c1.getLatitude(), c1.getLongitude()),
+                        calculateDistance(latitude, longitude, c2.getLatitude(), c2.getLongitude())))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No cities found"));
+
+        return CityDtos.toDto(nearest);
+    }
+
+    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6371;
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lonDistance = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
 }
