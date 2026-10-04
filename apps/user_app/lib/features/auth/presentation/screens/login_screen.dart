@@ -31,11 +31,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   /// credential comes back), so relying on authState.isLoading alone would
   /// leave the button not visibly busy while the native picker is open.
   bool _isProviderSigningIn = false;
+  bool _hasFinishedLogin = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _hasFinishedLogin = false;
     super.dispose();
   }
 
@@ -46,7 +48,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final isLoading = authState.isLoading || _isProviderSigningIn;
 
     ref.listen(authControllerProvider, (previous, next) {
-      if (next.hasValue && next.value != null) {
+      if (next.hasValue && next.value != null && !_hasFinishedLogin) {
+        _hasFinishedLogin = true;
         _finishLogin();
       }
     });

@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:core_ui/core_ui.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_cropper/image_cropper.dart';
@@ -1791,6 +1793,23 @@ class _BookingSettingsSectionState extends State<_BookingSettingsSection> {
 
     setState(() => _isEditing = true);
     try {
+      if (!mounted) return;
+
+      final dio = Dio();
+      final response = await dio.put(
+        'https://zairo-backend.onrender.com/api/v1/payment-settings',
+        queryParameters: {'providerId': widget.providerId},
+        data: {
+          'depositType': 'DEPOSIT',
+          'depositValueType': 'PERCENTAGE',
+          'depositValue': value,
+        },
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to save: ${response.statusCode}');
+      }
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.depositPercentageSaved)),
