@@ -8,6 +8,7 @@ import '../../../../app/locale/locale_controller.dart';
 import '../../../../app/router/app_routes.dart';
 import '../../../../app/theme/theme_provider.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -18,6 +19,7 @@ class SettingsScreen extends ConsumerWidget {
     final themeMode =
         ref.watch(themeModeControllerProvider).value ?? ThemeMode.system;
     final locale = ref.watch(localeControllerProvider).value;
+    final isLoggedIn = ref.watch(authControllerProvider).value != null;
 
     return Scaffold(
       appBar: FactoryAppBar(title: l10n.settingsTitle),
@@ -47,6 +49,16 @@ class SettingsScreen extends ConsumerWidget {
             trailing: const Icon(Symbols.chevron_right_rounded),
             onTap: () => context.push(AppRoutes.securitySettings),
           ),
+          if (isLoggedIn)
+            ListTile(
+              title: Text(
+                l10n.deleteAccountTitle,
+                style: TextStyle(color: context.factoryColors.coral),
+              ),
+              subtitle: Text(l10n.deleteAccountSubtitle),
+              trailing: const Icon(Symbols.chevron_right_rounded),
+              onTap: () => context.push(AppRoutes.deleteAccount),
+            ),
         ],
       ),
     );

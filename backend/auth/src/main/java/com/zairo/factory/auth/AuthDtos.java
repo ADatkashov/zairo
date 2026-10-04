@@ -83,6 +83,12 @@ public final class AuthDtos {
             @Schema(description = "Null leaves unchanged.") Boolean marketingConsent) {
     }
 
+    public record DeleteAccountRequest(
+            @Schema(description = "Required when the account has a password; ignored otherwise.") String password,
+            @Schema(description = "Must be exactly DELETE -- a typed confirmation so it can't happen by accident.",
+                    example = "DELETE") String confirmation) {
+    }
+
     public record GoogleAuthRequest(
             @NotBlank @Schema(description = "The Google ID token (JWT credential) obtained on-device via Google "
                     + "Sign-In — never a Google access token. Verified server-side against Google's own public "

@@ -19,6 +19,7 @@ import '../../features/notifications/presentation/screens/notifications_screen.d
 import '../../features/profile/presentation/screens/about_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/profile/presentation/screens/support_screen.dart';
+import '../../features/settings/presentation/screens/delete_account_screen.dart';
 import '../../features/settings/presentation/screens/security_settings_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../l10n/app_localizations.dart';
@@ -130,6 +131,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'security',
             parentNavigatorKey: rootNavigatorKey,
             builder: (context, state) => const SecuritySettingsScreen(),
+          ),
+          GoRoute(
+            path: 'delete-account',
+            parentNavigatorKey: rootNavigatorKey,
+            builder: (context, state) => const DeleteAccountScreen(),
           ),
         ],
       ),

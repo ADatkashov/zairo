@@ -30,6 +30,7 @@ abstract final class AppRoutes {
   static const about = '/about';
   static const settings = '/settings';
   static const securitySettings = '/settings/security';
+  static const deleteAccount = '/settings/delete-account';
 
   /// [extra] may carry the already-loaded `ProviderSearchResult`; without it
   /// (deep link, web refresh) the screen looks the provider up by id.

@@ -12,6 +12,9 @@ public interface InAppNotificationRepository extends JpaRepository<InAppNotifica
 
     List<InAppNotification> findByRecipientUserIdOrderByCreatedAtDesc(UUID recipientUserId);
 
+    /** Account deletion. */
+    void deleteByRecipientUserId(UUID recipientUserId);
+
     long countByRecipientUserIdAndReadFalse(UUID recipientUserId);
 
     Optional<InAppNotification> findByIdAndRecipientUserId(UUID id, UUID recipientUserId);
