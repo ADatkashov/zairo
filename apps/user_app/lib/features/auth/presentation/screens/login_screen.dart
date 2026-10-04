@@ -50,7 +50,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final authState = ref.watch(authControllerProvider);
     final isLoading = authState.isLoading || _isProviderSigningIn;
     final showApple = ref.watch(appleSignInAvailableProvider).value ?? false;
-    final showPasskey = ref.watch(passkeyAvailableProvider).value ?? false;
 
     ref.listen(authControllerProvider, (previous, next) {
       if (next.hasValue && next.value != null) {
@@ -113,16 +112,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       tooltip: l10n.loginContinueWithApple,
                       onPressed: isLoading ? null : _signInWithApple,
                       child: const AppleLogo(),
-                    ),
-                  ],
-                  if (showPasskey) ...[
-                    const SizedBox(width: FactorySpacing.space4),
-                    SocialLoginButton(
-                      tooltip: l10n.loginContinueWithPasskey,
-                      onPressed: isLoading
-                          ? null
-                          : () => ref.read(authControllerProvider.notifier).loginWithPasskey(),
-                      child: const Icon(Icons.fingerprint, size: 28),
                     ),
                   ],
                   const SizedBox(width: FactorySpacing.space4),

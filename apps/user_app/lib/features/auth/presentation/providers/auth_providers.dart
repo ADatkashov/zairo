@@ -4,15 +4,12 @@ import 'package:core_network/core_network.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/auth_api.dart';
-import '../../data/auth_exception.dart';
 import '../../data/biometric_auth_service.dart';
 import '../../data/facebook_sign_in_service.dart';
 import '../../data/google_sign_in_service.dart';
 import '../../data/models/auth_tokens.dart';
 import '../../data/models/identity_summary.dart';
-import '../../data/models/passkey_info.dart';
 import '../../data/models/phone_status.dart';
-import '../../data/passkey_service.dart';
 import '../../data/models/user_summary.dart';
 import '../../data/token_storage.dart';
 
@@ -211,46 +208,6 @@ class AuthController extends AsyncNotifier<UserSummary?> {
     });
   }
 
-  /// Sign in with a passkey — no username: the device offers this app's
-  /// passkeys. A canceled prompt leaves the person logged out, no error.
-  Future<void> loginWithPasskey() async {
-    final api = ref.read(authApiProvider);
-    state = const AsyncValue.loading();
-    try {
-      final ceremony = await api.passkeyLoginStart();
-      final credential = await ref.read(passkeyServiceProvider).getAssertion(ceremony.options);
-      if (credential == null) {
-        state = const AsyncValue.data(null);
-        return;
-      }
-      final tokens = await api.passkeyLoginFinish(ceremonyId: ceremony.ceremonyId, credential: credential);
-      await _applyTokens(tokens);
-      state = AsyncValue.data(tokens.user);
-    } catch (e, st) {
-      state = AsyncValue.error(e is AuthException ? e : const AuthException(AuthErrorKey.passkeyFailed), st);
-    }
-  }
-
-  /// Creates a passkey for the signed-in caller. Returns false if the person
-  /// canceled; throws [AuthException] if the backend rejected it.
-  Future<bool> registerPasskey({String? name}) async {
-    final api = ref.read(authApiProvider);
-    final ceremony = await api.passkeyRegisterStart();
-    final Map<String, dynamic>? credential;
-    try {
-      credential = await ref.read(passkeyServiceProvider).createCredential(ceremony.options);
-    } catch (_) {
-      throw const AuthException(AuthErrorKey.passkeyFailed);
-    }
-    if (credential == null) return false;
-    await api.passkeyRegisterFinish(ceremonyId: ceremony.ceremonyId, credential: credential, name: name);
-    return true;
-  }
-
-  Future<List<PasskeyInfo>> listPasskeys() => ref.read(authApiProvider).listPasskeys();
-
-  Future<void> deletePasskey(String id) => ref.read(authApiProvider).deletePasskey(id);
-
   /// Add-a-login-method flow — the caller must already be authenticated
   /// (see IdentityController.linkGoogle). Keeps the caller's own tokens;
   /// only refreshes the cached UserSummary (e.g. a newly-adopted phone
@@ -341,14 +298,3 @@ class AuthController extends AsyncNotifier<UserSummary?> {
 }
 
 final authControllerProvider = AsyncNotifierProvider<AuthController, UserSummary?>(AuthController.new);
-
-/// Whether to show passkey buttons: the backend has passkeys configured AND
-/// this device can use them.
-final passkeyAvailableProvider = FutureProvider<bool>((ref) async {
-  if (!await ref.watch(passkeyServiceProvider).isSupported()) return false;
-  try {
-    return await ref.watch(authApiProvider).passkeysEnabled();
-  } catch (_) {
-    return false;
-  }
-});

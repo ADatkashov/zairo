@@ -5,9 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/data/apple_sign_in_service.dart';
 import '../../../auth/data/google_sign_in_service.dart';
-import '../../../auth/data/auth_exception.dart';
 import '../../../auth/data/models/identity_summary.dart';
-import '../../../auth/data/models/passkey_info.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/phone_login_screen.dart';
 
@@ -28,8 +26,6 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
   bool _biometricEnabled = false;
   bool _loadingBiometric = true;
   List<IdentitySummary> _identities = [];
-  List<PasskeyInfo> _passkeys = [];
-  bool _isAddingPasskey = false;
   bool _loadingIdentities = true;
   bool _isLinking = false;
   String? _linkError;
@@ -39,7 +35,6 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
     super.initState();
     _loadBiometricState();
     _loadIdentities();
-    _loadPasskeys();
   }
 
   Future<void> _loadBiometricState() async {
@@ -65,48 +60,6 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
     } catch (_) {
       if (!mounted) return;
       setState(() => _loadingIdentities = false);
-    }
-  }
-
-  Future<void> _loadPasskeys() async {
-    try {
-      final passkeys = await ref.read(authControllerProvider.notifier).listPasskeys();
-      if (!mounted) return;
-      setState(() => _passkeys = passkeys);
-    } catch (_) {
-      // Passkeys are an extra; a failed list just shows none.
-    }
-  }
-
-  Future<void> _addPasskey() async {
-    setState(() {
-      _isAddingPasskey = true;
-      _linkError = null;
-    });
-    final l10n = AppLocalizations.of(context)!;
-    try {
-      final added = await ref.read(authControllerProvider.notifier).registerPasskey();
-      if (added) {
-        await _loadPasskeys();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.securityPasskeyAddedMessage)));
-        }
-      }
-    } on AuthException catch (e) {
-      if (mounted) setState(() => _linkError = e.localizedMessage(l10n));
-    } catch (e) {
-      if (mounted) setState(() => _linkError = l10n.errorAuthGeneric(e.toString()));
-    } finally {
-      if (mounted) setState(() => _isAddingPasskey = false);
-    }
-  }
-
-  Future<void> _removePasskey(PasskeyInfo passkey) async {
-    try {
-      await ref.read(authControllerProvider.notifier).deletePasskey(passkey.id);
-      await _loadPasskeys();
-    } catch (_) {
-      // Leave the list as it is; the next load shows the truth.
     }
   }
 
@@ -191,29 +144,6 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
                               .then((_) => _loadIdentities()),
                       child: Text(l10n.securityLinkButton),
                     ),
-            ),
-          ],
-          if (ref.watch(passkeyAvailableProvider).value ?? false) ...[
-            const SizedBox(height: FactorySpacing.space4),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4),
-              child: Text(l10n.securityPasskeysSectionTitle, style: Theme.of(context).textTheme.titleSmall),
-            ),
-            for (final passkey in _passkeys)
-              ListTile(
-                leading: const Icon(Icons.fingerprint),
-                title: Text(passkey.name),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  tooltip: l10n.securityPasskeyRemoveTooltip,
-                  onPressed: () => _removePasskey(passkey),
-                ),
-              ),
-            ListTile(
-              title: Text(l10n.securityPasskeyAddButton),
-              trailing: _isAddingPasskey
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : TextButton(onPressed: _addPasskey, child: Text(l10n.securityLinkButton)),
             ),
           ],
         ],

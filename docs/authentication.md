@@ -382,29 +382,6 @@ Note: for some countries (incl. Kazakhstan) Twilio may require a registered
 alphanumeric sender ID or a messaging service — check Twilio's country
 guidelines if messages are not delivered.
 
-### Passkeys (WebAuthn)
-
-Sign-in without a password or SMS: the phone's own Face ID / fingerprint unlocks
-a passkey stored in iCloud Keychain / Google Password Manager. The backend
-(`PasskeyService`, Yubico `webauthn-server-core`) verifies challenge, origin,
-RP-id hash, signature and signature counter; passkeys are *discoverable*, so no
-username is needed. Passkeys are off (and the app hides the buttons) until
-`PASSKEY_RP_ID` is set.
-
-| Variable | Notes |
-|---|---|
-| `PASSKEY_RP_ID` | The domain passkeys are bound to, e.g. `zairo-backend.onrender.com`. **Permanent**: changing it later orphans every registered passkey. It must be a domain the backend answers on, because the backend serves the two association files below. Must equal `PASSKEY_RP_ID` in `apps/user_app/ios/Flutter/*.xcconfig` (currently `zairo-backend.onrender.com`). |
-| `PASSKEY_APPLE_APP_IDS` | iOS: `<Apple TeamID>.<bundle id>`, e.g. `ABCDE12345.com.zairo` -> served at `/.well-known/apple-app-site-association` (404 until set). |
-| `PASSKEY_ANDROID_PACKAGE` | Default `com.zairo`. |
-| `PASSKEY_ANDROID_SHA256_FINGERPRINTS` | Android: SHA-256 fingerprint(s) (`AA:BB:...`) of the app-signing certificate — debug key for testing, plus the Play App Signing key for release. Served at `/.well-known/assetlinks.json` and also used to derive the `android:apk-key-hash:` origins WebAuthn accepts. |
-| `PASSKEY_RP_NAME`, `PASSKEY_EXTRA_ORIGINS` | Display name (default `ZAIRO`); extra allowed origins (comma-separated). |
-
-App side: `passkeys` plugin; iOS needs the *Associated Domains*
-(`webcredentials:$(PASSKEY_RP_ID)`) entitlement (committed in
-`Runner.entitlements`) and iOS 16+; Android needs API 28+ and a Google account
-with a credential provider (the button is hidden on unsupported devices). Test on
-a real device — passkeys do not work in most simulators/emulators.
-
 ### Flutter (`apps/user_app`)
 
 | What | Where | Notes |
