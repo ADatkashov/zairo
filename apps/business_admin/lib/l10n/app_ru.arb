@@ -852,5 +852,6 @@
   "loyaltyGreetingPointsHint": "От 0 до {max}. Пусто — только поздравление.",
   "loyaltyGreetingPointsError": "Введите целое число от 0 до {max}.",
   "loyaltyGreetingSendButton": "Отправить",
-  "loyaltyGreetingSent": "Поздравление отправлено"
+  "loyaltyGreetingSent": "Поздравление отправлено",
+  "navMore": "Ещё"
 }
