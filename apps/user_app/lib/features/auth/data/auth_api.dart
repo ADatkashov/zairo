@@ -108,15 +108,31 @@ class AuthApi {
     return UserSummary.fromJson(response.data as Map<String, dynamic>);
   }
 
-  /// Either argument may be null/blank to leave that field unchanged — see
-  /// backend's AuthDtos.UpdateProfileRequest. Used to complete a profile
+  /// Every argument may be null to leave that field unchanged — see
+  /// backend's AuthDtos.UpdateProfileRequest. Used both to complete a profile
   /// that started with a placeholder name/no email (Google/Facebook/phone
-  /// signup).
-  Future<UserSummary> updateProfile({String? displayName, String? email}) async {
+  /// signup) and by the Edit Profile screen. [clearBirthDate] removes a stored
+  /// birth date (null alone means "unchanged"); [gender] 'NOT_SPECIFIED'
+  /// clears the stored gender.
+  Future<UserSummary> updateProfile({
+    String? displayName,
+    String? email,
+    DateTime? birthDate,
+    bool clearBirthDate = false,
+    String? gender,
+    bool? marketingConsent,
+  }) async {
     try {
       final response = await _dioClient.patch(
         '/auth/me',
-        data: {'displayName': displayName, 'email': email},
+        data: {
+          'displayName': displayName,
+          'email': email,
+          'birthDate': birthDate == null ? null : UserSummary.formatBirthDate(birthDate),
+          'clearBirthDate': clearBirthDate,
+          'gender': gender,
+          'marketingConsent': marketingConsent,
+        },
       );
       return UserSummary.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
