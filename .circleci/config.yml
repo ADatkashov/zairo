@@ -12,6 +12,9 @@ jobs:
     environment:
       FLUTTER_HOME: /home/flutter
       ANDROID_HOME: /home/android
+      # Without this the APK falls back to http://10.0.2.2:8080/api/v1 (emulator-only
+      # loopback) and every request fails on a real phone.
+      API_BASE_URL: https://zairo-backend.onrender.com/api/v1
       PATH: /home/flutter/bin:/home/flutter/bin/cache/dart-sdk/bin:/home/android/cmdline-tools/latest/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     steps:
       - run:
@@ -67,7 +70,9 @@ jobs:
             flutter build apk \
               --release \
               --build-name=1.0.0 \
-              --build-number=${CIRCLE_BUILD_NUM}
+              --build-number=${CIRCLE_BUILD_NUM} \
+              --dart-define=API_BASE_URL="$API_BASE_URL" \
+              --dart-define=MAPS_API_KEY="${MAPS_API_KEY:-}"
       - store_artifacts:
           path: << parameters.app_dir >>/build/app/outputs/flutter-apk/app-release.apk
           destination: << parameters.artifact_name >>
