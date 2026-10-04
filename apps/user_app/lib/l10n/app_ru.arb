@@ -445,5 +445,19 @@
 
   "bookingCtaDueNow": "к оплате сейчас",
 
-  "bookingCtaFullPayment": "полная оплата"
+  "bookingCtaFullPayment": "полная оплата",
+
+  "weekdayMon": "Пн",
+
+  "weekdayTue": "Вт",
+
+  "weekdayWed": "Ср",
+
+  "weekdayThu": "Чт",
+
+  "weekdayFri": "Пт",
+
+  "weekdaySat": "Сб",
+
+  "weekdaySun": "Вс"
 }

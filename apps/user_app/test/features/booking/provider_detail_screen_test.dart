@@ -269,7 +269,7 @@ void main() {
 
     await tester.tap(find.text('Haircut'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Jan 1, 10:00'));
+    await tester.tap(find.text('10:00'));
     await tester.pumpAndSettle();
 
     expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNotNull);
@@ -338,8 +338,8 @@ void main() {
     final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');
     await tester.tap(find.text('Haircut'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Jan 1, 10:00'), 200);
-    await tester.tap(find.text('Jan 1, 10:00'));
+    await tester.scrollUntilVisible(find.text('10:00'), 200);
+    await tester.tap(find.text('10:00'));
     await tester.pumpAndSettle();
 
     // Service + slot picked, but no master yet -> still disabled.
@@ -432,8 +432,8 @@ void main() {
     // Mechanic + vehicle + service picked, but no slot yet -> still disabled.
     expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNull);
 
-    await tester.scrollUntilVisible(find.text('Jan 1, 10:00'), 200);
-    await tester.tap(find.text('Jan 1, 10:00'));
+    await tester.scrollUntilVisible(find.text('10:00'), 200);
+    await tester.tap(find.text('10:00'));
     await tester.pumpAndSettle();
 
     expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNotNull);
@@ -505,8 +505,8 @@ void main() {
     final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');
     await tester.tap(find.text('Checkup'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Jan 1, 10:00'), 200);
-    await tester.tap(find.text('Jan 1, 10:00'));
+    await tester.scrollUntilVisible(find.text('10:00'), 200);
+    await tester.tap(find.text('10:00'));
     await tester.pumpAndSettle();
 
     // Service + slot picked, but no staff member yet -> still disabled.

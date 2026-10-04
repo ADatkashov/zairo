@@ -1520,5 +1520,26 @@
   "@bookingCtaDueNow": {"description": "Short suffix next to the amount charged at booking."},
 
   "bookingCtaFullPayment": "full payment",
-  "@bookingCtaFullPayment": {"description": "Short suffix next to a fully prepaid amount."}
+  "@bookingCtaFullPayment": {"description": "Short suffix next to a fully prepaid amount."},
+
+  "weekdayMon": "Mon",
+  "@weekdayMon": {"description": "Short Mon label for the day picker."},
+
+  "weekdayTue": "Tue",
+  "@weekdayTue": {"description": "Short Tue label for the day picker."},
+
+  "weekdayWed": "Wed",
+  "@weekdayWed": {"description": "Short Wed label for the day picker."},
+
+  "weekdayThu": "Thu",
+  "@weekdayThu": {"description": "Short Thu label for the day picker."},
+
+  "weekdayFri": "Fri",
+  "@weekdayFri": {"description": "Short Fri label for the day picker."},
+
+  "weekdaySat": "Sat",
+  "@weekdaySat": {"description": "Short Sat label for the day picker."},
+
+  "weekdaySun": "Sun",
+  "@weekdaySun": {"description": "Short Sun label for the day picker."}
 }

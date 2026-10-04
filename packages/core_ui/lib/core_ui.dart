@@ -27,6 +27,7 @@ export 'src/widgets/factory_category_tile.dart';
 export 'src/widgets/factory_chip.dart';
 export 'src/widgets/factory_dialog.dart';
 export 'src/widgets/factory_empty_state.dart';
+export 'src/util/group_by_day.dart';
 export 'src/widgets/factory_error_state.dart';
 export 'src/widgets/factory_icon_button.dart';
 export 'src/widgets/factory_loading_state.dart';

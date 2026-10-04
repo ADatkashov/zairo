@@ -730,5 +730,11 @@
   "chatBookingChipLabel": "Брондау туралы",
   "selectCity": "Қаланы таңдаңыз",
   "noCitiesAvailable": "Қол жетімді қалалар жоқ",
-  "errorLoadingCities": "Қалалар жүктелуінде қате"
+  "errorLoadingCities": "Қалалар жүктелуінде қате",
+
+  "slotsDaySummary": "{open} бос · {booked} брондалған",
+
+  "slotsDaysShowAll": "Барлық күндерді көрсету (тағы {count})",
+
+  "slotsDaysShowLess": "Күндерді жасыру"
 }
