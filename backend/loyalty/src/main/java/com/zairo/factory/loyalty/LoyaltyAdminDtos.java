@@ -42,7 +42,17 @@ public final class LoyaltyAdminDtos {
      * exposed to the business.
      */
     public record BirthdayResponse(UUID userId, String displayName, int month, int day, int daysUntil,
-            int bonusPoints, boolean bonusAwarded) {
+            int bonusPoints, boolean bonusAwarded, boolean greetedToday) {
+    }
+
+    public record SendGreetingRequest(
+            @io.swagger.v3.oas.annotations.media.Schema(description = "Optional personal text (max 500). Blank "
+                    + "keeps the default greeting.") String message,
+            @io.swagger.v3.oas.annotations.media.Schema(description = "Optional gift of points, 0-1000. "
+                    + "Null/0 sends the greeting only.") Integer bonusPoints) {
+    }
+
+    public record GreetingResponse(UUID id, int bonusPoints, Instant sentAt) {
     }
 
     public record MilestoneResponse(UUID id, int visitsRequired, int pointsAwarded, String label) {
