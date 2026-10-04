@@ -17,10 +17,12 @@ jobs:
       - run:
           name: Install Flutter
           command: |
-            cd $HOME
-            git clone https://github.com/flutter/flutter.git
-            cd flutter
+            mkdir -p /home/flutter
+            git clone https://github.com/flutter/flutter.git /home/flutter
+            cd /home/flutter
             git checkout stable
+            export PATH=/home/flutter/bin:/home/flutter/bin/cache/dart-sdk/bin:$PATH
+            flutter doctor
       - run:
           name: Install Dependencies
           working_directory: apps/user_app
@@ -68,10 +70,12 @@ jobs:
       - run:
           name: Install Flutter
           command: |
-            cd $HOME
-            git clone https://github.com/flutter/flutter.git
-            cd flutter
+            mkdir -p /home/flutter
+            git clone https://github.com/flutter/flutter.git /home/flutter
+            cd /home/flutter
             git checkout stable
+            export PATH=/home/flutter/bin:/home/flutter/bin/cache/dart-sdk/bin:$PATH
+            flutter doctor
       - run:
           name: Install Dependencies
           working_directory: apps/user_app
