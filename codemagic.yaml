@@ -1,0 +1,73 @@
+workflows:
+  android-build:
+    name: Flutter Android APK Build
+    instance_type: linux_x2
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      xcode: latest
+      java: 11
+    triggering:
+      events:
+        - push
+      branch:
+        patterns:
+          - pattern: 'develop'
+            include: true
+          - pattern: 'test'
+            include: true
+          - pattern: 'master'
+            include: true
+    scripts:
+      - name: Install dependencies
+        script: |
+          cd apps/user_app
+          flutter pub get
+      - name: Build APK
+        script: |
+          cd apps/user_app
+          flutter build apk \
+            --release \
+            --build-name=1.0.0 \
+            --build-number=$BUILD_NUMBER
+    artifacts:
+      - apps/user_app/build/app/outputs/flutter-apk/app-release.apk
+    publishing:
+      email:
+        recipients:
+          - $PERSONAL_EMAIL
+        notify:
+          success: true
+          failure: true
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: true
+
+  ios-build:
+    name: Flutter iOS Build
+    instance_type: mac_mini_m1
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      xcode: latest
+    triggering:
+      events:
+        - push
+      branch:
+        patterns:
+          - pattern: 'develop'
+            include: true
+    scripts:
+      - name: Install dependencies
+        script: |
+          cd apps/user_app
+          flutter pub get
+      - name: Build iOS
+        script: |
+          cd apps/user_app
+          flutter build ios \
+            --release \
+            --no-codesign
+    artifacts:
+      - apps/user_app/build/ios/iphoneos/Runner.app

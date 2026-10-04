@@ -6,6 +6,8 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../core/formatting/initials.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../maps/data/geo_point.dart';
+import '../../../auth/data/models/user_summary.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../booking/data/models/book_again_suggestion.dart';
 import '../../../booking/presentation/providers/booking_providers.dart';
@@ -13,7 +15,6 @@ import '../../../booking/presentation/screens/provider_detail_screen.dart';
 import '../../../catalog/presentation/category_icon.dart';
 import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../../catalog/presentation/screens/all_categories_screen.dart';
-import '../../../city/presentation/providers/city_providers.dart';
 import '../../../maps/presentation/providers/maps_providers.dart';
 import '../../../notifications/presentation/providers/notifications_providers.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
@@ -67,8 +68,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     AppLocalizations l10n,
     DiscoveryQuery query,
     AsyncValue<List<ProviderSearchResult>> resultsAsync,
-    AsyncValue<LocationData?> locationAsync,
-    User? user,
+    AsyncValue<GeoPoint?> locationAsync,
+    UserSummary? user,
     FactoryColors colors,
     TextTheme textTheme,
   ) {
