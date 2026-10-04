@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../l10n/app_localizations.dart';
+import '../../data/models/booking.dart';
 import '../../data/models/payment_plan.dart';
 
 /// Tells the customer, in plain terms, what this booking costs *them right
@@ -63,6 +64,38 @@ class BookingPaymentSummary extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// A booking's amounts, honestly: the due-now / at-venue split when the
+/// backend told us the deposit, and just the service price when it didn't
+/// (never a guess that nothing is due).
+class BookingAmounts extends StatelessWidget {
+  final Booking booking;
+  final bool compact;
+
+  const BookingAmounts({super.key, required this.booking, this.compact = false});
+
+  @override
+  Widget build(BuildContext context) {
+    if (booking.depositAmount != null) {
+      return BookingPaymentSummary(
+        compact: compact,
+        plan: PaymentPlan.fromAmounts(total: booking.totalPrice, deposit: booking.depositAmount),
+      );
+    }
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          l10n.bookingPayServicePrice,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
+        ),
+        FactoryPriceText(amount: booking.totalPrice, fontSize: 16, weight: FontWeight.w700),
+      ],
     );
   }
 }

@@ -3,6 +3,8 @@ package com.zairo.factory.city;
 import com.zairo.factory.city.CityDtos.CreateCityRequest;
 import com.zairo.factory.city.CityDtos.CityDto;
 import com.zairo.factory.city.CityDtos.UpdateCityRequest;
+import com.zairo.factory.country.Country;
+import com.zairo.factory.country.CountryService;
 import com.zairo.factory.users.User;
 import com.zairo.factory.users.UserRepository;
 import java.util.List;
@@ -16,10 +18,13 @@ public class CityService {
 
     private final CityRepository cityRepository;
     private final UserRepository userRepository;
+    private final CountryService countryService;
 
-    public CityService(CityRepository cityRepository, UserRepository userRepository) {
+    public CityService(CityRepository cityRepository, UserRepository userRepository,
+            CountryService countryService) {
         this.cityRepository = cityRepository;
         this.userRepository = userRepository;
+        this.countryService = countryService;
     }
 
     public List<CityDto> getAllCities() {
@@ -51,13 +56,17 @@ public class CityService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "City code already exists: " + request.code());
         }
 
+        // A new city inherits its country's timezone and currency unless the
+        // request names its own — never a fixed market's values, so adding a
+        // city in another country (e.g. Uzbekistan) gets that country's currency.
+        Country country = countryService.getByCode(request.countryCode());
         City city = new City(
                 request.code(),
                 request.name(),
                 request.nameKk(),
                 request.countryCode(),
-                request.timezone() != null ? request.timezone() : "Asia/Almaty",
-                request.currency() != null ? request.currency() : "KZT",
+                request.timezone() != null ? request.timezone() : country.getTimezone(),
+                request.currency() != null ? request.currency() : country.getCurrency(),
                 request.latitude(),
                 request.longitude(),
                 request.defaultSearchRadiusKm(),

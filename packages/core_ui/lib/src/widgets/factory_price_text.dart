@@ -20,6 +20,15 @@ String formatFactoryAmount(num amount) {
   return amount < 0 ? '-$buffer' : buffer.toString();
 }
 
+/// "12 400 ₸" — amount plus the symbol for [currency] (an ISO 4217 code such as
+/// "KZT" or "USD"; null falls back to the platform's current market). Use this
+/// instead of gluing a raw currency code onto an amount, so every price shows
+/// the same symbol for the same currency.
+String formatFactoryMoney(num amount, String? currency) {
+  final code = (currency == null || currency.isEmpty) ? RegionDefaults.country.currency : currency;
+  return '${formatFactoryAmount(amount)} ${currencySymbolFor(code)}';
+}
+
 /// Prices, always tabular and monospaced — see FactoryTypography.mono.
 /// [prefix] renders in the surrounding body style ("from "), the amount
 /// itself always in mono so a list of prices lines up.
@@ -36,7 +45,9 @@ class FactoryPriceText extends StatelessWidget {
 
   final num amount;
 
-  /// Defaults to [RegionDefaults.currencySymbol] — the platform's current
+  /// An ISO 4217 code ("KZT", "USD" — what the API returns) or a ready symbol;
+  /// a code is resolved to its symbol, so callers can pass `service.currency`
+  /// straight through. Defaults to [RegionDefaults.currencySymbol] — the platform's current
   /// (and, for now, only) market — rather than a bare literal, so a caller
   /// that already knows the amount's real currency can override it, and the
   /// "why tenge" question has one named, documented answer instead of a
@@ -52,7 +63,7 @@ class FactoryPriceText extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.factoryColors;
     final resolvedColor = color ?? colors.text;
-    final resolvedSymbol = currencySymbol ?? RegionDefaults.currencySymbol;
+    final resolvedSymbol = currencySymbolFor(currencySymbol ?? RegionDefaults.country.currency);
     // FittedBox+scaleDown: a price can be arbitrarily wide (large amounts,
     // long currency codes) and this often sits in a tightly-constrained
     // card footer — shrink slightly rather than hard-overflow if it ever

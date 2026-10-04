@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:zairo/features/auth/data/models/user_summary.dart';
 import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/booking/data/booking_api.dart';
@@ -134,5 +135,29 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Salon'), findsOneWidget);
+  });
+
+  testWidgets('tapping the bookings stat tile goes to the bookings page', (tester) async {
+    final router = GoRouter(routes: [
+      GoRoute(path: '/', builder: (_, _) => const ProfileScreen()),
+      GoRoute(path: '/bookings', builder: (_, _) => const Scaffold(body: Text('Bookings page'))),
+    ]);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [authControllerProvider.overrideWith(_LoggedInAuthController.new)],
+        child: MaterialApp.router(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('My bookings'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Bookings page'), findsOneWidget);
   });
 }

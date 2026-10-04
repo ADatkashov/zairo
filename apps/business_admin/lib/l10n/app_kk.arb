@@ -153,7 +153,6 @@
   "addServiceDialogTitle": "Қызмет қосу",
   "titleLabel": "Атауы",
   "durationMinutesLabel": "Ұзақтығы (минут)",
-  "priceUsdLabel": "Бағасы (USD)",
   "validationServiceFields": "Атауын, оң ұзақтығын және дұрыс бағасын енгізіңіз",
   "errorServiceSaveFailed": "Қызметті сақтау мүмкін болмады: {error}",
   "errorServiceAddFailed": "Қызметті қосу мүмкін болмады: {error}",
@@ -736,5 +735,25 @@
 
   "slotsDaysShowAll": "Барлық күндерді көрсету (тағы {count})",
 
-  "slotsDaysShowLess": "Күндерді жасыру"
+  "slotsDaysShowLess": "Күндерді жасыру",
+
+  "depositModeTitle": "Клиент қашан төлейді?",
+
+  "depositModeNone": "Алдын ала төлемсіз",
+
+  "depositModeNoneHint": "Клиент тегін жазылады және сізге орнында төлейді.",
+
+  "depositModeDeposit": "Депозит",
+
+  "depositModeDepositHint": "Соманың бір бөлігі пайызбен жазылу кезінде онлайн төленеді, қалғаны орнында.",
+
+  "depositModeFull": "Толық төлем",
+
+  "depositModeFullHint": "Барлық құн жазылу кезінде онлайн төленеді.",
+
+  "depositPercentageRangeHint": "1-ден 99-ға дейін. Қалғаны орнында төленеді.",
+
+  "validationDepositPercentageRange": "1-ден 99-ға дейінгі пайызды енгізіңіз.",
+
+  "priceLabel": "Бағасы ({symbol})"
 }

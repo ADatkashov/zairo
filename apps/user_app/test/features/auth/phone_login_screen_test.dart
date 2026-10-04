@@ -7,6 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zairo/features/auth/data/auth_api.dart';
 import 'package:zairo/features/auth/data/auth_exception.dart';
+import 'package:zairo/features/auth/data/models/phone_status.dart';
 import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/auth/presentation/screens/phone_login_screen.dart';
 import 'package:zairo/l10n/app_localizations.dart';
@@ -16,6 +17,13 @@ class _FakeAuthApi extends AuthApi {
 
   String? lastRequestedPhone;
   Object? errorOnRequest;
+  PhoneStatus status = const PhoneStatus(registered: false, hasPassword: false);
+
+  @override
+  Future<PhoneStatus> phoneStatus(String phone) async {
+    if (errorOnRequest != null) throw errorOnRequest!;
+    return status;
+  }
 
   @override
   Future<void> requestPhoneOtp(String phone) async {
@@ -86,7 +94,7 @@ void main() {
     expect(fakeApi.lastRequestedPhone, isNull);
   });
 
-  testWidgets('a valid phone requests an OTP and advances to the OTP screen', (tester) async {
+  testWidgets('a new phone requests an OTP and advances to the registration screen', (tester) async {
     final fakeApi = _FakeAuthApi();
     await tester.pumpWidget(_wrap(fakeApi));
     await tester.tap(find.text('open'));
@@ -102,7 +110,21 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(fakeApi.lastRequestedPhone, '+7 700 123 45 67');
-    expect(find.text('Verification code'), findsOneWidget);
+    expect(find.text('Create account'), findsOneWidget);
+  });
+
+  testWidgets('a phone with a password asks for it and sends no SMS', (tester) async {
+    final fakeApi = _FakeAuthApi()..status = const PhoneStatus(registered: true, hasPassword: true);
+    await tester.pumpWidget(_wrap(fakeApi));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).first, '+7 700 123 45 67');
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Enter password'), findsOneWidget);
+    expect(fakeApi.lastRequestedPhone, isNull);
   });
 
   testWidgets('shows a readable error when the phone number is rejected', (tester) async {
@@ -117,6 +139,6 @@ void main() {
 
     expect(find.text('Enter a valid phone number.'), findsOneWidget);
     // Stays on the phone entry step.
-    expect(find.text('Verification code'), findsNothing);
+    expect(find.text('Create account'), findsNothing);
   });
 }

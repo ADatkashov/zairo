@@ -3,6 +3,7 @@ package com.zairo.factory.auth;
 import com.zairo.factory.users.User;
 import com.zairo.factory.users.UserRepository;
 import com.zairo.factory.users.UserRole;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -33,10 +34,76 @@ class IdentityLookupService {
 
     private final UserRepository userRepository;
     private final UserIdentityRepository userIdentityRepository;
+    private final CredentialRepository credentialRepository;
+    private final RefreshTokenService refreshTokenService;
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    IdentityLookupService(UserRepository userRepository, UserIdentityRepository userIdentityRepository) {
+    IdentityLookupService(UserRepository userRepository, UserIdentityRepository userIdentityRepository,
+            CredentialRepository credentialRepository, RefreshTokenService refreshTokenService) {
         this.userRepository = userRepository;
         this.userIdentityRepository = userIdentityRepository;
+        this.credentialRepository = credentialRepository;
+        this.refreshTokenService = refreshTokenService;
+    }
+
+    @Transactional(readOnly = true)
+    boolean hasPassword(UUID userId) {
+        return credentialRepository.findByUserId(userId).isPresent();
+    }
+
+    /** True if {@code rawPassword} matches the user's password; false if wrong or the user has none. */
+    @Transactional(readOnly = true)
+    boolean passwordMatches(UUID userId, String rawPassword) {
+        return credentialRepository.findByUserId(userId)
+                .map(c -> passwordEncoder.matches(rawPassword, c.getPasswordHash())).orElse(false);
+    }
+
+    /** Sets (or creates) the user's password — covers accounts that so far only had Google/Facebook/phone. */
+    @Transactional
+    void setPassword(UUID userId, String rawPassword) {
+        String hash = passwordEncoder.encode(rawPassword);
+        Credential credential = credentialRepository.findByUserId(userId).orElse(null);
+        if (credential == null) {
+            credentialRepository.save(new Credential(UUID.randomUUID(), userId, hash, Instant.now()));
+        } else {
+            credential.changePasswordHash(hash);
+            credentialRepository.save(credential);
+        }
+    }
+
+    /**
+     * Forgotten-password reset: new password and revoking every existing
+     * session in one transaction (revoking needs one, and a half-done reset —
+     * new password but old sessions still alive — is the wrong failure mode).
+     */
+    @Transactional
+    void resetPasswordAndRevokeSessions(UUID userId, String rawPassword) {
+        setPassword(userId, rawPassword);
+        refreshTokenService.revokeAllForUser(userId);
+    }
+
+    @Transactional
+    void markEmailVerified(UUID userId) {
+        User user = userRepository.findById(userId).orElseThrow();
+        if (!user.isEmailVerified()) {
+            user.markEmailVerified();
+            userRepository.save(user);
+        }
+    }
+
+    /**
+     * Phone registration: user, PHONE identity and password in one
+     * transaction, so a half-created account (phone but no password) can't
+     * be left behind. Same unique-constraint race semantics as
+     * {@link #createUserWithIdentity}.
+     */
+    @Transactional
+    User createPhoneUserWithPassword(String e164Phone, String displayName, String rawPassword) {
+        User user = createUserWithIdentity(IdentityProvider.PHONE, e164Phone, null, e164Phone, displayName,
+                UserRole.CUSTOMER);
+        credentialRepository.save(new Credential(UUID.randomUUID(), user.getId(),
+                passwordEncoder.encode(rawPassword), Instant.now()));
+        return user;
     }
 
     @Transactional(readOnly = true)
@@ -68,6 +135,10 @@ class IdentityLookupService {
             });
         }
         User user = new User(UUID.randomUUID(), email, phoneForDisplay, displayName, role, Instant.now());
+        if (email != null) {
+            // Only provider-verified emails reach this method (see IdentityService).
+            user.markEmailVerified();
+        }
         user = userRepository.save(user);
         // saveAndFlush forces the INSERT (and any unique-constraint
         // violation) to happen now, inside this method's own transaction,
