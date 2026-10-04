@@ -454,7 +454,7 @@ void main() {
 
     await tester.enterText(find.widgetWithText(TextField, 'Title'), 'Haircut');
     await tester.enterText(find.widgetWithText(TextField, 'Duration (minutes)'), '30');
-    await tester.enterText(find.widgetWithText(TextField, 'Price (USD)'), '25');
+    await tester.enterText(find.widgetWithText(TextField, 'Price (₸)'), '25');
     await tester.tap(find.widgetWithText(FilledButton, 'Add'));
     await tester.pumpAndSettle();
 
@@ -463,7 +463,7 @@ void main() {
       'title': 'Haircut',
       'durationMinutes': 30,
       'price': 25.0,
-      'currency': 'USD',
+      'currency': 'KZT',
     });
     expect(find.text('Haircut'), findsOneWidget);
   });
@@ -498,7 +498,7 @@ void main() {
 
     expect(find.widgetWithText(TextField, 'Title'), findsOneWidget);
     await tester.enterText(find.widgetWithText(TextField, 'Title'), 'Haircut & Style');
-    await tester.enterText(find.widgetWithText(TextField, 'Price (USD)'), '35');
+    await tester.enterText(find.widgetWithText(TextField, 'Price (\$)'), '35');
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));
     await tester.pumpAndSettle();
 

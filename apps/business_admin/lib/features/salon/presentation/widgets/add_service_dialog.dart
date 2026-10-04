@@ -21,6 +21,10 @@ class AddServiceDialog extends ConsumerStatefulWidget {
 }
 
 class _AddServiceDialogState extends ConsumerState<AddServiceDialog> {
+  /// A service keeps its own currency when edited; a new one takes the
+  /// platform's current market currency instead of a hardcoded one.
+  String get _currency => widget.existing?.currency ?? RegionDefaults.country.currency;
+
   late final _titleController = TextEditingController(text: widget.existing?.title ?? '');
   late final _durationController =
       TextEditingController(text: (widget.existing?.durationMinutes ?? 30).toString());
@@ -63,7 +67,7 @@ class _AddServiceDialogState extends ConsumerState<AddServiceDialog> {
             controller: _priceController,
             enabled: !_isSubmitting,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            label: l10n.priceUsdLabel,
+            label: l10n.priceLabel(currencySymbolFor(_currency)),
           ),
           if (_error != null)
             Padding(
@@ -108,7 +112,7 @@ class _AddServiceDialogState extends ConsumerState<AddServiceDialog> {
           title: title,
           durationMinutes: duration,
           price: price,
-          currency: widget.existing!.currency,
+          currency: _currency,
         );
       } else {
         await api.createService(
@@ -116,7 +120,7 @@ class _AddServiceDialogState extends ConsumerState<AddServiceDialog> {
           title: title,
           durationMinutes: duration,
           price: price,
-          currency: 'USD',
+          currency: _currency,
         );
       }
       if (!mounted) return;
