@@ -66,7 +66,8 @@ class TwilioOtpSenderTest {
         status = 400;
         TwilioOtpSender sender = new TwilioOtpSender("AC123", "secret", "+15005550006", "", baseUrl());
 
-        assertThatThrownBy(() -> sender.send("+77001234567", "123456")).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> sender.send("+77001234567", "123456"))
+                .isInstanceOf(OtpTemporarilyUnavailableException.class);
     }
 
     @Test

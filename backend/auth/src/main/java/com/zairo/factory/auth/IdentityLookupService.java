@@ -35,13 +35,15 @@ class IdentityLookupService {
     private final UserRepository userRepository;
     private final UserIdentityRepository userIdentityRepository;
     private final CredentialRepository credentialRepository;
+    private final RefreshTokenService refreshTokenService;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     IdentityLookupService(UserRepository userRepository, UserIdentityRepository userIdentityRepository,
-            CredentialRepository credentialRepository) {
+            CredentialRepository credentialRepository, RefreshTokenService refreshTokenService) {
         this.userRepository = userRepository;
         this.userIdentityRepository = userIdentityRepository;
         this.credentialRepository = credentialRepository;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @Transactional(readOnly = true)
@@ -67,6 +69,17 @@ class IdentityLookupService {
             credential.changePasswordHash(hash);
             credentialRepository.save(credential);
         }
+    }
+
+    /**
+     * Forgotten-password reset: new password and revoking every existing
+     * session in one transaction (revoking needs one, and a half-done reset —
+     * new password but old sessions still alive — is the wrong failure mode).
+     */
+    @Transactional
+    void resetPasswordAndRevokeSessions(UUID userId, String rawPassword) {
+        setPassword(userId, rawPassword);
+        refreshTokenService.revokeAllForUser(userId);
     }
 
     @Transactional
