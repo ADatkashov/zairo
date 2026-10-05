@@ -2449,5 +2449,19 @@
   "customerListNoMatch": "No customers match your search.",
   "@customerListNoMatch": {"description": "Customer list: nobody matches the typed text."},
   "quickActionCustomers": "Customers",
-  "@quickActionCustomers": {"description": "Dashboard quick action and title: a business's customers."}
+  "@quickActionCustomers": {"description": "Dashboard quick action and title: a business's customers."},
+
+  "catalogServiceLabel": "Service",
+  "@catalogServiceLabel": {"description": "Add/edit service dialog: dropdown of platform-managed catalog services."},
+
+  "validationPickCatalogService": "Pick a service from the list, a positive duration, and a valid price",
+  "@validationPickCatalogService": {"description": "Add service dialog validation error when using the catalog."},
+
+  "errorCatalogServicesLoad": "Could not load the service list: {error}",
+  "@errorCatalogServicesLoad": {
+    "description": "Add service dialog: catalog list failed to load.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  }
 }

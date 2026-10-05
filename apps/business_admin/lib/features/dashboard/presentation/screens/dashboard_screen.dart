@@ -714,7 +714,10 @@ class _QuickActions extends ConsumerWidget {
     if (provider == null || !context.mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     final message = AppLocalizations.of(context)!.quickActionServiceAdded;
-    final added = await showDialog<bool>(context: context, builder: (_) => AddServiceDialog(providerId: provider.id));
+    final added = await showDialog<bool>(
+      context: context,
+      builder: (_) => AddServiceDialog(providerId: provider.id, businessTypeId: provider.businessTypeId),
+    );
     if (added == true) {
       ref.invalidate(providerServicesProvider);
       messenger.showSnackBar(SnackBar(content: Text(message)));
