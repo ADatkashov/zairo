@@ -15,6 +15,7 @@ class AddMasterDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return AddPersonFromUserDialog(
+      providerId: providerId,
       title: AppLocalizations.of(context)!.addMasterDialogTitle,
       onAdd: (userId) => ref.read(beautyAdminApiProvider).createMasterFromUser(providerId: providerId, userId: userId),
     );

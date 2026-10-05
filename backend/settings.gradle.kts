@@ -43,4 +43,5 @@ include(
     "reactivation-engine",
     "campaign-center",
     "loyalty",
+    "invitations",
 )

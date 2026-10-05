@@ -15,6 +15,7 @@ class AddStaffDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return AddPersonFromUserDialog(
+      providerId: providerId,
       title: AppLocalizations.of(context)!.addStaffDialogTitle,
       onAdd: (userId) => ref.read(staffAdminApiProvider).createStaffFromUser(providerId: providerId, userId: userId),
     );

@@ -15,6 +15,7 @@ class AddCleanerDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return AddPersonFromUserDialog(
+      providerId: providerId,
       title: AppLocalizations.of(context)!.addCleanerDialogTitle,
       onAdd: (userId) => ref.read(cleaningAdminApiProvider).createCleanerFromUser(providerId: providerId, userId: userId),
     );
