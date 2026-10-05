@@ -1,12 +1,11 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../features/auth/presentation/providers/auth_providers.dart';
-import '../features/automation/presentation/screens/automation_center_screen.dart';
-import '../features/billing/presentation/screens/billing_screen.dart';
-import '../features/settings/presentation/screens/settings_screen.dart';
 import '../l10n/app_localizations.dart';
+import 'admin_routes.dart';
 
 /// The "More" tab of the phone/tablet shell: the destinations that don't earn
 /// a slot in a five-item bottom bar (Automation, Subscription, Settings). The
@@ -44,23 +43,17 @@ class AdminMoreScreen extends ConsumerWidget {
             tile(
               icon: Icons.bolt_outlined,
               label: l10n.automationCenterNavLabel,
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => AutomationCenterScreen(ownerUserId: ownerUserId)),
-              ),
+              onTap: () => context.go(AdminRoutes.automation),
             ),
           tile(
             icon: Icons.receipt_long_outlined,
             label: l10n.billingScreenTitle,
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const BillingScreen()),
-            ),
+            onTap: () => context.go(AdminRoutes.billing),
           ),
           tile(
             icon: Icons.settings_outlined,
             label: l10n.settingsButtonTooltip,
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
-            ),
+            onTap: () => context.go(AdminRoutes.settings),
           ),
         ],
       ),

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/constants/app_config.dart';
 import '../l10n/app_localizations.dart';
-import 'auth_gate.dart';
+import 'admin_router.dart';
 import 'locale/locale_controller.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_provider.dart';
@@ -16,7 +16,7 @@ class BusinessAdminApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeControllerProvider).value;
     final locale = ref.watch(localeControllerProvider).value;
 
-    return MaterialApp(
+    return MaterialApp.router(
       title: AppConfig.appName,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
@@ -25,7 +25,7 @@ class BusinessAdminApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: const AuthGate(),
+      routerConfig: ref.watch(adminRouterProvider),
     );
   }
 }
