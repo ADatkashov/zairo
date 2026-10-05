@@ -31,6 +31,9 @@ public class Cleaner {
     @Column(name = "photo_url")
     private String photoUrl;
 
+    @Column(name = "user_id")
+    private UUID userId;
+
     @Column(name = "is_active", nullable = false)
     private boolean active;
 
@@ -49,6 +52,16 @@ public class Cleaner {
         this.photoUrl = photoUrl;
         this.active = active;
         this.createdAt = createdAt;
+    }
+
+    /** Sets the registered user this cleaner was picked from; null for hand-entered entries. */
+    public Cleaner withUserId(UUID userId) {
+        this.userId = userId;
+        return this;
+    }
+
+    public UUID getUserId() {
+        return userId;
     }
 
     public UUID getId() {

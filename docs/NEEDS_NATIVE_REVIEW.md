@@ -62,3 +62,15 @@ Hand this file to a native Kazakh speaker for a yes/no pass on the two
 tables above. None of these block the production-ready MVP milestone —
 they're all either correct-as-is loanwords or, at worst, a single
 weekday-abbreviation character choice.
+
+## Platform console strings (2026-10-05)
+
+The platform console (`apps/platform_admin`) was localized in one pass: ~300
+keys in its own `app_en/ru/kk.arb`. The Kazakh (and Russian) wording was
+written without a native speaker. Worth a read-through, especially: role names
+(`roleAdmin`, `roleModerator`, `roleSupport`), the catalog level names
+(`levelSpheres` "Салалар", `levelSubspheres` "Ішкі салалар"), the audit-log
+action labels (`action*`), the payout / refund wording (`payout*`, `refund*`,
+`reconcile*` — money-related, so precision matters) and the confirmation
+dialogs (`suspendMessage`, `catalogHideMessage`, `cityDeleteMessage`,
+`payoutMarkPaidMessage`).

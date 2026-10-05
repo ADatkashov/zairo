@@ -1,0 +1,41 @@
+name: platform_admin
+description: "Platform console — ZAIRO staff tool for moderating businesses, managing the catalog and cities, and settling payouts."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.3
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^3.4.2
+  # URL-addressable console (deep links, browser back/refresh on web).
+  go_router: ^18.0.1
+  dio: ^5.11.1
+  # Avatar upload only — picks a photo; the console has no other image flows.
+  image_picker: ^1.2.3
+  core_network:
+    path: ../../packages/core_network
+  core_storage:
+    path: ../../packages/core_storage
+  core_ui:
+    path: ../../packages/core_ui
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  # Only used in tests to build a bare SecureStorageService(FlutterSecureStorage())
+  # for fake subclasses — the app itself only touches it through core_storage.
+  flutter_secure_storage: ^11.2.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+  generate: true

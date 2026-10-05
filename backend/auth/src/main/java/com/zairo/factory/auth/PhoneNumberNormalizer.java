@@ -24,14 +24,14 @@ import org.springframework.stereotype.Component;
  * caller already typed a country code.
  */
 @Component
-class PhoneNumberNormalizer {
+public class PhoneNumberNormalizer {
 
     private static final String DEFAULT_REGION = "KZ";
 
     private final PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
 
     /** @throws InvalidPhoneNumberException if the value isn't a valid, dialable phone number. */
-    String normalize(String rawPhone) {
+    public String normalize(String rawPhone) {
         if (rawPhone == null || rawPhone.isBlank()) {
             throw new InvalidPhoneNumberException("Phone number is required");
         }

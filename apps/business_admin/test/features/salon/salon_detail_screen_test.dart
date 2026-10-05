@@ -20,7 +20,9 @@ import 'package:business_admin/features/salon/data/salon_admin_api.dart';
 import 'package:business_admin/features/salon/presentation/providers/salon_providers.dart';
 import 'package:business_admin/features/salon/presentation/screens/salon_detail_screen.dart';
 import 'package:business_admin/features/staff/data/models/admin_staff.dart';
+import 'package:business_admin/features/staff/data/models/user_lookup.dart';
 import 'package:business_admin/features/staff/data/staff_admin_api.dart';
+import 'package:business_admin/features/staff/data/user_lookup_api.dart';
 import 'package:business_admin/features/staff/presentation/providers/staff_admin_providers.dart';
 import 'package:business_admin/l10n/app_localizations.dart';
 
@@ -111,6 +113,7 @@ class _FakeSalonAdminApi extends SalonAdminApi {
     required int durationMinutes,
     required double price,
     required String currency,
+    String? catalogServiceId,
   }) async {
     lastCreateServiceCall = {
       'providerId': providerId,
@@ -139,6 +142,7 @@ class _FakeSalonAdminApi extends SalonAdminApi {
     required int durationMinutes,
     required double price,
     required String currency,
+    String? catalogServiceId,
   }) async {
     lastUpdateServiceCall = {
       'serviceId': serviceId,
@@ -327,13 +331,9 @@ class _FakeAutoAdminApi extends AutoAdminApi {
   }
 
   @override
-  Future<AdminMechanic> createMechanic({
-    required String providerId,
-    required String displayName,
-    String? bio,
-  }) async {
-    lastCreateMechanicCall = {'providerId': providerId, 'displayName': displayName, 'bio': bio};
-    final created = AdminMechanic(id: 'mech-new', providerId: providerId, displayName: displayName, bio: bio, active: true);
+  Future<AdminMechanic> createMechanicFromUser({required String providerId, required String userId}) async {
+    lastCreateMechanicCall = {'providerId': providerId, 'userId': userId};
+    final created = AdminMechanic(id: 'mech-new', providerId: providerId, displayName: 'Yerlan Mechanic', active: true);
     _mechanics.add(created);
     return created;
   }
@@ -369,6 +369,15 @@ class _FakeAutoAdminApi extends AutoAdminApi {
   }
 }
 
+class _FakeUserLookupApi extends UserLookupApi {
+  _FakeUserLookupApi(this._user) : super(DioClient(Dio()));
+
+  final UserLookup _user;
+
+  @override
+  Future<UserLookup?> lookupByPhone(String phone) async => _user;
+}
+
 class _FakeStaffAdminApi extends StaffAdminApi {
   _FakeStaffAdminApi([List<AdminStaff>? staff])
       : _staff = staff ?? [],
@@ -385,13 +394,9 @@ class _FakeStaffAdminApi extends StaffAdminApi {
   }
 
   @override
-  Future<AdminStaff> createStaff({
-    required String providerId,
-    required String displayName,
-    String? bio,
-  }) async {
-    lastCreateStaffCall = {'providerId': providerId, 'displayName': displayName, 'bio': bio};
-    final created = AdminStaff(id: 'staff-new', providerId: providerId, displayName: displayName, bio: bio, active: true);
+  Future<AdminStaff> createStaffFromUser({required String providerId, required String userId}) async {
+    lastCreateStaffCall = {'providerId': providerId, 'userId': userId};
+    final created = AdminStaff(id: 'staff-new', providerId: providerId, displayName: 'Dr. Aliya', active: true);
     _staff.add(created);
     return created;
   }
@@ -767,6 +772,8 @@ void main() {
         overrides: [
           salonAdminApiProvider.overrideWithValue(fakeApi),
           autoAdminApiProvider.overrideWithValue(fakeAutoApi),
+          userLookupApiProvider.overrideWithValue(
+              _FakeUserLookupApi(const UserLookup(id: 'u-1', displayName: 'Yerlan Mechanic'))),
         ],
         child: MaterialApp(
           theme: factoryLightTheme(),
@@ -787,14 +794,15 @@ void main() {
     await tester.tap(find.widgetWithText(TextButton, 'Add').last);
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.widgetWithText(TextField, 'Name'), 'Yerlan Mechanic');
+    await tester.enterText(find.widgetWithText(TextField, 'Phone of a registered user'), '+77001234567');
+    await tester.tap(find.text('Find'));
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Add'));
     await tester.pumpAndSettle();
 
     expect(fakeAutoApi.lastCreateMechanicCall, {
       'providerId': 'p2',
-      'displayName': 'Yerlan Mechanic',
-      'bio': null,
+      'userId': 'u-1',
     });
     expect(find.text('Yerlan Mechanic'), findsOneWidget);
   });
@@ -848,6 +856,7 @@ void main() {
         overrides: [
           salonAdminApiProvider.overrideWithValue(fakeApi),
           staffAdminApiProvider.overrideWithValue(fakeStaffApi),
+          userLookupApiProvider.overrideWithValue(_FakeUserLookupApi(const UserLookup(id: 'u-2', displayName: 'Dr. Aliya'))),
         ],
         child: MaterialApp(
           theme: factoryLightTheme(),
@@ -871,14 +880,15 @@ void main() {
     await tester.tap(find.widgetWithText(TextButton, 'Add').last);
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.widgetWithText(TextField, 'Name'), 'Dr. Aliya');
+    await tester.enterText(find.widgetWithText(TextField, 'Phone of a registered user'), '+77001234568');
+    await tester.tap(find.text('Find'));
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Add'));
     await tester.pumpAndSettle();
 
     expect(fakeStaffApi.lastCreateStaffCall, {
       'providerId': 'p3',
-      'displayName': 'Dr. Aliya',
-      'bio': null,
+      'userId': 'u-2',
     });
     expect(find.text('Dr. Aliya'), findsOneWidget);
   });

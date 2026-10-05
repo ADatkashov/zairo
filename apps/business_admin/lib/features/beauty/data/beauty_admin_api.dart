@@ -24,15 +24,13 @@ class BeautyAdminApi {
     return data.map((e) => AdminMaster.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  Future<AdminMaster> createMaster({
-    required String providerId,
-    required String displayName,
-    String? bio,
-  }) async {
+  /// Adds an existing registered user as a master — name and photo come from
+  /// their profile, nothing is typed in.
+  Future<AdminMaster> createMasterFromUser({required String providerId, required String userId}) async {
     try {
       final response = await _dioClient.post(
-        '/beauty/providers/$providerId/masters',
-        data: {'displayName': displayName, 'bio': bio, 'photoUrl': null},
+        '/beauty/providers/$providerId/masters/from-user',
+        data: {'userId': userId},
       );
       return AdminMaster.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
