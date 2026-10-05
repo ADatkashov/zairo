@@ -65,10 +65,12 @@ weekday-abbreviation character choice.
 
 ## Platform console strings (2026-10-05)
 
-The platform admin console (`apps/business_admin`, `features/platform_admin`)
-was localized in one pass: ~110 new `pa*` keys in `app_en/ru/kk.arb`. The Kazakh
-(and Russian) wording was written without a native speaker. Worth a read-through,
-especially: role names (`paRoleAdmin`, `paRoleModerator`, `paRoleSupport`), the
-catalog level names (`paLevelSpheres` "Салалар", `paLevelSubspheres`
-"Ішкі салалар"), the audit-log action labels (`paAction*`) and the confirmation
-dialogs (`paSuspendMessage`, `paHideMessage`, `paStaffDeactivateMessage`).
+The platform console (`apps/platform_admin`) was localized in one pass: ~300
+keys in its own `app_en/ru/kk.arb`. The Kazakh (and Russian) wording was
+written without a native speaker. Worth a read-through, especially: role names
+(`roleAdmin`, `roleModerator`, `roleSupport`), the catalog level names
+(`levelSpheres` "Салалар", `levelSubspheres` "Ішкі салалар"), the audit-log
+action labels (`action*`), the payout / refund wording (`payout*`, `refund*`,
+`reconcile*` — money-related, so precision matters) and the confirmation
+dialogs (`suspendMessage`, `catalogHideMessage`, `cityDeleteMessage`,
+`payoutMarkPaidMessage`).
