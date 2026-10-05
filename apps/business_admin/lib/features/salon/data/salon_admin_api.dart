@@ -183,6 +183,20 @@ class SalonAdminApi {
     return _dioClient.delete('/services/$serviceId');
   }
 
+  /// Owner-only: links the offering to a master-catalog service (PATCH
+  /// /services/{id}/catalog-link) — that is how a service picked from the
+  /// platform-managed catalog is tied to its catalog entry.
+  Future<AdminService> linkCatalogService({
+    required String serviceId,
+    required String? catalogServiceId,
+  }) async {
+    final response = await _dioClient.patch(
+      '/services/$serviceId/catalog-link',
+      data: {'catalogServiceId': catalogServiceId},
+    );
+    return AdminService.fromJson(response.data as Map<String, dynamic>);
+  }
+
   /// Owner-only, idempotent — undoes deactivateService().
   Future<AdminService> reactivateService(String serviceId) async {
     final response = await _dioClient.post('/services/$serviceId/reactivate');
