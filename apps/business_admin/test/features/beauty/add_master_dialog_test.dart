@@ -1,8 +1,9 @@
 import 'package:business_admin/features/beauty/data/beauty_admin_api.dart';
 import 'package:business_admin/features/beauty/data/models/admin_master.dart';
-import 'package:business_admin/features/beauty/data/models/user_lookup.dart';
 import 'package:business_admin/features/beauty/presentation/providers/beauty_admin_providers.dart';
 import 'package:business_admin/features/beauty/presentation/widgets/add_master_dialog.dart';
+import 'package:business_admin/features/staff/data/models/user_lookup.dart';
+import 'package:business_admin/features/staff/data/user_lookup_api.dart';
 import 'package:business_admin/l10n/app_localizations.dart';
 import 'package:core_network/core_network.dart';
 import 'package:core_ui/core_ui.dart';
@@ -11,14 +12,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+class _FakeUserLookupApi extends UserLookupApi {
+  _FakeUserLookupApi() : super(DioClient(Dio()));
+
+  @override
+  Future<UserLookup?> lookupByPhone(String phone) async =>
+      phone == '+77001234567' ? const UserLookup(id: 'u-1', displayName: 'Aigerim Bekova') : null;
+}
+
 class _FakeBeautyAdminApi extends BeautyAdminApi {
   _FakeBeautyAdminApi() : super(DioClient(Dio()));
 
   Map<String, dynamic>? created;
-
-  @override
-  Future<UserLookup?> lookupUserByPhone(String phone) async =>
-      phone == '+77001234567' ? const UserLookup(id: 'u-1', displayName: 'Aigerim Bekova') : null;
 
   @override
   Future<AdminMaster> createMasterFromUser({required String providerId, required String userId}) async {
@@ -29,7 +34,10 @@ class _FakeBeautyAdminApi extends BeautyAdminApi {
 
 Widget _app(_FakeBeautyAdminApi api) {
   return ProviderScope(
-    overrides: [beautyAdminApiProvider.overrideWithValue(api)],
+    overrides: [
+      beautyAdminApiProvider.overrideWithValue(api),
+      userLookupApiProvider.overrideWithValue(_FakeUserLookupApi()),
+    ],
     child: MaterialApp(
       theme: factoryLightTheme(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,

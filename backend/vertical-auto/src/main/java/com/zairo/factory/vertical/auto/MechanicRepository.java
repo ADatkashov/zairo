@@ -10,5 +10,7 @@ public interface MechanicRepository extends JpaRepository<Mechanic, UUID> {
 
     long countByProviderId(UUID providerId);
 
+    boolean existsByProviderIdAndUserId(UUID providerId, UUID userId);
+
     List<Mechanic> findByProviderIdAndActiveTrue(UUID providerId);
 }

@@ -34,6 +34,9 @@ public class Staff {
     @Column(name = "photo_url")
     private String photoUrl;
 
+    @Column(name = "user_id")
+    private UUID userId;
+
     @Column(name = "is_active", nullable = false)
     private boolean active;
 
@@ -52,6 +55,16 @@ public class Staff {
         this.photoUrl = photoUrl;
         this.active = active;
         this.createdAt = createdAt;
+    }
+
+    /** Sets the registered user this staff was picked from; null for hand-entered entries. */
+    public Staff withUserId(UUID userId) {
+        this.userId = userId;
+        return this;
+    }
+
+    public UUID getUserId() {
+        return userId;
     }
 
     public UUID getId() {

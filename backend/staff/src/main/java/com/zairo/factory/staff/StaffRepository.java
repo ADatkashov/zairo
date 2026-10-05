@@ -10,5 +10,7 @@ public interface StaffRepository extends JpaRepository<Staff, UUID> {
 
     long countByProviderId(UUID providerId);
 
+    boolean existsByProviderIdAndUserId(UUID providerId, UUID userId);
+
     List<Staff> findByProviderIdAndActiveTrue(UUID providerId);
 }
