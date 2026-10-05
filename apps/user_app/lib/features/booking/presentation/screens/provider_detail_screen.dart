@@ -600,16 +600,17 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       // Board 19 (v2 design audit) — a durable confirmation screen, not a
       // snackbar that's gone in a few seconds, so replaces this route
       // rather than pushing on top of it.
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => BookingConfirmationScreen(
-            booking: booking,
-            providerId: widget.provider.id,
-            providerName: widget.provider.name,
-            providerVertical: widget.provider.vertical,
-            service: service,
-            slotStartsAt: selectedSlot?.startsAt,
-          ),
+      context.pushReplacement(
+        AppRoutes.bookingConfirmation,
+        extra: BookingConfirmationArgs(
+          booking: booking,
+          providerId: widget.provider.id,
+          providerName: widget.provider.name,
+          providerVertical: widget.provider.vertical,
+          service: service,
+          slotStartsAt: selectedSlot?.startsAt,
+          latitude: widget.provider.latitude,
+          longitude: widget.provider.longitude,
         ),
       );
     } on BookingException catch (e) {

@@ -18,7 +18,6 @@ import '../../../city/presentation/providers/city_providers.dart';
 import '../../../maps/presentation/providers/maps_providers.dart';
 import '../../../notifications/presentation/widgets/notification_bell_button.dart';
 import '../../data/models/provider_search_result.dart';
-import '../../data/models/service_summary.dart';
 import '../providers/discovery_providers.dart';
 import '../widgets/provider_card.dart';
 
@@ -453,23 +452,7 @@ class _BookAgainSection extends ConsumerWidget {
                 suggestion: suggestion,
                 onTap: () => context.push(
                   AppRoutes.provider(suggestion.providerId),
-                  extra: ProviderSearchResult(
-                    id: suggestion.providerId,
-                    name: suggestion.providerName,
-                    vertical: suggestion.vertical,
-                    status: 'ACTIVE',
-                    hasOpenAvailability: true,
-                    minPrice: suggestion.price,
-                    services: [
-                      ServiceSummary(
-                        id: suggestion.serviceId,
-                        title: suggestion.serviceTitle,
-                        durationMinutes: suggestion.durationMinutes,
-                        price: suggestion.price,
-                        currency: suggestion.currency,
-                      ),
-                    ],
-                  ),
+                  extra: suggestion.toProviderSearchResult(),
                 ),
               );
             },

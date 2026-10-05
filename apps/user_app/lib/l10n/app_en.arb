@@ -1654,5 +1654,13 @@
   "catalogServicesSheetEmpty": "No services listed in this sphere yet.",
   "@catalogServicesSheetEmpty": {"description": "Empty state of the catalog services sheet opened from All categories."},
   "catalogServicesSheetHint": "Pick a service to see who offers it and compare.",
-  "@catalogServicesSheetHint": {"description": "Hint under the title of the catalog services sheet."}
+  "@catalogServicesSheetHint": {"description": "Hint under the title of the catalog services sheet."},
+  "bookingBookAgainButton": "Book again",
+  "@bookingBookAgainButton": {"description": "Button on a completed booking card: opens the business to book the same service again."},
+  "bookingConfirmationAddToCalendar": "Add to calendar",
+  "@bookingConfirmationAddToCalendar": {"description": "Booking confirmation: opens the phone's calendar with this visit pre-filled."},
+  "bookingConfirmationDirections": "Directions",
+  "@bookingConfirmationDirections": {"description": "Booking confirmation: opens a maps app with directions to the business."},
+  "bookingCalendarEventTitle": "{service} · {business}",
+  "@bookingCalendarEventTitle": {"description": "Title of the calendar event created from a booking.", "placeholders": {"service": {"type": "String"}, "business": {"type": "String"}}}
 }
