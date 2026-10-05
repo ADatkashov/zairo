@@ -18,7 +18,7 @@ final platformBusinessApiProvider = Provider<PlatformBusinessApi>((ref) {
 
 /// All businesses — the backend returns them unfiltered so this one
 /// provider backs the whole Businesses tab (see
-/// PlatformAdminTaxonomyScreen's `_BusinessesTab`), which does its own
+/// PlatformAdminBusinessesTab), which does its own
 /// PENDING-first sort rather than needing a separate family provider per
 /// status.
 final platformBusinessesProvider =
@@ -28,7 +28,7 @@ final platformBusinessesProvider =
 
 /// The Staff tab's list — PLATFORM_ADMIN-only on the backend (a
 /// PLATFORM_SUPPORT/MODERATOR session simply never reaches this, since the
-/// tab itself is hidden for them — see PlatformAdminTaxonomyScreen).
+/// tab itself is hidden for them — see PlatformAdminConsoleScreen).
 final platformAdminsProvider = FutureProvider.autoDispose.family<List<PlatformAdminAccountSummary>, String>(
   (ref, platformToken) => ref.watch(platformAdminApiProvider).listAdmins(platformToken),
 );
