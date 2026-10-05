@@ -45,6 +45,19 @@ class _TestApp extends ConsumerWidget {
 }
 
 void main() {
+  testWidgets('hides the Subscription row while signed out', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [secureStorageServiceProvider.overrideWithValue(_InMemorySecureStorageService())],
+        child: const _TestApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('Subscription'), findsNothing);
+  });
+
   testWidgets(
     'defaults to system language and switches to Kazakh, persisting the choice',
     (tester) async {
