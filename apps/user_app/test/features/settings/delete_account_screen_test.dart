@@ -60,7 +60,10 @@ void main() {
     await tester.enterText(find.widgetWithText(TextFormField, 'Type DELETE to confirm'), 'DELETE');
     await tester.pump();
     await tester.tap(find.text('Delete my account'));
-    await tester.pumpAndSettle();
+    // Not pumpAndSettle: with no router in this harness the screen stays put
+    // after a successful delete and its button spinner never stops.
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
 
     expect(controller.calls, 1);
     expect(controller.lastPassword, 'secret123');
