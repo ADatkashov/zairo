@@ -122,4 +122,17 @@ void main() {
     expect(find.byType(PageView), findsNothing);
     expect(find.text('Balayage look'), findsOneWidget);
   });
+
+  testWidgets('swiping the photo down closes the viewer', (tester) async {
+    await _pump(tester);
+
+    await tester.tap(find.text('Balayage look'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PageView), findsOneWidget);
+
+    await tester.fling(find.byType(PageView), const Offset(0, 500), 1500);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(PageView), findsNothing);
+  });
 }

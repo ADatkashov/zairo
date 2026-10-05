@@ -4,6 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:zairo/app/router/app_routes.dart';
 import 'package:zairo/features/auth/data/models/user_summary.dart';
 import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/auto/data/auto_api.dart';
@@ -17,6 +19,7 @@ import 'package:zairo/features/booking/data/booking_api.dart';
 import 'package:zairo/features/booking/data/models/availability_slot.dart';
 import 'package:zairo/features/booking/data/models/booking.dart';
 import 'package:zairo/features/booking/presentation/providers/booking_providers.dart';
+import 'package:zairo/features/booking/presentation/screens/booking_confirmation_screen.dart';
 import 'package:zairo/features/booking/presentation/screens/provider_detail_screen.dart';
 import 'package:zairo/features/discovery/data/models/provider_search_result.dart';
 import 'package:zairo/features/discovery/data/models/service_summary.dart';
@@ -230,6 +233,24 @@ Future<void> tapVisible(WidgetTester tester, Finder finder) async {
   await tester.tap(finder);
 }
 
+/// The detail screen at `/`, plus the confirmation route it replaces itself
+/// with after a booking (the real router declares both as root routes).
+Widget _routerApp(ProviderSearchResult provider) => MaterialApp.router(
+      theme: factoryLightTheme(),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      routerConfig: GoRouter(
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => ProviderDetailScreen(provider: provider)),
+          GoRoute(
+            path: AppRoutes.bookingConfirmation,
+            builder: (_, state) =>
+                BookingConfirmationScreen.fromArgs(state.extra! as BookingConfirmationArgs),
+          ),
+        ],
+      ),
+    );
+
 void main() {
   testWidgets('selecting a service and slot enables booking and submits the right data', (tester) async {
     // Tall viewport: the price summary bar would otherwise cover the slot chips.
@@ -259,7 +280,6 @@ void main() {
       reviewCount: 55,
     );
 
-    final navigatorKey = GlobalKey<NavigatorState>();
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -268,17 +288,9 @@ void main() {
           beautyApiProvider.overrideWithValue(_FakeBeautyApi()),
           authControllerProvider.overrideWith(_LoggedInAuthController.new),
         ],
-        child: MaterialApp(
-          theme: factoryLightTheme(),
-          navigatorKey: navigatorKey,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const Scaffold(body: SizedBox()),
-        ),
+        child: _routerApp(provider),
       ),
     );
-    navigatorKey.currentState!
-        .push(MaterialPageRoute(builder: (_) => const ProviderDetailScreen(provider: provider)));
     await tester.pumpAndSettle();
 
     expect(find.text('4.2'), findsOneWidget);
@@ -354,12 +366,7 @@ void main() {
           beautyApiProvider.overrideWithValue(fakeBeautyApi),
           authControllerProvider.overrideWith(_LoggedInAuthController.new),
         ],
-        child: MaterialApp(
-          theme: factoryLightTheme(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: ProviderDetailScreen(provider: provider),
-        ),
+        child: _routerApp(provider),
       ),
     );
     await tester.pumpAndSettle();

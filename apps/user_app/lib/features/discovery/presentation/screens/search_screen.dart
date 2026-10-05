@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -68,10 +70,31 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     setState(() => _query = const DiscoveryQuery());
   }
 
+  Timer? _typingTimer;
+
   @override
   void dispose() {
+    _typingTimer?.cancel();
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// Search-as-you-type: the results follow the text once the user pauses for
+  /// a moment (and from two characters on), without waiting for the keyboard's
+  /// search key. Unlike [_runSearch] this does not add the text to recent
+  /// searches — half-typed words would drown the list; submit / chips do that.
+  void _onTyping(String value) {
+    _typingTimer?.cancel();
+    final trimmed = value.trim();
+    if (trimmed.length == 1) return;
+    _typingTimer = Timer(const Duration(milliseconds: 450), () {
+      if (!mounted) return;
+      setState(
+        () => _query = trimmed.isEmpty
+            ? _query.copyWith(clearQuery: true)
+            : _query.copyWith(query: trimmed),
+      );
+    });
   }
 
   bool get _filterActive =>
@@ -82,6 +105,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   /// up in the same place: the field reflects it, the search runs, and it
   /// (re)joins recent searches at the top.
   void _runSearch(String value) {
+    _typingTimer?.cancel();
     final trimmed = value.trim();
     _searchController.text = trimmed;
     setState(
@@ -119,6 +143,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 child: FactorySearchField(
                   controller: _searchController,
                   hint: l10n.searchHint,
+                  onChanged: _onTyping,
                   onSubmitted: _runSearch,
                   onCleared: () => _runSearch(''),
                   clearSemanticLabel: l10n.searchClearButton,

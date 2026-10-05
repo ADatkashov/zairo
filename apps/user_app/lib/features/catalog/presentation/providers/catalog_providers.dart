@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/catalog_api.dart';
 import '../../data/models/business_type.dart';
+import '../../data/models/catalog_service.dart';
 import '../../data/models/category.dart';
 
 final catalogApiProvider = Provider<CatalogApi>((ref) {
@@ -23,4 +24,9 @@ final categoriesProvider = FutureProvider.autoDispose<List<Category>>((ref) {
 /// actually expanded — not eagerly for all 20 on screen open.
 final businessTypesProvider = FutureProvider.autoDispose.family<List<BusinessType>, String>((ref, categoryId) {
   return ref.watch(catalogApiProvider).listBusinessTypes(categoryId);
+});
+
+/// A sphere's catalog services, fetched when the compare-prices sheet opens.
+final catalogServicesProvider = FutureProvider.autoDispose.family<List<CatalogService>, String>((ref, businessTypeId) {
+  return ref.watch(catalogApiProvider).listCatalogServices(businessTypeId);
 });

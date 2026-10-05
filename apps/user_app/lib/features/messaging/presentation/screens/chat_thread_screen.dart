@@ -9,6 +9,7 @@ import '../../../../core/formatting/month_day_time.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/models/chat_message.dart';
+import '../providers/message_seen_provider.dart';
 import '../providers/messaging_providers.dart';
 
 /// A 1:1 thread between the current customer and one provider. Keyed by
@@ -59,6 +60,13 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
     super.dispose();
   }
 
+  void _markSeen(DateTime at) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(messageSeenProvider.notifier).markSeen(widget.providerId, at);
+    });
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
@@ -90,6 +98,9 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
                     _lastMessageCount = messages.length;
                     _scrollToBottom();
                   }
+                  // What is on screen counts as read: the thread shows up to
+                  // its newest message, so the "new messages" count drops.
+                  if (messages.isNotEmpty) _markSeen(messages.last.createdAt);
 
                   if (messages.isEmpty) {
                     return RefreshIndicator(
