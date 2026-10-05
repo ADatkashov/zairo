@@ -9,6 +9,9 @@ class AdminService {
   final String currency;
   final bool active;
 
+  /// The master-catalog service this offering is linked to, if any.
+  final String? catalogServiceId;
+
   const AdminService({
     required this.id,
     required this.providerId,
@@ -17,6 +20,7 @@ class AdminService {
     required this.price,
     required this.currency,
     required this.active,
+    this.catalogServiceId,
   });
 
   factory AdminService.fromJson(Map<String, dynamic> json) {
@@ -28,6 +32,7 @@ class AdminService {
       price: (json['price'] as num).toDouble(),
       currency: json['currency'] as String,
       active: json['active'] as bool,
+      catalogServiceId: json['catalogServiceId'] as String?,
     );
   }
 }

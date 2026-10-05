@@ -127,11 +127,7 @@
   "businessCategoryLabel": "Category",
   "@businessCategoryLabel": {"description": "Label for the category dropdown when creating a business."},
 
-  "platformAdminEntryButton": "Platform Admin",
-  "@platformAdminEntryButton": {"description": "Text button on the login screen leading to the platform-staff login."},
 
-  "platformAdminLoginTitle": "Platform Admin Login",
-  "@platformAdminLoginTitle": {"description": "AppBar title for the platform-staff login screen."},
 
   "verticalBeautyLabel": "Beauty",
   "@verticalBeautyLabel": {"description": "Vertical picker segment label when creating a provider."},
@@ -789,8 +785,6 @@
     }
   },
 
-  "addSlotDialogTitle": "Add a time slot",
-  "@addSlotDialogTitle": {"description": "Add-slot dialog title."},
 
   "pickDateLabel": "Pick a date",
   "@pickDateLabel": {"description": "Add-slot dialog's date picker placeholder."},
@@ -2432,13 +2426,13 @@
   "@loyaltyGreetingSent": {"description": "Loyalty manual greeting: loyaltyGreetingSent"},
   "navMore": "More",
   "@navMore": {"description": "Bottom-nav label of the 'More' tab (Automation, Subscription, Settings)."},
-  "quickActionAddSlot": "Add time slot",
+  "quickActionAddSlot": "Set schedule",
   "@quickActionAddSlot": {"description": "Dashboard quick action: open a free time slot for a business."},
   "quickActionAddService": "Add service",
   "@quickActionAddService": {"description": "Dashboard quick action: add a service to a business."},
   "quickActionPickBusiness": "Which business?",
   "@quickActionPickBusiness": {"description": "Title of the sheet asking which business a dashboard quick action is for."},
-  "quickActionSlotAdded": "Time slot added",
+  "quickActionSlotAdded": "Schedule generated",
   "@quickActionSlotAdded": {"description": "Snackbar after the dashboard quick action created a slot."},
   "quickActionServiceAdded": "Service added",
   "@quickActionServiceAdded": {"description": "Snackbar after the dashboard quick action created a service."},
@@ -2449,5 +2443,54 @@
   "customerListNoMatch": "No customers match your search.",
   "@customerListNoMatch": {"description": "Customer list: nobody matches the typed text."},
   "quickActionCustomers": "Customers",
-  "@quickActionCustomers": {"description": "Dashboard quick action and title: a business's customers."}
+  "@quickActionCustomers": {"description": "Dashboard quick action and title: a business's customers."},
+
+  "catalogServiceLabel": "Service",
+  "@catalogServiceLabel": {"description": "Add/edit service dialog: dropdown of platform-managed catalog services."},
+
+  "validationPickCatalogService": "Pick a service from the list, a positive duration, and a valid price",
+  "@validationPickCatalogService": {"description": "Add service dialog validation error when using the catalog."},
+
+  "errorCatalogServicesLoad": "Could not load the service list: {error}",
+  "@errorCatalogServicesLoad": {
+    "description": "Add service dialog: catalog list failed to load.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "masterPhoneLabel": "Phone of a registered user",
+  "@masterPhoneLabel": {"description": "Add-master dialog."},
+
+  "findButton": "Find",
+  "@findButton": {"description": "Add-master dialog."},
+
+  "masterUserNotFound": "Nobody is registered with this phone",
+  "@masterUserNotFound": {"description": "Add-master dialog."},
+
+  "validationMasterPhoneRequired": "Enter a phone number",
+  "@validationMasterPhoneRequired": {"description": "Add-master dialog."},
+
+  "masterAlreadyAdded": "This person is already a master here",
+  "@masterAlreadyAdded": {"description": "Add-master dialog."},
+
+  "inviteExplanation": "They will be added to your business automatically once they sign up with this number.",
+  "@inviteExplanation": {"description": "Invite flow of the add-person dialog."},
+
+  "inviteButton": "Invite",
+  "@inviteButton": {"description": "Invite flow of the add-person dialog."},
+
+  "inviteSent": "Invitation sent to {phone}",
+  "@inviteSent": {"description": "Invite flow of the add-person dialog.",
+    "placeholders": {"phone": {"type": "String"}}},
+
+  "inviteAlreadySent": "This number is already invited",
+  "@inviteAlreadySent": {"description": "Invite flow of the add-person dialog."},
+
+  "pendingInvitationsTitle": "Pending invitations",
+  "@pendingInvitationsTitle": {"description": "Invite flow of the add-person dialog."},
+
+  "cancelInvitationTooltip": "Cancel invitation",
+  "@cancelInvitationTooltip": {"description": "Invite flow of the add-person dialog."}
+
 }

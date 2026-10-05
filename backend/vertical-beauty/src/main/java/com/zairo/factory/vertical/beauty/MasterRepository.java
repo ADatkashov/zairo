@@ -10,5 +10,7 @@ public interface MasterRepository extends JpaRepository<Master, UUID> {
 
     long countByProviderId(UUID providerId);
 
+    boolean existsByProviderIdAndUserId(UUID providerId, UUID userId);
+
     List<Master> findByProviderIdAndActiveTrue(UUID providerId);
 }

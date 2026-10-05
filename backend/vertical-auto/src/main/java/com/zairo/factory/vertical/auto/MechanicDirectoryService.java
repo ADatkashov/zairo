@@ -6,6 +6,7 @@ import com.zairo.factory.providers.ProviderRepository;
 import com.zairo.factory.services.ServiceOffering;
 import com.zairo.factory.services.ServiceOfferingRepository;
 import com.zairo.factory.subscriptions.SubscriptionLimitService;
+import com.zairo.factory.users.UserRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -26,17 +27,19 @@ public class MechanicDirectoryService {
     private final ServiceOfferingRepository serviceOfferingRepository;
     private final ProviderOwnership providerOwnership;
     private final SubscriptionLimitService subscriptionLimitService;
+    private final UserRepository userRepository;
 
     public MechanicDirectoryService(MechanicRepository mechanicRepository,
             MechanicServiceLinkRepository mechanicServiceLinkRepository, ProviderRepository providerRepository,
             ServiceOfferingRepository serviceOfferingRepository, ProviderOwnership providerOwnership,
-            SubscriptionLimitService subscriptionLimitService) {
+            SubscriptionLimitService subscriptionLimitService, UserRepository userRepository) {
         this.mechanicRepository = mechanicRepository;
         this.mechanicServiceLinkRepository = mechanicServiceLinkRepository;
         this.providerRepository = providerRepository;
         this.serviceOfferingRepository = serviceOfferingRepository;
         this.providerOwnership = providerOwnership;
         this.subscriptionLimitService = subscriptionLimitService;
+        this.userRepository = userRepository;
     }
 
     /**
@@ -62,6 +65,23 @@ public class MechanicDirectoryService {
         Mechanic mechanic = new Mechanic(UUID.randomUUID(), providerId, displayName, bio, photoUrl, true,
                 Instant.now());
         return mechanicRepository.save(mechanic);
+    }
+
+    /**
+     * Adds an existing registered user as a mechanic: the display name and photo come from their profile, so
+     * nothing is typed in. A user can be a mechanic at a given provider only once.
+     */
+    @Transactional
+    public Mechanic createMechanicFromUser(UUID providerId, UUID userId, UUID requestingUserId) {
+        providerOwnership.requireOwner(providerId, requestingUserId);
+        com.zairo.factory.users.User user = userRepository.findById(userId)
+                .filter(found -> !found.isDeleted())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found: " + userId));
+        if (mechanicRepository.existsByProviderIdAndUserId(providerId, userId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This user is already a mechanic here");
+        }
+        Mechanic mechanic = createMechanic(providerId, user.getDisplayName(), null, user.getAvatarUrl(), requestingUserId);
+        return mechanicRepository.save(mechanic.withUserId(userId));
     }
 
     /**
