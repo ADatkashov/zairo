@@ -1670,5 +1670,9 @@
   "discardChangesKeepEditing": "Keep editing",
   "@discardChangesKeepEditing": {"description": "Unsaved-changes dialog: stay on the form."},
   "discardChangesDiscard": "Discard",
-  "@discardChangesDiscard": {"description": "Unsaved-changes dialog: leave and lose the edits."}
+  "@discardChangesDiscard": {"description": "Unsaved-changes dialog: leave and lose the edits."},
+  "authStepLabel": "Step {step} of {total}",
+  "@authStepLabel": {"description": "Progress label at the top of the phone sign-in screens.", "placeholders": {"step": {"type": "int"}, "total": {"type": "int"}}},
+  "authChangeNumber": "Change number",
+  "@authChangeNumber": {"description": "Phone sign-in step 2: goes back to re-enter the phone number."}
 }

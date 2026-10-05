@@ -508,5 +508,7 @@
   "discardChangesTitle": "Өзгерістерден бас тарту керек пе?",
   "discardChangesMessage": "Енгізілген өзгерістер сақталмаған.",
   "discardChangesKeepEditing": "Жалғастыру",
-  "discardChangesDiscard": "Бас тарту"
+  "discardChangesDiscard": "Бас тарту",
+  "authStepLabel": "{step}-қадам, барлығы {total}",
+  "authChangeNumber": "Нөмірді өзгерту"
 }

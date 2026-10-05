@@ -523,5 +523,7 @@
   "discardChangesTitle": "Отменить изменения?",
   "discardChangesMessage": "Внесённые изменения не сохранены.",
   "discardChangesKeepEditing": "Продолжить",
-  "discardChangesDiscard": "Отменить"
+  "discardChangesDiscard": "Отменить",
+  "authStepLabel": "Шаг {step} из {total}",
+  "authChangeNumber": "Изменить номер"
 }

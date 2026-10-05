@@ -194,4 +194,21 @@ void main() {
     expect(find.text('That account is already linked to a different ZAIRO user.'), findsOneWidget);
     expect(find.text('open'), findsNothing);
   });
+
+  testWidgets('shows the step and lets the user go back to change the number', (tester) async {
+    final fakeApi = _FakeAuthApi();
+    await tester.pumpWidget(_wrap(fakeApi));
+    await tester.tap(find.text('open'));
+    await _settle(tester);
+
+    expect(find.text('Step 2 of 2'), findsOneWidget);
+    expect(find.text('+77001234567'), findsOneWidget);
+
+    await tester.tap(find.text('Change number'));
+    await _settle(tester);
+    await tester.pump(const Duration(milliseconds: 500)); // let the pop transition finish
+
+    expect(find.text('open'), findsOneWidget);
+    expect(find.text('Step 2 of 2'), findsNothing);
+  });
 }
