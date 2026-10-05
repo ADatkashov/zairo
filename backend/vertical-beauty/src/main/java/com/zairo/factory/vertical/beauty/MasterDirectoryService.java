@@ -6,6 +6,7 @@ import com.zairo.factory.providers.ProviderRepository;
 import com.zairo.factory.services.ServiceOffering;
 import com.zairo.factory.services.ServiceOfferingRepository;
 import com.zairo.factory.subscriptions.SubscriptionLimitService;
+import com.zairo.factory.users.UserRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -27,11 +28,12 @@ public class MasterDirectoryService {
     private final ServiceOfferingRepository serviceOfferingRepository;
     private final ProviderOwnership providerOwnership;
     private final SubscriptionLimitService subscriptionLimitService;
+    private final UserRepository userRepository;
 
     public MasterDirectoryService(MasterRepository masterRepository, PortfolioItemRepository portfolioItemRepository,
             MasterServiceLinkRepository masterServiceLinkRepository, ProviderRepository providerRepository,
             ServiceOfferingRepository serviceOfferingRepository, ProviderOwnership providerOwnership,
-            SubscriptionLimitService subscriptionLimitService) {
+            SubscriptionLimitService subscriptionLimitService, UserRepository userRepository) {
         this.masterRepository = masterRepository;
         this.portfolioItemRepository = portfolioItemRepository;
         this.masterServiceLinkRepository = masterServiceLinkRepository;
@@ -39,6 +41,7 @@ public class MasterDirectoryService {
         this.serviceOfferingRepository = serviceOfferingRepository;
         this.providerOwnership = providerOwnership;
         this.subscriptionLimitService = subscriptionLimitService;
+        this.userRepository = userRepository;
     }
 
     /**
@@ -66,6 +69,23 @@ public class MasterDirectoryService {
 
         Master master = new Master(UUID.randomUUID(), providerId, displayName, bio, photoUrl, true, Instant.now());
         return masterRepository.save(master);
+    }
+
+    /**
+     * Adds an existing registered user as a master: the display name and photo come from their profile, so
+     * nothing is typed in. A user can be a master at a given provider only once.
+     */
+    @Transactional
+    public Master createMasterFromUser(UUID providerId, UUID userId, UUID requestingUserId) {
+        providerOwnership.requireOwner(providerId, requestingUserId);
+        com.zairo.factory.users.User user = userRepository.findById(userId)
+                .filter(found -> !found.isDeleted())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found: " + userId));
+        if (masterRepository.existsByProviderIdAndUserId(providerId, userId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This user is already a master here");
+        }
+        Master master = createMaster(providerId, user.getDisplayName(), null, user.getAvatarUrl(), requestingUserId);
+        return masterRepository.save(master.withUserId(userId));
     }
 
     /**

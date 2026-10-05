@@ -34,7 +34,6 @@ import '../../data/models/admin_service.dart';
 import '../../data/models/admin_slot.dart';
 import '../providers/salon_providers.dart';
 import '../widgets/add_service_dialog.dart';
-import '../widgets/add_slot_dialog.dart';
 import '../widgets/recurring_schedule_dialog.dart';
 import 'business_analytics_screen.dart';
 
@@ -793,18 +792,6 @@ class _AvailabilitySectionState extends ConsumerState<_AvailabilitySection> {
                     builder: (_) => RecurringScheduleDialog(providerId: providerId),
                   );
                   if (generated == true) ref.invalidate(providerSlotsProvider(providerId));
-                },
-              ),
-              FactoryButton(
-                icon: Icons.add,
-                label: l10n.addButton,
-                variant: FactoryButtonVariant.text,
-                onPressed: () async {
-                  final added = await showDialog<bool>(
-                    context: context,
-                    builder: (_) => AddSlotDialog(providerId: providerId),
-                  );
-                  if (added == true) ref.invalidate(providerSlotsProvider(providerId));
                 },
               ),
             ],

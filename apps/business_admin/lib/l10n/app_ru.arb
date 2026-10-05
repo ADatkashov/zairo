@@ -157,7 +157,6 @@
   "errorServiceSaveFailed": "Не удалось сохранить услугу: {error}",
   "errorServiceAddFailed": "Не удалось добавить услугу: {error}",
 
-  "addSlotDialogTitle": "Добавить время",
   "pickDateLabel": "Выбрать дату",
   "pickTimeLabel": "Выбрать время начала",
   "validationSlotFields": "Выберите дату, время начала и положительную длительность",
@@ -854,10 +853,10 @@
   "loyaltyGreetingSendButton": "Отправить",
   "loyaltyGreetingSent": "Поздравление отправлено",
   "navMore": "Ещё",
-  "quickActionAddSlot": "Добавить слот",
+  "quickActionAddSlot": "Настроить расписание",
   "quickActionAddService": "Добавить услугу",
   "quickActionPickBusiness": "Для какого бизнеса?",
-  "quickActionSlotAdded": "Слот добавлен",
+  "quickActionSlotAdded": "Расписание создано",
   "quickActionServiceAdded": "Услуга добавлена",
   "customerListSearchHint": "Поиск по имени или email",
   "customerListSearchClear": "Очистить поиск",
@@ -868,5 +867,15 @@
 
   "validationPickCatalogService": "Выберите услугу из списка, положительную длительность и корректную цену",
 
-  "errorCatalogServicesLoad": "Не удалось загрузить список услуг: {error}"
+  "errorCatalogServicesLoad": "Не удалось загрузить список услуг: {error}",
+
+  "masterPhoneLabel": "Телефон зарегистрированного пользователя",
+
+  "findButton": "Найти",
+
+  "masterUserNotFound": "С этим телефоном никто не зарегистрирован",
+
+  "validationMasterPhoneRequired": "Введите телефон",
+
+  "masterAlreadyAdded": "Этот человек уже работает здесь мастером"
 }

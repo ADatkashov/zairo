@@ -26,7 +26,7 @@ import 'package:business_admin/features/salon/data/models/dashboard_metrics.dart
 import 'package:business_admin/features/salon/data/salon_admin_api.dart';
 import 'package:business_admin/features/salon/presentation/providers/salon_providers.dart';
 import 'package:business_admin/features/salon/presentation/widgets/add_service_dialog.dart';
-import 'package:business_admin/features/salon/presentation/widgets/add_slot_dialog.dart';
+import 'package:business_admin/features/salon/presentation/widgets/recurring_schedule_dialog.dart';
 import 'package:business_admin/l10n/app_localizations.dart';
 
 class _FakeSalonAdminApi extends SalonAdminApi {
@@ -309,16 +309,16 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('quick actions with one business open the slot dialog straight away', (tester) async {
+  testWidgets('quick actions with one business open the schedule dialog straight away', (tester) async {
     await pumpDashboard(tester, [
       const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE'),
     ]);
 
-    await tester.tap(find.text('Add time slot'));
+    await tester.tap(find.text('Set schedule'));
     await tester.pumpAndSettle();
 
     expect(find.text('Which business?'), findsNothing);
-    expect(find.byType(AddSlotDialog), findsOneWidget);
+    expect(find.byType(RecurringScheduleDialog), findsOneWidget);
   });
 
   testWidgets('quick actions with several businesses ask which one first', (tester) async {

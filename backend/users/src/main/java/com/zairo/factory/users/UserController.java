@@ -1,6 +1,7 @@
 package com.zairo.factory.users;
 
 import com.zairo.factory.users.UserDtos.CreateUserRequest;
+import com.zairo.factory.users.UserDtos.UserLookupResponse;
 import com.zairo.factory.users.UserDtos.UserResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -87,6 +89,25 @@ public class UserController {
         requireAdmin(httpRequest);
         return userRepository.findById(id).map(UserResponse::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found: " + id));
+    }
+
+    @Operation(summary = "Find a registered user by exact phone number", description = "For picking an "
+            + "existing person (e.g. adding a master to a business). Any signed-in user may call it, but it only "
+            + "ever answers an exact phone match and returns just the id, display name and avatar — never email, "
+            + "phone or role.")
+    @ApiResponse(responseCode = "200", description = "The matching user")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "404", ref = "NotFound", description = "Nobody is registered with this phone.")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/users/lookup")
+    public UserLookupResponse lookupByPhone(
+            @Parameter(description = "Exact phone, as registered.", example = "+77001234567")
+            @RequestParam String phone, HttpServletRequest httpRequest) {
+        if (!(httpRequest.getAttribute(ROLE_REQUEST_ATTRIBUTE) instanceof String)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid access token");
+        }
+        return userRepository.findByPhoneAndDeletedAtIsNull(phone.trim()).map(UserLookupResponse::from)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
     }
 
     private static void requireAdmin(HttpServletRequest httpRequest) {
