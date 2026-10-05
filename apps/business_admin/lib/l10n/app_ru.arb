@@ -157,7 +157,6 @@
   "errorServiceSaveFailed": "Не удалось сохранить услугу: {error}",
   "errorServiceAddFailed": "Не удалось добавить услугу: {error}",
 
-  "addSlotDialogTitle": "Добавить время",
   "pickDateLabel": "Выбрать дату",
   "pickTimeLabel": "Выбрать время начала",
   "validationSlotFields": "Выберите дату, время начала и положительную длительность",
@@ -854,15 +853,44 @@
   "loyaltyGreetingSendButton": "Отправить",
   "loyaltyGreetingSent": "Поздравление отправлено",
   "navMore": "Ещё",
-  "quickActionAddSlot": "Добавить слот",
+  "quickActionAddSlot": "Настроить расписание",
   "quickActionAddService": "Добавить услугу",
   "quickActionPickBusiness": "Для какого бизнеса?",
-  "quickActionSlotAdded": "Слот добавлен",
+  "quickActionSlotAdded": "Расписание создано",
   "quickActionServiceAdded": "Услуга добавлена",
   "customerListSearchHint": "Поиск по имени или email",
   "customerListSearchClear": "Очистить поиск",
   "customerListNoMatch": "Никто не подходит под поиск.",
   "quickActionCustomers": "Клиенты",
+
+  "catalogServiceLabel": "Услуга",
+
+  "validationPickCatalogService": "Выберите услугу из списка, положительную длительность и корректную цену",
+
+  "errorCatalogServicesLoad": "Не удалось загрузить список услуг: {error}",
+
+  "masterPhoneLabel": "Телефон зарегистрированного пользователя",
+
+  "findButton": "Найти",
+
+  "masterUserNotFound": "С этим телефоном никто не зарегистрирован",
+
+  "validationMasterPhoneRequired": "Введите телефон",
+
+  "masterAlreadyAdded": "Этот человек уже работает здесь мастером",
+
+  "inviteExplanation": "Человек будет добавлен в ваш бизнес автоматически, как только зарегистрируется с этим номером.",
+
+  "inviteButton": "Пригласить",
+
+  "inviteSent": "Приглашение отправлено на {phone}",
+
+  "inviteAlreadySent": "Этот номер уже приглашён",
+
+  "pendingInvitationsTitle": "Ожидают приглашения",
+
+  "cancelInvitationTooltip": "Отменить приглашение",
+
   "paConsoleTitle": "Консоль платформы",
   "paTabBusinesses": "Бизнесы",
   "paTabCatalog": "Каталог",

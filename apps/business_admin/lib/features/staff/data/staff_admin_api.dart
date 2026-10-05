@@ -25,15 +25,13 @@ class StaffAdminApi {
     return data.map((e) => AdminStaff.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  Future<AdminStaff> createStaff({
-    required String providerId,
-    required String displayName,
-    String? bio,
-  }) async {
+  /// Adds an existing registered user as a staff (POST .../from-user) — name and
+  /// photo come from their profile, nothing is typed in.
+  Future<AdminStaff> createStaffFromUser({required String providerId, required String userId}) async {
     try {
       final response = await _dioClient.post(
-        '/providers/$providerId/staff',
-        data: {'displayName': displayName, 'bio': bio, 'photoUrl': null},
+        '/providers/$providerId/staff/from-user',
+        data: {'userId': userId},
       );
       return AdminStaff.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {

@@ -34,7 +34,6 @@ import '../../data/models/admin_service.dart';
 import '../../data/models/admin_slot.dart';
 import '../providers/salon_providers.dart';
 import '../widgets/add_service_dialog.dart';
-import '../widgets/add_slot_dialog.dart';
 import '../widgets/recurring_schedule_dialog.dart';
 import 'business_analytics_screen.dart';
 
@@ -137,7 +136,7 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
             const SizedBox(height: FactorySpacing.space6),
             _DashboardMetricsSection(providerId: _provider.id),
             const SizedBox(height: FactorySpacing.space6),
-            _ServicesSection(providerId: _provider.id),
+            _ServicesSection(providerId: _provider.id, businessTypeId: _provider.businessTypeId),
             const SizedBox(height: FactorySpacing.space6),
             _AvailabilitySection(providerId: _provider.id),
             if (_provider.vertical == 'beauty') ...[
@@ -604,8 +603,9 @@ class _StatTile extends StatelessWidget {
 
 class _ServicesSection extends ConsumerWidget {
   final String providerId;
+  final String? businessTypeId;
 
-  const _ServicesSection({required this.providerId});
+  const _ServicesSection({required this.providerId, this.businessTypeId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -635,7 +635,7 @@ class _ServicesSection extends ConsumerWidget {
                 onPressed: () async {
                   final added = await showDialog<bool>(
                     context: context,
-                    builder: (_) => AddServiceDialog(providerId: providerId),
+                    builder: (_) => AddServiceDialog(providerId: providerId, businessTypeId: businessTypeId),
                   );
                   if (added == true) refresh();
                 },
@@ -658,7 +658,7 @@ class _ServicesSection extends ConsumerWidget {
                         onEdit: () async {
                           final saved = await showDialog<bool>(
                             context: context,
-                            builder: (_) => AddServiceDialog(providerId: providerId, existing: s),
+                            builder: (_) => AddServiceDialog(providerId: providerId, businessTypeId: businessTypeId, existing: s),
                           );
                           if (saved == true) refresh();
                         },
@@ -792,18 +792,6 @@ class _AvailabilitySectionState extends ConsumerState<_AvailabilitySection> {
                     builder: (_) => RecurringScheduleDialog(providerId: providerId),
                   );
                   if (generated == true) ref.invalidate(providerSlotsProvider(providerId));
-                },
-              ),
-              FactoryButton(
-                icon: Icons.add,
-                label: l10n.addButton,
-                variant: FactoryButtonVariant.text,
-                onPressed: () async {
-                  final added = await showDialog<bool>(
-                    context: context,
-                    builder: (_) => AddSlotDialog(providerId: providerId),
-                  );
-                  if (added == true) ref.invalidate(providerSlotsProvider(providerId));
                 },
               ),
             ],

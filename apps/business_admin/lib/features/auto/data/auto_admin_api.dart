@@ -23,15 +23,13 @@ class AutoAdminApi {
     return data.map((e) => AdminMechanic.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  Future<AdminMechanic> createMechanic({
-    required String providerId,
-    required String displayName,
-    String? bio,
-  }) async {
+  /// Adds an existing registered user as a mechanic (POST .../from-user) — name and
+  /// photo come from their profile, nothing is typed in.
+  Future<AdminMechanic> createMechanicFromUser({required String providerId, required String userId}) async {
     try {
       final response = await _dioClient.post(
-        '/auto/providers/$providerId/mechanics',
-        data: {'displayName': displayName, 'bio': bio, 'photoUrl': null},
+        '/auto/providers/$providerId/mechanics/from-user',
+        data: {'userId': userId},
       );
       return AdminMechanic.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {

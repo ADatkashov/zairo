@@ -12,6 +12,11 @@ class AdminProvider {
   final String? coverPhotoUrl;
   final String? cityCode;
 
+  /// The master-catalog business type this business resolved to — drives which
+  /// catalog services it can pick from. Null for businesses that predate the
+  /// catalog.
+  final String? businessTypeId;
+
   const AdminProvider({
     required this.id,
     required this.ownerUserId,
@@ -22,6 +27,7 @@ class AdminProvider {
     this.longitude,
     this.coverPhotoUrl,
     this.cityCode,
+    this.businessTypeId,
   });
 
   factory AdminProvider.fromJson(Map<String, dynamic> json) {
@@ -35,6 +41,7 @@ class AdminProvider {
       longitude: (json['longitude'] as num?)?.toDouble(),
       coverPhotoUrl: json['coverPhotoUrl'] as String?,
       cityCode: json['cityCode'] as String?,
+      businessTypeId: json['businessTypeId'] as String?,
     );
   }
 }

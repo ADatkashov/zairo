@@ -1,6 +1,7 @@
 package com.zairo.factory.vertical.cleaning;
 
 import com.zairo.factory.auth.CurrentUser;
+import com.zairo.factory.vertical.cleaning.CleanerDtos.CreateCleanerFromUserRequest;
 import com.zairo.factory.vertical.cleaning.CleanerDtos.CreateCleanerRequest;
 import com.zairo.factory.vertical.cleaning.CleanerDtos.CleanerResponse;
 import com.zairo.factory.vertical.cleaning.CleanerDtos.CleanerServiceResponse;
@@ -56,6 +57,24 @@ public class CleanerController {
         Cleaner cleaner = cleanerDirectoryService.createCleaner(providerId, request.displayName(), request.bio(),
                 request.photoUrl(), CurrentUser.requireUserId(httpRequest));
         return CleanerResponse.from(cleaner);
+    }
+
+    @Operation(summary = "Add an existing user as a cleaner", description = "Owner-only. The cleaner's name and photo "
+            + "come from the user's profile (find the user with GET /users/lookup). A user can be a cleaner at a "
+            + "provider once.")
+    @ApiResponse(responseCode = "201", description = "Cleaner created")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "402", description = "The plan's staff limit is reached.")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound", description = "The provider or the user doesn't exist.")
+    @ApiResponse(responseCode = "409", description = "This user is already a cleaner at this provider.")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/api/v1/cleaning/providers/{providerId}/cleaners/from-user")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CleanerResponse createFromUser(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
+            @Valid @RequestBody CreateCleanerFromUserRequest request, HttpServletRequest httpRequest) {
+        return CleanerResponse.from(cleanerDirectoryService.createCleanerFromUser(providerId, request.userId(),
+                CurrentUser.requireUserId(httpRequest)));
     }
 
     @Operation(summary = "List a provider's cleaners", description = "Active cleaners by default. Pass "

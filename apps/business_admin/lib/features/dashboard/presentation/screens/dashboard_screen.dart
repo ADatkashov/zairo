@@ -24,7 +24,7 @@ import '../../../salon/presentation/providers/salon_providers.dart';
 import '../../../salon/presentation/screens/customer_list_screen.dart';
 import '../../../salon/presentation/screens/salon_detail_screen.dart';
 import '../../../salon/presentation/widgets/add_service_dialog.dart';
-import '../../../salon/presentation/widgets/add_slot_dialog.dart';
+import '../../../salon/presentation/widgets/recurring_schedule_dialog.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
 
 /// Shown by AuthGate once logged in. Lists the salons/workshops/cleaning
@@ -697,12 +697,12 @@ class _QuickActions extends ConsumerWidget {
     );
   }
 
-  Future<void> _addSlot(BuildContext context, WidgetRef ref) async {
+  Future<void> _setSchedule(BuildContext context, WidgetRef ref) async {
     final provider = await _pickBusiness(context);
     if (provider == null || !context.mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     final message = AppLocalizations.of(context)!.quickActionSlotAdded;
-    final added = await showDialog<bool>(context: context, builder: (_) => AddSlotDialog(providerId: provider.id));
+    final added = await showDialog<bool>(context: context, builder: (_) => RecurringScheduleDialog(providerId: provider.id));
     if (added == true) {
       ref.invalidate(providerSlotsProvider(provider.id));
       messenger.showSnackBar(SnackBar(content: Text(message)));
@@ -714,7 +714,10 @@ class _QuickActions extends ConsumerWidget {
     if (provider == null || !context.mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     final message = AppLocalizations.of(context)!.quickActionServiceAdded;
-    final added = await showDialog<bool>(context: context, builder: (_) => AddServiceDialog(providerId: provider.id));
+    final added = await showDialog<bool>(
+      context: context,
+      builder: (_) => AddServiceDialog(providerId: provider.id, businessTypeId: provider.businessTypeId),
+    );
     if (added == true) {
       ref.invalidate(providerServicesProvider);
       messenger.showSnackBar(SnackBar(content: Text(message)));
@@ -741,7 +744,7 @@ class _QuickActions extends ConsumerWidget {
           icon: Icons.event_available_outlined,
           label: l10n.quickActionAddSlot,
           variant: FactoryButtonVariant.secondary,
-          onPressed: () => _addSlot(context, ref),
+          onPressed: () => _setSchedule(context, ref),
         ),
         FactoryButton(
           icon: Icons.add_business_outlined,
