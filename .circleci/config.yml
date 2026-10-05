@@ -132,6 +132,50 @@ jobs:
           working_directory: apps/user_app
           command: flutter analyze
 
+  # The platform console (apps/platform_admin) is web-first, so besides
+  # analyze + test this also proves the release web build compiles.
+  test-platform-admin:
+    docker:
+      - image: ubuntu:jammy
+    environment:
+      FLUTTER_HOME: /home/flutter
+      PATH: /home/flutter/bin:/home/flutter/bin/cache/dart-sdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    steps:
+      - run:
+          name: Install dependencies
+          command: |
+            apt-get update
+            apt-get install -y git openssh-client curl wget unzip
+      - checkout
+      - run:
+          name: Install Flutter
+          command: |
+            mkdir -p /home/flutter
+            git clone https://github.com/flutter/flutter.git /home/flutter
+            cd /home/flutter
+            git checkout stable
+            export PATH=/home/flutter/bin:/home/flutter/bin/cache/dart-sdk/bin:$PATH
+            flutter doctor
+      - run:
+          name: Install Dependencies
+          working_directory: apps/platform_admin
+          command: flutter pub get
+      - run:
+          name: Analyze Flutter Code
+          working_directory: apps/platform_admin
+          command: flutter analyze
+      - run:
+          name: Run Flutter Tests
+          working_directory: apps/platform_admin
+          command: flutter test
+      - run:
+          name: Build the web console
+          working_directory: apps/platform_admin
+          command: flutter build web --release --dart-define=API_BASE_URL=https://zairo-backend.onrender.com/api/v1
+      - store_artifacts:
+          path: apps/platform_admin/build/web
+          destination: platform-admin-web
+
 workflows:
   flutter-ci:
     jobs:
@@ -160,3 +204,18 @@ workflows:
                 - test
           requires:
             - build-for-testing
+      - test-platform-admin:
+          filters:
+            branches:
+              only:
+                - test
+      - build-android-apk:
+          name: build-android-apk-platform
+          app_dir: apps/platform_admin
+          artifact_name: platform-admin-release.apk
+          filters:
+            branches:
+              only:
+                - test
+          requires:
+            - test-platform-admin

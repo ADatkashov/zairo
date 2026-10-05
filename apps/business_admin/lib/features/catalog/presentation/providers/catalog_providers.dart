@@ -30,26 +30,3 @@ final catalogServicesProvider = FutureProvider.autoDispose.family<List<CatalogSe
     return ref.watch(catalogApiProvider).listServicesByBusinessType(businessTypeId);
   },
 );
-
-/// The Platform Admin taxonomy screen's own list — every status, not just
-/// ACTIVE, so deactivating a category doesn't drop it out of the screen
-/// that can reactivate it. See CatalogApi.listAllCategories.
-final platformAllCategoriesProvider = FutureProvider.autoDispose.family<List<Category>, String>((ref, platformToken) {
-  return ref.watch(catalogApiProvider).listAllCategories(platformToken);
-});
-
-final platformAllBusinessTypesProvider =
-    FutureProvider.autoDispose.family<List<BusinessType>, (String platformToken, String categoryId)>((ref, key) {
-  return ref.watch(catalogApiProvider).listAllBusinessTypes(key.$1, key.$2);
-});
-
-final platformAllSubspheresProvider =
-    FutureProvider.autoDispose.family<List<Subsphere>, (String platformToken, String businessTypeId)>((ref, key) {
-  return ref.watch(catalogApiProvider).listAllSubspheres(key.$1, key.$2);
-});
-
-final platformAllCatalogServicesProvider =
-    FutureProvider.autoDispose.family<List<CatalogServiceModel>, (String platformToken, String businessTypeId)>(
-        (ref, key) {
-  return ref.watch(catalogApiProvider).listAllCatalogServices(key.$1, key.$2);
-});

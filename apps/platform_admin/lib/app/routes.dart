@@ -1,0 +1,36 @@
+/// Every area of the console as a URL — a deep link on mobile / desktop and a
+/// browser address on web. The order of [consoleBranchPaths] is the branch
+/// order of the shell.
+abstract final class ConsoleRoutes {
+  static const login = '/login';
+  static const splash = '/splash';
+  static const dashboard = '/dashboard';
+  static const businesses = '/businesses';
+  static const catalog = '/catalog';
+  static const cities = '/cities';
+  static const finance = '/finance';
+  static const activity = '/activity';
+  static const staff = '/staff';
+  static const settings = '/settings';
+
+  /// Phone-only: the list of areas that don't fit the bottom bar.
+  static const more = '/more';
+}
+
+const consoleBranchPaths = [
+  ConsoleRoutes.dashboard, // 0
+  ConsoleRoutes.businesses, // 1
+  ConsoleRoutes.catalog, // 2
+  ConsoleRoutes.cities, // 3
+  ConsoleRoutes.finance, // 4
+  ConsoleRoutes.activity, // 5
+  ConsoleRoutes.staff, // 6
+  ConsoleRoutes.settings, // 7
+  ConsoleRoutes.more, // 8
+];
+
+/// Branch indexes the phone's bottom bar shows; the fifth tab is "More".
+const phoneTabBranches = [0, 1, 2, 4, 8];
+
+/// Areas a phone reaches through "More".
+const moreBranches = {3, 5, 6, 7};

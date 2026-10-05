@@ -118,7 +118,7 @@ class _AddServiceDialogState extends ConsumerState<AddServiceDialog> {
 
   Widget _buildCatalogPicker(AppLocalizations l10n) {
     final servicesAsync = ref.watch(catalogServicesProvider(widget.businessTypeId!));
-    final subspheres = ref.watch(subspheresProvider(widget.businessTypeId!)).valueOrNull ?? const [];
+    final subspheres = ref.watch(subspheresProvider(widget.businessTypeId!)).value ?? const [];
     final subsphereNames = {for (final s in subspheres) s.id: s.nameFor(_languageCode)};
     final subsphereOrder = {for (final s in subspheres) s.id: s.sortOrder};
 
