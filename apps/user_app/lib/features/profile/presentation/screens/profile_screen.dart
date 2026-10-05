@@ -13,6 +13,7 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../auth/presentation/screens/register_screen.dart';
 import '../../../booking/presentation/providers/booking_providers.dart';
+import '../../../messaging/presentation/providers/message_seen_provider.dart';
 import '../../../notifications/presentation/widgets/notification_bell_button.dart';
 import '../../../favorites/presentation/providers/favorites_providers.dart';
 import '../widgets/change_avatar_dialog.dart';
@@ -218,7 +219,16 @@ class _LoggedInView extends ConsumerWidget {
         FactorySelectableTile(
           title: l10n.messagesTitle,
           leading: Icon(Symbols.forum_rounded, color: colors.textSecondary),
-          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (ref.watch(newMessagesCountProvider) > 0) ...[
+                FactoryBadge(label: '${ref.watch(newMessagesCountProvider)}', variant: FactoryBadgeVariant.error),
+                const SizedBox(width: FactorySpacing.space2),
+              ],
+              Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
+            ],
+          ),
           onTap: () => context.push(AppRoutes.messages),
         ),
         const SizedBox(height: FactorySpacing.space2),
