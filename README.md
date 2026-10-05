@@ -55,6 +55,9 @@ GitHub Actions: `flutter analyze` + `flutter test` по каждому Flutter-
 - `apps/user_app` — клиентское приложение (бывший `zairo`).
 - `apps/business_admin` — приложение для владельцев/модераторов бизнеса
   (салоны и мастерские — обе вертикали, beauty и auto).
+- `apps/platform_admin` — консоль сотрудников платформы (web / Android / iOS /
+  desktop): модерация бизнесов, каталог, города, выплаты и возвраты, журнал,
+  сотрудники. Подробности — [`docs/PLATFORM_ADMIN_APP.md`](docs/PLATFORM_ADMIN_APP.md).
 - `packages/core_network`, `packages/core_storage`, `packages/core_ui` —
   переиспользуемые Flutter-пакеты Factory Core.
 - `backend/` — Spring Boot modular monolith, полноценно построен,

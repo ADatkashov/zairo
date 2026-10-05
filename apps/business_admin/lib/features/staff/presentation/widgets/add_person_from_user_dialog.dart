@@ -198,7 +198,7 @@ class _PendingInvitations extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final invitations = ref.watch(pendingInvitationsProvider(providerId)).valueOrNull ?? const [];
+    final invitations = ref.watch(pendingInvitationsProvider(providerId)).value ?? const [];
     if (invitations.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/app_localizations.dart';
-import '../../../platform_admin/presentation/screens/platform_admin_login_screen.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
 import '../../data/apple_sign_in_service.dart';
 import '../../data/auth_exception.dart';
@@ -182,19 +181,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
                           ),
                 ),
-              // A separate login for platform staff (see
-              // PlatformAdminLoginScreen's own doc comment) — not part of
-              // this app's regular owner/moderator auth, so it lives behind
-              // a low-visibility text button rather than a prominent one.
-              FactoryButton(
-                label: l10n.platformAdminEntryButton,
-                variant: FactoryButtonVariant.text,
-                onPressed: isLoading
-                    ? null
-                    : () => Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const PlatformAdminLoginScreen()),
-                        ),
-              ),
             ],
           ),
         ),
