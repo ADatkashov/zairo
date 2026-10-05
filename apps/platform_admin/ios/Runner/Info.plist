@@ -6,6 +6,8 @@
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ZAIRO Platform needs access to your photo library to set your profile photo.</string>
 	<key>CFBundleDisplayName</key>
 	<string>ZAIRO Platform</string>
 	<key>CFBundleExecutable</key>

@@ -34,7 +34,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _restoreLastEmail() async {
-    final last = await ref.read(sessionStorageProvider).readLastEmail();
+    String? last;
+    try {
+      last = await ref.read(sessionStorageProvider).readLastEmail();
+    } catch (_) {
+      return; // storage unavailable: just start with an empty field
+    }
     if (!mounted || last == null || _email.text.isNotEmpty) return;
     _email.text = last;
     // The email is known, so the next thing to type is the password.

@@ -39,11 +39,19 @@ class SessionController extends AsyncNotifier<PlatformSession?> {
     });
 
     final storage = ref.read(sessionStorageProvider);
-    final token = await storage.readToken();
+    // Secure storage can refuse on some desktop setups (no keychain access on
+    // macOS, no libsecret on Linux). That must only cost the "stay signed in
+    // across restarts" convenience, never stop the console from starting.
+    String? token;
+    try {
+      token = await storage.readToken();
+    } catch (_) {
+      return null;
+    }
     if (token == null) return null;
 
     final restored = await _tryRestore(token);
-    if (restored == null) await storage.clearToken();
+    if (restored == null) await _safely(storage.clearToken);
     return restored;
   }
 
@@ -64,8 +72,8 @@ class SessionController extends AsyncNotifier<PlatformSession?> {
   Future<void> login({required String email, required String password}) async {
     final session = await ref.read(authApiProvider).login(email: email, password: password);
     final storage = ref.read(sessionStorageProvider);
-    await storage.saveToken(session.accessToken);
-    await storage.saveLastEmail(email);
+    await _safely(() => storage.saveToken(session.accessToken));
+    await _safely(() => storage.saveLastEmail(email));
     ref.read(sessionExpiredProvider.notifier).set(false);
     state = AsyncData(_activate(session));
   }
@@ -97,8 +105,15 @@ class SessionController extends AsyncNotifier<PlatformSession?> {
   Future<void> _clear() async {
     _expiryTimer?.cancel();
     ref.read(authTokenHolderProvider).update(null);
-    await ref.read(sessionStorageProvider).clearToken();
+    await _safely(ref.read(sessionStorageProvider).clearToken);
     state = const AsyncData(null);
+  }
+
+  /// Storage is a convenience: a failure to read or write it is swallowed.
+  Future<void> _safely(Future<void> Function() action) async {
+    try {
+      await action();
+    } catch (_) {}
   }
 
   /// Pass null to remove the avatar.

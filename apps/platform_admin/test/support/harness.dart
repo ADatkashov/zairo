@@ -263,3 +263,15 @@ AppLocalizations l10nOf(WidgetTester tester) => AppLocalizations.of(tester.eleme
 Finder byTextContaining(String text) => find.textContaining(text);
 
 ThemeData get testTheme => factoryLightTheme();
+
+/// Secure storage that refuses everything, like a desktop without a keychain.
+class BrokenStorage extends MemoryStorage {
+  @override
+  Future<void> write(String key, String value) async => throw StateError('keychain unavailable');
+
+  @override
+  Future<String?> read(String key) async => throw StateError('keychain unavailable');
+
+  @override
+  Future<void> delete(String key) async => throw StateError('keychain unavailable');
+}
