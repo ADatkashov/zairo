@@ -844,5 +844,14 @@
   "loyaltyGreetingPointsError": "0-ден {max}-ға дейін бүтін сан енгізіңіз.",
   "loyaltyGreetingSendButton": "Жіберу",
   "loyaltyGreetingSent": "Құттықтау жіберілді",
-  "navMore": "Тағы"
+  "navMore": "Тағы",
+  "quickActionAddSlot": "Уақыт қосу",
+  "quickActionAddService": "Қызмет қосу",
+  "quickActionPickBusiness": "Қай бизнес үшін?",
+  "quickActionSlotAdded": "Уақыт қосылды",
+  "quickActionServiceAdded": "Қызмет қосылды",
+  "customerListSearchHint": "Аты немесе email бойынша іздеу",
+  "customerListSearchClear": "Іздеуді тазалау",
+  "customerListNoMatch": "Іздеуге ешкім сәйкес келмейді.",
+  "quickActionCustomers": "Клиенттер"
 }

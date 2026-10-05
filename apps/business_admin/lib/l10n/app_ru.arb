@@ -853,5 +853,14 @@
   "loyaltyGreetingPointsError": "Введите целое число от 0 до {max}.",
   "loyaltyGreetingSendButton": "Отправить",
   "loyaltyGreetingSent": "Поздравление отправлено",
-  "navMore": "Ещё"
+  "navMore": "Ещё",
+  "quickActionAddSlot": "Добавить слот",
+  "quickActionAddService": "Добавить услугу",
+  "quickActionPickBusiness": "Для какого бизнеса?",
+  "quickActionSlotAdded": "Слот добавлен",
+  "quickActionServiceAdded": "Услуга добавлена",
+  "customerListSearchHint": "Поиск по имени или email",
+  "customerListSearchClear": "Очистить поиск",
+  "customerListNoMatch": "Никто не подходит под поиск.",
+  "quickActionCustomers": "Клиенты"
 }
