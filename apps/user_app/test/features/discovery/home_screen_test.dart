@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:zairo/features/auth/data/models/user_summary.dart';
 import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/booking/data/booking_api.dart';
@@ -16,6 +17,7 @@ import 'package:zairo/features/catalog/presentation/providers/catalog_providers.
 import 'package:zairo/features/discovery/data/discovery_api.dart';
 import 'package:zairo/features/discovery/data/models/provider_search_result.dart';
 import 'package:zairo/features/discovery/presentation/providers/discovery_providers.dart';
+import 'package:zairo/features/catalog/presentation/screens/all_categories_screen.dart';
 import 'package:zairo/features/discovery/presentation/screens/home_screen.dart';
 import 'package:zairo/l10n/app_localizations.dart';
 
@@ -235,11 +237,19 @@ void main() {
           discoveryApiProvider.overrideWithValue(fakeDiscoveryApi),
           catalogApiProvider.overrideWithValue(fakeCatalogApi),
         ],
-        child: MaterialApp(
+        child: MaterialApp.router(
           theme: factoryLightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const HomeScreen(),
+          routerConfig: GoRouter(
+            routes: [
+              GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+              GoRoute(
+                path: '/categories',
+                builder: (_, _) => const AllCategoriesScreen(),
+              ),
+            ],
+          ),
         ),
       ),
     );

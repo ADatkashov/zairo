@@ -1648,5 +1648,11 @@
   "profileSectionActivity": "My activity",
   "@profileSectionActivity": {"description": "Profile list group header: favorites, messages, rewards, coupons, vehicles."},
   "profileSectionHelp": "Help",
-  "@profileSectionHelp": {"description": "Profile list group header: support and about."}
+  "@profileSectionHelp": {"description": "Profile list group header: support and about."},
+  "catalogComparePricesTooltip": "Compare prices for services in this sphere",
+  "@catalogComparePricesTooltip": {"description": "Tooltip of the compare-prices button on a sphere row in All categories."},
+  "catalogServicesSheetEmpty": "No services listed in this sphere yet.",
+  "@catalogServicesSheetEmpty": {"description": "Empty state of the catalog services sheet opened from All categories."},
+  "catalogServicesSheetHint": "Pick a service to see who offers it and compare.",
+  "@catalogServicesSheetHint": {"description": "Hint under the title of the catalog services sheet."}
 }

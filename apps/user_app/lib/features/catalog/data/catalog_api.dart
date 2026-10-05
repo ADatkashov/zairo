@@ -1,6 +1,7 @@
 import 'package:core_network/core_network.dart';
 
 import 'models/business_type.dart';
+import 'models/catalog_service.dart';
 import 'models/category.dart';
 
 /// Not final on purpose: tests substitute a subclass overriding
@@ -25,5 +26,13 @@ class CatalogApi {
     final response = await _dioClient.get('/categories/$categoryId/business-types');
     final data = response.data as List<dynamic>;
     return data.map((e) => BusinessType.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// The catalog services directly under one sphere — what a customer can
+  /// pick to see "who offers this" (see ServiceCompareScreen).
+  Future<List<CatalogService>> listCatalogServices(String businessTypeId) async {
+    final response = await _dioClient.get('/business-types/$businessTypeId/services');
+    final data = response.data as List<dynamic>;
+    return data.map((e) => CatalogService.fromJson(e as Map<String, dynamic>)).toList();
   }
 }
