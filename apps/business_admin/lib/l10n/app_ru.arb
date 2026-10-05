@@ -862,5 +862,11 @@
   "customerListSearchHint": "Поиск по имени или email",
   "customerListSearchClear": "Очистить поиск",
   "customerListNoMatch": "Никто не подходит под поиск.",
-  "quickActionCustomers": "Клиенты"
+  "quickActionCustomers": "Клиенты",
+
+  "catalogServiceLabel": "Услуга",
+
+  "validationPickCatalogService": "Выберите услугу из списка, положительную длительность и корректную цену",
+
+  "errorCatalogServicesLoad": "Не удалось загрузить список услуг: {error}"
 }

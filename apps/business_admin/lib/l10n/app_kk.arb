@@ -853,5 +853,11 @@
   "customerListSearchHint": "Аты немесе email бойынша іздеу",
   "customerListSearchClear": "Іздеуді тазалау",
   "customerListNoMatch": "Іздеуге ешкім сәйкес келмейді.",
-  "quickActionCustomers": "Клиенттер"
+  "quickActionCustomers": "Клиенттер",
+
+  "catalogServiceLabel": "Қызмет",
+
+  "validationPickCatalogService": "Тізімнен қызметті, оң ұзақтықты және дұрыс бағаны таңдаңыз",
+
+  "errorCatalogServicesLoad": "Қызметтер тізімін жүктеу мүмкін болмады: {error}"
 }
