@@ -20,7 +20,7 @@ class SettingsScreen extends ConsumerWidget {
     final themeMode =
         ref.watch(themeModeControllerProvider).value ?? ThemeMode.system;
     final locale = ref.watch(localeControllerProvider).value;
-    // Settings is also reachable from the login screen; Security only makes sense signed in.
+    // Settings is also reachable from the login screen; Security and Subscription only make sense signed in.
     final signedIn = ref.watch(authControllerProvider).value != null;
 
     return Scaffold(
@@ -53,12 +53,13 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () => Navigator.of(context)
                   .push(MaterialPageRoute(builder: (_) => const SecuritySettingsScreen())),
             ),
-          ListTile(
-            title: Text(l10n.billingSettingsRowTitle),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context)
-                .push(MaterialPageRoute(builder: (_) => const BillingScreen())),
-          ),
+          if (signedIn)
+            ListTile(
+              title: Text(l10n.billingSettingsRowTitle),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (_) => const BillingScreen())),
+            ),
         ],
       ),
     );

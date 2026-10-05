@@ -2,6 +2,7 @@ package com.zairo.factory.vertical.beauty;
 
 import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.vertical.beauty.MasterDtos.AddPortfolioItemRequest;
+import com.zairo.factory.vertical.beauty.MasterDtos.CreateMasterFromUserRequest;
 import com.zairo.factory.vertical.beauty.MasterDtos.CreateMasterRequest;
 import com.zairo.factory.vertical.beauty.MasterDtos.MasterResponse;
 import com.zairo.factory.vertical.beauty.MasterDtos.MasterServiceResponse;
@@ -58,6 +59,24 @@ public class MasterController {
         Master master = masterDirectoryService.createMaster(providerId, request.displayName(), request.bio(),
                 request.photoUrl(), CurrentUser.requireUserId(httpRequest));
         return MasterResponse.from(master);
+    }
+
+    @Operation(summary = "Add an existing user as a master", description = "Owner-only. The master's name and "
+            + "photo come from the user's profile (find the user with GET /users/lookup). A user can be a master "
+            + "at a provider once.")
+    @ApiResponse(responseCode = "201", description = "Master created")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "402", description = "The plan's staff limit is reached.")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound", description = "The provider or the user doesn't exist.")
+    @ApiResponse(responseCode = "409", description = "This user is already a master at this provider.")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/api/v1/beauty/providers/{providerId}/masters/from-user")
+    @ResponseStatus(HttpStatus.CREATED)
+    public MasterResponse createFromUser(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
+            @Valid @RequestBody CreateMasterFromUserRequest request, HttpServletRequest httpRequest) {
+        return MasterResponse.from(masterDirectoryService.createMasterFromUser(providerId, request.userId(),
+                CurrentUser.requireUserId(httpRequest)));
     }
 
     @Operation(summary = "List a provider's masters", description = "Active masters by default. Pass "

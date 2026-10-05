@@ -1,6 +1,7 @@
 package com.zairo.factory.staff;
 
 import com.zairo.factory.auth.CurrentUser;
+import com.zairo.factory.staff.StaffDtos.CreateStaffFromUserRequest;
 import com.zairo.factory.staff.StaffDtos.CreateStaffRequest;
 import com.zairo.factory.staff.StaffDtos.StaffResponse;
 import com.zairo.factory.staff.StaffDtos.StaffServiceResponse;
@@ -61,6 +62,24 @@ public class StaffController {
         Staff staff = staffDirectoryService.createStaff(providerId, request.displayName(), request.bio(),
                 request.photoUrl(), CurrentUser.requireUserId(httpRequest));
         return StaffResponse.from(staff);
+    }
+
+    @Operation(summary = "Add an existing user as a staff", description = "Owner-only. The staff's name and photo "
+            + "come from the user's profile (find the user with GET /users/lookup). A user can be a staff at a "
+            + "provider once.")
+    @ApiResponse(responseCode = "201", description = "Staff created")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "402", description = "The plan's staff limit is reached.")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound", description = "The provider or the user doesn't exist.")
+    @ApiResponse(responseCode = "409", description = "This user is already a staff at this provider.")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/api/v1/providers/{providerId}/staff/from-user")
+    @ResponseStatus(HttpStatus.CREATED)
+    public StaffResponse createFromUser(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
+            @Valid @RequestBody CreateStaffFromUserRequest request, HttpServletRequest httpRequest) {
+        return StaffResponse.from(staffDirectoryService.createStaffFromUser(providerId, request.userId(),
+                CurrentUser.requireUserId(httpRequest)));
     }
 
     @Operation(summary = "List a provider's staff", description = "Active staff by default. Pass "

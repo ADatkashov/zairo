@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -49,12 +50,14 @@ public class IdentityService {
     private final AuthAuditLog auditLog;
     private final LoginAttemptLimiter loginAttemptLimiter;
     private final Set<String> allowedSmsCountries;
+    private final ApplicationEventPublisher eventPublisher;
 
     IdentityService(UserRepository userRepository, IdentityLookupService identityLookupService,
             PhoneOtpService phoneOtpService, PhoneNumberNormalizer phoneNumberNormalizer,
             GoogleIdTokenVerifierPort googleVerifier, FacebookIdentityVerifierPort facebookVerifier,
             AppleIdTokenVerifierPort appleVerifier,
             SessionIssuer sessionIssuer, AuthAuditLog auditLog, LoginAttemptLimiter loginAttemptLimiter,
+            ApplicationEventPublisher eventPublisher,
             @Value("${app.otp.allowed-countries:KZ}") String allowedSmsCountries) {
         this.userRepository = userRepository;
         this.identityLookupService = identityLookupService;
@@ -66,6 +69,7 @@ public class IdentityService {
         this.sessionIssuer = sessionIssuer;
         this.auditLog = auditLog;
         this.loginAttemptLimiter = loginAttemptLimiter;
+        this.eventPublisher = eventPublisher;
         this.allowedSmsCountries = Arrays.stream(allowedSmsCountries.split(","))
                 .map(String::trim).filter(c -> !c.isEmpty()).map(String::toUpperCase).collect(Collectors.toSet());
     }
@@ -178,6 +182,7 @@ public class IdentityService {
         verifyOtpOrAudit(phone, code);
         User user = findOrCreateUser(IdentityProvider.PHONE, phone, null, phone, phone, UserRole.CUSTOMER);
         auditLog.loginSucceeded(user.getId(), "PHONE");
+        eventPublisher.publishEvent(new PhoneVerifiedEvent(user.getId(), phone));
         return sessionIssuer.issue(user);
     }
 
@@ -186,6 +191,7 @@ public class IdentityService {
         verifyOtpOrAudit(phone, code);
         linkIdentity(currentUserId, IdentityProvider.PHONE, phone, phone);
         auditLog.identityLinked(currentUserId, IdentityProvider.PHONE);
+        eventPublisher.publishEvent(new PhoneVerifiedEvent(currentUserId, phone));
         return SessionIssuer.toSummary(requireUser(currentUserId));
     }
 
@@ -250,6 +256,7 @@ public class IdentityService {
             throw new IdentityAlreadyLinkedException("This phone already has an account - sign in with its password");
         }
         auditLog.loginSucceeded(user.getId(), "PHONE");
+        eventPublisher.publishEvent(new PhoneVerifiedEvent(user.getId(), phone));
         return sessionIssuer.issue(user);
     }
 
