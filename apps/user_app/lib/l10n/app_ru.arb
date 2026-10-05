@@ -519,5 +519,9 @@
   "bookingBookAgainButton": "Записаться снова",
   "bookingConfirmationAddToCalendar": "В календарь",
   "bookingConfirmationDirections": "Маршрут",
-  "bookingCalendarEventTitle": "{service} · {business}"
+  "bookingCalendarEventTitle": "{service} · {business}",
+  "discardChangesTitle": "Отменить изменения?",
+  "discardChangesMessage": "Внесённые изменения не сохранены.",
+  "discardChangesKeepEditing": "Продолжить",
+  "discardChangesDiscard": "Отменить"
 }
