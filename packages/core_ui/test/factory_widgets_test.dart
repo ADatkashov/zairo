@@ -552,6 +552,23 @@ void main() {
     },
   );
 
+  testWidgets('FactoryButton wraps a long label in a narrow parent instead of overflowing', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        const SizedBox(
+          width: 160,
+          child: FactoryButton(
+            label: 'A very long button label that cannot fit on one line',
+            variant: FactoryButtonVariant.text,
+            onPressed: null,
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FactoryCard calls onTap and renders its child', (tester) async {
     var tapped = false;
     await tester.pumpWidget(

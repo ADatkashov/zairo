@@ -12,6 +12,8 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   flutter_riverpod: ^3.4.2
+  # URL-addressable owner area (deep links, browser back/refresh on web).
+  go_router: ^18.0.1
   dio: ^5.11.1
   # Every photo-upload flow (avatar, staff photos, cover photo, portfolio)
   # picks from camera/gallery, then crops/zooms/rotates before upload (see

@@ -65,7 +65,9 @@ class FactoryButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (icon != null) ...[Icon(icon, size: 18), const SizedBox(width: 8)],
-              Text(label),
+              // Flexible (loose): a long label wraps inside a width-constrained
+              // button instead of overflowing; at intrinsic width nothing changes.
+              Flexible(child: Text(label, textAlign: TextAlign.center)),
             ],
           );
 

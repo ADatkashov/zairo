@@ -4,111 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/auth/presentation/providers/auth_providers.dart';
 import '../features/auth/presentation/widgets/change_avatar_dialog.dart';
-import '../features/automation/presentation/screens/automation_center_screen.dart';
-import '../features/billing/presentation/screens/billing_screen.dart';
-import '../features/campaigns/presentation/screens/campaign_center_screen.dart';
-import '../features/dashboard/presentation/screens/dashboard_screen.dart';
-import '../features/loyalty/presentation/screens/loyalty_screen.dart';
-import '../features/messaging/presentation/screens/business_inbox_screen.dart';
-import '../features/settings/presentation/screens/settings_screen.dart';
 import '../l10n/app_localizations.dart';
-import 'admin_more_screen.dart';
-
-/// The desktop answer to this app's mobile linear push-navigation
-/// (see AuthGate's comment on why there's no router/shell there) — the
-/// design system's Responsive Navigation row calls for a sidebar on
-/// Business/Platform Admin at desktop width, so this only renders at
-/// [FactoryScreenSize.desktop]; below that, [ResponsiveOwnerHome] falls
-/// straight through to [DashboardScreen] unchanged, same as before this
-/// existed.
-///
-/// Each destination keeps its own Scaffold/AppBar exactly as it already
-/// does when reached by push on mobile — this composes them side-by-side
-/// rather than stripping their chrome, so nothing about DashboardScreen,
-/// BillingScreen or SettingsScreen had to change to gain a desktop shell.
-class AdminShell extends ConsumerStatefulWidget {
-  const AdminShell({super.key});
-
-  @override
-  ConsumerState<AdminShell> createState() => _AdminShellState();
-}
-
-class _AdminShellState extends ConsumerState<AdminShell> {
-  int _selectedIndex = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
-    // AdminShell only ever renders once logged in (see ResponsiveOwnerHome,
-    // reached through AuthGate) -- a null id here would mean a logout
-    // happened mid-frame, same edge case DashboardScreen already handles.
-    final ownerUserId = ref.watch(authControllerProvider).value?.id;
-
-    final destinations = [
-      AdminSidebarDestination(icon: Icons.dashboard_outlined, selectedIcon: Icons.dashboard_rounded, label: l10n.navDashboard),
-      AdminSidebarDestination(
-        icon: Icons.campaign_outlined,
-        selectedIcon: Icons.campaign_rounded,
-        label: l10n.campaignCenterNavLabel,
-      ),
-      AdminSidebarDestination(
-        icon: Icons.bolt_outlined,
-        selectedIcon: Icons.bolt,
-        label: l10n.automationCenterNavLabel,
-      ),
-      AdminSidebarDestination(
-        icon: Icons.loyalty_outlined,
-        selectedIcon: Icons.loyalty,
-        label: l10n.loyaltyNavLabel,
-      ),
-      AdminSidebarDestination(
-        icon: Icons.forum_outlined,
-        selectedIcon: Icons.forum_rounded,
-        label: l10n.messagingNavLabel,
-      ),
-      AdminSidebarDestination(
-        icon: Icons.receipt_long_outlined,
-        selectedIcon: Icons.receipt_long_rounded,
-        label: l10n.billingScreenTitle,
-      ),
-      AdminSidebarDestination(icon: Icons.settings_outlined, selectedIcon: Icons.settings_rounded, label: l10n.settingsButtonTooltip),
-    ];
-
-    return Scaffold(
-      body: Row(
-        children: [
-          AdminSidebar(
-            destinations: destinations,
-            selectedIndex: _selectedIndex,
-            onSelect: (index) => setState(() => _selectedIndex = index),
-          ),
-          VerticalDivider(width: 1, color: colors.border),
-          Expanded(
-            child: IndexedStack(
-              index: _selectedIndex,
-              children: [
-                const DashboardScreen(showNavActions: false),
-                if (ownerUserId != null) CampaignCenterScreen(ownerUserId: ownerUserId) else const SizedBox.shrink(),
-                if (ownerUserId != null)
-                  AutomationCenterScreen(ownerUserId: ownerUserId)
-                else
-                  const SizedBox.shrink(),
-                if (ownerUserId != null) LoyaltyScreen(ownerUserId: ownerUserId) else const SizedBox.shrink(),
-                if (ownerUserId != null)
-                  BusinessInboxScreen(ownerUserId: ownerUserId)
-                else
-                  const SizedBox.shrink(),
-                const BillingScreen(),
-                const SettingsScreen(),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class AdminSidebarDestination {
   const AdminSidebarDestination({required this.icon, required this.selectedIcon, required this.label});
@@ -118,18 +14,28 @@ class AdminSidebarDestination {
   final String label;
 }
 
-/// The branded 220px-wide sidebar: the Factory wordmark, the nav list with
+/// The branded 220px-wide sidebar (72px icon-only rail when [compact], used at
+/// tablet width): the Factory wordmark, the nav list with
 /// a rounded active pill (the same visual language as the redesigned
 /// customer app, carried into the owner's tool — see the Business Admin
 /// artifact), and a footer identifying who's signed in. Kept as its own
 /// widget (rather than inlined into [AdminShell]) so it stays a pure
 /// presentation component, easy to find in the widget tree from tests.
 class AdminSidebar extends ConsumerWidget {
-  const AdminSidebar({super.key, required this.destinations, required this.selectedIndex, required this.onSelect});
+  const AdminSidebar({
+    super.key,
+    required this.destinations,
+    required this.selectedIndex,
+    required this.onSelect,
+    this.compact = false,
+  });
 
   final List<AdminSidebarDestination> destinations;
   final int selectedIndex;
   final ValueChanged<int> onSelect;
+
+  /// Icons only (labels become tooltips) — the rail shown at tablet width.
+  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -139,22 +45,28 @@ class AdminSidebar extends ConsumerWidget {
     final user = ref.watch(authControllerProvider).value;
 
     return Container(
-      width: 220,
+      width: compact ? 72 : 220,
       color: colors.surface,
-      padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space3, vertical: FactorySpacing.space5),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? FactorySpacing.space2 : FactorySpacing.space3,
+        vertical: FactorySpacing.space5,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 0, 8, FactorySpacing.space5),
             child: Row(
+              mainAxisAlignment: compact ? MainAxisAlignment.center : MainAxisAlignment.start,
               children: [
                 const FactoryLogomark(size: 26),
-                const SizedBox(width: FactorySpacing.space2),
-                Text(
-                  'Factory',
-                  style: textTheme.headlineSmall?.copyWith(fontSize: 16, fontWeight: FontWeight.w700, color: colors.text),
-                ),
+                if (!compact) ...[
+                  const SizedBox(width: FactorySpacing.space2),
+                  Text(
+                    'Factory',
+                    style: textTheme.headlineSmall?.copyWith(fontSize: 16, fontWeight: FontWeight.w700, color: colors.text),
+                  ),
+                ],
               ],
             ),
           ),
@@ -163,6 +75,7 @@ class AdminSidebar extends ConsumerWidget {
             _SidebarNavItem(
               destination: destinations[i],
               selected: i == selectedIndex,
+              compact: compact,
               onTap: () => onSelect(i),
             ),
           ],
@@ -172,6 +85,7 @@ class AdminSidebar extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: FactorySpacing.space2),
               decoration: BoxDecoration(border: Border(top: BorderSide(color: colors.border))),
               child: Row(
+                mainAxisAlignment: compact ? MainAxisAlignment.center : MainAxisAlignment.start,
                 children: [
                   GestureDetector(
                     onTap: () => showChangeAvatarDialog(context, hasCurrentAvatar: user.avatarUrl != null),
@@ -181,22 +95,24 @@ class AdminSidebar extends ConsumerWidget {
                       image: user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
                     ),
                   ),
-                  const SizedBox(width: FactorySpacing.space2),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          user.displayName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: textTheme.labelLarge,
-                        ),
-                        Text(l10n.ownerRoleLabel, style: textTheme.labelSmall?.copyWith(color: colors.textTertiary)),
-                      ],
+                  if (!compact) ...[
+                    const SizedBox(width: FactorySpacing.space2),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            user.displayName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: textTheme.labelLarge,
+                          ),
+                          Text(l10n.ownerRoleLabel, style: textTheme.labelSmall?.copyWith(color: colors.textTertiary)),
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -207,11 +123,17 @@ class AdminSidebar extends ConsumerWidget {
 }
 
 class _SidebarNavItem extends StatelessWidget {
-  const _SidebarNavItem({required this.destination, required this.selected, required this.onTap});
+  const _SidebarNavItem({
+    required this.destination,
+    required this.selected,
+    required this.onTap,
+    required this.compact,
+  });
 
   final AdminSidebarDestination destination;
   final bool selected;
   final VoidCallback onTap;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -219,31 +141,36 @@ class _SidebarNavItem extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final color = selected ? colors.primary : colors.textSecondary;
 
-    return Material(
+    final item = Material(
       color: selected ? colors.primaryTint : Colors.transparent,
       borderRadius: FactoryRadius.mdRadius,
       child: InkWell(
         onTap: onTap,
         borderRadius: FactoryRadius.mdRadius,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space3, vertical: 11),
+          padding: EdgeInsets.symmetric(horizontal: compact ? 0 : FactorySpacing.space3, vertical: 11),
           child: Row(
+            mainAxisAlignment: compact ? MainAxisAlignment.center : MainAxisAlignment.start,
             children: [
               Icon(selected ? destination.selectedIcon : destination.icon, size: 20, color: color),
-              const SizedBox(width: FactorySpacing.space3),
-              Expanded(
-                child: Text(
-                  destination.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: textTheme.labelLarge?.copyWith(color: color),
+              if (!compact) ...[
+                const SizedBox(width: FactorySpacing.space3),
+                Expanded(
+                  child: Text(
+                    destination.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.labelLarge?.copyWith(color: color),
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
       ),
     );
+    // The rail has no room for labels: they become the tooltip.
+    return compact ? Tooltip(message: destination.label, child: item) : item;
   }
 }
 
@@ -254,84 +181,4 @@ String _initialsFor(String name) {
     return parts.first.substring(0, parts.first.length >= 2 ? 2 : 1).toUpperCase();
   }
   return (parts[0][0] + parts[1][0]).toUpperCase();
-}
-
-/// Picks [AdminShell] at desktop width, [DashboardScreen] below it —
-/// the single place that branches on [FactoryBreakpoints], so AuthGate
-/// itself stays a plain role switch.
-class ResponsiveOwnerHome extends StatelessWidget {
-  const ResponsiveOwnerHome({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return FactoryBreakpoints.of(context) == FactoryScreenSize.desktop
-        ? const AdminShell()
-        : const MobileAdminShell();
-  }
-}
-
-/// Phone/tablet shell: a bottom bar with the four destinations an owner
-/// reaches for daily (Dashboard, Messages, Campaigns, Loyalty) plus "More"
-/// for the rest. Replaces the row of six unlabeled AppBar icons the Dashboard
-/// used to carry, which didn't fit a narrow screen.
-///
-/// Like [AdminShell], each tab keeps its own Scaffold/AppBar. Tabs are built
-/// the first time they are opened (not all at startup) and then kept alive.
-class MobileAdminShell extends ConsumerStatefulWidget {
-  const MobileAdminShell({super.key});
-
-  @override
-  ConsumerState<MobileAdminShell> createState() => _MobileAdminShellState();
-}
-
-class _MobileAdminShellState extends ConsumerState<MobileAdminShell> {
-  int _selectedIndex = 0;
-  final Set<int> _opened = {0};
-
-  void _select(int index) => setState(() {
-    _selectedIndex = index;
-    _opened.add(index);
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final ownerUserId = ref.watch(authControllerProvider).value?.id;
-
-    final tabs = <Widget Function()>[
-      () => const DashboardScreen(showNavActions: false),
-      () => ownerUserId == null ? const SizedBox.shrink() : BusinessInboxScreen(ownerUserId: ownerUserId),
-      () => ownerUserId == null ? const SizedBox.shrink() : CampaignCenterScreen(ownerUserId: ownerUserId),
-      () => ownerUserId == null ? const SizedBox.shrink() : LoyaltyScreen(ownerUserId: ownerUserId),
-      () => const AdminMoreScreen(),
-    ];
-
-    // Back from any other tab returns to the Dashboard first; only from the
-    // Dashboard does it leave the app.
-    return PopScope(
-      canPop: _selectedIndex == 0,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _select(0);
-      },
-      child: Scaffold(
-        body: IndexedStack(
-          index: _selectedIndex,
-          children: [
-            for (var i = 0; i < tabs.length; i++) _opened.contains(i) ? tabs[i]() : const SizedBox.shrink(),
-          ],
-        ),
-        bottomNavigationBar: FactoryBottomNavigation(
-          selectedIndex: _selectedIndex,
-          onDestinationSelected: _select,
-          destinations: [
-            FactoryNavDestination(icon: Icons.dashboard_rounded, label: l10n.navDashboard),
-            FactoryNavDestination(icon: Icons.forum_rounded, label: l10n.messagingNavLabel),
-            FactoryNavDestination(icon: Icons.campaign_rounded, label: l10n.campaignCenterNavLabel),
-            FactoryNavDestination(icon: Icons.loyalty_rounded, label: l10n.loyaltyNavLabel),
-            FactoryNavDestination(icon: Icons.more_horiz_rounded, label: l10n.navMore),
-          ],
-        ),
-      ),
-    );
-  }
 }
