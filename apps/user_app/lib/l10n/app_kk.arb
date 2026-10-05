@@ -497,5 +497,18 @@
   "bookingsTabEmptyCompleted": "Аяқталған визиттер осында көрінеді.",
   "bookingsTabEmptyCancelled": "Бас тартылған жазылымдар жоқ.",
   "profileSectionActivity": "Менің белсенділігім",
-  "profileSectionHelp": "Көмек"
+  "profileSectionHelp": "Көмек",
+  "catalogComparePricesTooltip": "Осы саладағы қызметтердің бағасын салыстыру",
+  "catalogServicesSheetEmpty": "Бұл салада әзірге қызметтер жоқ.",
+  "catalogServicesSheetHint": "Кім ұсынатынын көру және салыстыру үшін қызметті таңдаңыз.",
+  "bookingBookAgainButton": "Қайта жазылу",
+  "bookingConfirmationAddToCalendar": "Күнтізбеге қосу",
+  "bookingConfirmationDirections": "Бағыт",
+  "bookingCalendarEventTitle": "{service} · {business}",
+  "discardChangesTitle": "Өзгерістерден бас тарту керек пе?",
+  "discardChangesMessage": "Енгізілген өзгерістер сақталмаған.",
+  "discardChangesKeepEditing": "Жалғастыру",
+  "discardChangesDiscard": "Бас тарту",
+  "authStepLabel": "{step}-қадам, барлығы {total}",
+  "authChangeNumber": "Нөмірді өзгерту"
 }

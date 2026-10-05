@@ -63,6 +63,7 @@ class _RecordingDiscoveryApi extends DiscoveryApi {
   _RecordingDiscoveryApi() : super(DioClient(Dio()));
 
   String? lastVertical;
+  String? lastQuery;
   String? lastSort;
   bool? lastAvailableOnly;
   double? lastMinRating;
@@ -83,6 +84,7 @@ class _RecordingDiscoveryApi extends DiscoveryApi {
     String? sort,
   }) async {
     lastVertical = vertical;
+    lastQuery = query;
     lastSort = sort;
     lastAvailableOnly = availableOnly;
     lastMinRating = minRating;
@@ -563,5 +565,35 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, isEmpty);
+  });
+
+  testWidgets('results follow the text after a pause, without saving half-typed words', (tester) async {
+    final api = _RecordingDiscoveryApi();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [discoveryApiProvider.overrideWithValue(api)],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SearchScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(api.lastQuery, isNull);
+
+    await tester.enterText(find.byType(TextField), 'm');
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(api.lastQuery, isNull, reason: 'one character is not enough to search');
+
+    await tester.enterText(find.byType(TextField), 'massage');
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(api.lastQuery, isNull, reason: 'still within the pause');
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pumpAndSettle();
+
+    expect(api.lastQuery, 'massage');
   });
 }

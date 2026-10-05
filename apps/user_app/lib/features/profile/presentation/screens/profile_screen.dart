@@ -13,9 +13,10 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../auth/presentation/screens/register_screen.dart';
 import '../../../booking/presentation/providers/booking_providers.dart';
+import '../../../messaging/presentation/providers/message_seen_provider.dart';
+import '../../../notifications/presentation/widgets/notification_bell_button.dart';
 import '../../../favorites/presentation/providers/favorites_providers.dart';
 import '../widgets/change_avatar_dialog.dart';
-import 'edit_profile_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -29,6 +30,7 @@ class ProfileScreen extends ConsumerWidget {
       appBar: FactoryAppBar(
         title: l10n.profileTitle,
         actions: [
+          if (authState.value != null) const NotificationBellButton(),
           IconButton(
             icon: const Icon(Symbols.settings_rounded),
             tooltip: l10n.settingsButtonTooltip,
@@ -200,9 +202,7 @@ class _LoggedInView extends ConsumerWidget {
               : null,
           leading: Icon(Symbols.edit_rounded, color: colors.textSecondary),
           trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => EditProfileScreen(user: user)),
-          ),
+          onTap: () => context.push(AppRoutes.editProfile),
         ),
         const SizedBox(height: FactorySpacing.space5),
         FactorySectionHeader(title: l10n.profileSectionActivity),
@@ -219,7 +219,16 @@ class _LoggedInView extends ConsumerWidget {
         FactorySelectableTile(
           title: l10n.messagesTitle,
           leading: Icon(Symbols.forum_rounded, color: colors.textSecondary),
-          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (ref.watch(newMessagesCountProvider) > 0) ...[
+                FactoryBadge(label: '${ref.watch(newMessagesCountProvider)}', variant: FactoryBadgeVariant.error),
+                const SizedBox(width: FactorySpacing.space2),
+              ],
+              Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
+            ],
+          ),
           onTap: () => context.push(AppRoutes.messages),
         ),
         const SizedBox(height: FactorySpacing.space2),

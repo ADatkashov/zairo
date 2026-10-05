@@ -3,7 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import 'package:go_router/go_router.dart';
+
+import '../../../../app/router/app_routes.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../data/models/business_type.dart';
+import '../../data/models/catalog_service.dart';
 import '../../data/models/category.dart';
 import '../category_icon.dart';
 import '../providers/catalog_providers.dart';
@@ -244,6 +249,12 @@ class _SphereList extends ConsumerWidget {
                   _SphereRow(
                     label: businessType.nameFor(languageCode),
                     onTap: () => Navigator.of(context).pop(category.code),
+                    trailing: IconButton(
+                      icon: const Icon(Symbols.compare_arrows_rounded),
+                      color: colors.textTertiary,
+                      tooltip: l10n.catalogComparePricesTooltip,
+                      onPressed: () => _comparePrices(context, businessType),
+                    ),
                   ),
               ],
             ),
@@ -270,16 +281,100 @@ class _SphereList extends ConsumerWidget {
   }
 }
 
+/// Opens the sphere's catalog services; picking one goes to "who offers it".
+Future<void> _comparePrices(BuildContext context, BusinessType businessType) async {
+  final languageCode = Localizations.localeOf(context).languageCode;
+  final picked = await showFactoryBottomSheet<CatalogService>(
+    context: context,
+    isScrollControlled: true,
+    builder: (_) => _CatalogServicesSheet(businessType: businessType),
+  );
+  if (picked == null || !context.mounted) return;
+  context.push(AppRoutes.compare(picked.id, serviceName: picked.nameFor(languageCode)));
+}
+
+class _CatalogServicesSheet extends ConsumerWidget {
+  const _CatalogServicesSheet({required this.businessType});
+
+  final BusinessType businessType;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final languageCode = Localizations.localeOf(context).languageCode;
+    final servicesAsync = ref.watch(catalogServicesProvider(businessType.id));
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        FactorySpacing.space4,
+        0,
+        FactorySpacing.space4,
+        FactorySpacing.space4,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            businessType.nameFor(languageCode),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: FactorySpacing.space1),
+          Text(
+            l10n.catalogServicesSheetHint,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: colors.textTertiary,
+            ),
+          ),
+          const SizedBox(height: FactorySpacing.space3),
+          servicesAsync.when(
+            data: (services) => services.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space4),
+                    child: Text(l10n.catalogServicesSheetEmpty),
+                  )
+                : Flexible(
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: [
+                        for (final service in services)
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(service.nameFor(languageCode)),
+                            trailing: Icon(
+                              Symbols.chevron_right_rounded,
+                              color: colors.textTertiary,
+                            ),
+                            onTap: () => Navigator.of(context).pop(service),
+                          ),
+                      ],
+                    ),
+                  ),
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: FactorySpacing.space4),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (error, stackTrace) => Text(l10n.catalogServicesSheetEmpty),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SphereRow extends StatelessWidget {
   const _SphereRow({
     required this.label,
     required this.onTap,
     this.emphasized = false,
+    this.trailing,
   });
 
   final String label;
   final VoidCallback onTap;
   final bool emphasized;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -290,13 +385,27 @@ class _SphereRow extends StatelessWidget {
         borderRadius: FactoryRadius.smRadius,
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space2),
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: emphasized ? colors.primary : colors.textSecondary,
-              fontWeight: emphasized ? FontWeight.w600 : FontWeight.w400,
-            ),
+          padding: EdgeInsets.symmetric(
+            vertical: trailing == null ? FactorySpacing.space2 : 0,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    vertical: trailing == null ? 0 : FactorySpacing.space2,
+                  ),
+                  child: Text(
+                    label,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: emphasized ? colors.primary : colors.textSecondary,
+                      fontWeight: emphasized ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                  ),
+                ),
+              ),
+              ?trailing,
+            ],
           ),
         ),
       ),

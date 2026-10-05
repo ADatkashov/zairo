@@ -499,7 +499,8 @@ void main() {
     expect(find.widgetWithText(TextField, 'Title'), findsOneWidget);
     await tester.enterText(find.widgetWithText(TextField, 'Title'), 'Haircut & Style');
     await tester.enterText(find.widgetWithText(TextField, 'Price (\$)'), '35');
-    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    // Scoped to the dialog: the page behind it has its own Save button (cover photo).
+    await tester.tap(find.descendant(of: find.byType(Dialog), matching: find.widgetWithText(FilledButton, 'Save')));
     await tester.pumpAndSettle();
 
     expect(fakeApi.lastUpdateServiceCall, {
@@ -622,7 +623,8 @@ void main() {
     await tester.enterText(find.widgetWithText(TextField, 'Business name'), 'Renamed Salon');
     await tester.enterText(find.widgetWithText(TextField, 'Latitude (optional)'), '43.25');
     await tester.enterText(find.widgetWithText(TextField, 'Longitude (optional)'), '76.90');
-    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    // Scoped to the dialog: the page behind it has its own Save button (cover photo).
+    await tester.tap(find.descendant(of: find.byType(Dialog), matching: find.widgetWithText(FilledButton, 'Save')));
     await tester.pumpAndSettle();
 
     expect(fakeApi.lastUpdateProviderCall, {

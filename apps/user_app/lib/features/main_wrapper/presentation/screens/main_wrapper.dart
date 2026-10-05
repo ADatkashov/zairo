@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../app/router/tab_reselect.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../messaging/presentation/providers/message_seen_provider.dart';
 
 class MainWrapper extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
@@ -15,6 +16,7 @@ class MainWrapper extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final newMessages = ref.watch(newMessagesCountProvider);
 
     // Android back from the root of Bookings/Search/Profile goes to Home
     // first and only exits the app from Home. Pushed screens inside a tab
@@ -58,6 +60,8 @@ class MainWrapper extends ConsumerWidget {
             FactoryNavDestination(
               icon: Symbols.person_rounded,
               label: l10n.navProfile,
+              // Messages live under Profile; new ones show on the tab.
+              badgeCount: newMessages,
             ),
           ],
         ),
