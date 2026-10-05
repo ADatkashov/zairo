@@ -15,6 +15,7 @@ import '../../../messaging/data/models/conversation.dart';
 import '../../../messaging/presentation/providers/messaging_providers.dart';
 import '../../../messaging/presentation/screens/chat_thread_screen.dart';
 import '../../../payments/presentation/providers/payments_providers.dart';
+import '../../../notifications/presentation/widgets/notification_bell_button.dart';
 import '../../../payments/presentation/widgets/payment_status_chip.dart';
 import '../../../reviews/presentation/widgets/review_section.dart';
 import '../../data/booking_exception.dart';
@@ -37,7 +38,16 @@ class MyBookingsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: colors.bg,
-      appBar: FactoryAppBar(title: l10n.myBookingsTitle),
+      appBar: FactoryAppBar(
+        title: l10n.myBookingsTitle,
+        actions: [
+          if (authState.value != null)
+            const Padding(
+              padding: EdgeInsets.only(right: FactorySpacing.space3),
+              child: NotificationBellButton(),
+            ),
+        ],
+      ),
       body: authState.when(
         data: (user) => user == null
             ? LoggedOutGate(

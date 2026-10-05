@@ -16,7 +16,7 @@ import '../../../catalog/presentation/category_icon.dart';
 import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../../city/presentation/providers/city_providers.dart';
 import '../../../maps/presentation/providers/maps_providers.dart';
-import '../../../notifications/presentation/providers/notifications_providers.dart';
+import '../../../notifications/presentation/widgets/notification_bell_button.dart';
 import '../../data/models/provider_search_result.dart';
 import '../../data/models/service_summary.dart';
 import '../providers/discovery_providers.dart';
@@ -145,7 +145,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ],
                         ),
                       ),
-                      if (user != null) const _NotificationBellButton(),
+                      const _FavoritesButton(),
+                      if (user != null) ...[
+                        const SizedBox(width: FactorySpacing.space2),
+                        const NotificationBellButton(),
+                      ],
                     ],
                   ),
                   const SizedBox(height: FactorySpacing.space4),
@@ -225,55 +229,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-/// A bell button with an unread-count badge (Customer App Redesign board,
-/// 2026-09-05) — pushes [NotificationsScreen] rather than something inline,
-/// same reasoning as Profile's favorites stat tile pushing [FavoritesScreen].
-class _NotificationBellButton extends ConsumerWidget {
-  const _NotificationBellButton();
+/// A heart in the header: Favorites used to be reachable only through a
+/// small counter tile two levels deep in Profile, and not at all for a guest.
+/// A guest lands on Favorites' own log-in gate.
+class _FavoritesButton extends StatelessWidget {
+  const _FavoritesButton();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
-    final userId = ref.watch(authControllerProvider).value?.id;
-    final unreadCount = userId == null
-        ? 0
-        : ref.watch(unreadNotificationsCountProvider(userId)).value ?? 0;
-
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: colors.surface,
-            borderRadius: FactoryRadius.lgRadius,
-            border: Border.all(color: colors.border),
-          ),
-          child: IconButton(
-            icon: Icon(Symbols.notifications_rounded, color: colors.text),
-            tooltip: l10n.notificationBellTooltip,
-            onPressed: () => context.push(AppRoutes.notifications),
-          ),
-        ),
-        if (unreadCount > 0)
-          Positioned(
-            top: 4,
-            right: 4,
-            child: IgnorePointer(
-              child: Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: colors.coral,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: colors.surface, width: 1.5),
-                ),
-              ),
-            ),
-          ),
-      ],
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: FactoryRadius.lgRadius,
+        border: Border.all(color: colors.border),
+      ),
+      child: IconButton(
+        icon: Icon(Symbols.favorite_rounded, color: colors.text),
+        tooltip: l10n.myFavoritesTitle,
+        onPressed: () => context.push(AppRoutes.favorites),
+      ),
     );
   }
 }
