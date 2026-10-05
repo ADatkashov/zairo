@@ -28,6 +28,7 @@ abstract final class AppRoutes {
   static String compare(String catalogServiceId, {required String serviceName}) =>
       _withName('/compare/$catalogServiceId', serviceName);
 
+  static const bookings = '/bookings';
   static const notifications = '/notifications';
   static const favorites = '/favorites';
   static const messages = '/messages';

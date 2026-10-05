@@ -1,6 +1,7 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../core/formatting/month_day_time.dart';
@@ -8,6 +9,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/widgets/logged_out_gate.dart';
 import '../../data/models/app_notification.dart';
+import '../../notification_destination.dart';
 import '../providers/notifications_providers.dart';
 
 /// Pushed from Home's bell icon — resolves the current user itself via
@@ -159,15 +161,23 @@ class _NotificationTile extends ConsumerWidget {
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
+    final destination = notificationDestination(notification.type);
+
     return FactoryCard(
-      onTap: notification.read
+      onTap: notification.read && destination == null
           ? null
           : () async {
-              await ref
-                  .read(notificationsApiProvider)
-                  .markRead(userId, notification.id);
-              ref.invalidate(myNotificationsProvider(userId));
-              ref.invalidate(unreadNotificationsCountProvider(userId));
+              // Capture before awaiting: opening the destination replaces
+              // this screen, and the router must not be looked up afterwards.
+              final router = destination == null ? null : GoRouter.maybeOf(context);
+              if (!notification.read) {
+                await ref
+                    .read(notificationsApiProvider)
+                    .markRead(userId, notification.id);
+                ref.invalidate(myNotificationsProvider(userId));
+                ref.invalidate(unreadNotificationsCountProvider(userId));
+              }
+              if (destination != null) router?.go(destination);
             },
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,6 +225,14 @@ class _NotificationTile extends ConsumerWidget {
               ],
             ),
           ),
+          if (destination != null && notification.read) ...[
+            const SizedBox(width: FactorySpacing.space2),
+            Icon(
+              Symbols.chevron_right_rounded,
+              size: 20,
+              color: colors.textTertiary,
+            ),
+          ],
           if (!notification.read) ...[
             const SizedBox(width: FactorySpacing.space2),
             Container(
