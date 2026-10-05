@@ -11,10 +11,18 @@ import '../theme/factory_motion.dart';
 /// keyed off `isActive`, not two different icon glyphs ([_NavItem] applies
 /// that same fill toggle below).
 class FactoryNavDestination {
-  const FactoryNavDestination({required this.icon, required this.label});
+  const FactoryNavDestination({
+    required this.icon,
+    required this.label,
+    this.badgeCount = 0,
+  });
 
   final IconData icon;
   final String label;
+
+  /// A small count on the icon (new messages, say); nothing is drawn at 0.
+  /// Shown as "9+" from ten up.
+  final int badgeCount;
 }
 
 /// The customer app's tab bar — never more than four or five destinations
@@ -96,7 +104,9 @@ class _NavItem extends StatelessWidget {
     return Semantics(
       button: true,
       selected: isSelected,
-      label: destination.label,
+      label: destination.badgeCount > 0
+          ? '${destination.label}, ${destination.badgeCount}'
+          : destination.label,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -115,11 +125,22 @@ class _NavItem extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    destination.icon,
-                    fill: isSelected ? 1 : 0,
-                    size: 22,
-                    color: color,
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Icon(
+                        destination.icon,
+                        fill: isSelected ? 1 : 0,
+                        size: 22,
+                        color: color,
+                      ),
+                      if (destination.badgeCount > 0)
+                        Positioned(
+                          top: -4,
+                          right: -9,
+                          child: _CountBadge(count: destination.badgeCount),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -133,6 +154,37 @@ class _NavItem extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CountBadge extends StatelessWidget {
+  const _CountBadge({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    return Container(
+      constraints: const BoxConstraints(minWidth: 16),
+      height: 16,
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: colors.coral,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colors.surface, width: 1.5),
+      ),
+      child: Text(
+        count > 9 ? '9+' : '$count',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          height: 1,
         ),
       ),
     );

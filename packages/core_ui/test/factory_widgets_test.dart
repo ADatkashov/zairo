@@ -669,6 +669,29 @@ void main() {
     },
   );
 
+  testWidgets('FactoryBottomNavigation draws a count badge only when there is something to count', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(
+        FactoryBottomNavigation(
+          destinations: const [
+            FactoryNavDestination(icon: Icons.home_rounded, label: 'Home'),
+            FactoryNavDestination(icon: Icons.person_rounded, label: 'Profile', badgeCount: 3),
+            FactoryNavDestination(icon: Icons.forum_rounded, label: 'Chats', badgeCount: 12),
+          ],
+          selectedIndex: 0,
+          onDestinationSelected: (_) {},
+        ),
+      ),
+    );
+
+    expect(find.text('3'), findsOneWidget);
+    expect(find.text('9+'), findsOneWidget);
+    expect(find.bySemanticsLabel('Profile, 3'), findsOneWidget);
+    expect(find.bySemanticsLabel('Home'), findsOneWidget);
+  });
+
   testWidgets(
     'FactoryLoadingState shows an optional message alongside the spinner',
     (tester) async {
