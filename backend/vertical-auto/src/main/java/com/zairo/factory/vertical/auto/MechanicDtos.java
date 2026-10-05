@@ -3,6 +3,7 @@ package com.zairo.factory.vertical.auto;
 import com.zairo.factory.services.ServiceOffering;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -16,6 +17,11 @@ public final class MechanicDtos {
     // Bounds mirror auto_mechanic's actual columns (V19 migration) —
     // display_name varchar(255) not null, bio unbounded text (nullable),
     // photo_url varchar(500) (nullable).
+    public record CreateMechanicFromUserRequest(
+            @NotNull @Schema(description = "A registered user, found via GET /users/lookup.",
+                    example = "550e8400-e29b-41d4-a716-446655440000") UUID userId) {
+    }
+
     public record CreateMechanicRequest(
             @NotBlank @Size(max = 255) @Schema(example = "Yerlan Mechanic") String displayName,
             @Schema(description = "Optional.", example = "12 years fixing German and Japanese engines.")
