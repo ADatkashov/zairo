@@ -16,6 +16,7 @@ import '../../../messaging/presentation/providers/messaging_providers.dart';
 import '../../../messaging/presentation/screens/chat_thread_screen.dart';
 import '../../../payments/presentation/providers/payments_providers.dart';
 import '../../../notifications/presentation/widgets/notification_bell_button.dart';
+import '../../data/models/book_again_suggestion.dart';
 import '../../../payments/presentation/widgets/payment_status_chip.dart';
 import '../../../reviews/presentation/widgets/review_section.dart';
 import '../../data/booking_exception.dart';
@@ -283,6 +284,40 @@ class _BookingsTabButton extends StatelessWidget {
   }
 }
 
+/// "Book again" on a completed booking. A Booking only knows its service id,
+/// not which business it belongs to, so the business is taken from the
+/// Book-Again suggestions Home already shows (matched by service) — the button
+/// simply isn't offered when the backend has no suggestion for that service.
+class _BookAgainButton extends ConsumerWidget {
+  const _BookAgainButton({required this.booking, required this.userId});
+
+  final Booking booking;
+  final String userId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final suggestions = ref.watch(bookAgainSuggestionsProvider(userId)).value;
+    BookAgainSuggestion? match;
+    for (final suggestion in suggestions ?? const <BookAgainSuggestion>[]) {
+      if (suggestion.serviceId == booking.serviceId) {
+        match = suggestion;
+        break;
+      }
+    }
+    if (match == null) return const SizedBox.shrink();
+    final suggestion = match;
+
+    return FactoryButton(
+      label: AppLocalizations.of(context)!.bookingBookAgainButton,
+      variant: FactoryButtonVariant.text,
+      onPressed: () => context.push(
+        AppRoutes.provider(suggestion.providerId),
+        extra: suggestion.toProviderSearchResult(),
+      ),
+    );
+  }
+}
+
 class _BookingCard extends ConsumerStatefulWidget {
   final Booking booking;
   final String userId;
@@ -342,6 +377,8 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
                   variant: FactoryButtonVariant.text,
                   onPressed: _openMessageAboutBookingDialog,
                 ),
+                if (booking.status == 'COMPLETED')
+                  _BookAgainButton(booking: booking, userId: widget.userId),
                 if (booking.status == 'CONFIRMED')
                   FactoryButton(
                     label: l10n.cancelBookingButton,

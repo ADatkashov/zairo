@@ -500,5 +500,9 @@
   "profileSectionHelp": "Көмек",
   "catalogComparePricesTooltip": "Осы саладағы қызметтердің бағасын салыстыру",
   "catalogServicesSheetEmpty": "Бұл салада әзірге қызметтер жоқ.",
-  "catalogServicesSheetHint": "Кім ұсынатынын көру және салыстыру үшін қызметті таңдаңыз."
+  "catalogServicesSheetHint": "Кім ұсынатынын көру және салыстыру үшін қызметті таңдаңыз.",
+  "bookingBookAgainButton": "Қайта жазылу",
+  "bookingConfirmationAddToCalendar": "Күнтізбеге қосу",
+  "bookingConfirmationDirections": "Бағыт",
+  "bookingCalendarEventTitle": "{service} · {business}"
 }

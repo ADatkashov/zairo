@@ -29,6 +29,9 @@ abstract final class AppRoutes {
       _withName('/compare/$catalogServiceId', serviceName);
 
   static const bookings = '/bookings';
+
+  /// Needs a `BookingConfirmationArgs` as `extra`.
+  static const bookingConfirmation = '/booking-confirmation';
   static const notifications = '/notifications';
   static const favorites = '/favorites';
   static const messages = '/messages';

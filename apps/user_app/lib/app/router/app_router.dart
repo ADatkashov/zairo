@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/booking/presentation/screens/booking_confirmation_screen.dart';
 import '../../features/booking/presentation/screens/my_bookings_screen.dart';
 import '../../features/booking/presentation/screens/provider_detail_screen.dart';
 import '../../features/catalog/presentation/screens/all_categories_screen.dart';
@@ -52,6 +53,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.citySelection,
         builder: (context, state) => const CitySelectionScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.bookingConfirmation,
+        parentNavigatorKey: rootNavigatorKey,
+        // The booking object can't survive a page refresh or a deep link;
+        // the bookings list is where a past booking lives then.
+        redirect: (context, state) =>
+            state.extra is BookingConfirmationArgs ? null : AppRoutes.bookings,
+        builder: (context, state) => BookingConfirmationScreen.fromArgs(
+          state.extra! as BookingConfirmationArgs,
+        ),
       ),
       GoRoute(
         path: AppRoutes.categories,

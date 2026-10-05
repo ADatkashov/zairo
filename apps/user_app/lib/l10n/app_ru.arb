@@ -515,5 +515,9 @@
   "profileSectionHelp": "Помощь",
   "catalogComparePricesTooltip": "Сравнить цены на услуги этой сферы",
   "catalogServicesSheetEmpty": "В этой сфере пока нет услуг.",
-  "catalogServicesSheetHint": "Выберите услугу, чтобы увидеть, кто её предлагает, и сравнить."
+  "catalogServicesSheetHint": "Выберите услугу, чтобы увидеть, кто её предлагает, и сравнить.",
+  "bookingBookAgainButton": "Записаться снова",
+  "bookingConfirmationAddToCalendar": "В календарь",
+  "bookingConfirmationDirections": "Маршрут",
+  "bookingCalendarEventTitle": "{service} · {business}"
 }
