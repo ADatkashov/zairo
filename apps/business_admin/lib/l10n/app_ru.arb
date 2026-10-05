@@ -877,5 +877,17 @@
 
   "validationMasterPhoneRequired": "Введите телефон",
 
-  "masterAlreadyAdded": "Этот человек уже работает здесь мастером"
+  "masterAlreadyAdded": "Этот человек уже работает здесь мастером",
+
+  "inviteExplanation": "Человек будет добавлен в ваш бизнес автоматически, как только зарегистрируется с этим номером.",
+
+  "inviteButton": "Пригласить",
+
+  "inviteSent": "Приглашение отправлено на {phone}",
+
+  "inviteAlreadySent": "Этот номер уже приглашён",
+
+  "pendingInvitationsTitle": "Ожидают приглашения",
+
+  "cancelInvitationTooltip": "Отменить приглашение"
 }

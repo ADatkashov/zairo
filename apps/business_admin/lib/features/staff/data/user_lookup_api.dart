@@ -2,6 +2,8 @@ import 'package:core_network/core_network.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'invitations_api.dart';
+import 'models/staff_invitation.dart';
 import 'models/user_lookup.dart';
 
 /// Finds registered people for the "add a master / mechanic / cleaner / staff
@@ -25,4 +27,13 @@ class UserLookupApi {
 
 final userLookupApiProvider = Provider<UserLookupApi>((ref) {
   return UserLookupApi(ref.watch(dioClientProvider));
+});
+
+final invitationsApiProvider = Provider<InvitationsApi>((ref) {
+  return InvitationsApi(ref.watch(dioClientProvider));
+});
+
+/// A business's open invitations, refreshed after inviting / cancelling.
+final pendingInvitationsProvider = FutureProvider.autoDispose.family<List<StaffInvitation>, String>((ref, providerId) {
+  return ref.watch(invitationsApiProvider).listPending(providerId);
 });

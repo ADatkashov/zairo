@@ -2476,5 +2476,24 @@
   "@validationMasterPhoneRequired": {"description": "Add-master dialog."},
 
   "masterAlreadyAdded": "This person is already a master here",
-  "@masterAlreadyAdded": {"description": "Add-master dialog."}
+  "@masterAlreadyAdded": {"description": "Add-master dialog."},
+
+  "inviteExplanation": "They will be added to your business automatically once they sign up with this number.",
+  "@inviteExplanation": {"description": "Invite flow of the add-person dialog."},
+
+  "inviteButton": "Invite",
+  "@inviteButton": {"description": "Invite flow of the add-person dialog."},
+
+  "inviteSent": "Invitation sent to {phone}",
+  "@inviteSent": {"description": "Invite flow of the add-person dialog.",
+    "placeholders": {"phone": {"type": "String"}}},
+
+  "inviteAlreadySent": "This number is already invited",
+  "@inviteAlreadySent": {"description": "Invite flow of the add-person dialog."},
+
+  "pendingInvitationsTitle": "Pending invitations",
+  "@pendingInvitationsTitle": {"description": "Invite flow of the add-person dialog."},
+
+  "cancelInvitationTooltip": "Cancel invitation",
+  "@cancelInvitationTooltip": {"description": "Invite flow of the add-person dialog."}
 }

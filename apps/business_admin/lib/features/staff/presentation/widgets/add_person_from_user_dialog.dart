@@ -12,12 +12,15 @@ import '../../data/user_lookup_api.dart';
 /// staff. A person is an existing registered user: the owner looks them up by
 /// phone and adds them, and their name and photo come from their profile —
 /// nothing about the person is typed in. [onAdd] performs the vertical's own
-/// create-from-user call. Returns true via Navigator.pop once added.
+/// create-from-user call. Returns true via Navigator.pop once added. When nobody
+/// is registered with the phone the owner can invite them: they join the
+/// business automatically once they sign up with that number.
 class AddPersonFromUserDialog extends ConsumerStatefulWidget {
+  final String providerId;
   final String title;
   final Future<void> Function(String userId) onAdd;
 
-  const AddPersonFromUserDialog({super.key, required this.title, required this.onAdd});
+  const AddPersonFromUserDialog({super.key, required this.providerId, required this.title, required this.onAdd});
 
   @override
   ConsumerState<AddPersonFromUserDialog> createState() => _AddPersonFromUserDialogState();
@@ -26,6 +29,7 @@ class AddPersonFromUserDialog extends ConsumerStatefulWidget {
 class _AddPersonFromUserDialogState extends ConsumerState<AddPersonFromUserDialog> {
   final _phoneController = TextEditingController();
   UserLookup? _found;
+  bool _notFound = false;
   bool _isSubmitting = false;
   String? _error;
 
@@ -50,9 +54,10 @@ class _AddPersonFromUserDialogState extends ConsumerState<AddPersonFromUserDialo
             keyboardType: TextInputType.phone,
             label: l10n.masterPhoneLabel,
             onChanged: (_) {
-              if (_found != null || _error != null) {
+              if (_found != null || _notFound || _error != null) {
                 setState(() {
                   _found = null;
+                  _notFound = false;
                   _error = null;
                 });
               }
@@ -76,6 +81,21 @@ class _AddPersonFromUserDialogState extends ConsumerState<AddPersonFromUserDialo
               ),
               title: Text(found.displayName),
             ),
+          if (_notFound) ...[
+            Text(l10n.masterUserNotFound),
+            const SizedBox(height: FactorySpacing.space2),
+            Text(l10n.inviteExplanation, style: Theme.of(context).textTheme.bodySmall),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FactoryButton(
+                label: l10n.inviteButton,
+                variant: FactoryButtonVariant.secondary,
+                isLoading: _isSubmitting,
+                onPressed: _isSubmitting ? null : _invite,
+              ),
+            ),
+          ],
+          _PendingInvitations(providerId: widget.providerId),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(top: FactorySpacing.space2),
@@ -111,11 +131,36 @@ class _AddPersonFromUserDialogState extends ConsumerState<AddPersonFromUserDialo
       if (!mounted) return;
       setState(() {
         _found = user;
-        if (user == null) _error = l10n.masterUserNotFound;
+        _notFound = user == null;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = l10n.errorAddMasterFailed(e.toString()));
+    }
+  }
+
+  Future<void> _invite() async {
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() {
+      _isSubmitting = true;
+      _error = null;
+    });
+    try {
+      final invitation = await ref
+          .read(invitationsApiProvider)
+          .invite(providerId: widget.providerId, phone: _phoneController.text.trim());
+      ref.invalidate(pendingInvitationsProvider(widget.providerId));
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text(l10n.inviteSent(invitation.phone))));
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      setState(() {
+        _error = (e is DioException && e.response?.statusCode == 409)
+            ? l10n.inviteAlreadySent
+            : l10n.errorAddMasterFailed(e.toString());
+        _isSubmitting = false;
+      });
     }
   }
 
@@ -141,5 +186,40 @@ class _AddPersonFromUserDialogState extends ConsumerState<AddPersonFromUserDialo
         _isSubmitting = false;
       });
     }
+  }
+}
+
+/// Open invitations for this business, each cancellable.
+class _PendingInvitations extends ConsumerWidget {
+  final String providerId;
+
+  const _PendingInvitations({required this.providerId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final invitations = ref.watch(pendingInvitationsProvider(providerId)).valueOrNull ?? const [];
+    if (invitations.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: FactorySpacing.space3),
+        Text(l10n.pendingInvitationsTitle, style: Theme.of(context).textTheme.labelLarge),
+        for (final invitation in invitations)
+          ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            title: Text(invitation.phone),
+            trailing: IconButton(
+              icon: const Icon(Icons.close),
+              tooltip: l10n.cancelInvitationTooltip,
+              onPressed: () async {
+                await ref.read(invitationsApiProvider).cancel(invitation.id);
+                ref.invalidate(pendingInvitationsProvider(providerId));
+              },
+            ),
+          ),
+      ],
+    );
   }
 }

@@ -15,6 +15,7 @@ class AddMechanicDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return AddPersonFromUserDialog(
+      providerId: providerId,
       title: AppLocalizations.of(context)!.addMechanicDialogTitle,
       onAdd: (userId) => ref.read(autoAdminApiProvider).createMechanicFromUser(providerId: providerId, userId: userId),
     );
