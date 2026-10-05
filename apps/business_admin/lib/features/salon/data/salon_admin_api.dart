@@ -138,12 +138,16 @@ class SalonAdminApi {
     return data.map((e) => AdminService.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  /// [catalogServiceId] is the platform-catalog service being offered — the
+  /// backend requires it (and that [title] is one of its names) whenever the
+  /// business's type has a catalog: businesses don't write their own services.
   Future<AdminService> createService({
     required String providerId,
     required String title,
     required int durationMinutes,
     required double price,
     required String currency,
+    String? catalogServiceId,
   }) async {
     final response = await _dioClient.post(
       '/providers/$providerId/services',
@@ -152,6 +156,7 @@ class SalonAdminApi {
         'durationMinutes': durationMinutes,
         'price': price,
         'currency': currency,
+        if (catalogServiceId != null) 'catalogServiceId': catalogServiceId,
       },
     );
     return AdminService.fromJson(response.data as Map<String, dynamic>);
@@ -163,6 +168,7 @@ class SalonAdminApi {
     required int durationMinutes,
     required double price,
     required String currency,
+    String? catalogServiceId,
   }) async {
     final response = await _dioClient.put(
       '/services/$serviceId',
@@ -171,6 +177,7 @@ class SalonAdminApi {
         'durationMinutes': durationMinutes,
         'price': price,
         'currency': currency,
+        if (catalogServiceId != null) 'catalogServiceId': catalogServiceId,
       },
     );
     return AdminService.fromJson(response.data as Map<String, dynamic>);

@@ -113,6 +113,7 @@ class _FakeSalonAdminApi extends SalonAdminApi {
     required int durationMinutes,
     required double price,
     required String currency,
+    String? catalogServiceId,
   }) async {
     lastCreateServiceCall = {
       'providerId': providerId,
@@ -141,6 +142,7 @@ class _FakeSalonAdminApi extends SalonAdminApi {
     required int durationMinutes,
     required double price,
     required String currency,
+    String? catalogServiceId,
   }) async {
     lastUpdateServiceCall = {
       'serviceId': serviceId,
