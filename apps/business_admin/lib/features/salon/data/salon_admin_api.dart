@@ -156,7 +156,7 @@ class SalonAdminApi {
         'durationMinutes': durationMinutes,
         'price': price,
         'currency': currency,
-        if (catalogServiceId != null) 'catalogServiceId': catalogServiceId,
+        'catalogServiceId': ?catalogServiceId,
       },
     );
     return AdminService.fromJson(response.data as Map<String, dynamic>);
@@ -177,7 +177,7 @@ class SalonAdminApi {
         'durationMinutes': durationMinutes,
         'price': price,
         'currency': currency,
-        if (catalogServiceId != null) 'catalogServiceId': catalogServiceId,
+        'catalogServiceId': ?catalogServiceId,
       },
     );
     return AdminService.fromJson(response.data as Map<String, dynamic>);
