@@ -1,3 +1,6 @@
+import '../../../discovery/data/models/provider_search_result.dart';
+import '../../../discovery/data/models/service_summary.dart';
+
 /// Mirrors backend's BookAgainDtos.BookAgainSuggestion
 /// (backend/search/.../BookAgainDtos.java) — returned by
 /// GET /api/v1/users/{userId}/book-again.
@@ -23,6 +26,26 @@ class BookAgainSuggestion {
     required this.currency,
     required this.lastVisitAt,
   });
+
+  /// The minimal provider the detail screen needs to start booking this exact
+  /// service again; the screen loads the rest (slots, staff) itself.
+  ProviderSearchResult toProviderSearchResult() => ProviderSearchResult(
+    id: providerId,
+    name: providerName,
+    vertical: vertical,
+    status: 'ACTIVE',
+    hasOpenAvailability: true,
+    minPrice: price,
+    services: [
+      ServiceSummary(
+        id: serviceId,
+        title: serviceTitle,
+        durationMinutes: durationMinutes,
+        price: price,
+        currency: currency,
+      ),
+    ],
+  );
 
   factory BookAgainSuggestion.fromJson(Map<String, dynamic> json) {
     return BookAgainSuggestion(

@@ -19,14 +19,12 @@ import '../../../auto/presentation/widgets/add_vehicle_dialog.dart';
 import '../../../beauty/data/beauty_exception.dart';
 import '../../../beauty/data/models/master.dart';
 import '../../../beauty/presentation/providers/beauty_providers.dart';
-import '../../../beauty/presentation/screens/master_portfolio_screen.dart';
 import '../../../cleaning/data/cleaning_exception.dart';
 import '../../../cleaning/data/models/cleaner.dart';
 import '../../../cleaning/presentation/providers/cleaning_providers.dart';
 import '../../../discovery/data/models/provider_search_result.dart';
 import '../../../discovery/data/models/service_summary.dart';
 import '../../../favorites/presentation/widgets/favorite_button.dart';
-import '../../../maps/presentation/screens/provider_map_screen.dart';
 import '../../../payments/data/payment_exception.dart';
 import '../../../payments/presentation/providers/payments_providers.dart';
 import '../../../staff/data/models/staff.dart';
@@ -201,14 +199,12 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                         variant: FactoryButtonVariant.secondary,
                         icon: Symbols.map_rounded,
                         label: l10n.viewOnMapButton,
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => ProviderMapScreen(
-                              providerName: widget.provider.name,
-                              latitude: widget.provider.latitude!,
-                              longitude: widget.provider.longitude!,
-                              distanceKm: widget.provider.distanceKm,
-                            ),
+                        onPressed: () => context.push(
+                          AppRoutes.map(
+                            providerName: widget.provider.name,
+                            latitude: widget.provider.latitude!,
+                            longitude: widget.provider.longitude!,
+                            distanceKm: widget.provider.distanceKm,
                           ),
                         ),
                       ),
@@ -246,12 +242,10 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                           selected: _selectedMasterId == master.id,
                           onTap: () =>
                               setState(() => _selectedMasterId = master.id),
-                          onViewPortfolio: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => MasterPortfolioScreen(
-                                masterId: master.id,
-                                masterName: master.displayName,
-                              ),
+                          onViewPortfolio: () => context.push(
+                            AppRoutes.portfolio(
+                              master.id,
+                              masterName: master.displayName,
                             ),
                           ),
                         ),
@@ -600,16 +594,17 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       // Board 19 (v2 design audit) — a durable confirmation screen, not a
       // snackbar that's gone in a few seconds, so replaces this route
       // rather than pushing on top of it.
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => BookingConfirmationScreen(
-            booking: booking,
-            providerId: widget.provider.id,
-            providerName: widget.provider.name,
-            providerVertical: widget.provider.vertical,
-            service: service,
-            slotStartsAt: selectedSlot?.startsAt,
-          ),
+      context.pushReplacement(
+        AppRoutes.bookingConfirmation,
+        extra: BookingConfirmationArgs(
+          booking: booking,
+          providerId: widget.provider.id,
+          providerName: widget.provider.name,
+          providerVertical: widget.provider.vertical,
+          service: service,
+          slotStartsAt: selectedSlot?.startsAt,
+          latitude: widget.provider.latitude,
+          longitude: widget.provider.longitude,
         ),
       );
     } on BookingException catch (e) {

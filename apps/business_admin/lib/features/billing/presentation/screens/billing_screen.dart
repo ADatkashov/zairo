@@ -381,10 +381,12 @@ class _LimitRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
+    // The label gives way (and wraps) on a narrow screen; the value never does.
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary)),
+        Expanded(child: Text(label, style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary))),
+        const SizedBox(width: FactorySpacing.space3),
         Text(value, style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
       ],
     );

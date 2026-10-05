@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../app/router/app_routes.dart';
 import '../../../../core/formatting/month_day_time.dart';
+import '../../../../core/links/external_links.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../discovery/data/models/service_summary.dart';
 import '../../../payments/presentation/widgets/payment_status_chip.dart';
@@ -18,6 +20,30 @@ import '../widgets/booking_payment_summary.dart';
 /// actually booked?" only ever got answered for a second. This screen
 /// replaces the provider-detail route so there is a durable, shareable
 /// confirmation with the details a customer would screenshot.
+/// What the confirmation route (`AppRoutes.bookingConfirmation`) needs, handed
+/// over as the route's `extra`.
+class BookingConfirmationArgs {
+  const BookingConfirmationArgs({
+    required this.booking,
+    required this.providerId,
+    required this.providerName,
+    required this.providerVertical,
+    required this.service,
+    required this.slotStartsAt,
+    this.latitude,
+    this.longitude,
+  });
+
+  final Booking booking;
+  final String providerId;
+  final String providerName;
+  final String providerVertical;
+  final ServiceSummary service;
+  final DateTime? slotStartsAt;
+  final double? latitude;
+  final double? longitude;
+}
+
 class BookingConfirmationScreen extends StatelessWidget {
   final Booking booking;
   final String providerId;
@@ -25,6 +51,10 @@ class BookingConfirmationScreen extends StatelessWidget {
   final String providerVertical;
   final ServiceSummary service;
   final DateTime? slotStartsAt;
+
+  /// Where the business is, when known — enables the "Directions" action.
+  final double? latitude;
+  final double? longitude;
 
   const BookingConfirmationScreen({
     super.key,
@@ -34,7 +64,47 @@ class BookingConfirmationScreen extends StatelessWidget {
     required this.providerVertical,
     required this.service,
     required this.slotStartsAt,
+    this.latitude,
+    this.longitude,
   });
+
+  BookingConfirmationScreen.fromArgs(BookingConfirmationArgs args, {Key? key})
+    : this(
+        key: key,
+        booking: args.booking,
+        providerId: args.providerId,
+        providerName: args.providerName,
+        providerVertical: args.providerVertical,
+        service: args.service,
+        slotStartsAt: args.slotStartsAt,
+        latitude: args.latitude,
+        longitude: args.longitude,
+      );
+
+  void _addToCalendar(BuildContext context) {
+    final startsAt = slotStartsAt;
+    if (startsAt == null) return;
+    final l10n = AppLocalizations.of(context)!;
+    launchUrl(
+      ExternalLinks.addToCalendar(
+        title: l10n.bookingCalendarEventTitle(service.title, providerName),
+        startsAt: startsAt,
+        duration: Duration(minutes: service.durationMinutes),
+        details: providerName,
+      ),
+      mode: LaunchMode.externalApplication,
+    );
+  }
+
+  void _openDirections() {
+    final lat = latitude;
+    final lng = longitude;
+    if (lat == null || lng == null) return;
+    launchUrl(
+      ExternalLinks.directionsTo(latitude: lat, longitude: lng),
+      mode: LaunchMode.externalApplication,
+    );
+  }
 
   /// Leaves the confirmation for a *tab* ([location] is `/bookings` or `/`).
   /// The confirmation sits on top of whichever tab started the booking, so it
@@ -130,6 +200,27 @@ class BookingConfirmationScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: FactorySpacing.space4),
+                  Wrap(
+                    spacing: FactorySpacing.space2,
+                    runSpacing: FactorySpacing.space2,
+                    children: [
+                      if (slotStartsAt != null)
+                        FactoryButton(
+                          variant: FactoryButtonVariant.secondary,
+                          icon: Symbols.event_available_rounded,
+                          label: l10n.bookingConfirmationAddToCalendar,
+                          onPressed: () => _addToCalendar(context),
+                        ),
+                      if (latitude != null && longitude != null)
+                        FactoryButton(
+                          variant: FactoryButtonVariant.secondary,
+                          icon: Symbols.directions_rounded,
+                          label: l10n.bookingConfirmationDirections,
+                          onPressed: _openDirections,
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: FactorySpacing.space2),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: FactoryButton(

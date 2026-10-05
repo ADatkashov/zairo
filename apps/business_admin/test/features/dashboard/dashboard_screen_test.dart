@@ -25,6 +25,8 @@ import 'package:business_admin/features/salon/data/models/admin_slot.dart';
 import 'package:business_admin/features/salon/data/models/dashboard_metrics.dart';
 import 'package:business_admin/features/salon/data/salon_admin_api.dart';
 import 'package:business_admin/features/salon/presentation/providers/salon_providers.dart';
+import 'package:business_admin/features/salon/presentation/widgets/add_service_dialog.dart';
+import 'package:business_admin/features/salon/presentation/widgets/add_slot_dialog.dart';
 import 'package:business_admin/l10n/app_localizations.dart';
 
 class _FakeSalonAdminApi extends SalonAdminApi {
@@ -284,5 +286,55 @@ void main() {
     expect(find.text('7'), findsOneWidget);
     expect(find.text('5'), findsOneWidget);
     expect(find.textContaining('24'), findsWidgets);
+  });
+
+  Future<void> pumpDashboard(WidgetTester tester, List<AdminProvider> providers) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(_FakeSalonAdminApi(providers)),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+          billingApiProvider.overrideWithValue(_FakeBillingApi()),
+          campaignCenterApiProvider.overrideWithValue(_FakeCampaignCenterApi()),
+          authControllerProvider.overrideWith(_LoggedInOwnerController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const DashboardScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('quick actions with one business open the slot dialog straight away', (tester) async {
+    await pumpDashboard(tester, [
+      const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE'),
+    ]);
+
+    await tester.tap(find.text('Add time slot'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Which business?'), findsNothing);
+    expect(find.byType(AddSlotDialog), findsOneWidget);
+  });
+
+  testWidgets('quick actions with several businesses ask which one first', (tester) async {
+    await pumpDashboard(tester, [
+      const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE'),
+      const AdminProvider(id: 'p2', ownerUserId: 'owner-1', name: 'Speedy Workshop', vertical: 'auto', status: 'ACTIVE'),
+    ]);
+
+    await tester.tap(find.text('Add service'));
+    await tester.pumpAndSettle();
+    expect(find.text('Which business?'), findsOneWidget);
+
+    await tester.tap(find.descendant(of: find.byType(BottomSheet), matching: find.text('Speedy Workshop')));
+    await tester.pumpAndSettle();
+
+    final dialog = tester.widget<AddServiceDialog>(find.byType(AddServiceDialog));
+    expect(dialog.providerId, 'p2');
   });
 }

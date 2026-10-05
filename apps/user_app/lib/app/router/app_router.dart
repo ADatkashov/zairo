@@ -2,17 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/beauty/presentation/screens/master_portfolio_screen.dart';
+import '../../features/booking/presentation/screens/booking_confirmation_screen.dart';
 import '../../features/booking/presentation/screens/my_bookings_screen.dart';
 import '../../features/booking/presentation/screens/provider_detail_screen.dart';
+import '../../features/catalog/presentation/screens/all_categories_screen.dart';
 import '../../features/city/presentation/screens/city_selection_screen.dart';
+import '../../features/city/presentation/widgets/city_onboarding_gate.dart';
 import '../../features/discovery/data/models/provider_search_result.dart';
 import '../../features/discovery/presentation/screens/home_screen.dart';
 import '../../features/discovery/presentation/screens/search_screen.dart';
+import '../../features/discovery/presentation/screens/service_compare_screen.dart';
 import '../../features/favorites/presentation/screens/favorites_screen.dart';
 import '../../features/loyalty/presentation/screens/business_loyalty_screen.dart';
 import '../../features/loyalty/presentation/screens/my_redemptions_screen.dart';
 import '../../features/loyalty/presentation/screens/my_rewards_screen.dart';
 import '../../features/main_wrapper/presentation/screens/main_wrapper.dart';
+import '../../features/maps/presentation/screens/provider_map_screen.dart';
 import '../../features/messaging/presentation/screens/chat_thread_screen.dart';
 import '../../features/messaging/presentation/screens/conversations_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
@@ -50,6 +56,64 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.citySelection,
         builder: (context, state) => const CitySelectionScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.bookingConfirmation,
+        parentNavigatorKey: rootNavigatorKey,
+        // The booking object can't survive a page refresh or a deep link;
+        // the bookings list is where a past booking lives then.
+        redirect: (context, state) =>
+            state.extra is BookingConfirmationArgs ? null : AppRoutes.bookings,
+        builder: (context, state) => BookingConfirmationScreen.fromArgs(
+          state.extra! as BookingConfirmationArgs,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.editProfile,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const EditProfileRoute(),
+      ),
+      GoRoute(
+        path: '/map',
+        parentNavigatorKey: rootNavigatorKey,
+        // Malformed coordinates (a hand-edited link) fall back to Home.
+        redirect: (context, state) {
+          final q = state.uri.queryParameters;
+          return double.tryParse(q['lat'] ?? '') == null ||
+                  double.tryParse(q['lng'] ?? '') == null
+              ? '/'
+              : null;
+        },
+        builder: (context, state) {
+          final q = state.uri.queryParameters;
+          return ProviderMapScreen(
+            providerName: q['name'] ?? '',
+            latitude: double.parse(q['lat']!),
+            longitude: double.parse(q['lng']!),
+            distanceKm: double.tryParse(q['distance'] ?? ''),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/portfolio/:masterId',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => MasterPortfolioScreen(
+          masterId: state.pathParameters['masterId']!,
+          masterName: state.uri.queryParameters['name'] ?? '',
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.categories,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const AllCategoriesScreen(),
+      ),
+      GoRoute(
+        path: '/compare/:catalogServiceId',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => ServiceCompareScreen(
+          catalogServiceId: state.pathParameters['catalogServiceId']!,
+          serviceName: state.uri.queryParameters['name'] ?? '',
+        ),
       ),
       GoRoute(
         path: '/provider/:id',
@@ -151,7 +215,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/',
                 builder: (context, state) => const ScrollToTopOnTabReselect(
                   tabIndex: 0,
-                  child: HomeScreen(),
+                  child: CityOnboardingGate(child: HomeScreen()),
                 ),
               ),
             ],
