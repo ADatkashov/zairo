@@ -15,9 +15,10 @@ import '../providers/salon_providers.dart';
 ///
 /// When the business has a catalog business type ([businessTypeId]) the service
 /// is picked from the platform-managed catalog instead of typed in: the title is
-/// the catalog name in the owner's language and the offering is linked to its
-/// catalog entry. Businesses that predate the catalog (no business type) keep
-/// the free-text title.
+/// the catalog name in the owner's language and the offering is created (or
+/// updated) already linked to its catalog entry — the backend enforces this, so
+/// a business can't write its own service names. Businesses that predate the
+/// catalog (no business type) keep the free-text title.
 class AddServiceDialog extends ConsumerStatefulWidget {
   final String providerId;
   final String? businessTypeId;
@@ -165,10 +166,10 @@ class _AddServiceDialogState extends ConsumerState<AddServiceDialog> {
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context)!;
     final catalogService = _usesCatalog ? _selectedCatalogService : null;
-    // Editing a business's pre-catalog service may keep its old title until a
-    // catalog entry is picked; a new service must come from the catalog.
-    final title = catalogService?.nameFor(_languageCode) ??
-        (_usesCatalog && !_isEditing ? '' : (_usesCatalog ? widget.existing!.title : _titleController.text.trim()));
+    // With a catalog business type the service must be one the platform
+    // defined — also when editing an older, free-text one — so nothing is
+    // submitted until an entry is picked.
+    final title = catalogService?.nameFor(_languageCode) ?? (_usesCatalog ? '' : _titleController.text.trim());
     final duration = int.tryParse(_durationController.text.trim());
     final price = double.tryParse(_priceController.text.trim());
     if (title.isEmpty || duration == null || duration <= 0 || price == null || price < 0) {
@@ -181,28 +182,24 @@ class _AddServiceDialogState extends ConsumerState<AddServiceDialog> {
     });
     try {
       final api = ref.read(salonAdminApiProvider);
-      String serviceId;
       if (_isEditing) {
-        serviceId = widget.existing!.id;
         await api.updateService(
           serviceId: widget.existing!.id,
           title: title,
           durationMinutes: duration,
           price: price,
           currency: _currency,
+          catalogServiceId: catalogService?.id,
         );
       } else {
-        final created = await api.createService(
+        await api.createService(
           providerId: widget.providerId,
           title: title,
           durationMinutes: duration,
           price: price,
           currency: _currency,
+          catalogServiceId: catalogService?.id,
         );
-        serviceId = created.id;
-      }
-      if (catalogService != null && catalogService.id != widget.existing?.catalogServiceId) {
-        await api.linkCatalogService(serviceId: serviceId, catalogServiceId: catalogService.id);
       }
       if (!mounted) return;
       Navigator.of(context).pop(true);
