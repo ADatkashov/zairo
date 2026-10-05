@@ -54,6 +54,16 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Deep links: zairo://app/provider/<id>, zairo://app/bookings, …
+                 (every path go_router declares — see AppRoutes). Flutter hands
+                 the path to the router. https App Links need a verified domain
+                 and are not set up yet. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="zairo" android:host="app"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

@@ -21,7 +21,10 @@ import '../../../loyalty/presentation/screens/loyalty_screen.dart';
 import '../../../messaging/presentation/screens/business_inbox_screen.dart';
 import '../../../salon/data/models/admin_provider.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
+import '../../../salon/presentation/screens/customer_list_screen.dart';
 import '../../../salon/presentation/screens/salon_detail_screen.dart';
+import '../../../salon/presentation/widgets/add_service_dialog.dart';
+import '../../../salon/presentation/widgets/add_slot_dialog.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
 
 /// Shown by AuthGate once logged in. Lists the salons/workshops/cleaning
@@ -131,7 +134,7 @@ class DashboardScreen extends ConsumerWidget {
             ]),
             child: ListView.separated(
             padding: const EdgeInsets.all(FactorySpacing.space4),
-            itemCount: providers.length + 3,
+            itemCount: providers.length + 4,
             separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
             itemBuilder: (context, index) {
               if (index == 0) {
@@ -143,7 +146,10 @@ class DashboardScreen extends ConsumerWidget {
                   subscription: subscriptionAsync.value,
                 );
               }
-              if (index == providers.length + 2) {
+              if (index == 2) {
+                return _QuickActions(providers: providers);
+              }
+              if (index == providers.length + 3) {
                 final subscription = subscriptionAsync.value;
                 final atLimit = subscription != null && providers.length >= subscription.limits.maxProviders;
                 if (atLimit) {
@@ -156,7 +162,7 @@ class DashboardScreen extends ConsumerWidget {
                   onPressed: () => _openCreateSalonDialog(context, ref, user.id),
                 );
               }
-              final provider = providers[index - 2];
+              final provider = providers[index - 3];
               return _SalonCard(
                 provider: provider,
                 onTap: () => Navigator.of(context).push(
@@ -656,6 +662,103 @@ String _providerStatusLabel(AppLocalizations l10n, String status) => switch (sta
     };
 
 String _capitalize(String s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1).toLowerCase()}';
+
+/// Two things an owner does every day, one tap from the Dashboard instead of
+/// Dashboard → business → section → add. With several businesses the owner is
+/// asked which one first.
+class _QuickActions extends ConsumerWidget {
+  const _QuickActions({required this.providers});
+
+  final List<AdminProvider> providers;
+
+  Future<AdminProvider?> _pickBusiness(BuildContext context) async {
+    if (providers.length == 1) return providers.first;
+    final l10n = AppLocalizations.of(context)!;
+    return showFactoryBottomSheet<AdminProvider>(
+      context: context,
+      builder: (sheetContext) => Padding(
+        padding: const EdgeInsets.fromLTRB(FactorySpacing.space4, 0, FactorySpacing.space4, FactorySpacing.space4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.quickActionPickBusiness, style: Theme.of(sheetContext).textTheme.titleMedium),
+            const SizedBox(height: FactorySpacing.space2),
+            for (final provider in providers)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(provider.name),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.of(sheetContext).pop(provider),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _addSlot(BuildContext context, WidgetRef ref) async {
+    final provider = await _pickBusiness(context);
+    if (provider == null || !context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final message = AppLocalizations.of(context)!.quickActionSlotAdded;
+    final added = await showDialog<bool>(context: context, builder: (_) => AddSlotDialog(providerId: provider.id));
+    if (added == true) {
+      ref.invalidate(providerSlotsProvider(provider.id));
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
+  Future<void> _addService(BuildContext context, WidgetRef ref) async {
+    final provider = await _pickBusiness(context);
+    if (provider == null || !context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final message = AppLocalizations.of(context)!.quickActionServiceAdded;
+    final added = await showDialog<bool>(context: context, builder: (_) => AddServiceDialog(providerId: provider.id));
+    if (added == true) {
+      ref.invalidate(providerServicesProvider);
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
+  Future<void> _openCustomers(BuildContext context) async {
+    final provider = await _pickBusiness(context);
+    if (provider == null || !context.mounted) return;
+    final title = AppLocalizations.of(context)!.quickActionCustomers;
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => CustomerListScreen(providerId: provider.id, title: title)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    return Wrap(
+      spacing: FactorySpacing.space2,
+      runSpacing: FactorySpacing.space2,
+      children: [
+        FactoryButton(
+          icon: Icons.event_available_outlined,
+          label: l10n.quickActionAddSlot,
+          variant: FactoryButtonVariant.secondary,
+          onPressed: () => _addSlot(context, ref),
+        ),
+        FactoryButton(
+          icon: Icons.add_business_outlined,
+          label: l10n.quickActionAddService,
+          variant: FactoryButtonVariant.secondary,
+          onPressed: () => _addService(context, ref),
+        ),
+        FactoryButton(
+          icon: Icons.groups_outlined,
+          label: l10n.quickActionCustomers,
+          variant: FactoryButtonVariant.secondary,
+          onPressed: () => _openCustomers(context),
+        ),
+      ],
+    );
+  }
+}
 
 class _CreateSalonForm extends ConsumerStatefulWidget {
   final String ownerUserId;

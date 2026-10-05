@@ -7,6 +7,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../salon/data/models/admin_provider.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
 import '../../data/models/conversation.dart';
+import '../providers/message_seen_provider.dart';
 import '../providers/messaging_providers.dart';
 import 'business_chat_thread_screen.dart';
 
@@ -180,14 +181,15 @@ class _ProviderPicker extends StatelessWidget {
   }
 }
 
-class _ConversationCard extends StatelessWidget {
+class _ConversationCard extends ConsumerWidget {
   final Conversation conversation;
   final VoidCallback onTap;
 
   const _ConversationCard({required this.conversation, required this.onTap});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isNew = ref.watch(messageSeenProvider).value?.isNew(conversation.id, conversation.lastMessageAt) ?? false;
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
@@ -205,7 +207,12 @@ class _ConversationCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(name, style: textTheme.titleSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(
+                  name,
+                  style: textTheme.titleSmall?.copyWith(fontWeight: isNew ? FontWeight.w800 : null),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: 2),
                 Text(
                   DateFormat.yMMMd(locale).add_Hm().format(conversation.lastMessageAt.toLocal()),
@@ -214,6 +221,10 @@ class _ConversationCard extends StatelessWidget {
               ],
             ),
           ),
+          if (isNew) ...[
+            Container(width: 10, height: 10, decoration: BoxDecoration(color: colors.coral, shape: BoxShape.circle)),
+            const SizedBox(width: FactorySpacing.space2),
+          ],
           Icon(Icons.chevron_right, color: colors.textTertiary),
         ],
       ),

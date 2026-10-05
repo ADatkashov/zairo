@@ -512,5 +512,18 @@
   "bookingsTabEmptyCompleted": "Здесь появятся завершённые визиты.",
   "bookingsTabEmptyCancelled": "Отменённых записей нет.",
   "profileSectionActivity": "Моя активность",
-  "profileSectionHelp": "Помощь"
+  "profileSectionHelp": "Помощь",
+  "catalogComparePricesTooltip": "Сравнить цены на услуги этой сферы",
+  "catalogServicesSheetEmpty": "В этой сфере пока нет услуг.",
+  "catalogServicesSheetHint": "Выберите услугу, чтобы увидеть, кто её предлагает, и сравнить.",
+  "bookingBookAgainButton": "Записаться снова",
+  "bookingConfirmationAddToCalendar": "В календарь",
+  "bookingConfirmationDirections": "Маршрут",
+  "bookingCalendarEventTitle": "{service} · {business}",
+  "discardChangesTitle": "Отменить изменения?",
+  "discardChangesMessage": "Внесённые изменения не сохранены.",
+  "discardChangesKeepEditing": "Продолжить",
+  "discardChangesDiscard": "Отменить",
+  "authStepLabel": "Шаг {step} из {total}",
+  "authChangeNumber": "Изменить номер"
 }

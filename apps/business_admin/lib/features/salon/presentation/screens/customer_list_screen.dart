@@ -10,7 +10,7 @@ import '../providers/salon_providers.dart';
 /// The Action Center's "rebook opportunity"/"retention risk" drill-down --
 /// the individual customers behind one of the customer-analytics counts,
 /// read-only (no rebooking-workflow UI exists yet in this app).
-class CustomerListScreen extends ConsumerWidget {
+class CustomerListScreen extends ConsumerStatefulWidget {
   final String providerId;
   final CustomerRetentionStatus? retentionStatus;
   final String title;
@@ -18,14 +18,37 @@ class CustomerListScreen extends ConsumerWidget {
   const CustomerListScreen({super.key, required this.providerId, this.retentionStatus, required this.title});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CustomerListScreen> createState() => _CustomerListScreenState();
+}
+
+class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
+  final _searchController = TextEditingController();
+  String _filter = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  bool _matches(CustomerListItem customer) {
+    final needle = _filter.trim().toLowerCase();
+    if (needle.isEmpty) return true;
+    return (customer.displayName ?? '').toLowerCase().contains(needle) ||
+        (customer.email ?? '').toLowerCase().contains(needle);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
+    final providerId = widget.providerId;
+    final retentionStatus = widget.retentionStatus;
     final customersAsync = ref.watch(customerListProvider((providerId, retentionStatus)));
 
     return Scaffold(
       backgroundColor: colors.bg,
-      appBar: FactoryAppBar(title: title),
+      appBar: FactoryAppBar(title: widget.title),
       body: customersAsync.when(
         data: (customers) {
           if (customers.isEmpty) {
@@ -41,11 +64,44 @@ class CustomerListScreen extends ConsumerWidget {
             );
           }
           final locale = Localizations.localeOf(context).toString();
-          return ListView.separated(
-            padding: const EdgeInsets.all(FactorySpacing.space4),
-            itemCount: customers.length,
-            separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
-            itemBuilder: (context, index) => _CustomerCard(customer: customers[index], locale: locale),
+          final shown = customers.where(_matches).toList();
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  FactorySpacing.space4,
+                  FactorySpacing.space4,
+                  FactorySpacing.space4,
+                  0,
+                ),
+                child: FactorySearchField(
+                  controller: _searchController,
+                  hint: l10n.customerListSearchHint,
+                  onChanged: (value) => setState(() => _filter = value),
+                  onCleared: () => setState(() => _filter = ''),
+                  clearSemanticLabel: l10n.customerListSearchClear,
+                ),
+              ),
+              Expanded(
+                child: shown.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(FactorySpacing.space6),
+                          child: Text(
+                            l10n.customerListNoMatch,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.all(FactorySpacing.space4),
+                        itemCount: shown.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
+                        itemBuilder: (context, index) => _CustomerCard(customer: shown[index], locale: locale),
+                      ),
+              ),
+            ],
           );
         },
         loading: () => const FactoryLoadingState(),

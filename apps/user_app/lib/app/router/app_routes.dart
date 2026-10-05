@@ -20,6 +20,39 @@ abstract final class AppRoutes {
     ).toString();
   }
 
+  /// The full category browser; pops with the picked category's `code`
+  /// (`context.push<String>(AppRoutes.categories)`).
+  static const categories = '/categories';
+
+  /// "Who offers this catalog service" (ServiceCompareScreen).
+  static String compare(String catalogServiceId, {required String serviceName}) =>
+      _withName('/compare/$catalogServiceId', serviceName);
+
+  static const bookings = '/bookings';
+  static const editProfile = '/profile/edit';
+
+  /// A business on a map. [distanceKm] is shown under the map when given.
+  static String map({
+    required String providerName,
+    required double latitude,
+    required double longitude,
+    double? distanceKm,
+  }) => Uri(
+    path: '/map',
+    queryParameters: {
+      'name': providerName,
+      'lat': '$latitude',
+      'lng': '$longitude',
+      if (distanceKm != null) 'distance': '$distanceKm',
+    },
+  ).toString();
+
+  /// A master's portfolio (beauty vertical).
+  static String portfolio(String masterId, {required String masterName}) =>
+      _withName('/portfolio/$masterId', masterName);
+
+  /// Needs a `BookingConfirmationArgs` as `extra`.
+  static const bookingConfirmation = '/booking-confirmation';
   static const notifications = '/notifications';
   static const favorites = '/favorites';
   static const messages = '/messages';

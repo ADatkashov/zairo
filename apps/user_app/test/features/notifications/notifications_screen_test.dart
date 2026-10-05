@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:zairo/features/auth/data/models/user_summary.dart';
 import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/notifications/data/models/app_notification.dart';
@@ -206,4 +207,84 @@ void main() {
       expect(find.text('Mark all read'), findsNothing);
     },
   );
+
+  testWidgets('tapping a booking notification marks it read and opens Bookings', (
+    tester,
+  ) async {
+    final fakeApi = _FakeNotificationsApi([
+      AppNotification(
+        id: 'n1',
+        type: 'BOOKING_REMINDER',
+        title: 'Reminder',
+        body: 'Your visit is tomorrow.',
+        read: false,
+        createdAt: DateTime(2026, 1, 1, 10),
+      ),
+    ]);
+    final router = GoRouter(
+      initialLocation: '/notifications',
+      routes: [
+        GoRoute(path: '/notifications', builder: (_, _) => const NotificationsScreen()),
+        GoRoute(path: '/bookings', builder: (_, _) => const Scaffold(body: Text('Bookings page'))),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          notificationsApiProvider.overrideWithValue(fakeApi),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp.router(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Reminder'));
+    await tester.pumpAndSettle();
+
+    expect(fakeApi.markedReadIds, ['n1']);
+    expect(find.text('Bookings page'), findsOneWidget);
+  });
+
+  testWidgets('a read notification with no destination does nothing when tapped', (
+    tester,
+  ) async {
+    final fakeApi = _FakeNotificationsApi([
+      AppNotification(
+        id: 'n1',
+        type: 'SOMETHING_NEW',
+        title: 'Hello',
+        body: 'No route for this one.',
+        read: true,
+        createdAt: DateTime(2026, 1, 1, 10),
+      ),
+    ]);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          notificationsApiProvider.overrideWithValue(fakeApi),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const NotificationsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Hello'));
+    await tester.pumpAndSettle();
+
+    expect(fakeApi.markedReadIds, isEmpty);
+    expect(find.text('Hello'), findsOneWidget);
+  });
 }

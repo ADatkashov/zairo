@@ -8,6 +8,7 @@ import '../../features/auth/presentation/widgets/logged_out_gate.dart';
 import '../../features/auto/presentation/screens/vehicles_screen.dart';
 import '../../features/booking/presentation/screens/provider_detail_screen.dart';
 import '../../features/discovery/presentation/providers/discovery_providers.dart';
+import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../../l10n/app_localizations.dart';
 
 /// Target of `/provider/:id` when the route was opened without the provider
@@ -72,6 +73,37 @@ class VehiclesRoute extends ConsumerWidget {
               ),
             )
           : VehiclesScreen(userId: user.id),
+      loading: () => const _RouteMessage(child: FactoryLoadingState()),
+      error: (error, stackTrace) => _RouteMessage(
+        child: FactoryErrorState(
+          message: l10n.errorProfileGeneric(error.toString()),
+          onRetry: () => ref.invalidate(authControllerProvider),
+        ),
+      ),
+    );
+  }
+}
+
+/// Target of `/profile/edit`: [EditProfileScreen] edits the signed-in user, who
+/// a URL can't carry, so the user is resolved here.
+class EditProfileRoute extends ConsumerWidget {
+  const EditProfileRoute({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final authState = ref.watch(authControllerProvider);
+
+    return authState.when(
+      data: (user) => user == null
+          ? _RouteMessage(
+              title: l10n.editProfileTitle,
+              child: LoggedOutGate(
+                icon: Symbols.person_rounded,
+                message: l10n.profileLoggedOutPrompt,
+              ),
+            )
+          : EditProfileScreen(user: user),
       loading: () => const _RouteMessage(child: FactoryLoadingState()),
       error: (error, stackTrace) => _RouteMessage(
         child: FactoryErrorState(

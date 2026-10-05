@@ -81,6 +81,16 @@
 	     the same way the consumer app does. -->
 	<key>CFBundleURLTypes</key>
 	<array>
+		<!-- Deep links: zairoadmin://app/messages, zairoadmin://app/billing, …
+		     (every path in AdminRoutes). -->
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>kz.zairo.admin.deeplink</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>zairoadmin</string>
+			</array>
+		</dict>
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
