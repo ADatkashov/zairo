@@ -75,6 +75,8 @@ void main() {
     expect(find.text('AK'), findsOneWidget);
     expect(find.text('Aigerim K.'), findsOneWidget);
     expect(find.text('aigerim@example.com'), findsOneWidget);
+    // The menu is a lazy list: rows below the fold only exist once scrolled to.
+    await tester.scrollUntilVisible(find.text('My vehicles'), 200);
     expect(find.text('My vehicles'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Log out'), 200);
     expect(find.text('Log out'), findsOneWidget);
