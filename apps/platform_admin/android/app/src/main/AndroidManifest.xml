@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- `flutter create` only grants INTERNET to debug/profile builds; without
+         this a release APK can't reach the backend at all. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="ZAIRO Platform"
         android:name="${applicationName}"
