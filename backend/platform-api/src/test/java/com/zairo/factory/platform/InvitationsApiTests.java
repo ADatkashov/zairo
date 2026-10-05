@@ -43,7 +43,7 @@ class InvitationsApiTests {
     @Test
     void invitedPersonJoinsAsStaffWhenTheyVerifyTheirPhone() {
         String runId = UUID.randomUUID().toString();
-        Registered owner = ownerWithProvider("inv-staff-" + runId, "medicine_dental");
+        OwnerWithProvider owner = ownerWithProvider("inv-staff-" + runId, "medicine_dental");
         UUID providerId = owner.providerId();
         String phone = uniqueKzPhone();
 

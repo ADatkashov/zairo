@@ -13,6 +13,11 @@ public final class ServiceOfferingDtos {
     private ServiceOfferingDtos() {
     }
 
+    private static final String CATALOG_SERVICE_DESCRIPTION = "The platform catalog service this offering is. "
+            + "Required once the business's type has an active catalog (businesses can't write their own "
+            + "services); the title must then be one of its names. Optional only for a business with no catalog "
+            + "business type, or whose type has no catalog services yet.";
+
     // title bound mirrors the service table's title varchar(255) (V3
     // migration); currency mirrors its varchar(3) column and the ISO 4217
     // code length Money ultimately validates against; price non-negative
@@ -23,14 +28,28 @@ public final class ServiceOfferingDtos {
             @Schema(example = "60") int durationMinutes,
             @NotNull @DecimalMin("0") @Schema(example = "25.00") BigDecimal price,
             @NotBlank @Size(min = 3, max = 3)
-            @Schema(description = "ISO 4217 currency code.", example = "USD") String currency) {
+            @Schema(description = "ISO 4217 currency code.", example = "USD") String currency,
+            @Schema(description = CATALOG_SERVICE_DESCRIPTION,
+                    example = "550e8400-e29b-41d4-a716-446655440000") UUID catalogServiceId) {
+
+        /** A request that names no catalog service - accepted only where free text is still allowed. */
+        public CreateServiceRequest(String title, int durationMinutes, BigDecimal price, String currency) {
+            this(title, durationMinutes, price, currency, null);
+        }
     }
 
     public record UpdateServiceRequest(
             @NotBlank @Size(max = 255) @Schema(example = "Classic Manicure") String title,
             @Schema(example = "60") int durationMinutes,
             @NotNull @DecimalMin("0") @Schema(example = "25.00") BigDecimal price,
-            @NotBlank @Size(min = 3, max = 3) @Schema(example = "USD") String currency) {
+            @NotBlank @Size(min = 3, max = 3) @Schema(example = "USD") String currency,
+            @Schema(description = CATALOG_SERVICE_DESCRIPTION,
+                    example = "550e8400-e29b-41d4-a716-446655440000") UUID catalogServiceId) {
+
+        /** A request that names no catalog service - accepted only where free text is still allowed. */
+        public UpdateServiceRequest(String title, int durationMinutes, BigDecimal price, String currency) {
+            this(title, durationMinutes, price, currency, null);
+        }
     }
 
     public record ServiceResponse(
