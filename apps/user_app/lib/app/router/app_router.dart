@@ -8,6 +8,7 @@ import '../../features/booking/presentation/screens/my_bookings_screen.dart';
 import '../../features/booking/presentation/screens/provider_detail_screen.dart';
 import '../../features/catalog/presentation/screens/all_categories_screen.dart';
 import '../../features/city/presentation/screens/city_selection_screen.dart';
+import '../../features/city/presentation/widgets/city_onboarding_gate.dart';
 import '../../features/discovery/data/models/provider_search_result.dart';
 import '../../features/discovery/presentation/screens/home_screen.dart';
 import '../../features/discovery/presentation/screens/search_screen.dart';
@@ -214,7 +215,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/',
                 builder: (context, state) => const ScrollToTopOnTabReselect(
                   tabIndex: 0,
-                  child: HomeScreen(),
+                  child: CityOnboardingGate(child: HomeScreen()),
                 ),
               ),
             ],
