@@ -124,4 +124,19 @@ void main() {
     expect(find.widgetWithText(FilledButton, 'Sign in'), findsOneWidget);
     expect(storage.values.containsKey('platform_access_token'), isFalse);
   });
+
+  testWidgets(
+    'storage that refuses (no keychain) only costs "stay signed in" - the console still starts and signs in',
+    (tester) async {
+      final backend = defaultBackend();
+      await pumpConsole(tester, backend: backend, signedIn: false, storage: BrokenStorage());
+      expect(find.widgetWithText(FilledButton, 'Sign in'), findsOneWidget);
+
+      await tester.enterText(find.widgetWithText(TextFormField, 'Email'), 'boss@zairo.kz');
+      await tester.enterText(find.widgetWithText(TextFormField, 'Password'), 'secret123');
+      await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+      await tester.pumpAndSettle();
+      expect(find.text('Hello, Aida'), findsOneWidget);
+    },
+  );
 }
