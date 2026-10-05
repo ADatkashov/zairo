@@ -29,7 +29,7 @@ cloud deployment of the backend that now exists alongside this.
 **Triggers:** `pull_request` and `push` on `develop`, `test`, `master`.
 
 **What it does:** a matrix job, one run per Flutter package —
-`apps/user_app`, `apps/business_admin`, `packages/core_network`,
+`apps/user_app`, `apps/business_admin`, `apps/platform_admin`, `packages/core_network`,
 `packages/core_region`, `packages/core_storage`, `packages/core_ui`.
 Each one gets its own `flutter pub get` → `flutter analyze` →
 `flutter test`, in its own directory (no melos in CI — path
