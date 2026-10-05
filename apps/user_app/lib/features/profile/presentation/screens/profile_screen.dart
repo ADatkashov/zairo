@@ -115,7 +115,7 @@ class _LoggedInView extends ConsumerWidget {
                 FactoryAvatar(
                   initials: initialsFor(displayName),
                   size: FactoryAvatarSize.xl,
-                  image: avatarUrl != null ? NetworkImage(avatarUrl!) : null,
+                  image: avatarUrl != null ? NetworkImage(avatarUrl) : null,
                 ),
                 Positioned(
                   right: 0,
