@@ -1,7 +1,6 @@
 package com.zairo.factory.services;
 
 import com.zairo.factory.auth.CurrentUser;
-import com.zairo.factory.catalog.CatalogServiceRepository;
 import com.zairo.factory.providers.ProviderOwnership;
 import com.zairo.factory.users.UserRepository;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
@@ -36,19 +35,22 @@ public class ServiceOfferingController {
 
     private final ServiceOfferingRepository serviceOfferingRepository;
     private final ProviderOwnership providerOwnership;
-    private final CatalogServiceRepository catalogServiceRepository;
+    private final ServiceCatalogPolicy serviceCatalogPolicy;
     private final UserRepository userRepository;
 
     public ServiceOfferingController(ServiceOfferingRepository serviceOfferingRepository,
-            ProviderOwnership providerOwnership, CatalogServiceRepository catalogServiceRepository,
+            ProviderOwnership providerOwnership, ServiceCatalogPolicy serviceCatalogPolicy,
             UserRepository userRepository) {
         this.serviceOfferingRepository = serviceOfferingRepository;
         this.providerOwnership = providerOwnership;
-        this.catalogServiceRepository = catalogServiceRepository;
+        this.serviceCatalogPolicy = serviceCatalogPolicy;
         this.userRepository = userRepository;
     }
 
-    @Operation(summary = "Add a service to a provider", description = "Owner-only. Created active by default.")
+    @Operation(summary = "Add a service to a provider", description = """
+            Owner-only. Created active by default. Businesses don't write their own services: once the \
+            business's type has an active catalog, `catalogServiceId` is required and `title` must be one \
+            of that catalog service's names (400 otherwise). See `ServiceCatalogPolicy`.""")
     @ApiResponse(responseCode = "201", description = "Service created")
     @ApiResponse(responseCode = "400", ref = "BadRequest")
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
@@ -59,8 +61,11 @@ public class ServiceOfferingController {
     public ServiceResponse create(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             @Valid @RequestBody CreateServiceRequest request, HttpServletRequest httpRequest) {
         providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
+        UUID catalogServiceId = serviceCatalogPolicy.resolveForSave(providerId, request.title(),
+                request.catalogServiceId());
         ServiceOffering service = new ServiceOffering(UUID.randomUUID(), providerId, request.title(),
                 request.durationMinutes(), request.price(), request.currency(), true);
+        service.linkCatalogService(catalogServiceId);
         return ServiceResponse.from(serviceOfferingRepository.save(service));
     }
 
@@ -112,7 +117,7 @@ public class ServiceOfferingController {
     }
 
     @Operation(summary = "Update a service", description = "Owner-only. Replaces title/duration/price/currency "
-            + "wholesale.")
+            + "wholesale. Same catalog rule as creating a service.")
     @ApiResponse(responseCode = "200", description = "Service updated")
     @ApiResponse(responseCode = "400", ref = "BadRequest")
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
@@ -125,7 +130,14 @@ public class ServiceOfferingController {
         ServiceOffering service = serviceOfferingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found: " + id));
         providerOwnership.requireOwner(service.getProviderId(), CurrentUser.requireUserId(httpRequest));
+        UUID catalogServiceId = serviceCatalogPolicy.resolveForSave(service.getProviderId(), request.title(),
+                request.catalogServiceId());
         service.update(request.title(), request.durationMinutes(), request.price(), request.currency());
+        // No catalog service named (only possible where free text is still
+        // allowed) keeps whatever link the offering already has.
+        if (catalogServiceId != null) {
+            service.linkCatalogService(catalogServiceId);
+        }
         return ServiceResponse.from(serviceOfferingRepository.save(service));
     }
 
@@ -164,10 +176,10 @@ public class ServiceOfferingController {
     }
 
     @Operation(summary = "Link (or unlink) this service to a master catalog entry", description = """
-            Owner-only. Pass a real catalog.CatalogService id to link, or null to unlink — deliberate and \
-            post-creation, never automatic (free-text titles are too varied to auto-match safely, see the \
-            master catalog ADR). Linking lets Search match this offering against the catalog entry's \
-            multilingual name, not just this offering's own title.""")
+            Owner-only. Pass a real catalog.CatalogService id to link. Unlinking (null) is only possible \
+            for a business that has no catalog to pick from - otherwise it is a 400, and the target must be an \
+            ACTIVE catalog service of the business's own type. Linking lets Search match this offering \
+            against the catalog entry's multilingual name, not just this offering's own title.""")
     @ApiResponse(responseCode = "200", description = "Link updated")
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @ApiResponse(responseCode = "403", ref = "Forbidden")
@@ -180,11 +192,8 @@ public class ServiceOfferingController {
         ServiceOffering service = serviceOfferingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found: " + id));
         providerOwnership.requireOwner(service.getProviderId(), CurrentUser.requireUserId(httpRequest));
-        if (request.catalogServiceId() != null && !catalogServiceRepository.existsById(request.catalogServiceId())) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Catalog service not found: " + request.catalogServiceId());
-        }
-        service.linkCatalogService(request.catalogServiceId());
+        service.linkCatalogService(serviceCatalogPolicy.resolveForLink(service.getProviderId(),
+                request.catalogServiceId()));
         return ServiceResponse.from(serviceOfferingRepository.save(service));
     }
 }
