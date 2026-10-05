@@ -157,7 +157,6 @@
   "errorServiceSaveFailed": "Қызметті сақтау мүмкін болмады: {error}",
   "errorServiceAddFailed": "Қызметті қосу мүмкін болмады: {error}",
 
-  "addSlotDialogTitle": "Уақыт қосу",
   "pickDateLabel": "Күнді таңдаңыз",
   "pickTimeLabel": "Басталу уақытын таңдаңыз",
   "validationSlotFields": "Күнді, басталу уақытын және оң ұзақтығын таңдаңыз",
@@ -845,10 +844,10 @@
   "loyaltyGreetingSendButton": "Жіберу",
   "loyaltyGreetingSent": "Құттықтау жіберілді",
   "navMore": "Тағы",
-  "quickActionAddSlot": "Уақыт қосу",
+  "quickActionAddSlot": "Кестені баптау",
   "quickActionAddService": "Қызмет қосу",
   "quickActionPickBusiness": "Қай бизнес үшін?",
-  "quickActionSlotAdded": "Уақыт қосылды",
+  "quickActionSlotAdded": "Кесте жасалды",
   "quickActionServiceAdded": "Қызмет қосылды",
   "customerListSearchHint": "Аты немесе email бойынша іздеу",
   "customerListSearchClear": "Іздеуді тазалау",
@@ -859,5 +858,15 @@
 
   "validationPickCatalogService": "Тізімнен қызметті, оң ұзақтықты және дұрыс бағаны таңдаңыз",
 
-  "errorCatalogServicesLoad": "Қызметтер тізімін жүктеу мүмкін болмады: {error}"
+  "errorCatalogServicesLoad": "Қызметтер тізімін жүктеу мүмкін болмады: {error}",
+
+  "masterPhoneLabel": "Тіркелген пайдаланушының телефоны",
+
+  "findButton": "Іздеу",
+
+  "masterUserNotFound": "Бұл телефонмен ешкім тіркелмеген",
+
+  "validationMasterPhoneRequired": "Телефон нөмірін енгізіңіз",
+
+  "masterAlreadyAdded": "Бұл адам мұнда шебер ретінде бар"
 }

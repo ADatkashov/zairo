@@ -5,6 +5,7 @@ import '../../billing/data/billing_exception.dart';
 import 'models/admin_master.dart';
 import 'models/admin_master_service_summary.dart';
 import 'models/admin_portfolio_item.dart';
+import 'models/user_lookup.dart';
 
 /// Wraps the vertical-beauty module's admin-facing endpoints
 /// (backend/vertical-beauty/.../MasterController.java). Only meaningful for
@@ -22,6 +23,35 @@ class BeautyAdminApi {
     );
     final data = response.data as List<dynamic>;
     return data.map((e) => AdminMaster.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Finds a registered user by exact phone (GET /users/lookup); null when
+  /// nobody is registered with it.
+  Future<UserLookup?> lookupUserByPhone(String phone) async {
+    try {
+      final response = await _dioClient.get('/users/lookup', queryParameters: {'phone': phone});
+      return UserLookup.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
+  /// Adds an existing registered user as a master — name and photo come from
+  /// their profile, nothing is typed in.
+  Future<AdminMaster> createMasterFromUser({required String providerId, required String userId}) async {
+    try {
+      final response = await _dioClient.post(
+        '/beauty/providers/$providerId/masters/from-user',
+        data: {'userId': userId},
+      );
+      return AdminMaster.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 402) {
+        throw const BillingException(SubscriptionErrorKey.staffLimitReached);
+      }
+      rethrow;
+    }
   }
 
   Future<AdminMaster> createMaster({

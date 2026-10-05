@@ -35,4 +35,17 @@ public final class UserDtos {
                     user.getRole(), user.getCreatedAt(), user.getAvatarUrl());
         }
     }
+
+    /**
+     * The minimum a business owner needs to pick an existing person (e.g. as a master): no email, phone
+     * or role — those stay admin-only.
+     */
+    public record UserLookupResponse(
+            @Schema(example = "550e8400-e29b-41d4-a716-446655440000") UUID id,
+            @Schema(example = "Aigerim Bekova") String displayName,
+            @Schema(example = "http://localhost:8080/api/v1/uploads/a1b2c3d4.jpg") String avatarUrl) {
+        static UserLookupResponse from(User user) {
+            return new UserLookupResponse(user.getId(), user.getDisplayName(), user.getAvatarUrl());
+        }
+    }
 }

@@ -789,8 +789,6 @@
     }
   },
 
-  "addSlotDialogTitle": "Add a time slot",
-  "@addSlotDialogTitle": {"description": "Add-slot dialog title."},
 
   "pickDateLabel": "Pick a date",
   "@pickDateLabel": {"description": "Add-slot dialog's date picker placeholder."},
@@ -2432,13 +2430,13 @@
   "@loyaltyGreetingSent": {"description": "Loyalty manual greeting: loyaltyGreetingSent"},
   "navMore": "More",
   "@navMore": {"description": "Bottom-nav label of the 'More' tab (Automation, Subscription, Settings)."},
-  "quickActionAddSlot": "Add time slot",
+  "quickActionAddSlot": "Set schedule",
   "@quickActionAddSlot": {"description": "Dashboard quick action: open a free time slot for a business."},
   "quickActionAddService": "Add service",
   "@quickActionAddService": {"description": "Dashboard quick action: add a service to a business."},
   "quickActionPickBusiness": "Which business?",
   "@quickActionPickBusiness": {"description": "Title of the sheet asking which business a dashboard quick action is for."},
-  "quickActionSlotAdded": "Time slot added",
+  "quickActionSlotAdded": "Schedule generated",
   "@quickActionSlotAdded": {"description": "Snackbar after the dashboard quick action created a slot."},
   "quickActionServiceAdded": "Service added",
   "@quickActionServiceAdded": {"description": "Snackbar after the dashboard quick action created a service."},
@@ -2463,5 +2461,20 @@
     "placeholders": {
       "error": {"type": "String"}
     }
-  }
+  },
+
+  "masterPhoneLabel": "Phone of a registered user",
+  "@masterPhoneLabel": {"description": "Add-master dialog."},
+
+  "findButton": "Find",
+  "@findButton": {"description": "Add-master dialog."},
+
+  "masterUserNotFound": "Nobody is registered with this phone",
+  "@masterUserNotFound": {"description": "Add-master dialog."},
+
+  "validationMasterPhoneRequired": "Enter a phone number",
+  "@validationMasterPhoneRequired": {"description": "Add-master dialog."},
+
+  "masterAlreadyAdded": "This person is already a master here",
+  "@masterAlreadyAdded": {"description": "Add-master dialog."}
 }
