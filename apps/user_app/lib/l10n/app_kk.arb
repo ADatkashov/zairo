@@ -504,5 +504,9 @@
   "bookingBookAgainButton": "Қайта жазылу",
   "bookingConfirmationAddToCalendar": "Күнтізбеге қосу",
   "bookingConfirmationDirections": "Бағыт",
-  "bookingCalendarEventTitle": "{service} · {business}"
+  "bookingCalendarEventTitle": "{service} · {business}",
+  "discardChangesTitle": "Өзгерістерден бас тарту керек пе?",
+  "discardChangesMessage": "Енгізілген өзгерістер сақталмаған.",
+  "discardChangesKeepEditing": "Жалғастыру",
+  "discardChangesDiscard": "Бас тарту"
 }

@@ -1662,5 +1662,13 @@
   "bookingConfirmationDirections": "Directions",
   "@bookingConfirmationDirections": {"description": "Booking confirmation: opens a maps app with directions to the business."},
   "bookingCalendarEventTitle": "{service} · {business}",
-  "@bookingCalendarEventTitle": {"description": "Title of the calendar event created from a booking.", "placeholders": {"service": {"type": "String"}, "business": {"type": "String"}}}
+  "@bookingCalendarEventTitle": {"description": "Title of the calendar event created from a booking.", "placeholders": {"service": {"type": "String"}, "business": {"type": "String"}}},
+  "discardChangesTitle": "Discard changes?",
+  "@discardChangesTitle": {"description": "Title of the dialog shown when leaving a form with unsaved changes."},
+  "discardChangesMessage": "What you changed hasn't been saved.",
+  "@discardChangesMessage": {"description": "Body of the unsaved-changes dialog."},
+  "discardChangesKeepEditing": "Keep editing",
+  "@discardChangesKeepEditing": {"description": "Unsaved-changes dialog: stay on the form."},
+  "discardChangesDiscard": "Discard",
+  "@discardChangesDiscard": {"description": "Unsaved-changes dialog: leave and lose the edits."}
 }

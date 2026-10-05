@@ -16,7 +16,6 @@ import '../../../booking/presentation/providers/booking_providers.dart';
 import '../../../notifications/presentation/widgets/notification_bell_button.dart';
 import '../../../favorites/presentation/providers/favorites_providers.dart';
 import '../widgets/change_avatar_dialog.dart';
-import 'edit_profile_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -202,9 +201,7 @@ class _LoggedInView extends ConsumerWidget {
               : null,
           leading: Icon(Symbols.edit_rounded, color: colors.textSecondary),
           trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => EditProfileScreen(user: user)),
-          ),
+          onTap: () => context.push(AppRoutes.editProfile),
         ),
         const SizedBox(height: FactorySpacing.space5),
         FactorySectionHeader(title: l10n.profileSectionActivity),
