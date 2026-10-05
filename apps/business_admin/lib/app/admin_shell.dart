@@ -7,11 +7,19 @@ import '../features/auth/presentation/widgets/change_avatar_dialog.dart';
 import '../l10n/app_localizations.dart';
 
 class AdminSidebarDestination {
-  const AdminSidebarDestination({required this.icon, required this.selectedIcon, required this.label});
+  const AdminSidebarDestination({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+    this.badgeCount = 0,
+  });
 
   final IconData icon;
   final IconData selectedIcon;
   final String label;
+
+  /// A count on the item (new messages); nothing is drawn at 0.
+  final int badgeCount;
 }
 
 /// The branded 220px-wide sidebar (72px icon-only rail when [compact], used at
@@ -152,7 +160,12 @@ class _SidebarNavItem extends StatelessWidget {
           child: Row(
             mainAxisAlignment: compact ? MainAxisAlignment.center : MainAxisAlignment.start,
             children: [
-              Icon(selected ? destination.selectedIcon : destination.icon, size: 20, color: color),
+              Badge(
+                isLabelVisible: destination.badgeCount > 0,
+                label: Text(destination.badgeCount > 9 ? '9+' : '${destination.badgeCount}'),
+                backgroundColor: colors.coral,
+                child: Icon(selected ? destination.selectedIcon : destination.icon, size: 20, color: color),
+              ),
               if (!compact) ...[
                 const SizedBox(width: FactorySpacing.space3),
                 Expanded(

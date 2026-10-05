@@ -1,7 +1,10 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/auth/presentation/providers/auth_providers.dart';
+import '../features/messaging/presentation/providers/message_seen_provider.dart';
 import '../l10n/app_localizations.dart';
 import 'admin_shell.dart';
 
@@ -35,7 +38,7 @@ class BranchDepthObserver extends NavigatorObserver {
 /// icon rail on tablet and a bottom bar on a phone. The areas themselves are
 /// the router's branches (see `buildAdminRouter`); every area keeps its own
 /// Scaffold/AppBar, this only composes them with the navigation.
-class OwnerShell extends StatelessWidget {
+class OwnerShell extends ConsumerWidget {
   const OwnerShell({super.key, required this.navigationShell, required this.depthObservers});
 
   final StatefulNavigationShell navigationShell;
@@ -45,26 +48,28 @@ class OwnerShell extends StatelessWidget {
   static const _phoneTabBranches = [0, 1, 2, 3, 7];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final ownerUserId = ref.watch(authControllerProvider).value?.id;
+    final newMessages = ownerUserId == null ? 0 : ref.watch(newMessagesCountProvider(ownerUserId));
 
     return switch (FactoryBreakpoints.of(context)) {
-      FactoryScreenSize.mobile => _phone(context, l10n),
-      FactoryScreenSize.tablet => _sidebar(context, l10n, compact: true),
-      FactoryScreenSize.desktop => _sidebar(context, l10n, compact: false),
+      FactoryScreenSize.mobile => _phone(context, l10n, newMessages),
+      FactoryScreenSize.tablet => _sidebar(context, l10n, newMessages, compact: true),
+      FactoryScreenSize.desktop => _sidebar(context, l10n, newMessages, compact: false),
     };
   }
 
   void _goBranch(int branch) =>
       navigationShell.goBranch(branch, initialLocation: branch == navigationShell.currentIndex);
 
-  Widget _sidebar(BuildContext context, AppLocalizations l10n, {required bool compact}) {
+  Widget _sidebar(BuildContext context, AppLocalizations l10n, int newMessages, {required bool compact}) {
     final colors = context.factoryColors;
     // Branch 7 ("More") is phone-only, so the sidebar never selects it.
     final selected = navigationShell.currentIndex.clamp(0, 6);
     final destinations = [
       AdminSidebarDestination(icon: Icons.dashboard_outlined, selectedIcon: Icons.dashboard_rounded, label: l10n.navDashboard),
-      AdminSidebarDestination(icon: Icons.forum_outlined, selectedIcon: Icons.forum_rounded, label: l10n.messagingNavLabel),
+      AdminSidebarDestination(icon: Icons.forum_outlined, selectedIcon: Icons.forum_rounded, label: l10n.messagingNavLabel, badgeCount: newMessages),
       AdminSidebarDestination(icon: Icons.campaign_outlined, selectedIcon: Icons.campaign_rounded, label: l10n.campaignCenterNavLabel),
       AdminSidebarDestination(icon: Icons.loyalty_outlined, selectedIcon: Icons.loyalty, label: l10n.loyaltyNavLabel),
       AdminSidebarDestination(icon: Icons.bolt_outlined, selectedIcon: Icons.bolt, label: l10n.automationCenterNavLabel),
@@ -83,7 +88,7 @@ class OwnerShell extends StatelessWidget {
     );
   }
 
-  Widget _phone(BuildContext context, AppLocalizations l10n) {
+  Widget _phone(BuildContext context, AppLocalizations l10n, int newMessages) {
     final current = navigationShell.currentIndex;
     // Automation / Subscription / Settings are reached through "More", so
     // while one of them is open the More tab stays highlighted.
@@ -107,7 +112,7 @@ class OwnerShell extends StatelessWidget {
               onDestinationSelected: (tab) => _goBranch(_phoneTabBranches[tab]),
               destinations: [
                 FactoryNavDestination(icon: Icons.dashboard_rounded, label: l10n.navDashboard),
-                FactoryNavDestination(icon: Icons.forum_rounded, label: l10n.messagingNavLabel),
+                FactoryNavDestination(icon: Icons.forum_rounded, label: l10n.messagingNavLabel, badgeCount: newMessages),
                 FactoryNavDestination(icon: Icons.campaign_rounded, label: l10n.campaignCenterNavLabel),
                 FactoryNavDestination(icon: Icons.loyalty_rounded, label: l10n.loyaltyNavLabel),
                 FactoryNavDestination(icon: Icons.more_horiz_rounded, label: l10n.navMore),
