@@ -512,5 +512,8 @@
   "bookingsTabEmptyCompleted": "Здесь появятся завершённые визиты.",
   "bookingsTabEmptyCancelled": "Отменённых записей нет.",
   "profileSectionActivity": "Моя активность",
-  "profileSectionHelp": "Помощь"
+  "profileSectionHelp": "Помощь",
+  "catalogComparePricesTooltip": "Сравнить цены на услуги этой сферы",
+  "catalogServicesSheetEmpty": "В этой сфере пока нет услуг.",
+  "catalogServicesSheetHint": "Выберите услугу, чтобы увидеть, кто её предлагает, и сравнить."
 }

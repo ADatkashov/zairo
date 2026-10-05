@@ -14,7 +14,6 @@ import '../../../booking/data/models/book_again_suggestion.dart';
 import '../../../booking/presentation/providers/booking_providers.dart';
 import '../../../catalog/presentation/category_icon.dart';
 import '../../../catalog/presentation/providers/catalog_providers.dart';
-import '../../../catalog/presentation/screens/all_categories_screen.dart';
 import '../../../city/presentation/providers/city_providers.dart';
 import '../../../maps/presentation/providers/maps_providers.dart';
 import '../../../notifications/presentation/providers/notifications_providers.dart';
@@ -364,9 +363,7 @@ class _CategoryGrid extends ConsumerWidget {
   static const _tileHeight = 96.0;
 
   Future<void> _openAllCategories(BuildContext context) async {
-    final code = await Navigator.of(context).push<String>(
-      MaterialPageRoute(builder: (_) => const AllCategoriesScreen()),
-    );
+    final code = await context.push<String>(AppRoutes.categories);
     if (code != null) onSelect(code);
   }
 

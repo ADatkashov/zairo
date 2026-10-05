@@ -20,6 +20,14 @@ abstract final class AppRoutes {
     ).toString();
   }
 
+  /// The full category browser; pops with the picked category's `code`
+  /// (`context.push<String>(AppRoutes.categories)`).
+  static const categories = '/categories';
+
+  /// "Who offers this catalog service" (ServiceCompareScreen).
+  static String compare(String catalogServiceId, {required String serviceName}) =>
+      _withName('/compare/$catalogServiceId', serviceName);
+
   static const notifications = '/notifications';
   static const favorites = '/favorites';
   static const messages = '/messages';

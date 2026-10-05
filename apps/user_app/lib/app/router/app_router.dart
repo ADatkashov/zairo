@@ -4,10 +4,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/booking/presentation/screens/my_bookings_screen.dart';
 import '../../features/booking/presentation/screens/provider_detail_screen.dart';
+import '../../features/catalog/presentation/screens/all_categories_screen.dart';
 import '../../features/city/presentation/screens/city_selection_screen.dart';
 import '../../features/discovery/data/models/provider_search_result.dart';
 import '../../features/discovery/presentation/screens/home_screen.dart';
 import '../../features/discovery/presentation/screens/search_screen.dart';
+import '../../features/discovery/presentation/screens/service_compare_screen.dart';
 import '../../features/favorites/presentation/screens/favorites_screen.dart';
 import '../../features/loyalty/presentation/screens/business_loyalty_screen.dart';
 import '../../features/loyalty/presentation/screens/my_redemptions_screen.dart';
@@ -50,6 +52,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.citySelection,
         builder: (context, state) => const CitySelectionScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.categories,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const AllCategoriesScreen(),
+      ),
+      GoRoute(
+        path: '/compare/:catalogServiceId',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => ServiceCompareScreen(
+          catalogServiceId: state.pathParameters['catalogServiceId']!,
+          serviceName: state.uri.queryParameters['name'] ?? '',
+        ),
       ),
       GoRoute(
         path: '/provider/:id',
