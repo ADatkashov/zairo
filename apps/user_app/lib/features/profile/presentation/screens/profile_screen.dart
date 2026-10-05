@@ -13,6 +13,7 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../auth/presentation/screens/register_screen.dart';
 import '../../../booking/presentation/providers/booking_providers.dart';
+import '../../../notifications/presentation/widgets/notification_bell_button.dart';
 import '../../../favorites/presentation/providers/favorites_providers.dart';
 import '../widgets/change_avatar_dialog.dart';
 import 'edit_profile_screen.dart';
@@ -29,6 +30,7 @@ class ProfileScreen extends ConsumerWidget {
       appBar: FactoryAppBar(
         title: l10n.profileTitle,
         actions: [
+          if (authState.value != null) const NotificationBellButton(),
           IconButton(
             icon: const Icon(Symbols.settings_rounded),
             tooltip: l10n.settingsButtonTooltip,

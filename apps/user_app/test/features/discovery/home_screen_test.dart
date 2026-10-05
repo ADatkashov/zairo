@@ -307,4 +307,38 @@ void main() {
     expect(find.text('Aigerim Beauty Studio'), findsOneWidget);
     expect(find.text('Haircut'), findsOneWidget);
   });
+
+  testWidgets('the header heart opens Favorites, even for a guest', (tester) async {
+    final fakeDiscoveryApi = _FakeDiscoveryApi([_open]);
+    final fakeCatalogApi = _FakeCatalogApi(const []);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          discoveryApiProvider.overrideWithValue(fakeDiscoveryApi),
+          catalogApiProvider.overrideWithValue(fakeCatalogApi),
+        ],
+        child: MaterialApp.router(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: GoRouter(
+            routes: [
+              GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+              GoRoute(
+                path: '/favorites',
+                builder: (_, _) => const Scaffold(body: Text('Favorites page')),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('My favorites'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Favorites page'), findsOneWidget);
+  });
 }
