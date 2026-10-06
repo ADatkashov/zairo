@@ -25,6 +25,16 @@ class StaffOwnerApi {
     );
   }
 
+  /// Hands the appointment to a colleague at the same time (409 if they are busy).
+  Future<void> reassignAppointment(String providerId, String bookingId, String workerId) {
+    return _dioClient.post('/providers/$providerId/appointments/$bookingId/reassign', data: {'workerId': workerId});
+  }
+
+  /// Lets the customer choose: a colleague, another time with the same person, or a refunded cancel.
+  Future<void> askCustomer(String providerId, String bookingId) {
+    return _dioClient.post('/providers/$providerId/appointments/$bookingId/ask-customer');
+  }
+
   // --- team schedule ---
 
   Future<List<WorkerSummary>> workers(String providerId) async {

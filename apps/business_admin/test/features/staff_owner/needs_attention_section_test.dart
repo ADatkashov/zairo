@@ -26,6 +26,10 @@ NeedsAttentionItem _item(String bookingId) => NeedsAttentionItem(
       reason: 'WORKER_CANNOT_ATTEND',
       workerNote: 'Sick leave',
       requestedAt: DateTime.now(),
+      replacements: const [
+        Replacement(workerId: 's2', name: 'Dana M.', atWorkingTime: true),
+        Replacement(workerId: 's3', name: 'Ruslan', atWorkingTime: false),
+      ],
     );
 
 class _FakeStaffOwnerApi extends StaffOwnerApi {
@@ -33,9 +37,22 @@ class _FakeStaffOwnerApi extends StaffOwnerApi {
 
   List<NeedsAttentionItem> items;
   final List<String> cancelled = [];
+  final List<String> reassigned = [];
+  final List<String> asked = [];
 
   @override
   Future<List<NeedsAttentionItem>> needsAttention(String providerId) async => items;
+
+  @override
+  Future<void> reassignAppointment(String providerId, String bookingId, String workerId) async {
+    reassigned.add('$bookingId->$workerId');
+    items = [];
+  }
+
+  @override
+  Future<void> askCustomer(String providerId, String bookingId) async {
+    asked.add(bookingId);
+  }
 
   @override
   Future<void> cancelAppointment(String providerId, String bookingId, {String? reason}) async {
@@ -80,5 +97,32 @@ void main() {
 
     expect(api.cancelled, ['p1/b1']);
     expect(find.text('Needs your decision'), findsNothing);
+  });
+
+  testWidgets('hands the appointment to a chosen colleague', (tester) async {
+    final api = _FakeStaffOwnerApi([_item('b1')]);
+    await tester.pumpWidget(_wrap(api));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Hand over'));
+    await tester.pumpAndSettle();
+    expect(find.text('Who takes it?'), findsOneWidget);
+    expect(find.text('Outside their usual hours'), findsOneWidget);
+    await tester.tap(find.text('Dana M.'));
+    await tester.pumpAndSettle();
+
+    expect(api.reassigned, ['b1->s2']);
+    expect(find.text('Needs your decision'), findsNothing);
+  });
+
+  testWidgets('asks the customer to choose', (tester) async {
+    final api = _FakeStaffOwnerApi([_item('b1')]);
+    await tester.pumpWidget(_wrap(api));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Ask customer'));
+    await tester.pumpAndSettle();
+
+    expect(api.asked, ['b1']);
   });
 }
