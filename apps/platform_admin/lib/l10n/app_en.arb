@@ -637,5 +637,15 @@
   "bulkDone": "{count, plural, one{{count} business updated} other{{count} businesses updated}}",
   "@bulkDone": {"description": "bulkDone", "placeholders": {"count": {"type": "int"}}},
   "bulkPartial": "{done} updated, {failed} failed. Try the failed ones again.",
-  "@bulkPartial": {"description": "bulkPartial", "placeholders": {"done": {"type": "int"}, "failed": {"type": "int"}}}
+  "@bulkPartial": {"description": "bulkPartial", "placeholders": {"done": {"type": "int"}, "failed": {"type": "int"}}},
+  "activityToday": "Today",
+  "@activityToday": {"description": "activityToday"},
+  "activityYesterday": "Yesterday",
+  "@activityYesterday": {"description": "activityYesterday"},
+  "activityDetailTime": "Time",
+  "@activityDetailTime": {"description": "activityDetailTime"},
+  "activityDetailTarget": "Target",
+  "@activityDetailTarget": {"description": "activityDetailTarget"},
+  "activityDetailEntryId": "Entry ID",
+  "@activityDetailEntryId": {"description": "activityDetailEntryId"}
 }
