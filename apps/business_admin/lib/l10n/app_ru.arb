@@ -898,5 +898,8 @@
   "calendarDayEmpty": "Записей нет",
   "calendarPrevWeek": "Предыдущая неделя",
   "calendarNextWeek": "Следующая неделя",
-  "calendarLoadFailed": "Не удалось загрузить календарь."
+  "calendarLoadFailed": "Не удалось загрузить календарь.",
+  "staffCabinetLinkTitle": "Мои записи как сотрудника",
+  "staffCabinetLinkSubtitle": "Откроет приложение Zairo, где ваши записи и рейтинг",
+  "staffCabinetLinkFailed": "Не удалось открыть приложение Zairo. Убедитесь, что оно установлено на этом устройстве."
 }
