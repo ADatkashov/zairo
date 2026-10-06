@@ -73,6 +73,16 @@ public class WorkerCatalog {
         return result;
     }
 
+    /** Everyone who no longer works at their business (deactivated in their directory). */
+    public List<Worker> findInactive() {
+        List<Worker> result = new ArrayList<>();
+        for (Spec spec : SPECS) {
+            result.addAll(jdbc.sql("select " + COLUMNS + " from " + spec.table() + " where not is_active")
+                    .query((rs, n) -> map(spec.kind(), rs)).list());
+        }
+        return result;
+    }
+
     /** Active workers of a business who perform the given service. */
     public List<Worker> findOfferingService(UUID providerId, UUID serviceId) {
         List<Worker> result = new ArrayList<>();
@@ -122,11 +132,23 @@ public class WorkerCatalog {
         return employee.flatMap(this::find);
     }
 
-    /** Points an existing booking's directory link at another worker of the same kind. */
-    public void relink(Worker newWorker, UUID bookingId) {
+    /**
+     * Points an existing booking's directory link at another worker of the same kind.
+     *
+     * @return how many link rows were updated (0 when the booking has no link row — it is attributed to its worker
+     *         only through the slot it sits on)
+     */
+    public int relink(Worker newWorker, UUID bookingId) {
         Spec spec = spec(newWorker.kind());
-        jdbc.sql("update " + spec.bookingTable() + " set " + spec.bookingWorkerCol() + " = :w where booking_id = :b")
-                .param("w", newWorker.id()).param("b", bookingId).update();
+        return jdbc.sql("update " + spec.bookingTable() + " set " + spec.bookingWorkerCol()
+                + " = :w where booking_id = :b").param("w", newWorker.id()).param("b", bookingId).update();
+    }
+
+    /** Whether the booking has a row in this kind's directory link table. */
+    public boolean hasLink(WorkerKind kind, UUID bookingId) {
+        Spec spec = spec(kind);
+        return jdbc.sql("select count(*) from " + spec.bookingTable() + " where booking_id = :b")
+                .param("b", bookingId).query(Long.class).single() > 0;
     }
 
     private static Worker map(WorkerKind kind, java.sql.ResultSet rs) throws java.sql.SQLException {

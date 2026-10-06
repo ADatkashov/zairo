@@ -60,12 +60,15 @@ public class WorkerPortalService {
     private final UserRepository userRepository;
     private final ReviewRepository reviewRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final WorkerDeclineRecorder declineRecorder;
+    private final WorkerAbsenceService absenceService;
 
     public WorkerPortalService(WorkerCatalog catalog, WorkerBookingStateRepository stateRepository,
             BookingRepository bookingRepository, BookingService bookingService,
             AvailabilitySlotRepository slotRepository, ServiceOfferingRepository serviceRepository,
             ProviderRepository providerRepository, UserRepository userRepository,
-            ReviewRepository reviewRepository, ApplicationEventPublisher eventPublisher) {
+            ReviewRepository reviewRepository, ApplicationEventPublisher eventPublisher,
+            WorkerDeclineRecorder declineRecorder, WorkerAbsenceService absenceService) {
         this.catalog = catalog;
         this.stateRepository = stateRepository;
         this.bookingRepository = bookingRepository;
@@ -76,6 +79,8 @@ public class WorkerPortalService {
         this.userRepository = userRepository;
         this.reviewRepository = reviewRepository;
         this.eventPublisher = eventPublisher;
+        this.declineRecorder = declineRecorder;
+        this.absenceService = absenceService;
     }
 
     @Transactional(readOnly = true)
@@ -162,7 +167,6 @@ public class WorkerPortalService {
      * and frees the slot, and that decision (reassign to a colleague, move, or cancel) is the owner's, since the
      * business, not the worker, carries the lost revenue. The booking is untouched; the owner is told.
      */
-    @Transactional
     public void cannotAttend(UUID userId, UUID workerId, UUID bookingId, String reason) {
         Worker worker = requireOwnActiveWorker(workerId, userId);
         Booking booking = requireOwnBooking(worker, bookingId);
@@ -170,13 +174,17 @@ public class WorkerPortalService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Only an upcoming appointment can be declined (status=" + booking.getStatus() + ")");
         }
-        WorkerBookingState state = stateOf(bookingId, worker);
-        boolean first = state.getDeclinedAt() == null;
-        state.requestDecline(Instant.now(), reason == null || reason.isBlank() ? null : reason.trim());
-        stateRepository.save(state);
-        if (first) {
-            eventPublisher.publishEvent(new WorkerCannotAttendEvent(bookingId, worker.providerId(), worker.id()));
+        WorkerDeclineRecorder.Recorded recorded = declineRecorder.record(bookingId, worker,
+                reason == null || reason.isBlank() ? null : reason.trim());
+        if (!recorded.first()) {
+            return;
         }
+        // A customer who didn't mind who serves them is handed to a free colleague on the spot; the owner only hears
+        // about it when that wasn't possible (or the customer chose this person).
+        if (recorded.customerDidntMind() && absenceService.autoReassignIfAny(bookingId)) {
+            return;
+        }
+        eventPublisher.publishEvent(new WorkerCannotAttendEvent(bookingId, worker.providerId(), worker.id()));
     }
 
     @Transactional

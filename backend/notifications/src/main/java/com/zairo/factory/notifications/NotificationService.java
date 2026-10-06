@@ -89,6 +89,34 @@ public class NotificationService {
                         + "or cancel it.");
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void sendWorkerChangedEmail(UUID recipientUserId, String toEmail, UUID bookingId, String toName,
+            boolean customerDidntMind) {
+        String title = "Your specialist has changed";
+        String body = (customerDidntMind ? "For your appointment (" + bookingId + ") " : "Your appointment ("
+                + bookingId + ") will be with ") + (customerDidntMind ? "we assigned " : "") + toName
+                + ". The time is the same.";
+        emailProvider.send(toEmail, title, body);
+        recordInApp(recipientUserId, InAppNotificationType.WORKER_CHANGED, title, body);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void sendChangeRequestedEmail(UUID recipientUserId, String toEmail, UUID bookingId, String workerName) {
+        String title = "Please choose how to proceed";
+        String body = workerName + " can't make your appointment (" + bookingId + "). Open the app to pick a "
+                + "colleague at the same time, another time, or cancel with a full refund.";
+        emailProvider.send(toEmail, title, body);
+        recordInApp(recipientUserId, InAppNotificationType.CHANGE_REQUESTED, title, body);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void sendBookingMovedEmail(UUID recipientUserId, String toEmail, UUID bookingId, Instant newStartsAt) {
+        String title = "Your appointment was moved";
+        String body = "Your appointment (" + bookingId + ") now starts at " + newStartsAt + ".";
+        emailProvider.send(toEmail, title, body);
+        recordInApp(recipientUserId, InAppNotificationType.BOOKING_MOVED, title, body);
+    }
+
     public void sendWorkerUnavailableEmail(String toEmail, String workerName, int affectedAppointments) {
         emailProvider.send(toEmail, workerName + " is unavailable",
                 workerName + " closed their availability. " + (affectedAppointments > 0

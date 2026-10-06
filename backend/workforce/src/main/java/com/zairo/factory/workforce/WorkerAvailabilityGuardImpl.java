@@ -6,7 +6,6 @@ import com.zairo.factory.booking.WorkerAvailabilityGuard;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 
 /**
@@ -30,17 +29,17 @@ class WorkerAvailabilityGuardImpl implements WorkerAvailabilityGuard {
     private final WorkerTimeOffRepository timeOffRepository;
     private final WorkforceSettingsService settingsService;
     private final WorkerBookings workerBookings;
-    private final JdbcClient jdbc;
+    private final PersonLock personLock;
 
     WorkerAvailabilityGuardImpl(WorkerCatalog catalog, WorkerScheduleRepository scheduleRepository,
             WorkerTimeOffRepository timeOffRepository, WorkforceSettingsService settingsService,
-            WorkerBookings workerBookings, JdbcClient jdbc) {
+            WorkerBookings workerBookings, PersonLock personLock) {
         this.catalog = catalog;
         this.scheduleRepository = scheduleRepository;
         this.timeOffRepository = timeOffRepository;
         this.settingsService = settingsService;
         this.workerBookings = workerBookings;
-        this.jdbc = jdbc;
+        this.personLock = personLock;
     }
 
     @Override
@@ -69,9 +68,7 @@ class WorkerAvailabilityGuardImpl implements WorkerAvailabilityGuard {
         }
 
         // One lock per human: a second booking for the same person waits for the first to commit, then sees it.
-        UUID lockKey = worker.userId() != null ? worker.userId() : worker.id();
-        jdbc.sql("select pg_advisory_xact_lock(hashtext(:key))").param("key", "worker-person:" + lockKey)
-                .query((rs, n) -> 1).list();
+        personLock.acquire(worker);
         List<Worker> samePerson = worker.userId() == null ? List.of(worker) : catalog.findByUserId(worker.userId());
         for (Worker w : samePerson) {
             if (!workerBookings.activeOverlapping(w, from, to).isEmpty()) {
