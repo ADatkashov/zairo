@@ -582,7 +582,7 @@
   "bookingsEmptyTitle": "No bookings yet",
   "@bookingsEmptyTitle": {"description": "My Bookings screen empty state title."},
 
-  "bookingsEmptyMessage": "Once you book a service, it will show up here.",
+  "bookingsEmptyMessage": "Pick a service and a time — your bookings and reminders will live here.",
   "@bookingsEmptyMessage": {"description": "My Bookings screen empty state message."},
 
   "errorBookingsLoadFailed": "Couldn't load your bookings.",
@@ -620,7 +620,7 @@
   "favoritesEmptyTitle": "No favorites yet",
   "@favoritesEmptyTitle": {"description": "Favorites screen empty state title."},
 
-  "favoritesEmptyMessage": "Providers you favorite will show up here.",
+  "favoritesEmptyMessage": "Tap the heart on a salon or workshop to keep it here for quick booking.",
   "@favoritesEmptyMessage": {"description": "Favorites screen empty state message."},
 
   "errorFavoritesLoadFailed": "Couldn't load your favorites.",
@@ -632,7 +632,7 @@
   "notificationsEmptyTitle": "No notifications yet",
   "@notificationsEmptyTitle": {"description": "Notifications screen empty state title."},
 
-  "notificationsEmptyMessage": "Booking updates and reminders will show up here.",
+  "notificationsEmptyMessage": "We'll let you know when a booking is confirmed, changed or coming up.",
   "@notificationsEmptyMessage": {"description": "Notifications screen empty state message."},
 
   "errorNotificationsLoadFailed": "Couldn't load your notifications.",
@@ -1333,7 +1333,7 @@
     "description": "ConversationsScreen empty state title."
   },
 
-  "conversationsEmptyMessage": "Message a business to start a conversation.",
+  "conversationsEmptyMessage": "Open a business and tap the chat icon to ask a question before you book.",
   "@conversationsEmptyMessage": {
     "description": "ConversationsScreen empty state body."
   },
@@ -1639,11 +1639,11 @@
   "@searchResetFilters": {"description": "Button in the empty Search results that clears the query and every filter."},
   "bookingsFindServiceButton": "Find a service",
   "@bookingsFindServiceButton": {"description": "Empty Bookings state: jumps to the Search tab."},
-  "bookingsTabEmptyUpcoming": "No upcoming bookings. Pick a service and a time that suits you.",
+  "bookingsTabEmptyUpcoming": "Choose a service and a time that suits you.",
   "@bookingsTabEmptyUpcoming": {"description": "Empty 'Upcoming' tab of My bookings."},
-  "bookingsTabEmptyCompleted": "Completed visits will show up here.",
+  "bookingsTabEmptyCompleted": "Finished visits appear here, and you can leave a review for each.",
   "@bookingsTabEmptyCompleted": {"description": "Empty 'Completed' tab of My bookings."},
-  "bookingsTabEmptyCancelled": "You have no cancelled bookings.",
+  "bookingsTabEmptyCancelled": "If you cancel a booking, it will be listed here.",
   "@bookingsTabEmptyCancelled": {"description": "Empty 'Cancelled' tab of My bookings."},
   "profileSectionActivity": "My activity",
   "@profileSectionActivity": {"description": "Profile list group header: favorites, messages, rewards, coupons, vehicles."},
@@ -1674,5 +1674,15 @@
   "authStepLabel": "Step {step} of {total}",
   "@authStepLabel": {"description": "Progress label at the top of the phone sign-in screens.", "placeholders": {"step": {"type": "int"}, "total": {"type": "int"}}},
   "authChangeNumber": "Change number",
-  "@authChangeNumber": {"description": "Phone sign-in step 2: goes back to re-enter the phone number."}
+  "@authChangeNumber": {"description": "Phone sign-in step 2: goes back to re-enter the phone number."},
+  "favoritesBrowseButton": "Explore places",
+  "@favoritesBrowseButton": {"description": "favoritesBrowseButton"},
+  "conversationsFindBusinessButton": "Find a business",
+  "@conversationsFindBusinessButton": {"description": "conversationsFindBusinessButton"},
+  "bookingsTabEmptyTitleUpcoming": "Nothing coming up",
+  "@bookingsTabEmptyTitleUpcoming": {"description": "bookingsTabEmptyTitleUpcoming"},
+  "bookingsTabEmptyTitleCompleted": "No visits yet",
+  "@bookingsTabEmptyTitleCompleted": {"description": "bookingsTabEmptyTitleCompleted"},
+  "bookingsTabEmptyTitleCancelled": "No cancellations",
+  "@bookingsTabEmptyTitleCancelled": {"description": "bookingsTabEmptyTitleCancelled"}
 }
