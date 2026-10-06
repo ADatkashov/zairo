@@ -25,10 +25,12 @@ class BusinessAnalyticsScreen extends ConsumerStatefulWidget {
   const BusinessAnalyticsScreen({super.key, required this.provider});
 
   @override
-  ConsumerState<BusinessAnalyticsScreen> createState() => _BusinessAnalyticsScreenState();
+  ConsumerState<BusinessAnalyticsScreen> createState() =>
+      _BusinessAnalyticsScreenState();
 }
 
-class _BusinessAnalyticsScreenState extends ConsumerState<BusinessAnalyticsScreen> {
+class _BusinessAnalyticsScreenState
+    extends ConsumerState<BusinessAnalyticsScreen> {
   _Period _period = _Period.thisMonth;
   DateTimeRange? _customRange;
 
@@ -44,7 +46,9 @@ class _BusinessAnalyticsScreenState extends ConsumerState<BusinessAnalyticsScree
         return (weekStart, weekStart.add(const Duration(days: 7)));
       case _Period.thisMonth:
         final monthStart = DateTime(now.year, now.month, 1);
-        final nextMonth = now.month == 12 ? DateTime(now.year + 1, 1, 1) : DateTime(now.year, now.month + 1, 1);
+        final nextMonth = now.month == 12
+            ? DateTime(now.year + 1, 1, 1)
+            : DateTime(now.year, now.month + 1, 1);
         return (monthStart, nextMonth);
       case _Period.custom:
         final range = _customRange;
@@ -62,7 +66,9 @@ class _BusinessAnalyticsScreenState extends ConsumerState<BusinessAnalyticsScree
       context: context,
       firstDate: DateTime(now.year - 3),
       lastDate: now,
-      initialDateRange: _customRange ?? DateTimeRange(start: now.subtract(const Duration(days: 7)), end: now),
+      initialDateRange:
+          _customRange ??
+          DateTimeRange(start: now.subtract(const Duration(days: 7)), end: now),
     );
     if (picked != null && mounted) {
       setState(() {
@@ -181,7 +187,9 @@ class _ActionCenterSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
-    final actionsAsync = ref.watch(businessAnalyticsActionsProvider(providerId));
+    final actionsAsync = ref.watch(
+      businessAnalyticsActionsProvider(providerId),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,17 +200,24 @@ class _ActionCenterSection extends ConsumerWidget {
             if (data.actions.isEmpty) {
               return Text(
                 l10n.actionCenterEmpty,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: colors.textTertiary),
               );
             }
             return Column(
-              children: data.actions.map((action) => _ActionCard(providerId: providerId, action: action)).toList(),
+              children: data.actions
+                  .map(
+                    (action) =>
+                        _ActionCard(providerId: providerId, action: action),
+                  )
+                  .toList(),
             );
           },
           loading: () => const FactoryLoadingState(),
           error: (error, _) => FactoryErrorState(
             message: l10n.errorAnalyticsLoadFailed(error.toString()),
-            onRetry: () => ref.invalidate(businessAnalyticsActionsProvider(providerId)),
+            onRetry: () =>
+                ref.invalidate(businessAnalyticsActionsProvider(providerId)),
           ),
         ),
       ],
@@ -221,10 +236,22 @@ class _ActionCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final (icon, text) = switch (action.type) {
-      ActionItemType.smartFillOpportunity => (Icons.bolt_outlined, l10n.actionSmartFillOpportunity(action.count)),
-      ActionItemType.rebookOpportunity => (Icons.event_repeat_outlined, l10n.actionRebookOpportunity(action.count)),
-      ActionItemType.retentionRisk => (Icons.warning_amber_outlined, l10n.actionRetentionRisk(action.count)),
-      ActionItemType.lowUtilization => (Icons.calendar_month_outlined, l10n.actionLowUtilization(action.count)),
+      ActionItemType.smartFillOpportunity => (
+        Icons.bolt_outlined,
+        l10n.actionSmartFillOpportunity(action.count),
+      ),
+      ActionItemType.rebookOpportunity => (
+        Icons.event_repeat_outlined,
+        l10n.actionRebookOpportunity(action.count),
+      ),
+      ActionItemType.retentionRisk => (
+        Icons.warning_amber_outlined,
+        l10n.actionRetentionRisk(action.count),
+      ),
+      ActionItemType.lowUtilization => (
+        Icons.calendar_month_outlined,
+        l10n.actionLowUtilization(action.count),
+      ),
     };
 
     return Padding(
@@ -235,7 +262,9 @@ class _ActionCard extends StatelessWidget {
           children: [
             Icon(icon, size: 20, color: colors.primary),
             const SizedBox(width: FactorySpacing.space3),
-            Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium)),
+            Expanded(
+              child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
+            ),
             Icon(Icons.chevron_right, size: 20, color: colors.textTertiary),
           ],
         ),
@@ -251,7 +280,9 @@ class _ActionCard extends StatelessWidget {
     switch (action.type) {
       case ActionItemType.smartFillOpportunity:
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => SmartFillCampaignsScreen(providerId: providerId)),
+          MaterialPageRoute(
+            builder: (_) => SmartFillCampaignsScreen(providerId: providerId),
+          ),
         );
       case ActionItemType.rebookOpportunity:
         Navigator.of(context).push(
@@ -288,7 +319,9 @@ class _OverviewSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final overviewAsync = ref.watch(businessAnalyticsOverviewProvider((providerId, range)));
+    final overviewAsync = ref.watch(
+      businessAnalyticsOverviewProvider((providerId, range)),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,7 +332,9 @@ class _OverviewSection extends ConsumerWidget {
           loading: () => const FactoryLoadingState(),
           error: (error, _) => FactoryErrorState(
             message: l10n.errorAnalyticsLoadFailed(error.toString()),
-            onRetry: () => ref.invalidate(businessAnalyticsOverviewProvider((providerId, range))),
+            onRetry: () => ref.invalidate(
+              businessAnalyticsOverviewProvider((providerId, range)),
+            ),
           ),
         ),
       ],
@@ -307,6 +342,8 @@ class _OverviewSection extends ConsumerWidget {
   }
 }
 
+/// Bento overview: revenue is the one big number; counts and rates are
+/// grouped underneath instead of a flat wall of twelve identical tiles.
 class _OverviewContent extends StatelessWidget {
   final BusinessAnalyticsOverview overview;
 
@@ -316,39 +353,298 @@ class _OverviewContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final utilization = overview.utilization;
+    const gap = SizedBox(height: FactorySpacing.space3);
 
-    return Wrap(
-      spacing: FactorySpacing.space3,
-      runSpacing: FactorySpacing.space3,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        FactoryStatTile(
+        _RevenueHero(
+          revenue: formatFactoryMoney(overview.totalRevenue, overview.currency),
           label: l10n.analyticsKpiRevenue,
-          value: formatFactoryMoney(overview.totalRevenue, overview.currency),
+          footnotes: [
+            (l10n.analyticsKpiBookings, '${overview.totalBookings}'),
+            if (overview.averageBookingValue != null)
+              (
+                l10n.analyticsAverageBookingValueLabel,
+                formatFactoryMoney(
+                  overview.averageBookingValue!,
+                  overview.currency,
+                ),
+              ),
+          ],
         ),
-        FactoryStatTile(label: l10n.analyticsKpiBookings, value: '${overview.totalBookings}'),
-        FactoryStatTile(
-          label: l10n.analyticsKpiUtilization,
-          value: utilization == null ? l10n.analyticsUtilizationUnavailable : _pct(utilization),
-        ),
-        FactoryStatTile(
-          label: l10n.analyticsKpiRevenueRecovered,
-          value: formatFactoryMoney(overview.revenueRecovered, overview.revenueRecoveredCurrency),
-        ),
-        FactoryStatTile(label: l10n.analyticsCompletedBookingsLabel, value: '${overview.completedBookings}'),
-        FactoryStatTile(label: l10n.analyticsUpcomingBookingsLabel, value: '${overview.upcomingBookings}'),
-        FactoryStatTile(label: l10n.analyticsCancelledBookingsLabel, value: '${overview.cancelledBookings}'),
-        FactoryStatTile(label: l10n.analyticsNoShowLabel, value: '${overview.noShowBookings}'),
-        FactoryStatTile(label: l10n.analyticsCancellationRateLabel, value: _pct(overview.cancellationRate)),
-        FactoryStatTile(label: l10n.analyticsNoShowRateLabel, value: _pct(overview.noShowRate)),
-        FactoryStatTile(
-          label: l10n.analyticsReturningCustomerRateLabel,
-          value: _pct(overview.returningCustomerRate),
-        ),
-        if (overview.averageBookingValue != null)
-          FactoryStatTile(
-            label: l10n.analyticsAverageBookingValueLabel,
-            value: formatFactoryMoney(overview.averageBookingValue!, overview.currency),
+        gap,
+        FactoryCard(
+          padding: const EdgeInsets.all(FactorySpacing.space4),
+          child: _Kpi(
+            label: l10n.analyticsKpiRevenueRecovered,
+            value: formatFactoryMoney(
+              overview.revenueRecovered,
+              overview.revenueRecoveredCurrency,
+            ),
+            emphasis: true,
           ),
+        ),
+        gap,
+        _TwoColumn(
+          children: [
+            _KpiCard(
+              label: l10n.analyticsCompletedBookingsLabel,
+              value: '${overview.completedBookings}',
+            ),
+            _KpiCard(
+              label: l10n.analyticsUpcomingBookingsLabel,
+              value: '${overview.upcomingBookings}',
+            ),
+            _KpiCard(
+              label: l10n.analyticsCancelledBookingsLabel,
+              value: '${overview.cancelledBookings}',
+            ),
+            _KpiCard(
+              label: l10n.analyticsNoShowLabel,
+              value: '${overview.noShowBookings}',
+            ),
+          ],
+        ),
+        gap,
+        FactoryCard(
+          padding: const EdgeInsets.all(FactorySpacing.space4),
+          child: _TwoColumn(
+            children: [
+              if (utilization == null)
+                _Kpi(
+                  label: l10n.analyticsKpiUtilization,
+                  value: l10n.analyticsUtilizationUnavailable,
+                )
+              else
+                _RateRing(
+                  label: l10n.analyticsKpiUtilization,
+                  rate: utilization,
+                ),
+              _RateRing(
+                label: l10n.analyticsReturningCustomerRateLabel,
+                rate: overview.returningCustomerRate,
+              ),
+              _RateRing(
+                label: l10n.analyticsCancellationRateLabel,
+                rate: overview.cancellationRate,
+                lowIsGood: true,
+              ),
+              _RateRing(
+                label: l10n.analyticsNoShowRateLabel,
+                rate: overview.noShowRate,
+                lowIsGood: true,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Gradient hero in the dashboard's treatment: the period's revenue, with a
+/// couple of secondary figures underneath.
+class _RevenueHero extends StatelessWidget {
+  final String revenue;
+  final String label;
+  final List<(String, String)> footnotes;
+
+  const _RevenueHero({
+    required this.revenue,
+    required this.label,
+    required this.footnotes,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    final radius =
+        context.factoryProfileOrNull?.cardBorderRadius ??
+        FactoryRadius.xlRadius;
+    final muted = colors.onPrimary.withValues(alpha: 0.8);
+
+    return Container(
+      padding: const EdgeInsets.all(FactorySpacing.space5),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [colors.primaryStrong, colors.primary],
+        ),
+        borderRadius: radius,
+        boxShadow: context.factoryElevation(FactoryElevationLevel.lg),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: textTheme.labelLarge?.copyWith(color: muted)),
+          const SizedBox(height: FactorySpacing.space1),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              revenue,
+              style: FactoryTypography.mono(
+                size: 36,
+                weight: FontWeight.w600,
+                color: colors.onPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(height: FactorySpacing.space4),
+          Wrap(
+            spacing: FactorySpacing.space6,
+            runSpacing: FactorySpacing.space2,
+            children: [
+              for (final (name, value) in footnotes)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      value,
+                      style: textTheme.titleMedium?.copyWith(
+                        color: colors.onPrimary,
+                      ),
+                    ),
+                    Text(
+                      name,
+                      style: textTheme.labelMedium?.copyWith(color: muted),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Lays children out two per row, equal width, wrapping to a new row.
+class _TwoColumn extends StatelessWidget {
+  final List<Widget> children;
+
+  const _TwoColumn({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (var i = 0; i < children.length; i += 2) ...[
+          if (i > 0) const SizedBox(height: FactorySpacing.space3),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: children[i]),
+              const SizedBox(width: FactorySpacing.space3),
+              Expanded(
+                child: i + 1 < children.length
+                    ? children[i + 1]
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _Kpi extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool emphasis;
+
+  const _Kpi({required this.label, required this.value, this.emphasis = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value,
+          style: emphasis
+              ? FactoryTypography.mono(
+                  size: 24,
+                  weight: FontWeight.w600,
+                  color: colors.accentInk,
+                )
+              : textTheme.titleLarge,
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: textTheme.labelMedium?.copyWith(color: colors.textSecondary),
+        ),
+      ],
+    );
+  }
+}
+
+class _KpiCard extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _KpiCard({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return FactoryCard(
+      padding: const EdgeInsets.all(FactorySpacing.space4),
+      child: SizedBox(
+        width: double.infinity,
+        child: _Kpi(label: label, value: value),
+      ),
+    );
+  }
+}
+
+/// A percentage as a ring with the label beside it. For rates where lower is
+/// better (cancellations, no-shows) the ring is drawn in the warning color so
+/// a high value reads as a problem without needing to read the number.
+class _RateRing extends StatelessWidget {
+  final String label;
+  final double rate;
+  final bool lowIsGood;
+
+  const _RateRing({
+    required this.label,
+    required this.rate,
+    this.lowIsGood = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    final tone = lowIsGood ? colors.warning : colors.primary;
+    return Row(
+      children: [
+        FactoryProgressRing(
+          value: rate,
+          size: 48,
+          strokeWidth: 6,
+          color: tone,
+          semanticLabel: label,
+          child: Text(
+            _pct(rate),
+            style: FactoryTypography.mono(size: 11, color: colors.text),
+          ),
+        ),
+        const SizedBox(width: FactorySpacing.space3),
+        Expanded(
+          child: Text(
+            label,
+            style: textTheme.labelMedium?.copyWith(color: colors.textSecondary),
+          ),
+        ),
       ],
     );
   }
@@ -364,7 +660,9 @@ class _RevenueSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
-    final revenueAsync = ref.watch(businessAnalyticsRevenueProvider((providerId, range)));
+    final revenueAsync = ref.watch(
+      businessAnalyticsRevenueProvider((providerId, range)),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -375,15 +673,21 @@ class _RevenueSection extends ConsumerWidget {
             if (revenue.revenueByDay.isEmpty) {
               return Text(
                 l10n.analyticsNoRevenueYet,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: colors.textTertiary),
               );
             }
-            final maxDaily = revenue.revenueByDay.map((d) => d.amount).reduce((a, b) => a > b ? a : b);
+            final maxDaily = revenue.revenueByDay
+                .map((d) => d.amount)
+                .reduce((a, b) => a > b ? a : b);
             final locale = Localizations.localeOf(context).toString();
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(l10n.analyticsRevenueByDayTitle, style: Theme.of(context).textTheme.titleSmall),
+                Text(
+                  l10n.analyticsRevenueByDayTitle,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
                 const SizedBox(height: FactorySpacing.space2),
                 ...revenue.revenueByDay.map(
                   (day) => _BarRow(
@@ -395,7 +699,10 @@ class _RevenueSection extends ConsumerWidget {
                 ),
                 if (revenue.revenueByService.isNotEmpty) ...[
                   const SizedBox(height: FactorySpacing.space4),
-                  Text(l10n.analyticsRevenueByServiceTitle, style: Theme.of(context).textTheme.titleSmall),
+                  Text(
+                    l10n.analyticsRevenueByServiceTitle,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
                   const SizedBox(height: FactorySpacing.space2),
                   ...revenue.revenueByService.map(
                     (service) => Padding(
@@ -403,7 +710,10 @@ class _RevenueSection extends ConsumerWidget {
                       child: Row(
                         children: [
                           Expanded(child: Text(service.title ?? '—')),
-                          Text('${service.bookingCount}', style: TextStyle(color: colors.textTertiary)),
+                          Text(
+                            '${service.bookingCount}',
+                            style: TextStyle(color: colors.textTertiary),
+                          ),
                           const SizedBox(width: FactorySpacing.space3),
                           FactoryPriceText(amount: service.amount),
                         ],
@@ -417,7 +727,9 @@ class _RevenueSection extends ConsumerWidget {
           loading: () => const FactoryLoadingState(),
           error: (error, _) => FactoryErrorState(
             message: l10n.errorAnalyticsLoadFailed(error.toString()),
-            onRetry: () => ref.invalidate(businessAnalyticsRevenueProvider((providerId, range))),
+            onRetry: () => ref.invalidate(
+              businessAnalyticsRevenueProvider((providerId, range)),
+            ),
           ),
         ),
       ],
@@ -435,7 +747,9 @@ class _BookingsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
-    final bookingsAsync = ref.watch(businessAnalyticsBookingsProvider((providerId, range)));
+    final bookingsAsync = ref.watch(
+      businessAnalyticsBookingsProvider((providerId, range)),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -446,13 +760,16 @@ class _BookingsSection extends ConsumerWidget {
             if (bookings.totalBookings == 0) {
               return Text(
                 l10n.analyticsNoBookingsYet,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: colors.textTertiary),
               );
             }
             final locale = Localizations.localeOf(context).toString();
             final maxDaily = bookings.trend.isEmpty
                 ? 0
-                : bookings.trend.map((d) => d.total).reduce((a, b) => a > b ? a : b);
+                : bookings.trend
+                      .map((d) => d.total)
+                      .reduce((a, b) => a > b ? a : b);
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -460,10 +777,22 @@ class _BookingsSection extends ConsumerWidget {
                   spacing: FactorySpacing.space3,
                   runSpacing: FactorySpacing.space3,
                   children: [
-                    FactoryStatTile(label: l10n.analyticsCompletedBookingsLabel, value: '${bookings.completedBookings}'),
-                    FactoryStatTile(label: l10n.analyticsUpcomingBookingsLabel, value: '${bookings.upcomingBookings}'),
-                    FactoryStatTile(label: l10n.analyticsCancelledBookingsLabel, value: '${bookings.cancelledBookings}'),
-                    FactoryStatTile(label: l10n.analyticsNoShowLabel, value: '${bookings.noShowBookings}'),
+                    FactoryStatTile(
+                      label: l10n.analyticsCompletedBookingsLabel,
+                      value: '${bookings.completedBookings}',
+                    ),
+                    FactoryStatTile(
+                      label: l10n.analyticsUpcomingBookingsLabel,
+                      value: '${bookings.upcomingBookings}',
+                    ),
+                    FactoryStatTile(
+                      label: l10n.analyticsCancelledBookingsLabel,
+                      value: '${bookings.cancelledBookings}',
+                    ),
+                    FactoryStatTile(
+                      label: l10n.analyticsNoShowLabel,
+                      value: '${bookings.noShowBookings}',
+                    ),
                     FactoryStatTile(
                       label: l10n.analyticsRepeatBookingRateLabel,
                       value: _pct(bookings.repeatBookingRate),
@@ -472,7 +801,10 @@ class _BookingsSection extends ConsumerWidget {
                 ),
                 if (bookings.trend.isNotEmpty && maxDaily > 0) ...[
                   const SizedBox(height: FactorySpacing.space4),
-                  Text(l10n.analyticsBookingTrendTitle, style: Theme.of(context).textTheme.titleSmall),
+                  Text(
+                    l10n.analyticsBookingTrendTitle,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
                   const SizedBox(height: FactorySpacing.space2),
                   ...bookings.trend.map(
                     (day) => _BarRow(
@@ -489,7 +821,9 @@ class _BookingsSection extends ConsumerWidget {
           loading: () => const FactoryLoadingState(),
           error: (error, _) => FactoryErrorState(
             message: l10n.errorAnalyticsLoadFailed(error.toString()),
-            onRetry: () => ref.invalidate(businessAnalyticsBookingsProvider((providerId, range))),
+            onRetry: () => ref.invalidate(
+              businessAnalyticsBookingsProvider((providerId, range)),
+            ),
           ),
         ),
       ],
@@ -507,7 +841,9 @@ class _SmartFillSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
-    final smartFillAsync = ref.watch(businessAnalyticsSmartFillProvider((providerId, range)));
+    final smartFillAsync = ref.watch(
+      businessAnalyticsSmartFillProvider((providerId, range)),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -518,14 +854,18 @@ class _SmartFillSection extends ConsumerWidget {
             if (smartFill.campaignsCreated == 0) {
               return Text(
                 l10n.analyticsSmartFillEmpty,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: colors.textTertiary),
               );
             }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  l10n.analyticsSmartFillSummary(smartFill.slotsRecovered, smartFill.campaignsCreated),
+                  l10n.analyticsSmartFillSummary(
+                    smartFill.slotsRecovered,
+                    smartFill.campaignsCreated,
+                  ),
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: FactorySpacing.space3),
@@ -533,13 +873,28 @@ class _SmartFillSection extends ConsumerWidget {
                   spacing: FactorySpacing.space3,
                   runSpacing: FactorySpacing.space3,
                   children: [
-                    FactoryStatTile(label: l10n.analyticsSlotsFreedLabel, value: '${smartFill.slotsFreed}'),
-                    FactoryStatTile(label: l10n.analyticsCampaignsCreatedLabel, value: '${smartFill.campaignsCreated}'),
-                    FactoryStatTile(label: l10n.analyticsSlotsRecoveredLabel, value: '${smartFill.slotsRecovered}'),
-                    FactoryStatTile(label: l10n.analyticsRecoveryRateLabel, value: _pct(smartFill.recoveryRate)),
+                    FactoryStatTile(
+                      label: l10n.analyticsSlotsFreedLabel,
+                      value: '${smartFill.slotsFreed}',
+                    ),
+                    FactoryStatTile(
+                      label: l10n.analyticsCampaignsCreatedLabel,
+                      value: '${smartFill.campaignsCreated}',
+                    ),
+                    FactoryStatTile(
+                      label: l10n.analyticsSlotsRecoveredLabel,
+                      value: '${smartFill.slotsRecovered}',
+                    ),
+                    FactoryStatTile(
+                      label: l10n.analyticsRecoveryRateLabel,
+                      value: _pct(smartFill.recoveryRate),
+                    ),
                     FactoryStatTile(
                       label: l10n.analyticsRecoveredRevenueLabel,
-                      value: formatFactoryMoney(smartFill.recoveredRevenue, smartFill.currency),
+                      value: formatFactoryMoney(
+                        smartFill.recoveredRevenue,
+                        smartFill.currency,
+                      ),
                     ),
                   ],
                 ),
@@ -549,7 +904,9 @@ class _SmartFillSection extends ConsumerWidget {
           loading: () => const FactoryLoadingState(),
           error: (error, _) => FactoryErrorState(
             message: l10n.errorAnalyticsLoadFailed(error.toString()),
-            onRetry: () => ref.invalidate(businessAnalyticsSmartFillProvider((providerId, range))),
+            onRetry: () => ref.invalidate(
+              businessAnalyticsSmartFillProvider((providerId, range)),
+            ),
           ),
         ),
       ],
@@ -567,7 +924,9 @@ class _CustomersSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
-    final customersAsync = ref.watch(businessAnalyticsCustomersProvider((providerId, range)));
+    final customersAsync = ref.watch(
+      businessAnalyticsCustomersProvider((providerId, range)),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -578,7 +937,8 @@ class _CustomersSection extends ConsumerWidget {
             if (customers.totalCustomers == 0) {
               return Text(
                 l10n.analyticsNoCustomersYet,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: colors.textTertiary),
               );
             }
             return Column(
@@ -588,18 +948,30 @@ class _CustomersSection extends ConsumerWidget {
                   spacing: FactorySpacing.space3,
                   runSpacing: FactorySpacing.space3,
                   children: [
-                    FactoryStatTile(label: l10n.analyticsTotalCustomersLabel, value: '${customers.totalCustomers}'),
-                    FactoryStatTile(label: l10n.analyticsActiveCustomersLabel, value: '${customers.activeCustomers}'),
+                    FactoryStatTile(
+                      label: l10n.analyticsTotalCustomersLabel,
+                      value: '${customers.totalCustomers}',
+                    ),
+                    FactoryStatTile(
+                      label: l10n.analyticsActiveCustomersLabel,
+                      value: '${customers.activeCustomers}',
+                    ),
                     FactoryStatTile(
                       label: l10n.analyticsReturningCustomersLabel,
                       value: '${customers.returningCustomers}',
                     ),
-                    FactoryStatTile(label: l10n.analyticsNewCustomersLabel, value: '${customers.newCustomers}'),
+                    FactoryStatTile(
+                      label: l10n.analyticsNewCustomersLabel,
+                      value: '${customers.newCustomers}',
+                    ),
                     FactoryStatTile(
                       label: l10n.analyticsDueForRebookingLabel,
                       value: '${customers.dueForRebooking}',
                     ),
-                    FactoryStatTile(label: l10n.analyticsAtRiskCustomersLabel, value: '${customers.atRiskCustomers}'),
+                    FactoryStatTile(
+                      label: l10n.analyticsAtRiskCustomersLabel,
+                      value: '${customers.atRiskCustomers}',
+                    ),
                     FactoryStatTile(
                       label: l10n.analyticsInactiveCustomersLabel,
                       value: '${customers.inactiveCustomers}',
@@ -607,18 +979,26 @@ class _CustomersSection extends ConsumerWidget {
                     if (customers.averageVisitIntervalDays != null)
                       FactoryStatTile(
                         label: l10n.analyticsAverageVisitIntervalLabel,
-                        value: l10n.analyticsAverageVisitIntervalValue(customers.averageVisitIntervalDays!.round()),
+                        value: l10n.analyticsAverageVisitIntervalValue(
+                          customers.averageVisitIntervalDays!.round(),
+                        ),
                       ),
                     if (customers.averageCustomerValue != null)
                       FactoryStatTile(
                         label: l10n.analyticsAverageCustomerValueLabel,
-                        value: formatFactoryMoney(customers.averageCustomerValue!, customers.currency),
+                        value: formatFactoryMoney(
+                          customers.averageCustomerValue!,
+                          customers.currency,
+                        ),
                       ),
                   ],
                 ),
                 if (customers.favouriteServices.isNotEmpty) ...[
                   const SizedBox(height: FactorySpacing.space4),
-                  Text(l10n.analyticsFavouriteServicesTitle, style: Theme.of(context).textTheme.titleSmall),
+                  Text(
+                    l10n.analyticsFavouriteServicesTitle,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
                   const SizedBox(height: FactorySpacing.space2),
                   ...customers.favouriteServices.map(
                     (service) => Padding(
@@ -626,7 +1006,10 @@ class _CustomersSection extends ConsumerWidget {
                       child: Row(
                         children: [
                           Expanded(child: Text(service.title ?? '—')),
-                          Text('${service.customerCount}', style: TextStyle(color: colors.textTertiary)),
+                          Text(
+                            '${service.customerCount}',
+                            style: TextStyle(color: colors.textTertiary),
+                          ),
                         ],
                       ),
                     ),
@@ -638,7 +1021,9 @@ class _CustomersSection extends ConsumerWidget {
           loading: () => const FactoryLoadingState(),
           error: (error, _) => FactoryErrorState(
             message: l10n.errorAnalyticsLoadFailed(error.toString()),
-            onRetry: () => ref.invalidate(businessAnalyticsCustomersProvider((providerId, range))),
+            onRetry: () => ref.invalidate(
+              businessAnalyticsCustomersProvider((providerId, range)),
+            ),
           ),
         ),
       ],
@@ -654,7 +1039,12 @@ class _BarRow extends StatelessWidget {
   final double maxValue;
   final String trailing;
 
-  const _BarRow({required this.label, required this.value, required this.maxValue, required this.trailing});
+  const _BarRow({
+    required this.label,
+    required this.value,
+    required this.maxValue,
+    required this.trailing,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -665,7 +1055,10 @@ class _BarRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          SizedBox(width: 56, child: Text(label, style: Theme.of(context).textTheme.bodySmall)),
+          SizedBox(
+            width: 56,
+            child: Text(label, style: Theme.of(context).textTheme.bodySmall),
+          ),
           const SizedBox(width: FactorySpacing.space2),
           Expanded(
             child: ClipRRect(
@@ -681,7 +1074,11 @@ class _BarRow extends StatelessWidget {
           const SizedBox(width: FactorySpacing.space3),
           SizedBox(
             width: 64,
-            child: Text(trailing, textAlign: TextAlign.end, style: Theme.of(context).textTheme.bodySmall),
+            child: Text(
+              trailing,
+              textAlign: TextAlign.end,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ),
         ],
       ),
