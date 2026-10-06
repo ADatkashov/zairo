@@ -887,6 +887,16 @@
 
   "pendingInvitationsTitle": "Ожидают приглашения",
 
-  "cancelInvitationTooltip": "Отменить приглашение"
-
+  "cancelInvitationTooltip": "Отменить приглашение",
+  "dashboardAgendaTitle": "Сегодня",
+  "dashboardAgendaEmpty": "Сегодня записей нет.",
+  "bookingStatusPendingPayment": "Ждёт оплаты",
+  "bookingStatusNoShow": "Не пришёл",
+  "bookingStatusPending": "В ожидании",
+  "calendarTitle": "Календарь",
+  "calendarThisWeek": "Эта неделя",
+  "calendarDayEmpty": "Записей нет",
+  "calendarPrevWeek": "Предыдущая неделя",
+  "calendarNextWeek": "Следующая неделя",
+  "calendarLoadFailed": "Не удалось загрузить календарь."
 }

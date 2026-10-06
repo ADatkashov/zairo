@@ -36,11 +36,12 @@ class FactoryBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.factoryColors;
+    // Tint alpha is 0.08 so the tone-colored label keeps 4.5:1 on its own tint.
     final (Color variantBg, Color variantFg) = switch (variant) {
       FactoryBadgeVariant.verified => (colors.primaryTint, colors.primaryStrong),
-      FactoryBadgeVariant.available => (Color.alphaBlend(colors.success.withValues(alpha: 0.14), colors.surface), colors.success),
-      FactoryBadgeVariant.limited => (Color.alphaBlend(colors.warning.withValues(alpha: 0.16), colors.surface), colors.warning),
-      FactoryBadgeVariant.error => (Color.alphaBlend(colors.error.withValues(alpha: 0.14), colors.surface), colors.error),
+      FactoryBadgeVariant.available => (Color.alphaBlend(colors.success.withValues(alpha: 0.08), colors.surface), colors.success),
+      FactoryBadgeVariant.limited => (Color.alphaBlend(colors.warning.withValues(alpha: 0.08), colors.surface), colors.warning),
+      FactoryBadgeVariant.error => (Color.alphaBlend(colors.error.withValues(alpha: 0.08), colors.surface), colors.error),
       FactoryBadgeVariant.neutral => (colors.surfaceAlt, colors.textSecondary),
     };
     final bg = backgroundColor ?? variantBg;

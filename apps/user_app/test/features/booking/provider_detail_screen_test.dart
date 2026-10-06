@@ -228,6 +228,11 @@ class _LoggedInAuthController extends AuthController {
 /// tapping it. `scrollUntilVisible` stops as soon as a widget is merely on
 /// screen, which can leave it underneath the bar (a tap there silently misses).
 Future<void> tapVisible(WidgetTester tester, Finder finder) async {
+  // The photo-first header pushes lower sections past the lazily-built part
+  // of the list, so scroll a not-yet-built target into existence first.
+  if (finder.evaluate().isEmpty) {
+    await tester.scrollUntilVisible(finder, 200);
+  }
   await tester.ensureVisible(finder);
   await tester.pumpAndSettle();
   await tester.tap(finder);
@@ -458,6 +463,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Yerlan Mechanic'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Toyota Camry (2019)'), 200);
     expect(find.text('Toyota Camry (2019)'), findsOneWidget);
 
     final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');

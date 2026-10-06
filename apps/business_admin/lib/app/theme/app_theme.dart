@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 /// overrides yet; add them here, not in core_ui, if this console ever
 /// needs to diverge from the customer app's look.
 class AppTheme {
-  static ThemeData get light => factoryLightTheme();
+  static ThemeData get light => factoryLightTheme(profile: FactoryAppProfile.business);
 
-  static ThemeData get dark => factoryDarkTheme();
+  static ThemeData get dark => factoryDarkTheme(profile: FactoryAppProfile.business);
 }

@@ -595,6 +595,9 @@ void main() {
 
     expect(find.text('Mark complete'), findsOneWidget);
 
+    // The photo header pushes the bookings list below the 600px test window.
+    await tester.ensureVisible(find.text('Mark complete'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Mark complete'));
     await tester.pumpAndSettle();
 
@@ -966,6 +969,8 @@ void main() {
     expect(find.text('10'), findsOneWidget);
     expect(find.text('7'), findsOneWidget);
     expect(find.text('30%'), findsOneWidget);
+    // The cancellation rate is drawn as a ring.
+    expect(find.byType(FactoryProgressRing), findsOneWidget);
     expect(find.text('Top services'), findsOneWidget);
     expect(find.text('Haircut'), findsOneWidget);
   });

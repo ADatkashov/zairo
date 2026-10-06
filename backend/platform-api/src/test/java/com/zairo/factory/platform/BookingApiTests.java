@@ -472,6 +472,42 @@ class BookingApiTests {
         assertThat(slots.getBody()).extracting(s -> s.get("status")).containsExactly("OPEN");
     }
 
+    @Test
+    void providerScheduleListsBookingsWithSlotTimesForTheOwnerOnly() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "schedule-owner-" + runId + "@example.com");
+        Registered other = TestAuth.registerOwner(restTemplate, "schedule-other-" + runId + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "schedule-customer-" + runId + "@example.com");
+
+        UUID providerId = createProvider(owner, "Schedule Salon");
+        UUID serviceId = createService(owner, providerId, "Haircut", new BigDecimal("15.00"));
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+        createSlot(owner, providerId, start.plus(2, ChronoUnit.HOURS), start.plus(150, ChronoUnit.MINUTES));
+        assertThat(createBooking(customer, new CreateBookingRequest(customer.userId(), serviceId, slotId,
+                new BigDecimal("15.00"))).getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+        String url = "/api/v1/providers/" + providerId + "/schedule?from=" + start.minus(1, ChronoUnit.HOURS)
+                + "&to=" + start.plus(1, ChronoUnit.DAYS);
+        ResponseEntity<Map[]> schedule = restTemplate.exchange(url, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map[].class);
+        assertThat(schedule.getStatusCode()).isEqualTo(HttpStatus.OK);
+        // Only the booked slot appears; the open one has no booking.
+        assertThat(schedule.getBody()).hasSize(1);
+        assertThat(schedule.getBody()[0].get("availabilitySlotId")).isEqualTo(slotId.toString());
+        assertThat(Instant.parse(schedule.getBody()[0].get("startsAt").toString())).isEqualTo(start);
+
+        assertThat(restTemplate.exchange(url, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(other.accessToken())), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
+
+        String tooWide = "/api/v1/providers/" + providerId + "/schedule?from=" + start + "&to="
+                + start.plus(40, ChronoUnit.DAYS);
+        assertThat(restTemplate.exchange(tooWide, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
     private UUID createProvider(Registered owner, String name) {
         var request = new CreateProviderRequest(owner.userId(), name, "beauty");
         ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,

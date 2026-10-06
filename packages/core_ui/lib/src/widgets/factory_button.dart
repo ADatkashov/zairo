@@ -36,6 +36,7 @@ class FactoryButton extends StatelessWidget {
     this.icon,
     this.isLoading = false,
     this.expand = false,
+    this.dense = false,
   });
 
   final String label;
@@ -50,6 +51,11 @@ class FactoryButton extends StatelessWidget {
   /// Fills the width of its parent — the common case for a bottom-anchored
   /// booking CTA. False renders at intrinsic (label) width.
   final bool expand;
+
+  /// A 36px-high button for pointer-driven, data-dense surfaces (table rows,
+  /// toolbars on desktop). Below the 44px touch target, so don't use it on
+  /// phone layouts.
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
@@ -71,21 +77,29 @@ class FactoryButton extends StatelessWidget {
             ],
           );
 
+    final ButtonStyle? denseStyle = dense
+        ? const ButtonStyle(
+            minimumSize: WidgetStatePropertyAll(Size(0, FactoryButtonHeight.sm)),
+            padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 12, vertical: 4)),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          )
+        : null;
+
     final button = switch (variant) {
-      FactoryButtonVariant.primary => FilledButton(onPressed: pressHandler, child: child),
-      FactoryButtonVariant.secondary => OutlinedButton(onPressed: pressHandler, child: child),
-      FactoryButtonVariant.text => TextButton(onPressed: pressHandler, child: child),
+      FactoryButtonVariant.primary => FilledButton(style: denseStyle, onPressed: pressHandler, child: child),
+      FactoryButtonVariant.secondary => OutlinedButton(style: denseStyle, onPressed: pressHandler, child: child),
+      FactoryButtonVariant.text => TextButton(style: denseStyle, onPressed: pressHandler, child: child),
       FactoryButtonVariant.danger => FilledButton(
           style: FilledButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.error,
-            foregroundColor: Colors.white,
+            foregroundColor: Theme.of(context).colorScheme.onError,
             disabledBackgroundColor: Theme.of(context).colorScheme.error.withValues(alpha: 0.4),
-          ),
+          ).merge(denseStyle),
           onPressed: pressHandler,
           child: child,
         ),
       FactoryButtonVariant.textDanger => TextButton(
-          style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+          style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error).merge(denseStyle),
           onPressed: pressHandler,
           child: child,
         ),

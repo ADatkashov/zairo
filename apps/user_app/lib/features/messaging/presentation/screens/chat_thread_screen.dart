@@ -114,6 +114,7 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
                             height: MediaQuery.of(context).size.height * 0.6,
                             child: Center(
                               child: FactoryEmptyState(
+                                compact: true,
                                 icon: Symbols.forum_rounded,
                                 title: l10n.chatThreadEmptyTitle,
                                 message: l10n.chatThreadEmptyMessage,

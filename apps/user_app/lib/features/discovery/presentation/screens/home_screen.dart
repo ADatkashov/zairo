@@ -180,13 +180,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(height: FactorySpacing.space3),
                   if (topRated.isEmpty)
                     FactoryEmptyState(
+                      compact: true,
                       icon: Symbols.storefront_rounded,
                       title: l10n.homeEmptyTitle,
                       message: l10n.homeEmptyMessage,
                     )
                   else
                     SizedBox(
-                      height: 220,
+                      height: 252,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: topRated.length,
@@ -684,7 +685,7 @@ class _AvailabilityHero extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [colors.primaryStrong, colors.mint],
+          colors: [colors.primaryStrong, colors.primary],
         ),
         borderRadius: FactoryRadius.xxlRadius,
         boxShadow: [
@@ -701,7 +702,17 @@ class _AvailabilityHero extends StatelessWidget {
           Positioned(
             top: -30,
             right: -30,
-            child: _HeroCircle(size: 140, opacity: 0.12),
+            child: Container(
+              width: 180,
+              height: 180,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                // Ambient gold glow: a radial fade, not a flat disc.
+                gradient: RadialGradient(
+                  colors: [colors.accent.withValues(alpha: 0.5), colors.accent.withValues(alpha: 0)],
+                ),
+              ),
+            ),
           ),
           Positioned(
             bottom: -40,
@@ -714,7 +725,7 @@ class _AvailabilityHero extends StatelessWidget {
               Text(
                 l10n.homeAvailabilityEyebrow.toUpperCase(),
                 style: Theme.of(context).textTheme.labelSmall
-                    ?.copyWith(color: Colors.white.withValues(alpha: 0.85)),
+                    ?.copyWith(color: colors.onPrimary.withValues(alpha: 0.85)),
               ),
               const SizedBox(height: FactorySpacing.space2),
               Text(
@@ -724,7 +735,9 @@ class _AvailabilityHero extends StatelessWidget {
               ),
               const SizedBox(height: FactorySpacing.space3),
               Material(
-                color: Colors.white,
+                // onPrimary: white in light, near-black in dark, so the pill
+                // and its primaryStrong label contrast in both themes.
+                color: colors.onPrimary,
                 shape: FactoryRadius.pill,
                 child: InkWell(
                   onTap: onViewAll,

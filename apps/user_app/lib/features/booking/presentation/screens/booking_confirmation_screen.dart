@@ -145,6 +145,14 @@ class BookingConfirmationScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: colors.success.withValues(alpha: 0.14),
                         shape: BoxShape.circle,
+                        // Soft success glow around the check.
+                        boxShadow: [
+                          BoxShadow(
+                            color: colors.success.withValues(alpha: 0.22),
+                            blurRadius: 36,
+                            spreadRadius: 4,
+                          ),
+                        ],
                       ),
                       child: Icon(
                         Symbols.check_circle_rounded,
