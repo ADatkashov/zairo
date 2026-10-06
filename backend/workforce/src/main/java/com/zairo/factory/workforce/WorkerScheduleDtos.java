@@ -61,8 +61,9 @@ public final class WorkerScheduleDtos {
 
     public record TimeOffCreatedResponse(
             TimeOffResponse timeOff,
-            @Schema(description = "Active appointments inside the period — they are NOT cancelled; the owner "
-                    + "decides what to do with each.") int affectedAppointments) {
+            @Schema(description = "Appointments inside the period that still need the owner's decision. Nothing is "
+                    + "cancelled: customers who said \"any master\" were handed to a free colleague, the rest "
+                    + "(a named person, or nobody free) wait in the owner's list.") int affectedAppointments) {
     }
 
     public record WorkforceSettingsResponse(boolean allowWorkerChoice, boolean workerPricingEnabled) {

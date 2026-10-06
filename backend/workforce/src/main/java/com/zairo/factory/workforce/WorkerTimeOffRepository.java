@@ -13,5 +13,8 @@ public interface WorkerTimeOffRepository extends JpaRepository<WorkerTimeOff, UU
 
     List<WorkerTimeOff> findByProviderIdAndEndsAtAfterOrderByStartsAt(UUID providerId, Instant after);
 
+    /** Every time off that hasn't ended yet, across all businesses. */
+    List<WorkerTimeOff> findByEndsAtAfter(Instant after);
+
     List<WorkerTimeOff> findByWorkerIdInAndEndsAtAfter(Collection<UUID> workerIds, Instant after);
 }

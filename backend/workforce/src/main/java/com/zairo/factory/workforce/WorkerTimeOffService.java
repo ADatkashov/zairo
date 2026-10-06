@@ -27,29 +27,27 @@ public class WorkerTimeOffService {
     private final WorkerTimeOffRepository timeOffRepository;
     private final WorkerScheduleRepository scheduleRepository;
     private final WorkerSlotGenerator generator;
-    private final WorkerBookings workerBookings;
+    private final WorkerAbsenceService absenceService;
     private final ApplicationEventPublisher eventPublisher;
 
     public WorkerTimeOffService(WorkerScheduleService scheduleService, WorkerCatalog catalog,
             WorkerTimeOffRepository timeOffRepository, WorkerScheduleRepository scheduleRepository,
-            WorkerSlotGenerator generator, WorkerBookings workerBookings, ApplicationEventPublisher eventPublisher) {
+            WorkerSlotGenerator generator, WorkerAbsenceService absenceService, ApplicationEventPublisher eventPublisher) {
         this.scheduleService = scheduleService;
         this.catalog = catalog;
         this.timeOffRepository = timeOffRepository;
         this.scheduleRepository = scheduleRepository;
         this.generator = generator;
-        this.workerBookings = workerBookings;
+        this.absenceService = absenceService;
         this.eventPublisher = eventPublisher;
     }
 
-    @Transactional
     public TimeOffCreatedResponse createByOwner(UUID providerId, UUID workerId, UUID ownerId, TimeOffRequest request) {
         Worker worker = scheduleService.requireOwnerOfWorker(providerId, workerId, ownerId);
         return create(worker, ownerId, request, false);
     }
 
     /** A worker closing their own availability (e.g. "I'm sick today"). */
-    @Transactional
     public TimeOffCreatedResponse createByWorker(UUID workerId, UUID userId, TimeOffRequest request) {
         Worker worker = catalog.find(workerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Not found: " + workerId));
@@ -92,6 +90,11 @@ public class WorkerTimeOffService {
         regenerateIfScheduled(timeOff.getWorkerId());
     }
 
+    /**
+     * Records the time off, then deals with the appointments inside it. Not one transaction on purpose: the time off
+     * must be committed before "any master" appointments are handed over (the hand-over reads it), and a hand-over
+     * that can't be done must never undo the time off.
+     */
     private TimeOffCreatedResponse create(Worker worker, UUID createdBy, TimeOffRequest request, boolean byWorker) {
         if (!request.startsAt().isBefore(request.endsAt())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "startsAt must be before endsAt");
@@ -100,12 +103,12 @@ public class WorkerTimeOffService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The period is already over");
         }
         String reason = request.reason() == null || request.reason().isBlank() ? null : request.reason().trim();
-        WorkerTimeOff saved = timeOffRepository.save(new WorkerTimeOff(UUID.randomUUID(), worker.id(),
+        WorkerTimeOff saved = timeOffRepository.saveAndFlush(new WorkerTimeOff(UUID.randomUUID(), worker.id(),
                 worker.providerId(), request.startsAt(), request.endsAt(), reason, createdBy, Instant.now()));
-        timeOffRepository.flush();
+        // Customers who didn't mind who serves them go to a free colleague; the rest are left for the owner.
+        int needOwner = absenceService.handleAbsence(worker, request.startsAt(), request.endsAt());
         regenerateIfScheduled(worker.id());
-        int affected = workerBookings.activeOverlapping(worker, request.startsAt(), request.endsAt()).size();
-        return new TimeOffCreatedResponse(toResponse(saved, worker), affected);
+        return new TimeOffCreatedResponse(toResponse(saved, worker), needOwner);
     }
 
     private void regenerateIfScheduled(UUID workerId) {

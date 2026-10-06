@@ -338,6 +338,53 @@ public class BookingService {
         return cancelled;
     }
 
+    /**
+     * Moves an active booking to another open slot of the same business — another time, or another worker's slot at
+     * the same time. The new slot is claimed atomically (so two moves can't take it), the old one is released. Like
+     * the other {@code *Authorized} methods this skips the actor check: the caller (workforce) has already authorised
+     * the actor. The customer is told only when the time actually changes.
+     */
+    @Transactional
+    public Booking moveToSlotAuthorized(UUID bookingId, UUID newSlotId) {
+        Booking booking = loadBooking(bookingId);
+        if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            throw new InvalidBookingStateException("Booking is not in a movable state: " + bookingId
+                    + " (status=" + booking.getStatus() + ")");
+        }
+        AvailabilitySlot oldSlot = loadSlot(booking);
+        if (oldSlot.getId().equals(newSlotId)) {
+            return booking;
+        }
+        AvailabilitySlot newSlot = availabilitySlotRepository.findById(newSlotId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
+                        + newSlotId));
+        if (!newSlot.getProviderId().equals(oldSlot.getProviderId())) {
+            throw new SlotNotAvailableException("That time belongs to a different business");
+        }
+        if (newSlot.getStatus() != AvailabilityStatus.OPEN) {
+            throw new SlotNotAvailableException("That time is not available: " + newSlotId);
+        }
+        try {
+            newSlot.markBooked();
+            availabilitySlotRepository.saveAndFlush(newSlot);
+        } catch (OptimisticLockingFailureException e) {
+            // Someone else claimed it between our read and the write.
+            throw new SlotNotAvailableException("That time was just taken: " + newSlotId);
+        }
+        oldSlot.markOpen();
+        availabilitySlotRepository.save(oldSlot);
+
+        booking.moveToSlot(newSlotId);
+        Booking moved = bookingRepository.save(booking);
+        boolean timeChanged = !oldSlot.getStartsAt().equals(newSlot.getStartsAt())
+                || !oldSlot.getEndsAt().equals(newSlot.getEndsAt());
+        if (timeChanged) {
+            eventPublisher.publishEvent(new BookingMovedEvent(moved.getId(), moved.getUserId(),
+                    newSlot.getProviderId(), newSlot.getStartsAt()));
+        }
+        return moved;
+    }
+
     /** {@link #markNoShow} without the provider-owner check — see {@link #completeBookingAuthorized}. */
     @Transactional
     public Booking markNoShowAuthorized(UUID bookingId) {
