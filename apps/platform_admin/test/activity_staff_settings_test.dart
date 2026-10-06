@@ -31,6 +31,26 @@ void main() {
     expect(find.text('Category created'), findsNothing);
   });
 
+  testWidgets('activity groups by day and an entry expands to its details', (tester) async {
+    await pumpConsole(tester, backend: defaultBackend(), location: ConsoleRoutes.activity);
+
+    // The fixtures are from 5 Oct 2026, so they sit under a dated heading
+    // (not Today / Yesterday).
+    expect(find.text('Today'), findsNothing);
+    expect(find.text('Yesterday'), findsNothing);
+
+    expect(find.text('Entry ID'), findsNothing);
+    await tester.tap(find.text('Business status changed'));
+    await tester.pumpAndSettle();
+    expect(find.text('Entry ID'), findsOneWidget);
+    expect(find.text('e1'), findsOneWidget);
+    expect(find.text('Target'), findsOneWidget);
+
+    await tester.tap(find.text('Business status changed'));
+    await tester.pumpAndSettle();
+    expect(find.text('Entry ID'), findsNothing);
+  });
+
   testWidgets('staff: roles legend, named roles, you cannot turn yourself off, turning off asks first', (tester) async {
     final backend = defaultBackend();
     backend.reply('POST', '/platform/admins/a2/deactivate', adminJson(id: 'a2'));

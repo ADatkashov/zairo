@@ -126,29 +126,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(FactorySpacing.space4),
                 children: [
-                  Container(
-                    height: 140,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      borderRadius: FactoryRadius.xlRadius,
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [colors.primaryTint, colors.surfaceAlt],
-                      ),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        switch (widget.provider.vertical) {
-                          'auto' => Symbols.directions_car_filled_rounded,
-                          'cleaning' => Symbols.cleaning_services_rounded,
-                          _ => Symbols.content_cut_rounded,
-                        },
-                        size: 48,
-                        color: colors.primaryStrong.withValues(alpha: 0.5),
-                      ),
-                    ),
-                  ),
+                  _ProviderHero(provider: widget.provider),
                   const SizedBox(height: FactorySpacing.space4),
                   Wrap(
                     spacing: 8,
@@ -322,6 +300,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                     const SizedBox(height: FactorySpacing.space3),
                     if (vehicles.isEmpty)
                       FactoryEmptyState(
+                        compact: true,
                         icon: Symbols.directions_car_rounded,
                         title: l10n.vehiclesEmptyTitle,
                         message: l10n.vehiclesEmptyMessage,
@@ -376,6 +355,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                       final openSlots = slots.where((s) => s.isOpen).toList();
                       if (openSlots.isEmpty) {
                         return FactoryEmptyState(
+                          compact: true,
                           icon: Symbols.event_busy_rounded,
                           title: l10n.noOpenTimesTitle,
                           message: l10n.noOpenTimesMessage,
@@ -755,6 +735,7 @@ class _BookingCta extends StatelessWidget {
         FactorySpacing.space4,
       ),
       decoration: BoxDecoration(
+        color: colors.surface,
         border: Border(top: BorderSide(color: colors.border)),
       ),
       child: Row(
@@ -993,3 +974,71 @@ class _VehicleOption extends StatelessWidget {
 
 String _capitalize(String s) =>
     s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';
+
+
+/// Photo-first header: the business's cover photo under a soft scrim, with
+/// the vertical's icon on a tinted gradient while there is no photo (or it
+/// fails to load). Radius follows the app profile.
+class _ProviderHero extends StatelessWidget {
+  const _ProviderHero({required this.provider});
+
+  final ProviderSearchResult provider;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final radius =
+        context.factoryProfileOrNull?.cardBorderRadius ?? FactoryRadius.xlRadius;
+    final fallback = DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [colors.primaryTint, colors.surfaceAlt],
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          switch (provider.vertical) {
+            'auto' => Symbols.directions_car_filled_rounded,
+            'cleaning' => Symbols.cleaning_services_rounded,
+            _ => Symbols.content_cut_rounded,
+          },
+          size: 56,
+          color: colors.primaryStrong.withValues(alpha: 0.5),
+        ),
+      ),
+    );
+
+    return ClipRRect(
+      borderRadius: radius,
+      child: SizedBox(
+        height: 220,
+        width: double.infinity,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (provider.coverPhotoUrl == null)
+              fallback
+            else
+              Image.network(
+                provider.coverPhotoUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => fallback,
+              ),
+            if (provider.coverPhotoUrl != null)
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0x00000000), Color(0x33000000)],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}

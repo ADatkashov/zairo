@@ -2491,6 +2491,27 @@
   "@pendingInvitationsTitle": {"description": "Invite flow of the add-person dialog."},
 
   "cancelInvitationTooltip": "Cancel invitation",
-  "@cancelInvitationTooltip": {"description": "Invite flow of the add-person dialog."}
-
+  "@cancelInvitationTooltip": {"description": "Invite flow of the add-person dialog."},
+  "dashboardAgendaTitle": "Today",
+  "@dashboardAgendaTitle": {"description": "dashboardAgendaTitle"},
+  "dashboardAgendaEmpty": "No bookings today.",
+  "@dashboardAgendaEmpty": {"description": "dashboardAgendaEmpty"},
+  "bookingStatusPendingPayment": "Awaiting payment",
+  "@bookingStatusPendingPayment": {"description": "bookingStatusPendingPayment"},
+  "bookingStatusNoShow": "No-show",
+  "@bookingStatusNoShow": {"description": "bookingStatusNoShow"},
+  "bookingStatusPending": "Pending",
+  "@bookingStatusPending": {"description": "bookingStatusPending"},
+  "calendarTitle": "Calendar",
+  "@calendarTitle": {"description": "calendarTitle"},
+  "calendarThisWeek": "This week",
+  "@calendarThisWeek": {"description": "calendarThisWeek"},
+  "calendarDayEmpty": "No bookings",
+  "@calendarDayEmpty": {"description": "calendarDayEmpty"},
+  "calendarPrevWeek": "Previous week",
+  "@calendarPrevWeek": {"description": "calendarPrevWeek"},
+  "calendarNextWeek": "Next week",
+  "@calendarNextWeek": {"description": "calendarNextWeek"},
+  "calendarLoadFailed": "Couldn't load the calendar.",
+  "@calendarLoadFailed": {"description": "calendarLoadFailed"}
 }

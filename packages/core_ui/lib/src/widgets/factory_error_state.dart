@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../theme/factory_colors.dart';
+import '../theme/factory_motion.dart';
 import '../theme/factory_spacing.dart';
+import 'factory_button.dart';
 
 /// A human-readable message plus a retry action — never a raw exception.
 /// [message] is the caller's job to make plain-language before it reaches
 /// here; this widget just gives it a consistent, calm presentation instead
-/// of a stack trace on screen.
+/// of a stack trace on screen. Eases in like [FactoryEmptyState] and
+/// respects reduced motion.
 class FactoryErrorState extends StatelessWidget {
   const FactoryErrorState({
     super.key,
@@ -25,40 +28,38 @@ class FactoryErrorState extends StatelessWidget {
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        vertical: FactorySpacing.space6,
-        horizontal: FactorySpacing.space6,
-      ),
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space8, horizontal: FactorySpacing.space6),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 72,
+            height: 72,
             decoration: BoxDecoration(
-              color: Color.alphaBlend(
-                colors.error.withValues(alpha: 0.12),
-                colors.surface,
-              ),
-              shape: BoxShape.circle,
+              color: Color.alphaBlend(colors.error.withValues(alpha: 0.12), colors.surface),
+              borderRadius: BorderRadius.circular(22),
             ),
-            child: Icon(
-              Symbols.error_outline_rounded,
-              size: 20,
-              color: colors.error,
-            ),
-          ),
-          const SizedBox(height: FactorySpacing.space3),
-          Text(
-            message,
-            style: textTheme.bodySmall?.copyWith(color: colors.textSecondary),
-            textAlign: TextAlign.center,
+            child: Icon(Symbols.error_outline_rounded, size: 32, color: colors.error),
           ),
           const SizedBox(height: FactorySpacing.space4),
-          OutlinedButton(onPressed: onRetry, child: Text(retryLabel)),
+          Text(
+            message,
+            style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: FactorySpacing.space5),
+          FactoryButton(label: retryLabel, variant: FactoryButtonVariant.secondary, onPressed: onRetry),
         ],
       ),
+    );
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: FactoryMotion.resolve(context, FactoryMotion.base),
+      curve: FactoryMotion.standard,
+      builder: (context, t, child) => Opacity(opacity: t, child: child),
+      child: content,
     );
   }
 }

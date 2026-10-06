@@ -309,6 +309,7 @@ class _RewardsSection extends ConsumerWidget {
       data: (rewards) {
         if (rewards.isEmpty) {
           return FactoryEmptyState(
+            compact: true,
             icon: Symbols.redeem_rounded,
             title: l10n.loyaltyRewardsEmptyTitle,
             message: l10n.loyaltyRewardsEmptyMessage,

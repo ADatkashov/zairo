@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../theme/factory_app_profile.dart';
 import '../theme/factory_colors.dart';
 import '../theme/factory_elevation.dart';
 import '../theme/factory_radius.dart';
@@ -31,12 +32,15 @@ class FactoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.factoryColors;
+    // The app profile (consumer 24 / business 16 / platform 12) wins when the
+    // theme sets one; without it cards keep the original 16.
+    final radius = context.factoryProfileOrNull?.cardBorderRadius ?? FactoryRadius.lgRadius;
 
     final card = Container(
       padding: padding,
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: FactoryRadius.lgRadius,
+        borderRadius: radius,
         border: Border.all(color: colors.border),
         boxShadow: context.factoryElevation(elevation),
       ),
@@ -46,7 +50,7 @@ class FactoryCard extends StatelessWidget {
     if (onTap == null) return card;
 
     return ClipRRect(
-      borderRadius: FactoryRadius.lgRadius,
+      borderRadius: radius,
       child: Material(
         color: Colors.transparent,
         child: InkWell(onTap: onTap, child: card),

@@ -878,6 +878,16 @@
 
   "pendingInvitationsTitle": "Күтіп тұрған шақырулар",
 
-  "cancelInvitationTooltip": "Шақыруды болдырмау"
-
+  "cancelInvitationTooltip": "Шақыруды болдырмау",
+  "dashboardAgendaTitle": "Бүгін",
+  "dashboardAgendaEmpty": "Бүгін жазылулар жоқ.",
+  "bookingStatusPendingPayment": "Төлемді күтуде",
+  "bookingStatusNoShow": "Келмеді",
+  "bookingStatusPending": "Күтілуде",
+  "calendarTitle": "Күнтізбе",
+  "calendarThisWeek": "Осы апта",
+  "calendarDayEmpty": "Жазылулар жоқ",
+  "calendarPrevWeek": "Өткен апта",
+  "calendarNextWeek": "Келесі апта",
+  "calendarLoadFailed": "Күнтізбені жүктеу мүмкін болмады."
 }

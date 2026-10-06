@@ -8,29 +8,53 @@ import '../features/messaging/presentation/providers/message_seen_provider.dart'
 import '../l10n/app_localizations.dart';
 import 'admin_shell.dart';
 
-/// Tracks how many screens are pushed on top of one branch's root, so the
+/// Tracks how many full screens are pushed on top of one branch's root, so the
 /// shell can hide its bottom bar on a detail screen (which has its own
 /// actions) and show it again on the way back.
+///
+/// It keeps the actual routes rather than a counter: a counter drifted when a
+/// push and a pop landed in the same frame (and counted dialogs, menus and
+/// sheets that open on this navigator), leaving the bottom bar hidden on the
+/// root screen until the app was restarted.
 class BranchDepthObserver extends NavigatorObserver {
+  final Set<Route<dynamic>> _pages = {};
+
   /// 0 while the branch shows its root screen.
   final ValueNotifier<int> depth = ValueNotifier(0);
 
   // Notifications fire in the middle of a navigator update; defer the rebuild.
-  void _set(int value) => WidgetsBinding.instance.addPostFrameCallback((_) => depth.value = value);
+  void _publish() => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (depth.value != _pages.length) depth.value = _pages.length;
+      });
+
+  void _add(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    // Dialogs, popup menus and bottom sheets are not screens.
+    if (previousRoute != null && route is PageRoute) _pages.add(route);
+  }
 
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    if (previousRoute != null) _set(depth.value + 1);
+    _add(route, previousRoute);
+    _publish();
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    if (oldRoute != null) _pages.remove(oldRoute);
+    if (newRoute != null && navigator?.canPop() == true) _pages.add(newRoute);
+    _publish();
   }
 
   @override
   void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    if (depth.value > 0) _set(depth.value - 1);
+    _pages.remove(route);
+    _publish();
   }
 
   @override
   void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    if (depth.value > 0) _set(depth.value - 1);
+    _pages.remove(route);
+    _publish();
   }
 }
 
