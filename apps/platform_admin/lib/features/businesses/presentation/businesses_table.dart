@@ -15,6 +15,9 @@ const double businessesTableMinWidth = 640;
 /// Width of the trailing actions column: room for "Approve" + "Suspend".
 const double _actionsWidth = 200;
 
+/// Width of the leading checkbox column.
+const double _checkWidth = 40;
+
 /// Dense moderation table (rows follow the app profile's row height, 40 on
 /// the platform profile, with 36px buttons). Rows open the business; the actions column holds
 /// the same approve / reinstate / suspend buttons the card layout has.
@@ -25,12 +28,21 @@ class BusinessesTable extends StatelessWidget {
     required this.canModerate,
     required this.onOpen,
     required this.onChangeStatus,
+    this.selected = const {},
+    this.onToggle,
+    this.onToggleAll,
   });
 
   final List<Business> businesses;
   final bool canModerate;
   final ValueChanged<Business> onOpen;
   final void Function(Business business, String next) onChangeStatus;
+
+  /// Ids of the checked rows. Checkboxes show only when [onToggle] is set
+  /// (callers pass it when the person may moderate).
+  final Set<String> selected;
+  final void Function(String id)? onToggle;
+  final void Function(bool all)? onToggleAll;
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +59,17 @@ class BusinessesTable extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4, vertical: FactorySpacing.space2),
       child: Row(
         children: [
+          if (onToggle != null)
+            SizedBox(
+              width: _checkWidth,
+              child: Checkbox(
+                visualDensity: VisualDensity.compact,
+                tristate: true,
+                semanticLabel: l10n.bulkSelectAll,
+                value: selected.isEmpty ? false : (selected.length == businesses.length ? true : null),
+                onChanged: (_) => onToggleAll?.call(selected.length != businesses.length),
+              ),
+            ),
           Expanded(flex: 4, child: Text(l10n.businessesColName.toUpperCase(), style: headerStyle)),
           Expanded(flex: 2, child: Text(l10n.businessesColType.toUpperCase(), style: headerStyle)),
           Expanded(flex: 2, child: Text(l10n.businessesColRegistered.toUpperCase(), style: headerStyle)),
@@ -78,6 +101,16 @@ class BusinessesTable extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4, vertical: 2),
             child: Row(
               children: [
+                if (onToggle != null)
+                  SizedBox(
+                    width: _checkWidth,
+                    child: Checkbox(
+                      visualDensity: VisualDensity.compact,
+                      value: selected.contains(business.id),
+                      semanticLabel: l10n.bulkSelectRow(business.name),
+                      onChanged: (_) => onToggle?.call(business.id),
+                    ),
+                  ),
                 Expanded(
                   flex: 4,
                   child: Row(

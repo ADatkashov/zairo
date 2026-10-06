@@ -11,6 +11,7 @@ import '../../auth/presentation/session_controller.dart';
 import '../../finance/data/finance_api.dart';
 import '../data/business.dart';
 import '../data/business_api.dart';
+import '../data/saved_views.dart';
 import 'businesses_table.dart';
 
 /// Every business on the platform. Businesses waiting for approval come
@@ -31,6 +32,8 @@ class _BusinessesScreenState extends ConsumerState<BusinessesScreen> {
   final _search = TextEditingController();
   String _query = '';
   String? _status;
+  final Set<String> _selected = {};
+  bool _bulkBusy = false;
 
   @override
   void initState() {
@@ -49,6 +52,55 @@ class _BusinessesScreenState extends ConsumerState<BusinessesScreen> {
             : null,
       );
     }
+  }
+
+  /// Applies [next] to every selected business it would change. Suspending
+  /// asks once (with one optional reason for all of them); each business is a
+  /// separate request, so a partial failure is reported with the counts and
+  /// the failed rows stay selected for a retry.
+  Future<void> _bulk(List<Business> targets, String next) async {
+    final l10n = AppLocalizations.of(context)!;
+    final api = ref.read(businessApiProvider);
+    final eligible = targets.where((b) => b.status != next).toList();
+    if (eligible.isEmpty) return;
+
+    String? reason;
+    if (next == 'SUSPENDED') {
+      reason = await promptText(
+        context,
+        title: l10n.bulkSuspendTitle(eligible.length),
+        message: l10n.suspendMessage,
+        fieldLabel: l10n.reasonOptional,
+        confirmLabel: l10n.suspend,
+        destructive: true,
+      );
+      if (reason == null) return;
+    }
+    if (!mounted) return;
+
+    setState(() => _bulkBusy = true);
+    final failed = <String>{};
+    for (final business in eligible) {
+      try {
+        await api.setStatus(business.id, next, reason: (reason == null || reason.isEmpty) ? null : reason);
+      } catch (_) {
+        failed.add(business.id);
+      }
+    }
+    ref.invalidate(businessesProvider);
+    if (!mounted) return;
+    setState(() {
+      _bulkBusy = false;
+      _selected
+        ..clear()
+        ..addAll(failed);
+    });
+    showSnack(
+      context,
+      failed.isEmpty
+          ? l10n.bulkDone(eligible.length)
+          : l10n.bulkPartial(eligible.length - failed.length, failed.length),
+    );
   }
 
   @override
@@ -90,6 +142,10 @@ class _BusinessesScreenState extends ConsumerState<BusinessesScreen> {
                 return byPending != 0 ? byPending : a.name.toLowerCase().compareTo(b.name.toLowerCase());
               });
 
+          // Only rows still on screen stay selected (a filter or a refresh
+          // can hide them), so a bulk action never touches unseen rows.
+          final selectedBusinesses = visible.where((b) => _selected.contains(b.id)).toList();
+
           return ContentFrame(
             child: RefreshIndicator(
               onRefresh: refresh,
@@ -126,6 +182,28 @@ class _BusinessesScreenState extends ConsumerState<BusinessesScreen> {
                         ),
                     ],
                   ),
+                  _SavedViewsRow(
+                    status: _status,
+                    query: _query,
+                    onApply: (v) => setState(() {
+                      _status = v.status;
+                      _query = v.query;
+                      _search.text = v.query;
+                      _selected.clear();
+                    }),
+                  ),
+                  if (selectedBusinesses.isNotEmpty) ...[
+                    const SizedBox(height: FactorySpacing.space3),
+                    _BulkBar(
+                      count: selectedBusinesses.length,
+                      busy: _bulkBusy,
+                      canApprove: selectedBusinesses.any((b) => b.status != 'ACTIVE'),
+                      canSuspend: selectedBusinesses.any((b) => b.status != 'SUSPENDED'),
+                      onApprove: () => _bulk(selectedBusinesses, 'ACTIVE'),
+                      onSuspend: () => _bulk(selectedBusinesses, 'SUSPENDED'),
+                      onClear: () => setState(_selected.clear),
+                    ),
+                  ],
                   const SizedBox(height: FactorySpacing.space4),
                   if (visible.isEmpty)
                     FactoryEmptyState(icon: Icons.search_off_rounded, title: l10n.noMatches, message: '')
@@ -140,6 +218,14 @@ class _BusinessesScreenState extends ConsumerState<BusinessesScreen> {
                             canModerate: canModerate,
                             onOpen: open,
                             onChangeStatus: change,
+                            selected: selectedBusinesses.map((b) => b.id).toSet(),
+                            onToggle: canModerate
+                                ? (id) => setState(() => _selected.contains(id) ? _selected.remove(id) : _selected.add(id))
+                                : null,
+                            onToggleAll: (all) => setState(() {
+                              _selected.clear();
+                              if (all) _selected.addAll(visible.map((b) => b.id));
+                            }),
                           );
                         }
                         return Column(
@@ -444,6 +530,121 @@ class _BusinessDetails extends ConsumerWidget {
               ],
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+
+/// Appears while rows are checked: how many, and the actions that apply.
+class _BulkBar extends StatelessWidget {
+  const _BulkBar({
+    required this.count,
+    required this.busy,
+    required this.canApprove,
+    required this.canSuspend,
+    required this.onApprove,
+    required this.onSuspend,
+    required this.onClear,
+  });
+
+  final int count;
+  final bool busy;
+  final bool canApprove;
+  final bool canSuspend;
+  final VoidCallback onApprove;
+  final VoidCallback onSuspend;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space3, vertical: FactorySpacing.space2),
+      decoration: BoxDecoration(
+        color: colors.primaryTint,
+        borderRadius: FactoryRadius.mdRadius,
+        border: Border.all(color: colors.primary.withValues(alpha: 0.3)),
+      ),
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: FactorySpacing.space2,
+        runSpacing: FactorySpacing.space2,
+        children: [
+          Text(l10n.bulkSelected(count), style: Theme.of(context).textTheme.titleSmall?.copyWith(color: colors.text)),
+          if (canApprove)
+            FactoryButton(dense: true, label: l10n.approve, isLoading: busy, onPressed: onApprove),
+          if (canSuspend)
+            FactoryButton(
+              dense: true,
+              label: l10n.suspend,
+              variant: FactoryButtonVariant.textDanger,
+              onPressed: busy ? null : onSuspend,
+            ),
+          FactoryButton(dense: true, label: l10n.bulkClear, variant: FactoryButtonVariant.text, onPressed: busy ? null : onClear),
+        ],
+      ),
+    );
+  }
+}
+
+/// Saved views as chips (tap applies, the x removes) plus "Save view" for the
+/// current filter and search when it isn't saved yet.
+class _SavedViewsRow extends ConsumerWidget {
+  const _SavedViewsRow({required this.status, required this.query, required this.onApply});
+
+  final String? status;
+  final String query;
+  final ValueChanged<SavedView> onApply;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final views = ref.watch(savedViewsProvider).value ?? const <SavedView>[];
+    final hasFilter = status != null || query.trim().isNotEmpty;
+    final alreadySaved = views.any((v) => v.matches(status, query));
+    if (views.isEmpty && !hasFilter) return const SizedBox.shrink();
+
+    Future<void> save() async {
+      final name = await promptText(
+        context,
+        title: l10n.businessesSaveViewTitle,
+        fieldLabel: l10n.businessesViewName,
+        confirmLabel: l10n.businessesSaveView,
+        required: true,
+      );
+      if (name == null || name.trim().isEmpty || !context.mounted) return;
+      final ok = await ref
+          .read(savedViewsProvider.notifier)
+          .add(SavedView(name: name.trim(), status: status, query: query.trim()));
+      if (!ok && context.mounted) showSnack(context, l10n.businessesViewsLimit);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: FactorySpacing.space2),
+      child: Wrap(
+        spacing: FactorySpacing.space2,
+        runSpacing: FactorySpacing.space1,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          for (final view in views)
+            InputChip(
+              label: Text(view.name),
+              selected: view.matches(status, query),
+              onPressed: () => onApply(view),
+              deleteButtonTooltipMessage: l10n.businessesRemoveView,
+              onDeleted: () => ref.read(savedViewsProvider.notifier).remove(view.name),
+            ),
+          if (hasFilter && !alreadySaved)
+            FactoryButton(
+              dense: true,
+              icon: Icons.bookmark_add_outlined,
+              label: l10n.businessesSaveView,
+              variant: FactoryButtonVariant.text,
+              onPressed: save,
+            ),
         ],
       ),
     );

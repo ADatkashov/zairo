@@ -306,5 +306,17 @@
   "cmdNoResults": "Ничего не найдено",
   "cmdSectionPages": "Разделы",
   "cmdSectionBusinesses": "Бизнесы",
-  "cmdOpenTooltip": "Быстрый поиск"
+  "cmdOpenTooltip": "Быстрый поиск",
+  "businessesSaveView": "Сохранить вид",
+  "businessesSaveViewTitle": "Название вида",
+  "businessesViewName": "Название",
+  "businessesViewsLimit": "Можно сохранить до 8 видов. Сначала удалите один.",
+  "businessesRemoveView": "Удалить вид",
+  "bulkSelected": "Выбрано: {count}",
+  "bulkClear": "Сбросить",
+  "bulkSelectAll": "Выбрать все",
+  "bulkSelectRow": "Выбрать «{name}»",
+  "bulkSuspendTitle": "{count, plural, one{Приостановить {count} бизнес?} few{Приостановить {count} бизнеса?} many{Приостановить {count} бизнесов?} other{Приостановить {count} бизнеса?}}",
+  "bulkDone": "{count, plural, one{Обновлён {count} бизнес} few{Обновлено {count} бизнеса} many{Обновлено {count} бизнесов} other{Обновлено {count} бизнеса}}",
+  "bulkPartial": "Обновлено: {done}, не удалось: {failed}. Повторите для неудавшихся."
 }
