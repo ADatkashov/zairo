@@ -2,7 +2,7 @@ import 'package:core_network/core_network.dart';
 
 import 'models/needs_attention.dart';
 
-/// The owner's side of staff-related appointments (backend `StaffOwnerController`). Not final:
+/// The owner's side of worker-related appointments (backend `WorkerOwnerController`). Not final:
 /// tests substitute a subclass overriding these methods — same pattern as the other APIs.
 class StaffOwnerApi {
   final DioClient _dioClient;
@@ -16,7 +16,7 @@ class StaffOwnerApi {
   }
 
   /// Cancels the appointment: the slot is released, a paid booking is refunded and the customer is
-  /// notified. Only the owner can do this — staff can only ask.
+  /// notified. Only the owner can do this — a worker can only ask.
   Future<void> cancelAppointment(String providerId, String bookingId, {String? reason}) {
     return _dioClient.post(
       '/providers/$providerId/appointments/$bookingId/cancel',

@@ -1,10 +1,10 @@
-package com.zairo.factory.staff;
+package com.zairo.factory.workforce;
 
 import com.zairo.factory.auth.CurrentUser;
-import com.zairo.factory.staff.StaffPortalDtos.CannotAttendRequest;
-import com.zairo.factory.staff.StaffPortalDtos.StaffAppointmentResponse;
-import com.zairo.factory.staff.StaffPortalDtos.StaffMembershipResponse;
-import com.zairo.factory.staff.StaffPortalDtos.StaffRatingResponse;
+import com.zairo.factory.workforce.WorkerPortalDtos.CannotAttendRequest;
+import com.zairo.factory.workforce.WorkerPortalDtos.WorkerAppointmentResponse;
+import com.zairo.factory.workforce.WorkerPortalDtos.WorkerMembershipResponse;
+import com.zairo.factory.workforce.WorkerPortalDtos.WorkerRatingResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -26,11 +26,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @Tag(name = "Staff cabinet")
 @SecurityRequirement(name = "bearerAuth")
-public class StaffPortalController {
+public class WorkerPortalController {
 
-    private final StaffPortalService portalService;
+    private final WorkerPortalService portalService;
 
-    public StaffPortalController(StaffPortalService portalService) {
+    public WorkerPortalController(WorkerPortalService portalService) {
         this.portalService = portalService;
     }
 
@@ -39,7 +39,7 @@ public class StaffPortalController {
     @ApiResponse(responseCode = "200", description = "The caller's staff profiles")
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @GetMapping("/api/v1/me/staff-memberships")
-    public List<StaffMembershipResponse> memberships(HttpServletRequest request) {
+    public List<WorkerMembershipResponse> memberships(HttpServletRequest request) {
         return portalService.memberships(CurrentUser.requireUserId(request));
     }
 
@@ -50,8 +50,8 @@ public class StaffPortalController {
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @GetMapping("/api/v1/me/staff/{staffId}/appointments")
-    public List<StaffAppointmentResponse> appointments(@PathVariable UUID staffId,
-            @RequestParam(defaultValue = "ALL") StaffPortalService.Scope scope, HttpServletRequest request) {
+    public List<WorkerAppointmentResponse> appointments(@PathVariable UUID staffId,
+            @RequestParam(defaultValue = "ALL") WorkerPortalService.Scope scope, HttpServletRequest request) {
         return portalService.appointments(CurrentUser.requireUserId(request), staffId, scope);
     }
 
@@ -111,7 +111,7 @@ public class StaffPortalController {
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @GetMapping("/api/v1/me/staff/{staffId}/rating")
-    public StaffRatingResponse rating(@PathVariable UUID staffId, HttpServletRequest request) {
+    public WorkerRatingResponse rating(@PathVariable UUID staffId, HttpServletRequest request) {
         return portalService.rating(CurrentUser.requireUserId(request), staffId);
     }
 }

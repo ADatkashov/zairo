@@ -44,4 +44,5 @@ include(
     "campaign-center",
     "loyalty",
     "invitations",
+    "workforce",
 )

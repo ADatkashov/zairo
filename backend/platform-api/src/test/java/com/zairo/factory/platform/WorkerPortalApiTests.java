@@ -25,11 +25,14 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-/** The staff member's cabinet: one person at two businesses, own appointments only, accept/cancel/complete, rating. */
+/**
+ * A worker's cabinet: one person at two businesses (and in two different directories), own appointments only,
+ * accept / complete / "can't attend", rating — and only the owner can cancel with a refund.
+ */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
 @Import(TestcontainersConfiguration.class)
-class StaffPortalApiTests {
+class WorkerPortalApiTests {
 
     @Autowired
     private TestRestTemplate restTemplate;
@@ -121,7 +124,7 @@ class StaffPortalApiTests {
         List<Map> needs = getList("/api/v1/providers/" + providerA + "/appointments/needs-attention", ownerA);
         assertThat(needs).hasSize(1);
         assertThat(needs.get(0).get("bookingId")).isEqualTo(colleaguesBooking.toString());
-        assertThat(needs.get(0).get("reason")).isEqualTo("STAFF_CANNOT_ATTEND");
+        assertThat(needs.get(0).get("reason")).isEqualTo("WORKER_CANNOT_ATTEND");
         assertThat(restTemplate.exchange("/api/v1/providers/" + providerA + "/appointments/needs-attention",
                 HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(ownerB.accessToken())), Map.class)
                 .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
@@ -134,6 +137,62 @@ class StaffPortalApiTests {
                 ownerA).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         assertThat(getList("/api/v1/providers/" + providerA + "/appointments/needs-attention", ownerA)).isEmpty();
         assertThat(getList("/api/v1/me/staff/" + colleagueStaff + "/appointments", colleague).get(0).get("status"))
+                .isEqualTo("CANCELLED");
+    }
+
+    @Test
+    void aBeautyMasterGetsTheSameCabinetAsGenericStaff() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "portal-m-owner-" + runId + "@example.com");
+        Registered masterUser = TestAuth.registerCustomer(restTemplate, "portal-m-master-" + runId + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "portal-m-customer-" + runId + "@example.com");
+
+        UUID providerId = createProviderOfVertical(owner, "Portal Beauty " + runId, "beauty");
+        UUID serviceId = createService(owner, providerId, "Manicure");
+        ResponseEntity<Map> masterResponse = restTemplate.exchange(
+                "/api/v1/beauty/providers/" + providerId + "/masters/from-user", HttpMethod.POST,
+                new HttpEntity<>(Map.of("userId", masterUser.userId().toString()),
+                        TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(masterResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        UUID masterId = UUID.fromString(masterResponse.getBody().get("id").toString());
+        restTemplate.exchange("/api/v1/beauty/masters/" + masterId + "/services/" + serviceId, HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+
+        // The master sees the business in their cabinet, labelled as a MASTER.
+        List<Map> memberships = getList("/api/v1/me/staff-memberships", masterUser);
+        assertThat(memberships).hasSize(1);
+        assertThat(memberships.get(0).get("staffId")).isEqualTo(masterId.toString());
+        assertThat(memberships.get(0).get("kind")).isEqualTo("MASTER");
+
+        // A booking made through the beauty endpoint shows up in the master's cabinet.
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        UUID slotId = createSlot(owner, providerId, null, start);
+        ResponseEntity<Map> booked = restTemplate.exchange("/api/v1/beauty/bookings", HttpMethod.POST,
+                new HttpEntity<>(Map.of("userId", customer.userId().toString(), "masterId", masterId.toString(),
+                        "serviceId", serviceId.toString(), "availabilitySlotId", slotId.toString(),
+                        "totalPrice", 25), TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(booked.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        UUID bookingId = UUID.fromString(booked.getBody().get("bookingId").toString());
+        restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+
+        List<Map> mine = getList("/api/v1/me/staff/" + masterId + "/appointments", masterUser);
+        assertThat(mine).extracting(a -> a.get("bookingId")).containsExactly(bookingId.toString());
+        assertThat(mine.get(0).get("canAccept")).isEqualTo(true);
+
+        // "Can't attend" only informs the owner; it never cancels.
+        assertThat(post("/api/v1/me/staff/" + masterId + "/appointments/" + bookingId + "/cannot-attend",
+                masterUser).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(getList("/api/v1/me/staff/" + masterId + "/appointments", masterUser).get(0).get("status"))
+                .isEqualTo("CONFIRMED");
+        List<Map> needs = getList("/api/v1/providers/" + providerId + "/appointments/needs-attention", owner);
+        assertThat(needs).hasSize(1);
+        assertThat(needs.get(0).get("workerKind")).isEqualTo("MASTER");
+
+        // Only the owner can cancel (and refund).
+        assertThat(post("/api/v1/providers/" + providerId + "/appointments/" + bookingId + "/cancel", owner)
+                .getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(getList("/api/v1/me/staff/" + masterId + "/appointments", masterUser).get(0).get("status"))
                 .isEqualTo("CANCELLED");
     }
 
@@ -179,8 +238,12 @@ class StaffPortalApiTests {
     }
 
     private UUID createProvider(Registered owner, String name) {
+        return createProviderOfVertical(owner, name, "sport_fitness");
+    }
+
+    private UUID createProviderOfVertical(Registered owner, String name, String vertical) {
         ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
-                new HttpEntity<>(new CreateProviderRequest(owner.userId(), name, "sport_fitness"),
+                new HttpEntity<>(new CreateProviderRequest(owner.userId(), name, vertical),
                         TestAuth.authHeaders(owner.accessToken())), Map.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         return UUID.fromString(response.getBody().get("id").toString());
