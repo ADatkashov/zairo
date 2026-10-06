@@ -23,6 +23,7 @@ import 'package:business_admin/features/salon/data/models/admin_provider.dart';
 import 'package:business_admin/features/salon/data/models/admin_service.dart';
 import 'package:business_admin/features/salon/data/models/admin_slot.dart';
 import 'package:business_admin/features/salon/data/models/dashboard_metrics.dart';
+import 'package:business_admin/features/salon/data/models/schedule_entry.dart';
 import 'package:business_admin/features/salon/data/salon_admin_api.dart';
 import 'package:business_admin/features/salon/presentation/providers/salon_providers.dart';
 import 'package:business_admin/features/salon/presentation/widgets/add_service_dialog.dart';
@@ -37,6 +38,10 @@ class _FakeSalonAdminApi extends SalonAdminApi {
   final List<AdminProvider> _providers;
   final Map<String, DashboardMetrics> _metricsByProviderId;
   Map<String, dynamic>? lastCreateCall;
+
+  /// Null = the schedule endpoint "fails" (the card stays hidden, as on a
+  /// real error), so tests that aren't about the agenda are unaffected.
+  List<ScheduleEntry>? schedule;
 
   @override
   Future<List<AdminProvider>> listMyProviders(String ownerUserId) async => _providers;
@@ -68,7 +73,21 @@ class _FakeSalonAdminApi extends SalonAdminApi {
   }
 
   @override
-  Future<List<AdminService>> listServices(String providerId, {bool includeInactive = false}) async => const [];
+  Future<List<ScheduleEntry>> fetchSchedule(String providerId, {required DateTime from, required DateTime to}) async =>
+      schedule ?? (throw StateError('no schedule in this test'));
+
+  @override
+  Future<List<AdminService>> listServices(String providerId, {bool includeInactive = false}) async => [
+        const AdminService(
+          id: 's1',
+          providerId: 'p1',
+          title: 'Gel manicure',
+          durationMinutes: 75,
+          price: 8500,
+          currency: 'KZT',
+          active: true,
+        ),
+      ];
 
   @override
   Future<List<AdminSlot>> listSlots(String providerId) async => const [];
@@ -336,5 +355,50 @@ void main() {
 
     final dialog = tester.widget<AddServiceDialog>(find.byType(AddServiceDialog));
     expect(dialog.providerId, 'p2');
+  });
+
+  testWidgets("shows today's bookings with time, service and status, leaving cancelled ones out", (tester) async {
+    final now = DateTime.now();
+    final noon = DateTime(now.year, now.month, now.day, 12);
+    ScheduleEntry entry(String id, String status, DateTime at) => ScheduleEntry(
+          bookingId: id,
+          serviceId: 's1',
+          availabilitySlotId: 'slot-$id',
+          status: status,
+          startsAt: at.toUtc(),
+          endsAt: at.add(const Duration(minutes: 75)).toUtc(),
+          totalPrice: 8500,
+          currency: 'KZT',
+        );
+    final fakeApi = _FakeSalonAdminApi([
+      const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE'),
+    ])
+      ..schedule = [entry('b1', 'CONFIRMED', noon), entry('b2', 'CANCELLED', noon.add(const Duration(hours: 1)))];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(fakeApi),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+          billingApiProvider.overrideWithValue(_FakeBillingApi()),
+          campaignCenterApiProvider.overrideWithValue(_FakeCampaignCenterApi()),
+          authControllerProvider.overrideWith(_LoggedInOwnerController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const DashboardScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Today'), findsOneWidget);
+    expect(find.text('Gel manicure'), findsOneWidget);
+    expect(find.text('12:00'), findsOneWidget);
+    expect(find.text('Confirmed'), findsOneWidget);
+    // The cancelled booking is not listed.
+    expect(find.text('13:00'), findsNothing);
   });
 }

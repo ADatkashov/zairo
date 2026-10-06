@@ -1,6 +1,7 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
@@ -20,6 +21,7 @@ import '../../../city/presentation/providers/city_providers.dart';
 import '../../../loyalty/presentation/screens/loyalty_screen.dart';
 import '../../../messaging/presentation/screens/business_inbox_screen.dart';
 import '../../../salon/data/models/admin_provider.dart';
+import '../../../salon/data/models/schedule_entry.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
 import '../../../salon/presentation/screens/customer_list_screen.dart';
 import '../../../salon/presentation/screens/salon_detail_screen.dart';
@@ -134,7 +136,7 @@ class DashboardScreen extends ConsumerWidget {
             ]),
             child: ListView.separated(
             padding: const EdgeInsets.all(FactorySpacing.space4),
-            itemCount: providers.length + 4,
+            itemCount: providers.length + 5,
             separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
             itemBuilder: (context, index) {
               if (index == 0) {
@@ -147,9 +149,12 @@ class DashboardScreen extends ConsumerWidget {
                 );
               }
               if (index == 2) {
+                return _TodayAgenda(ownerUserId: user.id);
+              }
+              if (index == 3) {
                 return _QuickActions(providers: providers);
               }
-              if (index == providers.length + 3) {
+              if (index == providers.length + 4) {
                 final subscription = subscriptionAsync.value;
                 final atLimit = subscription != null && providers.length >= subscription.limits.maxProviders;
                 if (atLimit) {
@@ -162,7 +167,7 @@ class DashboardScreen extends ConsumerWidget {
                   onPressed: () => _openCreateSalonDialog(context, ref, user.id),
                 );
               }
-              final provider = providers[index - 3];
+              final provider = providers[index - 4];
               return _SalonCard(
                 provider: provider,
                 onTap: () => Navigator.of(context).push(
@@ -908,4 +913,94 @@ String _initialsFor(String name) {
     return parts.first.substring(0, parts.first.length >= 2 ? 2 : 1).toUpperCase();
   }
   return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+
+/// Today's bookings across the owner's businesses: time, service, status.
+/// Shows the next few and says so plainly when there are none. While loading
+/// or on error it stays out of the way (the rest of the dashboard still
+/// works without it).
+class _TodayAgenda extends ConsumerWidget {
+  const _TodayAgenda({required this.ownerUserId});
+
+  final String ownerUserId;
+
+  static const int _maxRows = 5;
+
+  (String, FactoryBadgeVariant) _status(AppLocalizations l10n, String status) => switch (status) {
+    'CONFIRMED' => (l10n.bookingStatusConfirmed, FactoryBadgeVariant.available),
+    'COMPLETED' => (l10n.bookingStatusCompleted, FactoryBadgeVariant.verified),
+    'PENDING_PAYMENT' => (l10n.bookingStatusPendingPayment, FactoryBadgeVariant.limited),
+    'NO_SHOW' => (l10n.bookingStatusNoShow, FactoryBadgeVariant.error),
+    _ => (l10n.bookingStatusPending, FactoryBadgeVariant.neutral),
+  };
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final agenda = ref.watch(ownerTodayAgendaProvider(ownerUserId)).value;
+    if (agenda == null) return const SizedBox.shrink();
+
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    final locale = Localizations.localeOf(context).toString();
+    final multiple = agenda.map((a) => a.providerName).toSet().length > 1;
+
+    return FactoryCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.dashboardAgendaTitle, style: textTheme.titleMedium),
+          const SizedBox(height: FactorySpacing.space3),
+          if (agenda.isEmpty)
+            Text(l10n.dashboardAgendaEmpty, style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary))
+          else
+            for (final item in agenda.take(_maxRows))
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space2),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 52,
+                      child: Text(
+                        DateFormat.Hm(locale).format(item.entry.startsAt.toLocal()),
+                        style: FactoryTypography.mono(size: 14, color: colors.text),
+                      ),
+                    ),
+                    Container(width: 3, height: 32, decoration: BoxDecoration(color: colors.primary, borderRadius: BorderRadius.circular(2))),
+                    const SizedBox(width: FactorySpacing.space3),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(item.serviceTitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: textTheme.titleSmall),
+                          if (multiple)
+                            Text(
+                              item.providerName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: FactorySpacing.space2),
+                    Builder(
+                      builder: (context) {
+                        final (label, variant) = _status(l10n, item.entry.status);
+                        return FactoryBadge(label: label, variant: variant);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+          if (agenda.length > _maxRows)
+            Text(
+              '+${agenda.length - _maxRows}',
+              style: FactoryTypography.mono(size: 12, color: colors.textTertiary),
+            ),
+        ],
+      ),
+    );
+  }
 }

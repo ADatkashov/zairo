@@ -2491,6 +2491,15 @@
   "@pendingInvitationsTitle": {"description": "Invite flow of the add-person dialog."},
 
   "cancelInvitationTooltip": "Cancel invitation",
-  "@cancelInvitationTooltip": {"description": "Invite flow of the add-person dialog."}
-
+  "@cancelInvitationTooltip": {"description": "Invite flow of the add-person dialog."},
+  "dashboardAgendaTitle": "Today",
+  "@dashboardAgendaTitle": {"description": "dashboardAgendaTitle"},
+  "dashboardAgendaEmpty": "No bookings today.",
+  "@dashboardAgendaEmpty": {"description": "dashboardAgendaEmpty"},
+  "bookingStatusPendingPayment": "Awaiting payment",
+  "@bookingStatusPendingPayment": {"description": "bookingStatusPendingPayment"},
+  "bookingStatusNoShow": "No-show",
+  "@bookingStatusNoShow": {"description": "bookingStatusNoShow"},
+  "bookingStatusPending": "Pending",
+  "@bookingStatusPending": {"description": "bookingStatusPending"}
 }
