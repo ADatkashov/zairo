@@ -1,4 +1,4 @@
-/// Mirrors backend's StaffPortalDtos (backend/staff/.../StaffPortalDtos.java).
+// Mirrors backend's StaffPortalDtos (backend/staff/.../StaffPortalDtos.java).
 
 /// One business the signed-in user works at.
 class StaffMembership {
