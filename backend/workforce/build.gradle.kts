@@ -17,4 +17,11 @@ dependencies {
 
     // The cabinet shows each worker's rating and the reviews left on their appointments.
     implementation(project(":reviews"))
+
+    // "Any master" books on the customer's behalf through each directory's own booking service. One-directional
+    // (workforce -> verticals/staff); none of them depends on workforce (they only see booking's guard interface).
+    implementation(project(":vertical-beauty"))
+    implementation(project(":vertical-auto"))
+    implementation(project(":vertical-cleaning"))
+    implementation(project(":staff"))
 }
