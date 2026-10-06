@@ -26,6 +26,7 @@ import 'package:business_admin/features/salon/data/models/dashboard_metrics.dart
 import 'package:business_admin/features/salon/data/models/schedule_entry.dart';
 import 'package:business_admin/features/salon/data/salon_admin_api.dart';
 import 'package:business_admin/features/salon/presentation/providers/salon_providers.dart';
+import 'package:business_admin/features/salon/presentation/screens/week_calendar_screen.dart';
 import 'package:business_admin/features/salon/presentation/widgets/add_service_dialog.dart';
 import 'package:business_admin/features/salon/presentation/widgets/recurring_schedule_dialog.dart';
 import 'package:business_admin/l10n/app_localizations.dart';
@@ -400,5 +401,55 @@ void main() {
     expect(find.text('Confirmed'), findsOneWidget);
     // The cancelled booking is not listed.
     expect(find.text('13:00'), findsNothing);
+  });
+
+  testWidgets('week calendar groups bookings by day and steps to the next week', (tester) async {
+    ScheduleEntry entry(String id, String status, DateTime at) => ScheduleEntry(
+          bookingId: id,
+          serviceId: 's1',
+          availabilitySlotId: 'slot-$id',
+          status: status,
+          startsAt: at.toUtc(),
+          endsAt: at.add(const Duration(minutes: 75)).toUtc(),
+          totalPrice: 8500,
+          currency: 'KZT',
+        );
+    // Wed 7 Oct 2026: that week runs Mon 5 – Sun 11.
+    final fakeApi = _FakeSalonAdminApi([
+      const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE'),
+    ])
+      ..schedule = [
+        entry('b1', 'CONFIRMED', DateTime(2026, 10, 7, 12)),
+        entry('b2', 'PENDING_PAYMENT', DateTime(2026, 10, 8, 10)),
+      ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(fakeApi),
+          authControllerProvider.overrideWith(_LoggedInOwnerController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: WeekCalendarScreen(ownerUserId: 'owner-1', today: DateTime(2026, 10, 7)),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Gel manicure'), findsNWidgets(2));
+    expect(find.text('Confirmed'), findsOneWidget);
+    expect(find.text('Awaiting payment'), findsOneWidget);
+    expect(find.text('12:00'), findsOneWidget);
+    expect(find.text('This week'), findsNothing);
+
+    await tester.tap(find.byTooltip('Next week'));
+    await tester.pumpAndSettle();
+    // The fake returns the same two bookings, but none fall in the next week.
+    expect(find.text('Gel manicure'), findsNothing);
+    expect(find.text('No bookings'), findsNWidgets(7));
+    expect(find.text('This week'), findsOneWidget);
   });
 }
