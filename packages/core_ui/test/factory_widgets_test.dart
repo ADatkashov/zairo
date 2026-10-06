@@ -294,7 +294,7 @@ void main() {
           ),
         ),
       );
-      expect(find.byType(OutlinedButton), findsNothing);
+      expect(find.byType(FactoryButton), findsNothing);
 
       var tapped = false;
       await tester.pumpWidget(
@@ -308,6 +308,7 @@ void main() {
           ),
         ),
       );
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Try tomorrow'));
       expect(tapped, isTrue);
     },
@@ -326,6 +327,7 @@ void main() {
       ),
     );
 
+    await tester.pumpAndSettle();
     expect(find.text("Couldn't load your bookings."), findsOneWidget);
     await tester.tap(find.text('Try again'));
     expect(retried, isTrue);

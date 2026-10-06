@@ -180,6 +180,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(height: FactorySpacing.space3),
                   if (topRated.isEmpty)
                     FactoryEmptyState(
+                      compact: true,
                       icon: Symbols.storefront_rounded,
                       title: l10n.homeEmptyTitle,
                       message: l10n.homeEmptyMessage,
