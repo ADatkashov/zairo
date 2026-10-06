@@ -165,22 +165,17 @@ class _BusinessesScreenState extends ConsumerState<BusinessesScreen> {
                     clearSemanticLabel: l10n.clear,
                   ),
                   const SizedBox(height: FactorySpacing.space3),
-                  Wrap(
-                    spacing: FactorySpacing.space2,
-                    runSpacing: FactorySpacing.space2,
-                    children: [
-                      FactoryChip(
-                        label: l10n.filterAll,
-                        selected: _status == null,
-                        onTap: () => setState(() => _status = null),
-                      ),
+                  _StatusTabs(
+                    selected: _status,
+                    counts: {
+                      null: businesses.length,
                       for (final status in const ['PENDING', 'ACTIVE', 'SUSPENDED'])
-                        FactoryChip(
-                          label: businessStatusLabel(l10n, status),
-                          selected: _status == status,
-                          onTap: () => setState(() => _status = status),
-                        ),
-                    ],
+                        status: businesses.where((b) => b.status == status).length,
+                    },
+                    onSelect: (status) => setState(() {
+                      _status = status;
+                      _selected.clear();
+                    }),
                   ),
                   _SavedViewsRow(
                     status: _status,
@@ -646,6 +641,71 @@ class _SavedViewsRow extends ConsumerWidget {
               onPressed: save,
             ),
         ],
+      ),
+    );
+  }
+}
+
+
+/// Underlined status tabs with counts: All, awaiting approval, active,
+/// suspended. A null value is "All". Scrolls sideways when the labels are
+/// longer than the width (Russian and Kazakh run longer).
+class _StatusTabs extends StatelessWidget {
+  const _StatusTabs({required this.selected, required this.counts, required this.onSelect});
+
+  final String? selected;
+  final Map<String?, int> counts;
+  final ValueChanged<String?> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    Widget tab(String? status, String label) {
+      final isSelected = selected == status;
+      final tone = isSelected ? colors.primary : colors.textSecondary;
+      return Semantics(
+        button: true,
+        selected: isSelected,
+        child: InkWell(
+          onTap: () => onSelect(status),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 44),
+            padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space3),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: isSelected ? colors.primary : Colors.transparent, width: 2)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: textTheme.titleSmall?.copyWith(color: tone, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500),
+                ),
+                const SizedBox(width: FactorySpacing.space2),
+                Text('${counts[status] ?? 0}', style: FactoryTypography.mono(size: 12, weight: FontWeight.w500, color: tone)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: colors.border)),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            tab(null, l10n.filterAll),
+            for (final status in const ['PENDING', 'ACTIVE', 'SUSPENDED']) tab(status, businessStatusLabel(l10n, status)),
+          ],
+        ),
       ),
     );
   }
