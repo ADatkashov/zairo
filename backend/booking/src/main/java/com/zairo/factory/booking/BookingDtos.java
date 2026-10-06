@@ -72,4 +72,21 @@ public final class BookingDtos {
                     booking.getCityCode());
         }
     }
+
+    /**
+     * One row of a provider's schedule: a booking together with when its
+     * slot starts and ends. {@link BookingResponse} has no times (a booking
+     * only references its slot), so an agenda needs this join.
+     */
+    public record ScheduleEntryResponse(
+            @Schema(example = "550e8400-e29b-41d4-a716-446655440000") UUID bookingId,
+            @Schema(example = "550e8400-e29b-41d4-a716-446655440000") UUID serviceId,
+            @Schema(example = "550e8400-e29b-41d4-a716-446655440000") UUID availabilitySlotId,
+            BookingStatus status,
+            Instant startsAt,
+            Instant endsAt,
+            @Schema(example = "25.00") BigDecimal totalPrice,
+            @Schema(example = "KZT") String currency,
+            @Schema(description = "Total amount paid so far") BigDecimal paidAmount) {
+    }
 }
