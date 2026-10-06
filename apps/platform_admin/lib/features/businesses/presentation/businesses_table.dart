@@ -15,7 +15,8 @@ const double businessesTableMinWidth = 640;
 /// Width of the trailing actions column: room for "Approve" + "Suspend".
 const double _actionsWidth = 200;
 
-/// Dense moderation table. Rows open the business; the actions column holds
+/// Dense moderation table (rows follow the app profile's row height, 40 on
+/// the platform profile, with 36px buttons). Rows open the business; the actions column holds
 /// the same approve / reinstate / suspend buttons the card layout has.
 class BusinessesTable extends StatelessWidget {
   const BusinessesTable({
@@ -38,7 +39,7 @@ class BusinessesTable extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final locale = Localizations.localeOf(context).toString();
     final radius = context.factoryProfileOrNull?.cardBorderRadius ?? FactoryRadius.mdRadius;
-    final rowHeight = context.factoryProfileOrNull?.rowHeight ?? 44;
+    final rowHeight = context.factoryProfileOrNull?.rowHeight ?? 40;
 
     final headerStyle = textTheme.labelSmall?.copyWith(color: colors.textTertiary);
 
@@ -58,11 +59,12 @@ class BusinessesTable extends StatelessWidget {
     Widget row(Business business) {
       final actions = <Widget>[
         if (canModerate && business.status == 'PENDING')
-          FactoryButton(label: l10n.approve, onPressed: () => onChangeStatus(business, 'ACTIVE')),
+          FactoryButton(dense: true, label: l10n.approve, onPressed: () => onChangeStatus(business, 'ACTIVE')),
         if (canModerate && business.status == 'SUSPENDED')
-          FactoryButton(label: l10n.reinstate, onPressed: () => onChangeStatus(business, 'ACTIVE')),
+          FactoryButton(dense: true, label: l10n.reinstate, onPressed: () => onChangeStatus(business, 'ACTIVE')),
         if (canModerate && business.status != 'SUSPENDED')
           FactoryButton(
+            dense: true,
             label: l10n.suspend,
             variant: FactoryButtonVariant.textDanger,
             onPressed: () => onChangeStatus(business, 'SUSPENDED'),
@@ -73,7 +75,7 @@ class BusinessesTable extends StatelessWidget {
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: rowHeight),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4, vertical: FactorySpacing.space1),
+            padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4, vertical: 2),
             child: Row(
               children: [
                 Expanded(
@@ -125,7 +127,12 @@ class BusinessesTable extends StatelessWidget {
                 ),
                 SizedBox(
                   width: _actionsWidth,
-                  child: Wrap(alignment: WrapAlignment.end, spacing: FactorySpacing.space1, children: actions),
+                  child: Wrap(
+                    alignment: WrapAlignment.end,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: FactorySpacing.space1,
+                    children: actions,
+                  ),
                 ),
               ],
             ),
