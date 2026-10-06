@@ -306,49 +306,73 @@ class _OwnerOverviewHero extends ConsumerWidget {
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
+    final radius = context.factoryProfileOrNull?.cardBorderRadius ?? FactoryRadius.xlRadius;
+    final secondaryStyle = textTheme.headlineSmall?.copyWith(color: colors.onPrimary);
+
+    // Bento hero: revenue is the one big number, the rest are secondary.
     return Container(
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
-      padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space6, vertical: FactorySpacing.space5),
+      padding: const EdgeInsets.all(FactorySpacing.space6),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [colors.primaryStrong, colors.mint],
+          colors: [colors.primaryStrong, colors.primary],
         ),
-        borderRadius: FactoryRadius.xlRadius,
-        boxShadow: [
-          BoxShadow(color: colors.primaryStrong.withValues(alpha: 0.24), offset: const Offset(0, 16), blurRadius: 32),
-        ],
+        borderRadius: radius,
+        boxShadow: context.factoryElevation(FactoryElevationLevel.lg),
       ),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Positioned(top: -40, right: -20, child: _HeroCircle(size: 160, opacity: 0.12)),
-          Wrap(
-            spacing: FactorySpacing.space8,
-            runSpacing: FactorySpacing.space3,
-            children: [
-              _OverviewStat(
-                value: Text('${overview.businessCount}', style: textTheme.displaySmall?.copyWith(color: colors.onPrimary)),
-                label: l10n.dashboardBusinessesCountLabel,
-              ),
-              _OverviewStat(
-                value: Text('${overview.totalBookings}', style: textTheme.displaySmall?.copyWith(color: colors.onPrimary)),
-                label: l10n.dashboardTotalBookingsLabel,
-              ),
-              _OverviewStat(
-                value: FactoryPriceText(
-                  amount: overview.totalRevenue,
-                  currencySymbol: overview.currency,
-                  fontSize: 24,
-                  color: colors.onPrimary,
+          Positioned(
+            top: -60,
+            right: -50,
+            child: Container(
+              width: 220,
+              height: 220,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                // Ambient glow: radial fade, not a flat disc.
+                gradient: RadialGradient(
+                  colors: [colors.accent.withValues(alpha: 0.42), colors.accent.withValues(alpha: 0)],
                 ),
-                label: l10n.dashboardTotalRevenueLabel,
               ),
-              _OverviewStat(
-                value: Text('${overview.totalCustomers}', style: textTheme.displaySmall?.copyWith(color: colors.onPrimary)),
-                label: l10n.dashboardTotalCustomersLabel,
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.dashboardTotalRevenueLabel,
+                style: textTheme.labelMedium?.copyWith(color: colors.onPrimary.withValues(alpha: 0.8)),
+              ),
+              const SizedBox(height: FactorySpacing.space1),
+              FactoryPriceText(
+                amount: overview.totalRevenue,
+                currencySymbol: overview.currency,
+                fontSize: 40,
+                color: colors.onPrimary,
+              ),
+              const SizedBox(height: FactorySpacing.space5),
+              Wrap(
+                spacing: FactorySpacing.space8,
+                runSpacing: FactorySpacing.space3,
+                children: [
+                  _OverviewStat(
+                    value: Text('${overview.totalBookings}', style: secondaryStyle),
+                    label: l10n.dashboardTotalBookingsLabel,
+                  ),
+                  _OverviewStat(
+                    value: Text('${overview.totalCustomers}', style: secondaryStyle),
+                    label: l10n.dashboardTotalCustomersLabel,
+                  ),
+                  _OverviewStat(
+                    value: Text('${overview.businessCount}', style: secondaryStyle),
+                    label: l10n.dashboardBusinessesCountLabel,
+                  ),
+                ],
               ),
             ],
           ),
@@ -374,25 +398,11 @@ class _OverviewStat extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white.withValues(alpha: 0.85)),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: context.factoryColors.onPrimary.withValues(alpha: 0.8),
+          ),
         ),
       ],
-    );
-  }
-}
-
-class _HeroCircle extends StatelessWidget {
-  const _HeroCircle({required this.size, required this.opacity});
-
-  final double size;
-  final double opacity;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: opacity)),
     );
   }
 }
