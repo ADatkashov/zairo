@@ -107,13 +107,16 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen> {
                           )
                         : ListView.separated(
                             padding: const EdgeInsets.symmetric(
+                              horizontal: FactorySpacing.space4,
                               vertical: FactorySpacing.space2,
                             ),
                             itemCount: filtered.length,
                             separatorBuilder: (_, _) =>
-                                Divider(height: 1, color: colors.border),
+                                const SizedBox(height: FactorySpacing.space2),
                             itemBuilder: (context, index) =>
-                                _CategoryExpansionTile(category: filtered[index]),
+                                _CategoryExpansionTile(
+                                  category: filtered[index],
+                                ),
                           ),
                   ),
                 ),
@@ -161,56 +164,69 @@ class _CategoryExpansionTileState extends State<_CategoryExpansionTile> {
     final category = widget.category;
     final accent = colorForCategory(context, category.code);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => setState(() => _expanded = !_expanded),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: FactorySpacing.space4,
-                vertical: FactorySpacing.space3,
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: accent?.tint ?? colors.surfaceAlt,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Icon(
-                        iconForCategory(category.code),
-                        size: FactoryIconSize.md,
-                        color: accent?.color ?? colors.textSecondary,
+    final radius =
+        context.factoryProfileOrNull?.cardBorderRadius ??
+        FactoryRadius.lgRadius;
+
+    // Each category is its own card; the spheres open inside it.
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: radius,
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => setState(() => _expanded = !_expanded),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: FactorySpacing.space4,
+                  vertical: FactorySpacing.space3,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: accent?.tint ?? colors.surfaceAlt,
+                        borderRadius: FactoryRadius.mdRadius,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          iconForCategory(category.code),
+                          size: FactoryIconSize.md,
+                          color: accent?.color ?? colors.textSecondary,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: FactorySpacing.space3),
-                  Expanded(
-                    child: Text(
-                      category.nameFor(languageCode),
-                      style: Theme.of(context).textTheme.titleSmall
-                          ?.copyWith(color: colors.text),
+                    const SizedBox(width: FactorySpacing.space3),
+                    Expanded(
+                      child: Text(
+                        category.nameFor(languageCode),
+                        style: Theme.of(context).textTheme.titleSmall
+                            ?.copyWith(color: colors.text),
+                      ),
                     ),
-                  ),
-                  Icon(
-                    _expanded
-                        ? Symbols.expand_less_rounded
-                        : Symbols.expand_more_rounded,
-                    color: colors.textTertiary,
-                  ),
-                ],
+                    Icon(
+                      _expanded
+                          ? Symbols.expand_less_rounded
+                          : Symbols.expand_more_rounded,
+                      color: colors.textTertiary,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-        if (_expanded) _SphereList(category: category),
-      ],
+          if (_expanded) _SphereList(category: category),
+        ],
+      ),
     );
   }
 }
@@ -282,7 +298,10 @@ class _SphereList extends ConsumerWidget {
 }
 
 /// Opens the sphere's catalog services; picking one goes to "who offers it".
-Future<void> _comparePrices(BuildContext context, BusinessType businessType) async {
+Future<void> _comparePrices(
+  BuildContext context,
+  BusinessType businessType,
+) async {
   final languageCode = Localizations.localeOf(context).languageCode;
   final picked = await showFactoryBottomSheet<CatalogService>(
     context: context,
@@ -290,7 +309,9 @@ Future<void> _comparePrices(BuildContext context, BusinessType businessType) asy
     builder: (_) => _CatalogServicesSheet(businessType: businessType),
   );
   if (picked == null || !context.mounted) return;
-  context.push(AppRoutes.compare(picked.id, serviceName: picked.nameFor(languageCode)));
+  context.push(
+    AppRoutes.compare(picked.id, serviceName: picked.nameFor(languageCode)),
+  );
 }
 
 class _CatalogServicesSheet extends ConsumerWidget {
@@ -323,15 +344,16 @@ class _CatalogServicesSheet extends ConsumerWidget {
           const SizedBox(height: FactorySpacing.space1),
           Text(
             l10n.catalogServicesSheetHint,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: colors.textTertiary,
-            ),
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: colors.textTertiary),
           ),
           const SizedBox(height: FactorySpacing.space3),
           servicesAsync.when(
             data: (services) => services.isEmpty
                 ? Padding(
-                    padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space4),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: FactorySpacing.space4,
+                    ),
                     child: Text(l10n.catalogServicesSheetEmpty),
                   )
                 : Flexible(
@@ -399,7 +421,9 @@ class _SphereRow extends StatelessWidget {
                     label,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: emphasized ? colors.primary : colors.textSecondary,
-                      fontWeight: emphasized ? FontWeight.w600 : FontWeight.w400,
+                      fontWeight: emphasized
+                          ? FontWeight.w600
+                          : FontWeight.w400,
                     ),
                   ),
                 ),
