@@ -10,6 +10,7 @@ import '../../data/models/admin_slot.dart';
 import '../../data/models/business_analytics.dart';
 import '../../data/models/dashboard_metrics.dart';
 import '../../data/models/owner_overview.dart';
+import '../../data/models/schedule_entry.dart';
 import '../../data/salon_admin_api.dart';
 
 final salonAdminApiProvider = Provider<SalonAdminApi>((ref) {
@@ -137,4 +138,30 @@ final activeSmartFillCampaignsProvider =
 final customerListProvider = FutureProvider.autoDispose
     .family<List<CustomerListItem>, (String providerId, CustomerRetentionStatus? retentionStatus)>((ref, key) {
   return ref.watch(salonAdminApiProvider).fetchCustomerList(key.$1, retentionStatus: key.$2);
+});
+
+/// Today's bookings across every business [ownerUserId] manages, soonest
+/// first, cancelled ones left out. "Today" is the device's local calendar
+/// day, sent to the backend as a UTC window.
+final ownerTodayAgendaProvider = FutureProvider.autoDispose.family<List<AgendaItem>, String>((ref, ownerUserId) async {
+  final api = ref.watch(salonAdminApiProvider);
+  final providers = await ref.watch(myProvidersProvider(ownerUserId).future);
+  final now = DateTime.now();
+  final start = DateTime(now.year, now.month, now.day);
+  final end = DateTime(now.year, now.month, now.day + 1);
+
+  final perProvider = await Future.wait(providers.map((p) async {
+    final results = await Future.wait([
+      api.fetchSchedule(p.id, from: start, to: end),
+      api.listServices(p.id, includeInactive: true),
+    ]);
+    final titles = {for (final s in results[1] as List<AdminService>) s.id: s.title};
+    return [
+      for (final entry in results[0] as List<ScheduleEntry>)
+        if (entry.status != 'CANCELLED')
+          AgendaItem(entry: entry, providerName: p.name, serviceTitle: titles[entry.serviceId] ?? ''),
+    ];
+  }));
+
+  return [for (final items in perProvider) ...items]..sort((a, b) => a.entry.startsAt.compareTo(b.entry.startsAt));
 });

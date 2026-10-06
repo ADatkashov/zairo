@@ -878,6 +878,10 @@
 
   "pendingInvitationsTitle": "Күтіп тұрған шақырулар",
 
-  "cancelInvitationTooltip": "Шақыруды болдырмау"
-
+  "cancelInvitationTooltip": "Шақыруды болдырмау",
+  "dashboardAgendaTitle": "Бүгін",
+  "dashboardAgendaEmpty": "Бүгін жазылулар жоқ.",
+  "bookingStatusPendingPayment": "Төлемді күтуде",
+  "bookingStatusNoShow": "Келмеді",
+  "bookingStatusPending": "Күтілуде"
 }

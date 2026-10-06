@@ -887,6 +887,10 @@
 
   "pendingInvitationsTitle": "Ожидают приглашения",
 
-  "cancelInvitationTooltip": "Отменить приглашение"
-
+  "cancelInvitationTooltip": "Отменить приглашение",
+  "dashboardAgendaTitle": "Сегодня",
+  "dashboardAgendaEmpty": "Сегодня записей нет.",
+  "bookingStatusPendingPayment": "Ждёт оплаты",
+  "bookingStatusNoShow": "Не пришёл",
+  "bookingStatusPending": "В ожидании"
 }
