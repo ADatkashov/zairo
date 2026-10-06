@@ -566,6 +566,10 @@ void main() {
   });
 
   testWidgets('marking a confirmed booking complete calls the API', (tester) async {
+    // Tall window: the sections below the header must be built to be tapped.
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
     final booking = AdminBooking(
       id: 'b1',
       userId: 'u1',
@@ -688,6 +692,10 @@ void main() {
   });
 
   testWidgets('a deactivated master is hidden by default and reactivating it brings it back', (tester) async {
+    // Tall window: the sections below the header must be built to be tapped.
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
     final fakeApi = _FakeSalonAdminApi();
     final fakeBeautyApi = _FakeBeautyAdminApi([
       const AdminMaster(id: 'm1', providerId: 'p1', displayName: 'Jamie Stylist', active: false),
@@ -811,6 +819,10 @@ void main() {
   });
 
   testWidgets('a deactivated mechanic is hidden by default and reactivating it brings it back', (tester) async {
+    // Tall window: the sections below the header must be built to be tapped.
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
     final fakeApi = _FakeSalonAdminApi();
     final fakeAutoApi = _FakeAutoAdminApi([
       const AdminMechanic(id: 'm1', providerId: 'p2', displayName: 'Yerlan Mechanic', active: false),
@@ -897,6 +909,10 @@ void main() {
   });
 
   testWidgets('a deactivated staff member is hidden by default and reactivating it brings it back', (tester) async {
+    // Tall window: the sections below the header must be built to be tapped.
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
     final fakeApi = _FakeSalonAdminApi();
     final fakeStaffApi = _FakeStaffAdminApi([
       const AdminStaff(id: 's1', providerId: 'p3', displayName: 'Dr. Aliya', active: false),
