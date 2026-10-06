@@ -2501,5 +2501,17 @@
   "bookingStatusNoShow": "No-show",
   "@bookingStatusNoShow": {"description": "bookingStatusNoShow"},
   "bookingStatusPending": "Pending",
-  "@bookingStatusPending": {"description": "bookingStatusPending"}
+  "@bookingStatusPending": {"description": "bookingStatusPending"},
+  "calendarTitle": "Calendar",
+  "@calendarTitle": {"description": "calendarTitle"},
+  "calendarThisWeek": "This week",
+  "@calendarThisWeek": {"description": "calendarThisWeek"},
+  "calendarDayEmpty": "No bookings",
+  "@calendarDayEmpty": {"description": "calendarDayEmpty"},
+  "calendarPrevWeek": "Previous week",
+  "@calendarPrevWeek": {"description": "calendarPrevWeek"},
+  "calendarNextWeek": "Next week",
+  "@calendarNextWeek": {"description": "calendarNextWeek"},
+  "calendarLoadFailed": "Couldn't load the calendar.",
+  "@calendarLoadFailed": {"description": "calendarLoadFailed"}
 }

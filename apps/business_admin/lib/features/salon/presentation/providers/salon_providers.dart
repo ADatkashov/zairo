@@ -140,19 +140,16 @@ final customerListProvider = FutureProvider.autoDispose
   return ref.watch(salonAdminApiProvider).fetchCustomerList(key.$1, retentionStatus: key.$2);
 });
 
-/// Today's bookings across every business [ownerUserId] manages, soonest
-/// first, cancelled ones left out. "Today" is the device's local calendar
-/// day, sent to the backend as a UTC window.
-final ownerTodayAgendaProvider = FutureProvider.autoDispose.family<List<AgendaItem>, String>((ref, ownerUserId) async {
+/// Bookings across every business [ownerUserId] manages whose slot starts in
+/// [from, to) (local wall-clock bounds, sent to the backend as UTC), soonest
+/// first, cancelled ones left out.
+Future<List<AgendaItem>> _loadAgenda(Ref ref, String ownerUserId, DateTime from, DateTime to) async {
   final api = ref.watch(salonAdminApiProvider);
   final providers = await ref.watch(myProvidersProvider(ownerUserId).future);
-  final now = DateTime.now();
-  final start = DateTime(now.year, now.month, now.day);
-  final end = DateTime(now.year, now.month, now.day + 1);
 
   final perProvider = await Future.wait(providers.map((p) async {
     final results = await Future.wait([
-      api.fetchSchedule(p.id, from: start, to: end),
+      api.fetchSchedule(p.id, from: from, to: to),
       api.listServices(p.id, includeInactive: true),
     ]);
     final titles = {for (final s in results[1] as List<AdminService>) s.id: s.title};
@@ -164,4 +161,17 @@ final ownerTodayAgendaProvider = FutureProvider.autoDispose.family<List<AgendaIt
   }));
 
   return [for (final items in perProvider) ...items]..sort((a, b) => a.entry.startsAt.compareTo(b.entry.startsAt));
+}
+
+/// Today's bookings: the device's local calendar day.
+final ownerTodayAgendaProvider = FutureProvider.autoDispose.family<List<AgendaItem>, String>((ref, ownerUserId) {
+  final now = DateTime.now();
+  return _loadAgenda(ref, ownerUserId, DateTime(now.year, now.month, now.day), DateTime(now.year, now.month, now.day + 1));
+});
+
+/// The 7 local days starting at [weekStart] (a local midnight).
+final ownerWeekAgendaProvider =
+    FutureProvider.autoDispose.family<List<AgendaItem>, (String ownerUserId, DateTime weekStart)>((ref, key) {
+  final start = key.$2;
+  return _loadAgenda(ref, key.$1, start, DateTime(start.year, start.month, start.day + 7));
 });
