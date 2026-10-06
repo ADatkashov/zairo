@@ -68,6 +68,9 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
   /// "Any master": the customer picks a time, the system assigns a free person.
   bool _anyMaster = false;
 
+  /// The selected service's price for the selected person (see build).
+  double? _effectivePrice;
+
   /// Whether the current selection is booked as "any master" — set during build, read by [_book].
   bool _anyModeNow = false;
 
@@ -127,6 +130,17 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
         _selectedMechanicId ??
         _selectedCleanerId ??
         _selectedStaffId;
+    // A person may charge their own price (the owner's choice); it is shown here, before the customer confirms,
+    // exactly as the server will charge it. "Any master" is always the base price.
+    final serviceForPrice = _selectedService();
+    final workerPrices = serviceForPrice == null
+        ? const <String, double>{}
+        : ref.watch(serviceWorkerPricesProvider((widget.provider.id, serviceForPrice.id))).value ??
+              const <String, double>{};
+    _effectivePrice = serviceForPrice == null
+        ? null
+        : (selectedWorkerId == null || anyMode ? serviceForPrice.price : workerPrices[selectedWorkerId]) ??
+              serviceForPrice.price;
 
     // Back is blocked while the booking request is in flight so a swipe
     // can't leave the user guessing whether it went through.
@@ -410,6 +424,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
             ),
             _BookingCta(
               selectedService: _selectedService(),
+              price: _effectivePrice,
               plan: _paymentPlan(),
               isLoading: _isBooking,
               onPressed:
@@ -451,7 +466,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     final service = _selectedService();
     final policy = ref.watch(depositPolicyProvider(widget.provider.id)).value;
     if (service == null || policy == null) return null;
-    return PaymentPlan.fromPolicy(policy, service.price);
+    return PaymentPlan.fromPolicy(policy, _effectivePrice ?? service.price);
   }
 
   ServiceSummary? _selectedService() {
@@ -665,7 +680,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               vehicleId: _selectedVehicleId!,
               serviceId: service.id,
               availabilitySlotId: _selectedSlotId!,
-              totalPrice: service.price,
+              totalPrice: _effectivePrice ?? service.price,
             );
       } else if (_selectedMasterId != null) {
         booking = await ref
@@ -675,7 +690,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               masterId: _selectedMasterId!,
               serviceId: service.id,
               availabilitySlotId: _selectedSlotId!,
-              totalPrice: service.price,
+              totalPrice: _effectivePrice ?? service.price,
             );
       } else if (_selectedCleanerId != null) {
         booking = await ref
@@ -685,7 +700,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               cleanerId: _selectedCleanerId!,
               serviceId: service.id,
               availabilitySlotId: _selectedSlotId!,
-              totalPrice: service.price,
+              totalPrice: _effectivePrice ?? service.price,
             );
       } else if (_selectedStaffId != null) {
         booking = await ref
@@ -695,7 +710,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               staffId: _selectedStaffId!,
               serviceId: service.id,
               availabilitySlotId: _selectedSlotId!,
-              totalPrice: service.price,
+              totalPrice: _effectivePrice ?? service.price,
             );
       } else {
         booking = await ref
@@ -704,7 +719,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               userId: currentUser.id,
               serviceId: service.id,
               availabilitySlotId: _selectedSlotId!,
-              totalPrice: service.price,
+              totalPrice: _effectivePrice ?? service.price,
             );
       }
 
@@ -823,12 +838,14 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
 class _BookingCta extends StatelessWidget {
   const _BookingCta({
     required this.selectedService,
+    required this.price,
     required this.plan,
     required this.isLoading,
     required this.onPressed,
   });
 
   final ServiceSummary? selectedService;
+  final double? price;
   final PaymentPlan? plan;
   final bool isLoading;
   final VoidCallback? onPressed;
@@ -842,7 +859,7 @@ class _BookingCta extends StatelessWidget {
     if (p == null) {
       return [
         FactoryPriceText(
-          amount: service.price,
+          amount: price ?? service.price,
           currencySymbol: service.currency,
           fontSize: 16,
           color: colors.text,

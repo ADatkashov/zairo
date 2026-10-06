@@ -101,6 +101,28 @@ class _ChoiceSwitch extends ConsumerWidget {
                   ref.invalidate(workforceSettingsProvider(providerId));
                 },
         ),
+        SwitchListTile(
+          secondary: const FactoryIconBadge(icon: Icons.sell_outlined),
+          title: Text(l10n.teamSchedulePricingTitle),
+          subtitle: Text(l10n.teamSchedulePricingSubtitle),
+          value: settings?.workerPricingEnabled ?? false,
+          onChanged: settings == null
+              ? null
+              : (value) async {
+                  try {
+                    await ref.read(staffOwnerApiProvider).updateSettings(
+                          providerId,
+                          allowWorkerChoice: settings.allowWorkerChoice,
+                          workerPricingEnabled: value,
+                        );
+                  } catch (_) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.teamScheduleSaveFailed)));
+                    }
+                  }
+                  ref.invalidate(workforceSettingsProvider(providerId));
+                },
+        ),
       ],
     );
   }

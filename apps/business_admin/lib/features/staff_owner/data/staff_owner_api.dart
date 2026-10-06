@@ -35,6 +35,20 @@ class StaffOwnerApi {
     return _dioClient.post('/providers/$providerId/appointments/$bookingId/ask-customer');
   }
 
+  // --- per-worker prices ---
+
+  /// serviceId -> this worker's own price, for services where it differs from the base price.
+  Future<Map<String, double>> workerPrices(String providerId, String workerId) async {
+    final response = await _dioClient.get('/providers/$providerId/workers/$workerId/prices');
+    final data = response.data as List<dynamic>;
+    return {for (final e in data) (e as Map<String, dynamic>)['serviceId'] as String: (e['price'] as num).toDouble()};
+  }
+
+  /// A null [price] goes back to the service's own price.
+  Future<void> setWorkerPrice(String providerId, String workerId, String serviceId, double? price) {
+    return _dioClient.put('/providers/$providerId/workers/$workerId/prices', data: {'serviceId': serviceId, 'price': price});
+  }
+
   // --- team schedule ---
 
   Future<List<WorkerSummary>> workers(String providerId) async {

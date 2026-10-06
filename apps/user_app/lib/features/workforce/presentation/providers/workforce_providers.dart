@@ -36,3 +36,9 @@ final changeRequestApiProvider = Provider<ChangeRequestApi>((ref) {
 final changeRequestsProvider = FutureProvider.autoDispose<List<ChangeRequest>>((ref) {
   return ref.watch(changeRequestApiProvider).list();
 });
+
+/// Per-person prices for one service (empty unless the business uses them).
+final serviceWorkerPricesProvider = FutureProvider.autoDispose
+    .family<Map<String, double>, (String providerId, String serviceId)>((ref, key) {
+  return ref.watch(workforceApiProvider).serviceWorkerPrices(key.$1, key.$2);
+});

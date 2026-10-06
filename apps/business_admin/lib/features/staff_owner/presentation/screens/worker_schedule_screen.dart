@@ -6,6 +6,7 @@ import '../../../../core/formatting/month_day_time.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../data/models/worker_schedule.dart';
 import '../providers/staff_owner_providers.dart';
+import '../widgets/worker_prices_section.dart';
 
 /// One person's weekly hours (set once; their bookable times are generated automatically) and their days off.
 /// Only the owner can change these — the person themselves can only close their own availability.
@@ -327,6 +328,7 @@ class _WorkerScheduleScreenState extends ConsumerState<WorkerScheduleScreen> {
                 );
               },
             ),
+            WorkerPricesSection(providerId: widget.providerId, workerId: widget.worker.id),
           ],
         ),
       ),
