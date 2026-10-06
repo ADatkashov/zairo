@@ -1,5 +1,6 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -8,6 +9,8 @@ import '../core/widgets/common.dart';
 import '../features/auth/presentation/session_controller.dart';
 import '../features/dashboard/data/dashboard_api.dart';
 import '../l10n/app_localizations.dart';
+import '../features/businesses/presentation/businesses_screen.dart';
+import 'command_palette.dart';
 import 'nav.dart';
 import 'routes.dart';
 
@@ -53,11 +56,34 @@ class ConsoleShell extends ConsumerWidget {
     final permissions = ref.watch(permissionsProvider);
     final badges = _badges(ref);
 
-    return switch (FactoryBreakpoints.of(context)) {
+    final frame = switch (FactoryBreakpoints.of(context)) {
       FactoryScreenSize.mobile => _phone(context, l10n, badges),
       FactoryScreenSize.tablet => _sidebar(context, ref, l10n, permissions.canManageStaff, badges, compact: true),
       FactoryScreenSize.desktop => _sidebar(context, ref, l10n, permissions.canManageStaff, badges, compact: false),
     };
+
+    // Ctrl/Cmd+K opens quick search from anywhere in the console. The Focus
+    // gives the shortcut a place to live before anything else is focused.
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyK, control: true): () => _openPalette(context),
+        const SingleActivator(LogicalKeyboardKey.keyK, meta: true): () => _openPalette(context),
+      },
+      child: Focus(autofocus: true, child: frame),
+    );
+  }
+
+  Future<void> _openPalette(BuildContext context) async {
+    final router = GoRouter.of(context);
+    final choice = await showCommandPalette(context);
+    if (choice == null || !context.mounted) return;
+    switch (choice) {
+      case PagePick(:final path):
+        router.go(path);
+      case BusinessPick(:final id):
+        router.go(ConsoleRoutes.businesses);
+        showBusinessDetails(context, id);
+    }
   }
 
   Widget _sidebar(
@@ -90,6 +116,7 @@ class ConsoleShell extends ConsumerWidget {
             selected: selected,
             badges: badges,
             compact: compact,
+            onSearch: () => _openPalette(context),
             onSelect: (index) => _goBranch(items[index].branch),
           ),
           VerticalDivider(width: 1, color: context.factoryColors.border),
@@ -146,6 +173,7 @@ class ConsoleSidebar extends ConsumerWidget {
     required this.onSelect,
     this.badges = const {},
     this.compact = false,
+    this.onSearch,
   });
 
   final List<NavItem> items;
@@ -153,6 +181,9 @@ class ConsoleSidebar extends ConsumerWidget {
   final ValueChanged<int> onSelect;
   final Map<int, int> badges;
   final bool compact;
+
+  /// Opens quick search; null hides the entry.
+  final VoidCallback? onSearch;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -199,6 +230,42 @@ class ConsoleSidebar extends ConsumerWidget {
               ],
             ),
           ),
+          if (onSearch != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
+              child: compact
+                  ? IconButton(tooltip: l10n.cmdOpenTooltip, icon: const Icon(Icons.search_rounded), onPressed: onSearch)
+                  : Material(
+                      color: colors.surfaceAlt,
+                      borderRadius: FactoryRadius.mdRadius,
+                      child: InkWell(
+                        borderRadius: FactoryRadius.mdRadius,
+                        onTap: onSearch,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(minHeight: 44),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space3),
+                            child: Row(
+                              children: [
+                                Icon(Icons.search_rounded, size: 18, color: colors.textTertiary),
+                                const SizedBox(width: FactorySpacing.space2),
+                                Expanded(
+                                  child: Text(
+                                    l10n.cmdOpenTooltip,
+                                    style: textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
+                                  ),
+                                ),
+                                Text(
+                                  'Ctrl K',
+                                  style: FactoryTypography.mono(size: 11, weight: FontWeight.w500, color: colors.textTertiary),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+            ),
           Expanded(
             child: ListView(
               children: [

@@ -297,5 +297,14 @@
   "settingsSessionNote": "В целях безопасности вход действует 30 минут, затем нужно войти снова.",
   "settingsChangePhoto": "Сменить фото",
   "settingsRemovePhoto": "Убрать фото",
-  "settingsPhotoUpdated": "Фото обновлено"
+  "settingsPhotoUpdated": "Фото обновлено",
+  "businessesColName": "Бизнес",
+  "businessesColType": "Тип",
+  "businessesColRegistered": "Регистрация",
+  "businessesColStatus": "Статус",
+  "cmdPlaceholder": "Перейти к разделу или бизнесу…",
+  "cmdNoResults": "Ничего не найдено",
+  "cmdSectionPages": "Разделы",
+  "cmdSectionBusinesses": "Бизнесы",
+  "cmdOpenTooltip": "Быстрый поиск"
 }
