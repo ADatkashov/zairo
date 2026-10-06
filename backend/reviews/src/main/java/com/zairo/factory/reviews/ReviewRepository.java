@@ -17,6 +17,8 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
 
     boolean existsByBookingId(UUID bookingId);
 
+    List<Review> findByBookingIdIn(Collection<UUID> bookingIds);
+
     /**
      * One aggregate query for every requested provider at once, not one
      * query per provider — that per-provider-loop shape is exactly the

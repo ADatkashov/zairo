@@ -226,17 +226,26 @@ public class BookingService {
      */
     @Transactional
     public Booking completeBooking(UUID bookingId, UUID callerId) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
-                        + bookingId));
-
-        AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
-                        + booking.getAvailabilitySlotId()));
+        Booking booking = loadBooking(bookingId);
+        AvailabilitySlot slot = loadSlot(booking);
         providerOwnership.requireOwner(slot.getProviderId(), callerId);
+        return doComplete(booking, slot);
+    }
 
+    /**
+     * Same as {@link #completeBooking} but WITHOUT the provider-owner check — for a caller that has already
+     * authorised the actor some other way (the staff module checks the booking really belongs to the calling
+     * staff member). Never expose this directly from a controller.
+     */
+    @Transactional
+    public Booking completeBookingAuthorized(UUID bookingId) {
+        Booking booking = loadBooking(bookingId);
+        return doComplete(booking, loadSlot(booking));
+    }
+
+    private Booking doComplete(Booking booking, AvailabilitySlot slot) {
         if (booking.getStatus() != BookingStatus.CONFIRMED) {
-            throw new InvalidBookingStateException("Booking is not in a completable state: " + bookingId
+            throw new InvalidBookingStateException("Booking is not in a completable state: " + booking.getId()
                     + " (status=" + booking.getStatus() + ")");
         }
 
@@ -245,6 +254,18 @@ public class BookingService {
         eventPublisher.publishEvent(new BookingCompletedEvent(completed.getId(), completed.getUserId(),
                 slot.getProviderId(), completed.getServiceId()));
         return completed;
+    }
+
+    private Booking loadBooking(UUID bookingId) {
+        return bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
+                        + bookingId));
+    }
+
+    private AvailabilitySlot loadSlot(Booking booking) {
+        return availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
+                        + booking.getAvailabilitySlotId()));
     }
 
     /**
@@ -294,6 +315,48 @@ public class BookingService {
     }
 
     /**
+     * Provider-side cancellation (a staff member declining or cancelling an appointment). Same state guard,
+     * slot release and {@link BookingCancelledEvent} (so payments refund and the customer is told) as the
+     * customer flow, but without the customer-ownership check — the caller must already have authorised the
+     * actor (see the staff module). Never expose this directly from a controller.
+     */
+    @Transactional
+    public Booking cancelBookingAuthorized(UUID bookingId, String reason) {
+        Booking booking = loadBooking(bookingId);
+        if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            throw new InvalidBookingStateException("Booking is not in a cancellable state: " + bookingId
+                    + " (status=" + booking.getStatus() + ")");
+        }
+        AvailabilitySlot slot = loadSlot(booking);
+        slot.markOpen();
+        availabilitySlotRepository.save(slot);
+
+        booking.markCancelled(reason);
+        Booking cancelled = bookingRepository.save(booking);
+        eventPublisher.publishEvent(new BookingCancelledEvent(cancelled.getId(), cancelled.getUserId(),
+                slot.getProviderId()));
+        return cancelled;
+    }
+
+    /** {@link #markNoShow} without the provider-owner check — see {@link #completeBookingAuthorized}. */
+    @Transactional
+    public Booking markNoShowAuthorized(UUID bookingId) {
+        Booking booking = loadBooking(bookingId);
+        return doNoShow(booking, loadSlot(booking));
+    }
+
+    private Booking doNoShow(Booking booking, AvailabilitySlot slot) {
+        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new InvalidBookingStateException("Booking is not in a no-show-able state: " + booking.getId()
+                    + " (status=" + booking.getStatus() + ")");
+        }
+        booking.markNoShow();
+        Booking noShow = bookingRepository.save(booking);
+        eventPublisher.publishEvent(new BookingNoShowEvent(noShow.getId(), noShow.getUserId(), slot.getProviderId()));
+        return noShow;
+    }
+
+    /**
      * Provider-owner-initiated — the customer didn't show up for a
      * CONFIRMED slot. Same status guard as {@link #completeBooking}
      * (mutually exclusive terminal outcomes for a kept vs. missed
@@ -304,24 +367,14 @@ public class BookingService {
      */
     @Transactional
     public Booking markNoShow(UUID bookingId, UUID callerId) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
-                        + bookingId));
-
+        Booking booking = loadBooking(bookingId);
         if (booking.getStatus() != BookingStatus.CONFIRMED) {
             throw new InvalidBookingStateException("Booking is not in a no-show-able state: " + bookingId
                     + " (status=" + booking.getStatus() + ")");
         }
-
-        AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
-                        + booking.getAvailabilitySlotId()));
+        AvailabilitySlot slot = loadSlot(booking);
         providerOwnership.requireOwner(slot.getProviderId(), callerId);
-
-        booking.markNoShow();
-        Booking noShow = bookingRepository.save(booking);
-        eventPublisher.publishEvent(new BookingNoShowEvent(noShow.getId(), noShow.getUserId(), slot.getProviderId()));
-        return noShow;
+        return doNoShow(booking, slot);
     }
 
     /**
