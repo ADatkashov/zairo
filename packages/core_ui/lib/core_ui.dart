@@ -39,6 +39,7 @@ export 'src/widgets/factory_icon_button.dart';
 export 'src/widgets/factory_loading_state.dart';
 export 'src/widgets/factory_logomark.dart';
 export 'src/widgets/factory_auth_brand.dart';
+export 'src/widgets/factory_settings_group.dart';
 export 'src/widgets/factory_price_text.dart';
 export 'src/widgets/factory_rating_label.dart';
 export 'src/widgets/factory_search_field.dart';
