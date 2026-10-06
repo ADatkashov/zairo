@@ -78,4 +78,18 @@ class WorkforceApi {
       rethrow;
     }
   }
+
+  /// workerId -> that person's own price for the service, only where it differs from the base price. Empty when the
+  /// business doesn't use per-person prices or the prices can't be read (the base price then applies).
+  Future<Map<String, double>> serviceWorkerPrices(String providerId, String serviceId) async {
+    try {
+      final response = await _dioClient.get('/providers/$providerId/services/$serviceId/worker-prices');
+      return {
+        for (final e in response.data as List<dynamic>)
+          (e as Map<String, dynamic>)['workerId'] as String: (e['price'] as num).toDouble(),
+      };
+    } on DioException {
+      return const {};
+    }
+  }
 }

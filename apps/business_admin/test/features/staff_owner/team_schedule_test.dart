@@ -134,7 +134,7 @@ void main() {
     expect(find.text('Shared times'), findsOneWidget);
     expect(find.textContaining('Not in until'), findsOneWidget);
 
-    await tester.tap(find.byType(Switch));
+    await tester.tap(find.byType(Switch).first);
     await tester.pumpAndSettle();
     expect(api.choiceUpdates, [false]);
   });

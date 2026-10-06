@@ -32,3 +32,8 @@ final workerTimeOffProvider =
 final workforceSettingsProvider = FutureProvider.autoDispose.family<WorkforceSettings, String>((ref, providerId) {
   return ref.watch(staffOwnerApiProvider).settings(providerId);
 });
+
+final workerPricesProvider =
+    FutureProvider.autoDispose.family<Map<String, double>, (String providerId, String workerId)>((ref, key) {
+  return ref.watch(staffOwnerApiProvider).workerPrices(key.$1, key.$2);
+});

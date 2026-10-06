@@ -223,8 +223,17 @@ class _FakeStaffApi extends StaffApi {
 /// The per-person availability endpoints. By default a person's times are the business's slots and choosing a
 /// person is allowed, so the existing scenarios only differ by *when* the times appear (after picking a person).
 class _FakeWorkforceApi extends WorkforceApi {
-  _FakeWorkforceApi({this.slots = const [], this.anySlotList = const [], this.allowChoice = true})
-      : super(DioClient(Dio()));
+  _FakeWorkforceApi({
+    this.slots = const [],
+    this.anySlotList = const [],
+    this.allowChoice = true,
+    this.workerPrices = const {},
+  }) : super(DioClient(Dio()));
+
+  final Map<String, double> workerPrices;
+
+  @override
+  Future<Map<String, double>> serviceWorkerPrices(String providerId, String serviceId) async => workerPrices;
 
   final List<AvailabilitySlot> slots;
   final List<AnySlot> anySlotList;
@@ -760,6 +769,56 @@ void main() {
     await tester.pumpAndSettle();
     // Times come straight from the merged list.
     expect(find.text('10:00'), findsOneWidget);
+  });
+
+  testWidgets("a chosen master's own price is shown before booking; \"Any master\" keeps the base price",
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 3000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    final slot = AvailabilitySlot(
+      id: 'slot-1',
+      providerId: 'provider-3',
+      startsAt: DateTime(2026, 1, 1, 10, 0),
+      endsAt: DateTime(2026, 1, 1, 10, 30),
+      status: 'OPEN',
+    );
+    const provider = ProviderSearchResult(
+      id: 'provider-3',
+      name: 'Master Salon',
+      vertical: 'beauty',
+      status: 'ACTIVE',
+      hasOpenAvailability: true,
+      minPrice: 30,
+      services: [
+        ServiceSummary(id: 'service-1', title: 'Haircut', durationMinutes: 30, price: 30, currency: 'USD'),
+      ],
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(_FakeBookingApi([slot])),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          beautyApiProvider.overrideWithValue(_FakeBeautyApi(const [
+            Master(id: 'master-1', providerId: 'provider-3', displayName: 'Jamie Stylist', active: true),
+          ])),
+          workforceApiProvider.overrideWithValue(
+            _FakeWorkforceApi(slots: [slot], workerPrices: const {'master-1': 45}),
+          ),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: _routerApp(provider),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tapVisible(tester, find.text('Haircut'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('45'), findsNothing);
+
+    await tapVisible(tester, find.text('Jamie Stylist'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('45'), findsWidgets);
   });
 
   testWidgets('shows a message when there are no open slots', (tester) async {
