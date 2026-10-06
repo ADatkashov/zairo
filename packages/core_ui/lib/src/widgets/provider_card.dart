@@ -97,7 +97,7 @@ class FactoryProviderCard extends StatelessWidget {
 
     final imageArea = SizedBox(
       width: layout == FactoryProviderCardLayout.horizontal ? 84 : null,
-      height: layout == FactoryProviderCardLayout.vertical ? 96 : null,
+      height: layout == FactoryProviderCardLayout.vertical ? 128 : null,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -135,8 +135,8 @@ class FactoryProviderCard extends StatelessWidget {
             ),
           if (onFavoriteToggle != null)
             Positioned(
-              top: 8,
-              right: 8,
+              top: 4,
+              right: 4,
               child: _FavoriteButton(
                 isFavorite: isFavorite,
                 onToggle: onFavoriteToggle!,
@@ -276,20 +276,26 @@ class _FavoriteButton extends StatelessWidget {
       // inside the card's own tap target.
       container: true,
       label: isFavorite ? removeLabel : addLabel,
+      // Padding inside the detector widens the tap area to 44x44 without
+      // growing the visible 36px circle.
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () => onToggle(!isFavorite),
-        child: Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.92),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Symbols.favorite_rounded,
-            fill: isFavorite ? 1 : 0,
-            size: 15,
-            color: isFavorite ? colors.error : colors.textSecondary,
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.92),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Symbols.favorite_rounded,
+              fill: isFavorite ? 1 : 0,
+              size: 18,
+              color: isFavorite ? colors.error : colors.textSecondary,
+            ),
           ),
         ),
       ),
