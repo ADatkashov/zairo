@@ -178,7 +178,7 @@
 
   "myBookingsTitle": "Мои бронирования",
   "bookingsEmptyTitle": "Пока нет бронирований",
-  "bookingsEmptyMessage": "Как только вы забронируете услугу, она появится здесь.",
+  "bookingsEmptyMessage": "Выберите услугу и время — здесь будут ваши записи и напоминания.",
   "errorBookingsLoadFailed": "Не удалось загрузить ваши бронирования.",
   "bookedOnLabel": "Забронировано {date}",
   "bookingStatusConfirmed": "Подтверждено",
@@ -191,12 +191,12 @@
 
   "myFavoritesTitle": "Избранное",
   "favoritesEmptyTitle": "Пока нет избранного",
-  "favoritesEmptyMessage": "Провайдеры, которых вы добавите в избранное, появятся здесь.",
+  "favoritesEmptyMessage": "Нажмите на сердце у салона или мастерской — они сохранятся здесь для быстрой записи.",
   "errorFavoritesLoadFailed": "Не удалось загрузить избранное.",
 
   "notificationsTitle": "Уведомления",
   "notificationsEmptyTitle": "Пока нет уведомлений",
-  "notificationsEmptyMessage": "Здесь появятся обновления по бронированиям и напоминания.",
+  "notificationsEmptyMessage": "Мы сообщим, когда запись подтвердят, изменят или она будет скоро.",
   "errorNotificationsLoadFailed": "Не удалось загрузить уведомления.",
   "notificationsMarkAllReadButton": "Прочитать всё",
   "notificationBellTooltip": "Уведомления",
@@ -397,7 +397,7 @@
   "messagesTitle": "Сообщения",
   "conversationsLoggedOutPrompt": "Войдите, чтобы увидеть свои сообщения",
   "conversationsEmptyTitle": "Пока нет переписок",
-  "conversationsEmptyMessage": "Напишите бизнесу, чтобы начать переписку.",
+  "conversationsEmptyMessage": "Откройте страницу бизнеса и нажмите на значок чата, чтобы задать вопрос до записи.",
   "errorConversationsLoadFailed": "Не удалось загрузить ваши переписки.",
   "messagingUnknownBusinessName": "Бизнес",
   "messageProviderTooltip": "Сообщение",
@@ -508,9 +508,9 @@
   "searchClearButton": "Очистить поиск",
   "searchResetFilters": "Сбросить поиск и фильтры",
   "bookingsFindServiceButton": "Найти услугу",
-  "bookingsTabEmptyUpcoming": "Предстоящих записей нет. Выберите услугу и удобное время.",
-  "bookingsTabEmptyCompleted": "Здесь появятся завершённые визиты.",
-  "bookingsTabEmptyCancelled": "Отменённых записей нет.",
+  "bookingsTabEmptyUpcoming": "Выберите услугу и удобное время.",
+  "bookingsTabEmptyCompleted": "Прошедшие визиты появятся здесь, и к каждому можно оставить отзыв.",
+  "bookingsTabEmptyCancelled": "Если вы отмените запись, она появится здесь.",
   "profileSectionActivity": "Моя активность",
   "profileSectionHelp": "Помощь",
   "catalogComparePricesTooltip": "Сравнить цены на услуги этой сферы",
@@ -525,5 +525,10 @@
   "discardChangesKeepEditing": "Продолжить",
   "discardChangesDiscard": "Отменить",
   "authStepLabel": "Шаг {step} из {total}",
-  "authChangeNumber": "Изменить номер"
+  "authChangeNumber": "Изменить номер",
+  "favoritesBrowseButton": "Смотреть места",
+  "conversationsFindBusinessButton": "Найти бизнес",
+  "bookingsTabEmptyTitleUpcoming": "Ничего не предстоит",
+  "bookingsTabEmptyTitleCompleted": "Визитов пока нет",
+  "bookingsTabEmptyTitleCancelled": "Отмен нет"
 }

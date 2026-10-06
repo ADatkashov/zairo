@@ -37,11 +37,11 @@ class FactoryEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
-    final tile = compact ? 64.0 : 96.0;
+    final tile = compact ? 64.0 : 80.0;
 
     final content = Padding(
       padding: EdgeInsets.symmetric(
-        vertical: compact ? FactorySpacing.space6 : FactorySpacing.space10,
+        vertical: FactorySpacing.space6,
         horizontal: FactorySpacing.space6,
       ),
       child: Column(

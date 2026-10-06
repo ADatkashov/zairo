@@ -157,11 +157,12 @@ class _BookingsListState extends ConsumerState<_BookingsList> {
                             child: FactoryEmptyState(
                               icon: Symbols.calendar_month_rounded,
                               title: switch (_tab) {
-                                _BookingsTab.upcoming => l10n.bookingsTabUpcoming,
+                                _BookingsTab.upcoming =>
+                                  l10n.bookingsTabEmptyTitleUpcoming,
                                 _BookingsTab.completed =>
-                                  l10n.bookingsTabCompleted,
+                                  l10n.bookingsTabEmptyTitleCompleted,
                                 _BookingsTab.cancelled =>
-                                  l10n.bookingsTabCancelled,
+                                  l10n.bookingsTabEmptyTitleCancelled,
                               },
                               message: switch (_tab) {
                                 _BookingsTab.upcoming =>

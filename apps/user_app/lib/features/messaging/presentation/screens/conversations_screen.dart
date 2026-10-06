@@ -76,6 +76,8 @@ class _ConversationsList extends ConsumerWidget {
                       icon: Symbols.forum_rounded,
                       title: l10n.conversationsEmptyTitle,
                       message: l10n.conversationsEmptyMessage,
+                      actionLabel: l10n.conversationsFindBusinessButton,
+                      onAction: () => context.go(AppRoutes.search()),
                     ),
                   ),
                 ),
