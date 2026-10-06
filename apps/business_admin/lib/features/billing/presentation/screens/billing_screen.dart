@@ -67,39 +67,32 @@ class _BillingBodyState extends ConsumerState<_BillingBody> {
     return ListView(
       padding: const EdgeInsets.all(FactorySpacing.space4),
       children: [
-        FactoryCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(_planLabel(l10n, subscription.plan), style: textTheme.titleMedium),
-                  const SizedBox(width: FactorySpacing.space2),
-                  FactoryBadge(
-                    label: _statusLabel(l10n, subscription.status),
-                    variant: _statusVariant(subscription.status),
-                  ),
-                ],
-              ),
-              if (!subscription.isPro) ...[
-                const SizedBox(height: FactorySpacing.space2),
-                Row(
+        _PlanHero(
+          planLabel: _planLabel(l10n, subscription.plan),
+          badge: FactoryBadge(
+            label: _statusLabel(l10n, subscription.status),
+            variant: _statusVariant(subscription.status),
+          ),
+          priceRow: subscription.isPro
+              ? null
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
                   children: [
-                    Text('${l10n.billingProPriceLabel} ', style: textTheme.bodySmall),
-                    FactoryPriceText(amount: 29),
-                    Text(l10n.billingPerMonthSuffix, style: textTheme.bodySmall),
+                    Text(
+                      '${l10n.billingProPriceLabel} ',
+                      style: textTheme.bodySmall?.copyWith(color: colors.onPrimary.withValues(alpha: 0.8)),
+                    ),
+                    FactoryPriceText(amount: 29, color: colors.onPrimary),
+                    Text(
+                      l10n.billingPerMonthSuffix,
+                      style: textTheme.bodySmall?.copyWith(color: colors.onPrimary.withValues(alpha: 0.8)),
+                    ),
                   ],
                 ),
-              ],
-              if (subscription.cancelAtPeriodEnd) ...[
-                const SizedBox(height: FactorySpacing.space3),
-                Text(
-                  l10n.billingDowngradeScheduledNotice(_formatDate(subscription.currentPeriodEnd)),
-                  style: textTheme.bodySmall?.copyWith(color: colors.warning),
-                ),
-              ],
-            ],
-          ),
+          notice: subscription.cancelAtPeriodEnd
+              ? l10n.billingDowngradeScheduledNotice(_formatDate(subscription.currentPeriodEnd))
+              : null,
         ),
         if (subscription.status == 'PAST_DUE' && subscription.gracePeriodEndsAt != null) ...[
           const SizedBox(height: FactorySpacing.space3),
@@ -122,6 +115,10 @@ class _BillingBodyState extends ConsumerState<_BillingBody> {
                     ? l10n.billingUsageXOfY(0, subscription.limits.maxProviders)
                     : l10n.billingUsageXOfY(providerCount, subscription.limits.maxProviders),
               ),
+              if (providerCount != null && subscription.limits.maxProviders > 0) ...[
+                const SizedBox(height: FactorySpacing.space2),
+                _UsageBar(used: providerCount, limit: subscription.limits.maxProviders),
+              ],
               const SizedBox(height: FactorySpacing.space2),
               _LimitRow(
                 label: l10n.billingLimitStaffLabel,
@@ -367,6 +364,88 @@ class _InvoiceRow extends StatelessWidget {
           variant: _invoiceStatusVariant(charge.status),
         ),
       ],
+    );
+  }
+}
+
+/// Gradient plan card in the same treatment as the dashboard hero: the plan
+/// is the one big thing on this screen, everything else is secondary.
+class _PlanHero extends StatelessWidget {
+  const _PlanHero({required this.planLabel, required this.badge, this.priceRow, this.notice});
+
+  final String planLabel;
+  final Widget badge;
+  final Widget? priceRow;
+  final String? notice;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    final radius = context.factoryProfileOrNull?.cardBorderRadius ?? FactoryRadius.xlRadius;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(FactorySpacing.space5),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [colors.primaryStrong, colors.primary],
+        ),
+        borderRadius: radius,
+        boxShadow: context.factoryElevation(FactoryElevationLevel.lg),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Flexible(
+                child: Text(planLabel, style: textTheme.headlineSmall?.copyWith(color: colors.onPrimary)),
+              ),
+              const SizedBox(width: FactorySpacing.space3),
+              badge,
+            ],
+          ),
+          if (priceRow != null) ...[
+            const SizedBox(height: FactorySpacing.space2),
+            priceRow!,
+          ],
+          if (notice != null) ...[
+            const SizedBox(height: FactorySpacing.space3),
+            Text(notice!, style: textTheme.bodySmall?.copyWith(color: colors.onPrimary)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Thin animated meter under a "used of limit" row; turns to the warning
+/// color once the limit is reached, so a full plan reads without the number.
+class _UsageBar extends StatelessWidget {
+  const _UsageBar({required this.used, required this.limit});
+
+  final int used;
+  final int limit;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final fraction = (used / limit).clamp(0.0, 1.0);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(FactoryRadius.sm),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(end: fraction),
+        duration: FactoryMotion.resolve(context, FactoryMotion.slow),
+        curve: FactoryMotion.standard,
+        builder: (context, v, _) => LinearProgressIndicator(
+          value: v,
+          minHeight: 6,
+          backgroundColor: colors.primaryTint,
+          color: fraction >= 1 ? colors.warning : colors.primary,
+        ),
+      ),
     );
   }
 }
