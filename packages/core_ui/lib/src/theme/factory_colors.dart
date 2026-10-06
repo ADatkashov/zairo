@@ -25,6 +25,7 @@ class FactoryColors extends ThemeExtension<FactoryColors> {
     required this.onPrimary,
     required this.accent,
     required this.accentTint,
+    required this.accentInk,
     required this.success,
     required this.warning,
     required this.error,
@@ -51,6 +52,10 @@ class FactoryColors extends ThemeExtension<FactoryColors> {
   final Color onPrimary;
   final Color accent;
   final Color accentTint;
+
+  /// Accent for *text* on light surfaces. [accent] gold is 2.4:1 on white and
+  /// fails AA, so gold type (verified marks, loyalty labels) uses this instead.
+  final Color accentInk;
   final Color success;
   final Color warning;
   final Color error;
@@ -83,13 +88,15 @@ class FactoryColors extends ThemeExtension<FactoryColors> {
     onPrimary: Color(0xFFFFFFFF),
     accent: Color(0xFFC99A3E),
     accentTint: Color(0xFFE6CD97),
-    success: Color(0xFF2E8B6F),
+    accentInk: Color(0xFF7A5612),
+    // Darkened from #2E8B6F (4.2:1 on white) to clear AA 4.5:1.
+    success: Color(0xFF1F7A4D),
     // Darkened from the design system artifact's #B9862E (2.98:1 on `bg` —
     // fails WCAG AA even at the 3:1 large-text/UI-component floor). Same
     // hue/saturation, lower lightness: 4.64:1.
     warning: Color(0xFF906824),
-    error: Color(0xFFB5453B),
-    info: Color(0xFF3E6E93),
+    error: Color(0xFFB3372E),
+    info: Color(0xFF2F5FA8),
     coral: Color(0xFFFF6A54),
     coralTint: Color(0xFFFFE6E0),
     lavender: Color(0xFF7B68F0),
@@ -113,6 +120,7 @@ class FactoryColors extends ThemeExtension<FactoryColors> {
     onPrimary: Color(0xFF08211C),
     accent: Color(0xFFE0B563),
     accentTint: Color(0xFF3A2E17),
+    accentInk: Color(0xFFE0B563),
     success: Color(0xFF4FBE96),
     warning: Color(0xFFE0A94A),
     error: Color(0xFFE07A6E),
@@ -144,6 +152,7 @@ class FactoryColors extends ThemeExtension<FactoryColors> {
     Color? onPrimary,
     Color? accent,
     Color? accentTint,
+    Color? accentInk,
     Color? success,
     Color? warning,
     Color? error,
@@ -170,6 +179,7 @@ class FactoryColors extends ThemeExtension<FactoryColors> {
       onPrimary: onPrimary ?? this.onPrimary,
       accent: accent ?? this.accent,
       accentTint: accentTint ?? this.accentTint,
+      accentInk: accentInk ?? this.accentInk,
       success: success ?? this.success,
       warning: warning ?? this.warning,
       error: error ?? this.error,
@@ -201,6 +211,7 @@ class FactoryColors extends ThemeExtension<FactoryColors> {
       onPrimary: Color.lerp(onPrimary, other.onPrimary, t)!,
       accent: Color.lerp(accent, other.accent, t)!,
       accentTint: Color.lerp(accentTint, other.accentTint, t)!,
+      accentInk: Color.lerp(accentInk, other.accentInk, t)!,
       success: Color.lerp(success, other.success, t)!,
       warning: Color.lerp(warning, other.warning, t)!,
       error: Color.lerp(error, other.error, t)!,

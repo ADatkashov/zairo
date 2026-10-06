@@ -5,6 +5,7 @@
 library core_ui;
 
 export 'src/layout/factory_page_width.dart';
+export 'src/theme/factory_app_profile.dart';
 export 'src/theme/factory_avatar_size.dart';
 export 'src/theme/factory_breakpoints.dart';
 export 'src/theme/factory_colors.dart';
@@ -19,6 +20,10 @@ export 'src/theme/factory_typography.dart';
 export 'src/widgets/factory_app_bar.dart';
 export 'src/widgets/factory_avatar.dart';
 export 'src/widgets/factory_badge.dart';
+export 'src/widgets/factory_payment_breakdown.dart';
+export 'src/widgets/factory_progress_ring.dart';
+export 'src/widgets/factory_sparkline.dart';
+export 'src/widgets/factory_trend_badge.dart';
 export 'src/widgets/factory_bottom_navigation.dart';
 export 'src/widgets/factory_bottom_sheet.dart';
 export 'src/widgets/factory_button.dart';

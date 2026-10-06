@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  _profileAndTrendTests();
   // Built inside testWidgets, not a bare test(): building the TextTheme
   // touches google_fonts, which needs a real Flutter binding to degrade
   // gracefully (falls back to the system font) when a test environment has
@@ -64,5 +65,43 @@ void main() {
     expect(darkShadow.color.r, greaterThan(lightShadow.color.r));
     expect(darkShadow.color.g, greaterThan(lightShadow.color.g));
     expect(darkShadow.color.b, greaterThan(lightShadow.color.b));
+  });
+}
+
+void _profileAndTrendTests() {
+  testWidgets('app profile is opt-in and carries per-app card radius', (tester) async {
+    expect(factoryLightTheme().extension<FactoryAppProfile>(), isNull);
+    final p = factoryLightTheme(profile: FactoryAppProfile.platform).extension<FactoryAppProfile>();
+    expect(p!.cardRadius, 12);
+    expect(FactoryAppProfile.consumer.cardRadius, 24);
+  });
+
+  testWidgets('FactoryTrendBadge shows arrow and sign', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: factoryLightTheme(),
+      home: const Column(children: [
+        FactoryTrendBadge(delta: 12),
+        FactoryTrendBadge(delta: -4),
+      ]),
+    ));
+    expect(find.text('▲ +12%'), findsOneWidget);
+    expect(find.text('▼ −4%'), findsOneWidget);
+  });
+
+  testWidgets('FactoryPaymentBreakdown shows remaining = total - deposit', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: factoryLightTheme(),
+      home: const Scaffold(
+        body: FactoryPaymentBreakdown(
+          total: 8500,
+          deposit: 2550,
+          currency: 'KZT',
+          totalLabel: 'Total',
+          depositLabel: 'Deposit',
+          remainingLabel: 'Pay later',
+        ),
+      ),
+    ));
+    expect(find.textContaining('5 950'), findsOneWidget);
   });
 }
