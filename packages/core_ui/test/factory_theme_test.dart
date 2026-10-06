@@ -131,6 +131,24 @@ void _contrastTests() {
       expect(_contrast(c.onPrimary, c.primary), greaterThanOrEqualTo(4.5));
       expect(_contrast(c.onPrimary, c.primaryStrong), greaterThanOrEqualTo(4.5));
     });
+    // The hero cards (billing, analytics, loyalty, ...) draw secondary text as
+    // onPrimary at 80% over the gradient, and rings/bars on light tracks.
+    test('${entry.key}: muted hero text stays readable on the gradient', () {
+      final muted = c.onPrimary.withValues(alpha: 0.8);
+      for (final bg in [c.primary, c.primaryStrong]) {
+        expect(_contrast(Color.alphaBlend(muted, bg), bg), greaterThanOrEqualTo(4.5));
+      }
+    });
+    test('${entry.key}: accentInk reads as text on surface and as a bar on primaryTint', () {
+      expect(_contrast(c.accentInk, c.surface), greaterThanOrEqualTo(4.5));
+      // Graphical objects need 3:1 against what they sit on.
+      expect(_contrast(c.accentInk, c.primaryTint), greaterThanOrEqualTo(3));
+    });
+    test('${entry.key}: rings and secondary text on the tinted surfaces', () {
+      expect(_contrast(c.textSecondary, c.surfaceAlt), greaterThanOrEqualTo(4.5));
+      expect(_contrast(c.primary, c.primaryTint), greaterThanOrEqualTo(3));
+      expect(_contrast(c.warning, c.primaryTint), greaterThanOrEqualTo(3));
+    });
     test('${entry.key}: state colors read on surface', () {
       for (final tone in [c.success, c.warning, c.error, c.info]) {
         expect(_contrast(tone, c.surface), greaterThanOrEqualTo(4.5));
