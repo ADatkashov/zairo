@@ -174,15 +174,16 @@ class _CountBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4),
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: colors.coral,
+        // error (not coral) so the count keeps AA contrast with onError text.
+        color: colors.error,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: colors.surface, width: 1.5),
       ),
       child: Text(
         count > 9 ? '9+' : '$count',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 9,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onError,
+          fontSize: 10,
           fontWeight: FontWeight.w700,
           height: 1,
         ),

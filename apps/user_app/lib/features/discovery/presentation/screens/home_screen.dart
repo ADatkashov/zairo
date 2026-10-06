@@ -725,7 +725,7 @@ class _AvailabilityHero extends StatelessWidget {
               Text(
                 l10n.homeAvailabilityEyebrow.toUpperCase(),
                 style: Theme.of(context).textTheme.labelSmall
-                    ?.copyWith(color: Colors.white.withValues(alpha: 0.85)),
+                    ?.copyWith(color: colors.onPrimary.withValues(alpha: 0.85)),
               ),
               const SizedBox(height: FactorySpacing.space2),
               Text(
@@ -735,7 +735,9 @@ class _AvailabilityHero extends StatelessWidget {
               ),
               const SizedBox(height: FactorySpacing.space3),
               Material(
-                color: Colors.white,
+                // onPrimary: white in light, near-black in dark, so the pill
+                // and its primaryStrong label contrast in both themes.
+                color: colors.onPrimary,
                 shape: FactoryRadius.pill,
                 child: InkWell(
                   onTap: onViewAll,

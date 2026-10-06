@@ -23,7 +23,8 @@ class FactoryTrendBadge extends StatelessWidget {
   final int fractionDigits;
   final bool positiveIsGood;
 
-  /// Draws on a dark hero card: translucent white fill, light text.
+  /// Draws on a hero card (the primary gradient): text and fill follow
+  /// `onPrimary`, so it stays legible in both light and dark themes.
   final bool onDark;
 
   @override
@@ -33,8 +34,8 @@ class FactoryTrendBadge extends StatelessWidget {
     final flat = delta == 0;
     final good = flat || (up == positiveIsGood);
     final tone = flat ? colors.textSecondary : (good ? colors.success : colors.error);
-    final bg = onDark ? Colors.white.withValues(alpha: 0.16) : Color.alphaBlend(tone.withValues(alpha: 0.14), colors.surface);
-    final fg = onDark ? Colors.white : tone;
+    final bg = onDark ? colors.onPrimary.withValues(alpha: 0.16) : Color.alphaBlend(tone.withValues(alpha: 0.08), colors.surface);
+    final fg = onDark ? colors.onPrimary : tone;
     final sign = up ? '+' : (flat ? '' : '−');
     final text = '${flat ? '–' : (up ? '▲' : '▼')} $sign${delta.abs().toStringAsFixed(fractionDigits)}$suffix';
 

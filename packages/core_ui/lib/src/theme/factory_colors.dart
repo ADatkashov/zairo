@@ -81,7 +81,8 @@ class FactoryColors extends ThemeExtension<FactoryColors> {
     borderStrong: Color(0xFFC9C4B7),
     text: Color(0xFF1B1917),
     textSecondary: Color(0xFF5C564C),
-    textTertiary: Color(0xFF7A7266),
+    // Darkened from #7A7266 (4.39:1 on bg) to clear AA 4.5:1 on bg and tints.
+    textTertiary: Color(0xFF6C665A),
     primary: Color(0xFF1B5C52),
     primaryStrong: Color(0xFF123F38),
     primaryTint: Color(0xFFDCEAE6),
@@ -113,7 +114,8 @@ class FactoryColors extends ThemeExtension<FactoryColors> {
     borderStrong: Color(0xFF423E37),
     text: Color(0xFFF2F0EA),
     textSecondary: Color(0xFFB5AFA3),
-    textTertiary: Color(0xFF7A7266),
+    // Lightened from #7A7266 (3.5-4.1:1 on surfaces) to clear AA 4.5:1.
+    textTertiary: Color(0xFF9A9487),
     primary: Color(0xFF4FCFB4),
     primaryStrong: Color(0xFF7CDFC9),
     primaryTint: Color(0xFF173029),

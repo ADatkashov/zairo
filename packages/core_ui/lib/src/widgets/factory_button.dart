@@ -92,7 +92,7 @@ class FactoryButton extends StatelessWidget {
       FactoryButtonVariant.danger => FilledButton(
           style: FilledButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.error,
-            foregroundColor: Colors.white,
+            foregroundColor: Theme.of(context).colorScheme.onError,
             disabledBackgroundColor: Theme.of(context).colorScheme.error.withValues(alpha: 0.4),
           ).merge(denseStyle),
           onPressed: pressHandler,
