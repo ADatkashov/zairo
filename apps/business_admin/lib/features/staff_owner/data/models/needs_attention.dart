@@ -1,5 +1,5 @@
 /// Mirrors backend's StaffOwnerDtos.NeedsAttentionResponse
-/// (backend/staff/.../StaffOwnerDtos.java): an appointment that needs the owner's decision.
+/// (backend/workforce/.../WorkerOwnerDtos.java): an appointment that needs the owner's decision.
 class NeedsAttentionItem {
   final String bookingId;
   final String status;
@@ -10,12 +10,15 @@ class NeedsAttentionItem {
   final String? customerPhone;
   final double totalPrice;
   final String currency;
-  final String staffId;
-  final String? staffName;
+  final String workerId;
 
-  /// Why it is here — currently `STAFF_CANNOT_ATTEND`.
+  /// MASTER / MECHANIC / CLEANER / STAFF.
+  final String? workerKind;
+  final String? workerName;
+
+  /// Why it is here — currently `WORKER_CANNOT_ATTEND`.
   final String reason;
-  final String? staffNote;
+  final String? workerNote;
   final DateTime? requestedAt;
 
   const NeedsAttentionItem({
@@ -28,10 +31,11 @@ class NeedsAttentionItem {
     required this.customerPhone,
     required this.totalPrice,
     required this.currency,
-    required this.staffId,
-    required this.staffName,
+    required this.workerId,
+    required this.workerKind,
+    required this.workerName,
     required this.reason,
-    required this.staffNote,
+    required this.workerNote,
     required this.requestedAt,
   });
 
@@ -47,10 +51,11 @@ class NeedsAttentionItem {
       customerPhone: json['customerPhone'] as String?,
       totalPrice: (json['totalPrice'] as num).toDouble(),
       currency: json['currency'] as String,
-      staffId: json['staffId'] as String,
-      staffName: json['staffName'] as String?,
+      workerId: json['workerId'] as String,
+      workerKind: json['workerKind'] as String?,
+      workerName: json['workerName'] as String?,
       reason: json['reason'] as String,
-      staffNote: json['staffNote'] as String?,
+      workerNote: json['workerNote'] as String?,
       requestedAt: requested == null ? null : DateTime.parse(requested),
     );
   }

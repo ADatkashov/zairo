@@ -896,7 +896,7 @@
   "needsAttentionTitle": "Шешімді қажет етеді",
   "needsAttentionBadge": "Шешіңіз",
   "needsAttentionCustomer": "Клиент",
-  "needsAttentionStaffCannotAttend": "{staff} бара алмайды",
+  "needsAttentionWorkerCannotAttend": "{worker} бара алмайды",
   "needsAttentionCancelButton": "Қайтарумен бас тарту",
   "needsAttentionCancelConfirmTitle": "Жазылудан бас тарту керек пе?",
   "needsAttentionCancelConfirmMessage": "Клиентке хабарланады, төленген брон толық қайтарылады. Уақыт қайтадан қолжетімді болады.",

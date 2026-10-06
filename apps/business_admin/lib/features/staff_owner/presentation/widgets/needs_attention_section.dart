@@ -118,11 +118,11 @@ class _NeedsAttentionCardState extends ConsumerState<_NeedsAttentionCard> {
           ),
           const SizedBox(height: FactorySpacing.space1),
           Text(
-            l10n.needsAttentionStaffCannotAttend(item.staffName ?? '—'),
+            l10n.needsAttentionWorkerCannotAttend(item.workerName ?? '—'),
             style: textTheme.bodyMedium?.copyWith(color: colors.warning),
           ),
-          if (item.staffNote != null && item.staffNote!.isNotEmpty)
-            Text('«${item.staffNote}»', style: textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
+          if (item.workerNote != null && item.workerNote!.isNotEmpty)
+            Text('«${item.workerNote}»', style: textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
           const SizedBox(height: FactorySpacing.space2),
           FactoryButton(
             label: l10n.needsAttentionCancelButton,

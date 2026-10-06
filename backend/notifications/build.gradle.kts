@@ -15,8 +15,8 @@ dependencies {
     implementation(project(":providers"))
     implementation(project(":booking"))
 
-    // Tells the owner when a staff member can't attend an appointment (StaffCannotAttendEvent). One-directional.
-    implementation(project(":staff"))
+    // Tells the owner when a staff member can't attend an appointment (WorkerCannotAttendEvent). One-directional.
+    implementation(project(":workforce"))
 
     // PasswordResetRequestedEvent's type, and CurrentUser for
     // NotificationsController's ownership check (caller must be the

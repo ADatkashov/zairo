@@ -1,4 +1,4 @@
-package com.zairo.factory.staff;
+package com.zairo.factory.workforce;
 
 import com.zairo.factory.booking.AvailabilitySlot;
 import com.zairo.factory.booking.AvailabilitySlotRepository;
@@ -12,16 +12,16 @@ import com.zairo.factory.reviews.Review;
 import com.zairo.factory.reviews.ReviewRepository;
 import com.zairo.factory.services.ServiceOffering;
 import com.zairo.factory.services.ServiceOfferingRepository;
-import com.zairo.factory.staff.StaffPortalDtos.StaffAppointmentResponse;
-import com.zairo.factory.staff.StaffPortalDtos.StaffMembershipResponse;
-import com.zairo.factory.staff.StaffPortalDtos.StaffRatingResponse;
-import com.zairo.factory.staff.StaffPortalDtos.StaffReviewResponse;
 import com.zairo.factory.users.User;
 import com.zairo.factory.users.UserRepository;
+import com.zairo.factory.workforce.WorkerPortalDtos.WorkerAppointmentResponse;
+import com.zairo.factory.workforce.WorkerPortalDtos.WorkerMembershipResponse;
+import com.zairo.factory.workforce.WorkerPortalDtos.WorkerRatingResponse;
+import com.zairo.factory.workforce.WorkerPortalDtos.WorkerReviewResponse;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -34,16 +34,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * The staff member's own cabinet. A person can work at several businesses (one {@link Staff} row per business,
- * linked by {@code user_id}); every call is scoped to one of the caller's own staff rows, so a staff member sees
- * and acts on exactly the appointments booked with them — never a colleague's, never the business's whole book.
+ * A worker's own cabinet. A person can work at several businesses and in several directories (a beauty master at
+ * one, generic staff at another); every call is scoped to one of the caller's own worker records, so they see and
+ * act on exactly the appointments booked with them — never a colleague's, never the business's whole book.
  *
- * <p>Acting on a booking goes through core {@link BookingService}'s {@code *Authorized} methods, so the state
- * rules, slot release, refund and notification events stay identical to the owner and customer flows; only the
- * "who may do it" check differs and is done here.
+ * <p>The worker may accept, complete or mark a no-show, and may say "I can't attend" — but cancelling (which
+ * refunds the customer and frees the slot) is the owner's decision, never the worker's.
  */
 @Service
-public class StaffPortalService {
+public class WorkerPortalService {
 
     public enum Scope {
         ALL, UPCOMING, HISTORY
@@ -51,8 +50,8 @@ public class StaffPortalService {
 
     private static final int MAX_REVIEWS = 100;
 
-    private final StaffRepository staffRepository;
-    private final StaffBookingRepository staffBookingRepository;
+    private final WorkerCatalog catalog;
+    private final WorkerBookingStateRepository stateRepository;
     private final BookingRepository bookingRepository;
     private final BookingService bookingService;
     private final AvailabilitySlotRepository slotRepository;
@@ -62,13 +61,13 @@ public class StaffPortalService {
     private final ReviewRepository reviewRepository;
     private final ApplicationEventPublisher eventPublisher;
 
-    public StaffPortalService(StaffRepository staffRepository, StaffBookingRepository staffBookingRepository,
+    public WorkerPortalService(WorkerCatalog catalog, WorkerBookingStateRepository stateRepository,
             BookingRepository bookingRepository, BookingService bookingService,
             AvailabilitySlotRepository slotRepository, ServiceOfferingRepository serviceRepository,
             ProviderRepository providerRepository, UserRepository userRepository,
             ReviewRepository reviewRepository, ApplicationEventPublisher eventPublisher) {
-        this.staffRepository = staffRepository;
-        this.staffBookingRepository = staffBookingRepository;
+        this.catalog = catalog;
+        this.stateRepository = stateRepository;
         this.bookingRepository = bookingRepository;
         this.bookingService = bookingService;
         this.slotRepository = slotRepository;
@@ -80,32 +79,31 @@ public class StaffPortalService {
     }
 
     @Transactional(readOnly = true)
-    public List<StaffMembershipResponse> memberships(UUID userId) {
+    public List<WorkerMembershipResponse> memberships(UUID userId) {
         Instant now = Instant.now();
-        List<StaffMembershipResponse> result = new ArrayList<>();
-        for (Staff staff : staffRepository.findByUserId(userId)) {
-            Provider provider = providerRepository.findById(staff.getProviderId()).orElse(null);
+        List<WorkerMembershipResponse> result = new ArrayList<>();
+        for (Worker worker : catalog.findByUserId(userId)) {
+            Provider provider = providerRepository.findById(worker.providerId()).orElse(null);
             if (provider == null) {
                 continue;
             }
-            List<Entry> entries = entries(staff.getId());
+            List<Entry> entries = entries(worker);
             int pending = (int) entries.stream().filter(e -> e.needsAcceptance(now)).count();
             List<Review> reviews = reviewsOf(entries);
             Double average = reviews.isEmpty() ? null
                     : reviews.stream().mapToInt(Review::getRating).average().orElse(0);
-            result.add(new StaffMembershipResponse(staff.getId(), provider.getId(), provider.getName(),
-                    staff.getDisplayName(), staff.getPhotoUrl(), staff.isActive(), pending, average,
-                    reviews.size()));
+            result.add(new WorkerMembershipResponse(worker.id(), worker.kind(), provider.getId(), provider.getName(),
+                    worker.displayName(), worker.photoUrl(), worker.active(), pending, average, reviews.size()));
         }
-        result.sort(Comparator.comparing(StaffMembershipResponse::providerName, String.CASE_INSENSITIVE_ORDER));
+        result.sort(Comparator.comparing(WorkerMembershipResponse::providerName, String.CASE_INSENSITIVE_ORDER));
         return result;
     }
 
     @Transactional(readOnly = true)
-    public List<StaffAppointmentResponse> appointments(UUID userId, UUID staffId, Scope scope) {
-        requireOwnStaff(staffId, userId);
+    public List<WorkerAppointmentResponse> appointments(UUID userId, UUID workerId, Scope scope) {
+        Worker worker = requireOwnWorker(workerId, userId);
         Instant now = Instant.now();
-        List<Entry> entries = entries(staffId).stream()
+        List<Entry> entries = entries(worker).stream()
                 .filter(e -> switch (scope) {
                     case ALL -> true;
                     case UPCOMING -> e.isUpcoming(now);
@@ -130,10 +128,10 @@ public class StaffPortalService {
             User customer = customers.get(e.booking.getUserId());
             BookingStatus status = e.booking.getStatus();
             boolean confirmed = status == BookingStatus.CONFIRMED;
-            return new StaffAppointmentResponse(e.booking.getId(), status.name(), e.slot.getStartsAt(),
+            return new WorkerAppointmentResponse(e.booking.getId(), status.name(), e.slot.getStartsAt(),
                     e.slot.getEndsAt(), e.booking.getServiceId(), service == null ? null : service.getTitle(),
-                    customer == null ? null : customer.getDisplayName(), customer == null ? null
-                            : customer.getPhone(),
+                    customer == null ? null : customer.getDisplayName(),
+                    customer == null ? null : customer.getPhone(),
                     e.booking.getTotalPrice(), e.booking.getCurrency(), e.booking.getPaidAmount(),
                     e.booking.getCancellationReason(), e.confirmedAt(), e.declinedAt(),
                     confirmed && e.confirmedAt() == null && e.declinedAt() == null,
@@ -142,65 +140,63 @@ public class StaffPortalService {
         }).toList();
     }
 
-    /** The staff member accepts an appointment: purely an acknowledgement, the booking's status is unchanged. */
+    /** The worker accepts an appointment: purely an acknowledgement, the booking's status is unchanged. */
     @Transactional
-    public void accept(UUID userId, UUID staffId, UUID bookingId) {
-        requireOwnActiveStaff(staffId, userId);
-        Booking booking = requireOwnBooking(staffId, bookingId);
+    public void accept(UUID userId, UUID workerId, UUID bookingId) {
+        Worker worker = requireOwnActiveWorker(workerId, userId);
+        Booking booking = requireOwnBooking(worker, bookingId);
         if (booking.getStatus() != BookingStatus.CONFIRMED) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Only a confirmed appointment can be accepted (status=" + booking.getStatus() + ")");
         }
-        StaffBooking link = staffBookingRepository.findByBookingId(bookingId)
-                .orElseGet(() -> new StaffBooking(UUID.randomUUID(), bookingId, staffId, Instant.now()));
-        if (link.getStaffDeclinedAt() != null) {
+        WorkerBookingState state = stateOf(bookingId, worker);
+        if (state.getDeclinedAt() != null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "You already told the owner you can't attend");
         }
-        link.confirmByStaff(Instant.now());
-        staffBookingRepository.save(link);
+        state.confirm(Instant.now());
+        stateRepository.save(state);
     }
 
     /**
      * "I can't attend": a request to the owner. Deliberately NOT a cancellation — cancelling refunds the customer
      * and frees the slot, and that decision (reassign to a colleague, move, or cancel) is the owner's, since the
-     * business, not the staff member, carries the lost revenue. The booking is untouched; the owner is told.
+     * business, not the worker, carries the lost revenue. The booking is untouched; the owner is told.
      */
     @Transactional
-    public void cannotAttend(UUID userId, UUID staffId, UUID bookingId, String reason) {
-        Staff staff = requireOwnActiveStaff(staffId, userId);
-        Booking booking = requireOwnBooking(staffId, bookingId);
+    public void cannotAttend(UUID userId, UUID workerId, UUID bookingId, String reason) {
+        Worker worker = requireOwnActiveWorker(workerId, userId);
+        Booking booking = requireOwnBooking(worker, bookingId);
         if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Only an upcoming appointment can be declined (status=" + booking.getStatus() + ")");
         }
-        StaffBooking link = staffBookingRepository.findByBookingId(bookingId)
-                .orElseGet(() -> new StaffBooking(UUID.randomUUID(), bookingId, staffId, Instant.now()));
-        boolean first = link.getStaffDeclinedAt() == null;
-        link.requestDecline(Instant.now(), reason == null || reason.isBlank() ? null : reason.trim());
-        staffBookingRepository.save(link);
+        WorkerBookingState state = stateOf(bookingId, worker);
+        boolean first = state.getDeclinedAt() == null;
+        state.requestDecline(Instant.now(), reason == null || reason.isBlank() ? null : reason.trim());
+        stateRepository.save(state);
         if (first) {
-            eventPublisher.publishEvent(new StaffCannotAttendEvent(bookingId, staff.getProviderId(), staffId));
+            eventPublisher.publishEvent(new WorkerCannotAttendEvent(bookingId, worker.providerId(), worker.id()));
         }
     }
 
     @Transactional
-    public void complete(UUID userId, UUID staffId, UUID bookingId) {
-        requireOwnActiveStaff(staffId, userId);
-        requireOwnBooking(staffId, bookingId);
+    public void complete(UUID userId, UUID workerId, UUID bookingId) {
+        Worker worker = requireOwnActiveWorker(workerId, userId);
+        requireOwnBooking(worker, bookingId);
         bookingService.completeBookingAuthorized(bookingId);
     }
 
     @Transactional
-    public void markNoShow(UUID userId, UUID staffId, UUID bookingId) {
-        requireOwnActiveStaff(staffId, userId);
-        requireOwnBooking(staffId, bookingId);
+    public void markNoShow(UUID userId, UUID workerId, UUID bookingId) {
+        Worker worker = requireOwnActiveWorker(workerId, userId);
+        requireOwnBooking(worker, bookingId);
         bookingService.markNoShowAuthorized(bookingId);
     }
 
     @Transactional(readOnly = true)
-    public StaffRatingResponse rating(UUID userId, UUID staffId) {
-        requireOwnStaff(staffId, userId);
-        List<Entry> entries = entries(staffId);
+    public WorkerRatingResponse rating(UUID userId, UUID workerId) {
+        Worker worker = requireOwnWorker(workerId, userId);
+        List<Entry> entries = entries(worker);
         List<Review> reviews = reviewsOf(entries);
         long[] counts = new long[5];
         for (Review review : reviews) {
@@ -218,26 +214,25 @@ public class StaffPortalService {
                 .map(r -> bookingsById.get(r.getBookingId()).getUserId()).distinct().toList()).stream()
                 .collect(Collectors.toMap(User::getId, Function.identity()));
 
-        List<StaffReviewResponse> rows = latest.stream().map(r -> {
+        List<WorkerReviewResponse> rows = latest.stream().map(r -> {
             User customer = customers.get(bookingsById.get(r.getBookingId()).getUserId());
-            return new StaffReviewResponse(r.getId(), r.getBookingId(),
+            return new WorkerReviewResponse(r.getId(), r.getBookingId(),
                     customer == null ? null : customer.getDisplayName(), r.getRating(), r.getComment(),
                     r.getCreatedAt(), r.getBusinessReply(), r.getBusinessReplyAt());
         }).toList();
-        return new StaffRatingResponse(average, reviews.size(),
-                java.util.Arrays.stream(counts).boxed().toList(), rows);
+        return new WorkerRatingResponse(average, reviews.size(), Arrays.stream(counts).boxed().toList(), rows);
     }
 
     // --- internals ---
 
-    /** A booking of this staff member together with its slot and (if any) the staff acceptance link. */
-    private record Entry(Booking booking, AvailabilitySlot slot, StaffBooking link) {
+    /** A booking of this worker together with its slot and (if any) the worker's accept/decline state. */
+    private record Entry(Booking booking, AvailabilitySlot slot, WorkerBookingState state) {
         Instant confirmedAt() {
-            return link == null ? null : link.getStaffConfirmedAt();
+            return state == null ? null : state.getConfirmedAt();
         }
 
         Instant declinedAt() {
-            return link == null ? null : link.getStaffDeclinedAt();
+            return state == null ? null : state.getDeclinedAt();
         }
 
         boolean isUpcoming(Instant now) {
@@ -252,8 +247,8 @@ public class StaffPortalService {
         }
     }
 
-    private List<Entry> entries(UUID staffId) {
-        List<UUID> bookingIds = staffBookingRepository.findBookingIdsForStaff(staffId);
+    private List<Entry> entries(Worker worker) {
+        List<UUID> bookingIds = List.copyOf(catalog.bookingIdsOf(worker));
         if (bookingIds.isEmpty()) {
             return List.of();
         }
@@ -261,13 +256,13 @@ public class StaffPortalService {
         Map<UUID, AvailabilitySlot> slots = slotRepository
                 .findAllById(bookings.stream().map(Booking::getAvailabilitySlotId).distinct().toList()).stream()
                 .collect(Collectors.toMap(AvailabilitySlot::getId, Function.identity()));
-        Map<UUID, StaffBooking> links = new HashMap<>();
-        staffBookingRepository.findByBookingIdIn(bookingIds).forEach(l -> links.put(l.getBookingId(), l));
+        Map<UUID, WorkerBookingState> states = stateRepository.findAllById(bookingIds).stream()
+                .collect(Collectors.toMap(WorkerBookingState::getBookingId, Function.identity()));
         List<Entry> result = new ArrayList<>();
         for (Booking booking : bookings) {
             AvailabilitySlot slot = slots.get(booking.getAvailabilitySlotId());
             if (slot != null) {
-                result.add(new Entry(booking, slot, links.get(booking.getId())));
+                result.add(new Entry(booking, slot, states.get(booking.getId())));
             }
         }
         return result;
@@ -280,26 +275,32 @@ public class StaffPortalService {
         return reviewRepository.findByBookingIdIn(entries.stream().map(e -> e.booking.getId()).toList());
     }
 
-    private Staff requireOwnStaff(UUID staffId, UUID userId) {
-        Staff staff = staffRepository.findById(staffId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Staff not found: " + staffId));
-        if (!userId.equals(staff.getUserId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This is not your staff profile");
-        }
-        return staff;
+    private WorkerBookingState stateOf(UUID bookingId, Worker worker) {
+        return stateRepository.findById(bookingId).orElseGet(
+                () -> new WorkerBookingState(bookingId, worker.id(), WorkerBookingState.Preference.SPECIFIC,
+                        Instant.now()));
     }
 
-    private Staff requireOwnActiveStaff(UUID staffId, UUID userId) {
-        Staff staff = requireOwnStaff(staffId, userId);
-        if (!staff.isActive()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Your staff profile is deactivated");
+    private Worker requireOwnWorker(UUID workerId, UUID userId) {
+        Worker worker = catalog.find(workerId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Not found: " + workerId));
+        if (!userId.equals(worker.userId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This is not your profile");
         }
-        return staff;
+        return worker;
     }
 
-    /** The booking must be one of this staff member's own; anything else is reported as not found. */
-    private Booking requireOwnBooking(UUID staffId, UUID bookingId) {
-        if (!staffBookingRepository.findBookingIdsForStaff(staffId).contains(bookingId)) {
+    private Worker requireOwnActiveWorker(UUID workerId, UUID userId) {
+        Worker worker = requireOwnWorker(workerId, userId);
+        if (!worker.active()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Your profile is deactivated");
+        }
+        return worker;
+    }
+
+    /** The booking must be one of this worker's own; anything else is reported as not found. */
+    private Booking requireOwnBooking(Worker worker, UUID bookingId) {
+        if (!catalog.bookingIdsOf(worker).contains(bookingId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment not found: " + bookingId);
         }
         return bookingRepository.findById(bookingId)

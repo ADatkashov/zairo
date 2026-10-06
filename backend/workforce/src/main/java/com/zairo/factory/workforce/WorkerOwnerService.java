@@ -1,16 +1,17 @@
-package com.zairo.factory.staff;
+package com.zairo.factory.workforce;
 
 import com.zairo.factory.booking.AvailabilitySlot;
 import com.zairo.factory.booking.AvailabilitySlotRepository;
 import com.zairo.factory.booking.Booking;
 import com.zairo.factory.booking.BookingRepository;
 import com.zairo.factory.booking.BookingService;
+import com.zairo.factory.booking.BookingStatus;
 import com.zairo.factory.providers.ProviderOwnership;
 import com.zairo.factory.services.ServiceOffering;
 import com.zairo.factory.services.ServiceOfferingRepository;
-import com.zairo.factory.staff.StaffOwnerDtos.NeedsAttentionResponse;
 import com.zairo.factory.users.User;
 import com.zairo.factory.users.UserRepository;
+import com.zairo.factory.workforce.WorkerOwnerDtos.NeedsAttentionResponse;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -24,28 +25,28 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * The business owner's side of staff-related appointments: the "needs a decision" list and cancelling an
- * appointment. The owner (not the staff member) is the only one who may cancel with a refund.
+ * The business owner's side of worker-related appointments: the "needs a decision" list and cancelling an
+ * appointment. The owner (never the worker) is the only one who may cancel with a refund.
  */
 @Service
-public class StaffOwnerService {
+public class WorkerOwnerService {
 
     private final ProviderOwnership providerOwnership;
-    private final StaffBookingRepository staffBookingRepository;
-    private final StaffRepository staffRepository;
+    private final WorkerCatalog catalog;
+    private final WorkerBookingStateRepository stateRepository;
     private final BookingRepository bookingRepository;
     private final BookingService bookingService;
     private final AvailabilitySlotRepository slotRepository;
     private final ServiceOfferingRepository serviceRepository;
     private final UserRepository userRepository;
 
-    public StaffOwnerService(ProviderOwnership providerOwnership, StaffBookingRepository staffBookingRepository,
-            StaffRepository staffRepository, BookingRepository bookingRepository, BookingService bookingService,
-            AvailabilitySlotRepository slotRepository, ServiceOfferingRepository serviceRepository,
-            UserRepository userRepository) {
+    public WorkerOwnerService(ProviderOwnership providerOwnership, WorkerCatalog catalog,
+            WorkerBookingStateRepository stateRepository, BookingRepository bookingRepository,
+            BookingService bookingService, AvailabilitySlotRepository slotRepository,
+            ServiceOfferingRepository serviceRepository, UserRepository userRepository) {
         this.providerOwnership = providerOwnership;
-        this.staffBookingRepository = staffBookingRepository;
-        this.staffRepository = staffRepository;
+        this.catalog = catalog;
+        this.stateRepository = stateRepository;
         this.bookingRepository = bookingRepository;
         this.bookingService = bookingService;
         this.slotRepository = slotRepository;
@@ -56,12 +57,19 @@ public class StaffOwnerService {
     @Transactional(readOnly = true)
     public List<NeedsAttentionResponse> needsAttention(UUID providerId, UUID ownerId) {
         providerOwnership.requireOwner(providerId, ownerId);
-        List<StaffBooking> declines = staffBookingRepository.findOpenDeclinesByProviderId(providerId);
+        Map<UUID, Worker> workers = catalog.findByProvider(providerId).stream()
+                .collect(Collectors.toMap(Worker::id, Function.identity()));
+        if (workers.isEmpty()) {
+            return List.of();
+        }
+        List<WorkerBookingState> declines = stateRepository.findByWorkerIdInAndDeclinedAtIsNotNull(workers.keySet());
         if (declines.isEmpty()) {
             return List.of();
         }
         Map<UUID, Booking> bookings = bookingRepository
-                .findAllById(declines.stream().map(StaffBooking::getBookingId).toList()).stream()
+                .findAllById(declines.stream().map(WorkerBookingState::getBookingId).toList()).stream()
+                .filter(b -> b.getStatus() == BookingStatus.CONFIRMED
+                        || b.getStatus() == BookingStatus.PENDING_PAYMENT)
                 .collect(Collectors.toMap(Booking::getId, Function.identity()));
         Map<UUID, AvailabilitySlot> slots = slotRepository
                 .findAllById(bookings.values().stream().map(Booking::getAvailabilitySlotId).distinct().toList())
@@ -72,12 +80,9 @@ public class StaffOwnerService {
         Map<UUID, User> customers = userRepository
                 .findAllById(bookings.values().stream().map(Booking::getUserId).distinct().toList()).stream()
                 .collect(Collectors.toMap(User::getId, Function.identity()));
-        Map<UUID, Staff> staff = staffRepository
-                .findAllById(declines.stream().map(StaffBooking::getStaffId).distinct().toList()).stream()
-                .collect(Collectors.toMap(Staff::getId, Function.identity()));
 
         List<NeedsAttentionResponse> result = new ArrayList<>();
-        for (StaffBooking decline : declines) {
+        for (WorkerBookingState decline : declines) {
             Booking booking = bookings.get(decline.getBookingId());
             AvailabilitySlot slot = booking == null ? null : slots.get(booking.getAvailabilitySlotId());
             if (booking == null || slot == null) {
@@ -85,13 +90,14 @@ public class StaffOwnerService {
             }
             ServiceOffering service = services.get(booking.getServiceId());
             User customer = customers.get(booking.getUserId());
-            Staff member = staff.get(decline.getStaffId());
+            Worker worker = workers.get(decline.getWorkerId());
             result.add(new NeedsAttentionResponse(booking.getId(), booking.getStatus().name(), slot.getStartsAt(),
                     slot.getEndsAt(), booking.getServiceId(), service == null ? null : service.getTitle(),
                     customer == null ? null : customer.getDisplayName(),
                     customer == null ? null : customer.getPhone(), booking.getTotalPrice(), booking.getCurrency(),
-                    decline.getStaffId(), member == null ? null : member.getDisplayName(), "STAFF_CANNOT_ATTEND",
-                    decline.getStaffDeclineReason(), decline.getStaffDeclinedAt()));
+                    decline.getWorkerId(), worker == null ? null : worker.kind(),
+                    worker == null ? null : worker.displayName(), "WORKER_CANNOT_ATTEND", decline.getDeclineReason(),
+                    decline.getDeclinedAt()));
         }
         result.sort(Comparator.comparing(NeedsAttentionResponse::startsAt));
         return result;

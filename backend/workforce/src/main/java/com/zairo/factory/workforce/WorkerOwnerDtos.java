@@ -1,4 +1,4 @@
-package com.zairo.factory.staff;
+package com.zairo.factory.workforce;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Size;
@@ -6,19 +6,19 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-/** What the business owner sees and does about staff-related appointments. */
-public final class StaffOwnerDtos {
+/** What the business owner sees and does about worker-related appointments. */
+public final class WorkerOwnerDtos {
 
-    private StaffOwnerDtos() {
+    private WorkerOwnerDtos() {
     }
 
     @Schema(description = "An appointment that needs the owner's decision.")
     public record NeedsAttentionResponse(
             UUID bookingId, String status, Instant startsAt, Instant endsAt, UUID serviceId, String serviceTitle,
             String customerName, String customerPhone, BigDecimal totalPrice, String currency,
-            UUID staffId, String staffName,
-            @Schema(description = "Why it needs attention: STAFF_CANNOT_ATTEND.") String reason,
-            @Schema(description = "The staff member's own words, if any.") String staffNote,
+            UUID workerId, WorkerKind workerKind, String workerName,
+            @Schema(description = "Why it needs attention: WORKER_CANNOT_ATTEND.") String reason,
+            @Schema(description = "The worker's own words, if any.") String workerNote,
             Instant requestedAt) {
     }
 

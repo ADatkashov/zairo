@@ -1,8 +1,8 @@
-package com.zairo.factory.staff;
+package com.zairo.factory.workforce;
 
 import com.zairo.factory.auth.CurrentUser;
-import com.zairo.factory.staff.StaffOwnerDtos.NeedsAttentionResponse;
-import com.zairo.factory.staff.StaffOwnerDtos.OwnerCancelRequest;
+import com.zairo.factory.workforce.WorkerOwnerDtos.NeedsAttentionResponse;
+import com.zairo.factory.workforce.WorkerOwnerDtos.OwnerCancelRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -23,16 +23,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @Tag(name = "Staff — owner")
 @SecurityRequirement(name = "bearerAuth")
-public class StaffOwnerController {
+public class WorkerOwnerController {
 
-    private final StaffOwnerService ownerService;
+    private final WorkerOwnerService ownerService;
 
-    public StaffOwnerController(StaffOwnerService ownerService) {
+    public WorkerOwnerController(WorkerOwnerService ownerService) {
         this.ownerService = ownerService;
     }
 
     @Operation(summary = "Appointments that need my decision", description = "Owner-only. Upcoming appointments "
-            + "where a staff member said they can't attend, soonest first.")
+            + "where a worker said they can't attend, soonest first.")
     @ApiResponse(responseCode = "200", description = "The list (empty when nothing needs a decision)")
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @ApiResponse(responseCode = "404", ref = "NotFound")
@@ -42,7 +42,7 @@ public class StaffOwnerController {
     }
 
     @Operation(summary = "Cancel an appointment (owner)", description = "Owner-only. Releases the slot, refunds a "
-            + "paid booking and notifies the customer. Only the owner can cancel with a refund — staff can only ask.")
+            + "paid booking and notifies the customer. Only the owner can cancel with a refund — a worker can only ask.")
     @ApiResponse(responseCode = "204", description = "Cancelled")
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @ApiResponse(responseCode = "404", ref = "NotFound")

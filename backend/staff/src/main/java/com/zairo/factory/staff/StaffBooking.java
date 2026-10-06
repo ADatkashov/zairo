@@ -29,15 +29,6 @@ public class StaffBooking {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    @Column(name = "staff_confirmed_at")
-    private Instant staffConfirmedAt;
-
-    @Column(name = "staff_declined_at")
-    private Instant staffDeclinedAt;
-
-    @Column(name = "staff_decline_reason", length = 500)
-    private String staffDeclineReason;
-
     protected StaffBooking() {
     }
 
@@ -62,31 +53,5 @@ public class StaffBooking {
 
     public Instant getCreatedAt() {
         return createdAt;
-    }
-
-    public Instant getStaffConfirmedAt() {
-        return staffConfirmedAt;
-    }
-
-    void confirmByStaff(Instant at) {
-        if (staffConfirmedAt == null) {
-            staffConfirmedAt = at;
-        }
-    }
-
-    public Instant getStaffDeclinedAt() {
-        return staffDeclinedAt;
-    }
-
-    public String getStaffDeclineReason() {
-        return staffDeclineReason;
-    }
-
-    /** The staff member tells the owner they can't attend. Idempotent: the first request (and its reason) stands. */
-    void requestDecline(Instant at, String reason) {
-        if (staffDeclinedAt == null) {
-            staffDeclinedAt = at;
-            staffDeclineReason = reason;
-        }
     }
 }

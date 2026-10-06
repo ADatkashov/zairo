@@ -20,10 +20,11 @@ NeedsAttentionItem _item(String bookingId) => NeedsAttentionItem(
       customerPhone: '+77001112233',
       totalPrice: 25,
       currency: 'USD',
-      staffId: 's1',
-      staffName: 'Aigerim',
-      reason: 'STAFF_CANNOT_ATTEND',
-      staffNote: 'Sick leave',
+      workerId: 's1',
+      workerKind: 'MASTER',
+      workerName: 'Aigerim',
+      reason: 'WORKER_CANNOT_ATTEND',
+      workerNote: 'Sick leave',
       requestedAt: DateTime.now(),
     );
 
