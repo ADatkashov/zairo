@@ -297,5 +297,14 @@
   "settingsSessionNote": "Қауіпсіздік үшін кіру 30 минут жарамды, содан кейін қайта кіру керек.",
   "settingsChangePhoto": "Фотоны ауыстыру",
   "settingsRemovePhoto": "Фотоны алып тастау",
-  "settingsPhotoUpdated": "Фото жаңартылды"
+  "settingsPhotoUpdated": "Фото жаңартылды",
+  "businessesColName": "Бизнес",
+  "businessesColType": "Түрі",
+  "businessesColRegistered": "Тіркелген",
+  "businessesColStatus": "Күйі",
+  "cmdPlaceholder": "Бөлімге немесе бизнеске өту…",
+  "cmdNoResults": "Ештеңе табылмады",
+  "cmdSectionPages": "Бөлімдер",
+  "cmdSectionBusinesses": "Бизнестер",
+  "cmdOpenTooltip": "Жылдам іздеу"
 }

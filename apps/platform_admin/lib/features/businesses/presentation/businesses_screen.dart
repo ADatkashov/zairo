@@ -11,6 +11,7 @@ import '../../auth/presentation/session_controller.dart';
 import '../../finance/data/finance_api.dart';
 import '../data/business.dart';
 import '../data/business_api.dart';
+import 'businesses_table.dart';
 
 /// Every business on the platform. Businesses waiting for approval come
 /// first, with a banner that filters down to them; the rest can be searched by
@@ -129,16 +130,34 @@ class _BusinessesScreenState extends ConsumerState<BusinessesScreen> {
                   if (visible.isEmpty)
                     FactoryEmptyState(icon: Icons.search_off_rounded, title: l10n.noMatches, message: '')
                   else
-                    for (final business in visible)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
-                        child: _BusinessCard(
-                          business: business,
-                          canModerate: canModerate,
-                          onOpen: () => showBusinessDetails(context, business.id),
-                          onChangeStatus: (next) => changeBusinessStatus(context, ref, business, next),
-                        ),
-                      ),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        void open(Business b) => showBusinessDetails(context, b.id);
+                        void change(Business b, String next) => changeBusinessStatus(context, ref, b, next);
+                        if (constraints.maxWidth >= businessesTableMinWidth) {
+                          return BusinessesTable(
+                            businesses: visible,
+                            canModerate: canModerate,
+                            onOpen: open,
+                            onChangeStatus: change,
+                          );
+                        }
+                        return Column(
+                          children: [
+                            for (final business in visible)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
+                                child: _BusinessCard(
+                                  business: business,
+                                  canModerate: canModerate,
+                                  onOpen: () => open(business),
+                                  onChangeStatus: (next) => change(business, next),
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
                 ],
               ),
             ),
