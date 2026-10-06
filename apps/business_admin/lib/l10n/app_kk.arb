@@ -892,5 +892,14 @@
   "calendarLoadFailed": "Күнтізбені жүктеу мүмкін болмады.",
   "staffCabinetLinkTitle": "Қызметкер ретіндегі жазылуларым",
   "staffCabinetLinkSubtitle": "Жазылулар мен рейтингіңіз бар Zairo қолданбасын ашады",
-  "staffCabinetLinkFailed": "Zairo қолданбасын ашу мүмкін болмады. Ол осы құрылғыда орнатылғанына көз жеткізіңіз."
+  "staffCabinetLinkFailed": "Zairo қолданбасын ашу мүмкін болмады. Ол осы құрылғыда орнатылғанына көз жеткізіңіз.",
+  "needsAttentionTitle": "Шешімді қажет етеді",
+  "needsAttentionBadge": "Шешіңіз",
+  "needsAttentionCustomer": "Клиент",
+  "needsAttentionStaffCannotAttend": "{staff} бара алмайды",
+  "needsAttentionCancelButton": "Қайтарумен бас тарту",
+  "needsAttentionCancelConfirmTitle": "Жазылудан бас тарту керек пе?",
+  "needsAttentionCancelConfirmMessage": "Клиентке хабарланады, төленген брон толық қайтарылады. Уақыт қайтадан қолжетімді болады.",
+  "needsAttentionKeepButton": "Қалдыру",
+  "needsAttentionCancelFailed": "Жазылудан бас тарту мүмкін болмады. Қайталап көріңіз."
 }

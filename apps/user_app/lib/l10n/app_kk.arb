@@ -529,15 +529,15 @@
   "staffCabinetStatusPendingPayment": "Төлемді күтуде",
   "staffCabinetStatusNoShow": "Келмеді",
   "staffCabinetAcceptButton": "Растау",
-  "staffCabinetCancelButton": "Бас тарту",
+  "staffCabinetDeclineButton": "Бара алмаймын",
   "staffCabinetCompleteButton": "Аяқтау",
   "staffCabinetNoShowButton": "Келмеді",
-  "staffCabinetCancelConfirmTitle": "Жазылудан бас тарту керек пе?",
-  "staffCabinetCancelConfirmMessage": "Клиентке хабарланады, төленген брон қайтарылады. Уақыт қайтадан қолжетімді болады.",
+  "staffCabinetDeclineConfirmTitle": "Бұл жазылуға бара алмайсыз ба?",
+  "staffCabinetDeclineConfirmMessage": "Бизнес иесіне хабарланады, ол не істеуді шешеді: әріптесті тағайындау, ауыстыру немесе бас тарту. Дейін жазылу өзгеріссіз қалады.",
   "staffCabinetNoShowConfirmTitle": "«Келмеді» деп белгілеу керек пе?",
   "staffCabinetNoShowConfirmMessage": "Клиент келмесе қолданыңыз. Мұны қайтару мүмкін емес.",
   "staffCabinetKeepButton": "Қалдыру",
-  "staffCabinetConfirmCancelButton": "Жазылудан бас тарту",
+  "staffCabinetConfirmDeclineButton": "Иесіне хабарлау",
   "staffCabinetConfirmNoShowButton": "Келмеді",
   "staffCabinetActionFailed": "Жазылуды жаңарту мүмкін болмады. Қайталап көріңіз.",
   "staffCabinetLoadFailed": "Жазылуларды жүктеу мүмкін болмады.",
@@ -547,5 +547,6 @@
   "staffCabinetReviewsCount": "Пікірлер: {count}",
   "staffCabinetBusinessReply": "Бизнестің жауабы",
   "staffCabinetAnonymousCustomer": "Клиент",
-  "staffCabinetAverageRatingLabel": "Орташа баға"
+  "staffCabinetAverageRatingLabel": "Орташа баға",
+  "staffCabinetDeclinedBadge": "Иесіне жіберілді"
 }

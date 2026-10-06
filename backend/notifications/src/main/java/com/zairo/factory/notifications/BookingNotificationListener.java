@@ -5,6 +5,7 @@ import com.zairo.factory.booking.BookingConfirmedEvent;
 import com.zairo.factory.booking.BookingReminderDueEvent;
 import com.zairo.factory.providers.Provider;
 import com.zairo.factory.providers.ProviderRepository;
+import com.zairo.factory.staff.StaffCannotAttendEvent;
 import com.zairo.factory.users.User;
 import com.zairo.factory.users.UserRepository;
 import java.util.Optional;
@@ -55,6 +56,13 @@ class BookingNotificationListener {
                         customer.getEmail(), event.bookingId()));
         ownerEmailFor(event.providerId())
                 .ifPresent(ownerEmail -> notificationService.sendProviderBookingCancelledEmail(ownerEmail,
+                        event.bookingId()));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    void onStaffCannotAttend(StaffCannotAttendEvent event) {
+        ownerEmailFor(event.providerId())
+                .ifPresent(ownerEmail -> notificationService.sendStaffCannotAttendEmail(ownerEmail,
                         event.bookingId()));
     }
 

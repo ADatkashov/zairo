@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,12 +60,13 @@ public class StaffPortalService {
     private final ProviderRepository providerRepository;
     private final UserRepository userRepository;
     private final ReviewRepository reviewRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public StaffPortalService(StaffRepository staffRepository, StaffBookingRepository staffBookingRepository,
             BookingRepository bookingRepository, BookingService bookingService,
             AvailabilitySlotRepository slotRepository, ServiceOfferingRepository serviceRepository,
             ProviderRepository providerRepository, UserRepository userRepository,
-            ReviewRepository reviewRepository) {
+            ReviewRepository reviewRepository, ApplicationEventPublisher eventPublisher) {
         this.staffRepository = staffRepository;
         this.staffBookingRepository = staffBookingRepository;
         this.bookingRepository = bookingRepository;
@@ -74,6 +76,7 @@ public class StaffPortalService {
         this.providerRepository = providerRepository;
         this.userRepository = userRepository;
         this.reviewRepository = reviewRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -132,8 +135,10 @@ public class StaffPortalService {
                     customer == null ? null : customer.getDisplayName(), customer == null ? null
                             : customer.getPhone(),
                     e.booking.getTotalPrice(), e.booking.getCurrency(), e.booking.getPaidAmount(),
-                    e.booking.getCancellationReason(), e.confirmedAt(), confirmed && e.confirmedAt() == null,
-                    confirmed || status == BookingStatus.PENDING_PAYMENT, confirmed, confirmed);
+                    e.booking.getCancellationReason(), e.confirmedAt(), e.declinedAt(),
+                    confirmed && e.confirmedAt() == null && e.declinedAt() == null,
+                    (confirmed || status == BookingStatus.PENDING_PAYMENT) && e.declinedAt() == null, confirmed,
+                    confirmed);
         }).toList();
     }
 
@@ -148,16 +153,34 @@ public class StaffPortalService {
         }
         StaffBooking link = staffBookingRepository.findByBookingId(bookingId)
                 .orElseGet(() -> new StaffBooking(UUID.randomUUID(), bookingId, staffId, Instant.now()));
+        if (link.getStaffDeclinedAt() != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "You already told the owner you can't attend");
+        }
         link.confirmByStaff(Instant.now());
         staffBookingRepository.save(link);
     }
 
-    /** The staff member cancels an appointment: slot released, customer refunded and notified. */
+    /**
+     * "I can't attend": a request to the owner. Deliberately NOT a cancellation — cancelling refunds the customer
+     * and frees the slot, and that decision (reassign to a colleague, move, or cancel) is the owner's, since the
+     * business, not the staff member, carries the lost revenue. The booking is untouched; the owner is told.
+     */
     @Transactional
-    public void cancel(UUID userId, UUID staffId, UUID bookingId, String reason) {
-        requireOwnActiveStaff(staffId, userId);
-        requireOwnBooking(staffId, bookingId);
-        bookingService.cancelBookingAuthorized(bookingId, reason);
+    public void cannotAttend(UUID userId, UUID staffId, UUID bookingId, String reason) {
+        Staff staff = requireOwnActiveStaff(staffId, userId);
+        Booking booking = requireOwnBooking(staffId, bookingId);
+        if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Only an upcoming appointment can be declined (status=" + booking.getStatus() + ")");
+        }
+        StaffBooking link = staffBookingRepository.findByBookingId(bookingId)
+                .orElseGet(() -> new StaffBooking(UUID.randomUUID(), bookingId, staffId, Instant.now()));
+        boolean first = link.getStaffDeclinedAt() == null;
+        link.requestDecline(Instant.now(), reason == null || reason.isBlank() ? null : reason.trim());
+        staffBookingRepository.save(link);
+        if (first) {
+            eventPublisher.publishEvent(new StaffCannotAttendEvent(bookingId, staff.getProviderId(), staffId));
+        }
     }
 
     @Transactional
@@ -213,6 +236,10 @@ public class StaffPortalService {
             return link == null ? null : link.getStaffConfirmedAt();
         }
 
+        Instant declinedAt() {
+            return link == null ? null : link.getStaffDeclinedAt();
+        }
+
         boolean isUpcoming(Instant now) {
             BookingStatus status = booking.getStatus();
             return slot.getEndsAt().isAfter(now)
@@ -220,7 +247,7 @@ public class StaffPortalService {
         }
 
         boolean needsAcceptance(Instant now) {
-            return booking.getStatus() == BookingStatus.CONFIRMED && confirmedAt() == null
+            return booking.getStatus() == BookingStatus.CONFIRMED && confirmedAt() == null && declinedAt() == null
                     && slot.getEndsAt().isAfter(now);
         }
     }

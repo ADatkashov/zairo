@@ -1,6 +1,7 @@
 package com.zairo.factory.staff;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -29,11 +30,14 @@ public final class StaffPortalDtos {
             BigDecimal paidAmount, String cancellationReason,
             @Schema(description = "When the staff member accepted it; null while not accepted.")
             Instant staffConfirmedAt,
-            boolean canAccept, boolean canCancel, boolean canComplete, boolean canMarkNoShow) {
+            @Schema(description = "When the staff member told the owner they can't attend; null otherwise.")
+            Instant staffDeclinedAt,
+            boolean canAccept, boolean canDecline, boolean canComplete, boolean canMarkNoShow) {
     }
 
-    public record DeclineAppointmentRequest(
-            @Schema(description = "Optional — why the staff member cancels.", example = "Sick leave") String reason) {
+    public record CannotAttendRequest(
+            @Schema(description = "Optional — why the staff member can't attend.", example = "Sick leave")
+            @Size(max = 500) String reason) {
     }
 
     public record StaffReviewResponse(

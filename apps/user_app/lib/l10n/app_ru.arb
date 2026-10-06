@@ -544,15 +544,15 @@
   "staffCabinetStatusPendingPayment": "Ожидает оплаты",
   "staffCabinetStatusNoShow": "Не пришёл",
   "staffCabinetAcceptButton": "Подтвердить",
-  "staffCabinetCancelButton": "Отменить",
+  "staffCabinetDeclineButton": "Не смогу",
   "staffCabinetCompleteButton": "Завершить",
   "staffCabinetNoShowButton": "Не пришёл",
-  "staffCabinetCancelConfirmTitle": "Отменить запись?",
-  "staffCabinetCancelConfirmMessage": "Клиент получит уведомление, оплаченная запись будет возвращена. Время снова станет доступным.",
+  "staffCabinetDeclineConfirmTitle": "Не сможете принять эту запись?",
+  "staffCabinetDeclineConfirmMessage": "Владелец бизнеса получит уведомление и решит, что делать: назначить коллегу, перенести или отменить. До этого запись остаётся как есть.",
   "staffCabinetNoShowConfirmTitle": "Отметить «не пришёл»?",
   "staffCabinetNoShowConfirmMessage": "Используйте, если клиент не явился. Это нельзя отменить.",
   "staffCabinetKeepButton": "Оставить",
-  "staffCabinetConfirmCancelButton": "Отменить запись",
+  "staffCabinetConfirmDeclineButton": "Сообщить владельцу",
   "staffCabinetConfirmNoShowButton": "Не пришёл",
   "staffCabinetActionFailed": "Не удалось обновить запись. Попробуйте ещё раз.",
   "staffCabinetLoadFailed": "Не удалось загрузить записи.",
@@ -562,5 +562,6 @@
   "staffCabinetReviewsCount": "Отзывов: {count}",
   "staffCabinetBusinessReply": "Ответ бизнеса",
   "staffCabinetAnonymousCustomer": "Клиент",
-  "staffCabinetAverageRatingLabel": "Средняя оценка"
+  "staffCabinetAverageRatingLabel": "Средняя оценка",
+  "staffCabinetDeclinedBadge": "Отправлено владельцу"
 }
