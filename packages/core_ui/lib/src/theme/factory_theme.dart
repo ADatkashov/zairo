@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'factory_colors.dart';
+import 'factory_app_profile.dart';
 import 'factory_control_size.dart';
 import 'factory_radius.dart';
 import 'factory_typography.dart';
@@ -9,11 +10,15 @@ import 'factory_typography.dart';
 /// — `MaterialApp(theme: factoryLightTheme(), darkTheme: factoryDarkTheme())`
 /// — rather than re-deriving a palette from `ColorScheme.fromSeed`, which is
 /// how both apps looked before this package existed (stock Material purple).
-ThemeData factoryLightTheme() => _factoryTheme(FactoryColors.light);
+/// [profile] picks the per-app temperament (card radius, row density); the
+/// default is none, so existing callers are unchanged.
+ThemeData factoryLightTheme({FactoryAppProfile? profile}) =>
+    _factoryTheme(FactoryColors.light, profile);
 
-ThemeData factoryDarkTheme() => _factoryTheme(FactoryColors.dark);
+ThemeData factoryDarkTheme({FactoryAppProfile? profile}) =>
+    _factoryTheme(FactoryColors.dark, profile);
 
-ThemeData _factoryTheme(FactoryColors colors) {
+ThemeData _factoryTheme(FactoryColors colors, FactoryAppProfile? profile) {
   final brightness = colors.bg.computeLuminance() > 0.5 ? Brightness.light : Brightness.dark;
 
   // Start from a seeded scheme so every Material-internal role
@@ -182,6 +187,6 @@ ThemeData _factoryTheme(FactoryColors colors) {
       surfaceTintColor: Colors.transparent,
       labelTextStyle: WidgetStatePropertyAll(textTheme.labelSmall),
     ),
-    extensions: [colors],
+    extensions: [colors, if (profile != null) profile],
   );
 }
