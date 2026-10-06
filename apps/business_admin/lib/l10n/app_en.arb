@@ -2513,5 +2513,11 @@
   "calendarNextWeek": "Next week",
   "@calendarNextWeek": {"description": "calendarNextWeek"},
   "calendarLoadFailed": "Couldn't load the calendar.",
-  "@calendarLoadFailed": {"description": "calendarLoadFailed"}
+  "@calendarLoadFailed": {"description": "calendarLoadFailed"},
+  "staffCabinetLinkTitle": "My appointments as staff",
+  "@staffCabinetLinkTitle": {"description": "staffCabinetLinkTitle"},
+  "staffCabinetLinkSubtitle": "Opens the Zairo app, where your appointments and rating are",
+  "@staffCabinetLinkSubtitle": {"description": "staffCabinetLinkSubtitle"},
+  "staffCabinetLinkFailed": "Couldn't open the Zairo app. Make sure it's installed on this device.",
+  "@staffCabinetLinkFailed": {"description": "staffCabinetLinkFailed"}
 }
