@@ -300,6 +300,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                     const SizedBox(height: FactorySpacing.space3),
                     if (vehicles.isEmpty)
                       FactoryEmptyState(
+                        compact: true,
                         icon: Symbols.directions_car_rounded,
                         title: l10n.vehiclesEmptyTitle,
                         message: l10n.vehiclesEmptyMessage,
@@ -354,6 +355,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                       final openSlots = slots.where((s) => s.isOpen).toList();
                       if (openSlots.isEmpty) {
                         return FactoryEmptyState(
+                          compact: true,
                           icon: Symbols.event_busy_rounded,
                           title: l10n.noOpenTimesTitle,
                           message: l10n.noOpenTimesMessage,
