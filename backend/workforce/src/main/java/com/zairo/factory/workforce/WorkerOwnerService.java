@@ -38,6 +38,7 @@ public class WorkerOwnerService {
     static final String CANNOT_ATTEND = "WORKER_CANNOT_ATTEND";
     static final String UNAVAILABLE = "WORKER_UNAVAILABLE";
     static final String INACTIVE = "WORKER_INACTIVE";
+    static final String NOT_ACCEPTED = "WORKER_NOT_ACCEPTED";
 
     private static final Duration HORIZON = Duration.ofDays(120);
 
@@ -96,6 +97,10 @@ public class WorkerOwnerService {
             for (WorkerBookings.ActiveBooking ab : active) {
                 WorkerBookingState state = states.get(ab.booking().getId());
                 String reason = reasonOf(worker, ab.slot(), state, timeOff);
+                if (reason == null && WorkerUnacceptedWarningService.isUnaccepted(worker, ab.booking(), ab.slot(),
+                        state, now)) {
+                    reason = NOT_ACCEPTED;
+                }
                 if (reason != null) {
                     items.add(new Item(worker, ab, state, reason, timeOff));
                 }
@@ -185,6 +190,13 @@ public class WorkerOwnerService {
             r.resolve(WorkerChangeRequest.Resolution.OWNER_DECIDED, Instant.now());
             requestRepository.save(r);
         });
+    }
+
+    /** The customer did come after a wrong no-show mark. */
+    @Transactional
+    public void markAttended(UUID providerId, UUID bookingId, UUID ownerId) {
+        requireOwnedBooking(providerId, bookingId, ownerId);
+        bookingService.correctNoShowToCompleted(bookingId, ownerId);
     }
 
     /** Why an appointment needs the owner, or null when it doesn't. Shared with the customer-facing side. */

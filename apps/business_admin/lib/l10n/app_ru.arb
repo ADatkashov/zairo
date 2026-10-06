@@ -984,5 +984,17 @@
   "workerPricesUseBase": "Обычная цена",
   "@workerPricesUseBase": {"description": "workerPricesUseBase"},
   "workerPricesSave": "Сохранить",
-  "@workerPricesSave": {"description": "workerPricesSave"}
+  "@workerPricesSave": {"description": "workerPricesSave"},
+  "noShowCorrectionTitle": "Клиент всё-таки пришёл?",
+  "@noShowCorrectionTitle": {"description": "noShowCorrectionTitle"},
+  "noShowCorrectionMessage": "Этот визит отмечен как «не пришёл». Если клиент пришёл, отметьте его выполненным. Выполненный визит нельзя вернуть обратно.",
+  "@noShowCorrectionMessage": {"description": "noShowCorrectionMessage"},
+  "noShowCorrectionKeep": "Оставить «не пришёл»",
+  "@noShowCorrectionKeep": {"description": "noShowCorrectionKeep"},
+  "noShowCorrectionConfirm": "Он приходил",
+  "@noShowCorrectionConfirm": {"description": "noShowCorrectionConfirm"},
+  "noShowCorrectionFailed": "Не получилось изменить. Попробуйте ещё раз.",
+  "@noShowCorrectionFailed": {"description": "noShowCorrectionFailed"},
+  "needsAttentionWorkerNotAccepted": "{worker} ещё не принял(а) эту запись",
+  "@needsAttentionWorkerNotAccepted": {"description": "needsAttentionWorkerNotAccepted", "placeholders": {"worker": {"type": "String", "example": "Aigerim"}}}
 }

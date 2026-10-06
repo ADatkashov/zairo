@@ -975,5 +975,17 @@
   "workerPricesUseBase": "Әдеттегі баға",
   "@workerPricesUseBase": {"description": "workerPricesUseBase"},
   "workerPricesSave": "Сақтау",
-  "@workerPricesSave": {"description": "workerPricesSave"}
+  "@workerPricesSave": {"description": "workerPricesSave"},
+  "noShowCorrectionTitle": "Клиент келді ме?",
+  "@noShowCorrectionTitle": {"description": "noShowCorrectionTitle"},
+  "noShowCorrectionMessage": "Бұл визит «келмеді» деп белгіленген. Клиент келсе, орындалды деп белгілеңіз. Орындалған визитті кері қайтаруға болмайды.",
+  "@noShowCorrectionMessage": {"description": "noShowCorrectionMessage"},
+  "noShowCorrectionKeep": "«Келмеді» қалдыру",
+  "@noShowCorrectionKeep": {"description": "noShowCorrectionKeep"},
+  "noShowCorrectionConfirm": "Ол келген",
+  "@noShowCorrectionConfirm": {"description": "noShowCorrectionConfirm"},
+  "noShowCorrectionFailed": "Өзгерту мүмкін болмады. Қайталап көріңіз.",
+  "@noShowCorrectionFailed": {"description": "noShowCorrectionFailed"},
+  "needsAttentionWorkerNotAccepted": "{worker} бұл жазылымды әлі қабылдаған жоқ",
+  "@needsAttentionWorkerNotAccepted": {"description": "needsAttentionWorkerNotAccepted", "placeholders": {"worker": {"type": "String", "example": "Aigerim"}}}
 }

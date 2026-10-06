@@ -41,6 +41,9 @@ public class WorkerBookingState {
     @Column(name = "decline_reason", length = 500)
     private String declineReason;
 
+    @Column(name = "unaccepted_warned_at")
+    private Instant unacceptedWarnedAt;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 16)
     private Preference preference = Preference.SPECIFIC;
@@ -78,6 +81,14 @@ public class WorkerBookingState {
         return declineReason;
     }
 
+    public Instant getUnacceptedWarnedAt() {
+        return unacceptedWarnedAt;
+    }
+
+    void markUnacceptedWarned(Instant at) {
+        this.unacceptedWarnedAt = at;
+    }
+
     public Preference getPreference() {
         return preference;
     }
@@ -103,5 +114,6 @@ public class WorkerBookingState {
         this.confirmedAt = null;
         this.declinedAt = null;
         this.declineReason = null;
+        this.unacceptedWarnedAt = null;
     }
 }

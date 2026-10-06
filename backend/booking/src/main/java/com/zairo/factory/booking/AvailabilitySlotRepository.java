@@ -43,4 +43,6 @@ public interface AvailabilitySlotRepository extends JpaRepository<AvailabilitySl
      */
     List<AvailabilitySlot> findByProviderIdAndStartsAtLessThanAndEndsAtGreaterThan(UUID providerId, Instant windowEnd,
             Instant windowStart);
+
+    List<AvailabilitySlot> findByStatusAndStartsAtBetween(AvailabilityStatus status, Instant from, Instant to);
 }
