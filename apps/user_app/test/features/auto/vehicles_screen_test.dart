@@ -100,7 +100,9 @@ void main() {
     await tester.enterText(find.widgetWithText(TextFormField, 'Model'), 'Civic');
     await tester.enterText(find.widgetWithText(TextFormField, 'Year'), '2021');
     await tester.enterText(find.widgetWithText(TextFormField, 'License plate'), '999 XYZ 01');
-    await tester.tap(find.widgetWithText(FilledButton, 'Add vehicle'));
+    // The empty state also offers an "Add vehicle" action; the dialog's
+    // submit button is the one on top (last in the tree).
+    await tester.tap(find.widgetWithText(FilledButton, 'Add vehicle').last);
     await tester.pumpAndSettle();
 
     expect(api.lastRegisterCall, {

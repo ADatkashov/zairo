@@ -34,7 +34,6 @@ import '../../data/models/admin_service.dart';
 import '../../data/models/admin_slot.dart';
 import '../providers/salon_providers.dart';
 import '../widgets/add_service_dialog.dart';
-import '../widgets/add_slot_dialog.dart';
 import '../widgets/recurring_schedule_dialog.dart';
 import 'business_analytics_screen.dart';
 
@@ -122,22 +121,15 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
         child: ListView(
           padding: const EdgeInsets.all(FactorySpacing.space4),
           children: [
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                FactoryBadge(label: _capitalize(_provider.vertical)),
-                FactoryBadge(
-                  label: _providerStatusLabel(l10n, _provider.status),
-                  variant: _providerStatusVariant(_provider.status),
-                ),
-              ],
+            _BusinessHeader(
+              provider: _provider,
+              statusLabel: _providerStatusLabel(l10n, _provider.status),
+              statusVariant: _providerStatusVariant(_provider.status),
             ),
             const SizedBox(height: FactorySpacing.space6),
             _DashboardMetricsSection(providerId: _provider.id),
             const SizedBox(height: FactorySpacing.space6),
-            _ServicesSection(providerId: _provider.id),
+            _ServicesSection(providerId: _provider.id, businessTypeId: _provider.businessTypeId),
             const SizedBox(height: FactorySpacing.space6),
             _AvailabilitySection(providerId: _provider.id),
             if (_provider.vertical == 'beauty') ...[
@@ -511,36 +503,26 @@ class _DashboardMetricsSection extends ConsumerWidget {
         metricsAsync.when(
           data: (metrics) {
             if (metrics.totalBookings == 0) {
-              return Text(
-                l10n.dashboardNoDataYet,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-              );
+              return _SectionEmpty(l10n.dashboardNoDataYet);
             }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Wrap(
-                  spacing: FactorySpacing.space3,
-                  runSpacing: FactorySpacing.space3,
-                  children: [
-                    _StatTile(
-                      label: l10n.dashboardTotalRevenueLabel,
-                      value: FactoryPriceText(amount: metrics.totalRevenue, fontSize: 18),
-                    ),
-                    _StatTile(label: l10n.dashboardTotalBookingsLabel, value: Text('${metrics.totalBookings}')),
-                    _StatTile(label: l10n.dashboardCompletedBookingsLabel, value: Text('${metrics.completedBookings}')),
-                    _StatTile(label: l10n.dashboardCancelledBookingsLabel, value: Text('${metrics.cancelledBookings}')),
-                    _StatTile(
-                      label: l10n.dashboardCancellationRateLabel,
-                      value: Text('${(metrics.cancellationRate * 100).round()}%'),
-                    ),
-                    _StatTile(label: l10n.dashboardTotalCustomersLabel, value: Text('${metrics.totalCustomers}')),
-                    if (metrics.averageCheck != null)
-                      _StatTile(
-                        label: l10n.dashboardAverageCheckLabel,
-                        value: FactoryPriceText(amount: metrics.averageCheck!, fontSize: 18),
-                      ),
-                  ],
+                _MetricsBento(
+                  revenueLabel: l10n.dashboardTotalRevenueLabel,
+                  revenue: metrics.totalRevenue,
+                  totalLabel: l10n.dashboardTotalBookingsLabel,
+                  total: metrics.totalBookings,
+                  averageLabel: l10n.dashboardAverageCheckLabel,
+                  average: metrics.averageCheck,
+                  completedLabel: l10n.dashboardCompletedBookingsLabel,
+                  completed: metrics.completedBookings,
+                  cancelledLabel: l10n.dashboardCancelledBookingsLabel,
+                  cancelled: metrics.cancelledBookings,
+                  cancellationLabel: l10n.dashboardCancellationRateLabel,
+                  cancellationRate: metrics.cancellationRate,
+                  customersLabel: l10n.dashboardTotalCustomersLabel,
+                  customers: metrics.totalCustomers,
                 ),
                 if (metrics.topServices.isNotEmpty) ...[
                   const SizedBox(height: FactorySpacing.space4),
@@ -572,28 +554,76 @@ class _DashboardMetricsSection extends ConsumerWidget {
   }
 }
 
-class _StatTile extends StatelessWidget {
-  final String label;
-  final Widget value;
+/// Photo-first header: the cover photo under a soft scrim (or a tinted
+/// gradient with the vertical's icon while there is none), with the vertical
+/// and status badges on top. The name stays in the app bar.
+class _BusinessHeader extends StatelessWidget {
+  final AdminProvider provider;
+  final String statusLabel;
+  final FactoryBadgeVariant statusVariant;
 
-  const _StatTile({required this.label, required this.value});
+  const _BusinessHeader({required this.provider, required this.statusLabel, required this.statusVariant});
 
   @override
   Widget build(BuildContext context) {
     final colors = context.factoryColors;
-    return FactoryCard(
-      padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space3, vertical: FactorySpacing.space2),
+    final radius = context.factoryProfileOrNull?.cardBorderRadius ?? FactoryRadius.xlRadius;
+    final photo = provider.coverPhotoUrl;
+    final fallback = DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [colors.primaryTint, colors.surfaceAlt],
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          switch (provider.vertical) {
+            'auto' => Icons.directions_car_filled_outlined,
+            'cleaning' => Icons.cleaning_services_outlined,
+            _ => Icons.content_cut_rounded,
+          },
+          size: 48,
+          color: colors.primaryStrong.withValues(alpha: 0.5),
+        ),
+      ),
+    );
+
+    return ClipRRect(
+      borderRadius: radius,
       child: SizedBox(
-        width: 130,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+        height: 140,
+        width: double.infinity,
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
-            const SizedBox(height: 4),
-            DefaultTextStyle(
-              style: Theme.of(context).textTheme.titleMedium ?? const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-              child: value,
+            if (photo == null)
+              fallback
+            else
+              Image.network(photo, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => fallback),
+            if (photo != null)
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0x00000000), Color(0x55000000)],
+                  ),
+                ),
+              ),
+            Positioned(
+              left: FactorySpacing.space3,
+              bottom: FactorySpacing.space3,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  FactoryBadge(label: _capitalize(provider.vertical)),
+                  FactoryBadge(label: statusLabel, variant: statusVariant),
+                ],
+              ),
             ),
           ],
         ),
@@ -602,15 +632,198 @@ class _StatTile extends StatelessWidget {
   }
 }
 
+/// Bento for the business overview: revenue is the one big number (with the
+/// total and average ticket under it); completed / cancelled / customers are
+/// tiles and the cancellation rate is a ring, warning-colored because for a
+/// cancellation rate lower is better.
+class _MetricsBento extends StatelessWidget {
+  final String revenueLabel;
+  final num revenue;
+  final String totalLabel;
+  final int total;
+  final String averageLabel;
+  final num? average;
+  final String completedLabel;
+  final int completed;
+  final String cancelledLabel;
+  final int cancelled;
+  final String cancellationLabel;
+  final double cancellationRate;
+  final String customersLabel;
+  final int customers;
+
+  const _MetricsBento({
+    required this.revenueLabel,
+    required this.revenue,
+    required this.totalLabel,
+    required this.total,
+    required this.averageLabel,
+    required this.average,
+    required this.completedLabel,
+    required this.completed,
+    required this.cancelledLabel,
+    required this.cancelled,
+    required this.cancellationLabel,
+    required this.cancellationRate,
+    required this.customersLabel,
+    required this.customers,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    final radius = context.factoryProfileOrNull?.cardBorderRadius ?? FactoryRadius.xlRadius;
+    final muted = colors.onPrimary.withValues(alpha: 0.8);
+    const gap = SizedBox(height: FactorySpacing.space3);
+    const hgap = SizedBox(width: FactorySpacing.space3);
+
+    Widget tile(String label, String value) => Expanded(
+      child: FactoryCard(
+        padding: const EdgeInsets.all(FactorySpacing.space3),
+        child: SizedBox(
+          width: double.infinity,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(value, style: textTheme.titleLarge),
+              const SizedBox(height: 2),
+              Text(label, style: textTheme.labelMedium?.copyWith(color: colors.textSecondary)),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(FactorySpacing.space5),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [colors.primaryStrong, colors.primary],
+            ),
+            borderRadius: radius,
+            boxShadow: context.factoryElevation(FactoryElevationLevel.lg),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(revenueLabel, style: textTheme.labelLarge?.copyWith(color: muted)),
+              const SizedBox(height: FactorySpacing.space1),
+              FactoryPriceText(amount: revenue, fontSize: 30, color: colors.onPrimary),
+              const SizedBox(height: FactorySpacing.space4),
+              Wrap(
+                spacing: FactorySpacing.space6,
+                runSpacing: FactorySpacing.space2,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('$total', style: textTheme.titleMedium?.copyWith(color: colors.onPrimary)),
+                      Text(totalLabel, style: textTheme.labelMedium?.copyWith(color: muted)),
+                    ],
+                  ),
+                  if (average != null)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        FactoryPriceText(amount: average!, fontSize: 16, color: colors.onPrimary),
+                        Text(averageLabel, style: textTheme.labelMedium?.copyWith(color: muted)),
+                      ],
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        gap,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [tile(completedLabel, '$completed'), hgap, tile(cancelledLabel, '$cancelled')],
+        ),
+        gap,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            tile(customersLabel, '$customers'),
+            hgap,
+            Expanded(
+              child: FactoryCard(
+                padding: const EdgeInsets.all(FactorySpacing.space3),
+                child: Row(
+                  children: [
+                    FactoryProgressRing(
+                      value: cancellationRate,
+                      size: 44,
+                      strokeWidth: 6,
+                      color: colors.warning,
+                      semanticLabel: cancellationLabel,
+                      child: Text(
+                        '${(cancellationRate * 100).round()}%',
+                        style: FactoryTypography.mono(size: 10, color: colors.text),
+                      ),
+                    ),
+                    const SizedBox(width: FactorySpacing.space2),
+                    Expanded(
+                      child: Text(
+                        cancellationLabel,
+                        style: textTheme.labelMedium?.copyWith(color: colors.textSecondary),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// The "nothing here yet" line of a section (no services, no slots, no
+/// bookings ...): a quiet tinted block instead of loose grey text, so an empty
+/// section still reads as a section.
+class _SectionEmpty extends StatelessWidget {
+  final String message;
+
+  const _SectionEmpty(this.message);
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(FactorySpacing.space3),
+      decoration: BoxDecoration(color: colors.surfaceAlt, borderRadius: FactoryRadius.mdRadius),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline_rounded, size: 18, color: colors.textTertiary),
+          const SizedBox(width: FactorySpacing.space2),
+          Expanded(
+            child: Text(message, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textSecondary)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ServicesSection extends ConsumerWidget {
   final String providerId;
+  final String? businessTypeId;
 
-  const _ServicesSection({required this.providerId});
+  const _ServicesSection({required this.providerId, this.businessTypeId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
     final showInactive = ref.watch(showInactiveServicesProvider(providerId));
     final servicesAsync = ref.watch(providerServicesProvider((providerId, showInactive)));
     void refresh() => ref.invalidate(providerServicesProvider((providerId, showInactive)));
@@ -635,7 +848,7 @@ class _ServicesSection extends ConsumerWidget {
                 onPressed: () async {
                   final added = await showDialog<bool>(
                     context: context,
-                    builder: (_) => AddServiceDialog(providerId: providerId),
+                    builder: (_) => AddServiceDialog(providerId: providerId, businessTypeId: businessTypeId),
                   );
                   if (added == true) refresh();
                 },
@@ -646,10 +859,7 @@ class _ServicesSection extends ConsumerWidget {
         servicesAsync.when(
           data: (services) {
             if (services.isEmpty) {
-              return Text(
-                showInactive ? l10n.noServicesYet : l10n.noActiveServices,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-              );
+              return _SectionEmpty(showInactive ? l10n.noServicesYet : l10n.noActiveServices);
             }
             return Column(
               children: services
@@ -658,7 +868,7 @@ class _ServicesSection extends ConsumerWidget {
                         onEdit: () async {
                           final saved = await showDialog<bool>(
                             context: context,
-                            builder: (_) => AddServiceDialog(providerId: providerId, existing: s),
+                            builder: (_) => AddServiceDialog(providerId: providerId, businessTypeId: businessTypeId, existing: s),
                           );
                           if (saved == true) refresh();
                         },
@@ -772,7 +982,6 @@ class _AvailabilitySectionState extends ConsumerState<_AvailabilitySection> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
     final slotsAsync = ref.watch(providerSlotsProvider(providerId));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -794,28 +1003,13 @@ class _AvailabilitySectionState extends ConsumerState<_AvailabilitySection> {
                   if (generated == true) ref.invalidate(providerSlotsProvider(providerId));
                 },
               ),
-              FactoryButton(
-                icon: Icons.add,
-                label: l10n.addButton,
-                variant: FactoryButtonVariant.text,
-                onPressed: () async {
-                  final added = await showDialog<bool>(
-                    context: context,
-                    builder: (_) => AddSlotDialog(providerId: providerId),
-                  );
-                  if (added == true) ref.invalidate(providerSlotsProvider(providerId));
-                },
-              ),
             ],
           ),
         ),
         slotsAsync.when(
           data: (slots) {
             if (slots.isEmpty) {
-              return Text(
-                l10n.noSlotsYet,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-              );
+              return _SectionEmpty(l10n.noSlotsYet);
             }
             final byDay = groupByLocalDay<AdminSlot>(slots, (s) => s.startsAt);
             final days = byDay.keys.toList();
@@ -939,7 +1133,6 @@ class _MastersSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
     final showInactive = ref.watch(showInactiveMastersProvider(providerId));
     final mastersAsync = ref.watch(adminMastersProvider((providerId, showInactive)));
     void refresh() => ref.invalidate(adminMastersProvider((providerId, showInactive)));
@@ -975,10 +1168,7 @@ class _MastersSection extends ConsumerWidget {
         mastersAsync.when(
           data: (masters) {
             if (masters.isEmpty) {
-              return Text(
-                showInactive ? l10n.noMastersYet : l10n.noActiveMasters,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-              );
+              return _SectionEmpty(showInactive ? l10n.noMastersYet : l10n.noActiveMasters);
             }
             return Column(
               children: masters
@@ -1110,7 +1300,6 @@ class _MechanicsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
     final showInactive = ref.watch(showInactiveMechanicsProvider(providerId));
     final mechanicsAsync = ref.watch(adminMechanicsProvider((providerId, showInactive)));
     void refresh() => ref.invalidate(adminMechanicsProvider((providerId, showInactive)));
@@ -1146,10 +1335,7 @@ class _MechanicsSection extends ConsumerWidget {
         mechanicsAsync.when(
           data: (mechanics) {
             if (mechanics.isEmpty) {
-              return Text(
-                showInactive ? l10n.noMechanicsYet : l10n.noActiveMechanics,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-              );
+              return _SectionEmpty(showInactive ? l10n.noMechanicsYet : l10n.noActiveMechanics);
             }
             return Column(
               children: mechanics
@@ -1270,7 +1456,6 @@ class _CleanersSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
     final showInactive = ref.watch(showInactiveCleanersProvider(providerId));
     final cleanersAsync = ref.watch(adminCleanersProvider((providerId, showInactive)));
     void refresh() => ref.invalidate(adminCleanersProvider((providerId, showInactive)));
@@ -1306,10 +1491,7 @@ class _CleanersSection extends ConsumerWidget {
         cleanersAsync.when(
           data: (cleaners) {
             if (cleaners.isEmpty) {
-              return Text(
-                showInactive ? l10n.noCleanersYet : l10n.noActiveCleaners,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-              );
+              return _SectionEmpty(showInactive ? l10n.noCleanersYet : l10n.noActiveCleaners);
             }
             return Column(
               children: cleaners
@@ -1430,7 +1612,6 @@ class _StaffSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
     final showInactive = ref.watch(showInactiveStaffProvider(providerId));
     final staffAsync = ref.watch(adminStaffProvider((providerId, showInactive)));
     void refresh() => ref.invalidate(adminStaffProvider((providerId, showInactive)));
@@ -1466,10 +1647,7 @@ class _StaffSection extends ConsumerWidget {
         staffAsync.when(
           data: (staff) {
             if (staff.isEmpty) {
-              return Text(
-                showInactive ? l10n.noStaffYet : l10n.noActiveStaff,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-              );
+              return _SectionEmpty(showInactive ? l10n.noStaffYet : l10n.noActiveStaff);
             }
             return Column(
               children: staff
@@ -1590,7 +1768,6 @@ class _BookingsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
     final bookingsAsync = ref.watch(providerBookingsProvider(providerId));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1600,10 +1777,7 @@ class _BookingsSection extends ConsumerWidget {
         bookingsAsync.when(
           data: (bookings) {
             if (bookings.isEmpty) {
-              return Text(
-                l10n.noBookingsYet,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-              );
+              return _SectionEmpty(l10n.noBookingsYet);
             }
             return Column(
               children: bookings
@@ -1706,7 +1880,6 @@ class _PayoutsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
     final payoutsAsync = ref.watch(providerPayoutsProvider(providerId));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1716,10 +1889,7 @@ class _PayoutsSection extends ConsumerWidget {
         payoutsAsync.when(
           data: (payouts) {
             if (payouts.isEmpty) {
-              return Text(
-                l10n.noPayoutsYet,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-              );
+              return _SectionEmpty(l10n.noPayoutsYet);
             }
             return Column(children: payouts.map((p) => _PayoutAdminRow(payout: p)).toList());
           },

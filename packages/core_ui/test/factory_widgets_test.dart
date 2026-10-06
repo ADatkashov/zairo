@@ -9,6 +9,9 @@ Widget _wrap(Widget child) => MaterialApp(
 );
 
 void main() {
+  _denseButtonTests();
+  _authBrandTests();
+  _settingsGroupTests();
   group('formatFactoryAmount', () {
     test('groups the whole part into thousands with a space', () {
       expect(formatFactoryAmount(12400), '12 400');
@@ -293,7 +296,7 @@ void main() {
           ),
         ),
       );
-      expect(find.byType(OutlinedButton), findsNothing);
+      expect(find.byType(FactoryButton), findsNothing);
 
       var tapped = false;
       await tester.pumpWidget(
@@ -307,6 +310,7 @@ void main() {
           ),
         ),
       );
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Try tomorrow'));
       expect(tapped, isTrue);
     },
@@ -325,6 +329,7 @@ void main() {
       ),
     );
 
+    await tester.pumpAndSettle();
     expect(find.text("Couldn't load your bookings."), findsOneWidget);
     await tester.tap(find.text('Try again'));
     expect(retried, isTrue);
@@ -552,6 +557,23 @@ void main() {
     },
   );
 
+  testWidgets('FactoryButton wraps a long label in a narrow parent instead of overflowing', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        const SizedBox(
+          width: 160,
+          child: FactoryButton(
+            label: 'A very long button label that cannot fit on one line',
+            variant: FactoryButtonVariant.text,
+            onPressed: null,
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FactoryCard calls onTap and renders its child', (tester) async {
     var tapped = false;
     await tester.pumpWidget(
@@ -651,6 +673,29 @@ void main() {
       expect(find.text('More'), findsOneWidget);
     },
   );
+
+  testWidgets('FactoryBottomNavigation draws a count badge only when there is something to count', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(
+        FactoryBottomNavigation(
+          destinations: const [
+            FactoryNavDestination(icon: Icons.home_rounded, label: 'Home'),
+            FactoryNavDestination(icon: Icons.person_rounded, label: 'Profile', badgeCount: 3),
+            FactoryNavDestination(icon: Icons.forum_rounded, label: 'Chats', badgeCount: 12),
+          ],
+          selectedIndex: 0,
+          onDestinationSelected: (_) {},
+        ),
+      ),
+    );
+
+    expect(find.text('3'), findsOneWidget);
+    expect(find.text('9+'), findsOneWidget);
+    expect(find.bySemanticsLabel('Profile, 3'), findsOneWidget);
+    expect(find.bySemanticsLabel('Home'), findsOneWidget);
+  });
 
   testWidgets(
     'FactoryLoadingState shows an optional message alongside the spinner',
@@ -857,6 +902,101 @@ void main() {
       expect(formatFactoryMoney(12400, 'UZS'), "12 400 so'm");
       expect(formatFactoryMoney(12400, null), '12 400 ₸');
       expect(formatFactoryMoney(12400, 'XYZ'), '12 400 XYZ');
+    });
+  });
+}
+
+void _denseButtonTests() {
+  testWidgets('dense FactoryButton is 36px high, regular is 48px', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: factoryLightTheme(),
+        home: Scaffold(
+          body: Column(
+            children: [
+              FactoryButton(key: const Key('dense'), dense: true, label: 'Approve', onPressed: () {}),
+              FactoryButton(key: const Key('regular'), label: 'Approve', onPressed: () {}),
+            ],
+          ),
+        ),
+      ),
+    );
+    expect(tester.getSize(find.byKey(const Key('dense'))).height, 36);
+    expect(tester.getSize(find.byKey(const Key('regular'))).height, 48);
+  });
+}
+
+void _authBrandTests() {
+  group('FactoryAuthBrand', () {
+    testWidgets('shows the mark with an optional title and subtitle', (tester) async {
+      await tester.pumpWidget(_wrap(const FactoryAuthBrand(title: 'Welcome', subtitle: 'Sign in to continue')));
+
+      expect(find.byType(FactoryLogomark), findsOneWidget);
+      expect(find.text('Welcome'), findsOneWidget);
+      expect(find.text('Sign in to continue'), findsOneWidget);
+    });
+
+    testWidgets('is just the mark without text, in both themes, without overflow', (tester) async {
+      for (final theme in [factoryLightTheme(), factoryDarkTheme()]) {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: theme,
+            home: const Scaffold(body: Center(child: FactoryAuthBrand())),
+          ),
+        );
+        expect(find.byType(FactoryLogomark), findsOneWidget);
+        expect(find.byType(Text), findsNothing);
+        expect(tester.takeException(), isNull);
+      }
+    });
+  });
+}
+
+void _settingsGroupTests() {
+  group('FactorySettingsGroup', () {
+    testWidgets('puts a hairline between rows only, not before the first', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const FactorySettingsGroup(
+            children: [
+              ListTile(title: Text('One')),
+              ListTile(title: Text('Two')),
+              ListTile(title: Text('Three')),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.text('One'), findsOneWidget);
+      expect(find.text('Three'), findsOneWidget);
+      expect(find.byType(Divider), findsNWidgets(2));
+    });
+
+    testWidgets('a single row has no divider', (tester) async {
+      await tester.pumpWidget(_wrap(const FactorySettingsGroup(children: [ListTile(title: Text('Only'))])));
+
+      expect(find.byType(Divider), findsNothing);
+    });
+
+    testWidgets('row taps still reach the row inside the card', (tester) async {
+      var taps = 0;
+      await tester.pumpWidget(
+        _wrap(
+          FactorySettingsGroup(
+            children: [
+              ListTile(
+                leading: const FactoryIconBadge(icon: Icons.language),
+                title: const Text('Language'),
+                onTap: () => taps++,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Language'));
+      expect(taps, 1);
+      expect(find.byIcon(Icons.language), findsOneWidget);
     });
   });
 }

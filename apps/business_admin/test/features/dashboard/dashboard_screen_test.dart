@@ -23,8 +23,12 @@ import 'package:business_admin/features/salon/data/models/admin_provider.dart';
 import 'package:business_admin/features/salon/data/models/admin_service.dart';
 import 'package:business_admin/features/salon/data/models/admin_slot.dart';
 import 'package:business_admin/features/salon/data/models/dashboard_metrics.dart';
+import 'package:business_admin/features/salon/data/models/schedule_entry.dart';
 import 'package:business_admin/features/salon/data/salon_admin_api.dart';
 import 'package:business_admin/features/salon/presentation/providers/salon_providers.dart';
+import 'package:business_admin/features/salon/presentation/screens/week_calendar_screen.dart';
+import 'package:business_admin/features/salon/presentation/widgets/add_service_dialog.dart';
+import 'package:business_admin/features/salon/presentation/widgets/recurring_schedule_dialog.dart';
 import 'package:business_admin/l10n/app_localizations.dart';
 
 class _FakeSalonAdminApi extends SalonAdminApi {
@@ -35,6 +39,10 @@ class _FakeSalonAdminApi extends SalonAdminApi {
   final List<AdminProvider> _providers;
   final Map<String, DashboardMetrics> _metricsByProviderId;
   Map<String, dynamic>? lastCreateCall;
+
+  /// Null = the schedule endpoint "fails" (the card stays hidden, as on a
+  /// real error), so tests that aren't about the agenda are unaffected.
+  List<ScheduleEntry>? schedule;
 
   @override
   Future<List<AdminProvider>> listMyProviders(String ownerUserId) async => _providers;
@@ -66,7 +74,21 @@ class _FakeSalonAdminApi extends SalonAdminApi {
   }
 
   @override
-  Future<List<AdminService>> listServices(String providerId, {bool includeInactive = false}) async => const [];
+  Future<List<ScheduleEntry>> fetchSchedule(String providerId, {required DateTime from, required DateTime to}) async =>
+      schedule ?? (throw StateError('no schedule in this test'));
+
+  @override
+  Future<List<AdminService>> listServices(String providerId, {bool includeInactive = false}) async => [
+        const AdminService(
+          id: 's1',
+          providerId: 'p1',
+          title: 'Gel manicure',
+          durationMinutes: 75,
+          price: 8500,
+          currency: 'KZT',
+          active: true,
+        ),
+      ];
 
   @override
   Future<List<AdminSlot>> listSlots(String providerId) async => const [];
@@ -284,5 +306,150 @@ void main() {
     expect(find.text('7'), findsOneWidget);
     expect(find.text('5'), findsOneWidget);
     expect(find.textContaining('24'), findsWidgets);
+  });
+
+  Future<void> pumpDashboard(WidgetTester tester, List<AdminProvider> providers) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(_FakeSalonAdminApi(providers)),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+          billingApiProvider.overrideWithValue(_FakeBillingApi()),
+          campaignCenterApiProvider.overrideWithValue(_FakeCampaignCenterApi()),
+          authControllerProvider.overrideWith(_LoggedInOwnerController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const DashboardScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('quick actions with one business open the schedule dialog straight away', (tester) async {
+    await pumpDashboard(tester, [
+      const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE'),
+    ]);
+
+    await tester.tap(find.text('Set schedule'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Which business?'), findsNothing);
+    expect(find.byType(RecurringScheduleDialog), findsOneWidget);
+  });
+
+  testWidgets('quick actions with several businesses ask which one first', (tester) async {
+    await pumpDashboard(tester, [
+      const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE'),
+      const AdminProvider(id: 'p2', ownerUserId: 'owner-1', name: 'Speedy Workshop', vertical: 'auto', status: 'ACTIVE'),
+    ]);
+
+    await tester.tap(find.text('Add service'));
+    await tester.pumpAndSettle();
+    expect(find.text('Which business?'), findsOneWidget);
+
+    await tester.tap(find.descendant(of: find.byType(BottomSheet), matching: find.text('Speedy Workshop')));
+    await tester.pumpAndSettle();
+
+    final dialog = tester.widget<AddServiceDialog>(find.byType(AddServiceDialog));
+    expect(dialog.providerId, 'p2');
+  });
+
+  testWidgets("shows today's bookings with time, service and status, leaving cancelled ones out", (tester) async {
+    final now = DateTime.now();
+    final noon = DateTime(now.year, now.month, now.day, 12);
+    ScheduleEntry entry(String id, String status, DateTime at) => ScheduleEntry(
+          bookingId: id,
+          serviceId: 's1',
+          availabilitySlotId: 'slot-$id',
+          status: status,
+          startsAt: at.toUtc(),
+          endsAt: at.add(const Duration(minutes: 75)).toUtc(),
+          totalPrice: 8500,
+          currency: 'KZT',
+        );
+    final fakeApi = _FakeSalonAdminApi([
+      const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE'),
+    ])
+      ..schedule = [entry('b1', 'CONFIRMED', noon), entry('b2', 'CANCELLED', noon.add(const Duration(hours: 1)))];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(fakeApi),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+          billingApiProvider.overrideWithValue(_FakeBillingApi()),
+          campaignCenterApiProvider.overrideWithValue(_FakeCampaignCenterApi()),
+          authControllerProvider.overrideWith(_LoggedInOwnerController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const DashboardScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Today'), findsOneWidget);
+    expect(find.text('Gel manicure'), findsOneWidget);
+    expect(find.text('12:00'), findsOneWidget);
+    expect(find.text('Confirmed'), findsOneWidget);
+    // The cancelled booking is not listed.
+    expect(find.text('13:00'), findsNothing);
+  });
+
+  testWidgets('week calendar groups bookings by day and steps to the next week', (tester) async {
+    ScheduleEntry entry(String id, String status, DateTime at) => ScheduleEntry(
+          bookingId: id,
+          serviceId: 's1',
+          availabilitySlotId: 'slot-$id',
+          status: status,
+          startsAt: at.toUtc(),
+          endsAt: at.add(const Duration(minutes: 75)).toUtc(),
+          totalPrice: 8500,
+          currency: 'KZT',
+        );
+    // Wed 7 Oct 2026: that week runs Mon 5 – Sun 11.
+    final fakeApi = _FakeSalonAdminApi([
+      const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE'),
+    ])
+      ..schedule = [
+        entry('b1', 'CONFIRMED', DateTime(2026, 10, 7, 12)),
+        entry('b2', 'PENDING_PAYMENT', DateTime(2026, 10, 8, 10)),
+      ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(fakeApi),
+          authControllerProvider.overrideWith(_LoggedInOwnerController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: WeekCalendarScreen(ownerUserId: 'owner-1', today: DateTime(2026, 10, 7)),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Gel manicure'), findsNWidgets(2));
+    expect(find.text('Confirmed'), findsOneWidget);
+    expect(find.text('Awaiting payment'), findsOneWidget);
+    expect(find.text('12:00'), findsOneWidget);
+    expect(find.text('This week'), findsNothing);
+
+    await tester.tap(find.byTooltip('Next week'));
+    await tester.pumpAndSettle();
+    // The fake returns the same two bookings, but none fall in the next week.
+    expect(find.text('Gel manicure'), findsNothing);
+    expect(find.text('No bookings'), findsNWidgets(7));
+    expect(find.text('This week'), findsOneWidget);
   });
 }

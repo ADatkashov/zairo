@@ -15,6 +15,8 @@ import '../../../messaging/data/models/conversation.dart';
 import '../../../messaging/presentation/providers/messaging_providers.dart';
 import '../../../messaging/presentation/screens/chat_thread_screen.dart';
 import '../../../payments/presentation/providers/payments_providers.dart';
+import '../../../notifications/presentation/widgets/notification_bell_button.dart';
+import '../../data/models/book_again_suggestion.dart';
 import '../../../payments/presentation/widgets/payment_status_chip.dart';
 import '../../../reviews/presentation/widgets/review_section.dart';
 import '../../data/booking_exception.dart';
@@ -37,7 +39,16 @@ class MyBookingsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: colors.bg,
-      appBar: FactoryAppBar(title: l10n.myBookingsTitle),
+      appBar: FactoryAppBar(
+        title: l10n.myBookingsTitle,
+        actions: [
+          if (authState.value != null)
+            const Padding(
+              padding: EdgeInsets.only(right: FactorySpacing.space3),
+              child: NotificationBellButton(),
+            ),
+        ],
+      ),
       body: authState.when(
         data: (user) => user == null
             ? LoggedOutGate(
@@ -146,11 +157,12 @@ class _BookingsListState extends ConsumerState<_BookingsList> {
                             child: FactoryEmptyState(
                               icon: Symbols.calendar_month_rounded,
                               title: switch (_tab) {
-                                _BookingsTab.upcoming => l10n.bookingsTabUpcoming,
+                                _BookingsTab.upcoming =>
+                                  l10n.bookingsTabEmptyTitleUpcoming,
                                 _BookingsTab.completed =>
-                                  l10n.bookingsTabCompleted,
+                                  l10n.bookingsTabEmptyTitleCompleted,
                                 _BookingsTab.cancelled =>
-                                  l10n.bookingsTabCancelled,
+                                  l10n.bookingsTabEmptyTitleCancelled,
                               },
                               message: switch (_tab) {
                                 _BookingsTab.upcoming =>
@@ -273,6 +285,40 @@ class _BookingsTabButton extends StatelessWidget {
   }
 }
 
+/// "Book again" on a completed booking. A Booking only knows its service id,
+/// not which business it belongs to, so the business is taken from the
+/// Book-Again suggestions Home already shows (matched by service) — the button
+/// simply isn't offered when the backend has no suggestion for that service.
+class _BookAgainButton extends ConsumerWidget {
+  const _BookAgainButton({required this.booking, required this.userId});
+
+  final Booking booking;
+  final String userId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final suggestions = ref.watch(bookAgainSuggestionsProvider(userId)).value;
+    BookAgainSuggestion? match;
+    for (final suggestion in suggestions ?? const <BookAgainSuggestion>[]) {
+      if (suggestion.serviceId == booking.serviceId) {
+        match = suggestion;
+        break;
+      }
+    }
+    if (match == null) return const SizedBox.shrink();
+    final suggestion = match;
+
+    return FactoryButton(
+      label: AppLocalizations.of(context)!.bookingBookAgainButton,
+      variant: FactoryButtonVariant.text,
+      onPressed: () => context.push(
+        AppRoutes.provider(suggestion.providerId),
+        extra: suggestion.toProviderSearchResult(),
+      ),
+    );
+  }
+}
+
 class _BookingCard extends ConsumerStatefulWidget {
   final Booking booking;
   final String userId;
@@ -332,6 +378,8 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
                   variant: FactoryButtonVariant.text,
                   onPressed: _openMessageAboutBookingDialog,
                 ),
+                if (booking.status == 'COMPLETED')
+                  _BookAgainButton(booking: booking, userId: widget.userId),
                 if (booking.status == 'CONFIRMED')
                   FactoryButton(
                     label: l10n.cancelBookingButton,

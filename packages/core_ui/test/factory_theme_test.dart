@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  _contrastTests();
+  _profileAndTrendTests();
   // Built inside testWidgets, not a bare test(): building the TextTheme
   // touches google_fonts, which needs a real Flutter binding to degrade
   // gracefully (falls back to the system font) when a test environment has
@@ -65,4 +67,92 @@ void main() {
     expect(darkShadow.color.g, greaterThan(lightShadow.color.g));
     expect(darkShadow.color.b, greaterThan(lightShadow.color.b));
   });
+}
+
+void _profileAndTrendTests() {
+  testWidgets('app profile is opt-in and carries per-app card radius', (tester) async {
+    expect(factoryLightTheme().extension<FactoryAppProfile>(), isNull);
+    final p = factoryLightTheme(profile: FactoryAppProfile.platform).extension<FactoryAppProfile>();
+    expect(p!.cardRadius, 12);
+    expect(FactoryAppProfile.consumer.cardRadius, 24);
+  });
+
+  testWidgets('FactoryTrendBadge shows arrow and sign', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: factoryLightTheme(),
+      home: const Column(children: [
+        FactoryTrendBadge(delta: 12),
+        FactoryTrendBadge(delta: -4),
+      ]),
+    ));
+    expect(find.text('▲ +12%'), findsOneWidget);
+    expect(find.text('▼ −4%'), findsOneWidget);
+  });
+
+  testWidgets('FactoryPaymentBreakdown shows remaining = total - deposit', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: factoryLightTheme(),
+      home: const Scaffold(
+        body: FactoryPaymentBreakdown(
+          total: 8500,
+          deposit: 2550,
+          currency: 'KZT',
+          totalLabel: 'Total',
+          depositLabel: 'Deposit',
+          remainingLabel: 'Pay later',
+        ),
+      ),
+    ));
+    expect(find.textContaining('5 950'), findsOneWidget);
+  });
+}
+
+double _contrast(Color a, Color b) {
+  final la = a.computeLuminance();
+  final lb = b.computeLuminance();
+  final hi = la > lb ? la : lb;
+  final lo = la > lb ? lb : la;
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+void _contrastTests() {
+  // Guards the AA fixes: body-size text roles must stay >= 4.5:1 on the
+  // surfaces they are drawn on, in both themes.
+  for (final entry in {'light': FactoryColors.light, 'dark': FactoryColors.dark}.entries) {
+    final c = entry.value;
+    test('${entry.key}: text roles clear 4.5:1 on bg and surface', () {
+      for (final bg in [c.bg, c.surface]) {
+        expect(_contrast(c.text, bg), greaterThanOrEqualTo(4.5));
+        expect(_contrast(c.textSecondary, bg), greaterThanOrEqualTo(4.5));
+        expect(_contrast(c.textTertiary, bg), greaterThanOrEqualTo(4.5));
+      }
+    });
+    test('${entry.key}: onPrimary on primary and primaryStrong', () {
+      expect(_contrast(c.onPrimary, c.primary), greaterThanOrEqualTo(4.5));
+      expect(_contrast(c.onPrimary, c.primaryStrong), greaterThanOrEqualTo(4.5));
+    });
+    // The hero cards (billing, analytics, loyalty, ...) draw secondary text as
+    // onPrimary at 80% over the gradient, and rings/bars on light tracks.
+    test('${entry.key}: muted hero text stays readable on the gradient', () {
+      final muted = c.onPrimary.withValues(alpha: 0.8);
+      for (final bg in [c.primary, c.primaryStrong]) {
+        expect(_contrast(Color.alphaBlend(muted, bg), bg), greaterThanOrEqualTo(4.5));
+      }
+    });
+    test('${entry.key}: accentInk reads as text on surface and as a bar on primaryTint', () {
+      expect(_contrast(c.accentInk, c.surface), greaterThanOrEqualTo(4.5));
+      // Graphical objects need 3:1 against what they sit on.
+      expect(_contrast(c.accentInk, c.primaryTint), greaterThanOrEqualTo(3));
+    });
+    test('${entry.key}: rings and secondary text on the tinted surfaces', () {
+      expect(_contrast(c.textSecondary, c.surfaceAlt), greaterThanOrEqualTo(4.5));
+      expect(_contrast(c.primary, c.primaryTint), greaterThanOrEqualTo(3));
+      expect(_contrast(c.warning, c.primaryTint), greaterThanOrEqualTo(3));
+    });
+    test('${entry.key}: state colors read on surface', () {
+      for (final tone in [c.success, c.warning, c.error, c.info]) {
+        expect(_contrast(tone, c.surface), greaterThanOrEqualTo(4.5));
+      }
+    });
+  }
 }

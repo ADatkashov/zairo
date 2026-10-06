@@ -54,6 +54,10 @@ class DefaultBiometricAuthService implements BiometricAuthService {
         // offering this as a *stronger* option than just staying logged
         // in. See task spec §14/§17's "biometric bypass" threat.
         biometricOnly: true,
+        // Keeps the prompt alive through the brief inactive/paused
+        // lifecycle blips of a cold start; otherwise local_auth cancels it
+        // and the person is bounced to the login screen.
+        persistAcrossBackgrounding: true,
       );
     } on Exception {
       return false;

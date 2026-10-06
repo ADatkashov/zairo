@@ -10,5 +10,7 @@ public interface CleanerRepository extends JpaRepository<Cleaner, UUID> {
 
     long countByProviderId(UUID providerId);
 
+    boolean existsByProviderIdAndUserId(UUID providerId, UUID userId);
+
     List<Cleaner> findByProviderIdAndActiveTrue(UUID providerId);
 }

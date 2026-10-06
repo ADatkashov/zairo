@@ -6,6 +6,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../data/auth_exception.dart';
 import '../auth_navigation.dart';
 import '../providers/auth_providers.dart';
+import '../widgets/auth_step_header.dart';
 import '../widgets/enable_biometric_prompt.dart';
 import '../widgets/sms_mock_hint.dart';
 
@@ -52,6 +53,7 @@ class _PhoneOtpPasswordScreenState extends ConsumerState<PhoneOtpPasswordScreen>
           key: _formKey,
           child: ListView(
             children: [
+              AuthStepHeader(step: 2, phone: widget.phone, onChangePhone: () => Navigator.of(context).pop()),
               Text(widget.isNewAccount
                   ? l10n.phoneRegisterInstructions(widget.phone)
                   : l10n.phoneResetInstructions(widget.phone)),

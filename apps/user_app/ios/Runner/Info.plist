@@ -39,6 +39,16 @@
 	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
+		<!-- Deep links: zairo://app/provider/<id>, zairo://app/bookings, …
+		     (every path go_router declares — see AppRoutes). -->
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>kz.zairo.deeplink</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>zairo</string>
+			</array>
+		</dict>
 		<!-- Facebook's redirect back into the app after login. -->
 		<dict>
 			<key>CFBundleURLSchemes</key>

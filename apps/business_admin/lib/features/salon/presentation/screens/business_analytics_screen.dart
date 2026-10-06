@@ -250,9 +250,7 @@ class _ActionCard extends StatelessWidget {
   void _onTap(BuildContext context, AppLocalizations l10n) {
     switch (action.type) {
       case ActionItemType.smartFillOpportunity:
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => SmartFillCampaignsScreen(providerId: providerId)),
-        );
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => SmartFillCampaignsScreen(providerId: providerId)));
       case ActionItemType.rebookOpportunity:
         Navigator.of(context).push(
           MaterialPageRoute(
@@ -307,6 +305,8 @@ class _OverviewSection extends ConsumerWidget {
   }
 }
 
+/// Bento overview: revenue is the one big number; counts and rates are
+/// grouped underneath instead of a flat wall of twelve identical tiles.
 class _OverviewContent extends StatelessWidget {
   final BusinessAnalyticsOverview overview;
 
@@ -316,39 +316,224 @@ class _OverviewContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final utilization = overview.utilization;
+    const gap = SizedBox(height: FactorySpacing.space3);
 
-    return Wrap(
-      spacing: FactorySpacing.space3,
-      runSpacing: FactorySpacing.space3,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        FactoryStatTile(
+        _RevenueHero(
+          revenue: formatFactoryMoney(overview.totalRevenue, overview.currency),
           label: l10n.analyticsKpiRevenue,
-          value: formatFactoryMoney(overview.totalRevenue, overview.currency),
+          footnotes: [
+            (l10n.analyticsKpiBookings, '${overview.totalBookings}'),
+            if (overview.averageBookingValue != null)
+              (
+                l10n.analyticsAverageBookingValueLabel,
+                formatFactoryMoney(overview.averageBookingValue!, overview.currency),
+              ),
+          ],
         ),
-        FactoryStatTile(label: l10n.analyticsKpiBookings, value: '${overview.totalBookings}'),
-        FactoryStatTile(
-          label: l10n.analyticsKpiUtilization,
-          value: utilization == null ? l10n.analyticsUtilizationUnavailable : _pct(utilization),
-        ),
-        FactoryStatTile(
-          label: l10n.analyticsKpiRevenueRecovered,
-          value: formatFactoryMoney(overview.revenueRecovered, overview.revenueRecoveredCurrency),
-        ),
-        FactoryStatTile(label: l10n.analyticsCompletedBookingsLabel, value: '${overview.completedBookings}'),
-        FactoryStatTile(label: l10n.analyticsUpcomingBookingsLabel, value: '${overview.upcomingBookings}'),
-        FactoryStatTile(label: l10n.analyticsCancelledBookingsLabel, value: '${overview.cancelledBookings}'),
-        FactoryStatTile(label: l10n.analyticsNoShowLabel, value: '${overview.noShowBookings}'),
-        FactoryStatTile(label: l10n.analyticsCancellationRateLabel, value: _pct(overview.cancellationRate)),
-        FactoryStatTile(label: l10n.analyticsNoShowRateLabel, value: _pct(overview.noShowRate)),
-        FactoryStatTile(
-          label: l10n.analyticsReturningCustomerRateLabel,
-          value: _pct(overview.returningCustomerRate),
-        ),
-        if (overview.averageBookingValue != null)
-          FactoryStatTile(
-            label: l10n.analyticsAverageBookingValueLabel,
-            value: formatFactoryMoney(overview.averageBookingValue!, overview.currency),
+        gap,
+        FactoryCard(
+          padding: const EdgeInsets.all(FactorySpacing.space4),
+          child: _Kpi(
+            label: l10n.analyticsKpiRevenueRecovered,
+            value: formatFactoryMoney(overview.revenueRecovered, overview.revenueRecoveredCurrency),
+            emphasis: true,
           ),
+        ),
+        gap,
+        _TwoColumn(
+          children: [
+            _KpiCard(label: l10n.analyticsCompletedBookingsLabel, value: '${overview.completedBookings}'),
+            _KpiCard(label: l10n.analyticsUpcomingBookingsLabel, value: '${overview.upcomingBookings}'),
+            _KpiCard(label: l10n.analyticsCancelledBookingsLabel, value: '${overview.cancelledBookings}'),
+            _KpiCard(label: l10n.analyticsNoShowLabel, value: '${overview.noShowBookings}'),
+          ],
+        ),
+        gap,
+        FactoryCard(
+          padding: const EdgeInsets.all(FactorySpacing.space4),
+          child: _TwoColumn(
+            children: [
+              if (utilization == null)
+                _Kpi(label: l10n.analyticsKpiUtilization, value: l10n.analyticsUtilizationUnavailable)
+              else
+                _RateRing(label: l10n.analyticsKpiUtilization, rate: utilization),
+              _RateRing(label: l10n.analyticsReturningCustomerRateLabel, rate: overview.returningCustomerRate),
+              _RateRing(label: l10n.analyticsCancellationRateLabel, rate: overview.cancellationRate, lowIsGood: true),
+              _RateRing(label: l10n.analyticsNoShowRateLabel, rate: overview.noShowRate, lowIsGood: true),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Gradient hero in the dashboard's treatment: the period's revenue, with a
+/// couple of secondary figures underneath.
+class _RevenueHero extends StatelessWidget {
+  final String revenue;
+  final String label;
+  final List<(String, String)> footnotes;
+
+  const _RevenueHero({required this.revenue, required this.label, required this.footnotes});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    final radius = context.factoryProfileOrNull?.cardBorderRadius ?? FactoryRadius.xlRadius;
+    final muted = colors.onPrimary.withValues(alpha: 0.8);
+
+    return Container(
+      padding: const EdgeInsets.all(FactorySpacing.space5),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [colors.primaryStrong, colors.primary],
+        ),
+        borderRadius: radius,
+        boxShadow: context.factoryElevation(FactoryElevationLevel.lg),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: textTheme.labelLarge?.copyWith(color: muted)),
+          const SizedBox(height: FactorySpacing.space1),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              revenue,
+              style: FactoryTypography.mono(size: 36, weight: FontWeight.w600, color: colors.onPrimary),
+            ),
+          ),
+          const SizedBox(height: FactorySpacing.space4),
+          Wrap(
+            spacing: FactorySpacing.space6,
+            runSpacing: FactorySpacing.space2,
+            children: [
+              for (final (name, value) in footnotes)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(value, style: textTheme.titleMedium?.copyWith(color: colors.onPrimary)),
+                    Text(name, style: textTheme.labelMedium?.copyWith(color: muted)),
+                  ],
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Lays children out two per row, equal width, wrapping to a new row.
+class _TwoColumn extends StatelessWidget {
+  final List<Widget> children;
+
+  const _TwoColumn({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (var i = 0; i < children.length; i += 2) ...[
+          if (i > 0) const SizedBox(height: FactorySpacing.space3),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: children[i]),
+              const SizedBox(width: FactorySpacing.space3),
+              Expanded(child: i + 1 < children.length ? children[i + 1] : const SizedBox.shrink()),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _Kpi extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool emphasis;
+
+  const _Kpi({required this.label, required this.value, this.emphasis = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value,
+          style: emphasis
+              ? FactoryTypography.mono(size: 24, weight: FontWeight.w600, color: colors.accentInk)
+              : textTheme.titleLarge,
+        ),
+        const SizedBox(height: 2),
+        Text(label, style: textTheme.labelMedium?.copyWith(color: colors.textSecondary)),
+      ],
+    );
+  }
+}
+
+class _KpiCard extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _KpiCard({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return FactoryCard(
+      padding: const EdgeInsets.all(FactorySpacing.space4),
+      child: SizedBox(
+        width: double.infinity,
+        child: _Kpi(label: label, value: value),
+      ),
+    );
+  }
+}
+
+/// A percentage as a ring with the label beside it. For rates where lower is
+/// better (cancellations, no-shows) the ring is drawn in the warning color so
+/// a high value reads as a problem without needing to read the number.
+class _RateRing extends StatelessWidget {
+  final String label;
+  final double rate;
+  final bool lowIsGood;
+
+  const _RateRing({required this.label, required this.rate, this.lowIsGood = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    final tone = lowIsGood ? colors.warning : colors.primary;
+    return Row(
+      children: [
+        FactoryProgressRing(
+          value: rate,
+          size: 48,
+          strokeWidth: 6,
+          color: tone,
+          semanticLabel: label,
+          child: Text(_pct(rate), style: FactoryTypography.mono(size: 11, color: colors.text)),
+        ),
+        const SizedBox(width: FactorySpacing.space3),
+        Expanded(
+          child: Text(label, style: textTheme.labelMedium?.copyWith(color: colors.textSecondary)),
+        ),
       ],
     );
   }
@@ -460,9 +645,15 @@ class _BookingsSection extends ConsumerWidget {
                   spacing: FactorySpacing.space3,
                   runSpacing: FactorySpacing.space3,
                   children: [
-                    FactoryStatTile(label: l10n.analyticsCompletedBookingsLabel, value: '${bookings.completedBookings}'),
+                    FactoryStatTile(
+                      label: l10n.analyticsCompletedBookingsLabel,
+                      value: '${bookings.completedBookings}',
+                    ),
                     FactoryStatTile(label: l10n.analyticsUpcomingBookingsLabel, value: '${bookings.upcomingBookings}'),
-                    FactoryStatTile(label: l10n.analyticsCancelledBookingsLabel, value: '${bookings.cancelledBookings}'),
+                    FactoryStatTile(
+                      label: l10n.analyticsCancelledBookingsLabel,
+                      value: '${bookings.cancelledBookings}',
+                    ),
                     FactoryStatTile(label: l10n.analyticsNoShowLabel, value: '${bookings.noShowBookings}'),
                     FactoryStatTile(
                       label: l10n.analyticsRepeatBookingRateLabel,
@@ -595,10 +786,7 @@ class _CustomersSection extends ConsumerWidget {
                       value: '${customers.returningCustomers}',
                     ),
                     FactoryStatTile(label: l10n.analyticsNewCustomersLabel, value: '${customers.newCustomers}'),
-                    FactoryStatTile(
-                      label: l10n.analyticsDueForRebookingLabel,
-                      value: '${customers.dueForRebooking}',
-                    ),
+                    FactoryStatTile(label: l10n.analyticsDueForRebookingLabel, value: '${customers.dueForRebooking}'),
                     FactoryStatTile(label: l10n.analyticsAtRiskCustomersLabel, value: '${customers.atRiskCustomers}'),
                     FactoryStatTile(
                       label: l10n.analyticsInactiveCustomersLabel,

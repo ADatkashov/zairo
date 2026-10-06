@@ -3,6 +3,7 @@ package com.zairo.factory.vertical.beauty;
 import com.zairo.factory.services.ServiceOffering;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -30,6 +31,11 @@ public final class MasterDtos {
                     + "here. Null/blank removes the photo.",
                     example = "http://localhost:8080/api/v1/uploads/a1b2c3d4.jpg")
             String photoUrl) {
+    }
+
+    public record CreateMasterFromUserRequest(
+            @NotNull @Schema(description = "A registered user, found via GET /users/lookup.",
+                    example = "550e8400-e29b-41d4-a716-446655440000") UUID userId) {
     }
 
     public record MasterResponse(
