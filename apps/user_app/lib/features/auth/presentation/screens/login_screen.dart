@@ -66,8 +66,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           key: _formKey,
           child: ListView(
             children: [
-              const Center(child: FactoryLogomark(size: 56)),
-              const SizedBox(height: FactorySpacing.space6),
+              const FactoryAuthBrand(),
+              const SizedBox(height: FactorySpacing.space4),
               if (_showEmailForm) ...[
                 FactoryTextField(
                   controller: _emailController,

@@ -10,6 +10,7 @@ Widget _wrap(Widget child) => MaterialApp(
 
 void main() {
   _denseButtonTests();
+  _authBrandTests();
   group('formatFactoryAmount', () {
     test('groups the whole part into thousands with a space', () {
       expect(formatFactoryAmount(12400), '12 400');
@@ -921,5 +922,31 @@ void _denseButtonTests() {
     );
     expect(tester.getSize(find.byKey(const Key('dense'))).height, 36);
     expect(tester.getSize(find.byKey(const Key('regular'))).height, 48);
+  });
+}
+
+void _authBrandTests() {
+  group('FactoryAuthBrand', () {
+    testWidgets('shows the mark with an optional title and subtitle', (tester) async {
+      await tester.pumpWidget(_wrap(const FactoryAuthBrand(title: 'Welcome', subtitle: 'Sign in to continue')));
+
+      expect(find.byType(FactoryLogomark), findsOneWidget);
+      expect(find.text('Welcome'), findsOneWidget);
+      expect(find.text('Sign in to continue'), findsOneWidget);
+    });
+
+    testWidgets('is just the mark without text, in both themes, without overflow', (tester) async {
+      for (final theme in [factoryLightTheme(), factoryDarkTheme()]) {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: theme,
+            home: const Scaffold(body: Center(child: FactoryAuthBrand())),
+          ),
+        );
+        expect(find.byType(FactoryLogomark), findsOneWidget);
+        expect(find.byType(Text), findsNothing);
+        expect(tester.takeException(), isNull);
+      }
+    });
   });
 }
