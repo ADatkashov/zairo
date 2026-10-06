@@ -76,7 +76,7 @@ public class CleaningBookingService {
         // Workforce rules (not double-booked elsewhere, not off, choice allowed): see WorkerAvailabilityGuard.
         availabilityGuards.orderedStream().forEach(guard -> guard.requireBookable(cleanerId, slot, userId));
 
-        Booking booking = bookingService.createBooking(userId, serviceId, availabilitySlotId, totalPrice);
+        Booking booking = bookingService.createBooking(userId, serviceId, availabilitySlotId, totalPrice, cleanerId);
         cleaningBookingRepository.save(
                 new CleaningBooking(UUID.randomUUID(), booking.getId(), cleanerId, Instant.now()));
         return new CleaningBookingResult(booking, cleanerId);

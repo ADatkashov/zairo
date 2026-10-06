@@ -38,16 +38,19 @@ public class WorkerAvailabilityService {
     private final AvailabilitySlotRepository slotRepository;
     private final WorkerBookings workerBookings;
     private final WorkforceSettingsService settingsService;
+    private final WorkerPricingService pricingService;
 
     public WorkerAvailabilityService(WorkerCatalog catalog, WorkerScheduleRepository scheduleRepository,
             WorkerTimeOffRepository timeOffRepository, AvailabilitySlotRepository slotRepository,
-            WorkerBookings workerBookings, WorkforceSettingsService settingsService) {
+            WorkerBookings workerBookings, WorkforceSettingsService settingsService,
+            WorkerPricingService pricingService) {
         this.catalog = catalog;
         this.scheduleRepository = scheduleRepository;
         this.timeOffRepository = timeOffRepository;
         this.slotRepository = slotRepository;
         this.workerBookings = workerBookings;
         this.settingsService = settingsService;
+        this.pricingService = pricingService;
     }
 
     /** The bookable times of one person. Empty when the business doesn't let customers choose a person. */
@@ -94,6 +97,11 @@ public class WorkerAvailabilityService {
         Map<String, List<Candidate>> byTime = new LinkedHashMap<>();
         Map<UUID, Integer> load = new java.util.HashMap<>();
         for (Worker worker : catalog.findOfferingService(providerId, serviceId)) {
+            // "Any master" never hands a customer to someone who charges a premium (or a discount): they were
+            // promised the base price.
+            if (!pricingService.chargesBasePrice(providerId, worker.id(), serviceId)) {
+                continue;
+            }
             load.put(worker.id(), workerBookings.activeOverlapping(worker, now, now.plus(Duration.ofDays(30))).size());
             for (AvailabilitySlot slot : bookableSlots(worker, now)) {
                 byTime.computeIfAbsent(slot.getStartsAt().toEpochMilli() + "-" + slot.getEndsAt().toEpochMilli(),

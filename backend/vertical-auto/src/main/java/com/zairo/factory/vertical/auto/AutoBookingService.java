@@ -84,7 +84,7 @@ public class AutoBookingService {
         // Workforce rules (not double-booked elsewhere, not off, choice allowed): see WorkerAvailabilityGuard.
         availabilityGuards.orderedStream().forEach(guard -> guard.requireBookable(mechanicId, slot, userId));
 
-        Booking booking = bookingService.createBooking(userId, serviceId, availabilitySlotId, totalPrice);
+        Booking booking = bookingService.createBooking(userId, serviceId, availabilitySlotId, totalPrice, mechanicId);
         autoBookingRepository.save(new AutoBooking(UUID.randomUUID(), booking.getId(), mechanicId, vehicleId,
                 Instant.now()));
         return new AutoBookingResult(booking, mechanicId, vehicleId);
