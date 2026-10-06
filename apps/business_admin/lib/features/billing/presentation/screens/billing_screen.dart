@@ -179,16 +179,13 @@ class _BillingBodyState extends ConsumerState<_BillingBody> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            updated.status == 'PAST_DUE'
-                ? l10n.billingGracePeriodFixFailed
-                : l10n.billingGracePeriodFixSucceeded,
+            updated.status == 'PAST_DUE' ? l10n.billingGracePeriodFixFailed : l10n.billingGracePeriodFixSucceeded,
           ),
         ),
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.billingGracePeriodFixFailed)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.billingGracePeriodFixFailed)));
     } finally {
       if (mounted) setState(() => _isRetryingCharge = false);
     }
@@ -236,11 +233,7 @@ class _BillingBodyState extends ConsumerState<_BillingBody> {
 /// which the model already carried but no screen ever rendered: an owner
 /// whose renewal charge failed had no way to know PRO was about to lapse.
 class _GracePeriodBanner extends StatelessWidget {
-  const _GracePeriodBanner({
-    required this.gracePeriodEndsAt,
-    required this.isRetrying,
-    required this.onFix,
-  });
+  const _GracePeriodBanner({required this.gracePeriodEndsAt, required this.isRetrying, required this.onFix});
 
   final DateTime gracePeriodEndsAt;
   final bool isRetrying;
@@ -253,10 +246,7 @@ class _GracePeriodBanner extends StatelessWidget {
     final daysLeft = gracePeriodEndsAt.difference(DateTime.now()).inDays;
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: FactorySpacing.space3,
-        vertical: FactorySpacing.space3,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space3, vertical: FactorySpacing.space3),
       decoration: BoxDecoration(
         color: colors.error.withValues(alpha: 0.08),
         border: Border.all(color: colors.error.withValues(alpha: 0.3)),
@@ -268,12 +258,8 @@ class _GracePeriodBanner extends StatelessWidget {
           const SizedBox(width: FactorySpacing.space2),
           Expanded(
             child: Text(
-              daysLeft <= 0
-                  ? l10n.billingGracePeriodExpiringToday
-                  : l10n.billingGracePeriodBanner(daysLeft),
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: colors.error),
+              daysLeft <= 0 ? l10n.billingGracePeriodExpiringToday : l10n.billingGracePeriodBanner(daysLeft),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.error),
             ),
           ),
           const SizedBox(width: FactorySpacing.space2),
@@ -306,17 +292,14 @@ class _InvoicesSection extends ConsumerWidget {
         if (charges.isEmpty) {
           return Text(
             l10n.billingInvoicesEmpty,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
           );
         }
         return FactoryCard(
           child: Column(
             children: [
               for (final charge in charges) ...[
-                if (charge != charges.first)
-                  const Divider(height: FactorySpacing.space5),
+                if (charge != charges.first) const Divider(height: FactorySpacing.space5),
                 _InvoiceRow(charge: charge),
               ],
             ],
@@ -353,16 +336,10 @@ class _InvoiceRow extends StatelessWidget {
               fontSize: 14,
               weight: FontWeight.w600,
             ),
-            Text(
-              _formatDate(charge.createdAt),
-              style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-            ),
+            Text(_formatDate(charge.createdAt), style: textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
           ],
         ),
-        FactoryBadge(
-          label: _invoiceStatusLabel(l10n, charge.status),
-          variant: _invoiceStatusVariant(charge.status),
-        ),
+        FactoryBadge(label: _invoiceStatusLabel(l10n, charge.status), variant: _invoiceStatusVariant(charge.status)),
       ],
     );
   }
@@ -407,10 +384,7 @@ class _PlanHero extends StatelessWidget {
               badge,
             ],
           ),
-          if (priceRow != null) ...[
-            const SizedBox(height: FactorySpacing.space2),
-            priceRow!,
-          ],
+          if (priceRow != null) ...[const SizedBox(height: FactorySpacing.space2), priceRow!],
           if (notice != null) ...[
             const SizedBox(height: FactorySpacing.space3),
             Text(notice!, style: textTheme.bodySmall?.copyWith(color: colors.onPrimary)),
@@ -464,7 +438,9 @@ class _LimitRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: Text(label, style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary))),
+        Expanded(
+          child: Text(label, style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary)),
+        ),
         const SizedBox(width: FactorySpacing.space3),
         Text(value, style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
       ],
@@ -473,32 +449,32 @@ class _LimitRow extends StatelessWidget {
 }
 
 String _planLabel(AppLocalizations l10n, String plan) => switch (plan) {
-      'PRO' => l10n.billingPlanPro,
-      _ => l10n.billingPlanFree,
-    };
+  'PRO' => l10n.billingPlanPro,
+  _ => l10n.billingPlanFree,
+};
 
 String _statusLabel(AppLocalizations l10n, String status) => switch (status) {
-      'ACTIVE' => l10n.billingStatusActive,
-      'PAST_DUE' => l10n.billingStatusPastDue,
-      _ => l10n.billingStatusActive,
-    };
+  'ACTIVE' => l10n.billingStatusActive,
+  'PAST_DUE' => l10n.billingStatusPastDue,
+  _ => l10n.billingStatusActive,
+};
 
 FactoryBadgeVariant _statusVariant(String status) => switch (status) {
-      'PAST_DUE' => FactoryBadgeVariant.error,
-      _ => FactoryBadgeVariant.available,
-    };
+  'PAST_DUE' => FactoryBadgeVariant.error,
+  _ => FactoryBadgeVariant.available,
+};
 
 String _formatDate(DateTime date) =>
     '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
 String _invoiceStatusLabel(AppLocalizations l10n, String status) => switch (status) {
-      'SUCCEEDED' => l10n.billingInvoiceStatusSucceeded,
-      'FAILED' => l10n.billingInvoiceStatusFailed,
-      _ => l10n.billingInvoiceStatusPending,
-    };
+  'SUCCEEDED' => l10n.billingInvoiceStatusSucceeded,
+  'FAILED' => l10n.billingInvoiceStatusFailed,
+  _ => l10n.billingInvoiceStatusPending,
+};
 
 FactoryBadgeVariant _invoiceStatusVariant(String status) => switch (status) {
-      'SUCCEEDED' => FactoryBadgeVariant.available,
-      'FAILED' => FactoryBadgeVariant.error,
-      _ => FactoryBadgeVariant.neutral,
-    };
+  'SUCCEEDED' => FactoryBadgeVariant.available,
+  'FAILED' => FactoryBadgeVariant.error,
+  _ => FactoryBadgeVariant.neutral,
+};

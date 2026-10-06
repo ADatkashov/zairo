@@ -38,11 +38,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
   }
 
   Future<void> _reply(ProviderReview review) async {
-    final result = await showReviewReplyDialog(
-      context,
-      reviewId: review.id,
-      existingReply: review.businessReply,
-    );
+    final result = await showReviewReplyDialog(context, reviewId: review.id, existingReply: review.businessReply);
     if (result == null) return;
     setState(() {
       final index = _items.indexWhere((r) => r.id == review.id);
@@ -86,11 +82,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
             if (_items.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: FactorySpacing.space4),
-                child: _ReviewsSummary(
-                  items: _items,
-                  average: _averageRating(_items),
-                  awaitingReply: awaitingReply,
-                ),
+                child: _ReviewsSummary(items: _items, average: _averageRating(_items), awaitingReply: awaitingReply),
               ),
             if (_items.isEmpty)
               pageAsync.when(
@@ -240,7 +232,9 @@ class _ReviewsSummary extends StatelessWidget {
           const SizedBox(height: FactorySpacing.space4),
           Row(
             children: [
-              Expanded(child: _StatTile(value: '${items.length}', label: l10n.reviewsTotalCountLabel)),
+              Expanded(
+                child: _StatTile(value: '${items.length}', label: l10n.reviewsTotalCountLabel),
+              ),
               const SizedBox(width: FactorySpacing.space3),
               Expanded(
                 child: _StatTile(
@@ -276,10 +270,7 @@ class _StatTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            value,
-            style: textTheme.titleLarge?.copyWith(color: highlight ? colors.warning : colors.text),
-          ),
+          Text(value, style: textTheme.titleLarge?.copyWith(color: highlight ? colors.warning : colors.text)),
           const SizedBox(height: 2),
           Text(label, style: textTheme.labelMedium?.copyWith(color: colors.textSecondary)),
         ],
@@ -311,9 +302,7 @@ class _ReviewLifecycleStepper extends StatelessWidget {
         Row(
           children: [
             _StepDot(done: true, colors: colors),
-            Expanded(
-              child: Container(height: 2, color: review.hasReply ? colors.primary : colors.border),
-            ),
+            Expanded(child: Container(height: 2, color: review.hasReply ? colors.primary : colors.border)),
             _StepDot(done: review.hasReply, colors: colors),
           ],
         ),
@@ -329,9 +318,7 @@ class _ReviewLifecycleStepper extends StatelessWidget {
             Expanded(
               child: Text(
                 review.hasReply
-                    ? l10n.reviewLifecycleRepliedOn(
-                        DateFormat.yMMMd(locale).format(review.businessReplyAt!.toLocal()),
-                      )
+                    ? l10n.reviewLifecycleRepliedOn(DateFormat.yMMMd(locale).format(review.businessReplyAt!.toLocal()))
                     : l10n.reviewLifecyclePending,
                 textAlign: TextAlign.end,
                 style: textTheme.labelSmall?.copyWith(
@@ -386,7 +373,12 @@ class _ReviewCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(review.customerName, style: textTheme.titleSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                child: Text(
+                  review.customerName,
+                  style: textTheme.titleSmall,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               FactoryRatingLabel(rating: review.rating.toDouble()),
             ],
