@@ -68,7 +68,8 @@ void _tabTests() {
 
     // Two businesses: one pending, one active, none suspended.
     expect(find.widgetWithText(InkWell, 'All'), findsOneWidget);
-    await tester.tap(find.widgetWithText(InkWell, 'Active'));
+    // The tab row precedes the table, whose rows also contain an "Active" badge.
+    await tester.tap(find.widgetWithText(InkWell, 'Active').first);
     await tester.pumpAndSettle();
     expect(find.text('Zen Spa'), findsOneWidget);
     expect(find.text('Glow Salon'), findsNothing);

@@ -79,7 +79,9 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     final l10n = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context).toString();
     final async = ref.watch(auditLogProvider(_size));
-    final businessNames = {for (final b in ref.watch(businessesProvider).value ?? const []) b.id: b.name};
+    final businessNames = <String, String>{
+      for (final b in ref.watch(businessesProvider).value ?? const []) b.id: b.name,
+    };
     Future<void> refresh() => ref.refresh(auditLogProvider(_size).future);
 
     return AreaScaffold(

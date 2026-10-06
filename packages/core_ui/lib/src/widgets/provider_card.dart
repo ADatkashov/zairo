@@ -266,7 +266,6 @@ class _FavoriteButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.factoryColors;
     return Semantics(
       button: true,
       // container: true gives this its own semantics node — without it,
