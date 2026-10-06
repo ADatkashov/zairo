@@ -9,30 +9,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-const _provider = AdminProvider(
-  id: 'p-1',
-  ownerUserId: 'o-1',
-  name: 'Zen Spa',
-  vertical: 'beauty',
-  status: 'ACTIVE',
-);
+const _provider = AdminProvider(id: 'p-1', ownerUserId: 'o-1', name: 'Zen Spa', vertical: 'beauty', status: 'ACTIVE');
 
 BusinessAnalyticsOverview _overview({double? utilization = 0.62}) => BusinessAnalyticsOverview(
-      totalBookings: 40,
-      completedBookings: 31,
-      upcomingBookings: 5,
-      cancelledBookings: 3,
-      noShowBookings: 1,
-      cancellationRate: 0.075,
-      noShowRate: 0.025,
-      totalRevenue: 125000,
-      averageBookingValue: 4000,
-      currency: 'KZT',
-      utilization: utilization,
-      returningCustomerRate: 0.4,
-      revenueRecovered: 18000,
-      revenueRecoveredCurrency: 'KZT',
-    );
+  totalBookings: 40,
+  completedBookings: 31,
+  upcomingBookings: 5,
+  cancelledBookings: 3,
+  noShowBookings: 1,
+  cancellationRate: 0.075,
+  noShowRate: 0.025,
+  totalRevenue: 125000,
+  averageBookingValue: 4000,
+  currency: 'KZT',
+  utilization: utilization,
+  returningCustomerRate: 0.4,
+  revenueRecovered: 18000,
+  revenueRecoveredCurrency: 'KZT',
+);
 
 Future<void> _pump(WidgetTester tester, BusinessAnalyticsOverview overview, Size size) async {
   tester.view.physicalSize = size;

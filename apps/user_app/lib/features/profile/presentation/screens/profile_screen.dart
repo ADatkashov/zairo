@@ -39,8 +39,7 @@ class ProfileScreen extends ConsumerWidget {
         ],
       ),
       body: authState.when(
-        data: (user) =>
-            user == null ? const _LoggedOutView() : _LoggedInView(user: user),
+        data: (user) => user == null ? const _LoggedOutView() : _LoggedInView(user: user),
         loading: () => const FactoryLoadingState(),
         error: (error, stackTrace) => Center(
           child: Padding(
@@ -97,16 +96,11 @@ class _ProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.factoryColors;
-    final radius =
-        context.factoryProfileOrNull?.cardBorderRadius ??
-        FactoryRadius.xlRadius;
+    final radius = context.factoryProfileOrNull?.cardBorderRadius ?? FactoryRadius.xlRadius;
     return Container(
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
-      padding: const EdgeInsets.symmetric(
-        vertical: FactorySpacing.space6,
-        horizontal: FactorySpacing.space4,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space6, horizontal: FactorySpacing.space4),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -129,10 +123,7 @@ class _ProfileHeader extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [
-                      colors.accent.withValues(alpha: 0.28),
-                      colors.accent.withValues(alpha: 0),
-                    ],
+                    colors: [colors.accent.withValues(alpha: 0.28), colors.accent.withValues(alpha: 0)],
                   ),
                 ),
               ),
@@ -170,18 +161,13 @@ class _LoggedInView extends ConsumerWidget {
             children: [
               Center(
                 child: GestureDetector(
-                  onTap: () => showChangeAvatarDialog(
-                    context,
-                    hasCurrentAvatar: avatarUrl != null,
-                  ),
+                  onTap: () => showChangeAvatarDialog(context, hasCurrentAvatar: avatarUrl != null),
                   child: Stack(
                     children: [
                       FactoryAvatar(
                         initials: initialsFor(displayName),
                         size: FactoryAvatarSize.xl,
-                        image: avatarUrl != null
-                            ? NetworkImage(avatarUrl)
-                            : null,
+                        image: avatarUrl != null ? NetworkImage(avatarUrl) : null,
                       ),
                       Positioned(
                         right: 0,
@@ -193,11 +179,7 @@ class _LoggedInView extends ConsumerWidget {
                             shape: BoxShape.circle,
                             border: Border.all(color: colors.bg, width: 2),
                           ),
-                          child: Icon(
-                            Icons.edit,
-                            size: 14,
-                            color: colors.onPrimary,
-                          ),
+                          child: Icon(Icons.edit, size: 14, color: colors.onPrimary),
                         ),
                       ),
                     ],
@@ -206,21 +188,12 @@ class _LoggedInView extends ConsumerWidget {
               ),
               const SizedBox(height: FactorySpacing.space3),
               Center(
-                child: Text(
-                  displayName,
-                  style: textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
-                ),
+                child: Text(displayName, style: textTheme.headlineSmall, textAlign: TextAlign.center),
               ),
               const SizedBox(height: FactorySpacing.space1),
               if (email != null)
                 Center(
-                  child: Text(
-                    email,
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: colors.textTertiary,
-                    ),
-                  ),
+                  child: Text(email, style: textTheme.bodyMedium?.copyWith(color: colors.textTertiary)),
                 ),
             ],
           ),
@@ -268,18 +241,10 @@ class _LoggedInView extends ConsumerWidget {
           title: l10n.editProfileButton,
           // Nudge to fill in the birthday: it powers greetings and bonuses.
           subtitle: user.birthDate == null
-              ? Text(
-                  l10n.editProfileBirthdayPrompt,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colors.textTertiary,
-                  ),
-                )
+              ? Text(l10n.editProfileBirthdayPrompt, style: textTheme.bodySmall?.copyWith(color: colors.textTertiary))
               : null,
           leading: Icon(Symbols.edit_rounded, color: colors.textSecondary),
-          trailing: Icon(
-            Symbols.chevron_right_rounded,
-            color: colors.textTertiary,
-          ),
+          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
           onTap: () => context.push(AppRoutes.editProfile),
         ),
         const SizedBox(height: FactorySpacing.space5),
@@ -290,10 +255,7 @@ class _LoggedInView extends ConsumerWidget {
         FactorySelectableTile(
           title: l10n.myFavoritesTitle,
           leading: Icon(Symbols.favorite_rounded, color: colors.textSecondary),
-          trailing: Icon(
-            Symbols.chevron_right_rounded,
-            color: colors.textTertiary,
-          ),
+          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
           onTap: () => context.push(AppRoutes.favorites),
         ),
         const SizedBox(height: FactorySpacing.space2),
@@ -304,10 +266,7 @@ class _LoggedInView extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (ref.watch(newMessagesCountProvider) > 0) ...[
-                FactoryBadge(
-                  label: '${ref.watch(newMessagesCountProvider)}',
-                  variant: FactoryBadgeVariant.error,
-                ),
+                FactoryBadge(label: '${ref.watch(newMessagesCountProvider)}', variant: FactoryBadgeVariant.error),
                 const SizedBox(width: FactorySpacing.space2),
               ],
               Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
@@ -319,36 +278,21 @@ class _LoggedInView extends ConsumerWidget {
         FactorySelectableTile(
           title: l10n.myRewardsTitle,
           leading: Icon(Symbols.redeem_rounded, color: colors.textSecondary),
-          trailing: Icon(
-            Symbols.chevron_right_rounded,
-            color: colors.textTertiary,
-          ),
+          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
           onTap: () => context.push(AppRoutes.rewards),
         ),
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
           title: l10n.loyaltyRedemptionsTitle,
-          leading: Icon(
-            Symbols.confirmation_number_rounded,
-            color: colors.textSecondary,
-          ),
-          trailing: Icon(
-            Symbols.chevron_right_rounded,
-            color: colors.textTertiary,
-          ),
+          leading: Icon(Symbols.confirmation_number_rounded, color: colors.textSecondary),
+          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
           onTap: () => context.push(AppRoutes.redemptions),
         ),
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
           title: l10n.myVehiclesButton,
-          leading: Icon(
-            Symbols.directions_car_rounded,
-            color: colors.textSecondary,
-          ),
-          trailing: Icon(
-            Symbols.chevron_right_rounded,
-            color: colors.textTertiary,
-          ),
+          leading: Icon(Symbols.directions_car_rounded, color: colors.textSecondary),
+          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
           onTap: () => context.push(AppRoutes.vehicles),
         ),
         const SizedBox(height: FactorySpacing.space5),
@@ -356,24 +300,15 @@ class _LoggedInView extends ConsumerWidget {
         const SizedBox(height: FactorySpacing.space3),
         FactorySelectableTile(
           title: l10n.supportTitle,
-          leading: Icon(
-            Symbols.support_agent_rounded,
-            color: colors.textSecondary,
-          ),
-          trailing: Icon(
-            Symbols.chevron_right_rounded,
-            color: colors.textTertiary,
-          ),
+          leading: Icon(Symbols.support_agent_rounded, color: colors.textSecondary),
+          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
           onTap: () => context.push(AppRoutes.support),
         ),
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
           title: l10n.aboutTitle,
           leading: Icon(Symbols.info_rounded, color: colors.textSecondary),
-          trailing: Icon(
-            Symbols.chevron_right_rounded,
-            color: colors.textTertiary,
-          ),
+          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
           onTap: () => context.push(AppRoutes.about),
         ),
         const SizedBox(height: FactorySpacing.space6),
@@ -443,11 +378,7 @@ class _LogOutButton extends StatelessWidget {
               children: [
                 Icon(Symbols.logout_rounded, size: 18, color: colors.coral),
                 const SizedBox(width: 8),
-                Text(
-                  l10n.profileLogOut,
-                  style: Theme.of(context).textTheme.labelLarge
-                      ?.copyWith(color: colors.coral),
-                ),
+                Text(l10n.profileLogOut, style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.coral)),
               ],
             ),
           ),

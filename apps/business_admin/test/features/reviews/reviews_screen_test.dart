@@ -30,15 +30,15 @@ class _FakeReviewsApi extends ReviewsApi {
 }
 
 ProviderReview _review(String id, int rating, {String? reply}) => ProviderReview(
-      id: id,
-      bookingId: 'b-$id',
-      customerName: 'Customer $id',
-      rating: rating,
-      comment: 'Comment $id',
-      createdAt: DateTime(2026, 1, 1),
-      businessReply: reply,
-      businessReplyAt: reply == null ? null : DateTime(2026, 1, 2),
-    );
+  id: id,
+  bookingId: 'b-$id',
+  customerName: 'Customer $id',
+  rating: rating,
+  comment: 'Comment $id',
+  createdAt: DateTime(2026, 1, 1),
+  businessReply: reply,
+  businessReplyAt: reply == null ? null : DateTime(2026, 1, 2),
+);
 
 Future<void> _pump(WidgetTester tester, List<ProviderReview> reviews, Size size) async {
   tester.view.physicalSize = size;
