@@ -238,6 +238,9 @@ class OpenApiConfig {
                         "Staff booking: like a generic Booking, but also names which Staff member performs "
                                 + "it, and enforces that the staff member actually offers the requested "
                                 + "Service."),
+                new Tag().name("Workforce — booking").description(
+                        "Times a customer can book with one person or with \"any master\", and booking with "
+                                + "\"any master\"."),
                 new Tag().name("Workforce — schedule").description(
                         "The owner's team schedule: weekly hours per worker, time off (\"the master isn't in\") "
                                 + "and per-business worker rules."),

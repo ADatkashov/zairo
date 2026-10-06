@@ -6,10 +6,12 @@ import com.zairo.factory.booking.Booking;
 import com.zairo.factory.booking.BookingRepository;
 import com.zairo.factory.booking.BookingService;
 import com.zairo.factory.booking.SlotNotAvailableException;
+import com.zairo.factory.booking.WorkerAvailabilityGuard;
 import com.zairo.factory.providers.ProviderOwnership;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,12 +35,14 @@ public class AutoBookingService {
     private final BookingRepository bookingRepository;
     private final AvailabilitySlotRepository availabilitySlotRepository;
     private final ProviderOwnership providerOwnership;
+    private final ObjectProvider<WorkerAvailabilityGuard> availabilityGuards;
 
     public AutoBookingService(MechanicRepository mechanicRepository,
             MechanicServiceLinkRepository mechanicServiceLinkRepository, VehicleRepository vehicleRepository,
             AutoBookingRepository autoBookingRepository, BookingService bookingService,
             BookingRepository bookingRepository, AvailabilitySlotRepository availabilitySlotRepository,
-            ProviderOwnership providerOwnership) {
+            ProviderOwnership providerOwnership,
+            ObjectProvider<WorkerAvailabilityGuard> availabilityGuards) {
         this.mechanicRepository = mechanicRepository;
         this.mechanicServiceLinkRepository = mechanicServiceLinkRepository;
         this.vehicleRepository = vehicleRepository;
@@ -47,6 +51,7 @@ public class AutoBookingService {
         this.bookingRepository = bookingRepository;
         this.availabilitySlotRepository = availabilitySlotRepository;
         this.providerOwnership = providerOwnership;
+        this.availabilityGuards = availabilityGuards;
     }
 
     @Transactional
@@ -75,6 +80,9 @@ public class AutoBookingService {
             throw new SlotNotAvailableException(
                     "Availability slot " + availabilitySlotId + " belongs to a different mechanic");
         }
+
+        // Workforce rules (not double-booked elsewhere, not off, choice allowed): see WorkerAvailabilityGuard.
+        availabilityGuards.orderedStream().forEach(guard -> guard.requireBookable(mechanicId, slot, userId));
 
         Booking booking = bookingService.createBooking(userId, serviceId, availabilitySlotId, totalPrice);
         autoBookingRepository.save(new AutoBooking(UUID.randomUUID(), booking.getId(), mechanicId, vehicleId,
