@@ -503,10 +503,7 @@ class _DashboardMetricsSection extends ConsumerWidget {
         metricsAsync.when(
           data: (metrics) {
             if (metrics.totalBookings == 0) {
-              return Text(
-                l10n.dashboardNoDataYet,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-              );
+              return _SectionEmpty(l10n.dashboardNoDataYet);
             }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -790,6 +787,34 @@ class _MetricsBento extends StatelessWidget {
   }
 }
 
+/// The "nothing here yet" line of a section (no services, no slots, no
+/// bookings ...): a quiet tinted block instead of loose grey text, so an empty
+/// section still reads as a section.
+class _SectionEmpty extends StatelessWidget {
+  final String message;
+
+  const _SectionEmpty(this.message);
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(FactorySpacing.space3),
+      decoration: BoxDecoration(color: colors.surfaceAlt, borderRadius: FactoryRadius.mdRadius),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline_rounded, size: 18, color: colors.textTertiary),
+          const SizedBox(width: FactorySpacing.space2),
+          Expanded(
+            child: Text(message, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textSecondary)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ServicesSection extends ConsumerWidget {
   final String providerId;
   final String? businessTypeId;
@@ -799,7 +824,6 @@ class _ServicesSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
     final showInactive = ref.watch(showInactiveServicesProvider(providerId));
     final servicesAsync = ref.watch(providerServicesProvider((providerId, showInactive)));
     void refresh() => ref.invalidate(providerServicesProvider((providerId, showInactive)));
@@ -835,10 +859,7 @@ class _ServicesSection extends ConsumerWidget {
         servicesAsync.when(
           data: (services) {
             if (services.isEmpty) {
-              return Text(
-                showInactive ? l10n.noServicesYet : l10n.noActiveServices,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-              );
+              return _SectionEmpty(showInactive ? l10n.noServicesYet : l10n.noActiveServices);
             }
             return Column(
               children: services
@@ -961,7 +982,6 @@ class _AvailabilitySectionState extends ConsumerState<_AvailabilitySection> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
     final slotsAsync = ref.watch(providerSlotsProvider(providerId));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -989,10 +1009,7 @@ class _AvailabilitySectionState extends ConsumerState<_AvailabilitySection> {
         slotsAsync.when(
           data: (slots) {
             if (slots.isEmpty) {
-              return Text(
-                l10n.noSlotsYet,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-              );
+              return _SectionEmpty(l10n.noSlotsYet);
             }
             final byDay = groupByLocalDay<AdminSlot>(slots, (s) => s.startsAt);
             final days = byDay.keys.toList();
@@ -1116,7 +1133,6 @@ class _MastersSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
     final showInactive = ref.watch(showInactiveMastersProvider(providerId));
     final mastersAsync = ref.watch(adminMastersProvider((providerId, showInactive)));
     void refresh() => ref.invalidate(adminMastersProvider((providerId, showInactive)));
@@ -1152,10 +1168,7 @@ class _MastersSection extends ConsumerWidget {
         mastersAsync.when(
           data: (masters) {
             if (masters.isEmpty) {
-              return Text(
-                showInactive ? l10n.noMastersYet : l10n.noActiveMasters,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-              );
+              return _SectionEmpty(showInactive ? l10n.noMastersYet : l10n.noActiveMasters);
             }
             return Column(
               children: masters
@@ -1287,7 +1300,6 @@ class _MechanicsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
     final showInactive = ref.watch(showInactiveMechanicsProvider(providerId));
     final mechanicsAsync = ref.watch(adminMechanicsProvider((providerId, showInactive)));
     void refresh() => ref.invalidate(adminMechanicsProvider((providerId, showInactive)));
@@ -1323,10 +1335,7 @@ class _MechanicsSection extends ConsumerWidget {
         mechanicsAsync.when(
           data: (mechanics) {
             if (mechanics.isEmpty) {
-              return Text(
-                showInactive ? l10n.noMechanicsYet : l10n.noActiveMechanics,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-              );
+              return _SectionEmpty(showInactive ? l10n.noMechanicsYet : l10n.noActiveMechanics);
             }
             return Column(
               children: mechanics
@@ -1447,7 +1456,6 @@ class _CleanersSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
     final showInactive = ref.watch(showInactiveCleanersProvider(providerId));
     final cleanersAsync = ref.watch(adminCleanersProvider((providerId, showInactive)));
     void refresh() => ref.invalidate(adminCleanersProvider((providerId, showInactive)));
@@ -1483,10 +1491,7 @@ class _CleanersSection extends ConsumerWidget {
         cleanersAsync.when(
           data: (cleaners) {
             if (cleaners.isEmpty) {
-              return Text(
-                showInactive ? l10n.noCleanersYet : l10n.noActiveCleaners,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-              );
+              return _SectionEmpty(showInactive ? l10n.noCleanersYet : l10n.noActiveCleaners);
             }
             return Column(
               children: cleaners
@@ -1607,7 +1612,6 @@ class _StaffSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
     final showInactive = ref.watch(showInactiveStaffProvider(providerId));
     final staffAsync = ref.watch(adminStaffProvider((providerId, showInactive)));
     void refresh() => ref.invalidate(adminStaffProvider((providerId, showInactive)));
@@ -1643,10 +1647,7 @@ class _StaffSection extends ConsumerWidget {
         staffAsync.when(
           data: (staff) {
             if (staff.isEmpty) {
-              return Text(
-                showInactive ? l10n.noStaffYet : l10n.noActiveStaff,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-              );
+              return _SectionEmpty(showInactive ? l10n.noStaffYet : l10n.noActiveStaff);
             }
             return Column(
               children: staff
@@ -1767,7 +1768,6 @@ class _BookingsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
     final bookingsAsync = ref.watch(providerBookingsProvider(providerId));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1777,10 +1777,7 @@ class _BookingsSection extends ConsumerWidget {
         bookingsAsync.when(
           data: (bookings) {
             if (bookings.isEmpty) {
-              return Text(
-                l10n.noBookingsYet,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-              );
+              return _SectionEmpty(l10n.noBookingsYet);
             }
             return Column(
               children: bookings
@@ -1883,7 +1880,6 @@ class _PayoutsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
     final payoutsAsync = ref.watch(providerPayoutsProvider(providerId));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1893,10 +1889,7 @@ class _PayoutsSection extends ConsumerWidget {
         payoutsAsync.when(
           data: (payouts) {
             if (payouts.isEmpty) {
-              return Text(
-                l10n.noPayoutsYet,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-              );
+              return _SectionEmpty(l10n.noPayoutsYet);
             }
             return Column(children: payouts.map((p) => _PayoutAdminRow(payout: p)).toList());
           },

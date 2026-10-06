@@ -52,6 +52,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           key: _formKey,
           child: ListView(
             children: [
+              const FactoryAuthBrand(markSize: 40),
               FactoryTextField(
                 controller: _displayNameController,
                 label: l10n.nameLabel,
