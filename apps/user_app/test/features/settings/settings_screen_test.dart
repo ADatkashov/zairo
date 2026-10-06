@@ -1,4 +1,5 @@
 import 'package:core_storage/core_storage.dart';
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -43,6 +44,8 @@ class _TestApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(localeControllerProvider).value;
     return MaterialApp(
+      // The real app always runs on the Factory theme; the settings cards read it.
+      theme: factoryLightTheme(profile: FactoryAppProfile.consumer),
       locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,

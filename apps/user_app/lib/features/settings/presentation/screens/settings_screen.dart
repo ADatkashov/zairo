@@ -24,41 +24,58 @@ class SettingsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: FactoryAppBar(title: l10n.settingsTitle),
       body: ListView(
+        padding: const EdgeInsets.all(FactorySpacing.space4),
         children: [
-          SwitchListTile(
-            title: Text(l10n.darkModeTitle),
-            subtitle: Text(
-              l10n.darkModeSubtitle(_themeModeLabel(l10n, themeMode)),
-            ),
-            value: themeMode == ThemeMode.dark,
-            onChanged: (value) {
-              ref
-                  .read(themeModeControllerProvider.notifier)
-                  .setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
-            },
-          ),
-          ListTile(
-            title: Text(l10n.languageSectionTitle),
-            subtitle: Text(_languageLabel(l10n, locale)),
-            trailing: const Icon(Symbols.chevron_right_rounded),
-            onTap: () => _openLanguagePicker(context, ref, l10n, locale),
-          ),
-          ListTile(
-            title: Text(l10n.securityTitle),
-            subtitle: Text(l10n.securitySectionSubtitle),
-            trailing: const Icon(Symbols.chevron_right_rounded),
-            onTap: () => context.push(AppRoutes.securitySettings),
-          ),
-          if (isLoggedIn)
-            ListTile(
-              title: Text(
-                l10n.deleteAccountTitle,
-                style: TextStyle(color: context.factoryColors.coral),
+          _SettingsGroup(
+            children: [
+              SwitchListTile(
+                secondary: const _IconBadge(icon: Symbols.dark_mode_rounded),
+                title: Text(l10n.darkModeTitle),
+                subtitle: Text(
+                  l10n.darkModeSubtitle(_themeModeLabel(l10n, themeMode)),
+                ),
+                value: themeMode == ThemeMode.dark,
+                onChanged: (value) {
+                  ref
+                      .read(themeModeControllerProvider.notifier)
+                      .setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
+                },
               ),
-              subtitle: Text(l10n.deleteAccountSubtitle),
-              trailing: const Icon(Symbols.chevron_right_rounded),
-              onTap: () => context.push(AppRoutes.deleteAccount),
-            ),
+              ListTile(
+                leading: const _IconBadge(icon: Symbols.language_rounded),
+                title: Text(l10n.languageSectionTitle),
+                subtitle: Text(_languageLabel(l10n, locale)),
+                trailing: const Icon(Symbols.chevron_right_rounded),
+                onTap: () => _openLanguagePicker(context, ref, l10n, locale),
+              ),
+            ],
+          ),
+          const SizedBox(height: FactorySpacing.space4),
+          _SettingsGroup(
+            children: [
+              ListTile(
+                leading: const _IconBadge(icon: Symbols.shield_lock_rounded),
+                title: Text(l10n.securityTitle),
+                subtitle: Text(l10n.securitySectionSubtitle),
+                trailing: const Icon(Symbols.chevron_right_rounded),
+                onTap: () => context.push(AppRoutes.securitySettings),
+              ),
+              if (isLoggedIn)
+                ListTile(
+                  leading: _IconBadge(
+                    icon: Symbols.delete_rounded,
+                    color: context.factoryColors.coral,
+                  ),
+                  title: Text(
+                    l10n.deleteAccountTitle,
+                    style: TextStyle(color: context.factoryColors.coral),
+                  ),
+                  subtitle: Text(l10n.deleteAccountSubtitle),
+                  trailing: const Icon(Symbols.chevron_right_rounded),
+                  onTap: () => context.push(AppRoutes.deleteAccount),
+                ),
+            ],
+          ),
         ],
       ),
     );
@@ -105,6 +122,64 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// A card holding related settings rows, with a hairline between them.
+class _SettingsGroup extends StatelessWidget {
+  const _SettingsGroup({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final radius =
+        context.factoryProfileOrNull?.cardBorderRadius ??
+        FactoryRadius.xlRadius;
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: radius,
+        border: Border.all(color: colors.border),
+      ),
+      // Material so the rows' ink ripples are clipped to the card.
+      child: Material(
+        color: Colors.transparent,
+        child: Column(
+          children: [
+            for (var i = 0; i < children.length; i++) ...[
+              if (i > 0) Divider(height: 1, indent: 72, color: colors.border),
+              children[i],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The tinted rounded-square icon at the start of a settings row.
+class _IconBadge extends StatelessWidget {
+  const _IconBadge({required this.icon, this.color});
+
+  final IconData icon;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final tone = color ?? colors.primary;
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: Color.alphaBlend(tone.withValues(alpha: 0.12), colors.surface),
+        borderRadius: FactoryRadius.mdRadius,
+      ),
+      child: Icon(icon, size: FactoryIconSize.md, color: tone),
     );
   }
 }
