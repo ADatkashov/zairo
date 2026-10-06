@@ -10,6 +10,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import com.zairo.factory.workforce.WorkerScheduleDtos.TimeOffCreatedResponse;
+import com.zairo.factory.workforce.WorkerScheduleDtos.TimeOffRequest;
+import com.zairo.factory.workforce.WorkerScheduleDtos.TimeOffResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -29,9 +32,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class WorkerPortalController {
 
     private final WorkerPortalService portalService;
+    private final WorkerTimeOffService timeOffService;
 
-    public WorkerPortalController(WorkerPortalService portalService) {
+    public WorkerPortalController(WorkerPortalService portalService, WorkerTimeOffService timeOffService) {
         this.portalService = portalService;
+        this.timeOffService = timeOffService;
     }
 
     @Operation(summary = "My workplaces", description = "Every business the caller works at (empty list if "
@@ -113,5 +118,27 @@ public class WorkerPortalController {
     @GetMapping("/api/v1/me/staff/{staffId}/rating")
     public WorkerRatingResponse rating(@PathVariable UUID staffId, HttpServletRequest request) {
         return portalService.rating(CurrentUser.requireUserId(request), staffId);
+    }
+
+    @Operation(summary = "My upcoming time off", description = "Periods in which I can't be booked.")
+    @ApiResponse(responseCode = "200", description = "Time off that hasn't ended yet")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @GetMapping("/api/v1/me/staff/{staffId}/time-off")
+    public List<TimeOffResponse> timeOff(@PathVariable UUID staffId, HttpServletRequest request) {
+        return timeOffService.listOwn(staffId, CurrentUser.requireUserId(request));
+    }
+
+    @Operation(summary = "I'm unavailable", description = "E.g. \"I'm sick today\": closes MY availability for the "
+            + "period so no new bookings come in, and tells the owner. A worker can only ever reduce their own "
+            + "availability — appointments already booked are untouched (the owner decides), and only the owner can "
+            + "reopen the period.")
+    @ApiResponse(responseCode = "201", description = "Recorded; says how many booked appointments fall inside")
+    @ApiResponse(responseCode = "400", ref = "BadRequest")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @PostMapping("/api/v1/me/staff/{staffId}/time-off")
+    @ResponseStatus(HttpStatus.CREATED)
+    public TimeOffCreatedResponse markUnavailable(@PathVariable UUID staffId,
+            @Valid @RequestBody TimeOffRequest body, HttpServletRequest request) {
+        return timeOffService.createByWorker(staffId, CurrentUser.requireUserId(request), body);
     }
 }

@@ -89,6 +89,14 @@ public class NotificationService {
                         + "or cancel it.");
     }
 
+    public void sendWorkerUnavailableEmail(String toEmail, String workerName, int affectedAppointments) {
+        emailProvider.send(toEmail, workerName + " is unavailable",
+                workerName + " closed their availability. " + (affectedAppointments > 0
+                        ? affectedAppointments + " booked appointment(s) fall in that period — open the app to "
+                                + "decide what to do with each."
+                        : "No booked appointments are affected."));
+    }
+
     public void sendSubscriptionPaymentFailedEmail(String toEmail) {
         emailProvider.send(toEmail, "Subscription payment failed",
                 "We couldn't charge your PRO subscription. Please update your payment details — your plan "
