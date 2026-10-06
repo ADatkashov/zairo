@@ -785,7 +785,7 @@
   "noOpenTimesTitle": "No open times",
   "@noOpenTimesTitle": {"description": "Provider detail screen empty state title when there are no open slots."},
 
-  "noOpenTimesMessage": "Check back later or try another provider.",
+  "noOpenTimesMessage": "No free times right now. Message the business to ask, or try another one.",
   "@noOpenTimesMessage": {"description": "Provider detail screen empty state message when there are no open slots."},
 
   "errorAvailabilityLoadFailed": "Couldn't load availability.",
@@ -1034,7 +1034,7 @@
   "myRewardsEmptyTitle": "No rewards yet",
   "@myRewardsEmptyTitle": {"description": "My Rewards empty state title — the customer has no loyalty account anywhere yet."},
 
-  "myRewardsEmptyMessage": "Complete a booking at any business to start earning points — each business runs its own rewards program, entirely separate from the others.",
+  "myRewardsEmptyMessage": "Book a service to start earning points. Each business has its own rewards, separate from the others.",
   "@myRewardsEmptyMessage": {"description": "My Rewards empty state message, explaining what loyalty is."},
 
   "errorMyRewardsLoadFailed": "Couldn't load your rewards.",
@@ -1201,7 +1201,7 @@
   "loyaltyHistoryEmptyTitle": "No activity yet",
   "@loyaltyHistoryEmptyTitle": {"description": "Points history screen's empty state title."},
 
-  "loyaltyHistoryEmptyMessage": "Your points activity with this business will show up here.",
+  "loyaltyHistoryEmptyMessage": "Points you earn or spend at this business will be listed here.",
   "@loyaltyHistoryEmptyMessage": {"description": "Points history screen's empty state message."},
 
   "errorLoyaltyHistoryLoadFailed": "Couldn't load points history.",
@@ -1253,7 +1253,7 @@
   "loyaltyRedemptionsEmptyTitle": "No redemptions yet",
   "@loyaltyRedemptionsEmptyTitle": {"description": "My Redemptions empty state title."},
 
-  "loyaltyRedemptionsEmptyMessage": "Rewards you redeem at any business will show up here as codes.",
+  "loyaltyRedemptionsEmptyMessage": "When you redeem a reward, its code will appear here.",
   "@loyaltyRedemptionsEmptyMessage": {"description": "My Redemptions empty state message."},
 
   "errorLoyaltyRedemptionsLoadFailed": "Couldn't load your redemptions.",
@@ -1358,7 +1358,7 @@
     "description": "ChatThreadScreen empty state title before any message has been sent."
   },
 
-  "chatThreadEmptyMessage": "Send a message to start the conversation.",
+  "chatThreadEmptyMessage": "Say hello or ask about a time. Replies will show up here.",
   "@chatThreadEmptyMessage": {
     "description": "ChatThreadScreen empty state body."
   },
