@@ -2649,5 +2649,17 @@
   "workerPricesUseBase": "Use usual price",
   "@workerPricesUseBase": {"description": "workerPricesUseBase"},
   "workerPricesSave": "Save",
-  "@workerPricesSave": {"description": "workerPricesSave"}
+  "@workerPricesSave": {"description": "workerPricesSave"},
+  "noShowCorrectionTitle": "Did the customer come?",
+  "@noShowCorrectionTitle": {"description": "noShowCorrectionTitle"},
+  "noShowCorrectionMessage": "This visit was marked as a no-show. If the customer did come, mark it as completed. A completed visit cannot be changed back.",
+  "@noShowCorrectionMessage": {"description": "noShowCorrectionMessage"},
+  "noShowCorrectionKeep": "Keep no-show",
+  "@noShowCorrectionKeep": {"description": "noShowCorrectionKeep"},
+  "noShowCorrectionConfirm": "They came",
+  "@noShowCorrectionConfirm": {"description": "noShowCorrectionConfirm"},
+  "noShowCorrectionFailed": "Couldn't change it. Please try again.",
+  "@noShowCorrectionFailed": {"description": "noShowCorrectionFailed"},
+  "needsAttentionWorkerNotAccepted": "{worker} hasn't accepted this yet",
+  "@needsAttentionWorkerNotAccepted": {"description": "needsAttentionWorkerNotAccepted", "placeholders": {"worker": {"type": "String", "example": "Aigerim"}}}
 }

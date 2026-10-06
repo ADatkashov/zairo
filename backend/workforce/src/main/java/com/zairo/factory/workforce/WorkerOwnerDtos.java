@@ -27,7 +27,8 @@ public final class WorkerOwnerDtos {
             String customerName, String customerPhone, BigDecimal totalPrice, String currency,
             UUID workerId, WorkerKind workerKind, String workerName,
             @Schema(description = "Why it needs attention: WORKER_CANNOT_ATTEND (they said so), WORKER_UNAVAILABLE "
-                    + "(they are off then) or WORKER_INACTIVE (they no longer work here).") String reason,
+                    + "(they are off then), WORKER_INACTIVE (they no longer work here) or WORKER_NOT_ACCEPTED (the visit is "
+                    + "close and they haven't accepted it).") String reason,
             @Schema(description = "The worker's own words, if any.") String workerNote,
             Instant requestedAt,
             @Schema(description = "SPECIFIC (the customer chose this person) or ANY.") String preference,

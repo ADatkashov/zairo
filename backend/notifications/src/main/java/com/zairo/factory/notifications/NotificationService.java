@@ -89,6 +89,12 @@ public class NotificationService {
                         + "or cancel it.");
     }
 
+    public void sendWorkerNotAcceptedEmail(String toEmail, String workerName, Instant startsAt) {
+        emailProvider.send(toEmail, "An appointment hasn't been accepted",
+                workerName + " hasn't accepted the appointment at " + startsAt + ". Open the app to check with "
+                        + "them or hand it to a colleague.");
+    }
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void sendWorkerChangedEmail(UUID recipientUserId, String toEmail, UUID bookingId, String toName,
             boolean customerDidntMind) {

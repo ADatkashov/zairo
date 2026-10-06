@@ -175,6 +175,7 @@ class _NeedsAttentionCardState extends ConsumerState<_NeedsAttentionCard> {
             switch (item.reason) {
               'WORKER_UNAVAILABLE' => l10n.needsAttentionWorkerUnavailable(item.workerName ?? '—'),
               'WORKER_INACTIVE' => l10n.needsAttentionWorkerInactive(item.workerName ?? '—'),
+              'WORKER_NOT_ACCEPTED' => l10n.needsAttentionWorkerNotAccepted(item.workerName ?? '—'),
               _ => l10n.needsAttentionWorkerCannotAttend(item.workerName ?? '—'),
             },
             style: textTheme.bodyMedium?.copyWith(color: colors.warning),
@@ -193,7 +194,7 @@ class _NeedsAttentionCardState extends ConsumerState<_NeedsAttentionCard> {
                 dense: true,
                 onPressed: _busy ? null : _reassign,
               ),
-              if (item.customerAskedAt == null)
+              if (item.customerAskedAt == null && item.reason != 'WORKER_NOT_ACCEPTED')
                 FactoryButton(
                   label: l10n.needsAttentionAskCustomerButton,
                   variant: FactoryButtonVariant.text,

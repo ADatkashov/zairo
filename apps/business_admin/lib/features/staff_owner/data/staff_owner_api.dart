@@ -35,6 +35,11 @@ class StaffOwnerApi {
     return _dioClient.post('/providers/$providerId/appointments/$bookingId/ask-customer');
   }
 
+  /// The customer did come after a wrong no-show mark: it becomes a normal completion.
+  Future<void> markAttended(String providerId, String bookingId) {
+    return _dioClient.post('/providers/$providerId/appointments/$bookingId/mark-attended');
+  }
+
   // --- per-worker prices ---
 
   /// serviceId -> this worker's own price, for services where it differs from the base price.

@@ -445,6 +445,28 @@ public class BookingService {
     }
 
     /**
+     * Provider-owner correction of a wrong "no-show": the customer did come. Behaves exactly like a normal
+     * completion (same event, so the payout and loyalty points follow). The opposite correction —
+     * COMPLETED back to anything else — is deliberately not offered: completion has already created the
+     * business's payout and the customer's points, and undoing those is a money decision, not a status flip.
+     */
+    @Transactional
+    public Booking correctNoShowToCompleted(UUID bookingId, UUID callerId) {
+        Booking booking = loadBooking(bookingId);
+        if (booking.getStatus() != BookingStatus.NO_SHOW) {
+            throw new InvalidBookingStateException("Only a no-show can be corrected to completed: " + bookingId
+                    + " (status=" + booking.getStatus() + ")");
+        }
+        AvailabilitySlot slot = loadSlot(booking);
+        providerOwnership.requireOwner(slot.getProviderId(), callerId);
+        booking.markCompleted();
+        Booking completed = bookingRepository.save(booking);
+        eventPublisher.publishEvent(new BookingCompletedEvent(completed.getId(), completed.getUserId(),
+                slot.getProviderId(), completed.getServiceId()));
+        return completed;
+    }
+
+    /**
      * {@link BookingReminderJob}'s one call — marks each qualifying booking
      * reminded and publishes {@link BookingReminderDueEvent} for
      * notifications to actually email, in the same transaction as the

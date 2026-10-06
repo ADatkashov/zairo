@@ -84,4 +84,18 @@ public class WorkerOwnerController {
         ownerService.cancel(providerId, bookingId, CurrentUser.requireUserId(request),
                 body == null ? null : body.reason());
     }
+
+    @Operation(summary = "Correct a wrong no-show (owner)", description = "Owner-only. The customer did come after "
+            + "all: a NO_SHOW becomes COMPLETED exactly as a normal completion (payout and loyalty points follow). "
+            + "A COMPLETED appointment cannot be changed back — its payout and points already exist.")
+    @ApiResponse(responseCode = "204", description = "Corrected")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @ApiResponse(responseCode = "409", description = "The appointment isn't a no-show.")
+    @PostMapping("/api/v1/providers/{providerId}/appointments/{bookingId}/mark-attended")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void markAttended(@PathVariable UUID providerId, @PathVariable UUID bookingId,
+            HttpServletRequest request) {
+        ownerService.markAttended(providerId, bookingId, CurrentUser.requireUserId(request));
+    }
 }

@@ -156,7 +156,7 @@ Future<List<AgendaItem>> _loadAgenda(Ref ref, String ownerUserId, DateTime from,
     return [
       for (final entry in results[0] as List<ScheduleEntry>)
         if (entry.status != 'CANCELLED')
-          AgendaItem(entry: entry, providerName: p.name, serviceTitle: titles[entry.serviceId] ?? ''),
+          AgendaItem(entry: entry, providerId: p.id, providerName: p.name, serviceTitle: titles[entry.serviceId] ?? ''),
     ];
   }));
 
