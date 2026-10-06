@@ -318,5 +318,10 @@
   "bulkSelectRow": "«{name}» таңдау",
   "bulkSuspendTitle": "{count} бизнес тоқтатылсын ба?",
   "bulkDone": "{count} бизнес жаңартылды",
-  "bulkPartial": "Жаңартылды: {done}, орындалмады: {failed}. Орындалмағандарын қайталаңыз."
+  "bulkPartial": "Жаңартылды: {done}, орындалмады: {failed}. Орындалмағандарын қайталаңыз.",
+  "activityToday": "Бүгін",
+  "activityYesterday": "Кеше",
+  "activityDetailTime": "Уақыты",
+  "activityDetailTarget": "Нысан",
+  "activityDetailEntryId": "Жазба ID"
 }

@@ -318,5 +318,10 @@
   "bulkSelectRow": "Выбрать «{name}»",
   "bulkSuspendTitle": "{count, plural, one{Приостановить {count} бизнес?} few{Приостановить {count} бизнеса?} many{Приостановить {count} бизнесов?} other{Приостановить {count} бизнеса?}}",
   "bulkDone": "{count, plural, one{Обновлён {count} бизнес} few{Обновлено {count} бизнеса} many{Обновлено {count} бизнесов} other{Обновлено {count} бизнеса}}",
-  "bulkPartial": "Обновлено: {done}, не удалось: {failed}. Повторите для неудавшихся."
+  "bulkPartial": "Обновлено: {done}, не удалось: {failed}. Повторите для неудавшихся.",
+  "activityToday": "Сегодня",
+  "activityYesterday": "Вчера",
+  "activityDetailTime": "Время",
+  "activityDetailTarget": "Объект",
+  "activityDetailEntryId": "ID записи"
 }
