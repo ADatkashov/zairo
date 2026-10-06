@@ -75,7 +75,7 @@ public class BeautyBookingService {
         // Workforce rules (not double-booked elsewhere, not off, choice allowed): see WorkerAvailabilityGuard.
         availabilityGuards.orderedStream().forEach(guard -> guard.requireBookable(masterId, slot, userId));
 
-        Booking booking = bookingService.createBooking(userId, serviceId, availabilitySlotId, totalPrice);
+        Booking booking = bookingService.createBooking(userId, serviceId, availabilitySlotId, totalPrice, masterId);
         masterBookingRepository.save(new MasterBooking(UUID.randomUUID(), booking.getId(), masterId, Instant.now()));
         return new BeautyBookingResult(booking, masterId);
     }

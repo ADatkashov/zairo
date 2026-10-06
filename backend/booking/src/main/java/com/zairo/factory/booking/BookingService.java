@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.util.UUID;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
@@ -34,12 +35,13 @@ public class BookingService {
     private final ApplicationEventPublisher eventPublisher;
     private final EntityManager entityManager;
     private final PaymentSettingsService paymentSettingsService;
+    private final ObjectProvider<WorkerPriceResolver> workerPriceResolvers;
 
     public BookingService(AvailabilitySlotRepository availabilitySlotRepository, BookingRepository bookingRepository,
             ProviderRepository providerRepository, ServiceOfferingRepository serviceOfferingRepository,
             ProviderOwnership providerOwnership, SubscriptionLimitService subscriptionLimitService,
             ApplicationEventPublisher eventPublisher, EntityManager entityManager,
-            PaymentSettingsService paymentSettingsService) {
+            PaymentSettingsService paymentSettingsService, ObjectProvider<WorkerPriceResolver> workerPriceResolvers) {
         this.availabilitySlotRepository = availabilitySlotRepository;
         this.bookingRepository = bookingRepository;
         this.providerRepository = providerRepository;
@@ -49,6 +51,7 @@ public class BookingService {
         this.eventPublisher = eventPublisher;
         this.entityManager = entityManager;
         this.paymentSettingsService = paymentSettingsService;
+        this.workerPriceResolvers = workerPriceResolvers;
     }
 
     /**
@@ -69,6 +72,17 @@ public class BookingService {
      */
     @Transactional
     public Booking createBooking(UUID userId, UUID serviceId, UUID availabilitySlotId, BigDecimal totalPrice) {
+        return createBooking(userId, serviceId, availabilitySlotId, totalPrice, null);
+    }
+
+    /**
+     * As {@link #createBooking(UUID, UUID, UUID, BigDecimal)}, for a booking with a named worker: the price is the
+     * worker's own when the business set one (see {@link WorkerPriceResolver}), otherwise the service's price.
+     * Either way it is fixed here and never changes afterwards.
+     */
+    @Transactional
+    public Booking createBooking(UUID userId, UUID serviceId, UUID availabilitySlotId, BigDecimal totalPrice,
+            UUID workerId) {
         AvailabilitySlot slot = availabilitySlotRepository.findById(availabilitySlotId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Availability slot not found: " + availabilitySlotId));
@@ -138,13 +152,19 @@ public class BookingService {
         // Load payment settings for this provider to capture them at booking time
         PaymentSettings settings = paymentSettingsService.getOrCreateSettings(slot.getProviderId());
 
+        BigDecimal price = service.getPrice();
+        if (workerId != null) {
+            for (WorkerPriceResolver resolver : workerPriceResolvers.orderedStream().toList()) {
+                price = resolver.priceFor(slot.getProviderId(), workerId, serviceId).orElse(price);
+            }
+        }
+
         // Calculate deposit amount based on settings
         BigDecimal depositAmount = DepositCalculator.calculateDepositAmount(
-                service.getPrice(), settings.getDepositType(), settings.getDepositValueType(),
-                settings.getDepositValue());
+                price, settings.getDepositType(), settings.getDepositValueType(), settings.getDepositValue());
 
         Booking booking = new Booking(UUID.randomUUID(), userId, serviceId, availabilitySlotId,
-                BookingStatus.PENDING_PAYMENT, service.getPrice(), service.getCurrency(), Instant.now(),
+                BookingStatus.PENDING_PAYMENT, price, service.getCurrency(), Instant.now(),
                 settings.getDepositType(), settings.getDepositValueType(), settings.getDepositValue(),
                 depositAmount, service.getCityCode());
         booking = bookingRepository.save(booking);
