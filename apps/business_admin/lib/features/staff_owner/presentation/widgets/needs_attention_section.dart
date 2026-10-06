@@ -85,6 +85,60 @@ class _NeedsAttentionCardState extends ConsumerState<_NeedsAttentionCard> {
     }
   }
 
+  Future<void> _run(Future<void> Function() action, String failure) async {
+    setState(() => _busy = true);
+    try {
+      await action();
+      ref.invalidate(needsAttentionProvider(widget.providerId));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(failure)));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _reassign() async {
+    final l10n = AppLocalizations.of(context)!;
+    final item = widget.item;
+    final picked = await showModalBottomSheet<Replacement>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(FactorySpacing.space4),
+              child: Text(l10n.needsAttentionReassignTitle, style: Theme.of(sheetContext).textTheme.titleMedium),
+            ),
+            if (item.replacements.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(FactorySpacing.space4),
+                child: Text(l10n.needsAttentionNoReplacements),
+              ),
+            for (final r in item.replacements)
+              ListTile(
+                title: Text(r.name),
+                subtitle: r.atWorkingTime ? null : Text(l10n.needsAttentionOutsideHours),
+                onTap: () => Navigator.of(sheetContext).pop(r),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    await _run(
+      () => ref.read(staffOwnerApiProvider).reassignAppointment(widget.providerId, item.bookingId, picked.workerId),
+      l10n.needsAttentionReassignFailed,
+    );
+  }
+
+  Future<void> _askCustomer() => _run(
+        () => ref.read(staffOwnerApiProvider).askCustomer(widget.providerId, widget.item.bookingId),
+        AppLocalizations.of(context)!.needsAttentionReassignFailed,
+      );
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -118,18 +172,42 @@ class _NeedsAttentionCardState extends ConsumerState<_NeedsAttentionCard> {
           ),
           const SizedBox(height: FactorySpacing.space1),
           Text(
-            l10n.needsAttentionWorkerCannotAttend(item.workerName ?? '—'),
+            switch (item.reason) {
+              'WORKER_UNAVAILABLE' => l10n.needsAttentionWorkerUnavailable(item.workerName ?? '—'),
+              'WORKER_INACTIVE' => l10n.needsAttentionWorkerInactive(item.workerName ?? '—'),
+              _ => l10n.needsAttentionWorkerCannotAttend(item.workerName ?? '—'),
+            },
             style: textTheme.bodyMedium?.copyWith(color: colors.warning),
           ),
           if (item.workerNote != null && item.workerNote!.isNotEmpty)
             Text('«${item.workerNote}»', style: textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
           const SizedBox(height: FactorySpacing.space2),
-          FactoryButton(
-            label: l10n.needsAttentionCancelButton,
-            variant: FactoryButtonVariant.textDanger,
-            dense: true,
-            isLoading: _busy,
-            onPressed: _busy ? null : _cancel,
+          if (item.customerAskedAt != null)
+            Text(l10n.needsAttentionCustomerAsked, style: textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
+          Wrap(
+            spacing: FactorySpacing.space2,
+            children: [
+              FactoryButton(
+                label: l10n.needsAttentionReassignButton,
+                variant: FactoryButtonVariant.text,
+                dense: true,
+                onPressed: _busy ? null : _reassign,
+              ),
+              if (item.customerAskedAt == null)
+                FactoryButton(
+                  label: l10n.needsAttentionAskCustomerButton,
+                  variant: FactoryButtonVariant.text,
+                  dense: true,
+                  onPressed: _busy ? null : _askCustomer,
+                ),
+              FactoryButton(
+                label: l10n.needsAttentionCancelButton,
+                variant: FactoryButtonVariant.textDanger,
+                dense: true,
+                isLoading: _busy,
+                onPressed: _busy ? null : _cancel,
+              ),
+            ],
           ),
         ],
       ),

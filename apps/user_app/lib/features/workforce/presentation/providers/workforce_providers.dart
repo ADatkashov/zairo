@@ -2,7 +2,9 @@ import 'package:core_network/core_network.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../booking/data/models/availability_slot.dart';
+import '../../data/change_request_api.dart';
 import '../../data/models/any_slot.dart';
+import '../../data/models/change_request.dart';
 import '../../data/workforce_api.dart';
 
 final workforceApiProvider = Provider<WorkforceApi>((ref) {
@@ -24,4 +26,13 @@ final workerSlotsProvider = FutureProvider.autoDispose
 final anySlotsProvider = FutureProvider.autoDispose
     .family<List<AnySlot>, (String providerId, String serviceId)>((ref, key) {
   return ref.watch(workforceApiProvider).anySlots(key.$1, key.$2);
+});
+
+final changeRequestApiProvider = Provider<ChangeRequestApi>((ref) {
+  return ChangeRequestApi(ref.watch(dioClientProvider));
+});
+
+/// Appointments where the owner asked the customer to choose a replacement, another time or a refund.
+final changeRequestsProvider = FutureProvider.autoDispose<List<ChangeRequest>>((ref) {
+  return ref.watch(changeRequestApiProvider).list();
 });
