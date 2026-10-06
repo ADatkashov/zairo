@@ -306,5 +306,17 @@
   "cmdNoResults": "Ештеңе табылмады",
   "cmdSectionPages": "Бөлімдер",
   "cmdSectionBusinesses": "Бизнестер",
-  "cmdOpenTooltip": "Жылдам іздеу"
+  "cmdOpenTooltip": "Жылдам іздеу",
+  "businessesSaveView": "Көріністі сақтау",
+  "businessesSaveViewTitle": "Көріністің атауы",
+  "businessesViewName": "Атауы",
+  "businessesViewsLimit": "8 көрінісіне дейін сақтауға болады. Алдымен біреуін жойыңыз.",
+  "businessesRemoveView": "Көріністі жою",
+  "bulkSelected": "Таңдалды: {count}",
+  "bulkClear": "Тазарту",
+  "bulkSelectAll": "Барлығын таңдау",
+  "bulkSelectRow": "«{name}» таңдау",
+  "bulkSuspendTitle": "{count} бизнес тоқтатылсын ба?",
+  "bulkDone": "{count} бизнес жаңартылды",
+  "bulkPartial": "Жаңартылды: {done}, орындалмады: {failed}. Орындалмағандарын қайталаңыз."
 }
