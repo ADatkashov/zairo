@@ -21,7 +21,12 @@ import '../../../loyalty/presentation/screens/loyalty_screen.dart';
 import '../../../messaging/presentation/screens/business_inbox_screen.dart';
 import '../../../salon/data/models/admin_provider.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
+import '../../../salon/presentation/screens/week_calendar_screen.dart';
+import '../../../salon/presentation/widgets/agenda_row.dart';
+import '../../../salon/presentation/screens/customer_list_screen.dart';
 import '../../../salon/presentation/screens/salon_detail_screen.dart';
+import '../../../salon/presentation/widgets/add_service_dialog.dart';
+import '../../../salon/presentation/widgets/recurring_schedule_dialog.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
 
 /// Shown by AuthGate once logged in. Lists the salons/workshops/cleaning
@@ -131,7 +136,7 @@ class DashboardScreen extends ConsumerWidget {
             ]),
             child: ListView.separated(
             padding: const EdgeInsets.all(FactorySpacing.space4),
-            itemCount: providers.length + 3,
+            itemCount: providers.length + 5,
             separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
             itemBuilder: (context, index) {
               if (index == 0) {
@@ -143,7 +148,13 @@ class DashboardScreen extends ConsumerWidget {
                   subscription: subscriptionAsync.value,
                 );
               }
-              if (index == providers.length + 2) {
+              if (index == 2) {
+                return _TodayAgenda(ownerUserId: user.id);
+              }
+              if (index == 3) {
+                return _QuickActions(providers: providers);
+              }
+              if (index == providers.length + 4) {
                 final subscription = subscriptionAsync.value;
                 final atLimit = subscription != null && providers.length >= subscription.limits.maxProviders;
                 if (atLimit) {
@@ -156,7 +167,7 @@ class DashboardScreen extends ConsumerWidget {
                   onPressed: () => _openCreateSalonDialog(context, ref, user.id),
                 );
               }
-              final provider = providers[index - 2];
+              final provider = providers[index - 4];
               return _SalonCard(
                 provider: provider,
                 onTap: () => Navigator.of(context).push(
@@ -300,49 +311,73 @@ class _OwnerOverviewHero extends ConsumerWidget {
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
+    final radius = context.factoryProfileOrNull?.cardBorderRadius ?? FactoryRadius.xlRadius;
+    final secondaryStyle = textTheme.headlineSmall?.copyWith(color: colors.onPrimary);
+
+    // Bento hero: revenue is the one big number, the rest are secondary.
     return Container(
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
-      padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space6, vertical: FactorySpacing.space5),
+      padding: const EdgeInsets.all(FactorySpacing.space6),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [colors.primaryStrong, colors.mint],
+          colors: [colors.primaryStrong, colors.primary],
         ),
-        borderRadius: FactoryRadius.xlRadius,
-        boxShadow: [
-          BoxShadow(color: colors.primaryStrong.withValues(alpha: 0.24), offset: const Offset(0, 16), blurRadius: 32),
-        ],
+        borderRadius: radius,
+        boxShadow: context.factoryElevation(FactoryElevationLevel.lg),
       ),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Positioned(top: -40, right: -20, child: _HeroCircle(size: 160, opacity: 0.12)),
-          Wrap(
-            spacing: FactorySpacing.space8,
-            runSpacing: FactorySpacing.space3,
-            children: [
-              _OverviewStat(
-                value: Text('${overview.businessCount}', style: textTheme.displaySmall?.copyWith(color: colors.onPrimary)),
-                label: l10n.dashboardBusinessesCountLabel,
-              ),
-              _OverviewStat(
-                value: Text('${overview.totalBookings}', style: textTheme.displaySmall?.copyWith(color: colors.onPrimary)),
-                label: l10n.dashboardTotalBookingsLabel,
-              ),
-              _OverviewStat(
-                value: FactoryPriceText(
-                  amount: overview.totalRevenue,
-                  currencySymbol: overview.currency,
-                  fontSize: 24,
-                  color: colors.onPrimary,
+          Positioned(
+            top: -60,
+            right: -50,
+            child: Container(
+              width: 220,
+              height: 220,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                // Ambient glow: radial fade, not a flat disc.
+                gradient: RadialGradient(
+                  colors: [colors.accent.withValues(alpha: 0.42), colors.accent.withValues(alpha: 0)],
                 ),
-                label: l10n.dashboardTotalRevenueLabel,
               ),
-              _OverviewStat(
-                value: Text('${overview.totalCustomers}', style: textTheme.displaySmall?.copyWith(color: colors.onPrimary)),
-                label: l10n.dashboardTotalCustomersLabel,
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.dashboardTotalRevenueLabel,
+                style: textTheme.labelMedium?.copyWith(color: colors.onPrimary.withValues(alpha: 0.8)),
+              ),
+              const SizedBox(height: FactorySpacing.space1),
+              FactoryPriceText(
+                amount: overview.totalRevenue,
+                currencySymbol: overview.currency,
+                fontSize: 40,
+                color: colors.onPrimary,
+              ),
+              const SizedBox(height: FactorySpacing.space5),
+              Wrap(
+                spacing: FactorySpacing.space8,
+                runSpacing: FactorySpacing.space3,
+                children: [
+                  _OverviewStat(
+                    value: Text('${overview.totalBookings}', style: secondaryStyle),
+                    label: l10n.dashboardTotalBookingsLabel,
+                  ),
+                  _OverviewStat(
+                    value: Text('${overview.totalCustomers}', style: secondaryStyle),
+                    label: l10n.dashboardTotalCustomersLabel,
+                  ),
+                  _OverviewStat(
+                    value: Text('${overview.businessCount}', style: secondaryStyle),
+                    label: l10n.dashboardBusinessesCountLabel,
+                  ),
+                ],
               ),
             ],
           ),
@@ -368,25 +403,11 @@ class _OverviewStat extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white.withValues(alpha: 0.85)),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: context.factoryColors.onPrimary.withValues(alpha: 0.8),
+          ),
         ),
       ],
-    );
-  }
-}
-
-class _HeroCircle extends StatelessWidget {
-  const _HeroCircle({required this.size, required this.opacity});
-
-  final double size;
-  final double opacity;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: opacity)),
     );
   }
 }
@@ -657,6 +678,106 @@ String _providerStatusLabel(AppLocalizations l10n, String status) => switch (sta
 
 String _capitalize(String s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1).toLowerCase()}';
 
+/// Two things an owner does every day, one tap from the Dashboard instead of
+/// Dashboard → business → section → add. With several businesses the owner is
+/// asked which one first.
+class _QuickActions extends ConsumerWidget {
+  const _QuickActions({required this.providers});
+
+  final List<AdminProvider> providers;
+
+  Future<AdminProvider?> _pickBusiness(BuildContext context) async {
+    if (providers.length == 1) return providers.first;
+    final l10n = AppLocalizations.of(context)!;
+    return showFactoryBottomSheet<AdminProvider>(
+      context: context,
+      builder: (sheetContext) => Padding(
+        padding: const EdgeInsets.fromLTRB(FactorySpacing.space4, 0, FactorySpacing.space4, FactorySpacing.space4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.quickActionPickBusiness, style: Theme.of(sheetContext).textTheme.titleMedium),
+            const SizedBox(height: FactorySpacing.space2),
+            for (final provider in providers)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(provider.name),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.of(sheetContext).pop(provider),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _setSchedule(BuildContext context, WidgetRef ref) async {
+    final provider = await _pickBusiness(context);
+    if (provider == null || !context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final message = AppLocalizations.of(context)!.quickActionSlotAdded;
+    final added = await showDialog<bool>(context: context, builder: (_) => RecurringScheduleDialog(providerId: provider.id));
+    if (added == true) {
+      ref.invalidate(providerSlotsProvider(provider.id));
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
+  Future<void> _addService(BuildContext context, WidgetRef ref) async {
+    final provider = await _pickBusiness(context);
+    if (provider == null || !context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final message = AppLocalizations.of(context)!.quickActionServiceAdded;
+    final added = await showDialog<bool>(
+      context: context,
+      builder: (_) => AddServiceDialog(providerId: provider.id, businessTypeId: provider.businessTypeId),
+    );
+    if (added == true) {
+      ref.invalidate(providerServicesProvider);
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
+  Future<void> _openCustomers(BuildContext context) async {
+    final provider = await _pickBusiness(context);
+    if (provider == null || !context.mounted) return;
+    final title = AppLocalizations.of(context)!.quickActionCustomers;
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => CustomerListScreen(providerId: provider.id, title: title)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    return Wrap(
+      spacing: FactorySpacing.space2,
+      runSpacing: FactorySpacing.space2,
+      children: [
+        FactoryButton(
+          icon: Icons.event_available_outlined,
+          label: l10n.quickActionAddSlot,
+          variant: FactoryButtonVariant.secondary,
+          onPressed: () => _setSchedule(context, ref),
+        ),
+        FactoryButton(
+          icon: Icons.add_business_outlined,
+          label: l10n.quickActionAddService,
+          variant: FactoryButtonVariant.secondary,
+          onPressed: () => _addService(context, ref),
+        ),
+        FactoryButton(
+          icon: Icons.groups_outlined,
+          label: l10n.quickActionCustomers,
+          variant: FactoryButtonVariant.secondary,
+          onPressed: () => _openCustomers(context),
+        ),
+      ],
+    );
+  }
+}
+
 class _CreateSalonForm extends ConsumerStatefulWidget {
   final String ownerUserId;
 
@@ -792,4 +913,61 @@ String _initialsFor(String name) {
     return parts.first.substring(0, parts.first.length >= 2 ? 2 : 1).toUpperCase();
   }
   return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+
+/// Today's bookings across the owner's businesses: time, service, status.
+/// Shows the next few and says so plainly when there are none. While loading
+/// or on error it stays out of the way (the rest of the dashboard still
+/// works without it).
+class _TodayAgenda extends ConsumerWidget {
+  const _TodayAgenda({required this.ownerUserId});
+
+  final String ownerUserId;
+
+  static const int _maxRows = 5;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final agenda = ref.watch(ownerTodayAgendaProvider(ownerUserId)).value;
+    if (agenda == null) return const SizedBox.shrink();
+
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    final multiple = agenda.map((a) => a.providerName).toSet().length > 1;
+
+    return FactoryCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text(l10n.dashboardAgendaTitle, style: textTheme.titleMedium)),
+              TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => WeekCalendarScreen(ownerUserId: ownerUserId)),
+                ),
+                child: Text(l10n.calendarTitle),
+              ),
+            ],
+          ),
+          const SizedBox(height: FactorySpacing.space3),
+          if (agenda.isEmpty)
+            Text(l10n.dashboardAgendaEmpty, style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary))
+          else
+            for (final item in agenda.take(_maxRows))
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space2),
+                child: AgendaRow(item: item, showProvider: multiple),
+              ),
+          if (agenda.length > _maxRows)
+            Text(
+              '+${agenda.length - _maxRows}',
+              style: FactoryTypography.mono(size: 12, color: colors.textTertiary),
+            ),
+        ],
+      ),
+    );
+  }
 }

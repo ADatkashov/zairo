@@ -7,6 +7,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../salon/data/models/admin_provider.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
 import '../../data/models/conversation.dart';
+import '../providers/message_seen_provider.dart';
 import '../providers/messaging_providers.dart';
 import 'business_chat_thread_screen.dart';
 
@@ -60,11 +61,7 @@ class _BusinessInboxScreenState extends ConsumerState<BusinessInboxScreen> {
           if (_providerId == null || !providers.any((p) => p.id == _providerId)) {
             _providerId = providers.first.id;
           }
-          return _BusinessInboxBody(
-            providerId: _providerId!,
-            providers: providers,
-            onSelectProvider: _selectProvider,
-          );
+          return _BusinessInboxBody(providerId: _providerId!, providers: providers, onSelectProvider: _selectProvider);
         },
         loading: () => const FactoryLoadingState(),
         error: (error, _) => Center(
@@ -86,11 +83,7 @@ class _BusinessInboxBody extends ConsumerWidget {
   final List<AdminProvider> providers;
   final ValueChanged<String> onSelectProvider;
 
-  const _BusinessInboxBody({
-    required this.providerId,
-    required this.providers,
-    required this.onSelectProvider,
-  });
+  const _BusinessInboxBody({required this.providerId, required this.providers, required this.onSelectProvider});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -117,11 +110,7 @@ class _BusinessInboxBody extends ConsumerWidget {
                 ? Padding(
                     padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space6),
                     child: Center(
-                      child: Text(
-                        l10n.businessInboxEmpty,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
-                      ),
+                      child: FactoryEmptyState(icon: Icons.forum_outlined, title: l10n.businessInboxEmpty, message: ''),
                     ),
                   )
                 : Column(
@@ -180,14 +169,15 @@ class _ProviderPicker extends StatelessWidget {
   }
 }
 
-class _ConversationCard extends StatelessWidget {
+class _ConversationCard extends ConsumerWidget {
   final Conversation conversation;
   final VoidCallback onTap;
 
   const _ConversationCard({required this.conversation, required this.onTap});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isNew = ref.watch(messageSeenProvider).value?.isNew(conversation.id, conversation.lastMessageAt) ?? false;
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
@@ -205,7 +195,12 @@ class _ConversationCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(name, style: textTheme.titleSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(
+                  name,
+                  style: textTheme.titleSmall?.copyWith(fontWeight: isNew ? FontWeight.w800 : null),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: 2),
                 Text(
                   DateFormat.yMMMd(locale).add_Hm().format(conversation.lastMessageAt.toLocal()),
@@ -214,6 +209,14 @@ class _ConversationCard extends StatelessWidget {
               ],
             ),
           ),
+          if (isNew) ...[
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(color: colors.coral, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: FactorySpacing.space2),
+          ],
           Icon(Icons.chevron_right, color: colors.textTertiary),
         ],
       ),

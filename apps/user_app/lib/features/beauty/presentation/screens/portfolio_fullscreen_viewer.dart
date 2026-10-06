@@ -48,90 +48,100 @@ class _PortfolioFullscreenViewerState extends State<PortfolioFullscreenViewer> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: Stack(
-          children: [
-            PageView.builder(
-              controller: _controller,
-              itemCount: widget.items.length,
-              onPageChanged: (i) => setState(() => _index = i),
-              itemBuilder: (context, i) =>
-                  _PortfolioPage(item: widget.items[i], l10n: l10n),
-            ),
-            Positioned(
-              top: 8,
-              left: 8,
-              child: IconButton(
-                icon: const Icon(Symbols.close_rounded, color: Colors.white),
-                tooltip: l10n.portfolioViewerCloseTooltip,
-                onPressed: () => Navigator.of(context).pop(),
+        // Swipe the photo up or down to close it, the way every photo viewer
+        // does; the x button stays for anyone who doesn't know the gesture.
+        child: Dismissible(
+          key: const ValueKey('portfolio-viewer-dismiss'),
+          direction: DismissDirection.vertical,
+          onDismissed: (_) => Navigator.of(context).pop(),
+          child: Stack(
+            children: [
+              PageView.builder(
+                controller: _controller,
+                itemCount: widget.items.length,
+                onPageChanged: (i) => setState(() => _index = i),
+                itemBuilder: (context, i) =>
+                    _PortfolioPage(item: widget.items[i], l10n: l10n),
               ),
-            ),
-            if (widget.items.length > 1)
               Positioned(
-                top: 16,
-                right: 16,
-                child: Text(
-                  l10n.portfolioViewerCounter(_index + 1, widget.items.length),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
+                top: 8,
+                left: 8,
+                child: IconButton(
+                  icon: const Icon(Symbols.close_rounded, color: Colors.white),
+                  tooltip: l10n.portfolioViewerCloseTooltip,
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
-            if (widget.items.length > 1) ...[
-              if (_index > 0)
+              if (widget.items.length > 1)
                 Positioned(
-                  left: 4,
-                  top: 0,
-                  bottom: 0,
-                  child: Center(
-                    child: IconButton(
-                      icon: const Icon(
-                        Symbols.chevron_left_rounded,
-                        color: Colors.white,
-                        size: 36,
-                      ),
-                      tooltip: l10n.portfolioViewerPreviousTooltip,
-                      onPressed: () => _controller.previousPage(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeOut,
-                      ),
+                  top: 16,
+                  right: 16,
+                  child: Text(
+                    l10n.portfolioViewerCounter(
+                      _index + 1,
+                      widget.items.length,
+                    ),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-              if (_index < widget.items.length - 1)
-                Positioned(
-                  right: 4,
-                  top: 0,
-                  bottom: 0,
-                  child: Center(
-                    child: IconButton(
-                      icon: const Icon(
-                        Symbols.chevron_right_rounded,
-                        color: Colors.white,
-                        size: 36,
-                      ),
-                      tooltip: l10n.portfolioViewerNextTooltip,
-                      onPressed: () => _controller.nextPage(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeOut,
+              if (widget.items.length > 1) ...[
+                if (_index > 0)
+                  Positioned(
+                    left: 4,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: IconButton(
+                        icon: const Icon(
+                          Symbols.chevron_left_rounded,
+                          color: Colors.white,
+                          size: 36,
+                        ),
+                        tooltip: l10n.portfolioViewerPreviousTooltip,
+                        onPressed: () => _controller.previousPage(
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeOut,
+                        ),
                       ),
                     ),
+                  ),
+                if (_index < widget.items.length - 1)
+                  Positioned(
+                    right: 4,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: IconButton(
+                        icon: const Icon(
+                          Symbols.chevron_right_rounded,
+                          color: Colors.white,
+                          size: 36,
+                        ),
+                        tooltip: l10n.portfolioViewerNextTooltip,
+                        onPressed: () => _controller.nextPage(
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeOut,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+              if (item.caption != null && item.caption!.isNotEmpty)
+                Positioned(
+                  left: 16,
+                  right: 16,
+                  bottom: 16,
+                  child: Text(
+                    item.caption!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white),
                   ),
                 ),
             ],
-            if (item.caption != null && item.caption!.isNotEmpty)
-              Positioned(
-                left: 16,
-                right: 16,
-                bottom: 16,
-                child: Text(
-                  item.caption!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ),
-          ],
+          ),
         ),
       ),
     );

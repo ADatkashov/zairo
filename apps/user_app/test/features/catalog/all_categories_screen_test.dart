@@ -4,8 +4,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:zairo/features/catalog/data/catalog_api.dart';
 import 'package:zairo/features/catalog/data/models/business_type.dart';
+import 'package:zairo/features/catalog/data/models/catalog_service.dart';
 import 'package:zairo/features/catalog/data/models/category.dart';
 import 'package:zairo/features/catalog/presentation/providers/catalog_providers.dart';
 import 'package:zairo/features/catalog/presentation/screens/all_categories_screen.dart';
@@ -26,6 +28,18 @@ class _FakeCatalogApi extends CatalogApi {
     requestedBusinessTypesFor.add(categoryId);
     return _businessTypes[categoryId] ?? const [];
   }
+
+  @override
+  Future<List<CatalogService>> listCatalogServices(String businessTypeId) async => const [
+        CatalogService(
+          id: 'svc-1',
+          businessTypeId: 'bt-1',
+          nameKk: 'Шаш алу',
+          nameRu: 'Мужская стрижка',
+          nameEn: "Men's haircut",
+          sortOrder: 1,
+        ),
+      ];
 }
 
 const _beauty = Category(
@@ -201,5 +215,47 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(popped, 'beauty');
+  });
+
+  testWidgets('a sphere offers its catalog services, and picking one opens the price comparison', (
+    tester,
+  ) async {
+    final fakeApi = _FakeCatalogApi(const [_beauty], const {
+      'cat-beauty': [_haircuts],
+    });
+    final router = GoRouter(
+      routes: [
+        GoRoute(path: '/', builder: (_, _) => const AllCategoriesScreen()),
+        GoRoute(
+          path: '/compare/:catalogServiceId',
+          builder: (_, state) => Scaffold(
+            body: Text('compare ${state.pathParameters['catalogServiceId']} ${state.uri.queryParameters['name']}'),
+          ),
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [catalogApiProvider.overrideWithValue(fakeApi)],
+        child: MaterialApp.router(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Beauty'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Compare prices for services in this sphere'));
+    await tester.pumpAndSettle();
+
+    expect(find.text("Men's haircut"), findsOneWidget);
+    await tester.tap(find.text("Men's haircut"));
+    await tester.pumpAndSettle();
+
+    expect(find.text("compare svc-1 Men's haircut"), findsOneWidget);
   });
 }

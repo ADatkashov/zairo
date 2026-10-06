@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:zairo/features/auth/data/models/user_summary.dart';
 import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/booking/data/booking_api.dart';
@@ -16,6 +17,7 @@ import 'package:zairo/features/catalog/presentation/providers/catalog_providers.
 import 'package:zairo/features/discovery/data/discovery_api.dart';
 import 'package:zairo/features/discovery/data/models/provider_search_result.dart';
 import 'package:zairo/features/discovery/presentation/providers/discovery_providers.dart';
+import 'package:zairo/features/catalog/presentation/screens/all_categories_screen.dart';
 import 'package:zairo/features/discovery/presentation/screens/home_screen.dart';
 import 'package:zairo/l10n/app_localizations.dart';
 
@@ -235,11 +237,19 @@ void main() {
           discoveryApiProvider.overrideWithValue(fakeDiscoveryApi),
           catalogApiProvider.overrideWithValue(fakeCatalogApi),
         ],
-        child: MaterialApp(
+        child: MaterialApp.router(
           theme: factoryLightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const HomeScreen(),
+          routerConfig: GoRouter(
+            routes: [
+              GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+              GoRoute(
+                path: '/categories',
+                builder: (_, _) => const AllCategoriesScreen(),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -256,7 +266,28 @@ void main() {
     await tester.pumpAndSettle();
 
     // AllCategoriesScreen: the whole catalog, including what Home cut off.
+    // The rows are cards now, so the later ones sit below the test window.
+    // The list's own Scrollable — the search field has one too.
+    final categoriesList = find
+        .descendant(
+          of: find.descendant(
+            of: find.byType(AllCategoriesScreen),
+            matching: find.byType(ListView),
+          ),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    await tester.scrollUntilVisible(
+      find.text('Category 7'),
+      100,
+      scrollable: categoriesList,
+    );
     expect(find.text('Category 7'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Category 8'),
+      100,
+      scrollable: categoriesList,
+    );
     expect(find.text('Category 8'), findsOneWidget);
   });
 
@@ -296,5 +327,39 @@ void main() {
     expect(find.text('Book again'), findsOneWidget);
     expect(find.text('Aigerim Beauty Studio'), findsOneWidget);
     expect(find.text('Haircut'), findsOneWidget);
+  });
+
+  testWidgets('the header heart opens Favorites, even for a guest', (tester) async {
+    final fakeDiscoveryApi = _FakeDiscoveryApi([_open]);
+    final fakeCatalogApi = _FakeCatalogApi(const []);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          discoveryApiProvider.overrideWithValue(fakeDiscoveryApi),
+          catalogApiProvider.overrideWithValue(fakeCatalogApi),
+        ],
+        child: MaterialApp.router(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: GoRouter(
+            routes: [
+              GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+              GoRoute(
+                path: '/favorites',
+                builder: (_, _) => const Scaffold(body: Text('Favorites page')),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('My favorites'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Favorites page'), findsOneWidget);
   });
 }

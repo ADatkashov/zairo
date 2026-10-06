@@ -20,45 +20,64 @@ class SettingsScreen extends ConsumerWidget {
     final themeMode =
         ref.watch(themeModeControllerProvider).value ?? ThemeMode.system;
     final locale = ref.watch(localeControllerProvider).value;
-    // Settings is also reachable from the login screen; Security only makes sense signed in.
+    // Settings is also reachable from the login screen; Security and Subscription only make sense signed in.
     final signedIn = ref.watch(authControllerProvider).value != null;
 
     return Scaffold(
       appBar: FactoryAppBar(title: l10n.settingsTitle),
       body: ListView(
+        padding: const EdgeInsets.all(FactorySpacing.space4),
         children: [
-          SwitchListTile(
-            title: Text(l10n.darkModeTitle),
-            subtitle: Text(
-              l10n.darkModeSubtitle(_themeModeLabel(l10n, themeMode)),
+          FactorySettingsGroup(
+            children: [
+              SwitchListTile(
+                secondary: const FactoryIconBadge(icon: Icons.dark_mode_outlined),
+                title: Text(l10n.darkModeTitle),
+                subtitle: Text(
+                  l10n.darkModeSubtitle(_themeModeLabel(l10n, themeMode)),
+                ),
+                value: themeMode == ThemeMode.dark,
+                onChanged: (value) {
+                  ref
+                      .read(themeModeControllerProvider.notifier)
+                      .setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
+                },
+              ),
+              ListTile(
+                leading: const FactoryIconBadge(icon: Icons.language),
+                title: Text(l10n.languageSectionTitle),
+                subtitle: Text(_languageLabel(l10n, locale)),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _openLanguagePicker(context, ref, l10n, locale),
+              ),
+            ],
+          ),
+          if (signedIn) ...[
+            const SizedBox(height: FactorySpacing.space4),
+            FactorySettingsGroup(
+              children: [
+                ListTile(
+                  leading: const FactoryIconBadge(icon: Icons.shield_outlined),
+                  title: Text(l10n.securityTitle),
+                  subtitle: Text(l10n.securitySectionSubtitle),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const SecuritySettingsScreen(),
+                    ),
+                  ),
+                ),
+                ListTile(
+                  leading: const FactoryIconBadge(icon: Icons.workspace_premium_outlined),
+                  title: Text(l10n.billingSettingsRowTitle),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const BillingScreen()),
+                  ),
+                ),
+              ],
             ),
-            value: themeMode == ThemeMode.dark,
-            onChanged: (value) {
-              ref
-                  .read(themeModeControllerProvider.notifier)
-                  .setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
-            },
-          ),
-          ListTile(
-            title: Text(l10n.languageSectionTitle),
-            subtitle: Text(_languageLabel(l10n, locale)),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _openLanguagePicker(context, ref, l10n, locale),
-          ),
-          if (signedIn)
-            ListTile(
-              title: Text(l10n.securityTitle),
-              subtitle: Text(l10n.securitySectionSubtitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context)
-                  .push(MaterialPageRoute(builder: (_) => const SecuritySettingsScreen())),
-            ),
-          ListTile(
-            title: Text(l10n.billingSettingsRowTitle),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context)
-                .push(MaterialPageRoute(builder: (_) => const BillingScreen())),
-          ),
+          ],
         ],
       ),
     );

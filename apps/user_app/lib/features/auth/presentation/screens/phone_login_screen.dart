@@ -6,6 +6,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../data/auth_exception.dart';
 import '../auth_navigation.dart';
 import '../providers/auth_providers.dart';
+import '../widgets/auth_step_header.dart';
 import 'otp_screen.dart';
 import 'phone_otp_password_screen.dart';
 import 'phone_password_screen.dart';
@@ -28,7 +29,12 @@ class PhoneLoginScreen extends StatelessWidget {
       appBar: FactoryAppBar(title: l10n.phoneLoginTitle),
       body: Padding(
         padding: const EdgeInsets.all(FactorySpacing.space4),
-        child: ListView(children: [PhoneLoginForm(linking: linking)]),
+        child: ListView(
+          children: [
+            const AuthStepHeader(step: 1),
+            PhoneLoginForm(linking: linking),
+          ],
+        ),
       ),
     );
   }

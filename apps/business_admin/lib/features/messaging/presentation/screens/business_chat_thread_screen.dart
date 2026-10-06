@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/models/chat_message.dart';
+import '../providers/message_seen_provider.dart';
 import '../providers/messaging_providers.dart';
 
 /// One conversation's full thread, from the business owner's side --
@@ -89,6 +90,13 @@ class _BusinessChatThreadScreenState extends ConsumerState<BusinessChatThreadScr
     }
   }
 
+  void _markSeen(DateTime at) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(messageSeenProvider.notifier).markSeen(widget.conversationId, at);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -120,6 +128,8 @@ class _BusinessChatThreadScreenState extends ConsumerState<BusinessChatThreadScr
               onRefresh: () async => ref.invalidate(conversationThreadProvider(widget.conversationId)),
               child: threadAsync.when(
                 data: (messages) {
+                  // What is on screen counts as read.
+                  if (messages.isNotEmpty) _markSeen(messages.last.createdAt);
                   if (messages.isEmpty) {
                     return ListView(
                       padding: const EdgeInsets.all(FactorySpacing.space4),

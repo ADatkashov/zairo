@@ -29,4 +29,7 @@ dependencies {
     // Creating a master is gated by the owner's subscription plan's
     // staff-count limit — see SubscriptionLimitService.
     implementation(project(":subscriptions"))
+
+    // Picking an existing user as a master reads their display name / avatar.
+    implementation(project(":users"))
 }

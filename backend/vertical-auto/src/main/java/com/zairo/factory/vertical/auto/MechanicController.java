@@ -1,6 +1,7 @@
 package com.zairo.factory.vertical.auto;
 
 import com.zairo.factory.auth.CurrentUser;
+import com.zairo.factory.vertical.auto.MechanicDtos.CreateMechanicFromUserRequest;
 import com.zairo.factory.vertical.auto.MechanicDtos.CreateMechanicRequest;
 import com.zairo.factory.vertical.auto.MechanicDtos.MechanicResponse;
 import com.zairo.factory.vertical.auto.MechanicDtos.MechanicServiceResponse;
@@ -56,6 +57,24 @@ public class MechanicController {
         Mechanic mechanic = mechanicDirectoryService.createMechanic(providerId, request.displayName(),
                 request.bio(), request.photoUrl(), CurrentUser.requireUserId(httpRequest));
         return MechanicResponse.from(mechanic);
+    }
+
+    @Operation(summary = "Add an existing user as a mechanic", description = "Owner-only. The mechanic's name and photo "
+            + "come from the user's profile (find the user with GET /users/lookup). A user can be a mechanic at a "
+            + "provider once.")
+    @ApiResponse(responseCode = "201", description = "Mechanic created")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "402", description = "The plan's staff limit is reached.")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound", description = "The provider or the user doesn't exist.")
+    @ApiResponse(responseCode = "409", description = "This user is already a mechanic at this provider.")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/api/v1/auto/providers/{providerId}/mechanics/from-user")
+    @ResponseStatus(HttpStatus.CREATED)
+    public MechanicResponse createFromUser(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
+            @Valid @RequestBody CreateMechanicFromUserRequest request, HttpServletRequest httpRequest) {
+        return MechanicResponse.from(mechanicDirectoryService.createMechanicFromUser(providerId, request.userId(),
+                CurrentUser.requireUserId(httpRequest)));
     }
 
     @Operation(summary = "List a provider's mechanics", description = "Active mechanics by default. Pass "

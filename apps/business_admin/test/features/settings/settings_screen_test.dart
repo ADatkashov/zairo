@@ -2,6 +2,7 @@ import 'package:business_admin/app/locale/locale_controller.dart';
 import 'package:business_admin/features/settings/presentation/screens/settings_screen.dart';
 import 'package:business_admin/l10n/app_localizations.dart';
 import 'package:core_storage/core_storage.dart';
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -36,6 +37,8 @@ class _TestApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(localeControllerProvider).value;
     return MaterialApp(
+      // The real app always runs on the Factory theme; the settings cards read it.
+      theme: factoryLightTheme(profile: FactoryAppProfile.business),
       locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -45,6 +48,19 @@ class _TestApp extends ConsumerWidget {
 }
 
 void main() {
+  testWidgets('hides the Subscription row while signed out', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [secureStorageServiceProvider.overrideWithValue(_InMemorySecureStorageService())],
+        child: const _TestApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('Subscription'), findsNothing);
+  });
+
   testWidgets(
     'defaults to system language and switches to Kazakh, persisting the choice',
     (tester) async {

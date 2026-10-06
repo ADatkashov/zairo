@@ -23,15 +23,13 @@ class CleaningAdminApi {
     return data.map((e) => AdminCleaner.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  Future<AdminCleaner> createCleaner({
-    required String providerId,
-    required String displayName,
-    String? bio,
-  }) async {
+  /// Adds an existing registered user as a cleaner (POST .../from-user) — name and
+  /// photo come from their profile, nothing is typed in.
+  Future<AdminCleaner> createCleanerFromUser({required String providerId, required String userId}) async {
     try {
       final response = await _dioClient.post(
-        '/cleaning/providers/$providerId/cleaners',
-        data: {'displayName': displayName, 'bio': bio, 'photoUrl': null},
+        '/cleaning/providers/$providerId/cleaners/from-user',
+        data: {'userId': userId},
       );
       return AdminCleaner.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {

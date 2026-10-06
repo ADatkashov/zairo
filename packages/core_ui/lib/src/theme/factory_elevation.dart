@@ -27,12 +27,12 @@ class FactoryElevation {
       case FactoryElevationLevel.md:
         return [
           BoxShadow(color: base.withValues(alpha: 0.06), offset: const Offset(0, 1), blurRadius: 2),
-          BoxShadow(color: base.withValues(alpha: 0.04), offset: const Offset(0, 1), blurRadius: 1),
+          BoxShadow(color: base.withValues(alpha: 0.06), offset: const Offset(0, 6), blurRadius: 16),
         ];
       case FactoryElevationLevel.lg:
         return [
-          BoxShadow(color: base.withValues(alpha: 0.14), offset: const Offset(0, 8), blurRadius: 24),
-          BoxShadow(color: base.withValues(alpha: 0.08), offset: const Offset(0, 2), blurRadius: 6),
+          BoxShadow(color: base.withValues(alpha: 0.14), offset: const Offset(0, 18), blurRadius: 40),
+          BoxShadow(color: base.withValues(alpha: 0.08), offset: const Offset(0, 2), blurRadius: 4),
         ];
     }
   }

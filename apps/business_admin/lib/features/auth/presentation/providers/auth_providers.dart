@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:core_network/core_network.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/auth_api.dart';
@@ -17,6 +18,19 @@ final authApiProvider = Provider<AuthApi>((ref) {
   return AuthApi(ref.watch(dioClientProvider));
 });
 
+class _ResumeObserver with WidgetsBindingObserver {
+  _ResumeObserver(this._resumed);
+
+  final Completer<void> _resumed;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !_resumed.isCompleted) {
+      _resumed.complete();
+    }
+  }
+}
+
 /// null = logged out. Same shape/behavior as apps/user_app's AuthController
 /// — session restore (access token -> silent refresh -> give up), no
 /// per-request 401-retry (same deliberate scope cut, see SESSION_NOTES.md).
@@ -31,14 +45,44 @@ class AuthController extends AsyncNotifier<UserSummary?> {
       // stored locally. A declined/failed prompt is treated as logged out for
       // this launch (the person can still log in normally, or relaunch to retry);
       // it never skips the prompt and restores the session anyway.
-      final unlocked = await ref
-          .watch(biometricAuthServiceProvider)
-          .authenticate(reason: 'Unlock ZAIRO Business');
+      //
+      // The prompt must not fire until the first frame is drawn and the app
+      // is resumed: on a cold start the Android BiometricPrompt otherwise
+      // never attaches to the activity and the app sits on the spinner
+      // forever. `read`, not `watch`, so a provider rebuild can't re-prompt;
+      // the timeout means a prompt that never answers still ends in the
+      // normal login screen instead of an endless spinner.
+      final biometric = ref.read(biometricAuthServiceProvider);
+      await _waitUntilResumed();
+      final unlocked = await biometric
+          .authenticate(reason: 'Unlock ZAIRO Business')
+          .timeout(const Duration(seconds: 60), onTimeout: () => false);
       if (!unlocked) {
         return null;
       }
     }
     return _restoreSession();
+  }
+
+  Future<void> _waitUntilResumed() async {
+    final WidgetsBinding binding;
+    try {
+      binding = WidgetsBinding.instance;
+    } catch (_) {
+      return; // No Flutter binding (plain unit tests) — nothing to wait for.
+    }
+    await binding.endOfFrame.timeout(const Duration(seconds: 2), onTimeout: () {});
+    if (binding.lifecycleState == null || binding.lifecycleState == AppLifecycleState.resumed) {
+      return;
+    }
+    final resumed = Completer<void>();
+    final observer = _ResumeObserver(resumed);
+    binding.addObserver(observer);
+    try {
+      await resumed.future.timeout(const Duration(seconds: 5), onTimeout: () {});
+    } finally {
+      binding.removeObserver(observer);
+    }
   }
 
   Future<UserSummary?> _restoreSession() async {

@@ -4,6 +4,7 @@ import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.booking.BookingDtos.BookingResponse;
 import com.zairo.factory.booking.BookingDtos.CancelBookingRequest;
 import com.zairo.factory.booking.BookingDtos.CreateBookingRequest;
+import com.zairo.factory.booking.BookingDtos.ScheduleEntryResponse;
 import com.zairo.factory.providers.ProviderOwnership;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -14,13 +15,20 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -198,5 +206,47 @@ public class BookingController {
         List<UUID> slotIds = availabilitySlotRepository.findByProviderId(providerId).stream()
                 .map(AvailabilitySlot::getId).toList();
         return bookingRepository.findByAvailabilitySlotIdIn(slotIds).stream().map(BookingResponse::from).toList();
+    }
+
+    /** The widest window the schedule endpoint will answer for. */
+    private static final Duration MAX_SCHEDULE_WINDOW = Duration.ofDays(31);
+
+    @Operation(summary = "A provider's schedule for a time window", description = "For the Business Admin "
+            + "agenda: the provider's bookings whose slot starts in [from, to), each with the slot's start "
+            + "and end, oldest first. Cancelled bookings are included — filter on `status` as needed. "
+            + "Owner-only: the caller must own the provider. The window may span at most 31 days.")
+    @ApiResponse(responseCode = "200", description = "Schedule entries (empty list if none)")
+    @ApiResponse(responseCode = "400", ref = "BadRequest", description = "`from` is not before `to`, or the "
+            + "window is longer than 31 days.")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound", description = "The provider doesn't exist.")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/providers/{providerId}/schedule")
+    public List<ScheduleEntryResponse> schedule(
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
+            @Parameter(description = "Window start, inclusive (ISO-8601 instant).") @RequestParam Instant from,
+            @Parameter(description = "Window end, exclusive (ISO-8601 instant).") @RequestParam Instant to,
+            HttpServletRequest httpRequest) {
+        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
+        if (!from.isBefore(to) || Duration.between(from, to).compareTo(MAX_SCHEDULE_WINDOW) > 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "`from` must be before `to`, at most 31 days apart");
+        }
+        Map<UUID, AvailabilitySlot> slots = availabilitySlotRepository
+                .findByProviderIdAndStartsAtBetween(providerId, from, to).stream()
+                .collect(Collectors.toMap(AvailabilitySlot::getId, Function.identity()));
+        if (slots.isEmpty()) {
+            return List.of();
+        }
+        return bookingRepository.findByAvailabilitySlotIdIn(List.copyOf(slots.keySet())).stream()
+                .map(booking -> {
+                    AvailabilitySlot slot = slots.get(booking.getAvailabilitySlotId());
+                    return new ScheduleEntryResponse(booking.getId(), booking.getServiceId(), slot.getId(),
+                            booking.getStatus(), slot.getStartsAt(), slot.getEndsAt(), booking.getTotalPrice(),
+                            booking.getCurrency(), booking.getPaidAmount());
+                })
+                .sorted(Comparator.comparing(ScheduleEntryResponse::startsAt))
+                .toList();
     }
 }

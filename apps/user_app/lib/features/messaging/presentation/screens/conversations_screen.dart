@@ -11,6 +11,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/widgets/logged_out_gate.dart';
 import '../../data/models/conversation.dart';
+import '../providers/message_seen_provider.dart';
 import '../providers/messaging_providers.dart';
 
 /// The customer's inbox — one row per provider they've ever messaged.
@@ -75,6 +76,8 @@ class _ConversationsList extends ConsumerWidget {
                       icon: Symbols.forum_rounded,
                       title: l10n.conversationsEmptyTitle,
                       message: l10n.conversationsEmptyMessage,
+                      actionLabel: l10n.conversationsFindBusinessButton,
+                      onAction: () => context.go(AppRoutes.search()),
                     ),
                   ),
                 ),
@@ -109,13 +112,15 @@ class _ConversationsList extends ConsumerWidget {
   }
 }
 
-class _ConversationTile extends StatelessWidget {
+class _ConversationTile extends ConsumerWidget {
   final Conversation conversation;
 
   const _ConversationTile({required this.conversation});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isNew =
+        ref.watch(messageSeenProvider).value?.isNew(conversation.providerId, conversation.lastMessageAt) ?? false;
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final providerName = conversation.providerName ?? l10n.messagingUnknownBusinessName;
@@ -137,7 +142,9 @@ class _ConversationTile extends StatelessWidget {
                   providerName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleSmall,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: isNew ? FontWeight.w800 : null,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -149,6 +156,14 @@ class _ConversationTile extends StatelessWidget {
               ],
             ),
           ),
+          if (isNew) ...[
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(color: colors.coral, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: FactorySpacing.space2),
+          ],
           Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
         ],
       ),

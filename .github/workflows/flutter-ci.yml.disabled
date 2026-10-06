@@ -1,7 +1,7 @@
 name: Flutter CI
 
 # Validates every Flutter package in the workspace (apps/user_app,
-# apps/business_admin, packages/core_network, packages/core_region,
+# apps/business_admin, apps/platform_admin, packages/core_network, packages/core_region,
 # packages/core_storage, packages/core_ui). Each one resolves its
 # path: dependencies via plain `flutter pub get` (see README.md's
 # "Flutter workspace" section) — melos is a convenience for local dev,
@@ -38,6 +38,7 @@ jobs:
         package:
           - apps/user_app
           - apps/business_admin
+          - apps/platform_admin
           - packages/core_network
           - packages/core_region
           - packages/core_storage

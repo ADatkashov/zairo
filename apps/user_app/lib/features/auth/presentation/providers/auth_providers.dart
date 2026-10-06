@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:core_network/core_network.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/auth_api.dart';
@@ -17,6 +18,19 @@ import '../../data/token_storage.dart';
 final authApiProvider = Provider<AuthApi>((ref) {
   return AuthApi(ref.watch(dioClientProvider));
 });
+
+class _ResumeObserver with WidgetsBindingObserver {
+  _ResumeObserver(this._resumed);
+
+  final Completer<void> _resumed;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !_resumed.isCompleted) {
+      _resumed.complete();
+    }
+  }
+}
 
 /// null = logged out. AsyncValue's loading/error states cover the rest —
 /// no separate hand-rolled state class needed for something this shaped.
@@ -36,14 +50,44 @@ class AuthController extends AsyncNotifier<UserSummary?> {
       // to retry the prompt; it never falls back to skipping the prompt
       // and restoring the session anyway (task spec §17's "biometric
       // bypass").
-      final unlocked = await ref
-          .watch(biometricAuthServiceProvider)
-          .authenticate(reason: 'Unlock ZAIRO');
+      //
+      // The prompt must not fire until the first frame is drawn and the app
+      // is resumed: on a cold start the Android BiometricPrompt otherwise
+      // never attaches to the activity and the app sits on the spinner
+      // forever. `read`, not `watch`, so a provider rebuild can't re-prompt;
+      // the timeout means a prompt that never answers still ends in the
+      // normal login screen instead of an endless spinner.
+      final biometric = ref.read(biometricAuthServiceProvider);
+      await _waitUntilResumed();
+      final unlocked = await biometric
+          .authenticate(reason: 'Unlock ZAIRO')
+          .timeout(const Duration(seconds: 60), onTimeout: () => false);
       if (!unlocked) {
         return null;
       }
     }
     return _restoreSession();
+  }
+
+  Future<void> _waitUntilResumed() async {
+    final WidgetsBinding binding;
+    try {
+      binding = WidgetsBinding.instance;
+    } catch (_) {
+      return; // No Flutter binding (plain unit tests) — nothing to wait for.
+    }
+    await binding.endOfFrame.timeout(const Duration(seconds: 2), onTimeout: () {});
+    if (binding.lifecycleState == null || binding.lifecycleState == AppLifecycleState.resumed) {
+      return;
+    }
+    final resumed = Completer<void>();
+    final observer = _ResumeObserver(resumed);
+    binding.addObserver(observer);
+    try {
+      await resumed.future.timeout(const Duration(seconds: 5), onTimeout: () {});
+    } finally {
+      binding.removeObserver(observer);
+    }
   }
 
   /// Tries the stored access token, falls back to a silent refresh if that

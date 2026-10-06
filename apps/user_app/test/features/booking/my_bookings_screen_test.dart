@@ -10,6 +10,7 @@ import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/booking/data/booking_api.dart';
 import 'package:zairo/features/booking/data/booking_exception.dart';
 import 'package:zairo/features/booking/data/models/availability_slot.dart';
+import 'package:zairo/features/booking/data/models/book_again_suggestion.dart';
 import 'package:zairo/features/booking/data/models/booking.dart';
 import 'package:zairo/features/booking/presentation/providers/booking_providers.dart';
 import 'package:zairo/features/booking/presentation/screens/my_bookings_screen.dart';
@@ -478,5 +479,65 @@ void main() {
     // The dialog stays open with an inline error rather than closing.
     expect(find.text("This isn't your booking."), findsOneWidget);
     expect(find.text('Message the business'), findsOneWidget);
+  });
+
+  testWidgets('a completed booking offers "Book again" when a suggestion matches its service', (
+    tester,
+  ) async {
+    final booking = Booking(
+      id: 'booking-1',
+      userId: 'user-1',
+      serviceId: 'service-1',
+      availabilitySlotId: 'slot-1',
+      status: 'COMPLETED',
+      totalPrice: 25,
+      createdAt: DateTime(2026, 1, 1),
+    );
+    final suggestion = BookAgainSuggestion(
+      providerId: 'provider-9',
+      providerName: 'Glow Salon',
+      vertical: 'beauty',
+      serviceId: 'service-1',
+      serviceTitle: 'Haircut',
+      durationMinutes: 30,
+      price: 25,
+      currency: 'USD',
+      lastVisitAt: DateTime(2026, 1, 1),
+    );
+    final router = GoRouter(
+      routes: [
+        GoRoute(path: '/', builder: (_, _) => const MyBookingsScreen()),
+        GoRoute(
+          path: '/provider/:id',
+          builder: (_, state) => Scaffold(body: Text('provider ${state.pathParameters['id']}')),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(_FakeBookingApi([booking])),
+          reviewsApiProvider.overrideWithValue(_FakeReviewsApi()),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+          bookAgainSuggestionsProvider('user-1').overrideWith((ref) async => [suggestion]),
+        ],
+        child: MaterialApp.router(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Completed'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Book again'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('provider provider-9'), findsOneWidget);
   });
 }
