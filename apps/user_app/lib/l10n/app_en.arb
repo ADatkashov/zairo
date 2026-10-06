@@ -629,6 +629,12 @@
   "notificationsTitle": "Notifications",
   "@notificationsTitle": {"description": "Notifications screen app bar title."},
 
+  "notificationsGroupToday": "Today",
+  "@notificationsGroupToday": {"description": "Notifications screen day heading for today."},
+
+  "notificationsGroupYesterday": "Yesterday",
+  "@notificationsGroupYesterday": {"description": "Notifications screen day heading for yesterday."},
+
   "notificationsEmptyTitle": "No notifications yet",
   "@notificationsEmptyTitle": {"description": "Notifications screen empty state title."},
 

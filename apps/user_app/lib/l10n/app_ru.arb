@@ -195,6 +195,8 @@
   "errorFavoritesLoadFailed": "Не удалось загрузить избранное.",
 
   "notificationsTitle": "Уведомления",
+  "notificationsGroupToday": "Сегодня",
+  "notificationsGroupYesterday": "Вчера",
   "notificationsEmptyTitle": "Пока нет уведомлений",
   "notificationsEmptyMessage": "Мы сообщим, когда запись подтвердят, изменят или она будет скоро.",
   "errorNotificationsLoadFailed": "Не удалось загрузить уведомления.",
