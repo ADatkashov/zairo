@@ -1,4 +1,5 @@
 import 'package:core_network/core_network.dart';
+import 'package:core_ui/core_ui.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,6 +33,8 @@ Widget _wrap(AuthApi fakeApi) {
   return ProviderScope(
     overrides: [authApiProvider.overrideWithValue(fakeApi)],
     child: MaterialApp(
+      // The real app always runs on the Factory theme; the brand block reads it.
+      theme: factoryLightTheme(profile: FactoryAppProfile.consumer),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Builder(
