@@ -294,7 +294,9 @@ class _FavoriteButton extends StatelessWidget {
               Symbols.favorite_rounded,
               fill: isFavorite ? 1 : 0,
               size: 18,
-              color: isFavorite ? colors.error : colors.textSecondary,
+              // The disc behind is always translucent white, so the icon uses
+            // fixed light-theme tones (the dark theme's pale ones would vanish).
+            color: isFavorite ? const Color(0xFFB3372E) : const Color(0xFF5C564C),
             ),
           ),
         ),

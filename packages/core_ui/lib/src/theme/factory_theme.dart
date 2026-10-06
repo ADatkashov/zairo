@@ -42,7 +42,9 @@ ThemeData _factoryTheme(FactoryColors colors, FactoryAppProfile? profile) {
     outline: colors.border,
     outlineVariant: colors.borderStrong,
     error: colors.error,
-    onError: Colors.white,
+    // White on the light theme's deep red; near-black on the dark theme's pale
+    // red (white there is only ~2.6:1).
+    onError: brightness == Brightness.light ? Colors.white : colors.onPrimary,
   );
 
   final textTheme = FactoryTypography.textTheme(colors.text);

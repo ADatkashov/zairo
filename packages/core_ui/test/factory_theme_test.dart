@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  _contrastTests();
   _profileAndTrendTests();
   // Built inside testWidgets, not a bare test(): building the TextTheme
   // touches google_fonts, which needs a real Flutter binding to degrade
@@ -104,4 +105,36 @@ void _profileAndTrendTests() {
     ));
     expect(find.textContaining('5 950'), findsOneWidget);
   });
+}
+
+double _contrast(Color a, Color b) {
+  final la = a.computeLuminance();
+  final lb = b.computeLuminance();
+  final hi = la > lb ? la : lb;
+  final lo = la > lb ? lb : la;
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+void _contrastTests() {
+  // Guards the AA fixes: body-size text roles must stay >= 4.5:1 on the
+  // surfaces they are drawn on, in both themes.
+  for (final entry in {'light': FactoryColors.light, 'dark': FactoryColors.dark}.entries) {
+    final c = entry.value;
+    test('${entry.key}: text roles clear 4.5:1 on bg and surface', () {
+      for (final bg in [c.bg, c.surface]) {
+        expect(_contrast(c.text, bg), greaterThanOrEqualTo(4.5));
+        expect(_contrast(c.textSecondary, bg), greaterThanOrEqualTo(4.5));
+        expect(_contrast(c.textTertiary, bg), greaterThanOrEqualTo(4.5));
+      }
+    });
+    test('${entry.key}: onPrimary on primary and primaryStrong', () {
+      expect(_contrast(c.onPrimary, c.primary), greaterThanOrEqualTo(4.5));
+      expect(_contrast(c.onPrimary, c.primaryStrong), greaterThanOrEqualTo(4.5));
+    });
+    test('${entry.key}: state colors read on surface', () {
+      for (final tone in [c.success, c.warning, c.error, c.info]) {
+        expect(_contrast(tone, c.surface), greaterThanOrEqualTo(4.5));
+      }
+    });
+  }
 }
