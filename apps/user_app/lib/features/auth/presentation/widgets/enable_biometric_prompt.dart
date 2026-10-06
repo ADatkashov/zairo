@@ -12,7 +12,27 @@ import '../providers/auth_providers.dart';
 /// fallback": never offer a toggle that can't work) or already enabled.
 Future<void> maybeOfferEnableBiometric(BuildContext context, WidgetRef ref) async {
   if (!context.mounted) return;
+  // Several screens of one sign-in chain (e.g. Login underneath OTP) all react
+  // to the same "signed in" state change. Without this guard each of them
+  // opened its own dialog and its own biometric prompt, and the second
+  // prompt never resolved — the app looked frozen.
+  if (_offerInFlight) return;
+  _offerInFlight = true;
+  try {
+    await _offer(context, ref);
+  } finally {
+    _offerInFlight = false;
+  }
+}
 
+bool _offerInFlight = false;
+
+Future<void> _offer(BuildContext context, WidgetRef ref) async {
+  // Resolved up front: the sign-in screen that called us may be removed from
+  // the tree while the dialog is open, and looking a navigator up through a
+  // dead context would throw inside the button handler, leaving the dialog
+  // impossible to close.
+  final rootNavigator = Navigator.of(context, rootNavigator: true);
   final controller = ref.read(authControllerProvider.notifier);
   final available = await controller.isBiometricAvailable();
   if (!available) return;
@@ -33,18 +53,12 @@ Future<void> maybeOfferEnableBiometric(BuildContext context, WidgetRef ref) asyn
     title: l10n.biometricEnrollTitle,
     message: l10n.biometricEnrollMessage,
     actions: [
-      TextButton(
-        onPressed: () => Navigator.of(context, rootNavigator: true).pop(false),
-        child: Text(l10n.biometricEnrollNotNow),
-      ),
-      FilledButton(
-        onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
-        child: Text(l10n.biometricEnrollEnable),
-      ),
+      TextButton(onPressed: () => rootNavigator.pop(false), child: Text(l10n.biometricEnrollNotNow)),
+      FilledButton(onPressed: () => rootNavigator.pop(true), child: Text(l10n.biometricEnrollEnable)),
     ],
   );
 
-  if (accepted == true && context.mounted) {
+  if (accepted == true) {
     await controller.enableBiometric();
   }
 }
