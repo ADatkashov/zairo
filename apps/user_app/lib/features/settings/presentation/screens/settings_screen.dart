@@ -26,10 +26,10 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(FactorySpacing.space4),
         children: [
-          _SettingsGroup(
+          FactorySettingsGroup(
             children: [
               SwitchListTile(
-                secondary: const _IconBadge(icon: Symbols.dark_mode_rounded),
+                secondary: const FactoryIconBadge(icon: Symbols.dark_mode_rounded),
                 title: Text(l10n.darkModeTitle),
                 subtitle: Text(
                   l10n.darkModeSubtitle(_themeModeLabel(l10n, themeMode)),
@@ -42,7 +42,7 @@ class SettingsScreen extends ConsumerWidget {
                 },
               ),
               ListTile(
-                leading: const _IconBadge(icon: Symbols.language_rounded),
+                leading: const FactoryIconBadge(icon: Symbols.language_rounded),
                 title: Text(l10n.languageSectionTitle),
                 subtitle: Text(_languageLabel(l10n, locale)),
                 trailing: const Icon(Symbols.chevron_right_rounded),
@@ -51,10 +51,10 @@ class SettingsScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: FactorySpacing.space4),
-          _SettingsGroup(
+          FactorySettingsGroup(
             children: [
               ListTile(
-                leading: const _IconBadge(icon: Symbols.shield_lock_rounded),
+                leading: const FactoryIconBadge(icon: Symbols.shield_lock_rounded),
                 title: Text(l10n.securityTitle),
                 subtitle: Text(l10n.securitySectionSubtitle),
                 trailing: const Icon(Symbols.chevron_right_rounded),
@@ -62,7 +62,7 @@ class SettingsScreen extends ConsumerWidget {
               ),
               if (isLoggedIn)
                 ListTile(
-                  leading: _IconBadge(
+                  leading: FactoryIconBadge(
                     icon: Symbols.delete_rounded,
                     color: context.factoryColors.coral,
                   ),
@@ -122,64 +122,6 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// A card holding related settings rows, with a hairline between them.
-class _SettingsGroup extends StatelessWidget {
-  const _SettingsGroup({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.factoryColors;
-    final radius =
-        context.factoryProfileOrNull?.cardBorderRadius ??
-        FactoryRadius.xlRadius;
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: radius,
-        border: Border.all(color: colors.border),
-      ),
-      // Material so the rows' ink ripples are clipped to the card.
-      child: Material(
-        color: Colors.transparent,
-        child: Column(
-          children: [
-            for (var i = 0; i < children.length; i++) ...[
-              if (i > 0) Divider(height: 1, indent: 72, color: colors.border),
-              children[i],
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// The tinted rounded-square icon at the start of a settings row.
-class _IconBadge extends StatelessWidget {
-  const _IconBadge({required this.icon, this.color});
-
-  final IconData icon;
-  final Color? color;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.factoryColors;
-    final tone = color ?? colors.primary;
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: Color.alphaBlend(tone.withValues(alpha: 0.12), colors.surface),
-        borderRadius: FactoryRadius.mdRadius,
-      ),
-      child: Icon(icon, size: FactoryIconSize.md, color: tone),
     );
   }
 }

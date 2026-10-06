@@ -11,6 +11,7 @@ Widget _wrap(Widget child) => MaterialApp(
 void main() {
   _denseButtonTests();
   _authBrandTests();
+  _settingsGroupTests();
   group('formatFactoryAmount', () {
     test('groups the whole part into thousands with a space', () {
       expect(formatFactoryAmount(12400), '12 400');
@@ -947,6 +948,55 @@ void _authBrandTests() {
         expect(find.byType(Text), findsNothing);
         expect(tester.takeException(), isNull);
       }
+    });
+  });
+}
+
+void _settingsGroupTests() {
+  group('FactorySettingsGroup', () {
+    testWidgets('puts a hairline between rows only, not before the first', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const FactorySettingsGroup(
+            children: [
+              ListTile(title: Text('One')),
+              ListTile(title: Text('Two')),
+              ListTile(title: Text('Three')),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.text('One'), findsOneWidget);
+      expect(find.text('Three'), findsOneWidget);
+      expect(find.byType(Divider), findsNWidgets(2));
+    });
+
+    testWidgets('a single row has no divider', (tester) async {
+      await tester.pumpWidget(_wrap(const FactorySettingsGroup(children: [ListTile(title: Text('Only'))])));
+
+      expect(find.byType(Divider), findsNothing);
+    });
+
+    testWidgets('row taps still reach the row inside the card', (tester) async {
+      var taps = 0;
+      await tester.pumpWidget(
+        _wrap(
+          FactorySettingsGroup(
+            children: [
+              ListTile(
+                leading: const FactoryIconBadge(icon: Icons.language),
+                title: const Text('Language'),
+                onTap: () => taps++,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Language'));
+      expect(taps, 1);
+      expect(find.byIcon(Icons.language), findsOneWidget);
     });
   });
 }
