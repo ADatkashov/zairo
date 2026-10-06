@@ -9,6 +9,7 @@ Widget _wrap(Widget child) => MaterialApp(
 );
 
 void main() {
+  _denseButtonTests();
   group('formatFactoryAmount', () {
     test('groups the whole part into thousands with a space', () {
       expect(formatFactoryAmount(12400), '12 400');
@@ -898,5 +899,25 @@ void main() {
       expect(formatFactoryMoney(12400, null), '12 400 ₸');
       expect(formatFactoryMoney(12400, 'XYZ'), '12 400 XYZ');
     });
+  });
+}
+
+void _denseButtonTests() {
+  testWidgets('dense FactoryButton is 36px high, regular is 48px', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: factoryLightTheme(),
+        home: Scaffold(
+          body: Column(
+            children: [
+              FactoryButton(key: const Key('dense'), dense: true, label: 'Approve', onPressed: () {}),
+              FactoryButton(key: const Key('regular'), label: 'Approve', onPressed: () {}),
+            ],
+          ),
+        ),
+      ),
+    );
+    expect(tester.getSize(find.byKey(const Key('dense'))).height, 36);
+    expect(tester.getSize(find.byKey(const Key('regular'))).height, 48);
   });
 }
