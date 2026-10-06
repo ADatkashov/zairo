@@ -216,7 +216,7 @@ class _ReviewsSummary extends StatelessWidget {
                                     value: v,
                                     minHeight: 6,
                                     backgroundColor: colors.primaryTint,
-                                    color: colors.accent,
+                                    color: colors.accentInk,
                                   ),
                                 ),
                               ),

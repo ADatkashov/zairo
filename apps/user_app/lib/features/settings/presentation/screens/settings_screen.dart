@@ -64,11 +64,11 @@ class SettingsScreen extends ConsumerWidget {
                 ListTile(
                   leading: FactoryIconBadge(
                     icon: Symbols.delete_rounded,
-                    color: context.factoryColors.coral,
+                    color: context.factoryColors.error,
                   ),
                   title: Text(
                     l10n.deleteAccountTitle,
-                    style: TextStyle(color: context.factoryColors.coral),
+                    style: TextStyle(color: context.factoryColors.error),
                   ),
                   subtitle: Text(l10n.deleteAccountSubtitle),
                   trailing: const Icon(Symbols.chevron_right_rounded),
