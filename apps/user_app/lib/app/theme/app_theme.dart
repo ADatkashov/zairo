@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 /// yet; add them here, not in core_ui, if this app ever needs to diverge
 /// from Business Admin's look.
 class AppTheme {
-  static ThemeData get light => factoryLightTheme();
+  static ThemeData get light => factoryLightTheme(profile: FactoryAppProfile.consumer);
 
-  static ThemeData get dark => factoryDarkTheme();
+  static ThemeData get dark => factoryDarkTheme(profile: FactoryAppProfile.consumer);
 }

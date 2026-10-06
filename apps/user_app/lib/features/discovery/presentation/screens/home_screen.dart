@@ -186,7 +186,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     )
                   else
                     SizedBox(
-                      height: 220,
+                      height: 252,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: topRated.length,
@@ -684,7 +684,7 @@ class _AvailabilityHero extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [colors.primaryStrong, colors.mint],
+          colors: [colors.primaryStrong, colors.primary],
         ),
         borderRadius: FactoryRadius.xxlRadius,
         boxShadow: [
@@ -701,7 +701,17 @@ class _AvailabilityHero extends StatelessWidget {
           Positioned(
             top: -30,
             right: -30,
-            child: _HeroCircle(size: 140, opacity: 0.12),
+            child: Container(
+              width: 180,
+              height: 180,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                // Ambient gold glow: a radial fade, not a flat disc.
+                gradient: RadialGradient(
+                  colors: [colors.accent.withValues(alpha: 0.5), colors.accent.withValues(alpha: 0)],
+                ),
+              ),
+            ),
           ),
           Positioned(
             bottom: -40,
