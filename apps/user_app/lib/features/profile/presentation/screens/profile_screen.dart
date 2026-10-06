@@ -15,6 +15,7 @@ import '../../../auth/presentation/screens/register_screen.dart';
 import '../../../booking/presentation/providers/booking_providers.dart';
 import '../../../messaging/presentation/providers/message_seen_provider.dart';
 import '../../../notifications/presentation/widgets/notification_bell_button.dart';
+import '../../../staff/presentation/providers/staff_cabinet_providers.dart';
 import '../../../favorites/presentation/providers/favorites_providers.dart';
 import '../widgets/change_avatar_dialog.dart';
 
@@ -152,6 +153,9 @@ class _LoggedInView extends ConsumerWidget {
     final textTheme = Theme.of(context).textTheme;
     final bookingsCount = ref.watch(myBookingsProvider(userId)).value?.length;
     final favoritesCount = ref.watch(myFavoritesProvider(userId)).value?.length;
+    // Only people who were added as staff somewhere get the cabinet entry.
+    final staffMemberships = ref.watch(staffMembershipsProvider).value ?? const [];
+    final staffPending = staffMemberships.fold<int>(0, (sum, m) => sum + m.pendingCount);
 
     return ListView(
       padding: const EdgeInsets.all(FactorySpacing.space4),
@@ -236,6 +240,24 @@ class _LoggedInView extends ConsumerWidget {
             ],
           ),
         ),
+        if (staffMemberships.isNotEmpty) ...[
+          const SizedBox(height: FactorySpacing.space6),
+          FactorySelectableTile(
+            title: l10n.staffCabinetTitle,
+            leading: Icon(Symbols.work_rounded, color: colors.textSecondary),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (staffPending > 0) ...[
+                  FactoryBadge(label: '$staffPending', variant: FactoryBadgeVariant.limited),
+                  const SizedBox(width: FactorySpacing.space2),
+                ],
+                Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
+              ],
+            ),
+            onTap: () => context.push(AppRoutes.staffCabinet),
+          ),
+        ],
         const SizedBox(height: FactorySpacing.space6),
         FactorySelectableTile(
           title: l10n.editProfileButton,

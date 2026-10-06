@@ -237,7 +237,10 @@ class OpenApiConfig {
                 new Tag().name("Staff — Bookings").description(
                         "Staff booking: like a generic Booking, but also names which Staff member performs "
                                 + "it, and enforces that the staff member actually offers the requested "
-                                + "Service."));
+                                + "Service."),
+                new Tag().name("Staff cabinet").description(
+                        "The signed-in staff member's own cabinet: every business they work at, their own "
+                                + "appointments there (accept / cancel / complete / no-show) and their rating."));
         // Actuator (health/info, GET /actuator/health) is deliberately not
         // listed here or exposed through Swagger — springdoc.show-actuator
         // is off (see application.yml). It's a platform/ops endpoint, not
