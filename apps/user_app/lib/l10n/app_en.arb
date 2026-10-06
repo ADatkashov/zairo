@@ -1752,5 +1752,17 @@
   "staffCabinetAverageRatingLabel": "Average rating",
   "@staffCabinetAverageRatingLabel": {"description": "Staff cabinet: AverageRatingLabel"},
   "staffCabinetDeclinedBadge": "Sent to the owner",
-  "@staffCabinetDeclinedBadge": {"description": "staffCabinetDeclinedBadge"}
+  "@staffCabinetDeclinedBadge": {"description": "staffCabinetDeclinedBadge"},
+  "anyMasterOptionTitle": "Any master",
+  "@anyMasterOptionTitle": {"description": "anyMasterOptionTitle"},
+  "anyMasterOptionSubtitle": "We'll assign whoever is free at the time you pick",
+  "@anyMasterOptionSubtitle": {"description": "anyMasterOptionSubtitle"},
+  "workforceChooseMasterTitle": "Who would you like to see?",
+  "@workforceChooseMasterTitle": {"description": "workforceChooseMasterTitle"},
+  "workforceChooseMasterMessage": "Pick a master, or \"Any master\", to see the available times.",
+  "@workforceChooseMasterMessage": {"description": "workforceChooseMasterMessage"},
+  "workforceChooseServiceTitle": "Choose a service first",
+  "@workforceChooseServiceTitle": {"description": "workforceChooseServiceTitle"},
+  "workforceChooseServiceMessage": "The times for \"Any master\" depend on the service you pick.",
+  "@workforceChooseServiceMessage": {"description": "workforceChooseServiceMessage"}
 }

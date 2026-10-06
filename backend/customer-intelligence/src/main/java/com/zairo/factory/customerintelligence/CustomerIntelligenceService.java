@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -47,18 +48,23 @@ public class CustomerIntelligenceService {
         this.clock = clock;
     }
 
-    /** Explicit recalculation -- also what {@link CustomerIntelligenceBookingListener} calls after a relevant booking event. */
-    @Transactional
+    /**
+     * Explicit recalculation -- also what {@link CustomerIntelligenceBookingListener} calls after a relevant booking
+     * event, i.e. from an AFTER_COMMIT callback, where joining the (already completed) booking transaction fails with
+     * "No active transaction" and, because it throws, cuts off every listener registered after this one (notably the
+     * refund request's eager nudge). Hence {@code REQUIRES_NEW}, the same fix notifications uses for the same reason.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public CustomerProfile recalculateProfile(UUID userId) {
         return profileCalculator.recalculate(userId, clock.instant());
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public CustomerProviderProfile recalculateProviderProfile(UUID userId, UUID providerId) {
         return providerProfileCalculator.recalculate(userId, providerId, clock.instant());
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public CustomerEmployeeProfile recalculateEmployeeProfile(UUID userId, UUID providerId, UUID employeeId) {
         return employeeProfileCalculator.recalculate(userId, providerId, employeeId, clock.instant());
     }

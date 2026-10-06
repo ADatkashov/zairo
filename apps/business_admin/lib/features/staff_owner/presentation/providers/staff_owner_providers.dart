@@ -2,6 +2,7 @@ import 'package:core_network/core_network.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/needs_attention.dart';
+import '../../data/models/worker_schedule.dart';
 import '../../data/staff_owner_api.dart';
 
 final staffOwnerApiProvider = Provider<StaffOwnerApi>((ref) {
@@ -11,4 +12,23 @@ final staffOwnerApiProvider = Provider<StaffOwnerApi>((ref) {
 /// Appointments of one business that need the owner's decision, soonest first.
 final needsAttentionProvider = FutureProvider.autoDispose.family<List<NeedsAttentionItem>, String>((ref, providerId) {
   return ref.watch(staffOwnerApiProvider).needsAttention(providerId);
+});
+
+/// Everyone who works at the business, with whether they have their own schedule and whether they're off now.
+final workersProvider = FutureProvider.autoDispose.family<List<WorkerSummary>, String>((ref, providerId) {
+  return ref.watch(staffOwnerApiProvider).workers(providerId);
+});
+
+final workerScheduleProvider =
+    FutureProvider.autoDispose.family<WorkerScheduleData, (String providerId, String workerId)>((ref, key) {
+  return ref.watch(staffOwnerApiProvider).schedule(key.$1, key.$2);
+});
+
+final workerTimeOffProvider =
+    FutureProvider.autoDispose.family<List<TimeOffItem>, (String providerId, String workerId)>((ref, key) {
+  return ref.watch(staffOwnerApiProvider).timeOff(key.$1, key.$2);
+});
+
+final workforceSettingsProvider = FutureProvider.autoDispose.family<WorkforceSettings, String>((ref, providerId) {
+  return ref.watch(staffOwnerApiProvider).settings(providerId);
 });
