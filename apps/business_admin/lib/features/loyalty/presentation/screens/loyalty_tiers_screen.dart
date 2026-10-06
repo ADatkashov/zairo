@@ -41,8 +41,8 @@ class _TierDraft {
   final TextEditingController minPointsController;
 
   _TierDraft({String name = '', String minPoints = ''})
-      : nameController = TextEditingController(text: name),
-        minPointsController = TextEditingController(text: minPoints);
+    : nameController = TextEditingController(text: name),
+      minPointsController = TextEditingController(text: minPoints);
 
   void dispose() {
     nameController.dispose();
@@ -95,10 +95,11 @@ class _TiersFormState extends ConsumerState<_TiersForm> {
         if (_drafts.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space4),
-            child: Text(
-              l10n.loyaltyTiersEmpty,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
+            child: FactoryEmptyState(
+              icon: Icons.military_tech_outlined,
+              title: l10n.loyaltyTiersEmpty,
+              message: '',
+              compact: true,
             ),
           )
         else
@@ -181,7 +182,11 @@ class _TierRow extends StatelessWidget {
         children: [
           Expanded(
             flex: 2,
-            child: FactoryTextField(controller: draft.nameController, enabled: enabled, label: l10n.loyaltyTierNameLabel),
+            child: FactoryTextField(
+              controller: draft.nameController,
+              enabled: enabled,
+              label: l10n.loyaltyTierNameLabel,
+            ),
           ),
           const SizedBox(width: FactorySpacing.space3),
           Expanded(
@@ -192,7 +197,11 @@ class _TierRow extends StatelessWidget {
               label: l10n.loyaltyTierMinPointsLabel,
             ),
           ),
-          IconButton(icon: const Icon(Icons.delete_outline), onPressed: enabled ? onRemove : null, tooltip: l10n.loyaltyTierRemoveButton),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: enabled ? onRemove : null,
+            tooltip: l10n.loyaltyTierRemoveButton,
+          ),
         ],
       ),
     );

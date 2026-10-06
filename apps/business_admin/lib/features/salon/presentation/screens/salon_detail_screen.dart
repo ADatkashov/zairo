@@ -121,17 +121,10 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
         child: ListView(
           padding: const EdgeInsets.all(FactorySpacing.space4),
           children: [
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                FactoryBadge(label: _capitalize(_provider.vertical)),
-                FactoryBadge(
-                  label: _providerStatusLabel(l10n, _provider.status),
-                  variant: _providerStatusVariant(_provider.status),
-                ),
-              ],
+            _BusinessHeader(
+              provider: _provider,
+              statusLabel: _providerStatusLabel(l10n, _provider.status),
+              statusVariant: _providerStatusVariant(_provider.status),
             ),
             const SizedBox(height: FactorySpacing.space6),
             _DashboardMetricsSection(providerId: _provider.id),
@@ -518,28 +511,21 @@ class _DashboardMetricsSection extends ConsumerWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Wrap(
-                  spacing: FactorySpacing.space3,
-                  runSpacing: FactorySpacing.space3,
-                  children: [
-                    _StatTile(
-                      label: l10n.dashboardTotalRevenueLabel,
-                      value: FactoryPriceText(amount: metrics.totalRevenue, fontSize: 18),
-                    ),
-                    _StatTile(label: l10n.dashboardTotalBookingsLabel, value: Text('${metrics.totalBookings}')),
-                    _StatTile(label: l10n.dashboardCompletedBookingsLabel, value: Text('${metrics.completedBookings}')),
-                    _StatTile(label: l10n.dashboardCancelledBookingsLabel, value: Text('${metrics.cancelledBookings}')),
-                    _StatTile(
-                      label: l10n.dashboardCancellationRateLabel,
-                      value: Text('${(metrics.cancellationRate * 100).round()}%'),
-                    ),
-                    _StatTile(label: l10n.dashboardTotalCustomersLabel, value: Text('${metrics.totalCustomers}')),
-                    if (metrics.averageCheck != null)
-                      _StatTile(
-                        label: l10n.dashboardAverageCheckLabel,
-                        value: FactoryPriceText(amount: metrics.averageCheck!, fontSize: 18),
-                      ),
-                  ],
+                _MetricsBento(
+                  revenueLabel: l10n.dashboardTotalRevenueLabel,
+                  revenue: metrics.totalRevenue,
+                  totalLabel: l10n.dashboardTotalBookingsLabel,
+                  total: metrics.totalBookings,
+                  averageLabel: l10n.dashboardAverageCheckLabel,
+                  average: metrics.averageCheck,
+                  completedLabel: l10n.dashboardCompletedBookingsLabel,
+                  completed: metrics.completedBookings,
+                  cancelledLabel: l10n.dashboardCancelledBookingsLabel,
+                  cancelled: metrics.cancelledBookings,
+                  cancellationLabel: l10n.dashboardCancellationRateLabel,
+                  cancellationRate: metrics.cancellationRate,
+                  customersLabel: l10n.dashboardTotalCustomersLabel,
+                  customers: metrics.totalCustomers,
                 ),
                 if (metrics.topServices.isNotEmpty) ...[
                   const SizedBox(height: FactorySpacing.space4),
@@ -571,32 +557,235 @@ class _DashboardMetricsSection extends ConsumerWidget {
   }
 }
 
-class _StatTile extends StatelessWidget {
-  final String label;
-  final Widget value;
+/// Photo-first header: the cover photo under a soft scrim (or a tinted
+/// gradient with the vertical's icon while there is none), with the vertical
+/// and status badges on top. The name stays in the app bar.
+class _BusinessHeader extends StatelessWidget {
+  final AdminProvider provider;
+  final String statusLabel;
+  final FactoryBadgeVariant statusVariant;
 
-  const _StatTile({required this.label, required this.value});
+  const _BusinessHeader({required this.provider, required this.statusLabel, required this.statusVariant});
 
   @override
   Widget build(BuildContext context) {
     final colors = context.factoryColors;
-    return FactoryCard(
-      padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space3, vertical: FactorySpacing.space2),
+    final radius = context.factoryProfileOrNull?.cardBorderRadius ?? FactoryRadius.xlRadius;
+    final photo = provider.coverPhotoUrl;
+    final fallback = DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [colors.primaryTint, colors.surfaceAlt],
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          switch (provider.vertical) {
+            'auto' => Icons.directions_car_filled_outlined,
+            'cleaning' => Icons.cleaning_services_outlined,
+            _ => Icons.content_cut_rounded,
+          },
+          size: 48,
+          color: colors.primaryStrong.withValues(alpha: 0.5),
+        ),
+      ),
+    );
+
+    return ClipRRect(
+      borderRadius: radius,
       child: SizedBox(
-        width: 130,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+        height: 140,
+        width: double.infinity,
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
-            const SizedBox(height: 4),
-            DefaultTextStyle(
-              style: Theme.of(context).textTheme.titleMedium ?? const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-              child: value,
+            if (photo == null)
+              fallback
+            else
+              Image.network(photo, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => fallback),
+            if (photo != null)
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0x00000000), Color(0x55000000)],
+                  ),
+                ),
+              ),
+            Positioned(
+              left: FactorySpacing.space3,
+              bottom: FactorySpacing.space3,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  FactoryBadge(label: _capitalize(provider.vertical)),
+                  FactoryBadge(label: statusLabel, variant: statusVariant),
+                ],
+              ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Bento for the business overview: revenue is the one big number (with the
+/// total and average ticket under it); completed / cancelled / customers are
+/// tiles and the cancellation rate is a ring, warning-colored because for a
+/// cancellation rate lower is better.
+class _MetricsBento extends StatelessWidget {
+  final String revenueLabel;
+  final num revenue;
+  final String totalLabel;
+  final int total;
+  final String averageLabel;
+  final num? average;
+  final String completedLabel;
+  final int completed;
+  final String cancelledLabel;
+  final int cancelled;
+  final String cancellationLabel;
+  final double cancellationRate;
+  final String customersLabel;
+  final int customers;
+
+  const _MetricsBento({
+    required this.revenueLabel,
+    required this.revenue,
+    required this.totalLabel,
+    required this.total,
+    required this.averageLabel,
+    required this.average,
+    required this.completedLabel,
+    required this.completed,
+    required this.cancelledLabel,
+    required this.cancelled,
+    required this.cancellationLabel,
+    required this.cancellationRate,
+    required this.customersLabel,
+    required this.customers,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    final radius = context.factoryProfileOrNull?.cardBorderRadius ?? FactoryRadius.xlRadius;
+    final muted = colors.onPrimary.withValues(alpha: 0.8);
+    const gap = SizedBox(height: FactorySpacing.space3);
+    const hgap = SizedBox(width: FactorySpacing.space3);
+
+    Widget tile(String label, String value) => Expanded(
+      child: FactoryCard(
+        padding: const EdgeInsets.all(FactorySpacing.space3),
+        child: SizedBox(
+          width: double.infinity,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(value, style: textTheme.titleLarge),
+              const SizedBox(height: 2),
+              Text(label, style: textTheme.labelMedium?.copyWith(color: colors.textSecondary)),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(FactorySpacing.space5),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [colors.primaryStrong, colors.primary],
+            ),
+            borderRadius: radius,
+            boxShadow: context.factoryElevation(FactoryElevationLevel.lg),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(revenueLabel, style: textTheme.labelLarge?.copyWith(color: muted)),
+              const SizedBox(height: FactorySpacing.space1),
+              FactoryPriceText(amount: revenue, fontSize: 30, color: colors.onPrimary),
+              const SizedBox(height: FactorySpacing.space4),
+              Wrap(
+                spacing: FactorySpacing.space6,
+                runSpacing: FactorySpacing.space2,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('$total', style: textTheme.titleMedium?.copyWith(color: colors.onPrimary)),
+                      Text(totalLabel, style: textTheme.labelMedium?.copyWith(color: muted)),
+                    ],
+                  ),
+                  if (average != null)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        FactoryPriceText(amount: average!, fontSize: 16, color: colors.onPrimary),
+                        Text(averageLabel, style: textTheme.labelMedium?.copyWith(color: muted)),
+                      ],
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        gap,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [tile(completedLabel, '$completed'), hgap, tile(cancelledLabel, '$cancelled')],
+        ),
+        gap,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            tile(customersLabel, '$customers'),
+            hgap,
+            Expanded(
+              child: FactoryCard(
+                padding: const EdgeInsets.all(FactorySpacing.space3),
+                child: Row(
+                  children: [
+                    FactoryProgressRing(
+                      value: cancellationRate,
+                      size: 44,
+                      strokeWidth: 6,
+                      color: colors.warning,
+                      semanticLabel: cancellationLabel,
+                      child: Text(
+                        '${(cancellationRate * 100).round()}%',
+                        style: FactoryTypography.mono(size: 10, color: colors.text),
+                      ),
+                    ),
+                    const SizedBox(width: FactorySpacing.space2),
+                    Expanded(
+                      child: Text(
+                        cancellationLabel,
+                        style: textTheme.labelMedium?.copyWith(color: colors.textSecondary),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
