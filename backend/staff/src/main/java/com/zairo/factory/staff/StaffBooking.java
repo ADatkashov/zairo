@@ -29,6 +29,9 @@ public class StaffBooking {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(name = "staff_confirmed_at")
+    private Instant staffConfirmedAt;
+
     protected StaffBooking() {
     }
 
@@ -53,5 +56,15 @@ public class StaffBooking {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Instant getStaffConfirmedAt() {
+        return staffConfirmedAt;
+    }
+
+    void confirmByStaff(Instant at) {
+        if (staffConfirmedAt == null) {
+            staffConfirmedAt = at;
+        }
     }
 }

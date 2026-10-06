@@ -28,4 +28,8 @@ dependencies {
 
     // Picking an existing user reads their display name / avatar.
     implementation(project(":users"))
+
+    // The staff cabinet shows each staff member's rating and the reviews left on their appointments.
+    // One-directional (staff -> reviews); reviews depends on neither staff nor anything that does.
+    implementation(project(":reviews"))
 }
