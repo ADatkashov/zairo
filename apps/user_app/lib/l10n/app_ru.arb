@@ -563,5 +563,11 @@
   "staffCabinetBusinessReply": "Ответ бизнеса",
   "staffCabinetAnonymousCustomer": "Клиент",
   "staffCabinetAverageRatingLabel": "Средняя оценка",
-  "staffCabinetDeclinedBadge": "Отправлено владельцу"
+  "staffCabinetDeclinedBadge": "Отправлено владельцу",
+  "anyMasterOptionTitle": "Любой мастер",
+  "anyMasterOptionSubtitle": "Назначим того, кто свободен в выбранное вами время",
+  "workforceChooseMasterTitle": "К кому хотите записаться?",
+  "workforceChooseMasterMessage": "Выберите мастера или «Любой мастер», чтобы увидеть свободное время.",
+  "workforceChooseServiceTitle": "Сначала выберите услугу",
+  "workforceChooseServiceMessage": "Время для «Любого мастера» зависит от выбранной услуги."
 }

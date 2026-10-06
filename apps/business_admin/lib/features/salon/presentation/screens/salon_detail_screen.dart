@@ -37,6 +37,7 @@ import '../widgets/add_service_dialog.dart';
 import '../widgets/recurring_schedule_dialog.dart';
 import '../../../staff_owner/presentation/providers/staff_owner_providers.dart';
 import '../../../staff_owner/presentation/widgets/needs_attention_section.dart';
+import '../../../staff_owner/presentation/widgets/team_schedule_entry.dart';
 import 'business_analytics_screen.dart';
 
 /// Categories with their own hardcoded staff module (Master/Mechanic/
@@ -120,6 +121,7 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
           ref.invalidate(providerBookingsProvider);
           ref.invalidate(providerPayoutsProvider);
           ref.invalidate(needsAttentionProvider);
+          ref.invalidate(workersProvider);
         },
         child: ListView(
           padding: const EdgeInsets.all(FactorySpacing.space4),
@@ -152,6 +154,8 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
               const SizedBox(height: FactorySpacing.space6),
               _StaffSection(providerId: _provider.id),
             ],
+            const SizedBox(height: FactorySpacing.space6),
+            TeamScheduleEntry(providerId: _provider.id),
             const SizedBox(height: FactorySpacing.space6),
             _BookingsSection(providerId: _provider.id),
             const SizedBox(height: FactorySpacing.space6),

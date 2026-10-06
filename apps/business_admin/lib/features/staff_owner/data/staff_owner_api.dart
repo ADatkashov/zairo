@@ -1,6 +1,7 @@
 import 'package:core_network/core_network.dart';
 
 import 'models/needs_attention.dart';
+import 'models/worker_schedule.dart';
 
 /// The owner's side of worker-related appointments (backend `WorkerOwnerController`). Not final:
 /// tests substitute a subclass overriding these methods — same pattern as the other APIs.
@@ -22,5 +23,97 @@ class StaffOwnerApi {
       '/providers/$providerId/appointments/$bookingId/cancel',
       data: {if (reason != null && reason.isNotEmpty) 'reason': reason},
     );
+  }
+
+  // --- team schedule ---
+
+  Future<List<WorkerSummary>> workers(String providerId) async {
+    final response = await _dioClient.get('/providers/$providerId/workers');
+    final data = response.data as List<dynamic>;
+    return data.map((e) => WorkerSummary.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<WorkerScheduleData> schedule(String providerId, String workerId) async {
+    final response = await _dioClient.get('/providers/$providerId/workers/$workerId/schedule');
+    return WorkerScheduleData.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// Replaces the weekly hours and (re)generates the person's own bookable times. Only the owner can do this.
+  Future<SaveScheduleResult> saveSchedule(
+    String providerId,
+    String workerId, {
+    required int slotMinutes,
+    required int breakMinutes,
+    required List<HoursInterval> hours,
+  }) async {
+    final response = await _dioClient.put(
+      '/providers/$providerId/workers/$workerId/schedule',
+      data: {
+        'zoneId': localZoneOffset(),
+        'slotMinutes': slotMinutes,
+        'breakMinutes': breakMinutes,
+        'hours': hours.map((h) => h.toJson()).toList(),
+      },
+    );
+    return SaveScheduleResult.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// Back to the business's shared slots.
+  Future<void> deleteSchedule(String providerId, String workerId) =>
+      _dioClient.delete('/providers/$providerId/workers/$workerId/schedule');
+
+  Future<List<TimeOffItem>> timeOff(String providerId, String workerId) async {
+    final response = await _dioClient.get('/providers/$providerId/workers/$workerId/time-off');
+    final data = response.data as List<dynamic>;
+    return data.map((e) => TimeOffItem.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// "The master isn't in": closes new bookings for the period. Booked appointments are NOT cancelled.
+  Future<TimeOffCreated> createTimeOff(
+    String providerId,
+    String workerId, {
+    required DateTime startsAt,
+    required DateTime endsAt,
+    String? reason,
+  }) async {
+    final response = await _dioClient.post(
+      '/providers/$providerId/workers/$workerId/time-off',
+      data: {
+        'startsAt': startsAt.toUtc().toIso8601String(),
+        'endsAt': endsAt.toUtc().toIso8601String(),
+        if (reason != null && reason.isNotEmpty) 'reason': reason,
+      },
+    );
+    return TimeOffCreated.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<void> deleteTimeOff(String providerId, String timeOffId) =>
+      _dioClient.delete('/providers/$providerId/time-off/$timeOffId');
+
+  Future<WorkforceSettings> settings(String providerId) async {
+    final response = await _dioClient.get('/providers/$providerId/workforce-settings');
+    return WorkforceSettings.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<WorkforceSettings> updateSettings(
+    String providerId, {
+    required bool allowWorkerChoice,
+    required bool workerPricingEnabled,
+  }) async {
+    final response = await _dioClient.put(
+      '/providers/$providerId/workforce-settings',
+      data: {'allowWorkerChoice': allowWorkerChoice, 'workerPricingEnabled': workerPricingEnabled},
+    );
+    return WorkforceSettings.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// The device's current fixed UTC offset (e.g. "+06:00"). The app has no IANA zone data, but the server accepts
+  /// a fixed-offset zone as validly as "Asia/Almaty" — same convention as the recurring-schedule dialog.
+  static String localZoneOffset([Duration? offset]) {
+    final o = offset ?? DateTime.now().timeZoneOffset;
+    final sign = o.isNegative ? '-' : '+';
+    final hours = o.abs().inHours.toString().padLeft(2, '0');
+    final minutes = (o.abs().inMinutes % 60).toString().padLeft(2, '0');
+    return '$sign$hours:$minutes';
   }
 }

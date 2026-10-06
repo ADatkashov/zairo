@@ -548,5 +548,11 @@
   "staffCabinetBusinessReply": "Бизнестің жауабы",
   "staffCabinetAnonymousCustomer": "Клиент",
   "staffCabinetAverageRatingLabel": "Орташа баға",
-  "staffCabinetDeclinedBadge": "Иесіне жіберілді"
+  "staffCabinetDeclinedBadge": "Иесіне жіберілді",
+  "anyMasterOptionTitle": "Кез келген шебер",
+  "anyMasterOptionSubtitle": "Таңдаған уақытыңызда бос шеберді тағайындаймыз",
+  "workforceChooseMasterTitle": "Кімге жазылғыңыз келеді?",
+  "workforceChooseMasterMessage": "Бос уақытты көру үшін шеберді немесе «Кез келген шеберді» таңдаңыз.",
+  "workforceChooseServiceTitle": "Алдымен қызметті таңдаңыз",
+  "workforceChooseServiceMessage": "«Кез келген шебер» уақыты таңдалған қызметке байланысты."
 }
