@@ -889,5 +889,8 @@
   "calendarDayEmpty": "Жазылулар жоқ",
   "calendarPrevWeek": "Өткен апта",
   "calendarNextWeek": "Келесі апта",
-  "calendarLoadFailed": "Күнтізбені жүктеу мүмкін болмады."
+  "calendarLoadFailed": "Күнтізбені жүктеу мүмкін болмады.",
+  "staffCabinetLinkTitle": "Қызметкер ретіндегі жазылуларым",
+  "staffCabinetLinkSubtitle": "Жазылулар мен рейтингіңіз бар Zairo қолданбасын ашады",
+  "staffCabinetLinkFailed": "Zairo қолданбасын ашу мүмкін болмады. Ол осы құрылғыда орнатылғанына көз жеткізіңіз."
 }
