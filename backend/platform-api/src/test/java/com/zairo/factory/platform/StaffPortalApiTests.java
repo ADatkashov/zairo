@@ -99,12 +99,42 @@ class StaffPortalApiTests {
         assertThat(((Number) rating.get("reviewCount")).longValue()).isEqualTo(1);
         assertThat((List<?>) rating.get("reviews")).hasSize(1);
 
-        // The colleague's appointment can be cancelled only by the colleague, and frees the slot.
+        // Staff can't cancel (and so can't refund): the old endpoint is gone, "can't attend" only informs the owner.
         assertThat(post("/api/v1/me/staff/" + colleagueStaff + "/appointments/" + colleaguesBooking + "/cancel",
-                colleague).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-        Map<?, ?> cancelled = getList("/api/v1/me/staff/" + colleagueStaff + "/appointments", colleague).get(0);
-        assertThat(cancelled.get("status")).isEqualTo("CANCELLED");
-        assertThat(cancelled.get("canCancel")).isEqualTo(false);
+                colleague).getStatusCode().is2xxSuccessful()).isFalse();
+        assertThat(post("/api/v1/me/staff/" + colleagueStaff + "/appointments/" + colleaguesBooking
+                + "/cannot-attend", worker).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(post("/api/v1/me/staff/" + colleagueStaff + "/appointments/" + colleaguesBooking
+                + "/cannot-attend", colleague).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        // Idempotent.
+        assertThat(post("/api/v1/me/staff/" + colleagueStaff + "/appointments/" + colleaguesBooking
+                + "/cannot-attend", colleague).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+        // The booking is untouched: still CONFIRMED, no further action offered to the staff member.
+        Map<?, ?> asked = getList("/api/v1/me/staff/" + colleagueStaff + "/appointments", colleague).get(0);
+        assertThat(asked.get("status")).isEqualTo("CONFIRMED");
+        assertThat(asked.get("staffDeclinedAt")).isNotNull();
+        assertThat(asked.get("canDecline")).isEqualTo(false);
+        assertThat(asked.get("canAccept")).isEqualTo(false);
+
+        // The owner sees it, a stranger owner doesn't, and only the owner can cancel (refunding the customer).
+        List<Map> needs = getList("/api/v1/providers/" + providerA + "/appointments/needs-attention", ownerA);
+        assertThat(needs).hasSize(1);
+        assertThat(needs.get(0).get("bookingId")).isEqualTo(colleaguesBooking.toString());
+        assertThat(needs.get(0).get("reason")).isEqualTo("STAFF_CANNOT_ATTEND");
+        assertThat(restTemplate.exchange("/api/v1/providers/" + providerA + "/appointments/needs-attention",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(ownerB.accessToken())), Map.class)
+                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        // Not the owner of that business: 403. Owner of another business, naming a foreign booking: 404.
+        assertThat(post("/api/v1/providers/" + providerA + "/appointments/" + colleaguesBooking + "/cancel", ownerB)
+                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(post("/api/v1/providers/" + providerB + "/appointments/" + colleaguesBooking + "/cancel", ownerB)
+                .getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(post("/api/v1/providers/" + providerA + "/appointments/" + colleaguesBooking + "/cancel",
+                ownerA).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(getList("/api/v1/providers/" + providerA + "/appointments/needs-attention", ownerA)).isEmpty();
+        assertThat(getList("/api/v1/me/staff/" + colleagueStaff + "/appointments", colleague).get(0).get("status"))
+                .isEqualTo("CANCELLED");
     }
 
     // --- helpers ---

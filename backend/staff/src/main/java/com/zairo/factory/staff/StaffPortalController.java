@@ -1,7 +1,7 @@
 package com.zairo.factory.staff;
 
 import com.zairo.factory.auth.CurrentUser;
-import com.zairo.factory.staff.StaffPortalDtos.DeclineAppointmentRequest;
+import com.zairo.factory.staff.StaffPortalDtos.CannotAttendRequest;
 import com.zairo.factory.staff.StaffPortalDtos.StaffAppointmentResponse;
 import com.zairo.factory.staff.StaffPortalDtos.StaffMembershipResponse;
 import com.zairo.factory.staff.StaffPortalDtos.StaffRatingResponse;
@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -66,17 +67,18 @@ public class StaffPortalController {
         portalService.accept(CurrentUser.requireUserId(request), staffId, bookingId);
     }
 
-    @Operation(summary = "Cancel an appointment", description = "Releases the slot, refunds a paid booking and "
-            + "notifies the customer — same effects as the customer cancelling.")
-    @ApiResponse(responseCode = "204", description = "Cancelled")
+    @Operation(summary = "I can't attend this appointment", description = "A request to the business owner — "
+            + "NOT a cancellation: the booking, the slot and the customer's payment are untouched, and the "
+            + "owner is told and decides (reassign, move or cancel). Idempotent.")
+    @ApiResponse(responseCode = "204", description = "The owner was notified")
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @ApiResponse(responseCode = "404", ref = "NotFound")
-    @ApiResponse(responseCode = "409", description = "The appointment can't be cancelled in its current state.")
-    @PostMapping("/api/v1/me/staff/{staffId}/appointments/{bookingId}/cancel")
+    @ApiResponse(responseCode = "409", description = "The appointment is already over, completed or cancelled.")
+    @PostMapping("/api/v1/me/staff/{staffId}/appointments/{bookingId}/cannot-attend")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void cancel(@PathVariable UUID staffId, @PathVariable UUID bookingId,
-            @RequestBody(required = false) DeclineAppointmentRequest body, HttpServletRequest request) {
-        portalService.cancel(CurrentUser.requireUserId(request), staffId, bookingId,
+    public void cannotAttend(@PathVariable UUID staffId, @PathVariable UUID bookingId,
+            @Valid @RequestBody(required = false) CannotAttendRequest body, HttpServletRequest request) {
+        portalService.cannotAttend(CurrentUser.requireUserId(request), staffId, bookingId,
                 body == null ? null : body.reason());
     }
 

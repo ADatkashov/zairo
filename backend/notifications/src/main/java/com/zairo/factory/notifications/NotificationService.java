@@ -83,6 +83,12 @@ public class NotificationService {
                 "A customer cancelled booking (" + bookingId + ").");
     }
 
+    public void sendStaffCannotAttendEmail(String toEmail, UUID bookingId) {
+        emailProvider.send(toEmail, "A staff member can't attend an appointment",
+                "A staff member can't attend booking (" + bookingId + "). Open the app to reassign it, move it "
+                        + "or cancel it.");
+    }
+
     public void sendSubscriptionPaymentFailedEmail(String toEmail) {
         emailProvider.send(toEmail, "Subscription payment failed",
                 "We couldn't charge your PRO subscription. Please update your payment details — your plan "

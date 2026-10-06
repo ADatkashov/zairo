@@ -901,5 +901,14 @@
   "calendarLoadFailed": "Не удалось загрузить календарь.",
   "staffCabinetLinkTitle": "Мои записи как сотрудника",
   "staffCabinetLinkSubtitle": "Откроет приложение Zairo, где ваши записи и рейтинг",
-  "staffCabinetLinkFailed": "Не удалось открыть приложение Zairo. Убедитесь, что оно установлено на этом устройстве."
+  "staffCabinetLinkFailed": "Не удалось открыть приложение Zairo. Убедитесь, что оно установлено на этом устройстве.",
+  "needsAttentionTitle": "Нужно решить",
+  "needsAttentionBadge": "Решите",
+  "needsAttentionCustomer": "Клиент",
+  "needsAttentionStaffCannotAttend": "{staff} не сможет прийти",
+  "needsAttentionCancelButton": "Отменить с возвратом",
+  "needsAttentionCancelConfirmTitle": "Отменить запись?",
+  "needsAttentionCancelConfirmMessage": "Клиент получит уведомление, оплаченная запись будет полностью возвращена. Время снова станет доступным.",
+  "needsAttentionKeepButton": "Оставить",
+  "needsAttentionCancelFailed": "Не удалось отменить запись. Попробуйте ещё раз."
 }

@@ -26,4 +26,16 @@ public interface StaffBookingRepository extends JpaRepository<StaffBooking, UUID
             where sb.staff_id = :staffId or s.employee_id = :staffId
             """, nativeQuery = true)
     List<UUID> findBookingIdsForStaff(@Param("staffId") UUID staffId);
+
+    /** Active bookings of this business where the staff member asked the owner to decide ("can't attend"). */
+    @Query(value = """
+            select sb.*
+            from staff_booking sb
+            join staff s on s.id = sb.staff_id
+            join booking b on b.id = sb.booking_id
+            where s.provider_id = :providerId
+              and sb.staff_declined_at is not null
+              and b.status in ('CONFIRMED', 'PENDING_PAYMENT')
+            """, nativeQuery = true)
+    List<StaffBooking> findOpenDeclinesByProviderId(@Param("providerId") UUID providerId);
 }
