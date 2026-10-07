@@ -226,6 +226,13 @@ public class Booking {
         this.status = BookingStatus.COMPLETED;
     }
 
+    /** The appointment moves to another slot (another time, or another worker's slot at the same time). */
+    void moveToSlot(UUID newSlotId) {
+        this.availabilitySlotId = newSlotId;
+        // A reminder already sent was for the old time; the new one deserves its own.
+        this.reminderSentAt = null;
+    }
+
     void markCancelled(String reason) {
         this.status = BookingStatus.CANCELLED;
         this.cancellationReason = reason;

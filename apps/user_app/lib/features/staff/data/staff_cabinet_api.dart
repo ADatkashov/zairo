@@ -29,8 +29,10 @@ class StaffCabinetApi {
   Future<void> accept(String staffId, String bookingId) =>
       _dioClient.post('/me/staff/$staffId/appointments/$bookingId/accept');
 
-  Future<void> cancel(String staffId, String bookingId, {String? reason}) => _dioClient.post(
-        '/me/staff/$staffId/appointments/$bookingId/cancel',
+  /// "I can't attend": a request to the business owner. Never a cancellation — the
+  /// booking and the customer's payment stay as they are until the owner decides.
+  Future<void> cannotAttend(String staffId, String bookingId, {String? reason}) => _dioClient.post(
+        '/me/staff/$staffId/appointments/$bookingId/cannot-attend',
         data: {if (reason != null && reason.isNotEmpty) 'reason': reason},
       );
 

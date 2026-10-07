@@ -35,8 +35,9 @@ StaffAppointment _appointment(String id, {bool canAccept = true}) => StaffAppoin
       paidAmount: 25,
       cancellationReason: null,
       staffConfirmedAt: null,
+      staffDeclinedAt: null,
       canAccept: canAccept,
-      canCancel: true,
+      canDecline: true,
       canComplete: true,
       canMarkNoShow: true,
     );
@@ -47,6 +48,7 @@ class _FakeCabinetApi extends StaffCabinetApi {
   final List<StaffMembership> _memberships;
   final Map<String, List<StaffAppointment>> _appointmentsByStaff;
   final List<String> accepted = [];
+  final List<String> declined = [];
 
   @override
   Future<List<StaffMembership>> memberships() async => _memberships;
@@ -57,6 +59,10 @@ class _FakeCabinetApi extends StaffCabinetApi {
 
   @override
   Future<void> accept(String staffId, String bookingId) async => accepted.add('$staffId/$bookingId');
+
+  @override
+  Future<void> cannotAttend(String staffId, String bookingId, {String? reason}) async =>
+      declined.add('$staffId/$bookingId');
 
   @override
   Future<StaffRating> rating(String staffId) async =>
@@ -108,5 +114,28 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(api.accepted, ['s1/b1']);
+  });
+
+  testWidgets('"Can\'t attend" asks the owner instead of cancelling', (tester) async {
+    final api = _FakeCabinetApi(
+      [_membership('s1', 'Salon One', pending: 1)],
+      {
+        's1': [_appointment('b1')],
+      },
+    );
+    await tester.pumpWidget(_wrap(api));
+    await tester.pumpAndSettle();
+
+    // There is no cancel action for staff at all.
+    expect(find.text('Cancel'), findsNothing);
+
+    await tester.tap(find.text("Can't attend"));
+    await tester.pumpAndSettle();
+    expect(find.text("Can't attend this appointment?"), findsOneWidget);
+
+    await tester.tap(find.text('Tell the owner'));
+    await tester.pumpAndSettle();
+
+    expect(api.declined, ['s1/b1']);
   });
 }

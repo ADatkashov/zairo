@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../features/workforce/presentation/screens/change_requests_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -131,6 +132,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.notifications,
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.changeRequests,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const ChangeRequestsScreen(),
       ),
       GoRoute(
         path: AppRoutes.staffCabinet,

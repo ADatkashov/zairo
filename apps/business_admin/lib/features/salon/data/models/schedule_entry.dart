@@ -39,8 +39,14 @@ class ScheduleEntry {
 /// A schedule entry with the names an agenda row shows.
 class AgendaItem {
   final ScheduleEntry entry;
+  final String providerId;
   final String providerName;
   final String serviceTitle;
 
-  const AgendaItem({required this.entry, required this.providerName, required this.serviceTitle});
+  const AgendaItem({
+    required this.entry,
+    required this.providerId,
+    required this.providerName,
+    required this.serviceTitle,
+  });
 }

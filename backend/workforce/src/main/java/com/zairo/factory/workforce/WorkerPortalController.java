@@ -1,15 +1,19 @@
-package com.zairo.factory.staff;
+package com.zairo.factory.workforce;
 
 import com.zairo.factory.auth.CurrentUser;
-import com.zairo.factory.staff.StaffPortalDtos.DeclineAppointmentRequest;
-import com.zairo.factory.staff.StaffPortalDtos.StaffAppointmentResponse;
-import com.zairo.factory.staff.StaffPortalDtos.StaffMembershipResponse;
-import com.zairo.factory.staff.StaffPortalDtos.StaffRatingResponse;
+import com.zairo.factory.workforce.WorkerPortalDtos.CannotAttendRequest;
+import com.zairo.factory.workforce.WorkerPortalDtos.WorkerAppointmentResponse;
+import com.zairo.factory.workforce.WorkerPortalDtos.WorkerMembershipResponse;
+import com.zairo.factory.workforce.WorkerPortalDtos.WorkerRatingResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import com.zairo.factory.workforce.WorkerScheduleDtos.TimeOffCreatedResponse;
+import com.zairo.factory.workforce.WorkerScheduleDtos.TimeOffRequest;
+import com.zairo.factory.workforce.WorkerScheduleDtos.TimeOffResponse;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -25,12 +29,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @Tag(name = "Staff cabinet")
 @SecurityRequirement(name = "bearerAuth")
-public class StaffPortalController {
+public class WorkerPortalController {
 
-    private final StaffPortalService portalService;
+    private final WorkerPortalService portalService;
+    private final WorkerTimeOffService timeOffService;
 
-    public StaffPortalController(StaffPortalService portalService) {
+    public WorkerPortalController(WorkerPortalService portalService, WorkerTimeOffService timeOffService) {
         this.portalService = portalService;
+        this.timeOffService = timeOffService;
     }
 
     @Operation(summary = "My workplaces", description = "Every business the caller works at (empty list if "
@@ -38,7 +44,7 @@ public class StaffPortalController {
     @ApiResponse(responseCode = "200", description = "The caller's staff profiles")
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @GetMapping("/api/v1/me/staff-memberships")
-    public List<StaffMembershipResponse> memberships(HttpServletRequest request) {
+    public List<WorkerMembershipResponse> memberships(HttpServletRequest request) {
         return portalService.memberships(CurrentUser.requireUserId(request));
     }
 
@@ -49,8 +55,8 @@ public class StaffPortalController {
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @GetMapping("/api/v1/me/staff/{staffId}/appointments")
-    public List<StaffAppointmentResponse> appointments(@PathVariable UUID staffId,
-            @RequestParam(defaultValue = "ALL") StaffPortalService.Scope scope, HttpServletRequest request) {
+    public List<WorkerAppointmentResponse> appointments(@PathVariable UUID staffId,
+            @RequestParam(defaultValue = "ALL") WorkerPortalService.Scope scope, HttpServletRequest request) {
         return portalService.appointments(CurrentUser.requireUserId(request), staffId, scope);
     }
 
@@ -66,17 +72,18 @@ public class StaffPortalController {
         portalService.accept(CurrentUser.requireUserId(request), staffId, bookingId);
     }
 
-    @Operation(summary = "Cancel an appointment", description = "Releases the slot, refunds a paid booking and "
-            + "notifies the customer — same effects as the customer cancelling.")
-    @ApiResponse(responseCode = "204", description = "Cancelled")
+    @Operation(summary = "I can't attend this appointment", description = "A request to the business owner — "
+            + "NOT a cancellation: the booking, the slot and the customer's payment are untouched, and the "
+            + "owner is told and decides (reassign, move or cancel). Idempotent.")
+    @ApiResponse(responseCode = "204", description = "The owner was notified")
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @ApiResponse(responseCode = "404", ref = "NotFound")
-    @ApiResponse(responseCode = "409", description = "The appointment can't be cancelled in its current state.")
-    @PostMapping("/api/v1/me/staff/{staffId}/appointments/{bookingId}/cancel")
+    @ApiResponse(responseCode = "409", description = "The appointment is already over, completed or cancelled.")
+    @PostMapping("/api/v1/me/staff/{staffId}/appointments/{bookingId}/cannot-attend")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void cancel(@PathVariable UUID staffId, @PathVariable UUID bookingId,
-            @RequestBody(required = false) DeclineAppointmentRequest body, HttpServletRequest request) {
-        portalService.cancel(CurrentUser.requireUserId(request), staffId, bookingId,
+    public void cannotAttend(@PathVariable UUID staffId, @PathVariable UUID bookingId,
+            @Valid @RequestBody(required = false) CannotAttendRequest body, HttpServletRequest request) {
+        portalService.cannotAttend(CurrentUser.requireUserId(request), staffId, bookingId,
                 body == null ? null : body.reason());
     }
 
@@ -109,7 +116,29 @@ public class StaffPortalController {
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @GetMapping("/api/v1/me/staff/{staffId}/rating")
-    public StaffRatingResponse rating(@PathVariable UUID staffId, HttpServletRequest request) {
+    public WorkerRatingResponse rating(@PathVariable UUID staffId, HttpServletRequest request) {
         return portalService.rating(CurrentUser.requireUserId(request), staffId);
+    }
+
+    @Operation(summary = "My upcoming time off", description = "Periods in which I can't be booked.")
+    @ApiResponse(responseCode = "200", description = "Time off that hasn't ended yet")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @GetMapping("/api/v1/me/staff/{staffId}/time-off")
+    public List<TimeOffResponse> timeOff(@PathVariable UUID staffId, HttpServletRequest request) {
+        return timeOffService.listOwn(staffId, CurrentUser.requireUserId(request));
+    }
+
+    @Operation(summary = "I'm unavailable", description = "E.g. \"I'm sick today\": closes MY availability for the "
+            + "period so no new bookings come in, and tells the owner. A worker can only ever reduce their own "
+            + "availability — appointments already booked are untouched (the owner decides), and only the owner can "
+            + "reopen the period.")
+    @ApiResponse(responseCode = "201", description = "Recorded; says how many booked appointments fall inside")
+    @ApiResponse(responseCode = "400", ref = "BadRequest")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @PostMapping("/api/v1/me/staff/{staffId}/time-off")
+    @ResponseStatus(HttpStatus.CREATED)
+    public TimeOffCreatedResponse markUnavailable(@PathVariable UUID staffId,
+            @Valid @RequestBody TimeOffRequest body, HttpServletRequest request) {
+        return timeOffService.createByWorker(staffId, CurrentUser.requireUserId(request), body);
     }
 }
