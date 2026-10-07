@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/auth/presentation/providers/auth_providers.dart';
+import '../features/staff/presentation/providers/staff_cabinet_link_providers.dart';
+import '../features/staff/presentation/staff_cabinet_launcher.dart';
 import '../l10n/app_localizations.dart';
 import 'admin_routes.dart';
 
@@ -18,6 +20,7 @@ class AdminMoreScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final ownerUserId = ref.watch(authControllerProvider).value?.id;
+    final staffPending = ownerUserId == null ? null : ref.watch(staffCabinetLinkProvider).value;
 
     Widget tile({
       required IconData icon,
@@ -50,6 +53,14 @@ class AdminMoreScreen extends ConsumerWidget {
             label: l10n.billingScreenTitle,
             onTap: () => context.go(AdminRoutes.billing),
           ),
+          if (staffPending != null)
+            tile(
+              icon: Icons.badge_outlined,
+              label: staffPending > 0
+                  ? '${l10n.staffCabinetLinkTitle} ($staffPending)'
+                  : l10n.staffCabinetLinkTitle,
+              onTap: () => openStaffCabinet(context),
+            ),
           tile(
             icon: Icons.settings_outlined,
             label: l10n.settingsButtonTooltip,

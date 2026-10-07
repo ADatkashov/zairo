@@ -57,6 +57,10 @@ abstract final class AppRoutes {
   static const favorites = '/favorites';
   static const messages = '/messages';
   static const rewards = '/rewards';
+
+  /// The staff member's own cabinet (appointments, accept/cancel, rating).
+  static const staffCabinet = '/staff-cabinet';
+  static const changeRequests = '/change-requests';
   static const redemptions = '/redemptions';
   static const vehicles = '/vehicles';
   static const support = '/support';

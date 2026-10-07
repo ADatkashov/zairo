@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../data/models/schedule_entry.dart';
 import '../providers/salon_providers.dart';
+import '../../../staff_owner/presentation/widgets/no_show_correction.dart';
 import '../widgets/agenda_row.dart';
 
 /// Below this width the week is a day strip plus the chosen day's list;
@@ -116,6 +117,7 @@ class _WeekCalendarScreenState extends ConsumerState<WeekCalendarScreen> {
                             selected: _selectedDay,
                             multiple: multiple,
                             onSelect: (i) => setState(() => _selectedDay = i),
+                            onRefresh: () => ref.invalidate(ownerWeekAgendaProvider((widget.ownerUserId, _weekStart))),
                           ),
                   );
                 },
@@ -136,6 +138,7 @@ class _DayStripAndList extends StatelessWidget {
     required this.selected,
     required this.multiple,
     required this.onSelect,
+    required this.onRefresh,
   });
 
   final List<DateTime> days;
@@ -144,6 +147,7 @@ class _DayStripAndList extends StatelessWidget {
   final int selected;
   final bool multiple;
   final ValueChanged<int> onSelect;
+  final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -216,7 +220,11 @@ class _DayStripAndList extends StatelessWidget {
                   padding: const EdgeInsets.all(FactorySpacing.space4),
                   itemCount: items.length,
                   separatorBuilder: (_, _) => Divider(height: FactorySpacing.space4, color: colors.border),
-                  itemBuilder: (context, i) => AgendaRow(item: items[i], showProvider: multiple),
+                  itemBuilder: (context, i) {
+                    final row = AgendaRow(item: items[i], showProvider: multiple);
+                    if (items[i].entry.status != 'NO_SHOW') return row;
+                    return NoShowCorrection(item: items[i], onCorrected: onRefresh, child: row);
+                  },
                 ),
         ),
       ],

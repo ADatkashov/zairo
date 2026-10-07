@@ -264,15 +264,19 @@ class SearchApiTests {
         // A provider with 1 five-star review should NOT rank higher than
         // a provider with many moderate reviews, even though raw 5.0 > 4.5.
         String runId = UUID.randomUUID().toString();
-        String vertical = "beauty-bayesian-" + runId;
+        // The vertical column is limited to 50 characters, so only the start of the run id is used.
+        String vertical = "beauty-bayesian-" + runId.substring(0, 8);
         Registered owner = TestAuth.registerOwner(restTemplate, "bayesian-owner-" + runId + "@example.com");
         TestAuth.upgradeToPro(restTemplate, owner);
 
         // Provider A: Many moderate reviews (establishes track record)
         UUID manyModerate = createProvider(owner, "Many Moderate Reviews " + runId, vertical);
         createService(owner, manyModerate, "Cut", new BigDecimal("20.00"));
+        // 15x 5-star + 15x 4-star = 30 reviews averaging 4.5. The Bayesian pull is toward the platform-wide
+        // average, which here includes every other test's reviews, so the track record must beat a lone 5-star
+        // review for any realistic global average (it does while that average is below ~4.46).
         for (int i = 0; i < 30; i++) {
-            reviewProviderWithBooking(owner, manyModerate, 4); // 30x 4-star
+            reviewProviderWithBooking(owner, manyModerate, i % 2 == 0 ? 5 : 4);
         }
         approve(manyModerate);
 
@@ -283,7 +287,7 @@ class SearchApiTests {
         approve(singleFivestar);
 
         // When sorted by RATING (Bayesian), manyModerate should rank higher
-        // despite its raw rating (4.0) being lower than singleFivestar (5.0).
+        // despite its raw rating (4.5) being lower than singleFivestar (5.0).
         List<Map> byRating = search(new SearchParams(vertical).sort(SearchSort.RATING));
         List<UUID> ratingOrder = byRating.stream()
                 .map(r -> UUID.fromString(r.get("id").toString()))
@@ -295,7 +299,7 @@ class SearchApiTests {
         Map manyModerateResult = byRating.get(0);
         Map singleFivestarResult = byRating.get(1);
 
-        assertThat(((Number) manyModerateResult.get("averageRating")).doubleValue()).isEqualTo(4.0);
+        assertThat(((Number) manyModerateResult.get("averageRating")).doubleValue()).isEqualTo(4.5);
         assertThat(((Number) manyModerateResult.get("reviewCount")).longValue()).isEqualTo(30L);
 
         assertThat(((Number) singleFivestarResult.get("averageRating")).doubleValue()).isEqualTo(5.0);

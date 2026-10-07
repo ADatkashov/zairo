@@ -2,9 +2,15 @@ package com.zairo.factory.notifications;
 
 import com.zairo.factory.booking.BookingCancelledEvent;
 import com.zairo.factory.booking.BookingConfirmedEvent;
+import com.zairo.factory.booking.BookingMovedEvent;
 import com.zairo.factory.booking.BookingReminderDueEvent;
 import com.zairo.factory.providers.Provider;
 import com.zairo.factory.providers.ProviderRepository;
+import com.zairo.factory.workforce.WorkerCannotAttendEvent;
+import com.zairo.factory.workforce.WorkerNotAcceptedEvent;
+import com.zairo.factory.workforce.WorkerChangeRequestedEvent;
+import com.zairo.factory.workforce.WorkerReassignedEvent;
+import com.zairo.factory.workforce.WorkerUnavailableEvent;
 import com.zairo.factory.users.User;
 import com.zairo.factory.users.UserRepository;
 import java.util.Optional;
@@ -56,6 +62,49 @@ class BookingNotificationListener {
         ownerEmailFor(event.providerId())
                 .ifPresent(ownerEmail -> notificationService.sendProviderBookingCancelledEmail(ownerEmail,
                         event.bookingId()));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    void onStaffCannotAttend(WorkerCannotAttendEvent event) {
+        ownerEmailFor(event.providerId())
+                .ifPresent(ownerEmail -> notificationService.sendStaffCannotAttendEmail(ownerEmail,
+                        event.bookingId()));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    void onWorkerNotAccepted(WorkerNotAcceptedEvent event) {
+        ownerEmailFor(event.providerId())
+                .ifPresent(ownerEmail -> notificationService.sendWorkerNotAcceptedEmail(ownerEmail,
+                        event.workerName(), event.startsAt()));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    void onWorkerReassigned(WorkerReassignedEvent event) {
+        userRepository.findById(event.userId())
+                .ifPresent(customer -> notificationService.sendWorkerChangedEmail(customer.getId(),
+                        customer.getEmail(), event.bookingId(), event.toName(), event.customerDidntMind(),
+                        event.newPrice()));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    void onWorkerChangeRequested(WorkerChangeRequestedEvent event) {
+        userRepository.findById(event.userId())
+                .ifPresent(customer -> notificationService.sendChangeRequestedEmail(customer.getId(),
+                        customer.getEmail(), event.bookingId(), event.workerName()));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    void onBookingMoved(BookingMovedEvent event) {
+        userRepository.findById(event.userId())
+                .ifPresent(customer -> notificationService.sendBookingMovedEmail(customer.getId(),
+                        customer.getEmail(), event.bookingId(), event.newStartsAt()));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    void onWorkerUnavailable(WorkerUnavailableEvent event) {
+        ownerEmailFor(event.providerId())
+                .ifPresent(ownerEmail -> notificationService.sendWorkerUnavailableEmail(ownerEmail,
+                        event.workerName(), event.affectedAppointments()));
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

@@ -19,6 +19,7 @@ import '../../../notifications/presentation/widgets/notification_bell_button.dar
 import '../../data/models/book_again_suggestion.dart';
 import '../../../payments/presentation/widgets/payment_status_chip.dart';
 import '../../../reviews/presentation/widgets/review_section.dart';
+import '../../../workforce/presentation/widgets/change_requests_banner.dart';
 import '../../data/booking_exception.dart';
 import '../../data/models/booking.dart';
 import '../providers/booking_providers.dart';
@@ -55,7 +56,12 @@ class MyBookingsScreen extends ConsumerWidget {
                 icon: Symbols.calendar_month_rounded,
                 message: l10n.bookingsLoggedOutPrompt,
               )
-            : _BookingsList(userId: user.id),
+            : Column(
+                children: [
+                  const ChangeRequestsBanner(),
+                  Expanded(child: _BookingsList(userId: user.id)),
+                ],
+              ),
         loading: () => const FactoryLoadingState(),
         error: (error, stackTrace) => Center(
           child: Padding(

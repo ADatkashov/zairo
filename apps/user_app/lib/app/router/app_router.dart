@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../features/workforce/presentation/screens/change_requests_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/beauty/presentation/screens/master_portfolio_screen.dart';
 import '../../features/booking/presentation/screens/booking_confirmation_screen.dart';
+import '../../features/staff/presentation/screens/staff_cabinet_screen.dart';
 import '../../features/booking/presentation/screens/my_bookings_screen.dart';
 import '../../features/booking/presentation/screens/provider_detail_screen.dart';
 import '../../features/catalog/presentation/screens/all_categories_screen.dart';
@@ -130,6 +132,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.notifications,
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.changeRequests,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const ChangeRequestsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.staffCabinet,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const StaffCabinetScreen(),
       ),
       GoRoute(
         path: AppRoutes.favorites,

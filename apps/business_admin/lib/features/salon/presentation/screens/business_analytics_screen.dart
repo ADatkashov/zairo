@@ -570,6 +570,20 @@ class _RevenueSection extends ConsumerWidget {
               children: [
                 Text(l10n.analyticsRevenueByDayTitle, style: Theme.of(context).textTheme.titleSmall),
                 const SizedBox(height: FactorySpacing.space2),
+                // The shape of the period at a glance; the exact figures stay in the rows below.
+                if (revenue.revenueByDay.length >= 2) ...[
+                  FactoryCard(
+                    padding: const EdgeInsets.all(FactorySpacing.space3),
+                    child: FactorySparkline(
+                      values: ([...revenue.revenueByDay]..sort((a, b) => a.date.compareTo(b.date)))
+                          .map((d) => d.amount.toDouble())
+                          .toList(),
+                      height: 72,
+                      semanticLabel: l10n.analyticsRevenueByDayTitle,
+                    ),
+                  ),
+                  const SizedBox(height: FactorySpacing.space3),
+                ],
                 ...revenue.revenueByDay.map(
                   (day) => _BarRow(
                     label: DateFormat.MMMd(locale).format(day.date),

@@ -83,6 +83,56 @@ public class NotificationService {
                 "A customer cancelled booking (" + bookingId + ").");
     }
 
+    public void sendStaffCannotAttendEmail(String toEmail, UUID bookingId) {
+        emailProvider.send(toEmail, "A staff member can't attend an appointment",
+                "A staff member can't attend booking (" + bookingId + "). Open the app to reassign it, move it "
+                        + "or cancel it.");
+    }
+
+    public void sendWorkerNotAcceptedEmail(String toEmail, String workerName, Instant startsAt) {
+        emailProvider.send(toEmail, "An appointment hasn't been accepted",
+                workerName + " hasn't accepted the appointment at " + startsAt + ". Open the app to check with "
+                        + "them or hand it to a colleague.");
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void sendWorkerChangedEmail(UUID recipientUserId, String toEmail, UUID bookingId, String toName,
+            boolean customerDidntMind, java.math.BigDecimal newPrice) {
+        String title = "Your specialist has changed";
+        String body = (customerDidntMind ? "For your appointment (" + bookingId + ") " : "Your appointment ("
+                + bookingId + ") will be with ") + (customerDidntMind ? "we assigned " : "") + toName
+                + ". The time is the same."
+                + (newPrice == null ? "" : " The price is now " + newPrice.toPlainString()
+                        + "; anything you already paid above it is returned to you.");
+        emailProvider.send(toEmail, title, body);
+        recordInApp(recipientUserId, InAppNotificationType.WORKER_CHANGED, title, body);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void sendChangeRequestedEmail(UUID recipientUserId, String toEmail, UUID bookingId, String workerName) {
+        String title = "Please choose how to proceed";
+        String body = workerName + " can't make your appointment (" + bookingId + "). Open the app to pick a "
+                + "colleague at the same time, another time, or cancel with a full refund.";
+        emailProvider.send(toEmail, title, body);
+        recordInApp(recipientUserId, InAppNotificationType.CHANGE_REQUESTED, title, body);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void sendBookingMovedEmail(UUID recipientUserId, String toEmail, UUID bookingId, Instant newStartsAt) {
+        String title = "Your appointment was moved";
+        String body = "Your appointment (" + bookingId + ") now starts at " + newStartsAt + ".";
+        emailProvider.send(toEmail, title, body);
+        recordInApp(recipientUserId, InAppNotificationType.BOOKING_MOVED, title, body);
+    }
+
+    public void sendWorkerUnavailableEmail(String toEmail, String workerName, int affectedAppointments) {
+        emailProvider.send(toEmail, workerName + " is unavailable",
+                workerName + " closed their availability. " + (affectedAppointments > 0
+                        ? affectedAppointments + " booked appointment(s) fall in that period — open the app to "
+                                + "decide what to do with each."
+                        : "No booked appointments are affected."));
+    }
+
     public void sendSubscriptionPaymentFailedEmail(String toEmail) {
         emailProvider.send(toEmail, "Subscription payment failed",
                 "We couldn't charge your PRO subscription. Please update your payment details — your plan "
