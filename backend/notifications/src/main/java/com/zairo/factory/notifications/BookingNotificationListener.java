@@ -82,7 +82,8 @@ class BookingNotificationListener {
     void onWorkerReassigned(WorkerReassignedEvent event) {
         userRepository.findById(event.userId())
                 .ifPresent(customer -> notificationService.sendWorkerChangedEmail(customer.getId(),
-                        customer.getEmail(), event.bookingId(), event.toName(), event.customerDidntMind()));
+                        customer.getEmail(), event.bookingId(), event.toName(), event.customerDidntMind(),
+                        event.newPrice()));
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

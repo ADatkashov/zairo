@@ -97,11 +97,13 @@ public class NotificationService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void sendWorkerChangedEmail(UUID recipientUserId, String toEmail, UUID bookingId, String toName,
-            boolean customerDidntMind) {
+            boolean customerDidntMind, java.math.BigDecimal newPrice) {
         String title = "Your specialist has changed";
         String body = (customerDidntMind ? "For your appointment (" + bookingId + ") " : "Your appointment ("
                 + bookingId + ") will be with ") + (customerDidntMind ? "we assigned " : "") + toName
-                + ". The time is the same.";
+                + ". The time is the same."
+                + (newPrice == null ? "" : " The price is now " + newPrice.toPlainString()
+                        + "; anything you already paid above it is returned to you.");
         emailProvider.send(toEmail, title, body);
         recordInApp(recipientUserId, InAppNotificationType.WORKER_CHANGED, title, body);
     }

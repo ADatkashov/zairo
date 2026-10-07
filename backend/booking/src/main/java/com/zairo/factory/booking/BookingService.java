@@ -445,6 +445,30 @@ public class BookingService {
     }
 
     /**
+     * Lowers the agreed price of an active booking (it moved to a cheaper worker). Never raises it. Publishes
+     * {@link BookingPriceReducedEvent} so payments can return what was already paid above the new price. For a
+     * caller that has already authorised the actor (workforce); never expose this directly from a controller.
+     */
+    @Transactional
+    public Booking reducePriceAuthorized(UUID bookingId, BigDecimal newTotal) {
+        Booking booking = loadBooking(bookingId);
+        if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            throw new InvalidBookingStateException("Booking price can't change in this state: " + bookingId
+                    + " (status=" + booking.getStatus() + ")");
+        }
+        BigDecimal oldTotal = booking.getTotalPrice();
+        if (newTotal == null || newTotal.signum() < 0 || newTotal.compareTo(oldTotal) >= 0) {
+            return booking;
+        }
+        AvailabilitySlot slot = loadSlot(booking);
+        booking.reduceTotalPrice(newTotal);
+        Booking saved = bookingRepository.save(booking);
+        eventPublisher.publishEvent(new BookingPriceReducedEvent(saved.getId(), saved.getUserId(),
+                slot.getProviderId(), oldTotal, newTotal, saved.getCurrency()));
+        return saved;
+    }
+
+    /**
      * Provider-owner correction of a wrong "no-show": the customer did come. Behaves exactly like a normal
      * completion (same event, so the payout and loyalty points follow). The opposite correction —
      * COMPLETED back to anything else — is deliberately not offered: completion has already created the

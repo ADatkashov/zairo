@@ -35,6 +35,7 @@ public class PaymentsService {
     private final ApplicationEventPublisher eventPublisher;
     private final PaymentAllocationService paymentAllocationService;
     private final BusinessPayoutRepository businessPayoutRepository;
+    private final PaymentPartialRefundRepository partialRefundRepository;
     private final String successUrl;
     private final String failureUrl;
 
@@ -43,6 +44,7 @@ public class PaymentsService {
             PaymentProvider paymentProvider, @Value("${payment.provider:mock}") String providerName,
             ProviderOwnership providerOwnership, ApplicationEventPublisher eventPublisher,
             PaymentAllocationService paymentAllocationService, BusinessPayoutRepository businessPayoutRepository,
+            PaymentPartialRefundRepository partialRefundRepository,
             @Value("${payment.return.success-url:}") String successUrl,
             @Value("${payment.return.failure-url:}") String failureUrl) {
         this.paymentRepository = paymentRepository;
@@ -55,6 +57,7 @@ public class PaymentsService {
         this.eventPublisher = eventPublisher;
         this.paymentAllocationService = paymentAllocationService;
         this.businessPayoutRepository = businessPayoutRepository;
+        this.partialRefundRepository = partialRefundRepository;
         this.successUrl = successUrl;
         this.failureUrl = failureUrl;
     }
@@ -262,8 +265,10 @@ public class PaymentsService {
             }
         });
 
+        // Anything a cheaper replacement worker already returned (partially) is not refunded a second time.
+        BigDecimal refundable = payment.getAmount().subtract(partialRefundRepository.totalForPayment(payment.getId()));
         PaymentProvider.RefundResult result = paymentProvider.refund(payment.getId(), payment.getProviderReference(),
-                payment.getAmount());
+                refundable);
         if (!result.succeeded()) {
             // Recorded on the row before throwing — a failed refund used to
             // be visible only in whatever caller's log line happened to

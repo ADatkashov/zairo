@@ -8,6 +8,7 @@ import com.zairo.factory.booking.BookingRepository;
 import com.zairo.factory.booking.BookingService;
 import com.zairo.factory.booking.BookingStatus;
 import java.time.Duration;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -52,13 +53,15 @@ public class WorkerReassignmentService {
     private final WorkerSlotGenerator generator;
     private final PersonLock personLock;
     private final ApplicationEventPublisher eventPublisher;
+    private final WorkerPricingService pricingService;
 
     public WorkerReassignmentService(WorkerCatalog catalog, BookingRepository bookingRepository,
             AvailabilitySlotRepository slotRepository, WorkerBookingStateRepository stateRepository,
             WorkerChangeRequestRepository requestRepository, WorkerTimeOffRepository timeOffRepository,
             WorkerScheduleRepository scheduleRepository, WorkerBookings workerBookings,
             BookingService bookingService, WorkerSlotGenerator generator, PersonLock personLock,
-            ApplicationEventPublisher eventPublisher) {
+            ApplicationEventPublisher eventPublisher, WorkerPricingService pricingService) {
+        this.pricingService = pricingService;
         this.catalog = catalog;
         this.bookingRepository = bookingRepository;
         this.slotRepository = slotRepository;
@@ -143,6 +146,16 @@ public class WorkerReassignmentService {
         }
         catalog.relink(target, bookingId);
 
+        // The customer never pays more than they agreed to: a pricier replacement is absorbed by the business (the
+        // booking keeps its price), a cheaper one lowers it — and payments returns what was already paid above it.
+        BigDecimal reducedTo = null;
+        BigDecimal replacementPrice = pricingService
+                .effectivePrice(slot.getProviderId(), target.id(), booking.getServiceId()).orElse(null);
+        if (replacementPrice != null && replacementPrice.compareTo(booking.getTotalPrice()) < 0) {
+            bookingService.reducePriceAuthorized(bookingId, replacementPrice);
+            reducedTo = replacementPrice;
+        }
+
         WorkerBookingState state = stateRepository.findById(bookingId).orElse(null);
         if (state == null) {
             state = new WorkerBookingState(bookingId, target.id(), WorkerBookingState.Preference.SPECIFIC,
@@ -161,7 +174,7 @@ public class WorkerReassignmentService {
             generator.regenerate(current.id());
         }
         eventPublisher.publishEvent(new WorkerReassignedEvent(bookingId, booking.getUserId(), slot.getProviderId(),
-                current.displayName(), target.displayName(), customerDidntMind));
+                current.displayName(), target.displayName(), customerDidntMind, reducedTo));
         return bookingRepository.findById(bookingId).orElse(booking);
     }
 
