@@ -12,6 +12,14 @@ public interface AvailabilitySlotRepository extends JpaRepository<AvailabilitySl
 
     List<AvailabilitySlot> findByProviderIdAndEmployeeId(UUID providerId, UUID employeeId);
 
+    /** A worker's own slots of one status that start after the given moment. */
+    List<AvailabilitySlot> findByProviderIdAndEmployeeIdAndStatusAndStartsAtAfter(UUID providerId, UUID employeeId,
+            AvailabilityStatus status, java.time.Instant after);
+
+    /** The business's shared (no particular worker) slots of one status that start after the given moment. */
+    List<AvailabilitySlot> findByProviderIdAndEmployeeIdIsNullAndStatusAndStartsAtAfter(UUID providerId,
+            AvailabilityStatus status, java.time.Instant after);
+
     boolean existsByProviderIdAndStatus(UUID providerId, AvailabilityStatus status);
 
     /** The soonest OPEN slot, if any — presence/absence also answers "does this provider have open availability". */
@@ -35,4 +43,6 @@ public interface AvailabilitySlotRepository extends JpaRepository<AvailabilitySl
      */
     List<AvailabilitySlot> findByProviderIdAndStartsAtLessThanAndEndsAtGreaterThan(UUID providerId, Instant windowEnd,
             Instant windowStart);
+
+    List<AvailabilitySlot> findByStatusAndStartsAtBetween(AvailabilityStatus status, Instant from, Instant to);
 }

@@ -36,8 +36,13 @@ class LoyaltyOutboxItemProcessor {
         this.clock = clock;
     }
 
-    /** One transaction covering the read, the actual earning computation, and marking the row PROCESSED. */
-    @Transactional
+    /**
+     * One transaction covering the read, the actual earning computation, and marking the row PROCESSED. Always a
+     * genuinely new transaction: the nudge that triggers this runs AFTER_COMMIT of the booking transaction, whose
+     * (already committed) resources are still bound to the thread — joining them fails with "No active
+     * transaction for update or delete query".
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     boolean attemptProcessing(UUID eventId) {
         LoyaltyOutboxEvent event = outboxRepository.findById(eventId).orElse(null);
         if (event == null || event.getStatus() != LoyaltyOutboxEventStatus.PENDING) {

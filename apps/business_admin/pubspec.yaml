@@ -30,6 +30,8 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.3
+  # Settings > "my appointments as staff": opens the consumer app's staff cabinet (zairo://app/staff-cabinet).
+  url_launcher: ^6.3.0
   json_annotation: ^4.12.0
   # Sign-in methods shared with the consumer app: Google and Sign in with Apple
   # only obtain a credential on-device; the backend verifies it.

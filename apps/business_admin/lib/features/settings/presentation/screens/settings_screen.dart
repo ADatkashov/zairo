@@ -7,6 +7,8 @@ import '../../../../app/theme/theme_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../billing/presentation/screens/billing_screen.dart';
+import '../../../staff/presentation/providers/staff_cabinet_link_providers.dart';
+import '../../../staff/presentation/staff_cabinet_launcher.dart';
 import 'security_settings_screen.dart';
 
 /// Mirrors apps/user_app's identical SettingsScreen — same layout, same
@@ -22,6 +24,8 @@ class SettingsScreen extends ConsumerWidget {
     final locale = ref.watch(localeControllerProvider).value;
     // Settings is also reachable from the login screen; Security and Subscription only make sense signed in.
     final signedIn = ref.watch(authControllerProvider).value != null;
+    // Non-null only for an owner who is also staff somewhere (see StaffCabinetLinkApi).
+    final staffPending = signedIn ? ref.watch(staffCabinetLinkProvider).value : null;
 
     return Scaffold(
       appBar: FactoryAppBar(title: l10n.settingsTitle),
@@ -77,6 +81,29 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ],
             ),
+            if (staffPending != null) ...[
+              const SizedBox(height: FactorySpacing.space4),
+              FactorySettingsGroup(
+                children: [
+                  ListTile(
+                    leading: const FactoryIconBadge(icon: Icons.badge_outlined),
+                    title: Text(l10n.staffCabinetLinkTitle),
+                    subtitle: Text(l10n.staffCabinetLinkSubtitle),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (staffPending > 0) ...[
+                          FactoryBadge(label: '$staffPending', variant: FactoryBadgeVariant.limited),
+                          const SizedBox(width: FactorySpacing.space2),
+                        ],
+                        const Icon(Icons.open_in_new),
+                      ],
+                    ),
+                    onTap: () => openStaffCabinet(context),
+                  ),
+                ],
+              ),
+            ],
           ],
         ],
       ),
