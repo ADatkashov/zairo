@@ -28,6 +28,8 @@ void main() {
     expect(find.text('Map view placeholder'), findsOneWidget);
     expect(find.text('43.2389, 76.8897'), findsOneWidget);
     expect(find.text('2.5 km from you'), findsOneWidget);
+    expect(find.text('Open in 2GIS'), findsOneWidget);
+    expect(find.text('Open in Google Maps'), findsOneWidget);
   });
 
   testWidgets('omits distance when not provided', (tester) async {
