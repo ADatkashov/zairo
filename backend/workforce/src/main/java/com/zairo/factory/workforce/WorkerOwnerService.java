@@ -55,6 +55,7 @@ public class WorkerOwnerService {
     private final ServiceOfferingRepository serviceRepository;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final WorkerUnacceptedWarningService unacceptedWarningService;
 
     public WorkerOwnerService(ProviderOwnership providerOwnership, WorkerCatalog catalog,
             WorkerBookingStateRepository stateRepository, WorkerChangeRequestRepository requestRepository,
@@ -62,7 +63,8 @@ public class WorkerOwnerService {
             WorkerReassignmentService reassignmentService, BookingRepository bookingRepository,
             BookingService bookingService, AvailabilitySlotRepository slotRepository,
             ServiceOfferingRepository serviceRepository, UserRepository userRepository,
-            ApplicationEventPublisher eventPublisher) {
+            ApplicationEventPublisher eventPublisher, WorkerUnacceptedWarningService unacceptedWarningService) {
+        this.unacceptedWarningService = unacceptedWarningService;
         this.providerOwnership = providerOwnership;
         this.catalog = catalog;
         this.stateRepository = stateRepository;
@@ -97,7 +99,7 @@ public class WorkerOwnerService {
             for (WorkerBookings.ActiveBooking ab : active) {
                 WorkerBookingState state = states.get(ab.booking().getId());
                 String reason = reasonOf(worker, ab.slot(), state, timeOff);
-                if (reason == null && WorkerUnacceptedWarningService.isUnaccepted(worker, ab.booking(), ab.slot(),
+                if (reason == null && unacceptedWarningService.isUnaccepted(worker, ab.booking(), ab.slot(),
                         state, now)) {
                     reason = NOT_ACCEPTED;
                 }
