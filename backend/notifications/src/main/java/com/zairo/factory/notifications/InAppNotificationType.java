@@ -22,4 +22,10 @@ public enum InAppNotificationType {
     BIRTHDAY_BONUS,
     /** A greeting an owner sent by hand -- see loyalty.ManualGreetingSentEvent. */
     GREETING,
+    /** The person serving an appointment changed (same time) -- see workforce.WorkerReassignedEvent. */
+    WORKER_CHANGED,
+    /** The business asks the customer to decide about an appointment whose person can't make it. */
+    CHANGE_REQUESTED,
+    /** An appointment moved to another time -- see booking.BookingMovedEvent. */
+    BOOKING_MOVED,
 }

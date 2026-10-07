@@ -739,9 +739,10 @@ class LoyaltyApiTests {
     }
 
     private void putMilestones(Registered owner, UUID providerId, List<MilestoneRequest> milestones) {
-        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/business/" + providerId + "/loyalty/milestones",
+        // The endpoint answers with the saved milestones — a JSON array, not an object.
+        ResponseEntity<List> response = restTemplate.exchange("/api/v1/business/" + providerId + "/loyalty/milestones",
                 HttpMethod.PUT, new HttpEntity<>(new ReplaceMilestonesRequest(milestones),
-                        TestAuth.authHeaders(owner.accessToken())), Map.class);
+                        TestAuth.authHeaders(owner.accessToken())), List.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 

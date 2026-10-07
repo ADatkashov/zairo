@@ -35,17 +35,37 @@ jobs:
       - run:
           name: Install Android SDK
           command: |
+            # Google's download servers now and then hand back a truncated or
+            # corrupt archive ("Archive is not a ZIP archive"), which used to fail
+            # a whole build at random (the NDK, or platform 35 inside Gradle).
+            # Retry the downloads, dropping sdkmanager's partial files in between.
+            retry() {
+              local attempt=1
+              until "$@"; do
+                if [ "$attempt" -ge 3 ]; then
+                  echo "giving up after $attempt attempts: $*"
+                  return 1
+                fi
+                echo "attempt $attempt failed, retrying: $*"
+                rm -rf /home/android/.temp
+                attempt=$((attempt + 1))
+                sleep 5
+              done
+            }
+
             mkdir -p /home/android/cmdline-tools
             cd /tmp
-            wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-            unzip -q commandlinetools-linux-9477386_latest.zip
+            retry wget -q -O commandlinetools.zip https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+            unzip -q commandlinetools.zip
             mv cmdline-tools /home/android/cmdline-tools/latest
 
             # Accept licenses
             yes | /home/android/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
 
-            # Install required SDK components
-            /home/android/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-37.0" "build-tools;36.0.0" "ndk;28.2.13676358"
+            # Install required SDK components. Platform 35 is installed here too:
+            # a plugin (jni_flutter) compiles against it, and Gradle would
+            # otherwise download it on its own, without any retry.
+            retry /home/android/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-35" "platforms;android-37.0" "build-tools;36.0.0" "ndk;28.2.13676358"
 
             # AGP resolves compileSdk=37 to platforms/android-37, SDK installs android-37.0
             ln -sfn /home/android/platforms/android-37.0 /home/android/platforms/android-37

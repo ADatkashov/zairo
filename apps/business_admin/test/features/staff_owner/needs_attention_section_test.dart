@@ -1,0 +1,128 @@
+import 'package:business_admin/features/staff_owner/data/models/needs_attention.dart';
+import 'package:business_admin/features/staff_owner/data/staff_owner_api.dart';
+import 'package:business_admin/features/staff_owner/presentation/providers/staff_owner_providers.dart';
+import 'package:business_admin/features/staff_owner/presentation/widgets/needs_attention_section.dart';
+import 'package:business_admin/l10n/app_localizations.dart';
+import 'package:core_network/core_network.dart';
+import 'package:core_ui/core_ui.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+NeedsAttentionItem _item(String bookingId) => NeedsAttentionItem(
+      bookingId: bookingId,
+      status: 'CONFIRMED',
+      startsAt: DateTime.now().add(const Duration(days: 1)),
+      endsAt: DateTime.now().add(const Duration(days: 1, hours: 1)),
+      serviceTitle: 'Haircut',
+      customerName: 'Dana',
+      customerPhone: '+77001112233',
+      totalPrice: 25,
+      currency: 'USD',
+      workerId: 's1',
+      workerKind: 'MASTER',
+      workerName: 'Aigerim',
+      reason: 'WORKER_CANNOT_ATTEND',
+      workerNote: 'Sick leave',
+      requestedAt: DateTime.now(),
+      replacements: const [
+        Replacement(workerId: 's2', name: 'Dana M.', atWorkingTime: true),
+        Replacement(workerId: 's3', name: 'Ruslan', atWorkingTime: false),
+      ],
+    );
+
+class _FakeStaffOwnerApi extends StaffOwnerApi {
+  _FakeStaffOwnerApi(this.items) : super(DioClient(Dio()));
+
+  List<NeedsAttentionItem> items;
+  final List<String> cancelled = [];
+  final List<String> reassigned = [];
+  final List<String> asked = [];
+
+  @override
+  Future<List<NeedsAttentionItem>> needsAttention(String providerId) async => items;
+
+  @override
+  Future<void> reassignAppointment(String providerId, String bookingId, String workerId) async {
+    reassigned.add('$bookingId->$workerId');
+    items = [];
+  }
+
+  @override
+  Future<void> askCustomer(String providerId, String bookingId) async {
+    asked.add(bookingId);
+  }
+
+  @override
+  Future<void> cancelAppointment(String providerId, String bookingId, {String? reason}) async {
+    cancelled.add('$providerId/$bookingId');
+    items = [];
+  }
+}
+
+Widget _wrap(_FakeStaffOwnerApi api) => ProviderScope(
+      overrides: [staffOwnerApiProvider.overrideWithValue(api)],
+      child: MaterialApp(
+        theme: factoryLightTheme(profile: FactoryAppProfile.business),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const Scaffold(body: SingleChildScrollView(child: NeedsAttentionSection(providerId: 'p1'))),
+      ),
+    );
+
+void main() {
+  testWidgets('shows nothing when no appointment needs a decision', (tester) async {
+    await tester.pumpWidget(_wrap(_FakeStaffOwnerApi([])));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Needs your decision'), findsNothing);
+  });
+
+  testWidgets('lists the request and lets the owner cancel after confirming', (tester) async {
+    final api = _FakeStaffOwnerApi([_item('b1')]);
+    await tester.pumpWidget(_wrap(api));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Needs your decision'), findsOneWidget);
+    expect(find.text("Aigerim can't attend"), findsOneWidget);
+    expect(find.textContaining('Dana'), findsOneWidget);
+
+    await tester.tap(find.text('Cancel and refund'));
+    await tester.pumpAndSettle();
+    expect(find.text('Cancel this appointment?'), findsOneWidget);
+    // The dialog's confirm button and the card's own button share the label; the dialog one is the last.
+    await tester.tap(find.text('Cancel and refund').last);
+    await tester.pumpAndSettle();
+
+    expect(api.cancelled, ['p1/b1']);
+    expect(find.text('Needs your decision'), findsNothing);
+  });
+
+  testWidgets('hands the appointment to a chosen colleague', (tester) async {
+    final api = _FakeStaffOwnerApi([_item('b1')]);
+    await tester.pumpWidget(_wrap(api));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Hand over'));
+    await tester.pumpAndSettle();
+    expect(find.text('Who takes it?'), findsOneWidget);
+    expect(find.text('Outside their usual hours'), findsOneWidget);
+    await tester.tap(find.text('Dana M.'));
+    await tester.pumpAndSettle();
+
+    expect(api.reassigned, ['b1->s2']);
+    expect(find.text('Needs your decision'), findsNothing);
+  });
+
+  testWidgets('asks the customer to choose', (tester) async {
+    final api = _FakeStaffOwnerApi([_item('b1')]);
+    await tester.pumpWidget(_wrap(api));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Ask customer'));
+    await tester.pumpAndSettle();
+
+    expect(api.asked, ['b1']);
+  });
+}

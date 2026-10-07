@@ -28,7 +28,12 @@ BusinessAnalyticsOverview _overview({double? utilization = 0.62}) => BusinessAna
   revenueRecoveredCurrency: 'KZT',
 );
 
-Future<void> _pump(WidgetTester tester, BusinessAnalyticsOverview overview, Size size) async {
+Future<void> _pump(
+  WidgetTester tester,
+  BusinessAnalyticsOverview overview,
+  Size size, {
+  BusinessAnalyticsRevenue? revenue,
+}) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -38,7 +43,9 @@ Future<void> _pump(WidgetTester tester, BusinessAnalyticsOverview overview, Size
       overrides: [
         businessAnalyticsOverviewProvider.overrideWith((ref, key) async => overview),
         businessAnalyticsActionsProvider.overrideWith((ref, id) => unavailable()),
-        businessAnalyticsRevenueProvider.overrideWith((ref, key) => unavailable()),
+        businessAnalyticsRevenueProvider.overrideWith(
+          (ref, key) => revenue == null ? unavailable() : Future.value(revenue),
+        ),
         businessAnalyticsBookingsProvider.overrideWith((ref, key) => unavailable()),
         businessAnalyticsSmartFillProvider.overrideWith((ref, key) => unavailable()),
         businessAnalyticsCustomersProvider.overrideWith((ref, key) => unavailable()),
@@ -77,5 +84,40 @@ void main() {
     await _pump(tester, _overview(), const Size(320, 1600));
 
     expect(tester.takeException(), isNull);
+  });
+
+  BusinessAnalyticsRevenue revenueOf(List<DailyAmount> days) => BusinessAnalyticsRevenue(
+    totalRevenue: 0,
+    currency: 'KZT',
+    revenueByDay: days,
+    revenueByService: const [],
+    revenueByStaff: const [],
+    revenueRecovered: 0,
+  );
+
+  testWidgets('revenue by day gets a sparkline once there are two or more days', (tester) async {
+    await _pump(
+      tester,
+      _overview(),
+      const Size(390, 2400),
+      revenue: revenueOf([
+        DailyAmount(date: DateTime(2026, 1, 3), amount: 30),
+        DailyAmount(date: DateTime(2026, 1, 1), amount: 10),
+        DailyAmount(date: DateTime(2026, 1, 2), amount: 20),
+      ]),
+    );
+
+    expect(find.byType(FactorySparkline), findsOneWidget);
+  });
+
+  testWidgets('a single day of revenue draws no sparkline', (tester) async {
+    await _pump(
+      tester,
+      _overview(),
+      const Size(390, 2400),
+      revenue: revenueOf([DailyAmount(date: DateTime(2026, 1, 1), amount: 10)]),
+    );
+
+    expect(find.byType(FactorySparkline), findsNothing);
   });
 }
