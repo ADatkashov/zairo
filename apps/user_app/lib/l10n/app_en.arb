@@ -707,7 +707,7 @@
   "mapPlaceholderTitle": "Map view placeholder",
   "@mapPlaceholderTitle": {"description": "Mock map screen's placeholder heading."},
 
-  "mapPlaceholderMessage": "Real map rendering (Google Maps/Mapbox/OSM) is wired in once the project has a map provider account.",
+  "mapPlaceholderMessage": "Real map rendering (2GIS, with Google Maps as an alternative) is wired in once a map API key is configured.",
   "@mapPlaceholderMessage": {"description": "Mock map screen's explanatory placeholder text."},
 
   "masterPortfolioTitle": "{masterName} — Portfolio",
@@ -1786,5 +1786,10 @@
   "changeRequestsMoveHeading": "Another time with {worker}",
   "@changeRequestsMoveHeading": {"description": "changeRequestsMoveHeading", "placeholders": {"worker": {"type": "String", "example": "Aigerim"}}},
   "changeRequestsBanner": "{count, plural, =1{1 booking needs your choice} other{{count} bookings need your choice}}",
-  "@changeRequestsBanner": {"description": "changeRequestsBanner", "placeholders": {"count": {"type": "int", "example": "2"}}}
+  "@changeRequestsBanner": {"description": "changeRequestsBanner", "placeholders": {"count": {"type": "int", "example": "2"}}},
+  "mapOpenIn2gis": "Open in 2GIS",
+  "@mapOpenIn2gis": {"description": "Map screen button opening the location in the 2GIS app/site."},
+
+  "mapOpenInGoogle": "Open in Google Maps",
+  "@mapOpenInGoogle": {"description": "Map screen button opening the location in Google Maps (alternative to 2GIS)."}
 }
