@@ -54,8 +54,11 @@ class StaffAppointment {
   final double paidAmount;
   final String? cancellationReason;
   final DateTime? staffConfirmedAt;
+
+  /// When the staff member told the owner they can't attend; null otherwise.
+  final DateTime? staffDeclinedAt;
   final bool canAccept;
-  final bool canCancel;
+  final bool canDecline;
   final bool canComplete;
   final bool canMarkNoShow;
 
@@ -72,14 +75,16 @@ class StaffAppointment {
     required this.paidAmount,
     required this.cancellationReason,
     required this.staffConfirmedAt,
+    required this.staffDeclinedAt,
     required this.canAccept,
-    required this.canCancel,
+    required this.canDecline,
     required this.canComplete,
     required this.canMarkNoShow,
   });
 
   factory StaffAppointment.fromJson(Map<String, dynamic> json) {
     final confirmedAt = json['staffConfirmedAt'] as String?;
+    final declinedAt = json['staffDeclinedAt'] as String?;
     return StaffAppointment(
       bookingId: json['bookingId'] as String,
       status: json['status'] as String,
@@ -93,8 +98,9 @@ class StaffAppointment {
       paidAmount: (json['paidAmount'] as num).toDouble(),
       cancellationReason: json['cancellationReason'] as String?,
       staffConfirmedAt: confirmedAt == null ? null : DateTime.parse(confirmedAt),
+      staffDeclinedAt: declinedAt == null ? null : DateTime.parse(declinedAt),
       canAccept: json['canAccept'] as bool,
-      canCancel: json['canCancel'] as bool,
+      canDecline: json['canDecline'] as bool,
       canComplete: json['canComplete'] as bool,
       canMarkNoShow: json['canMarkNoShow'] as bool,
     );

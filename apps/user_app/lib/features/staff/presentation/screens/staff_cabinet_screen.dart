@@ -299,6 +299,7 @@ class _AppointmentCardState extends ConsumerState<_AppointmentCard> {
     required String title,
     required String message,
     required String confirmLabel,
+    bool destructive = true,
   }) async {
     final l10n = AppLocalizations.of(context)!;
     final confirmed = await showFactoryDialog<bool>(
@@ -316,7 +317,7 @@ class _AppointmentCardState extends ConsumerState<_AppointmentCard> {
         Builder(
           builder: (dialogContext) => FactoryButton(
             label: confirmLabel,
-            variant: FactoryButtonVariant.danger,
+            variant: destructive ? FactoryButtonVariant.danger : FactoryButtonVariant.primary,
             onPressed: () => Navigator.of(dialogContext).pop(true),
           ),
         ),
@@ -363,17 +364,23 @@ class _AppointmentCardState extends ConsumerState<_AppointmentCard> {
           ),
           if (a.status == 'CANCELLED' && a.cancellationReason != null)
             Text(a.cancellationReason!, style: textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
-          if (a.status == 'CONFIRMED')
+          if (a.status == 'CONFIRMED' || a.status == 'PENDING_PAYMENT')
             Padding(
               padding: const EdgeInsets.only(top: FactorySpacing.space2),
               child: Text(
-                a.staffConfirmedAt == null ? l10n.staffCabinetAwaitingBadge : l10n.staffCabinetAcceptedBadge,
+                a.staffDeclinedAt != null
+                    ? l10n.staffCabinetDeclinedBadge
+                    : a.status != 'CONFIRMED'
+                        ? ''
+                        : a.staffConfirmedAt == null
+                            ? l10n.staffCabinetAwaitingBadge
+                            : l10n.staffCabinetAcceptedBadge,
                 style: textTheme.bodySmall?.copyWith(
-                  color: a.staffConfirmedAt == null ? colors.warning : colors.textTertiary,
+                  color: a.staffDeclinedAt != null || a.staffConfirmedAt != null ? colors.textTertiary : colors.warning,
                 ),
               ),
             ),
-          if (a.canAccept || a.canCancel || a.canComplete || a.canMarkNoShow)
+          if (a.canAccept || a.canDecline || a.canComplete || a.canMarkNoShow)
             Padding(
               padding: const EdgeInsets.only(top: FactorySpacing.space2),
               child: Wrap(
@@ -410,20 +417,21 @@ class _AppointmentCardState extends ConsumerState<_AppointmentCard> {
                               if (ok) await _run((api) => api.markNoShow());
                             },
                     ),
-                  if (a.canCancel)
+                  if (a.canDecline)
                     FactoryButton(
-                      label: l10n.staffCabinetCancelButton,
-                      variant: FactoryButtonVariant.textDanger,
+                      label: l10n.staffCabinetDeclineButton,
+                      variant: FactoryButtonVariant.text,
                       dense: true,
                       onPressed: !canAct
                           ? null
                           : () async {
                               final ok = await _confirm(
-                                title: l10n.staffCabinetCancelConfirmTitle,
-                                message: l10n.staffCabinetCancelConfirmMessage,
-                                confirmLabel: l10n.staffCabinetConfirmCancelButton,
+                                title: l10n.staffCabinetDeclineConfirmTitle,
+                                message: l10n.staffCabinetDeclineConfirmMessage,
+                                confirmLabel: l10n.staffCabinetConfirmDeclineButton,
+                                destructive: false,
                               );
-                              if (ok) await _run((api) => api.cancel());
+                              if (ok) await _run((api) => api.cannotAttend());
                             },
                     ),
                 ],
@@ -444,7 +452,7 @@ class StaffCabinetApiAccess {
   final String _bookingId;
 
   Future<void> accept() => _ref.read(staffCabinetApiProvider).accept(_staffId, _bookingId);
-  Future<void> cancel() => _ref.read(staffCabinetApiProvider).cancel(_staffId, _bookingId);
+  Future<void> cannotAttend() => _ref.read(staffCabinetApiProvider).cannotAttend(_staffId, _bookingId);
   Future<void> complete() => _ref.read(staffCabinetApiProvider).complete(_staffId, _bookingId);
   Future<void> markNoShow() => _ref.read(staffCabinetApiProvider).markNoShow(_staffId, _bookingId);
 }

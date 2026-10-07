@@ -13,7 +13,4 @@ public interface StaffRepository extends JpaRepository<Staff, UUID> {
     boolean existsByProviderIdAndUserId(UUID providerId, UUID userId);
 
     List<Staff> findByProviderIdAndActiveTrue(UUID providerId);
-
-    /** Every place the user works — one row per business they were added to. */
-    List<Staff> findByUserId(UUID userId);
 }
