@@ -153,6 +153,48 @@ class WorkerPricingApiTests {
         }
     }
 
+    private Map<?, ?> bookingOf(Registered as, UUID bookingId) {
+        return restTemplate.exchange("/api/v1/bookings/" + bookingId, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(as.accessToken())), Map.class).getBody();
+    }
+
+    private void pay(Registered customer, UUID bookingId) {
+        restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+    }
+
+    private ResponseEntity<Map> reassign(Salon salon, UUID bookingId, UUID toWorker) {
+        return post("/api/v1/providers/" + salon.providerId() + "/appointments/" + bookingId + "/reassign",
+                salon.owner(), Map.of("workerId", toWorker.toString()));
+    }
+
+    @Test
+    void aCheaperReplacementLowersThePriceAndReturnsWhatWasPaidAboveItButAPricierOneNeverCostsMore() {
+        Salon salon = salon("prc3");
+        setPricing(salon, true);
+        setPrice(salon, salon.owner(), salon.first(), 40);
+        Registered premiumCustomer = TestAuth.registerCustomer(restTemplate, "prc3-a-" + UUID.randomUUID() + "@example.com");
+        Registered baseCustomer = TestAuth.registerCustomer(restTemplate, "prc3-b-" + UUID.randomUUID() + "@example.com");
+
+        // Paid 40 for the premium master; the colleague charges 25 -> the booking becomes 25 and 15 goes back.
+        UUID premium = bookNamed(salon, premiumCustomer, salon.first(), 9);
+        assertThat(priceOf(premiumCustomer, premium)).isEqualTo(40.0);
+        pay(premiumCustomer, premium);
+        assertThat(((Number) bookingOf(premiumCustomer, premium).get("paidAmount")).doubleValue()).isEqualTo(40.0);
+        assertThat(reassign(salon, premium, salon.second()).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        Map<?, ?> after = bookingOf(premiumCustomer, premium);
+        assertThat(((Number) after.get("totalPrice")).doubleValue()).isEqualTo(25.0);
+        assertThat(((Number) after.get("paidAmount")).doubleValue()).isEqualTo(25.0);
+        assertThat(((Number) after.get("remainingAmount")).doubleValue()).isEqualTo(0.0);
+
+        // Booked at the base price with the colleague; the owner hands it to the premium master -> still 25.
+        UUID basic = bookNamed(salon, baseCustomer, salon.second(), 10);
+        pay(baseCustomer, basic);
+        assertThat(reassign(salon, basic, salon.first()).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(priceOf(baseCustomer, basic)).isEqualTo(25.0);
+        assertThat(((Number) bookingOf(baseCustomer, basic).get("paidAmount")).doubleValue()).isEqualTo(25.0);
+    }
+
     // --- helpers ---
 
     /** The worker a booking is with: whose slot (or link) it is attributed to, by the slots they own. */

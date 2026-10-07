@@ -258,6 +258,23 @@ public class Booking {
         }
     }
 
+    /** The agreed price drops (cheaper replacement worker). Never raises it: a customer never pays more than agreed. */
+    void reduceTotalPrice(BigDecimal newTotal) {
+        this.totalPrice = new Money(newTotal, this.totalPrice.currencyCode());
+        if (this.depositAmount != null && this.depositAmount.compareTo(newTotal) > 0) {
+            this.depositAmount = newTotal;
+        }
+        this.remainingAmount = newTotal.subtract(this.paidAmount).max(BigDecimal.ZERO);
+    }
+
+    /** Public for the same reason as {@link #recordPayment}: payments returns money it had collected. */
+    public void recordRefund(BigDecimal amount) {
+        if (amount != null && amount.compareTo(BigDecimal.ZERO) > 0) {
+            this.paidAmount = this.paidAmount.subtract(amount).max(BigDecimal.ZERO);
+            this.remainingAmount = this.totalPrice.amount().subtract(this.paidAmount).max(BigDecimal.ZERO);
+        }
+    }
+
     boolean isFullyPaid() {
         return this.remainingAmount.compareTo(BigDecimal.ZERO) <= 0;
     }
