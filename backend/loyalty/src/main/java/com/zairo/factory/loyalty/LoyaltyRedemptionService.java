@@ -77,7 +77,7 @@ public class LoyaltyRedemptionService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This reward is not currently available");
         }
 
-        LoyaltyAccount account = ledgerService.getOrCreateAccount(providerId, userId);
+        LoyaltyAccount account = ledgerService.getOrCreateAccountForUpdate(providerId, userId);
         if (program.getMinRedemptionPoints() != null && account.getPointsBalance() < program.getMinRedemptionPoints()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "A minimum balance of "
                     + program.getMinRedemptionPoints() + " points is required to redeem any reward");

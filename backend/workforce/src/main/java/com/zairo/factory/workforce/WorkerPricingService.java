@@ -56,6 +56,16 @@ public class WorkerPricingService implements WorkerPriceResolver {
         return repository.findByWorkerIdAndServiceId(workerId, serviceId).map(WorkerServicePrice::getPrice);
     }
 
+    /** What this worker charges for the service: their own price when the business uses them, else the base price. */
+    @Transactional(readOnly = true)
+    public Optional<BigDecimal> effectivePrice(UUID providerId, UUID workerId, UUID serviceId) {
+        Optional<BigDecimal> own = priceFor(providerId, workerId, serviceId);
+        if (own.isPresent()) {
+            return own;
+        }
+        return serviceRepository.findById(serviceId).map(ServiceOffering::getPrice);
+    }
+
     /**
      * Whether "any master" may assign this worker: only someone charging the base price, so a customer who
      * didn't choose a person never pays a premium.
