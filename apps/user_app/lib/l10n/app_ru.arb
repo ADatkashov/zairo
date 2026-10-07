@@ -216,7 +216,7 @@
   "profileLogOut": "Выйти",
 
   "mapPlaceholderTitle": "Заглушка карты",
-  "mapPlaceholderMessage": "Настоящая карта (Google Maps/Mapbox/OSM) будет подключена, когда у проекта появится аккаунт провайдера карт.",
+  "mapPlaceholderMessage": "Настоящая карта (2GIS, Google Maps — как альтернатива) подключится, когда будет настроен ключ API карт.",
 
   "masterPortfolioTitle": "{masterName} — Портфолио",
   "portfolioEmptyTitle": "Пока нет фото",
@@ -591,5 +591,7 @@
   "changeRequestsMoveHeading": "Другое время у {worker}",
   "@changeRequestsMoveHeading": {"description": "changeRequestsMoveHeading", "placeholders": {"worker": {"type": "String", "example": "Aigerim"}}},
   "changeRequestsBanner": "{count, plural, =1{1 запись ждёт вашего выбора} few{{count} записи ждут вашего выбора} many{{count} записей ждут вашего выбора} other{{count} записи ждут вашего выбора}}",
-  "@changeRequestsBanner": {"description": "changeRequestsBanner", "placeholders": {"count": {"type": "int", "example": "2"}}}
+  "@changeRequestsBanner": {"description": "changeRequestsBanner", "placeholders": {"count": {"type": "int", "example": "2"}}},
+  "mapOpenIn2gis": "Открыть в 2ГИС",
+  "mapOpenInGoogle": "Открыть в Google Maps"
 }
