@@ -154,6 +154,15 @@ workflow run's summary page, the **Artifacts** section lists:
 - `business_admin-apk-debug-signed`
 - `platform-api-bootjar`
 
+**`TWOGIS_API_KEY` secret (optional)** — 2GIS is the preferred map for
+Kazakhstan. If set (key from the 2GIS Platform Manager, passed as
+`--dart-define=TWOGIS_API_KEY`), `user_app` renders a real 2GIS map
+(`TwoGisMapsRenderer`, MapGL JS in a WebView — no native setup needed).
+Selection order in `maps_providers.dart`: 2GIS key → Google key
+(`MAPS_API_KEY` below) → placeholder. On Flutter web the WebView renderer
+is skipped. Directions/"open in map" links always default to 2GIS, with
+Google Maps as the alternative button.
+
 **`MAPS_API_KEY` secret (optional)** — if set (**GitHub → Settings →
 Secrets and variables → Actions → New repository secret**, name
 `MAPS_API_KEY`, value a real Google Maps API key restricted to
