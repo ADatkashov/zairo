@@ -1,5 +1,6 @@
 package com.zairo.factory.payments;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,12 +28,14 @@ public class BusinessPayoutService {
     private final BusinessPayoutRepository payoutRepository;
     private final PaymentRepository paymentRepository;
     private final PaymentAllocationRepository allocationRepository;
+    private final PaymentPartialRefundRepository partialRefundRepository;
 
     BusinessPayoutService(BusinessPayoutRepository payoutRepository, PaymentRepository paymentRepository,
-            PaymentAllocationRepository allocationRepository) {
+            PaymentAllocationRepository allocationRepository, PaymentPartialRefundRepository partialRefundRepository) {
         this.payoutRepository = payoutRepository;
         this.paymentRepository = paymentRepository;
         this.allocationRepository = allocationRepository;
+        this.partialRefundRepository = partialRefundRepository;
     }
 
     /**
@@ -71,8 +74,12 @@ public class BusinessPayoutService {
         }
         PaymentAllocation allocation = maybeAllocation.get();
 
+        // Money already returned to the customer (a cheaper worker took over) comes out of the business's share
+        // in proportion to the commission that was returned with it.
+        BigDecimal businessAmount = allocation.getBusinessAmount()
+                .subtract(partialRefundRepository.businessShareForPayment(payment.getId())).max(BigDecimal.ZERO);
         BusinessPayout payout = new BusinessPayout(UUID.randomUUID(), bookingId, payment.getId(), providerId,
-                allocation.getBusinessAmount(), allocation.getCurrency(), Instant.now());
+                businessAmount, allocation.getCurrency(), Instant.now());
         payoutRepository.save(payout);
     }
 
