@@ -37,6 +37,11 @@ class TestPayments {
             @Override
             public ChargeResult chargeRecurring(String recurringProfileId, UUID paymentId, BigDecimal amount,
                     String currency) {
+                failureController.chargeAttempts.computeIfAbsent(paymentId,
+                        id -> new java.util.concurrent.atomic.AtomicInteger()).incrementAndGet();
+                if (failureController.failAllRecurringCharges) {
+                    return new ChargeResult(false, null, "simulated card decline");
+                }
                 if (failureController.failNextCharge) {
                     failureController.failNextCharge = false;
                     if (failureController.throwOnNextCharge) {
@@ -93,6 +98,11 @@ class TestPayments {
         volatile boolean failNextCharge;
         volatile boolean throwOnNextCharge;
         volatile boolean failNextRefund;
+        /** Every recurring (renewal) charge is declined while set — unlike failNextCharge, no other subscription in the shared DB can use it up. */
+        volatile boolean failAllRecurringCharges;
+        /** How many times chargeRecurring was called per charge id — proves a charge was attempted once, not twice. */
+        final java.util.concurrent.ConcurrentHashMap<UUID, java.util.concurrent.atomic.AtomicInteger> chargeAttempts =
+                new java.util.concurrent.ConcurrentHashMap<>();
         /** Decrementing counter — the next N refund calls fail, then it resolves normally. For PaymentRefundOutboxApiTests. */
         final java.util.concurrent.atomic.AtomicInteger failRefundTimes = new java.util.concurrent.atomic.AtomicInteger();
     }

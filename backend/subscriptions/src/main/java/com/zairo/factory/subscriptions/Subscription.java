@@ -102,6 +102,10 @@ public class Subscription {
         return gracePeriodEndsAt;
     }
 
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
     public boolean isCancelAtPeriodEnd() {
         return cancelAtPeriodEnd;
     }
