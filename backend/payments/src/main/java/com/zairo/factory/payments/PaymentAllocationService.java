@@ -1,5 +1,8 @@
 package com.zairo.factory.payments;
 
+import com.zairo.factory.booking.AvailabilitySlotRepository;
+import com.zairo.factory.booking.BookingRepository;
+import java.math.BigDecimal;
 import java.time.Instant;
 import org.springframework.stereotype.Service;
 
@@ -20,19 +23,31 @@ import org.springframework.stereotype.Service;
 class PaymentAllocationService {
 
     private final PaymentAllocationRepository allocationRepository;
-    private final CommissionCalculator commissionCalculator;
+    private final CommissionRateService commissionRateService;
+    private final BookingRepository bookingRepository;
+    private final AvailabilitySlotRepository availabilitySlotRepository;
 
     PaymentAllocationService(PaymentAllocationRepository allocationRepository,
-            CommissionCalculator commissionCalculator) {
+            CommissionRateService commissionRateService, BookingRepository bookingRepository,
+            AvailabilitySlotRepository availabilitySlotRepository) {
         this.allocationRepository = allocationRepository;
-        this.commissionCalculator = commissionCalculator;
+        this.commissionRateService = commissionRateService;
+        this.bookingRepository = bookingRepository;
+        this.availabilitySlotRepository = availabilitySlotRepository;
     }
 
     void ensureAllocation(Payment payment) {
         if (allocationRepository.findByPaymentId(payment.getId()).isPresent()) {
             return;
         }
-        CommissionCalculator.Split split = commissionCalculator.split(payment.getAmount(), payment.getCurrency());
+        // The rate in force *right now* is snapshotted on the allocation — a
+        // later change in the admin settings never rewrites past payments.
+        BigDecimal rate = bookingRepository.findById(payment.getBookingId())
+                .flatMap(b -> availabilitySlotRepository.findById(b.getAvailabilitySlotId()))
+                .map(slot -> commissionRateService.rateForProvider(slot.getProviderId()))
+                .orElse(BigDecimal.ZERO);
+        CommissionCalculator.Split split = CommissionCalculator.split(payment.getAmount(), payment.getCurrency(),
+                rate);
         PaymentAllocation allocation = new PaymentAllocation(payment.getId(), payment.getAmount(),
                 split.businessAmount(), split.platformFee(), payment.getCurrency(), split.rate(), Instant.now());
         allocationRepository.save(allocation);
