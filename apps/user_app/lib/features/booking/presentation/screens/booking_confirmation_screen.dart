@@ -42,6 +42,19 @@ class BookingConfirmationArgs {
   final DateTime? slotStartsAt;
   final double? latitude;
   final double? longitude;
+
+  /// The same confirmation for a fresher copy of the booking — the payment
+  /// screen swaps in the server's CONFIRMED booking before showing this.
+  BookingConfirmationArgs withBooking(Booking booking) => BookingConfirmationArgs(
+    booking: booking,
+    providerId: providerId,
+    providerName: providerName,
+    providerVertical: providerVertical,
+    service: service,
+    slotStartsAt: slotStartsAt,
+    latitude: latitude,
+    longitude: longitude,
+  );
 }
 
 class BookingConfirmationScreen extends StatelessWidget {

@@ -189,6 +189,37 @@ class PaymentsApiTests {
     }
 
     @Test
+    void payingAgainWhileACheckoutIsStillPendingReturnsThatSamePaymentInsteadOfStartingAnother() {
+        BookingForPayment bfp = createBookingForPayment("pending-", new BigDecimal("27.00"));
+        UUID bookingId = bfp.bookingId();
+        var customerAuth = new HttpEntity<>(null, TestAuth.authHeaders(bfp.customer().accessToken()));
+
+        failureController.pendingNextCharge = true;
+        int initiationsBefore = failureController.paymentInitiations.get();
+        ResponseEntity<Map> first = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.POST, customerAuth, Map.class);
+        assertThat(first.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(first.getBody().get("status")).isEqualTo("PENDING");
+        String checkoutUrl = first.getBody().get("checkoutUrl").toString();
+        assertThat(checkoutUrl).startsWith("https://pay.test/checkout/");
+
+        // A second tap on "Pay" (or the app resuming): same payment, same checkout, no new provider call.
+        ResponseEntity<Map> second = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.POST, customerAuth, Map.class);
+        assertThat(second.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(second.getBody().get("id")).isEqualTo(first.getBody().get("id"));
+        assertThat(second.getBody().get("status")).isEqualTo("PENDING");
+        assertThat(second.getBody().get("checkoutUrl")).isEqualTo(checkoutUrl);
+        assertThat(failureController.paymentInitiations.get()).isEqualTo(initiationsBefore + 1);
+
+        // And the booking still has exactly one payment to read back.
+        ResponseEntity<Map> read = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.GET, customerAuth, Map.class);
+        assertThat(read.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(read.getBody().get("id")).isEqualTo(first.getBody().get("id"));
+    }
+
+    @Test
     void aProviderExceptionDuringChargeMarksThePaymentFailedInsteadOfCrashing() {
         BookingForPayment bfp = createBookingForPayment("outage-", new BigDecimal("18.00"));
         UUID bookingId = bfp.bookingId();
