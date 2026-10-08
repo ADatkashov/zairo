@@ -25,6 +25,10 @@ dependencies {
     implementation(project(":auth"))
     implementation(project(":providers"))
 
+    // CommissionRateService resolves a provider's category (commission can differ per category) and
+    // lists categories for the admin screen -- catalog depends only on platform-admin, so no cycle.
+    implementation(project(":catalog"))
+
     // The PaymentProvider port itself now lives in its own dependency-free
     // module — see payment-provider/build.gradle.kts for why (subscriptions
     // needed the same port without a Gradle cycle).

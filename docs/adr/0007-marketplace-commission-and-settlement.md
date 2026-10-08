@@ -335,3 +335,13 @@ split, the completion-gated payout lifecycle, and the manual-settlement
 fallback are all real, working, and honestly scoped to what this pass
 could confirm — they do not depend on any of these open questions
 resolving in a particular direction.
+
+## Update (2026-10-08): configurable commission
+
+The fixed `payment.commission.rate` (10%) was replaced by rates stored in the
+`commission_rate` table and edited by PLATFORM_ADMIN at runtime: a platform-wide
+default (seeded at **0%** — no commission until the platform decides to charge
+one) plus an optional override per catalog category (provider → business type →
+category). Changes are audit-logged and apply only to payments that succeed
+afterwards; `payment_allocation.commission_rate` still snapshots the rate used.
+See `CommissionRateService` and `CommissionAdminController`.

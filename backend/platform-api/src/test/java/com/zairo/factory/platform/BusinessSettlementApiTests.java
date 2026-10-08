@@ -37,6 +37,8 @@ import org.springframework.http.ResponseEntity;
 @Import({TestcontainersConfiguration.class, TestPayments.class, TestNotifications.class})
 class BusinessSettlementApiTests {
 
+    private static final String BEAUTY_CATEGORY_ID = "a1111111-1111-4111-8111-111111111111";
+
     @Autowired
     private TestRestTemplate restTemplate;
 
@@ -44,7 +46,7 @@ class BusinessSettlementApiTests {
     private PlatformAdminAccountRepository platformAdminAccountRepository;
 
     @Test
-    void completingABookingCreatesAPayableBusinessPayoutWithTheDefaultTenPercentCommissionSplit() {
+    void completingABookingCreatesAPayableBusinessPayoutWithNoCommissionByDefault() {
         String runId = UUID.randomUUID().toString();
         Registered owner = TestAuth.registerOwner(restTemplate, "settle-owner-" + runId + "@example.com");
         UUID providerId = createProvider(owner, "Settlement Salon " + runId);
@@ -59,10 +61,9 @@ class BusinessSettlementApiTests {
         ResponseEntity<Map> payResponse = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
                 HttpMethod.POST, customerAuth, Map.class);
         assertThat(payResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        // 100.00 at the default 10% rate -> the task's own worked ratio,
-        // scaled down: 90.00 business / 10.00 platform fee.
-        assertThat(payResponse.getBody().get("businessAmount")).isEqualTo(90.00);
-        assertThat(payResponse.getBody().get("platformFee")).isEqualTo(10.00);
+        // The platform-wide default is 0% until a PLATFORM_ADMIN sets one.
+        assertThat(payResponse.getBody().get("businessAmount")).isEqualTo(100.00);
+        assertThat(payResponse.getBody().get("platformFee")).isEqualTo(0.00);
 
         // No payout yet — the booking is only CONFIRMED, not COMPLETED.
         ResponseEntity<List> beforeCompletion = restTemplate.exchange("/api/v1/providers/" + providerId + "/payouts",
@@ -80,8 +81,62 @@ class BusinessSettlementApiTests {
         assertThat(afterCompletion.getBody()).hasSize(1);
         Map<?, ?> payout = (Map<?, ?>) afterCompletion.getBody().get(0);
         assertThat(payout.get("bookingId")).isEqualTo(bookingId.toString());
-        assertThat(payout.get("amount")).isEqualTo(90.00);
+        assertThat(payout.get("amount")).isEqualTo(100.00);
         assertThat(payout.get("status")).isEqualTo("PAYABLE");
+    }
+
+    @Test
+    void aCategoryCommissionSetByPlatformAdminAppliesToThatCategorysBookingsAndCanBeCleared() {
+        var admin = registerPlatformAdmin("settle-commission-admin-" + UUID.randomUUID());
+        var adminAuth = TestPlatformAuth.authHeaders(admin.accessToken());
+
+        // A non-admin cannot change the commission.
+        Registered owner = TestAuth.registerOwner(restTemplate, "settle-commission-owner-" + UUID.randomUUID()
+                + "@example.com");
+        ResponseEntity<Map> forbidden = restTemplate.exchange("/api/v1/platform/commission/categories/"
+                + BEAUTY_CATEGORY_ID, HttpMethod.PUT, new HttpEntity<>(Map.of("ratePercent", 10),
+                        TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(forbidden.getStatusCode()).isIn(HttpStatus.UNAUTHORIZED, HttpStatus.FORBIDDEN);
+
+        // An out-of-range percent is rejected.
+        ResponseEntity<Map> tooHigh = restTemplate.exchange("/api/v1/platform/commission/default", HttpMethod.PUT,
+                new HttpEntity<>(Map.of("ratePercent", 101), adminAuth), Map.class);
+        assertThat(tooHigh.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+
+        try {
+            ResponseEntity<Map> set = restTemplate.exchange("/api/v1/platform/commission/categories/"
+                    + BEAUTY_CATEGORY_ID, HttpMethod.PUT, new HttpEntity<>(Map.of("ratePercent", 10), adminAuth),
+                    Map.class);
+            assertThat(set.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(commissionOf(set.getBody(), BEAUTY_CATEGORY_ID).get("effectivePercent")).isEqualTo(10.0);
+
+            // 100.00 at the beauty category's 10% -> 90.00 business / 10.00 fee.
+            BookingContext withCommission = payAndCompleteABooking("catcomm-", new BigDecimal("100.00"));
+            Map<?, ?> payout = (Map<?, ?>) restTemplate.exchange("/api/v1/providers/" + withCommission.providerId()
+                    + "/payouts", HttpMethod.GET, new HttpEntity<>(null,
+                            TestAuth.authHeaders(withCommission.owner().accessToken())), List.class).getBody().get(0);
+            assertThat(payout.get("amount")).isEqualTo(90.00);
+
+            ResponseEntity<Map> cleared = restTemplate.exchange("/api/v1/platform/commission/categories/"
+                    + BEAUTY_CATEGORY_ID, HttpMethod.DELETE, new HttpEntity<>(null, adminAuth), Map.class);
+            assertThat(cleared.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(commissionOf(cleared.getBody(), BEAUTY_CATEGORY_ID).get("overridePercent")).isNull();
+
+            // Back on the 0% default: the earlier payment keeps its snapshot, a new one pays no commission.
+            BookingContext afterClear = payAndCompleteABooking("catcomm-clear-", new BigDecimal("100.00"));
+            Map<?, ?> payoutAfter = (Map<?, ?>) restTemplate.exchange("/api/v1/providers/" + afterClear.providerId()
+                    + "/payouts", HttpMethod.GET, new HttpEntity<>(null,
+                            TestAuth.authHeaders(afterClear.owner().accessToken())), List.class).getBody().get(0);
+            assertThat(payoutAfter.get("amount")).isEqualTo(100.00);
+        } finally {
+            restTemplate.exchange("/api/v1/platform/commission/categories/" + BEAUTY_CATEGORY_ID, HttpMethod.DELETE,
+                    new HttpEntity<>(null, adminAuth), Map.class);
+        }
+    }
+
+    private static Map<?, ?> commissionOf(Map<?, ?> settings, String categoryId) {
+        return ((List<?>) settings.get("categories")).stream().map(c -> (Map<?, ?>) c)
+                .filter(c -> categoryId.equals(c.get("categoryId"))).findFirst().orElseThrow();
     }
 
     @Test
