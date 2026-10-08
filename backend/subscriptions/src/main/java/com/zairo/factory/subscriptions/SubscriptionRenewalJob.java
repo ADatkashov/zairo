@@ -24,6 +24,9 @@ class SubscriptionRenewalJob {
     @Scheduled(cron = "0 0 3 * * *")
     void renewDueSubscriptions() {
         subscriptionRenewalService.renewDueSubscriptions();
+        // Same run, right after: anyone who failed on an earlier day gets another attempt today
+        // (the ones that failed a moment ago are skipped — see retryPastDueSubscriptions).
+        subscriptionRenewalService.retryPastDueSubscriptions();
     }
 
     @Scheduled(cron = "0 15 3 * * *")
