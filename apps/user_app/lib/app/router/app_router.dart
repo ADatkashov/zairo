@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/beauty/presentation/screens/master_portfolio_screen.dart';
 import '../../features/booking/presentation/screens/booking_confirmation_screen.dart';
+import '../../features/booking/presentation/screens/booking_payment_screen.dart';
 import '../../features/staff/presentation/screens/staff_cabinet_screen.dart';
 import '../../features/booking/presentation/screens/my_bookings_screen.dart';
 import '../../features/booking/presentation/screens/provider_detail_screen.dart';
@@ -58,6 +59,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.citySelection,
         builder: (context, state) => const CitySelectionScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.bookingPayment,
+        parentNavigatorKey: rootNavigatorKey,
+        // Like the confirmation: the booking can't survive a refresh or a deep link.
+        redirect: (context, state) =>
+            state.extra is BookingPaymentArgs ? null : AppRoutes.bookings,
+        builder: (context, state) =>
+            BookingPaymentScreen(args: state.extra! as BookingPaymentArgs),
       ),
       GoRoute(
         path: AppRoutes.bookingConfirmation,

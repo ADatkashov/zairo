@@ -100,6 +100,16 @@ public class PaymentsService {
         }
 
         if (payment == null) {
+            // The customer already has a checkout open with the provider (PENDING, waiting for
+            // the webhook): hand that payment back — same id, same checkoutUrl — instead of
+            // minting a second payment and a second provider-side session. Without this a
+            // double tap on "Pay" (or the app resuming a half-finished payment) could leave
+            // two PENDING rows for one booking, and the customer able to pay twice.
+            for (Payment existing : existingPayments) {
+                if (existing.getStatus() == PaymentStatus.PENDING && existing.getPaymentMethod() == PaymentMethod.ONLINE) {
+                    return existing;
+                }
+            }
             payment = paymentRepository.save(new Payment(UUID.randomUUID(), bookingId, paymentAmount,
                     booking.getCurrency(), providerName, PaymentMethod.ONLINE, Instant.now()));
         }
