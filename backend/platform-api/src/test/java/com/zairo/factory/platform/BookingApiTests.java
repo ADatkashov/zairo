@@ -508,6 +508,50 @@ class BookingApiTests {
                 .isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
+    @Test
+    void customerBookingListAndGetCarryServiceTitleBusinessAndAppointmentTimes() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "enrich-owner-" + runId + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "enrich-customer-" + runId + "@example.com");
+
+        String providerName = "Enrich Salon " + runId;
+        UUID providerId = createProvider(owner, providerName);
+        UUID haircutId = createService(owner, providerId, "Haircut", new BigDecimal("15.00"));
+        UUID colorId = createService(owner, providerId, "Coloring", new BigDecimal("40.00"));
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
+        Instant end = start.plus(30, ChronoUnit.MINUTES);
+        UUID slot1 = createSlot(owner, providerId, start, end);
+        UUID slot2 = createSlot(owner, providerId, start.plus(3, ChronoUnit.HOURS),
+                start.plus(4, ChronoUnit.HOURS));
+        UUID bookingId = UUID.fromString(createBooking(customer, new CreateBookingRequest(customer.userId(),
+                haircutId, slot1, new BigDecimal("15.00"))).getBody().get("id").toString());
+        createBooking(customer, new CreateBookingRequest(customer.userId(), colorId, slot2,
+                new BigDecimal("40.00")));
+
+        ResponseEntity<Map[]> list = restTemplate.exchange("/api/v1/users/" + customer.userId() + "/bookings",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map[].class);
+        assertThat(list.getBody()).hasSize(2);
+        Map first = java.util.Arrays.stream(list.getBody())
+                .filter(b -> bookingId.toString().equals(b.get("id"))).findFirst().orElseThrow();
+        assertThat(first.get("serviceTitle")).isEqualTo("Haircut");
+        assertThat(first.get("providerId")).isEqualTo(providerId.toString());
+        assertThat(first.get("providerName")).isEqualTo(providerName);
+        assertThat(first.get("providerVertical")).isEqualTo("beauty");
+        assertThat(Instant.parse(first.get("startsAt").toString())).isEqualTo(start);
+        assertThat(Instant.parse(first.get("endsAt").toString())).isEqualTo(end);
+        // Existing fields are untouched for older clients.
+        assertThat(first.get("serviceId")).isEqualTo(haircutId.toString());
+        assertThat(first.get("availabilitySlotId")).isEqualTo(slot1.toString());
+        assertThat(java.util.Arrays.stream(list.getBody()).map(b -> b.get("serviceTitle")))
+                .containsExactlyInAnyOrder("Haircut", "Coloring");
+
+        ResponseEntity<Map> single = restTemplate.exchange("/api/v1/bookings/" + bookingId, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(single.getBody().get("serviceTitle")).isEqualTo("Haircut");
+        assertThat(single.getBody().get("providerName")).isEqualTo(providerName);
+        assertThat(Instant.parse(single.getBody().get("startsAt").toString())).isEqualTo(start);
+    }
+
     private UUID createProvider(Registered owner, String name) {
         var request = new CreateProviderRequest(owner.userId(), name, "beauty");
         ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,

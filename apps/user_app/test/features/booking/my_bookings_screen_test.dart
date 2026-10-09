@@ -196,6 +196,99 @@ void main() {
     expect(find.text('Leave a review'), findsNothing);
   });
 
+  testWidgets('shows service, business and appointment time on every tab',
+      (tester) async {
+    Booking make(String id, String status, String title, String business,
+            DateTime startsAt) =>
+        Booking(
+          id: id,
+          userId: 'user-1',
+          serviceId: 'service-$id',
+          availabilitySlotId: 'slot-$id',
+          status: status,
+          totalPrice: 20,
+          createdAt: DateTime(2026, 1, 1),
+          serviceTitle: title,
+          providerName: business,
+          providerId: 'provider-1',
+          providerVertical: 'beauty',
+          // Local wall-clock time, sent as the UTC instant the API returns.
+          startsAt: startsAt.toUtc(),
+          endsAt: startsAt.add(const Duration(minutes: 30)).toUtc(),
+        );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(
+            _FakeBookingApi([
+              make('1', 'CONFIRMED', 'Haircut', 'Salon Aurora',
+                  DateTime(2026, 10, 5, 14, 30)),
+              make('2', 'COMPLETED', 'Manicure', 'Nail Bar',
+                  DateTime(2026, 9, 1, 9, 5)),
+              make('3', 'CANCELLED', 'Coloring', 'Studio K',
+                  DateTime(2026, 8, 20, 18, 0)),
+            ]),
+          ),
+          reviewsApiProvider.overrideWithValue(_FakeReviewsApi()),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const MyBookingsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Haircut'), findsOneWidget);
+    expect(find.text('Salon Aurora'), findsOneWidget);
+    expect(find.text('Appointment: Oct 5, 14:30'), findsOneWidget);
+
+    await tester.tap(find.text('Completed'));
+    await tester.pumpAndSettle();
+    expect(find.text('Manicure'), findsOneWidget);
+    expect(find.text('Nail Bar'), findsOneWidget);
+    expect(find.text('Appointment: Sep 1, 09:05'), findsOneWidget);
+
+    await tester.tap(find.text('Cancelled'));
+    await tester.pumpAndSettle();
+    expect(find.text('Coloring'), findsOneWidget);
+    expect(find.text('Studio K'), findsOneWidget);
+    expect(find.text('Appointment: Aug 20, 18:00'), findsOneWidget);
+  });
+
+  test('Booking.fromJson tolerates missing enrichment fields', () {
+    final json = {
+      'id': 'b',
+      'userId': 'u',
+      'serviceId': 's',
+      'availabilitySlotId': 'sl',
+      'status': 'CONFIRMED',
+      'totalPrice': 10,
+      'createdAt': '2026-01-01T00:00:00Z',
+    };
+    final plain = Booking.fromJson(json);
+    expect(plain.serviceTitle, isNull);
+    expect(plain.startsAt, isNull);
+
+    final enriched = Booking.fromJson({
+      ...json,
+      'serviceTitle': 'Haircut',
+      'providerId': 'p',
+      'providerName': 'Salon',
+      'providerVertical': 'beauty',
+      'startsAt': '2026-10-05T09:30:00Z',
+      'endsAt': '2026-10-05T10:00:00Z',
+    });
+    expect(enriched.serviceTitle, 'Haircut');
+    expect(enriched.providerName, 'Salon');
+    expect(enriched.startsAt, DateTime.utc(2026, 10, 5, 9, 30));
+  });
+
   testWidgets('shows the review section only for completed bookings', (tester) async {
     final booking = Booking(
       id: 'booking-1',

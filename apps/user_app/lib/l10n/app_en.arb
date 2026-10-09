@@ -588,6 +588,14 @@
   "errorBookingsLoadFailed": "Couldn't load your bookings.",
   "@errorBookingsLoadFailed": {"description": "My Bookings screen error state."},
 
+  "bookingAppointmentLabel": "Appointment: {date}",
+  "@bookingAppointmentLabel": {
+    "description": "Booking card's appointment date/time line.",
+    "placeholders": {
+      "date": {"type": "String", "example": "Oct 5, 14:30"}
+    }
+  },
+
   "bookedOnLabel": "Booked on {date}",
   "@bookedOnLabel": {
     "description": "Booking card's creation-date caption.",

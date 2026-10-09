@@ -62,15 +62,43 @@ public final class BookingDtos {
             @Schema(description = "Null unless status is CANCELLED and the customer gave one.", example = "Change of plans")
             String cancellationReason,
             @Schema(description = "City code where the service is offered (e.g., 'almaty', 'shymkent').", example = "almaty")
-            String cityCode) {
+            String cityCode,
+            @Schema(description = "Title of the booked service. Null if the service no longer exists, and on "
+                    + "write responses (create/cancel/...), which are not enriched.", example = "Haircut")
+            String serviceTitle,
+            @Schema(description = "The business (provider) the booking is with. Same null rules as serviceTitle.")
+            UUID providerId,
+            @Schema(description = "Business name. Same null rules as serviceTitle.", example = "Salon Aurora")
+            String providerName,
+            @Schema(description = "Business vertical, e.g. 'beauty'. Same null rules as serviceTitle.",
+                    example = "beauty")
+            String providerVertical,
+            @Schema(description = "When the appointment starts (the booked slot's start). Same null rules as "
+                    + "serviceTitle.") Instant startsAt,
+            @Schema(description = "When the appointment ends. Same null rules as serviceTitle.") Instant endsAt) {
+        /** Plain mapping with no enrichment — the extra fields are null. */
         static BookingResponse from(Booking booking) {
+            return from(booking, null, null, null);
+        }
+
+        static BookingResponse from(Booking booking, String serviceTitle, ProviderRef provider,
+                SlotTimes times) {
             return new BookingResponse(booking.getId(), booking.getUserId(), booking.getServiceId(),
                     booking.getAvailabilitySlotId(), booking.getStatus(), booking.getTotalPrice(),
                     booking.getCurrency(), booking.getDepositType(), booking.getDepositValueType(),
                     booking.getDepositValue(), booking.getDepositAmount(), booking.getPaidAmount(),
                     booking.getRemainingAmount(), booking.getCreatedAt(), booking.getCancellationReason(),
-                    booking.getCityCode());
+                    booking.getCityCode(), serviceTitle,
+                    provider == null ? null : provider.id(), provider == null ? null : provider.name(),
+                    provider == null ? null : provider.vertical(),
+                    times == null ? null : times.startsAt(), times == null ? null : times.endsAt());
         }
+    }
+
+    record ProviderRef(UUID id, String name, String vertical) {
+    }
+
+    record SlotTimes(Instant startsAt, Instant endsAt) {
     }
 
     /**
