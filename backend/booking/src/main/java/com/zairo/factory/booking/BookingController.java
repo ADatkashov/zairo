@@ -177,7 +177,8 @@ public class BookingController {
 
     @Operation(summary = "List a user's bookings", description = "Owner-only: the caller must be the exact "
             + "user named by `userId`.")
-    @ApiResponse(responseCode = "200", description = "The user's bookings (empty list if none)")
+    @ApiResponse(responseCode = "200", description = "The user's bookings (empty list if none), each with the "
+            + "service title, the business and the appointment times")
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @SecurityRequirement(name = "bearerAuth")
