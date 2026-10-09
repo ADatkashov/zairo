@@ -13,13 +13,17 @@ import '../theme/factory_radius.dart';
 /// "Cancel booking" link sitting on a card among several) — same red,
 /// different weight, same distinction [primary]/[text] already draw.
 ///
+/// [tonal] is the soft-filled secondary action (ZAIRO 2.0, Figma "Secondary"):
+/// `primaryTint` fill with `primaryStrong` label — less shouty than [primary],
+/// more present than the outlined [secondary] (Figma "Outline").
+///
 /// [gradient] is the one deliberate exception to "every Factory button
 /// shares one shape": the Customer App Redesign board's sticky booking CTA
 /// (`primaryStrong` → `mint`, pill radius, a soft colored shadow) — reach
 /// for it only on the one or two screens with a money-moving bottom action
 /// (booking confirm, provider profile's "Book"), not as a general
 /// alternative to [primary].
-enum FactoryButtonVariant { primary, secondary, text, danger, textDanger, gradient }
+enum FactoryButtonVariant { primary, secondary, tonal, text, danger, textDanger, gradient }
 
 /// The screen's primary or secondary action — "Book", "Cancel", "Delete
 /// account". Wraps Flutter's own button widgets rather than reinventing
@@ -88,6 +92,16 @@ class FactoryButton extends StatelessWidget {
     final button = switch (variant) {
       FactoryButtonVariant.primary => FilledButton(style: denseStyle, onPressed: pressHandler, child: child),
       FactoryButtonVariant.secondary => OutlinedButton(style: denseStyle, onPressed: pressHandler, child: child),
+      FactoryButtonVariant.tonal => FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: context.factoryColors.primaryTint,
+            foregroundColor: context.factoryColors.primaryStrong,
+            disabledBackgroundColor: context.factoryColors.primaryTint.withValues(alpha: 0.5),
+            disabledForegroundColor: context.factoryColors.primaryStrong.withValues(alpha: 0.5),
+          ).merge(denseStyle),
+          onPressed: pressHandler,
+          child: child,
+        ),
       FactoryButtonVariant.text => TextButton(style: denseStyle, onPressed: pressHandler, child: child),
       FactoryButtonVariant.danger => FilledButton(
           style: FilledButton.styleFrom(
@@ -114,7 +128,10 @@ class FactoryButton extends StatelessWidget {
         FactoryButtonVariant.danger ||
         FactoryButtonVariant.gradient =>
           Theme.of(context).colorScheme.onPrimary,
-        FactoryButtonVariant.secondary || FactoryButtonVariant.text => Theme.of(context).colorScheme.primary,
+        FactoryButtonVariant.secondary ||
+        FactoryButtonVariant.tonal ||
+        FactoryButtonVariant.text =>
+          Theme.of(context).colorScheme.primary,
         FactoryButtonVariant.textDanger => Theme.of(context).colorScheme.error,
       };
 }

@@ -134,6 +134,41 @@ void main() {
     expect(size.width, greaterThanOrEqualTo(44));
   });
 
+  testWidgets('FactoryButton tonal uses the primary tint with the strong label colour', (tester) async {
+    var tapped = false;
+    await tester.pumpWidget(
+      _wrap(FactoryButton(label: 'Reschedule', variant: FactoryButtonVariant.tonal, onPressed: () => tapped = true)),
+    );
+
+    final button = tester.widget<FilledButton>(find.byType(FilledButton));
+    final style = button.style!;
+    expect(style.backgroundColor!.resolve({}), FactoryColors.light.primaryTint);
+    expect(style.foregroundColor!.resolve({}), FactoryColors.light.primaryStrong);
+
+    await tester.tap(find.byType(FactoryButton));
+    expect(tapped, isTrue);
+  });
+
+  testWidgets('FactoryChip selected is a tint with a check mark, not a solid fill', (tester) async {
+    await tester.pumpWidget(_wrap(const FactoryChip(label: 'Manicure', selected: true)));
+
+    final box = tester.widget<AnimatedContainer>(find.byType(AnimatedContainer)).decoration as BoxDecoration;
+    expect(box.color, FactoryColors.light.primaryTint);
+    expect(find.byIcon(Symbols.check_rounded), findsOneWidget);
+
+    await tester.pumpWidget(_wrap(const FactoryChip(label: 'Manicure')));
+    expect(find.byIcon(Symbols.check_rounded), findsNothing);
+  });
+
+  testWidgets('input fields use the tonal fill with a hairline and a 2px focus ring', (tester) async {
+    final theme = factoryLightTheme().inputDecorationTheme;
+    expect(theme.filled, isTrue);
+    expect(theme.fillColor, FactoryColors.light.surfaceAlt);
+    expect((theme.enabledBorder as OutlineInputBorder).borderSide.color, FactoryColors.light.border);
+    expect((theme.focusedBorder as OutlineInputBorder).borderSide.width, 2);
+    expect((theme.errorBorder as OutlineInputBorder).borderSide.color, FactoryColors.light.error);
+  });
+
   testWidgets('FactoryBadge renders its label', (tester) async {
     await tester.pumpWidget(
       _wrap(
