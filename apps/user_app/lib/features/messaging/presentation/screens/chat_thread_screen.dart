@@ -182,7 +182,7 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.errorChatSendFailed(e.toString()))));
+      ).showSnackBar(SnackBar(content: Text(l10n.errorChatSendFailed)));
     } finally {
       if (mounted) setState(() => _isSending = false);
     }

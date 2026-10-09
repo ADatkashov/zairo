@@ -27,7 +27,7 @@ class LoyaltyTiersScreen extends ConsumerWidget {
         child: Padding(
           padding: const EdgeInsets.all(FactorySpacing.space4),
           child: FactoryErrorState(
-            message: l10n.errorLoyaltyTiersLoadFailed(error.toString()),
+            message: l10n.errorLoyaltyTiersLoadFailed,
             onRetry: () => ref.invalidate(loyaltyTiersProvider(providerId)),
           ),
         ),
@@ -160,7 +160,7 @@ class _TiersFormState extends ConsumerState<_TiersForm> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.loyaltyTiersSavedMessage)));
     } catch (e) {
       setState(() {
-        _error = e is LoyaltyAdminException ? e.localizedMessage(l10n) : l10n.errorLoyaltyActionFailed(e.toString());
+        _error = e is LoyaltyAdminException ? e.localizedMessage(l10n) : l10n.errorLoyaltyActionFailed;
         _isSubmitting = false;
       });
     }

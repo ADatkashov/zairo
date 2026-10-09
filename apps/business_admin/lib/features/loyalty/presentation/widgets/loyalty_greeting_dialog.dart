@@ -120,7 +120,7 @@ class _GreetingDialogState extends ConsumerState<_GreetingDialog> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e is LoyaltyAdminException ? e.localizedMessage(l10n) : l10n.errorLoyaltyActionFailed(e.toString());
+        _error = e is LoyaltyAdminException ? e.localizedMessage(l10n) : l10n.errorLoyaltyActionFailed;
         _isSubmitting = false;
       });
     }

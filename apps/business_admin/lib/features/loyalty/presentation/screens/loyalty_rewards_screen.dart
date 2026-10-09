@@ -73,7 +73,7 @@ class LoyaltyRewardsScreen extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.all(FactorySpacing.space4),
               child: FactoryErrorState(
-                message: l10n.errorLoyaltyRewardsLoadFailed(error.toString()),
+                message: l10n.errorLoyaltyRewardsLoadFailed,
                 onRetry: () => ref.invalidate(loyaltyRewardsProvider(providerId)),
               ),
             ),
@@ -102,7 +102,7 @@ class LoyaltyRewardsScreen extends ConsumerWidget {
       invalidateLoyaltyRewards(ref, providerId);
     } catch (e) {
       if (!context.mounted) return;
-      final message = e is LoyaltyAdminException ? e.localizedMessage(l10n) : l10n.errorLoyaltyActionFailed(e.toString());
+      final message = e is LoyaltyAdminException ? e.localizedMessage(l10n) : l10n.errorLoyaltyActionFailed;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     }
   }
@@ -165,7 +165,7 @@ class LoyaltyRewardsScreen extends ConsumerWidget {
       invalidateLoyaltyRewards(ref, providerId);
     } catch (e) {
       if (!context.mounted) return;
-      final message = e is LoyaltyAdminException ? e.localizedMessage(l10n) : l10n.errorLoyaltyActionFailed(e.toString());
+      final message = e is LoyaltyAdminException ? e.localizedMessage(l10n) : l10n.errorLoyaltyActionFailed;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     }
   }

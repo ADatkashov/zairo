@@ -138,7 +138,7 @@ class _BusinessInboxBody extends ConsumerWidget {
             error: (error, _) => Padding(
               padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space4),
               child: FactoryErrorState(
-                message: l10n.errorConversationsLoadFailed(error.toString()),
+                message: l10n.errorConversationsLoadFailed,
                 onRetry: () => ref.invalidate(providerInboxProvider(providerId)),
               ),
             ),

@@ -46,7 +46,7 @@ class ProfileScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             child: FactoryErrorState(
-              message: l10n.errorProfileGeneric(error.toString()),
+              message: l10n.errorProfileGeneric,
               onRetry: () => ref.invalidate(authControllerProvider),
             ),
           ),

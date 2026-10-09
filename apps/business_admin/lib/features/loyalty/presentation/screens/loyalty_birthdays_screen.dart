@@ -38,7 +38,7 @@ class LoyaltyBirthdaysScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(FactorySpacing.space4),
           children: [
             FactoryErrorState(
-              message: l10n.errorLoyaltyBirthdaysLoadFailed(error.toString()),
+              message: l10n.errorLoyaltyBirthdaysLoadFailed,
               onRetry: () => ref.invalidate(loyaltyBirthdaysProvider(key)),
             ),
           ],

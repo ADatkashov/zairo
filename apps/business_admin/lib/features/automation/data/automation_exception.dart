@@ -18,7 +18,7 @@ class AutomationException implements Exception {
       case 403:
         return l10n.errorAutomationForbidden;
       default:
-        return l10n.errorAutomationActionFailed(serverMessage ?? statusCode?.toString() ?? '');
+        return serverMessage ?? l10n.errorAutomationActionFailed;
     }
   }
 
