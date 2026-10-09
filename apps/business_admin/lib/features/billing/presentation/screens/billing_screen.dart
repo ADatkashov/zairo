@@ -174,7 +174,7 @@ class _BillingBodyState extends ConsumerState<_BillingBody> with WidgetsBindingO
             label: _statusLabel(l10n, subscription.status),
             variant: _statusVariant(subscription.status),
           ),
-          priceRow: subscription.isPro
+          priceRow: subscription.isPro || subscription.proMonthlyPrice == null
               ? null
               : Row(
                   crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -184,7 +184,11 @@ class _BillingBodyState extends ConsumerState<_BillingBody> with WidgetsBindingO
                       '${l10n.billingProPriceLabel} ',
                       style: textTheme.bodySmall?.copyWith(color: colors.onPrimary.withValues(alpha: 0.8)),
                     ),
-                    FactoryPriceText(amount: 29, color: colors.onPrimary),
+                    FactoryPriceText(
+                      amount: subscription.proMonthlyPrice!,
+                      currencySymbol: subscription.currency,
+                      color: colors.onPrimary,
+                    ),
                     Text(
                       l10n.billingPerMonthSuffix,
                       style: textTheme.bodySmall?.copyWith(color: colors.onPrimary.withValues(alpha: 0.8)),

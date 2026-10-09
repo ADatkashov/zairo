@@ -23,10 +23,13 @@ public class SubscriptionController {
     private final SubscriptionService subscriptionService;
     private final SubscriptionRenewalService subscriptionRenewalService;
     private final SubscriptionPaymentMethodService paymentMethodService;
+    private final String currency;
 
     public SubscriptionController(SubscriptionService subscriptionService,
             SubscriptionRenewalService subscriptionRenewalService,
-            SubscriptionPaymentMethodService paymentMethodService) {
+            SubscriptionPaymentMethodService paymentMethodService,
+            @org.springframework.beans.factory.annotation.Value("${app.platform.default-currency:USD}") String currency) {
+        this.currency = currency;
         this.subscriptionService = subscriptionService;
         this.subscriptionRenewalService = subscriptionRenewalService;
         this.paymentMethodService = paymentMethodService;
@@ -40,7 +43,7 @@ public class SubscriptionController {
     @GetMapping("/api/v1/subscriptions/me")
     public SubscriptionResponse getMine(HttpServletRequest httpRequest) {
         UUID ownerUserId = CurrentUser.requireUserId(httpRequest);
-        return SubscriptionResponse.from(subscriptionService.getOrCreate(ownerUserId));
+        return SubscriptionResponse.from(subscriptionService.getOrCreate(ownerUserId), currency);
     }
 
     @Operation(summary = "Upgrade to PRO", description = "Charges the PRO monthly price immediately through the "
@@ -54,7 +57,7 @@ public class SubscriptionController {
     public SubscriptionResponse upgrade(HttpServletRequest httpRequest) {
         UUID ownerUserId = CurrentUser.requireUserId(httpRequest);
         SubscriptionService.SubscriptionUpgradeResult result = subscriptionService.upgradeToPro(ownerUserId);
-        return SubscriptionResponse.from(result.subscription(), result.checkoutUrl());
+        return SubscriptionResponse.from(result.subscription(), result.checkoutUrl(), currency);
     }
 
     @Operation(summary = "Downgrade to FREE", description = "Self-service, takes effect at the end of the "
@@ -66,7 +69,7 @@ public class SubscriptionController {
     @PostMapping("/api/v1/subscriptions/downgrade")
     public SubscriptionResponse downgrade(HttpServletRequest httpRequest) {
         UUID ownerUserId = CurrentUser.requireUserId(httpRequest);
-        return SubscriptionResponse.from(subscriptionService.downgradeToFreeAtPeriodEnd(ownerUserId));
+        return SubscriptionResponse.from(subscriptionService.downgradeToFreeAtPeriodEnd(ownerUserId), currency);
     }
 
     @Operation(summary = "Retry a past-due charge now", description = "The Billing screen's grace-period "
@@ -83,7 +86,7 @@ public class SubscriptionController {
         UUID ownerUserId = CurrentUser.requireUserId(httpRequest);
         SubscriptionService.SubscriptionUpgradeResult result = subscriptionRenewalService
                 .retryPastDueCharge(ownerUserId);
-        return SubscriptionResponse.from(result.subscription(), result.checkoutUrl());
+        return SubscriptionResponse.from(result.subscription(), result.checkoutUrl(), currency);
     }
 
     @Operation(summary = "My saved payment card", description = "The card the subscription renews with — brand "
