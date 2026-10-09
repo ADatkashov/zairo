@@ -26,6 +26,8 @@ class FactoryDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(title),
+      // Taller than the screen (small phone, large text, keyboard open): scroll, don't overflow.
+      scrollable: true,
       content: content ?? Text(message!),
       actions: actions.isEmpty ? null : actions,
     );
