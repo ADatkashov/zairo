@@ -133,19 +133,23 @@ ThemeData _factoryTheme(FactoryColors colors, FactoryAppProfile? profile) {
         minimumSize: const Size(44, 44),
       ),
     ),
+    // ZAIRO 2.0 inputs: a tonal fill (surfaceAlt) with a hairline at rest, a
+    // 2px primary ring on focus and an error ring — the hairline keeps the
+    // field's edge visible on the page background (non-text contrast), which a
+    // borderless tonal field would lose.
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: colors.surface,
+      fillColor: colors.surfaceAlt,
       hintStyle: textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
       labelStyle: textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       border: OutlineInputBorder(
         borderRadius: FactoryRadius.mdRadius,
-        borderSide: BorderSide(color: colors.border, width: 1.5),
+        borderSide: BorderSide(color: colors.border),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: FactoryRadius.mdRadius,
-        borderSide: BorderSide(color: colors.border, width: 1.5),
+        borderSide: BorderSide(color: colors.border),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: FactoryRadius.mdRadius,
@@ -154,6 +158,10 @@ ThemeData _factoryTheme(FactoryColors colors, FactoryAppProfile? profile) {
       errorBorder: OutlineInputBorder(
         borderRadius: FactoryRadius.mdRadius,
         borderSide: BorderSide(color: colors.error, width: 1.5),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: FactoryRadius.mdRadius,
+        borderSide: BorderSide(color: colors.error, width: 2),
       ),
     ),
     chipTheme: ChipThemeData(
