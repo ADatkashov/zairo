@@ -148,7 +148,8 @@ class PaymentWebhookProcessor {
         String failureReason = webhook.paymentSucceeded() ? null : "Freedom Pay reported failure (pg_result != 1)";
         SubscriptionChargeWebhookService.Outcome outcome = subscriptionChargeWebhookService.applyChargeResult(
                 chargeId, webhook.paymentSucceeded(), webhook.providerPaymentId(), webhook.amount(),
-                webhook.currency(), failureReason);
+                webhook.currency(), failureReason, new SubscriptionChargeWebhookService.CardOnFile(
+                        webhook.recurringProfileId(), webhook.cardPan(), webhook.cardBrand()));
         return switch (outcome) {
             case APPLIED -> {
                 event.markProcessed(Instant.now());

@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,13 +48,33 @@ public class SubscriptionChargeWebhookService {
 
     private final SubscriptionChargeRepository chargeRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final SubscriptionPaymentMethodService paymentMethodService;
+    private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
     public SubscriptionChargeWebhookService(SubscriptionChargeRepository chargeRepository,
-            SubscriptionRepository subscriptionRepository, Clock clock) {
+            SubscriptionRepository subscriptionRepository, SubscriptionPaymentMethodService paymentMethodService,
+            ApplicationEventPublisher eventPublisher, Clock clock) {
         this.chargeRepository = chargeRepository;
         this.subscriptionRepository = subscriptionRepository;
+        this.paymentMethodService = paymentMethodService;
+        this.eventPublisher = eventPublisher;
         this.clock = clock;
+    }
+
+    /**
+     * What the provider reported about the card used. All fields optional;
+     * {@code cardPan} may be a masked PAN — only its last four digits are kept.
+     */
+    public record CardOnFile(String recurringProfileId, String cardPan, String cardBrand) {
+        public static final CardOnFile NONE = new CardOnFile(null, null, null);
+    }
+
+    @Transactional
+    public Outcome applyChargeResult(UUID chargeId, boolean succeeded, String providerReference,
+            BigDecimal webhookAmount, String webhookCurrency, String failureReason) {
+        return applyChargeResult(chargeId, succeeded, providerReference, webhookAmount, webhookCurrency,
+                failureReason, CardOnFile.NONE);
     }
 
     /**
@@ -67,7 +88,7 @@ public class SubscriptionChargeWebhookService {
      */
     @Transactional
     public Outcome applyChargeResult(UUID chargeId, boolean succeeded, String providerReference,
-            BigDecimal webhookAmount, String webhookCurrency, String failureReason) {
+            BigDecimal webhookAmount, String webhookCurrency, String failureReason, CardOnFile card) {
         SubscriptionCharge charge = chargeRepository.findById(chargeId).orElse(null);
         if (charge == null) {
             return Outcome.UNKNOWN_CHARGE;
@@ -90,12 +111,28 @@ public class SubscriptionChargeWebhookService {
         }
 
         charge.markSucceeded(providerReference, now);
+        String profileId = card.recurringProfileId() != null ? card.recurringProfileId()
+                : charge.getRecurringProfileId();
+        if (profileId != null && !profileId.equals(charge.getRecurringProfileId())) {
+            charge.assignRecurringProfileId(profileId, now);
+        }
         chargeRepository.save(charge);
+        paymentMethodService.save(charge.getSubscriptionId(), profileId, card.cardPan(), card.cardBrand());
 
         Subscription subscription = subscriptionRepository.findById(charge.getSubscriptionId()).orElse(null);
-        if (subscription != null && subscription.getPlan() != SubscriptionPlan.PRO) {
+        if (subscription == null) {
+            return Outcome.APPLIED;
+        }
+        if (subscription.getPlan() != SubscriptionPlan.PRO) {
             subscription.markUpgradedToPro(now);
             subscriptionRepository.save(subscription);
+        } else if (charge.getPurpose() == SubscriptionChargePurpose.RENEWAL) {
+            // The owner paid a renewal through hosted checkout (no auto-charge available, or "Fix"):
+            // a new period starts and any grace period ends.
+            subscription.markRenewed(now);
+            subscriptionRepository.save(subscription);
+            eventPublisher.publishEvent(new SubscriptionRenewedEvent(subscription.getId(),
+                    subscription.getOwnerUserId(), subscription.getPlan()));
         }
         return Outcome.APPLIED;
     }
