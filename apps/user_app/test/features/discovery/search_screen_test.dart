@@ -156,7 +156,7 @@ void main() {
 
     expect(find.text('Hair Studio'), findsOneWidget);
     expect(find.text('Available today'), findsOneWidget);
-    expect(find.text('3.7 km · beauty'), findsOneWidget);
+    expect(find.text('3.7 km'), findsOneWidget);
     expect(find.text('30 ₸'), findsOneWidget);
     expect(find.text('4.7'), findsOneWidget);
     expect(find.text('(128)'), findsOneWidget);
