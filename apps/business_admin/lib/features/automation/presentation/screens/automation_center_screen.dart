@@ -2,6 +2,7 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/widgets/no_business_state.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../salon/data/models/admin_provider.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
@@ -44,16 +45,7 @@ class _AutomationCenterScreenState extends ConsumerState<AutomationCenterScreen>
       body: providersAsync.when(
         data: (providers) {
           if (providers.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(FactorySpacing.space6),
-                child: Text(
-                  l10n.automationCenterNoBusinesses,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
-                ),
-              ),
-            );
+            return NoBusinessState(message: l10n.automationCenterNoBusinesses);
           }
           if (_providerId == null || !providers.any((p) => p.id == _providerId)) {
             _providerId = providers.first.id;

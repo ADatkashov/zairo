@@ -520,21 +520,38 @@ class _RateRing extends StatelessWidget {
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
     final tone = lowIsGood ? colors.warning : colors.primary;
-    return Row(
-      children: [
-        FactoryProgressRing(
-          value: rate,
-          size: 48,
-          strokeWidth: 6,
-          color: tone,
-          semanticLabel: label,
-          child: Text(_pct(rate), style: FactoryTypography.mono(size: 11, color: colors.text)),
-        ),
-        const SizedBox(width: FactorySpacing.space3),
-        Expanded(
-          child: Text(label, style: textTheme.labelMedium?.copyWith(color: colors.textSecondary)),
-        ),
-      ],
+    final ring = FactoryProgressRing(
+      value: rate,
+      size: 48,
+      strokeWidth: 6,
+      color: tone,
+      semanticLabel: label,
+      child: Text(_pct(rate), style: FactoryTypography.mono(size: 11, color: colors.text)),
+    );
+    final labelStyle = textTheme.labelMedium?.copyWith(color: colors.textSecondary, letterSpacing: 0);
+    // Two rings share a row, so on a narrow phone each gets ~110px: beside a
+    // 48px ring that leaves ~40px for the label, which broke words mid-letter
+    // ("Utilizati/on"). Below that width the label sits under the ring instead.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 150) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ring,
+              const SizedBox(height: FactorySpacing.space2),
+              Text(label, textAlign: TextAlign.center, style: labelStyle),
+            ],
+          );
+        }
+        return Row(
+          children: [
+            ring,
+            const SizedBox(width: FactorySpacing.space3),
+            Expanded(child: Text(label, style: labelStyle)),
+          ],
+        );
+      },
     );
   }
 }

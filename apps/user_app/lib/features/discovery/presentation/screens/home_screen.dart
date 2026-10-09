@@ -137,6 +137,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               user != null
                                   ? l10n.homeGreeting(user.displayName)
                                   : l10n.homeGreetingGuest,
+                              // The headline face (Unbounded) is very wide: at large
+                              // system text a single name overflows the space beside
+                              // the avatar and action buttons and snaps mid-word.
+                              // Cap this one heading's scale and ellipsize instead.
+                              textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: MediaQuery.sizeOf(context).width < 360 ? 1.0 : 1.1),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: textTheme.headlineSmall?.copyWith(
                                 color: colors.text,
                               ),
@@ -332,13 +339,14 @@ class _CategoryGrid extends ConsumerWidget {
 
   static const _popularCount = 6;
 
-  // FactoryCategoryTile's own content is 88px tall (4px padding + 56px icon
-  // circle + 8px gap + one label line + 4px padding) — a plain Wrap never
-  // exposed this since it sizes each child to its natural height, but a
-  // horizontal ListView hard-constrains the cross axis to whatever this is,
-  // so it has to be at least that. A few extra px of headroom over the
-  // exact figure absorbs minor text-scale/locale line-height variance.
-  static const _tileHeight = 96.0;
+  // FactoryCategoryTile's own content is 72px of chrome (4px padding + 56px
+  // icon circle + 8px gap + 4px padding) plus up to two label lines — a plain
+  // Wrap never exposed this since it sizes each child to its natural height,
+  // but a horizontal ListView hard-constrains the cross axis to whatever this
+  // is, so it has to be at least that. The label height follows the user's
+  // text scale so large system fonts don't clip the second line.
+  static double _tileHeightFor(BuildContext context) =>
+      72 + 2 * MediaQuery.textScalerOf(context).scale(13 * 1.2) + 4;
 
   Future<void> _openAllCategories(BuildContext context) async {
     final code = await context.push<String>(AppRoutes.categories);
@@ -357,8 +365,9 @@ class _CategoryGrid extends ConsumerWidget {
       onTap: () => _openAllCategories(context),
     );
 
+    final tileHeight = _tileHeightFor(context);
     return SizedBox(
-      height: _tileHeight,
+      height: tileHeight,
       child: categoriesAsync.when(
         data: (categories) {
           final popular = categories.take(_popularCount).toList();
@@ -389,15 +398,15 @@ class _CategoryGrid extends ConsumerWidget {
         loading: () => ListView(
           scrollDirection: Axis.horizontal,
           children: [
-            const FactorySkeleton(
+            FactorySkeleton(
               width: 64,
-              height: _tileHeight,
+              height: tileHeight,
               borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
             const SizedBox(width: FactorySpacing.space3),
-            const FactorySkeleton(
+            FactorySkeleton(
               width: 64,
-              height: _tileHeight,
+              height: tileHeight,
               borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
             const SizedBox(width: FactorySpacing.space3),

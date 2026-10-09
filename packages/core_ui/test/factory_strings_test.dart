@@ -26,6 +26,7 @@ void main() {
         s.clear,
         s.addToFavorites,
         s.removeFromFavorites,
+        s.priceFrom,
       ]) {
         expect(value.trim(), isNotEmpty, reason: code);
       }

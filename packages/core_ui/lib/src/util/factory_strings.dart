@@ -28,6 +28,9 @@ class FactoryStrings {
   String get addToFavorites => _table['addToFavorites']!;
   String get removeFromFavorites => _table['removeFromFavorites']!;
 
+  /// Leads a lowest-price amount ("from 8 000 ₸"), with its trailing space.
+  String get priceFrom => _table['priceFrom']!;
+
   static const _tables = <String, Map<String, String>>{
     'en': {
       'retry': 'Try again',
@@ -37,6 +40,7 @@ class FactoryStrings {
       'clear': 'Clear',
       'addToFavorites': 'Add to favorites',
       'removeFromFavorites': 'Remove from favorites',
+      'priceFrom': 'from ',
     },
     'ru': {
       'retry': 'Повторить',
@@ -46,6 +50,7 @@ class FactoryStrings {
       'clear': 'Очистить',
       'addToFavorites': 'Добавить в избранное',
       'removeFromFavorites': 'Убрать из избранного',
+      'priceFrom': 'от ',
     },
     'kk': {
       'retry': 'Қайталау',
@@ -55,6 +60,7 @@ class FactoryStrings {
       'clear': 'Тазалау',
       'addToFavorites': 'Таңдаулыларға қосу',
       'removeFromFavorites': 'Таңдаулылардан алып тастау',
+      'priceFrom': 'бастап ',
     },
   };
 }
