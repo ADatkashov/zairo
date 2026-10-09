@@ -180,6 +180,7 @@
   "bookingsEmptyTitle": "Әзірге брондар жоқ",
   "bookingsEmptyMessage": "Қызмет пен уақытты таңдаңыз — жазылымдарыңыз бен еске салулар осында болады.",
   "errorBookingsLoadFailed": "Брондарды жүктеу мүмкін болмады.",
+  "bookingAppointmentLabel": "Келу уақыты: {date}",
   "bookedOnLabel": "{date} брондалды",
   "bookingStatusConfirmed": "Расталды",
   "bookingStatusCompleted": "Аяқталды",
