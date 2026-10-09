@@ -372,6 +372,9 @@ void main() {
 
     expect(find.text('4.2'), findsOneWidget);
     expect(find.text('(55)'), findsOneWidget);
+    // The service row shows the service's own currency, not the platform default.
+    expect(find.text(r'30 $'), findsOneWidget);
+    expect(find.text('30 ₸'), findsNothing);
 
     final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');
     expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNull);

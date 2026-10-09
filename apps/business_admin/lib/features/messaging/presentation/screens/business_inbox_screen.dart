@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/widgets/no_business_state.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../salon/data/models/admin_provider.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
@@ -47,16 +48,7 @@ class _BusinessInboxScreenState extends ConsumerState<BusinessInboxScreen> {
       body: providersAsync.when(
         data: (providers) {
           if (providers.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(FactorySpacing.space6),
-                child: Text(
-                  l10n.businessInboxNoBusinesses,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
-                ),
-              ),
-            );
+            return NoBusinessState(message: l10n.businessInboxNoBusinesses);
           }
           if (_providerId == null || !providers.any((p) => p.id == _providerId)) {
             _providerId = providers.first.id;
