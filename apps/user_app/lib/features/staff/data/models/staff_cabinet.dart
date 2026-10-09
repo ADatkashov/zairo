@@ -97,7 +97,9 @@ class StaffAppointment {
       currency: json['currency'] as String,
       paidAmount: (json['paidAmount'] as num).toDouble(),
       cancellationReason: json['cancellationReason'] as String?,
-      staffConfirmedAt: confirmedAt == null ? null : DateTime.parse(confirmedAt),
+      staffConfirmedAt: confirmedAt == null
+          ? null
+          : DateTime.parse(confirmedAt),
       staffDeclinedAt: declinedAt == null ? null : DateTime.parse(declinedAt),
       canAccept: json['canAccept'] as bool,
       canDecline: json['canDecline'] as bool,
@@ -158,7 +160,9 @@ class StaffRating {
     return StaffRating(
       averageRating: (json['averageRating'] as num?)?.toDouble(),
       reviewCount: (json['reviewCount'] as num).toInt(),
-      distribution: (json['distribution'] as List<dynamic>).map((e) => (e as num).toInt()).toList(),
+      distribution: (json['distribution'] as List<dynamic>)
+          .map((e) => (e as num).toInt())
+          .toList(),
       reviews: (json['reviews'] as List<dynamic>)
           .map((e) => StaffReview.fromJson(e as Map<String, dynamic>))
           .toList(),

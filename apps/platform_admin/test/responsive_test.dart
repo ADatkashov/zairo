@@ -35,6 +35,18 @@ void main() {
     }
   }
 
+  // Large system text on a small phone is the worst case for a row of badges and buttons.
+  for (final locale in const ['en', 'ru']) {
+    testWidgets('no overflow: $locale at 360px with 1.3x text', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      for (final area in areas) {
+        await pumpConsole(tester, backend: defaultBackend(), locale: Locale(locale), size: const Size(360, 740), location: area);
+        expect(tester.takeException(), isNull, reason: '$area overflowed');
+      }
+    });
+  }
+
   testWidgets('login screen fits a phone in every language', (tester) async {
     for (final locale in const ['en', 'ru', 'kk']) {
       await pumpConsole(

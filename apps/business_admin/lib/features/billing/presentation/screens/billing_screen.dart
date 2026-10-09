@@ -176,9 +176,8 @@ class _BillingBodyState extends ConsumerState<_BillingBody> with WidgetsBindingO
           ),
           priceRow: subscription.isPro || subscription.proMonthlyPrice == null
               ? null
-              : Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
+              : Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.end,
                   children: [
                     Text(
                       '${l10n.billingProPriceLabel} ',

@@ -165,11 +165,17 @@ class FactoryProviderCard extends StatelessWidget {
           Row(
             children: [
               if (rating != null)
-                FactoryRatingLabel(
-                  rating: rating!,
-                  reviewCount: reviewCount,
-                  iconSize: 11,
-                  semanticLabel: ratingSemanticLabel,
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: AlignmentDirectional.centerStart,
+                    child: FactoryRatingLabel(
+                      rating: rating!,
+                      reviewCount: reviewCount,
+                      iconSize: 11,
+                      semanticLabel: ratingSemanticLabel,
+                    ),
+                  ),
                 ),
               if (rating != null && metaText != null) ...[
                 const SizedBox(width: 5),
@@ -294,8 +300,10 @@ class _FavoriteButton extends StatelessWidget {
               fill: isFavorite ? 1 : 0,
               size: 18,
               // The disc behind is always translucent white, so the icon uses
-            // fixed light-theme tones (the dark theme's pale ones would vanish).
-            color: isFavorite ? const Color(0xFFB3372E) : const Color(0xFF5C564C),
+              // fixed light-theme tones (the dark theme's pale ones would vanish).
+              color: isFavorite
+                  ? const Color(0xFFB3372E)
+                  : const Color(0xFF5C564C),
             ),
           ),
         ),

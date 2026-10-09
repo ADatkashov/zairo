@@ -840,8 +840,9 @@ class _ServicesSection extends ConsumerWidget {
       children: [
         FactorySectionHeader(
           title: l10n.servicesSectionTitle,
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
+          trailing: Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               FactoryButton(
                 label: showInactive ? l10n.hideRemovedButton : l10n.showRemovedButton,
@@ -949,6 +950,9 @@ class _ServiceAdminRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(l10n.serviceDurationMinutes(service.durationMinutes),
                     style: textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
+                // Below the title, not beside the price: a wide button here left the title no room on a phone.
+                if (!service.active)
+                  FactoryButton(label: l10n.reactivateButton, variant: FactoryButtonVariant.text, onPressed: onReactivate),
               ],
             ),
           ),
@@ -961,9 +965,7 @@ class _ServiceAdminRow extends StatelessWidget {
                 IconButton(icon: const Icon(Icons.edit_outlined), tooltip: l10n.editTooltip, onPressed: onEdit),
                 IconButton(icon: const Icon(Icons.delete_outline), tooltip: l10n.removeTooltip, onPressed: onRemove),
               ],
-            )
-          else
-            FactoryButton(label: l10n.reactivateButton, variant: FactoryButtonVariant.text, onPressed: onReactivate),
+            ),
         ],
       ),
     );
@@ -996,8 +998,9 @@ class _AvailabilitySectionState extends ConsumerState<_AvailabilitySection> {
       children: [
         FactorySectionHeader(
           title: l10n.availabilitySectionTitle,
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
+          trailing: Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               FactoryButton(
                 icon: Icons.event_repeat,
@@ -1149,8 +1152,9 @@ class _MastersSection extends ConsumerWidget {
       children: [
         FactorySectionHeader(
           title: l10n.mastersSectionTitle,
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
+          trailing: Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               FactoryButton(
                 label: showInactive ? l10n.hideRemovedButton : l10n.showRemovedButton,
@@ -1316,8 +1320,9 @@ class _MechanicsSection extends ConsumerWidget {
       children: [
         FactorySectionHeader(
           title: l10n.mechanicsSectionTitle,
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
+          trailing: Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               FactoryButton(
                 label: showInactive ? l10n.hideRemovedButton : l10n.showRemovedButton,
@@ -1472,8 +1477,9 @@ class _CleanersSection extends ConsumerWidget {
       children: [
         FactorySectionHeader(
           title: l10n.cleanersSectionTitle,
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
+          trailing: Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               FactoryButton(
                 label: showInactive ? l10n.hideRemovedButton : l10n.showRemovedButton,
@@ -1628,8 +1634,9 @@ class _StaffSection extends ConsumerWidget {
       children: [
         FactorySectionHeader(
           title: l10n.staffSectionTitle,
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
+          trailing: Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               FactoryButton(
                 label: showInactive ? l10n.hideRemovedButton : l10n.showRemovedButton,

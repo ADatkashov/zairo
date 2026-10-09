@@ -66,12 +66,16 @@ class DashboardScreen extends ConsumerWidget {
         title: l10n.dashboardGreeting(user.displayName),
         leading: Padding(
           padding: const EdgeInsets.all(FactorySpacing.space2),
-          child: GestureDetector(
-            onTap: () => showChangeAvatarDialog(context, hasCurrentAvatar: user.avatarUrl != null),
-            child: FactoryAvatar(
-              initials: _initialsFor(user.displayName),
-              size: 32,
-              image: user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+          child: Semantics(
+            button: true,
+            label: l10n.changeAvatarDialogTitle,
+            child: GestureDetector(
+              onTap: () => showChangeAvatarDialog(context, hasCurrentAvatar: user.avatarUrl != null),
+              child: FactoryAvatar(
+                initials: _initialsFor(user.displayName),
+                size: 32,
+                image: user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+              ),
             ),
           ),
         ),

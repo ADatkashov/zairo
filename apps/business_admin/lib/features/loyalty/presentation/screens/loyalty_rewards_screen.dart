@@ -186,8 +186,8 @@ class _RewardTile extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         LoyaltyRewardCard(reward: reward, onTap: onEdit),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
+        Wrap(
+          alignment: WrapAlignment.end,
           children: [
             TextButton(
               onPressed: onToggleActive,
