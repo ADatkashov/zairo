@@ -23,6 +23,7 @@ import '../../../workforce/presentation/widgets/change_requests_banner.dart';
 import '../../data/booking_exception.dart';
 import '../../data/models/booking.dart';
 import '../providers/booking_providers.dart';
+import 'booking_payment_screen.dart';
 import '../widgets/booking_payment_summary.dart';
 
 /// Reached directly from the bottom nav (a peer tab to Home/Search/
@@ -67,7 +68,7 @@ class MyBookingsScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             child: FactoryErrorState(
-              message: l10n.errorProfileGeneric(error.toString()),
+              message: l10n.errorProfileGeneric,
               onRetry: () => ref.invalidate(authControllerProvider),
             ),
           ),
@@ -80,13 +81,13 @@ class MyBookingsScreen extends ConsumerWidget {
 enum _BookingsTab { upcoming, completed, cancelled }
 
 extension on _BookingsTab {
-  /// The single status each tab filters to — this screen only ever shows
-  /// CONFIRMED/COMPLETED/CANCELLED bookings (see [Booking.status]), so a
-  /// direct 1:1 mapping is enough; no tab needs to match more than one status.
-  String get status => switch (this) {
-    _BookingsTab.upcoming => 'CONFIRMED',
-    _BookingsTab.completed => 'COMPLETED',
-    _BookingsTab.cancelled => 'CANCELLED',
+  /// The statuses each tab shows. Upcoming also holds a booking that is
+  /// still awaiting payment, so the customer can finish paying for it (or
+  /// cancel it) instead of it silently disappearing from the list.
+  Set<String> get statuses => switch (this) {
+    _BookingsTab.upcoming => const {'CONFIRMED', 'PENDING_PAYMENT'},
+    _BookingsTab.completed => const {'COMPLETED'},
+    _BookingsTab.cancelled => const {'CANCELLED'},
   };
 }
 
@@ -136,7 +137,9 @@ class _BookingsListState extends ConsumerState<_BookingsList> {
         }
         final sorted = [...bookings]
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        final filtered = sorted.where((b) => b.status == _tab.status).toList();
+        final filtered = sorted
+            .where((b) => _tab.statuses.contains(b.status))
+            .toList();
         return Column(
           children: [
             Padding(
@@ -159,7 +162,9 @@ class _BookingsListState extends ConsumerState<_BookingsList> {
                         physics: const AlwaysScrollableScrollPhysics(),
                         children: [
                           Padding(
-                            padding: const EdgeInsets.all(FactorySpacing.space6),
+                            padding: const EdgeInsets.all(
+                              FactorySpacing.space6,
+                            ),
                             child: FactoryEmptyState(
                               icon: Symbols.calendar_month_rounded,
                               title: switch (_tab) {
@@ -392,9 +397,11 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
                 ),
               ),
               const SizedBox(width: FactorySpacing.space2),
-              FactoryBadge(
-                label: _statusLabel(l10n, booking.status),
-                variant: _statusVariant(booking.status),
+              Flexible(
+                child: FactoryBadge(
+                  label: _statusLabel(l10n, booking.status),
+                  variant: _statusVariant(booking.status),
+                ),
               ),
             ],
           ),
@@ -425,7 +432,13 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
                 ),
                 if (booking.status == 'COMPLETED')
                   _BookAgainButton(booking: booking, userId: widget.userId),
-                if (booking.status == 'CONFIRMED')
+                if (booking.status == 'PENDING_PAYMENT')
+                  FactoryButton(
+                    label: l10n.bookingPayNowButton,
+                    onPressed: _payNow,
+                  ),
+                if (booking.status == 'CONFIRMED' ||
+                    booking.status == 'PENDING_PAYMENT')
                   FactoryButton(
                     label: l10n.cancelBookingButton,
                     variant: FactoryButtonVariant.textDanger,
@@ -473,14 +486,26 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
       context.push(
         AppRoutes.chat(
           matched.providerId,
-          providerName: matched.providerName ?? l10n.messagingUnknownBusinessName,
+          providerName:
+              matched.providerName ?? l10n.messagingUnknownBusinessName,
         ),
       );
       return;
     }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(l10n.messageAboutBookingSentMessage)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.messageAboutBookingSentMessage)),
+    );
+  }
+
+  /// Resumes payment for a booking that is still awaiting it. The payment
+  /// screen pops with `true` once the server confirms the booking.
+  Future<void> _payNow() async {
+    await context.push<bool>(
+      AppRoutes.bookingPayment,
+      extra: BookingPaymentArgs(booking: widget.booking),
+    );
+    if (!mounted) return;
+    ref.invalidate(myBookingsProvider(widget.userId));
   }
 
   Future<void> _confirmAndCancel() async {
@@ -523,9 +548,8 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
       setState(() => _isCancelling = false);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.errorBookingGeneric(e.toString()))),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.errorBookingGeneric)));
       setState(() => _isCancelling = false);
     }
   }
@@ -586,9 +610,7 @@ class _MessageAboutBookingDialogState
         FactoryButton(
           label: l10n.messageAboutBookingCancelButton,
           variant: FactoryButtonVariant.text,
-          onPressed: _isSubmitting
-              ? null
-              : () => Navigator.of(context).pop(),
+          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
         ),
         FactoryButton(
           label: l10n.messageAboutBookingSendButton,
@@ -626,7 +648,7 @@ class _MessageAboutBookingDialogState
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = l10n.errorMessagingGeneric(e.toString());
+        _error = l10n.errorMessagingGeneric;
         _isSubmitting = false;
       });
     }
@@ -634,6 +656,7 @@ class _MessageAboutBookingDialogState
 }
 
 String _statusLabel(AppLocalizations l10n, String status) => switch (status) {
+  'PENDING_PAYMENT' => l10n.bookingStatusPendingPayment,
   'CONFIRMED' => l10n.bookingStatusConfirmed,
   'COMPLETED' => l10n.bookingStatusCompleted,
   'CANCELLED' => l10n.bookingStatusCancelled,
@@ -644,6 +667,7 @@ String _statusLabel(AppLocalizations l10n, String status) => switch (status) {
 };
 
 FactoryBadgeVariant _statusVariant(String status) => switch (status) {
+  'PENDING_PAYMENT' => FactoryBadgeVariant.limited,
   'CONFIRMED' => FactoryBadgeVariant.available,
   'COMPLETED' => FactoryBadgeVariant.verified,
   'CANCELLED' => FactoryBadgeVariant.error,

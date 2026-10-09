@@ -17,7 +17,7 @@ enum _Period { today, thisWeek, thisMonth, custom }
 /// ZAIRO recovered, what's at risk, and what deserves attention next — all
 /// composed from real Booking/Payment/Smart Fill/Revenue Engine/Customer
 /// Intelligence data for one owner-selected reporting period (see backend's
-/// {@code BusinessAnalyticsService}). Every section shares the same
+/// `BusinessAnalyticsService`). Every section shares the same
 /// [AnalyticsRange] so the numbers on screen always agree with each other.
 class BusinessAnalyticsScreen extends ConsumerStatefulWidget {
   final AdminProvider provider;
@@ -201,7 +201,7 @@ class _ActionCenterSection extends ConsumerWidget {
           },
           loading: () => const FactoryLoadingState(),
           error: (error, _) => FactoryErrorState(
-            message: l10n.errorAnalyticsLoadFailed(error.toString()),
+            message: l10n.errorAnalyticsLoadFailed,
             onRetry: () => ref.invalidate(businessAnalyticsActionsProvider(providerId)),
           ),
         ),
@@ -296,7 +296,7 @@ class _OverviewSection extends ConsumerWidget {
           data: (overview) => _OverviewContent(overview: overview),
           loading: () => const FactoryLoadingState(),
           error: (error, _) => FactoryErrorState(
-            message: l10n.errorAnalyticsLoadFailed(error.toString()),
+            message: l10n.errorAnalyticsLoadFailed,
             onRetry: () => ref.invalidate(businessAnalyticsOverviewProvider((providerId, range))),
           ),
         ),
@@ -520,21 +520,38 @@ class _RateRing extends StatelessWidget {
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
     final tone = lowIsGood ? colors.warning : colors.primary;
-    return Row(
-      children: [
-        FactoryProgressRing(
-          value: rate,
-          size: 48,
-          strokeWidth: 6,
-          color: tone,
-          semanticLabel: label,
-          child: Text(_pct(rate), style: FactoryTypography.mono(size: 11, color: colors.text)),
-        ),
-        const SizedBox(width: FactorySpacing.space3),
-        Expanded(
-          child: Text(label, style: textTheme.labelMedium?.copyWith(color: colors.textSecondary)),
-        ),
-      ],
+    final ring = FactoryProgressRing(
+      value: rate,
+      size: 48,
+      strokeWidth: 6,
+      color: tone,
+      semanticLabel: label,
+      child: Text(_pct(rate), style: FactoryTypography.mono(size: 11, color: colors.text)),
+    );
+    final labelStyle = textTheme.labelMedium?.copyWith(color: colors.textSecondary, letterSpacing: 0);
+    // Two rings share a row, so on a narrow phone each gets ~110px: beside a
+    // 48px ring that leaves ~40px for the label, which broke words mid-letter
+    // ("Utilizati/on"). Below that width the label sits under the ring instead.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 150) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ring,
+              const SizedBox(height: FactorySpacing.space2),
+              Text(label, textAlign: TextAlign.center, style: labelStyle),
+            ],
+          );
+        }
+        return Row(
+          children: [
+            ring,
+            const SizedBox(width: FactorySpacing.space3),
+            Expanded(child: Text(label, style: labelStyle)),
+          ],
+        );
+      },
     );
   }
 }
@@ -615,7 +632,7 @@ class _RevenueSection extends ConsumerWidget {
           },
           loading: () => const FactoryLoadingState(),
           error: (error, _) => FactoryErrorState(
-            message: l10n.errorAnalyticsLoadFailed(error.toString()),
+            message: l10n.errorAnalyticsLoadFailed,
             onRetry: () => ref.invalidate(businessAnalyticsRevenueProvider((providerId, range))),
           ),
         ),
@@ -693,7 +710,7 @@ class _BookingsSection extends ConsumerWidget {
           },
           loading: () => const FactoryLoadingState(),
           error: (error, _) => FactoryErrorState(
-            message: l10n.errorAnalyticsLoadFailed(error.toString()),
+            message: l10n.errorAnalyticsLoadFailed,
             onRetry: () => ref.invalidate(businessAnalyticsBookingsProvider((providerId, range))),
           ),
         ),
@@ -753,7 +770,7 @@ class _SmartFillSection extends ConsumerWidget {
           },
           loading: () => const FactoryLoadingState(),
           error: (error, _) => FactoryErrorState(
-            message: l10n.errorAnalyticsLoadFailed(error.toString()),
+            message: l10n.errorAnalyticsLoadFailed,
             onRetry: () => ref.invalidate(businessAnalyticsSmartFillProvider((providerId, range))),
           ),
         ),
@@ -839,7 +856,7 @@ class _CustomersSection extends ConsumerWidget {
           },
           loading: () => const FactoryLoadingState(),
           error: (error, _) => FactoryErrorState(
-            message: l10n.errorAnalyticsLoadFailed(error.toString()),
+            message: l10n.errorAnalyticsLoadFailed,
             onRetry: () => ref.invalidate(businessAnalyticsCustomersProvider((providerId, range))),
           ),
         ),

@@ -76,7 +76,7 @@ class SmartFillCampaignsScreen extends ConsumerWidget {
         },
         loading: () => const FactoryLoadingState(),
         error: (error, _) => FactoryErrorState(
-          message: l10n.errorAnalyticsLoadFailed(error.toString()),
+          message: l10n.errorAnalyticsLoadFailed,
           onRetry: () => ref.invalidate(activeSmartFillCampaignsProvider(providerId)),
         ),
       ),

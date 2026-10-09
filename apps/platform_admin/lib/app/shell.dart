@@ -393,7 +393,8 @@ class _SidebarItem extends StatelessWidget {
               Badge(
                 isLabelVisible: badge > 0 && compact,
                 label: Text(badge > 9 ? '9+' : '$badge'),
-                backgroundColor: colors.coral,
+                backgroundColor: colors.error,
+                textColor: colors.bg,
                 child: Icon(selected ? item.selectedIcon : item.icon, size: 20, color: color),
               ),
               if (!compact) ...[
@@ -406,7 +407,7 @@ class _SidebarItem extends StatelessWidget {
                     style: textTheme.labelLarge?.copyWith(color: color),
                   ),
                 ),
-                if (badge > 0) Badge(label: Text(badge > 99 ? '99+' : '$badge'), backgroundColor: colors.coral),
+                if (badge > 0) Badge(label: Text(badge > 99 ? '99+' : '$badge'), backgroundColor: colors.error, textColor: colors.bg),
               ],
             ],
           ),

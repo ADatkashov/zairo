@@ -323,5 +323,19 @@
   "activityYesterday": "Вчера",
   "activityDetailTime": "Время",
   "activityDetailTarget": "Объект",
-  "activityDetailEntryId": "ID записи"
+  "activityDetailEntryId": "ID записи",
+  "financeCommission": "Комиссия",
+  "commissionDefaultTitle": "Комиссия по умолчанию",
+  "commissionDefaultHelp": "Действует для всех категорий без собственной ставки. 0% — платформа не берёт комиссию.",
+  "commissionCategoriesTitle": "По категориям",
+  "commissionOwnRate": "Своя ставка для категории",
+  "commissionFollowsDefault": "По умолчанию",
+  "commissionChange": "Изменить",
+  "commissionUseDefault": "Вернуть по умолчанию",
+  "commissionEditMessage": "Процент от каждой оплаты брони, от 0 до 100. Действует для новых оплат; уже совершённые оплаты сохраняют свою ставку.",
+  "commissionField": "Процент (%)",
+  "commissionSave": "Сохранить",
+  "commissionSaved": "Комиссия обновлена",
+  "commissionReset": "Категория снова использует ставку по умолчанию",
+  "commissionInvalid": "Введите число от 0 до 100 (до 2 знаков после запятой)"
 }

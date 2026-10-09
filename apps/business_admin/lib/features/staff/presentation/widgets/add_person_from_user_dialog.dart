@@ -135,7 +135,7 @@ class _AddPersonFromUserDialogState extends ConsumerState<AddPersonFromUserDialo
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = l10n.errorAddMasterFailed(e.toString()));
+      setState(() => _error = l10n.errorAddMasterFailed);
     }
   }
 
@@ -158,7 +158,7 @@ class _AddPersonFromUserDialogState extends ConsumerState<AddPersonFromUserDialo
       setState(() {
         _error = (e is DioException && e.response?.statusCode == 409)
             ? l10n.inviteAlreadySent
-            : l10n.errorAddMasterFailed(e.toString());
+            : l10n.errorAddMasterFailed;
         _isSubmitting = false;
       });
     }
@@ -182,7 +182,7 @@ class _AddPersonFromUserDialogState extends ConsumerState<AddPersonFromUserDialo
             ? e.localizedMessage(l10n)
             : (e is DioException && e.response?.statusCode == 409)
                 ? l10n.masterAlreadyAdded
-                : l10n.errorAddMasterFailed(e.toString());
+                : l10n.errorAddMasterFailed;
         _isSubmitting = false;
       });
     }

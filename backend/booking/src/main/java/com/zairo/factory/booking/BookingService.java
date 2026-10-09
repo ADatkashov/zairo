@@ -58,7 +58,9 @@ public class BookingService {
      * Atomically claims the slot (OPEN -> BOOKED) and creates a booking in
      * one transaction — starting at {@link BookingStatus#PENDING_PAYMENT},
      * <b>not</b> CONFIRMED (see ADR-0006: a booking is never confirmed
-     * without a successful payment). {@code @Version} on AvailabilitySlot
+     * without a successful payment). The one exception is a booking with
+     * nothing due online (no advance payment required, or a free service):
+     * it has no payment to wait for and is CONFIRMED right here. {@code @Version} on AvailabilitySlot
      * means a concurrent request for the same slot fails with
      * OptimisticLockingFailureException, which we turn into 409 — the slot
      * can't be double-booked even under concurrent requests.
@@ -167,11 +169,21 @@ public class BookingService {
                 BookingStatus.PENDING_PAYMENT, price, service.getCurrency(), Instant.now(),
                 settings.getDepositType(), settings.getDepositValueType(), settings.getDepositValue(),
                 depositAmount, service.getCityCode());
+        // Nothing is due online (the provider takes no advance payment, or the service is free): there is
+        // no payment to wait for, so the booking is confirmed right here instead of sitting in
+        // PENDING_PAYMENT until the unpaid-booking sweep cancels it. The customer pays at the venue.
+        boolean nothingToPayOnline = depositAmount.signum() <= 0;
+        if (nothingToPayOnline) {
+            booking.markConfirmed();
+        }
         booking = bookingRepository.save(booking);
 
         eventPublisher.publishEvent(new BookingAttemptedEvent(userId, serviceId, slot.getProviderId(), true, null));
         eventPublisher.publishEvent(new AvailabilitySlotBookedEvent(slot.getId(), booking.getId(),
                 slot.getProviderId()));
+        if (nothingToPayOnline) {
+            eventPublisher.publishEvent(new BookingConfirmedEvent(booking.getId(), userId, slot.getProviderId()));
+        }
         return booking;
     }
 

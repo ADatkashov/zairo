@@ -35,7 +35,7 @@ class ChangeRequestsScreen extends ConsumerWidget {
         loading: () => const FactoryLoadingState(),
         error: (error, _) => Center(
           child: FactoryErrorState(
-            message: l10n.errorProfileGeneric(error.toString()),
+            message: l10n.errorProfileGeneric,
             onRetry: () => ref.invalidate(changeRequestsProvider),
           ),
         ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/widgets/no_business_state.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../salon/data/models/admin_provider.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
@@ -85,16 +86,7 @@ class _CampaignCenterScreenState extends ConsumerState<CampaignCenterScreen> {
       body: providersAsync.when(
         data: (providers) {
           if (providers.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(FactorySpacing.space6),
-                child: Text(
-                  l10n.campaignCenterNoBusinesses,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
-                ),
-              ),
-            );
+            return NoBusinessState(message: l10n.campaignCenterNoBusinesses);
           }
           if (_providerId == null || !providers.any((p) => p.id == _providerId)) {
             _providerId = providers.first.id;
@@ -243,7 +235,7 @@ class _CampaignCenterBody extends ConsumerWidget {
               error: (error, _) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space4),
                 child: FactoryErrorState(
-                  message: l10n.errorCampaignsLoadFailed(error.toString()),
+                  message: l10n.errorCampaignsLoadFailed,
                   onRetry: () => ref.invalidate(campaignListProvider(key)),
                 ),
               ),
@@ -347,7 +339,7 @@ class _StatsRow extends ConsumerWidget {
       ),
       loading: () => const FactoryLoadingState(),
       error: (error, _) => FactoryErrorState(
-        message: l10n.errorCampaignStatsLoadFailed(error.toString()),
+        message: l10n.errorCampaignStatsLoadFailed,
         onRetry: () => ref.invalidate(campaignStatsProvider(providerId)),
       ),
     );

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
+import '../../../../core/provider_grid.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -194,8 +195,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       FactoryScreenSize.tablet => 2,
                       FactoryScreenSize.desktop => 3,
                     };
-                    void openProvider(ProviderSearchResult result) =>
-                        context.push(AppRoutes.provider(result.id), extra: result);
+                    void openProvider(ProviderSearchResult result) => context
+                        .push(AppRoutes.provider(result.id), extra: result);
 
                     return Column(
                       children: [
@@ -209,15 +210,19 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                l10n.searchResultsCount(results.length),
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(color: colors.textTertiary),
+                              Flexible(
+                                child: Text(
+                                  l10n.searchResultsCount(results.length),
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(color: colors.textTertiary),
+                                ),
                               ),
-                              _SortMenuButton(
-                                value: query.sort,
-                                onChanged: (sort) => setState(
-                                  () => _query = _query.copyWith(sort: sort),
+                              Flexible(
+                                child: _SortMenuButton(
+                                  value: query.sort,
+                                  onChanged: (sort) => setState(
+                                    () => _query = _query.copyWith(sort: sort),
+                                  ),
                                 ),
                               ),
                             ],
@@ -250,13 +255,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                     padding: const EdgeInsets.all(
                                       FactorySpacing.space4,
                                     ),
-                                    gridDelegate:
-                                        SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: columns,
-                                          mainAxisSpacing: FactorySpacing.space4,
-                                          crossAxisSpacing: FactorySpacing.space4,
-                                          childAspectRatio: 0.78,
-                                        ),
+                                    gridDelegate: providerGridDelegate(
+                                      context,
+                                      crossAxisCount: columns,
+                                      spacing: FactorySpacing.space4,
+                                    ),
                                     itemCount: results.length,
                                     itemBuilder: (context, index) {
                                       final result = results[index];
@@ -392,11 +395,13 @@ class _SortMenuButton extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            l10n.searchSortButtonLabel(_sortLabel(l10n, value)),
-            style: Theme.of(
-              context,
-            ).textTheme.labelMedium?.copyWith(color: colors.primary),
+          Flexible(
+            child: Text(
+              l10n.searchSortButtonLabel(_sortLabel(l10n, value)),
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelMedium
+                  ?.copyWith(color: colors.primary),
+            ),
           ),
           Icon(Symbols.expand_more_rounded, size: 18, color: colors.primary),
         ],
@@ -506,7 +511,10 @@ class _FilterSheetState extends State<_FilterSheet> {
                 children: [
                   _verticalChip(l10n.searchFilterCategoryAll, null),
                   for (final category in categories)
-                    _verticalChip(category.nameFor(languageCode), category.code),
+                    _verticalChip(
+                      category.nameFor(languageCode),
+                      category.code,
+                    ),
                 ],
               );
             },

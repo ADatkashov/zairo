@@ -73,6 +73,10 @@ class FactoryBottomNavigation extends StatelessWidget {
             for (var i = 0; i < destinations.length; i++)
               Flexible(
                 child: _NavItem(
+                  // Five or more tabs share ~70px each on a phone; the roomy
+                  // 12px side padding left a long label ("Бизнестер") ~50px
+                  // and it ellipsized to "Бизне…".
+                  dense: destinations.length > 4,
                   destination: destinations[i],
                   isSelected: i == selectedIndex,
                   onTap: () => onDestinationSelected(i),
@@ -87,11 +91,13 @@ class FactoryBottomNavigation extends StatelessWidget {
 
 class _NavItem extends StatelessWidget {
   const _NavItem({
+    required this.dense,
     required this.destination,
     required this.isSelected,
     required this.onTap,
   });
 
+  final bool dense;
   final FactoryNavDestination destination;
   final bool isSelected;
   final VoidCallback onTap;
@@ -116,7 +122,7 @@ class _NavItem extends StatelessWidget {
             duration: FactoryMotion.fast,
             curve: FactoryMotion.standard,
             constraints: const BoxConstraints(minWidth: 48, minHeight: 44),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            padding: EdgeInsets.symmetric(horizontal: dense ? 4 : 12, vertical: 7),
             decoration: BoxDecoration(
               color: isSelected ? colors.primaryTint : Colors.transparent,
               borderRadius: BorderRadius.circular(16),
@@ -148,7 +154,7 @@ class _NavItem extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelSmall
-                        ?.copyWith(fontSize: 10, color: color),
+                        ?.copyWith(fontSize: 10, letterSpacing: 0, color: color),
                   ),
                 ],
               ),

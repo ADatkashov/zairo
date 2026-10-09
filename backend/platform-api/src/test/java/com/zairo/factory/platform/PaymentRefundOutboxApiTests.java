@@ -230,6 +230,7 @@ class PaymentRefundOutboxApiTests {
         UUID providerId = UUID.fromString(restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
                 new HttpEntity<>(providerRequest, TestAuth.authHeaders(owner.accessToken())), Map.class).getBody()
                 .get("id").toString());
+        TestAuth.requireFullPayment(restTemplate, owner, providerId);
 
         var serviceRequest = new CreateServiceRequest(prefix + "Service", 30, price, "USD");
         UUID serviceId = UUID.fromString(restTemplate.exchange("/api/v1/providers/" + providerId + "/services",

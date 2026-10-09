@@ -182,7 +182,7 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.errorChatSendFailed(e.toString()))));
+      ).showSnackBar(SnackBar(content: Text(l10n.errorChatSendFailed)));
     } finally {
       if (mounted) setState(() => _isSending = false);
     }
@@ -275,12 +275,14 @@ class _ComposeBar extends StatelessWidget {
               label: l10n.chatComposeLabel,
               controller: controller,
               enabled: !isSending,
+              minLines: 1,
               maxLines: 4,
               textInputAction: TextInputAction.newline,
             ),
           ),
           const SizedBox(width: FactorySpacing.space2),
           IconButton.filled(
+            tooltip: AppLocalizations.of(context)!.chatSendTooltip,
             onPressed: isSending ? null : onSend,
             icon: isSending
                 ? SizedBox(

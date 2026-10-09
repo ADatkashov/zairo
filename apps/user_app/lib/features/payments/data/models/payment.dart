@@ -8,6 +8,11 @@ class Payment {
   final String status;
   final String? providerReference;
   final String? failureReason;
+
+  /// Where to send the customer to pay — only set while a redirect-based
+  /// provider (Freedom Pay) is waiting for them; null for the mock and once
+  /// the payment has resolved.
+  final String? checkoutUrl;
   final String? paymentType; // DEPOSIT, FULL, REMAINING
   final DateTime createdAt;
 
@@ -19,6 +24,7 @@ class Payment {
     required this.status,
     this.providerReference,
     this.failureReason,
+    this.checkoutUrl,
     this.paymentType,
     required this.createdAt,
   });
@@ -32,6 +38,7 @@ class Payment {
       status: json['status'] as String,
       providerReference: json['providerReference'] as String?,
       failureReason: json['failureReason'] as String?,
+      checkoutUrl: json['checkoutUrl'] as String?,
       paymentType: json['paymentType'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
