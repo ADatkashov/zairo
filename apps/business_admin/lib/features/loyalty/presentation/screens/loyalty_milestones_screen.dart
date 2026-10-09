@@ -30,7 +30,7 @@ class LoyaltyMilestonesScreen extends ConsumerWidget {
         child: Padding(
           padding: const EdgeInsets.all(FactorySpacing.space4),
           child: FactoryErrorState(
-            message: l10n.errorLoyaltyMilestonesLoadFailed(error.toString()),
+            message: l10n.errorLoyaltyMilestonesLoadFailed,
             onRetry: () => ref.invalidate(loyaltyMilestonesProvider(providerId)),
           ),
         ),
@@ -168,7 +168,7 @@ class _MilestonesFormState extends ConsumerState<_MilestonesForm> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.loyaltyMilestonesSavedMessage)));
     } catch (e) {
       setState(() {
-        _error = e is LoyaltyAdminException ? e.localizedMessage(l10n) : l10n.errorLoyaltyActionFailed(e.toString());
+        _error = e is LoyaltyAdminException ? e.localizedMessage(l10n) : l10n.errorLoyaltyActionFailed;
         _isSubmitting = false;
       });
     }

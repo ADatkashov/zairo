@@ -190,7 +190,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   String _errorText(AppLocalizations l10n, Object error) {
     if (error is AuthException) return error.localizedMessage(l10n);
-    return l10n.errorAuthGeneric(error.toString());
+    return l10n.errorAuthGeneric;
   }
 
   void _submit() {

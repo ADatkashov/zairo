@@ -102,7 +102,7 @@ class _AddPortfolioItemDialogState extends ConsumerState<AddPortfolioItemDialog>
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = AppLocalizations.of(context)!.errorReadFileFailed(e.toString()));
+      setState(() => _error = AppLocalizations.of(context)!.errorReadFileFailed);
     }
   }
 
@@ -130,7 +130,7 @@ class _AddPortfolioItemDialogState extends ConsumerState<AddPortfolioItemDialog>
       Navigator.of(context).pop(true);
     } catch (e) {
       setState(() {
-        _error = l10n.errorAddPhotoFailed(e.toString());
+        _error = l10n.errorAddPhotoFailed;
         _isSubmitting = false;
       });
     }

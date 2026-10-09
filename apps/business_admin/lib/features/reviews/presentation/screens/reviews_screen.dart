@@ -103,7 +103,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                 error: (error, _) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space4),
                   child: FactoryErrorState(
-                    message: l10n.errorReviewsLoadFailed(error.toString()),
+                    message: l10n.errorReviewsLoadFailed,
                     onRetry: () => ref.invalidate(providerReviewsProvider(key)),
                   ),
                 ),

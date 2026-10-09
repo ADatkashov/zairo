@@ -129,7 +129,7 @@ class _AddServiceDialogState extends ConsumerState<AddServiceDialog> {
         child: Center(child: CircularProgressIndicator()),
       ),
       error: (error, _) => Text(
-        l10n.errorCatalogServicesLoad(error.toString()),
+        l10n.errorCatalogServicesLoad,
         style: TextStyle(color: Theme.of(context).colorScheme.error),
       ),
       data: (services) {
@@ -205,7 +205,7 @@ class _AddServiceDialogState extends ConsumerState<AddServiceDialog> {
       Navigator.of(context).pop(true);
     } catch (e) {
       setState(() {
-        _error = _isEditing ? l10n.errorServiceSaveFailed(e.toString()) : l10n.errorServiceAddFailed(e.toString());
+        _error = _isEditing ? l10n.errorServiceSaveFailed : l10n.errorServiceAddFailed;
         _isSubmitting = false;
       });
     }

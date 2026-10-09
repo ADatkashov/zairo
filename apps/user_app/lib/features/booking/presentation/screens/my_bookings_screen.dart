@@ -68,7 +68,7 @@ class MyBookingsScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             child: FactoryErrorState(
-              message: l10n.errorProfileGeneric(error.toString()),
+              message: l10n.errorProfileGeneric,
               onRetry: () => ref.invalidate(authControllerProvider),
             ),
           ),
@@ -503,7 +503,7 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.errorBookingGeneric(e.toString()))),
+        SnackBar(content: Text(l10n.errorBookingGeneric)),
       );
       setState(() => _isCancelling = false);
     }
@@ -605,7 +605,7 @@ class _MessageAboutBookingDialogState
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = l10n.errorMessagingGeneric(e.toString());
+        _error = l10n.errorMessagingGeneric;
         _isSubmitting = false;
       });
     }

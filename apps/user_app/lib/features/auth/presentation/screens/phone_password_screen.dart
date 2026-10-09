@@ -96,7 +96,7 @@ class _PhonePasswordScreenState extends ConsumerState<PhonePasswordScreen> {
     if (authState.hasError) {
       final error = authState.error;
       setState(() {
-        _error = error is AuthException ? error.localizedMessage(l10n) : l10n.errorAuthGeneric(error.toString());
+        _error = error is AuthException ? error.localizedMessage(l10n) : l10n.errorAuthGeneric;
         _isSubmitting = false;
       });
       return;
@@ -130,7 +130,7 @@ class _PhonePasswordScreenState extends ConsumerState<PhonePasswordScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = l10n.errorAuthGeneric(e.toString());
+        _error = l10n.errorAuthGeneric;
         _isSendingCode = false;
       });
     }

@@ -20,7 +20,7 @@
 
   "errorReviewDuplicateOrNotCompleted": "Бұл брондауда пікір бар немесе ол әлі аяқталмаған.",
   "errorReviewInvalidRating": "Баға 1-ден 5-ке дейін болуы керек.",
-  "errorReviewSubmitFailed": "Пікірді жіберу сәтсіз аяқталды: {error}",
+  "errorReviewSubmitFailed": "Пікірді жіберу сәтсіз аяқталды",
 
   "emailLabel": "Email",
   "passwordLabel": "Құпия сөз",
@@ -41,7 +41,7 @@
 
   "errorAuthEmailAlreadyRegistered": "Бұл email бұрын тіркелген.",
   "errorAuthInvalidCredentials": "Email немесе құпия сөз қате.",
-  "errorAuthGeneric": "Бірдеңе дұрыс болмады: {error}",
+  "errorAuthGeneric": "Бірдеңе дұрыс болмады",
   "errorAuthInvalidResetToken": "Бұл код жарамсыз немесе мерзімі өтіп кеткен. Жаңасын сұраңыз.",
 
   "forgotPasswordTitle": "Құпия сөзді қалпына келтіру",
@@ -102,7 +102,7 @@
   "bookingConfirmationViewBookingsButton": "Менің брондарым",
   "bookingConfirmationBackHomeButton": "Басты бетке",
   "bookingConfirmedButError": "Брондау расталды, бірақ {error}",
-  "errorBookingGeneric": "Брондау сәтсіз аяқталды: {error}",
+  "errorBookingGeneric": "Брондау сәтсіз аяқталды",
 
   "homeSearchPrompt": "Қандай қызмет іздеп жатырсыз?",
   "homeEmptyTitle": "Әзірге провайдерлер жоқ",
@@ -209,7 +209,7 @@
   "starRatingSemanticLabel": "{count, plural, other{{count} жұлдыз қою}}",
 
   "profileTitle": "Профиль",
-  "errorProfileGeneric": "Бірдеңе дұрыс болмады: {error}",
+  "errorProfileGeneric": "Бірдеңе дұрыс болмады",
   "profileLoggedOutTitle": "Сіз жүйеге кірмегенсіз",
   "profileLoggedOutPrompt": "Брондау және пікір қалдыру үшін кіріңіз",
   "profileCreateAccount": "Аккаунт құру",
@@ -222,7 +222,7 @@
   "portfolioEmptyTitle": "Әзірге фото жоқ",
   "portfolioEmptyMessage": "Портфолиода әзірге фото жоқ.",
   "portfolioPhotoSemanticLabel": "Портфолио фотосы",
-  "errorPortfolioLoadFailed": "Портфолионы жүктеу мүмкін болмады: {error}",
+  "errorPortfolioLoadFailed": "Портфолионы жүктеу мүмкін болмады",
   "portfolioViewerCloseTooltip": "Жабу",
   "portfolioViewerPreviousTooltip": "Алдыңғы сурет",
   "portfolioViewerNextTooltip": "Келесі сурет",
@@ -233,7 +233,7 @@
   "reviewCommentHint": "Пікір (міндетті емес)",
   "reviewCancel": "Бас тарту",
   "reviewSubmit": "Жіберу",
-  "errorReviewLoadFailed": "Пікірді жүктеу мүмкін болмады: {error}",
+  "errorReviewLoadFailed": "Пікірді жүктеу мүмкін болмады",
 
   "viewOnMapButton": "Картадан көру",
   "mastersSectionTitle": "Шеберлер",
@@ -319,8 +319,8 @@
   "changeAvatarCancelButton": "Бас тарту",
   "changeAvatarSaveButton": "Сақтау",
   "changeAvatarRemoveButton": "Фотоны өшіру",
-  "changeAvatarErrorReadFileFailed": "Файлды оқу мүмкін болмады: {error}",
-  "changeAvatarErrorSaveFailed": "Аватарды жаңарту мүмкін болмады: {error}",
+  "changeAvatarErrorReadFileFailed": "Файлды оқу мүмкін болмады",
+  "changeAvatarErrorSaveFailed": "Аватарды жаңарту мүмкін болмады",
   "imagePickerCameraLabel": "Камера",
   "imagePickerGalleryLabel": "Галерея",
 
@@ -362,7 +362,7 @@
   "loyaltyRedemptionSuccessTitle": "Сыйлық алынды!",
   "loyaltyRedemptionSuccessMessage": "Сыйлықты қолдану үшін бұл кодты төлем кезінде провайдерге көрсетіңіз.",
   "loyaltyRedemptionSuccessDone": "Дайын",
-  "errorLoyaltyRedeemFailed": "Сыйлықты айырбастау мүмкін болмады: {error}",
+  "errorLoyaltyRedeemFailed": "Сыйлықты айырбастау мүмкін болмады",
   "errorLoyaltyActionConflict": "Бұл әрекетті орындау мүмкін емес. Бетті жаңартып, қайта көріңіз.",
   "loyaltyHistoryTitle": "Ұпай тарихы",
   "loyaltyHistoryEmptyTitle": "Әзірге әрекет жоқ",
@@ -392,7 +392,7 @@
   "loyaltyRedemptionCancelKeepButton": "Қалдыру",
   "loyaltyRedemptionCancelConfirmButton": "Айырбастаудан бас тарту",
   "loyaltyRedemptionCancelledMessage": "Айырбастаудан бас тартылды — ұпайлар қайтарылды.",
-  "errorLoyaltyCancelGeneric": "Айырбастаудан бас тарту мүмкін болмады: {error}",
+  "errorLoyaltyCancelGeneric": "Айырбастаудан бас тарту мүмкін болмады",
   "loyaltyRedemptionCreatedOn": "{date} айырбасталды",
   "loyaltyRedemptionAppliedOn": "{date} қолданылды",
 
@@ -406,7 +406,7 @@
   "chatThreadEmptyTitle": "Әзірге хабарлама жоқ",
   "chatThreadEmptyMessage": "Сәлемдесіңіз немесе уақыт туралы сұраңыз. Жауаптар осында көрінеді.",
   "errorChatThreadLoadFailed": "Бұл әңгімені жүктеу мүмкін болмады.",
-  "errorChatSendFailed": "Хабарламаңызды жіберу мүмкін болмады: {error}",
+  "errorChatSendFailed": "Хабарламаңызды жіберу мүмкін болмады",
   "chatComposeLabel": "Хабарлама",
   "chatBookingContextLabel": "Жазба туралы",
   "messageAboutBookingButton": "Осы жазба туралы жазу",
@@ -417,7 +417,7 @@
   "messageAboutBookingSentMessage": "Хабарлама жіберілді.",
   "errorMessagingNotYourBooking": "Бұл сіздің жазбаңыз емес.",
   "errorMessagingBookingNotFound": "Бұл жазба табылмады.",
-  "errorMessagingGeneric": "Хабарламаңызды жіберу мүмкін болмады: {error}",
+  "errorMessagingGeneric": "Хабарламаңызды жіберу мүмкін болмады",
 
   "bookingPayFullTitle": "Толық төлем",
 
@@ -612,5 +612,8 @@
   "paymentCardGenericBrand": "Карта",
   "paymentChooseTitle": "Қалай төлегіңіз келеді?",
   "paymentChooseOtherCard": "Басқа карта (төлем беті)",
-  "paymentChoosePayButton": "Төлеу"
+  "paymentChoosePayButton": "Төлеу",
+  "citiesLoadFailed": "Қалаларды жүктеу мүмкін болмады. Қайталап көріңіз.",
+  "citySelectLoading": "Қала ауыстырылуда…",
+  "citySelectFailed": "Қаланы ауыстыру мүмкін болмады. Қайталап көріңіз."
 }

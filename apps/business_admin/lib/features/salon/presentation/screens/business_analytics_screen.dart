@@ -201,7 +201,7 @@ class _ActionCenterSection extends ConsumerWidget {
           },
           loading: () => const FactoryLoadingState(),
           error: (error, _) => FactoryErrorState(
-            message: l10n.errorAnalyticsLoadFailed(error.toString()),
+            message: l10n.errorAnalyticsLoadFailed,
             onRetry: () => ref.invalidate(businessAnalyticsActionsProvider(providerId)),
           ),
         ),
@@ -296,7 +296,7 @@ class _OverviewSection extends ConsumerWidget {
           data: (overview) => _OverviewContent(overview: overview),
           loading: () => const FactoryLoadingState(),
           error: (error, _) => FactoryErrorState(
-            message: l10n.errorAnalyticsLoadFailed(error.toString()),
+            message: l10n.errorAnalyticsLoadFailed,
             onRetry: () => ref.invalidate(businessAnalyticsOverviewProvider((providerId, range))),
           ),
         ),
@@ -615,7 +615,7 @@ class _RevenueSection extends ConsumerWidget {
           },
           loading: () => const FactoryLoadingState(),
           error: (error, _) => FactoryErrorState(
-            message: l10n.errorAnalyticsLoadFailed(error.toString()),
+            message: l10n.errorAnalyticsLoadFailed,
             onRetry: () => ref.invalidate(businessAnalyticsRevenueProvider((providerId, range))),
           ),
         ),
@@ -693,7 +693,7 @@ class _BookingsSection extends ConsumerWidget {
           },
           loading: () => const FactoryLoadingState(),
           error: (error, _) => FactoryErrorState(
-            message: l10n.errorAnalyticsLoadFailed(error.toString()),
+            message: l10n.errorAnalyticsLoadFailed,
             onRetry: () => ref.invalidate(businessAnalyticsBookingsProvider((providerId, range))),
           ),
         ),
@@ -753,7 +753,7 @@ class _SmartFillSection extends ConsumerWidget {
           },
           loading: () => const FactoryLoadingState(),
           error: (error, _) => FactoryErrorState(
-            message: l10n.errorAnalyticsLoadFailed(error.toString()),
+            message: l10n.errorAnalyticsLoadFailed,
             onRetry: () => ref.invalidate(businessAnalyticsSmartFillProvider((providerId, range))),
           ),
         ),
@@ -839,7 +839,7 @@ class _CustomersSection extends ConsumerWidget {
           },
           loading: () => const FactoryLoadingState(),
           error: (error, _) => FactoryErrorState(
-            message: l10n.errorAnalyticsLoadFailed(error.toString()),
+            message: l10n.errorAnalyticsLoadFailed,
             onRetry: () => ref.invalidate(businessAnalyticsCustomersProvider((providerId, range))),
           ),
         ),

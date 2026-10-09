@@ -103,7 +103,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
         },
         loading: () => const FactoryLoadingState(),
         error: (error, _) => FactoryErrorState(
-          message: l10n.errorAnalyticsLoadFailed(error.toString()),
+          message: l10n.errorAnalyticsLoadFailed,
           onRetry: () => ref.invalidate(customerListProvider((providerId, retentionStatus))),
         ),
       ),

@@ -99,7 +99,7 @@ class _LoyaltyRedemptionsScreenState extends ConsumerState<LoyaltyRedemptionsScr
                 error: (error, _) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space4),
                   child: FactoryErrorState(
-                    message: l10n.errorLoyaltyRedemptionsLoadFailed(error.toString()),
+                    message: l10n.errorLoyaltyRedemptionsLoadFailed,
                     onRetry: () => ref.invalidate(loyaltyRedemptionsProvider(key)),
                   ),
                 ),
@@ -193,7 +193,7 @@ class _LoyaltyRedemptionsScreenState extends ConsumerState<LoyaltyRedemptionsScr
       setState(_resetPaging);
     } catch (e) {
       if (!context.mounted) return;
-      final message = e is LoyaltyAdminException ? e.localizedMessage(l10n) : l10n.errorLoyaltyActionFailed(e.toString());
+      final message = e is LoyaltyAdminException ? e.localizedMessage(l10n) : l10n.errorLoyaltyActionFailed;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     }
   }
@@ -287,7 +287,7 @@ class _ApplyRedemptionDialogState extends ConsumerState<_ApplyRedemptionDialog> 
       Navigator.of(context).pop(true);
     } catch (e) {
       setState(() {
-        _error = e is LoyaltyAdminException ? e.localizedMessage(l10n) : l10n.errorLoyaltyActionFailed(e.toString());
+        _error = e is LoyaltyAdminException ? e.localizedMessage(l10n) : l10n.errorLoyaltyActionFailed;
         _isSubmitting = false;
       });
     }
