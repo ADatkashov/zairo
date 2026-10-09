@@ -11,12 +11,15 @@ class Booking {
   final double? remainingAmount;
   final DateTime createdAt;
 
-  /// Read-side enrichment — null when the backend omits it (older server,
-  /// deleted service, or a write response that isn't enriched).
+  // What the booking references by id, resolved by the backend for display.
+  // All nullable: an older backend (or a reference that no longer resolves)
+  // simply leaves them out, and the UI falls back to what it always showed.
   final String? serviceTitle;
   final String? providerId;
   final String? providerName;
   final String? providerVertical;
+
+  /// When the appointment starts and ends (the booked slot's times).
   final DateTime? startsAt;
   final DateTime? endsAt;
 

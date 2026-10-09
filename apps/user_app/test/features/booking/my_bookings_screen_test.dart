@@ -2,6 +2,7 @@ import 'package:core_network/core_network.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -248,19 +249,19 @@ void main() {
 
     expect(find.text('Haircut'), findsOneWidget);
     expect(find.text('Salon Aurora'), findsOneWidget);
-    expect(find.text('Appointment: Oct 5, 14:30'), findsOneWidget);
+    expect(find.text('Mon, Oct 5 · 14:30–15:00'), findsOneWidget);
 
     await tester.tap(find.text('Completed'));
     await tester.pumpAndSettle();
     expect(find.text('Manicure'), findsOneWidget);
     expect(find.text('Nail Bar'), findsOneWidget);
-    expect(find.text('Appointment: Sep 1, 09:05'), findsOneWidget);
+    expect(find.text('Tue, Sep 1 · 09:05–09:35'), findsOneWidget);
 
     await tester.tap(find.text('Cancelled'));
     await tester.pumpAndSettle();
     expect(find.text('Coloring'), findsOneWidget);
     expect(find.text('Studio K'), findsOneWidget);
-    expect(find.text('Appointment: Aug 20, 18:00'), findsOneWidget);
+    expect(find.text('Thu, Aug 20 · 18:00–18:30'), findsOneWidget);
   });
 
   test('Booking.fromJson tolerates missing enrichment fields', () {
@@ -683,5 +684,78 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('provider provider-9'), findsOneWidget);
+  });
+
+  Future<void> pumpBookings(WidgetTester tester, List<Booking> bookings) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(_FakeBookingApi(bookings)),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const MyBookingsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  Booking withDetails(String id, {required DateTime starts, String title = 'Gel manicure'}) => Booking(
+    id: id,
+    userId: 'user-1',
+    serviceId: 'service-$id',
+    availabilitySlotId: 'slot-$id',
+    status: 'CONFIRMED',
+    totalPrice: 8000,
+    createdAt: DateTime(2026, 1, 1),
+    serviceTitle: title,
+    providerId: 'provider-1',
+    providerName: 'Nur Beauty Salon',
+    providerVertical: 'beauty',
+    startsAt: starts,
+    endsAt: starts.add(const Duration(hours: 1)),
+  );
+
+  testWidgets('a booking says what was booked, with whom and when', (tester) async {
+    await pumpBookings(tester, [withDetails('b1', starts: DateTime(2026, 10, 10, 10))]);
+
+    expect(find.text('Gel manicure'), findsOneWidget);
+    expect(find.text('Nur Beauty Salon'), findsOneWidget);
+    expect(find.text('Sat, Oct 10 · 10:00–11:00'), findsOneWidget);
+  });
+
+  testWidgets('a booking without resolved details still renders as before', (tester) async {
+    await pumpBookings(tester, [
+      Booking(
+        id: 'b1',
+        userId: 'user-1',
+        serviceId: 's1',
+        availabilitySlotId: 'slot-1',
+        status: 'CONFIRMED',
+        totalPrice: 8000,
+        createdAt: DateTime(2026, 1, 1),
+      ),
+    ]);
+
+    expect(find.text('8 000 ₸'), findsOneWidget);
+    expect(find.text('Confirmed'), findsOneWidget);
+    expect(find.byIcon(Symbols.event_rounded), findsNothing);
+  });
+
+  testWidgets('upcoming shows the soonest visit first', (tester) async {
+    await pumpBookings(tester, [
+      // Made first but happens last, so it must not be listed first.
+      withDetails('late', starts: DateTime(2026, 11, 20, 12), title: 'Later visit'),
+      withDetails('soon', starts: DateTime(2026, 10, 10, 10), title: 'Sooner visit'),
+    ]);
+
+    final sooner = tester.getTopLeft(find.text('Sooner visit')).dy;
+    final later = tester.getTopLeft(find.text('Later visit')).dy;
+    expect(sooner, lessThan(later));
   });
 }
