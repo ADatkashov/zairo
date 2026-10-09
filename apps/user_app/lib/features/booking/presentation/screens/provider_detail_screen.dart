@@ -398,6 +398,10 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                         service.durationMinutes,
                       ),
                       price: service.price,
+                      // The service's own currency — the sticky bar and the
+                      // payment summary already use it; without this the row
+                      // fell back to the platform default and could disagree.
+                      currencySymbol: service.currency,
                       selected: _selectedServiceId == service.id,
                       onTap: () => setState(() {
                         if (_selectedServiceId != service.id && anyMode) {
