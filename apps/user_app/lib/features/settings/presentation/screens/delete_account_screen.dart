@@ -48,7 +48,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
       body: ListView(
         padding: const EdgeInsets.all(FactorySpacing.space4),
         children: [
-          Text(l10n.deleteAccountWarning, style: textTheme.titleMedium?.copyWith(color: colors.coral)),
+          Text(l10n.deleteAccountWarning, style: textTheme.titleMedium?.copyWith(color: colors.error)),
           const SizedBox(height: FactorySpacing.space3),
           Text(l10n.deleteAccountWhatIsDeleted, style: textTheme.bodyMedium),
           const SizedBox(height: FactorySpacing.space3),

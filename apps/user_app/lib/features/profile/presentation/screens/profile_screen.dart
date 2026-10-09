@@ -409,9 +409,9 @@ class _LogOutButton extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Symbols.logout_rounded, size: 18, color: colors.coral),
+                Icon(Symbols.logout_rounded, size: 18, color: colors.error),
                 const SizedBox(width: 8),
-                Text(l10n.profileLogOut, style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.coral)),
+                Text(l10n.profileLogOut, style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.error)),
               ],
             ),
           ),
