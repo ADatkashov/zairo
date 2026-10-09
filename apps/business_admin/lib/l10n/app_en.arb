@@ -2513,5 +2513,15 @@
   "billingRemoveCardKeep": "Keep card",
   "@billingRemoveCardKeep": {"description": "billingRemoveCardKeep"},
   "billingRemoveCardFailed": "Couldn't remove the card. Please try again.",
-  "@billingRemoveCardFailed": {"description": "billingRemoveCardFailed"}
+  "@billingRemoveCardFailed": {"description": "billingRemoveCardFailed"},
+  "salonTabOverview": "Overview",
+  "@salonTabOverview": {"description": "Tab label on the business detail screen."},
+  "salonTabServices": "Services",
+  "@salonTabServices": {"description": "Tab label on the business detail screen."},
+  "salonTabTeam": "Team",
+  "@salonTabTeam": {"description": "Tab label on the business detail screen."},
+  "salonTabBookings": "Bookings",
+  "@salonTabBookings": {"description": "Tab label on the business detail screen."},
+  "salonTabSettings": "Settings",
+  "@salonTabSettings": {"description": "Tab label on the business detail screen."}
 }

@@ -183,6 +183,36 @@ ThemeData _factoryTheme(FactoryColors colors, FactoryAppProfile? profile) {
       shape: RoundedRectangleBorder(borderRadius: FactoryRadius.mdRadius),
       behavior: SnackBarBehavior.floating,
     ),
+    // Section tabs (e.g. the business-detail screen) — brand-coloured
+    // indicator, readable inactive label, full-width hairline underneath.
+    tabBarTheme: TabBarThemeData(
+      labelColor: colors.primaryStrong,
+      unselectedLabelColor: colors.textSecondary,
+      labelStyle: textTheme.labelLarge,
+      unselectedLabelStyle: textTheme.labelLarge,
+      indicatorColor: colors.primary,
+      indicatorSize: TabBarIndicatorSize.label,
+      dividerColor: colors.border,
+      dividerHeight: 1,
+      overlayColor: WidgetStatePropertyAll(colors.primaryTint.withValues(alpha: 0.5)),
+      tabAlignment: TabAlignment.start,
+    ),
+    progressIndicatorTheme: ProgressIndicatorThemeData(
+      color: colors.primary,
+      linearTrackColor: colors.surfaceAlt,
+      circularTrackColor: Colors.transparent,
+    ),
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith(
+        (s) => s.contains(WidgetState.selected) ? colors.onPrimary : colors.textTertiary,
+      ),
+      trackColor: WidgetStateProperty.resolveWith(
+        (s) => s.contains(WidgetState.selected) ? colors.primary : colors.surfaceAlt,
+      ),
+      trackOutlineColor: WidgetStateProperty.resolveWith(
+        (s) => s.contains(WidgetState.selected) ? Colors.transparent : colors.borderStrong,
+      ),
+    ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: colors.surface,
       indicatorColor: colors.primaryTint,
