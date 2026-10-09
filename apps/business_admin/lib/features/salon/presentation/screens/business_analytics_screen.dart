@@ -17,7 +17,7 @@ enum _Period { today, thisWeek, thisMonth, custom }
 /// ZAIRO recovered, what's at risk, and what deserves attention next — all
 /// composed from real Booking/Payment/Smart Fill/Revenue Engine/Customer
 /// Intelligence data for one owner-selected reporting period (see backend's
-/// {@code BusinessAnalyticsService}). Every section shares the same
+/// `BusinessAnalyticsService`). Every section shares the same
 /// [AnalyticsRange] so the numbers on screen always agree with each other.
 class BusinessAnalyticsScreen extends ConsumerStatefulWidget {
   final AdminProvider provider;

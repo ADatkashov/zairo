@@ -74,3 +74,17 @@ action labels (`action*`), the payout / refund wording (`payout*`, `refund*`,
 `reconcile*` — money-related, so precision matters) and the confirmation
 dialogs (`suspendMessage`, `catalogHideMessage`, `cityDeleteMessage`,
 `payoutMarkPaidMessage`).
+
+## Added 2026-10 (machine-written, please have a Kazakh speaker check)
+
+These keys were missing from `app_kk.arb` (the app showed them in English to
+Kazakh users) and were filled in by a non-native pass: the deposit / payment
+breakdown texts in both apps (`paymentBreakdownTitle`, `paymentTotalPrice`,
+`paymentDepositAmount`, `paymentDepositPercentage`, `paymentRemainingAmount`,
+`paymentRemainingInfo`), business_admin's `bookingSettingsTitle`,
+`depositPercentageLabel`, `depositPercentageSaved`, and user_app's
+`paymentMethodsTitle`, `paymentMethodOnline`, `paymentMethodCash`,
+`paymentStatusPending`, `paymentStatusProcessing`,
+`bookingConfirmationPaidLabel`, `bookingConfirmationRemainingLabel`,
+`bookingPaymentInstructions`, `selectCity`. A `l10n_parity_test.dart` in each
+app now fails if a key is added to English without Russian and Kazakh.

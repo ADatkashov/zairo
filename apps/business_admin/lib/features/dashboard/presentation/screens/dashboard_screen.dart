@@ -225,7 +225,7 @@ class DashboardScreen extends ConsumerWidget {
                     selectedCity = cities.first.code;
                   }
                   return DropdownButtonFormField<String>(
-                    value: selectedCity,
+                    initialValue: selectedCity,
                     decoration: InputDecoration(
                       labelText: l10n.selectCity,
                       border: const OutlineInputBorder(),
@@ -839,7 +839,7 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
               data: (cities) {
                 if (cities.isEmpty) return Text(l10n.noCitiesAvailable);
                 return DropdownButtonFormField<String>(
-                  value: _cityCode ?? cities.first.code,
+                  initialValue: _cityCode ?? cities.first.code,
                   decoration: InputDecoration(
                     labelText: l10n.selectCity,
                     border: const OutlineInputBorder(),
