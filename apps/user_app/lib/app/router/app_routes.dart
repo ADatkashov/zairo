@@ -71,6 +71,7 @@ abstract final class AppRoutes {
   static const changeRequests = '/change-requests';
   static const redemptions = '/redemptions';
   static const vehicles = '/vehicles';
+  static const paymentCards = '/payment-cards';
   static const support = '/support';
   static const about = '/about';
   static const settings = '/settings';

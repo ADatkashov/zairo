@@ -36,6 +36,7 @@ public class PaymentsService {
     private final PaymentAllocationService paymentAllocationService;
     private final BusinessPayoutRepository businessPayoutRepository;
     private final PaymentPartialRefundRepository partialRefundRepository;
+    private final SavedCardService savedCardService;
     private final String successUrl;
     private final String failureUrl;
 
@@ -44,7 +45,7 @@ public class PaymentsService {
             PaymentProvider paymentProvider, @Value("${payment.provider:mock}") String providerName,
             ProviderOwnership providerOwnership, ApplicationEventPublisher eventPublisher,
             PaymentAllocationService paymentAllocationService, BusinessPayoutRepository businessPayoutRepository,
-            PaymentPartialRefundRepository partialRefundRepository,
+            PaymentPartialRefundRepository partialRefundRepository, SavedCardService savedCardService,
             @Value("${payment.return.success-url:}") String successUrl,
             @Value("${payment.return.failure-url:}") String failureUrl) {
         this.paymentRepository = paymentRepository;
@@ -58,6 +59,7 @@ public class PaymentsService {
         this.paymentAllocationService = paymentAllocationService;
         this.businessPayoutRepository = businessPayoutRepository;
         this.partialRefundRepository = partialRefundRepository;
+        this.savedCardService = savedCardService;
         this.successUrl = successUrl;
         this.failureUrl = failureUrl;
     }
@@ -75,6 +77,18 @@ public class PaymentsService {
      */
     @Transactional
     public Payment createPayment(UUID bookingId, UUID callerId) {
+        return createPayment(bookingId, callerId, null);
+    }
+
+    /**
+     * As {@link #createPayment(UUID, UUID)}, optionally paying with one of the
+     * customer's saved cards: that charges the stored card right away (no
+     * payment page). Only the booking's own customer may do that, and only
+     * with their own card. Without a saved card, a customer who switched on
+     * "save my card" gets a payment that also creates the reusable profile.
+     */
+    @Transactional
+    public Payment createPayment(UUID bookingId, UUID callerId, UUID savedCardId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
                         + bookingId));
@@ -84,6 +98,20 @@ public class PaymentsService {
             throw new InvalidBookingStateException("Booking is not awaiting payment: " + bookingId + " (status="
                     + booking.getStatus() + ")");
         }
+
+        SavedCard savedCard = null;
+        if (savedCardId != null) {
+            if (!booking.getUserId().equals(callerId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the booking's customer can pay with a saved card");
+            }
+            if (!paymentProvider.supportsRecurringCharge()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "This payment provider cannot charge a saved card yet — pay on the payment page");
+            }
+            savedCard = savedCardService.requireOwn(savedCardId, callerId);
+        }
+        boolean saveCard = savedCard == null && booking.getUserId().equals(callerId)
+                && savedCardService.saveOnNextPayment(callerId);
 
         // Determine payment amount: if there's a deposit, charge the deposit; otherwise charge the full amount
         BigDecimal paymentAmount = booking.getDepositAmount().compareTo(BigDecimal.ZERO) > 0 ?
@@ -114,7 +142,8 @@ public class PaymentsService {
                     booking.getCurrency(), providerName, PaymentMethod.ONLINE, Instant.now()));
         }
 
-        charge(payment);
+        payment.setSaveCard(saveCard);
+        charge(payment, savedCard, booking.getUserId());
         return paymentRepository.save(payment);
     }
 
@@ -213,12 +242,28 @@ public class PaymentsService {
      * {@link PaymentProvider.InitiationStatus#PENDING} (a real, redirect-
      * based provider) confirms nothing yet: that's the webhook's job.
      */
-    private void charge(Payment payment) {
+    private void charge(Payment payment, SavedCard savedCard, UUID customerId) {
         PaymentInitiation result;
         try {
-            result = paymentProvider.createPayment(payment.getId(), payment.getAmount(), payment.getCurrency(),
-                    "Factory booking payment", PaymentReturnUrls.withBooking(successUrl, payment.getBookingId()),
-                    PaymentReturnUrls.withBooking(failureUrl, payment.getBookingId()));
+            String successReturn = PaymentReturnUrls.withBooking(successUrl, payment.getBookingId());
+            String failureReturn = PaymentReturnUrls.withBooking(failureUrl, payment.getBookingId());
+            if (savedCard != null) {
+                // The stored card is charged right away — no payment page, so the result is final.
+                PaymentProvider.ChargeResult charged = paymentProvider.chargeRecurring(
+                        savedCard.getRecurringProfileId(), payment.getId(), payment.getAmount(),
+                        payment.getCurrency());
+                result = charged.succeeded()
+                        ? new PaymentInitiation(charged.providerReference(), null, null,
+                                PaymentProvider.InitiationStatus.SUCCEEDED, null)
+                        : new PaymentInitiation(null, null, null, PaymentProvider.InitiationStatus.FAILED,
+                                charged.failureReason());
+            } else if (payment.isSaveCard()) {
+                result = paymentProvider.createRecurringPayment(payment.getId(), payment.getAmount(),
+                        payment.getCurrency(), "Factory booking payment", successReturn, failureReturn);
+            } else {
+                result = paymentProvider.createPayment(payment.getId(), payment.getAmount(), payment.getCurrency(),
+                        "Factory booking payment", successReturn, failureReturn);
+            }
         } catch (RuntimeException e) {
             payment.markFailed("Payment provider error: " + e.getMessage(), Instant.now());
             return;
@@ -227,6 +272,10 @@ public class PaymentsService {
         switch (result.status()) {
             case SUCCEEDED -> {
                 payment.markSucceeded(result.providerPaymentId(), Instant.now());
+                if (payment.isSaveCard()) {
+                    savedCardService.save(customerId, result.recurringProfileId(), result.cardLast4(),
+                            result.cardBrand());
+                }
                 // Record the payment in the booking
                 Booking booking = bookingRepository.findById(payment.getBookingId()).orElse(null);
                 if (booking != null) {

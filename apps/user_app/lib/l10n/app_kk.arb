@@ -595,5 +595,22 @@
   "paymentOpenFailed": "Төлем бетін ашу мүмкін болмады.",
   "bookingStatusPendingPayment": "Төлем күтілуде",
   "bookingPayNowButton": "Төлеу",
-  "paymentConfirmedSnack": "Төлем алынды — брон расталды."
+  "paymentConfirmedSnack": "Төлем алынды — брон расталды.",
+  "paymentCardsTitle": "Төлем карталары",
+  "paymentCardsIntro": "Сақталған картамен жылдам төлеңіз. Тек бренд пен соңғы 4 цифрды сақтаймыз.",
+  "paymentCardsEmpty": "Сақталған карталар әлі жоқ.",
+  "paymentCardsSaveSwitch": "Келесі төлемде картамды сақтау",
+  "paymentCardsSaveSwitchHint": "Карта келесі онлайн төлемде сақталады, содан кейін бір басумен төлей аласыз.",
+  "paymentCardsPageOnlyNote": "Әзірге төлем бұрынғыдай төлем бетінде ашылады; сақталған карталар кейінге қалады.",
+  "paymentCardsRemove": "Жою",
+  "paymentCardsRemoveTitle": "Бұл картаны жою керек пе?",
+  "paymentCardsRemoveBody": "Ол енді төлем үшін қолданылмайды.",
+  "paymentCardsKeep": "Қалдыру",
+  "paymentCardsRemoveFailed": "Картаны жою мүмкін болмады. Қайталап көріңіз.",
+  "paymentCardsLoadFailed": "Карталарды жүктеу мүмкін болмады.",
+  "paymentCardLabel": "{brand} •••• {last4}",
+  "paymentCardGenericBrand": "Карта",
+  "paymentChooseTitle": "Қалай төлегіңіз келеді?",
+  "paymentChooseOtherCard": "Басқа карта (төлем беті)",
+  "paymentChoosePayButton": "Төлеу"
 }

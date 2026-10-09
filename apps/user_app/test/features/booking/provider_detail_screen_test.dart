@@ -25,6 +25,7 @@ import 'package:zairo/features/booking/presentation/screens/provider_detail_scre
 import 'package:zairo/features/discovery/data/models/provider_search_result.dart';
 import 'package:zairo/features/discovery/data/models/service_summary.dart';
 import 'package:zairo/features/payments/data/models/payment.dart';
+import 'package:zairo/features/payments/data/models/saved_card.dart';
 import 'package:zairo/features/payments/data/payments_api.dart';
 import 'package:zairo/features/payments/presentation/providers/payments_providers.dart';
 import 'package:zairo/features/staff/data/models/staff.dart';
@@ -80,6 +81,9 @@ class _FakePaymentsApi extends PaymentsApi {
   _FakePaymentsApi() : super(DioClient(Dio()));
 
   String? lastChargedBookingId;
+
+  @override
+  Future<SavedCards> getSavedCards() async => SavedCards.empty;
 
   /// What the charge answers — 'PENDING' is a redirect-based provider (Freedom Pay) leaving a checkout page.
   String chargeStatus = 'SUCCEEDED';
