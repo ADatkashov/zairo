@@ -878,6 +878,14 @@
 
   "pendingInvitationsTitle": "Күтіп тұрған шақырулар",
 
-  "cancelInvitationTooltip": "Шақыруды болдырмау"
-
+  "cancelInvitationTooltip": "Шақыруды болдырмау",
+  "paymentBreakdownTitle": "Төлем есебі",
+  "paymentTotalPrice": "Жалпы құны",
+  "paymentDepositAmount": "Қазір төленетін депозит",
+  "paymentDepositPercentage": "{percentage}% депозит",
+  "paymentRemainingAmount": "Қалдық",
+  "paymentRemainingInfo": "Қызмет көрсетілетін күні төленеді",
+  "bookingSettingsTitle": "Брондау параметрлері",
+  "depositPercentageLabel": "Депозит пайызы (%)",
+  "depositPercentageSaved": "Депозит пайызы жаңартылды"
 }

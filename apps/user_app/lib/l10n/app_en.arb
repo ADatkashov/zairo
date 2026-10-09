@@ -1674,5 +1674,7 @@
   "authStepLabel": "Step {step} of {total}",
   "@authStepLabel": {"description": "Progress label at the top of the phone sign-in screens.", "placeholders": {"step": {"type": "int"}, "total": {"type": "int"}}},
   "authChangeNumber": "Change number",
-  "@authChangeNumber": {"description": "Phone sign-in step 2: goes back to re-enter the phone number."}
+  "@authChangeNumber": {"description": "Phone sign-in step 2: goes back to re-enter the phone number."},
+  "cityLoadFailed": "Couldn't load cities",
+  "cityLoading": "Loading…"
 }

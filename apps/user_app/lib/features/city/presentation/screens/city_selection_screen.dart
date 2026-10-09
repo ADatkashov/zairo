@@ -47,70 +47,82 @@ class CitySelectionScreen extends ConsumerWidget {
                   final city = cities[index];
                   final isSelected = currentCity?.code == city.code;
 
-                  return GestureDetector(
-                    onTap: () => _selectCity(context, ref, city.code),
-                    child: Container(
-                      color: colors.bg,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: FactorySpacing.space4,
-                        vertical: FactorySpacing.space3,
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  city.name,
-                                  style: textTheme.bodyLarge?.copyWith(
-                                    color: colors.text,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                if (city.nameKk != null) ...[
-                                  const SizedBox(height: 4),
+                  return Semantics(
+                    button: true,
+                    selected: isSelected,
+                    label: city.name,
+                    excludeSemantics: true,
+                    child: InkWell(
+                      onTap: () => _selectCity(context, ref, city.code),
+                      child: Container(
+                        constraints: const BoxConstraints(minHeight: 56),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: FactorySpacing.space4,
+                          vertical: FactorySpacing.space3,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
                                   Text(
-                                    city.nameKk!,
-                                    style: textTheme.bodySmall?.copyWith(
-                                      color: colors.textSecondary,
+                                    city.name,
+                                    style: textTheme.bodyLarge?.copyWith(
+                                      color: colors.text,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
+                                  if (city.nameKk != null) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      city.nameKk!,
+                                      style: textTheme.bodySmall?.copyWith(
+                                        color: colors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
                                 ],
-                              ],
+                              ),
                             ),
-                          ),
-                          if (isSelected)
-                            Icon(
-                              Symbols.check_circle,
-                              color: colors.primary,
-                              fill: 1,
-                            )
-                          else
-                            Icon(
-                              Symbols.radio_button_unchecked,
-                              color: colors.border,
-                            ),
-                        ],
+                            if (isSelected)
+                              Icon(
+                                Symbols.check_circle,
+                                color: colors.primary,
+                                fill: 1,
+                              )
+                            else
+                              Icon(
+                                Symbols.radio_button_unchecked,
+                                color: colors.border,
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   );
                 },
               );
             },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, stack) => Center(
-              child: Text('Error: $error'),
-            ),
+            loading: () => const FactoryLoadingState(),
+            error: (error, stack) => _retry(ref, l10n),
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Text('Error loading cities: $error'),
-        ),
+        loading: () => const FactoryLoadingState(),
+        error: (error, stack) => _retry(ref, l10n),
       ),
     );
   }
+
+  Widget _retry(WidgetRef ref, AppLocalizations l10n) => Center(
+    child: FactoryErrorState(
+      message: l10n.cityLoadFailed,
+      onRetry: () {
+        ref.invalidate(activeCitiesProvider);
+        ref.invalidate(userCurrentCityProvider);
+      },
+    ),
+  );
 
   Future<void> _selectCity(
     BuildContext context,
@@ -120,7 +132,7 @@ class CitySelectionScreen extends ConsumerWidget {
     // Show loading
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Loading...')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.cityLoading)),
       );
     }
 

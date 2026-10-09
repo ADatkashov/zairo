@@ -510,5 +510,22 @@
   "discardChangesKeepEditing": "Жалғастыру",
   "discardChangesDiscard": "Бас тарту",
   "authStepLabel": "{step}-қадам, барлығы {total}",
-  "authChangeNumber": "Нөмірді өзгерту"
+  "authChangeNumber": "Нөмірді өзгерту",
+  "paymentBreakdownTitle": "Төлем есебі",
+  "paymentTotalPrice": "Жалпы құны",
+  "paymentDepositAmount": "Қазір төленетін депозит",
+  "paymentDepositPercentage": "{percentage}% депозит",
+  "paymentRemainingAmount": "Қалдық",
+  "paymentRemainingInfo": "Қызмет көрсетілетін күні төленеді",
+  "paymentMethodsTitle": "Төлем тәсілдері",
+  "paymentMethodOnline": "Онлайн төлем",
+  "paymentMethodCash": "Келгенде қолма-қол төлем",
+  "paymentStatusPending": "Күтілуде",
+  "paymentStatusProcessing": "Өңделуде",
+  "bookingConfirmationPaidLabel": "Төленді: {amount}",
+  "bookingConfirmationRemainingLabel": "Қалдық: {amount}",
+  "bookingPaymentInstructions": "{amount} депозит есептен шешілді. Қалған {remaining} соманы қызмет көрсетілетін күні қолма-қол немесе онлайн төлеуге болады.",
+  "selectCity": "Қаланы таңдаңыз",
+  "cityLoadFailed": "Қалаларды жүктеу мүмкін болмады",
+  "cityLoading": "Жүктелуде…"
 }
