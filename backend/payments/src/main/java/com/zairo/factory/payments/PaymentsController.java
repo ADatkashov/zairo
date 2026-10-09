@@ -26,6 +26,13 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Payments")
 public class PaymentsController {
 
+    /** Optional body: pay with one of the caller's saved cards instead of the provider's payment page. */
+    public record CreatePaymentRequest(
+            @Schema(description = "One of the caller's saved cards (GET /api/v1/me/payment-cards). Only the "
+                    + "booking's own customer can use it; the card is charged right away.", nullable = true)
+            UUID savedCardId) {
+    }
+
     private final PaymentsService paymentsService;
     private final PaymentAllocationRepository allocationRepository;
 
@@ -62,9 +69,10 @@ public class PaymentsController {
     @PostMapping("/api/v1/bookings/{bookingId}/payments")
     @ResponseStatus(HttpStatus.CREATED)
     public PaymentResponse createPayment(@Parameter(description = "The booking's id.") @PathVariable UUID bookingId,
-            HttpServletRequest httpRequest) {
+            @RequestBody(required = false) CreatePaymentRequest request, HttpServletRequest httpRequest) {
         UUID callerId = CurrentUser.requireUserId(httpRequest);
-        return toResponse(paymentsService.createPayment(bookingId, callerId));
+        UUID savedCardId = request == null ? null : request.savedCardId();
+        return toResponse(paymentsService.createPayment(bookingId, callerId, savedCardId));
     }
 
     @Operation(summary = "Get a booking's payment", description = "Restricted to the booking's own customer, "

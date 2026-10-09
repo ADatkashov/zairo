@@ -9,8 +9,10 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../../../app/router/app_routes.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../payments/data/models/payment.dart';
+import '../../../payments/data/models/saved_card.dart';
 import '../../../payments/data/payment_exception.dart';
 import '../../../payments/presentation/providers/payments_providers.dart';
+import '../../../payments/presentation/screens/saved_cards_screen.dart' show savedCardLabel;
 import '../../data/models/booking.dart';
 import '../../data/models/payment_plan.dart';
 import '../providers/booking_providers.dart';
@@ -43,7 +45,7 @@ class BookingPaymentArgs {
 /// shows "Booking confirmed!" finds the details here instead of losing them.
 final pendingConfirmationsProvider = Provider<Map<String, BookingConfirmationArgs>>((ref) => {});
 
-enum _Phase { starting, waiting, failed, expired }
+enum _Phase { starting, choose, waiting, failed, expired }
 
 /// Pays for a booking with a redirect-based provider (Freedom Pay): opens the
 /// provider's payment page in the browser, then waits here until the *server*
@@ -73,6 +75,10 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen> wit
   bool _busy = false;
   bool _finished = false;
   String? _problem;
+
+  /// Saved cards the customer can pay with, and the one picked (null = the payment page).
+  List<SavedCard> _cards = const [];
+  String? _selectedCardId;
 
   Booking get _booking => widget.args.booking;
 
@@ -122,6 +128,11 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen> wit
       }
       final payment = _payment ?? await _currentOrNewPayment();
       if (!mounted) return;
+      if (payment == null) {
+        // The customer has saved cards: let them pick one instead of going to the payment page.
+        setState(() => _phase = _Phase.choose);
+        return;
+      }
       await _apply(payment, launch: true);
     } on PaymentException {
       // 409: the booking is no longer awaiting payment — it was paid or released meanwhile.
@@ -137,11 +148,43 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen> wit
 
   /// Reuses a payment that is already waiting for the customer (or just
   /// reads back one that finished) rather than starting a second charge.
-  Future<Payment> _currentOrNewPayment() async {
+  ///
+  /// Returns null when the customer should first choose how to pay (they have
+  /// saved cards that can be charged right away).
+  Future<Payment?> _currentOrNewPayment() async {
     final api = ref.read(paymentsApiProvider);
     final existing = await api.getPayment(_booking.id);
     if (existing != null && existing.status != 'FAILED') return existing;
+    final cards = await usableSavedCards(api);
+    if (cards.isNotEmpty) {
+      _cards = cards;
+      _selectedCardId ??= cards.first.id;
+      return null;
+    }
     return api.createPayment(_booking.id);
+  }
+
+  /// Pays with the card picked on the choose step — or on the payment page when none is picked.
+  Future<void> _payChosen() async {
+    setState(() {
+      _busy = true;
+      _problem = null;
+    });
+    try {
+      final api = ref.read(paymentsApiProvider);
+      final cardId = _selectedCardId;
+      final payment = cardId == null
+          ? await api.createPayment(_booking.id)
+          : await api.payWithSavedCard(_booking.id, cardId);
+      if (!mounted) return;
+      await _apply(payment, launch: cardId == null);
+    } on PaymentException {
+      await _poll();
+    } catch (_) {
+      if (mounted) setState(() => _problem = AppLocalizations.of(context)!.paymentStartError);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _apply(Payment payment, {required bool launch}) async {
@@ -239,6 +282,14 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen> wit
   }
 
   Future<void> _retry() async {
+    if (_cards.isNotEmpty) {
+      // Pick again: the same card, another one, or the payment page.
+      setState(() {
+        _phase = _Phase.choose;
+        _problem = null;
+      });
+      return;
+    }
     setState(() {
       _busy = true;
       _problem = null;
@@ -275,6 +326,64 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen> wit
     }
   }
 
+  Widget _buildChooser(BuildContext context, double amount) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    return Scaffold(
+      backgroundColor: colors.bg,
+      appBar: AppBar(title: Text(l10n.paymentScreenTitle)),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(FactorySpacing.space4),
+          children: [
+            Center(child: FactoryPriceText(amount: amount, fontSize: 28, weight: FontWeight.w800)),
+            const SizedBox(height: FactorySpacing.space4),
+            Text(l10n.paymentChooseTitle, style: textTheme.titleMedium),
+            const SizedBox(height: FactorySpacing.space2),
+            RadioGroup<String?>(
+              groupValue: _selectedCardId,
+              onChanged: (value) => setState(() => _selectedCardId = value),
+              child: Column(
+                children: [
+                  for (final card in _cards)
+                    RadioListTile<String?>(
+                      value: card.id,
+                      title: Text(savedCardLabel(l10n, card)),
+                      secondary: const Icon(Symbols.credit_card_rounded),
+                    ),
+                  RadioListTile<String?>(
+                    value: null,
+                    title: Text(l10n.paymentChooseOtherCard),
+                    secondary: const Icon(Symbols.open_in_new_rounded),
+                  ),
+                ],
+              ),
+            ),
+            if (_problem != null) ...[
+              const SizedBox(height: FactorySpacing.space3),
+              Text(_problem!, textAlign: TextAlign.center, style: textTheme.bodySmall?.copyWith(color: colors.error)),
+            ],
+            const SizedBox(height: FactorySpacing.space4),
+            FactoryButton(
+              label: l10n.paymentChoosePayButton,
+              expand: true,
+              isLoading: _busy,
+              onPressed: _busy ? null : _payChosen,
+            ),
+            const SizedBox(height: FactorySpacing.space2),
+            FactoryButton(
+              label: l10n.paymentCloseButton,
+              variant: FactoryButtonVariant.text,
+              expand: true,
+              onPressed: _close,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -285,8 +394,12 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen> wit
     final amount = _payment?.amount ?? (plan.dueNow > 0 ? plan.dueNow : _booking.totalPrice);
     final canOpenPage = _payment?.status == 'PENDING' && (_payment?.checkoutUrl ?? '').isNotEmpty;
 
+    if (_phase == _Phase.choose) {
+      return _buildChooser(context, amount);
+    }
+
     final (IconData icon, Color tone, String title, String body) = switch (_phase) {
-      _Phase.starting || _Phase.waiting => (
+      _Phase.starting || _Phase.waiting || _Phase.choose => (
         Symbols.hourglass_top_rounded,
         colors.primary,
         l10n.paymentWaitingTitle,

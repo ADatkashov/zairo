@@ -40,12 +40,14 @@ class PaymentWebhookProcessor {
     private final SubscriptionChargeWebhookService subscriptionChargeWebhookService;
     private final PaymentAllocationService paymentAllocationService;
     private final ApplicationEventPublisher eventPublisher;
+    private final SavedCardService savedCardService;
 
     PaymentWebhookProcessor(PaymentWebhookEventRepository webhookEventRepository,
             PaymentWebhookEventRecorder eventRecorder, PaymentRepository paymentRepository,
             PaymentRefundRequestRepository refundRequestRepository, BookingRepository bookingRepository,
             BookingService bookingService, SubscriptionChargeWebhookService subscriptionChargeWebhookService,
-            PaymentAllocationService paymentAllocationService, ApplicationEventPublisher eventPublisher) {
+            PaymentAllocationService paymentAllocationService, ApplicationEventPublisher eventPublisher,
+            SavedCardService savedCardService) {
         this.webhookEventRepository = webhookEventRepository;
         this.eventRecorder = eventRecorder;
         this.paymentRepository = paymentRepository;
@@ -55,6 +57,7 @@ class PaymentWebhookProcessor {
         this.subscriptionChargeWebhookService = subscriptionChargeWebhookService;
         this.paymentAllocationService = paymentAllocationService;
         this.eventPublisher = eventPublisher;
+        this.savedCardService = savedCardService;
     }
 
     enum Outcome {
@@ -210,6 +213,11 @@ class PaymentWebhookProcessor {
         Booking booking = bookingRepository.findById(payment.getBookingId())
                 .orElseThrow(() -> new IllegalStateException("Payment " + payment.getId() + " has no booking "
                         + payment.getBookingId()));
+
+        if (payment.isSaveCard()) {
+            savedCardService.save(booking.getUserId(), webhook.recurringProfileId(), webhook.cardPan(),
+                    webhook.cardBrand());
+        }
 
         if (booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
             bookingService.confirmAfterPayment(booking.getId());

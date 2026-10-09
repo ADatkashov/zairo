@@ -740,9 +740,16 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       // customer pays at the venue — so there is no payment to start.
       String? paymentErrorMessage;
       Payment? payment;
+      var choosePayment = false;
       try {
         if (booking.status == 'PENDING_PAYMENT') {
-          payment = await ref.read(paymentsApiProvider).createPayment(booking.id);
+          // With saved cards the customer picks how to pay on the payment screen, so no payment yet.
+          final hasCards = (await usableSavedCards(ref.read(paymentsApiProvider))).isNotEmpty;
+          if (!hasCards) {
+            payment = await ref.read(paymentsApiProvider).createPayment(booking.id);
+          } else {
+            choosePayment = true;
+          }
         }
       } on PaymentException catch (e) {
         paymentErrorMessage = l10n.bookingConfirmedButError(
@@ -761,6 +768,13 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
         latitude: widget.provider.latitude,
         longitude: widget.provider.longitude,
       );
+      if (choosePayment) {
+        context.pushReplacement(
+          AppRoutes.bookingPayment,
+          extra: BookingPaymentArgs(booking: booking, confirmation: confirmation),
+        );
+        return;
+      }
       if (payment != null && payment.status != 'SUCCEEDED') {
         // Not paid yet: the customer must pay (or retry) before this is a confirmed booking.
         context.pushReplacement(
