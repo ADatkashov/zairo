@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/app_localizations.dart';
+import '../../../../core/formatting/vertical_label.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/widgets/change_avatar_dialog.dart';
 import '../../../auth/presentation/widgets/confirm_log_out.dart';
@@ -653,7 +654,7 @@ class _SalonCard extends StatelessWidget {
               children: [
                 Text(provider.name, style: textTheme.titleSmall),
                 const SizedBox(height: 4),
-                Text(_capitalize(provider.vertical), style: textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
+                Text(verticalLabel(l10n, provider.vertical), style: textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
               ],
             ),
           ),

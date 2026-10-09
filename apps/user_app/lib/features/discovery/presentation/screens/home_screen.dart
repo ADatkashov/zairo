@@ -117,7 +117,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       ref
                                               .watch(userCurrentCityProvider)
                                               .value
-                                              ?.name ??
+                                              ?.nameFor(Localizations.localeOf(context).languageCode) ??
                                           locationAsync.value?.label ??
                                           l10n.homeLocationUnknown,
                                       style: textTheme.titleSmall,
