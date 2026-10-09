@@ -41,12 +41,12 @@ public class BookingController {
     private final BookingRepository bookingRepository;
     private final AvailabilitySlotRepository availabilitySlotRepository;
     private final ProviderOwnership providerOwnership;
-    private final BookingResponseAssembler responseAssembler;
+    private final BookingDetailsAssembler detailsAssembler;
 
     public BookingController(BookingService bookingService, BookingRepository bookingRepository,
             AvailabilitySlotRepository availabilitySlotRepository, ProviderOwnership providerOwnership,
-            BookingResponseAssembler responseAssembler) {
-        this.responseAssembler = responseAssembler;
+            BookingDetailsAssembler detailsAssembler) {
+        this.detailsAssembler = detailsAssembler;
         this.bookingService = bookingService;
         this.bookingRepository = bookingRepository;
         this.availabilitySlotRepository = availabilitySlotRepository;
@@ -88,7 +88,7 @@ public class BookingController {
         }
         Booking booking = bookingService.createBooking(request.userId(), request.serviceId(),
                 request.availabilitySlotId(), request.totalPrice());
-        return BookingResponse.from(booking);
+        return detailsAssembler.one(booking);
     }
 
     @Operation(summary = "Get a booking by id", description = "Restricted to the two parties involved: the "
@@ -114,7 +114,7 @@ public class BookingController {
             providerOwnership.requireOwner(slot.getProviderId(), callerId);
         }
 
-        return responseAssembler.assemble(booking);
+        return detailsAssembler.one(booking);
     }
 
     @Operation(summary = "Mark a booking complete", description = "Only a CONFIRMED booking can be completed "
@@ -133,7 +133,7 @@ public class BookingController {
     public BookingResponse complete(@Parameter(description = "The booking's id.") @PathVariable UUID id,
             HttpServletRequest httpRequest) {
         UUID callerId = CurrentUser.requireUserId(httpRequest);
-        return BookingResponse.from(bookingService.completeBooking(id, callerId));
+        return detailsAssembler.one(bookingService.completeBooking(id, callerId));
     }
 
     @Operation(summary = "Cancel a booking", description = "Customer-only — the caller must be the booking's "
@@ -154,7 +154,7 @@ public class BookingController {
             @RequestBody(required = false) CancelBookingRequest request, HttpServletRequest httpRequest) {
         UUID callerId = CurrentUser.requireUserId(httpRequest);
         String reason = request == null ? null : request.reason();
-        return BookingResponse.from(bookingService.cancelBooking(id, callerId, reason));
+        return detailsAssembler.one(bookingService.cancelBooking(id, callerId, reason));
     }
 
     @Operation(summary = "Mark a booking as a no-show", description = "Provider-owner-only — the caller must "
@@ -172,13 +172,13 @@ public class BookingController {
     public BookingResponse markNoShow(@Parameter(description = "The booking's id.") @PathVariable UUID id,
             HttpServletRequest httpRequest) {
         UUID callerId = CurrentUser.requireUserId(httpRequest);
-        return BookingResponse.from(bookingService.markNoShow(id, callerId));
+        return detailsAssembler.one(bookingService.markNoShow(id, callerId));
     }
 
     @Operation(summary = "List a user's bookings", description = "Owner-only: the caller must be the exact "
             + "user named by `userId`.")
-    @ApiResponse(responseCode = "200", description = "The user's bookings (empty list if none), each enriched "
-            + "with serviceTitle, providerId/providerName/providerVertical and startsAt/endsAt")
+    @ApiResponse(responseCode = "200", description = "The user's bookings (empty list if none), each with the "
+            + "service title, the business and the appointment times")
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @SecurityRequirement(name = "bearerAuth")
@@ -189,7 +189,7 @@ public class BookingController {
         if (!callerId.equals(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot view another user's bookings");
         }
-        return responseAssembler.assemble(bookingRepository.findByUserId(userId));
+        return detailsAssembler.many(bookingRepository.findByUserId(userId));
     }
 
     @Operation(summary = "List a provider's received bookings", description = "For the Business Admin app: "
@@ -209,7 +209,7 @@ public class BookingController {
         providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         List<UUID> slotIds = availabilitySlotRepository.findByProviderId(providerId).stream()
                 .map(AvailabilitySlot::getId).toList();
-        return bookingRepository.findByAvailabilitySlotIdIn(slotIds).stream().map(BookingResponse::from).toList();
+        return detailsAssembler.many(bookingRepository.findByAvailabilitySlotIdIn(slotIds));
     }
 
     /** The widest window the schedule endpoint will answer for. */

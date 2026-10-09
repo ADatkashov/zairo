@@ -180,7 +180,6 @@
   "bookingsEmptyTitle": "Пока нет бронирований",
   "bookingsEmptyMessage": "Выберите услугу и время — здесь будут ваши записи и напоминания.",
   "errorBookingsLoadFailed": "Не удалось загрузить ваши бронирования.",
-  "bookingAppointmentLabel": "Запись: {date}",
   "bookedOnLabel": "Забронировано {date}",
   "bookingStatusConfirmed": "Подтверждено",
   "bookingStatusCompleted": "Завершено",
