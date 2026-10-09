@@ -48,13 +48,9 @@
   "errorReviewInvalidRating": "Rating must be between 1 and 5.",
   "@errorReviewInvalidRating": {"description": "400 from POST .../reviews — the rating value failed validation."},
 
-  "errorReviewSubmitFailed": "Failed to submit review: {error}",
+  "errorReviewSubmitFailed": "Failed to submit review",
   "@errorReviewSubmitFailed": {
-    "description": "Unexpected (non-ReviewException) failure submitting a review.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Unexpected (non-ReviewException) failure submitting a review."},
 
   "emailLabel": "Email",
   "@emailLabel": {"description": "Email text field label."},
@@ -101,13 +97,9 @@
   "errorAuthInvalidCredentials": "Invalid email or password.",
   "@errorAuthInvalidCredentials": {"description": "401 from POST /auth/login."},
 
-  "errorAuthGeneric": "Something went wrong: {error}",
+  "errorAuthGeneric": "Something went wrong",
   "@errorAuthGeneric": {
-    "description": "Unexpected (non-AuthException) failure during login/register.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Unexpected (non-AuthException) failure during login/register."},
 
   "errorAuthInvalidResetToken": "This code is invalid or has expired. Request a new one.",
   "@errorAuthInvalidResetToken": {"description": "401 from POST /auth/reset-password."},
@@ -296,13 +288,9 @@
     }
   },
 
-  "errorBookingGeneric": "Booking failed: {error}",
+  "errorBookingGeneric": "Booking failed",
   "@errorBookingGeneric": {
-    "description": "Unexpected (non-Booking/Beauty exception) failure creating a booking.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Unexpected (non-Booking/Beauty exception) failure creating a booking."},
 
   "homeSearchPrompt": "What service are you looking for?",
   "@homeSearchPrompt": {"description": "Home screen's tap-to-search entry field placeholder."},
@@ -692,13 +680,9 @@
   "profileTitle": "Profile",
   "@profileTitle": {"description": "Profile screen app bar title."},
 
-  "errorProfileGeneric": "Something went wrong: {error}",
+  "errorProfileGeneric": "Something went wrong",
   "@errorProfileGeneric": {
-    "description": "Profile screen error state when the auth session fails to resolve.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Profile screen error state when the auth session fails to resolve."},
 
   "profileLoggedOutTitle": "You're not logged in",
   "@profileLoggedOutTitle": {"description": "Profile screen's logged-out empty state title."},
@@ -715,7 +699,7 @@
   "mapPlaceholderTitle": "Map view placeholder",
   "@mapPlaceholderTitle": {"description": "Mock map screen's placeholder heading."},
 
-  "mapPlaceholderMessage": "Real map rendering (Google Maps/Mapbox/OSM) is wired in once the project has a map provider account.",
+  "mapPlaceholderMessage": "Real map rendering (2GIS, with Google Maps as an alternative) is wired in once a map API key is configured.",
   "@mapPlaceholderMessage": {"description": "Mock map screen's explanatory placeholder text."},
 
   "masterPortfolioTitle": "{masterName} — Portfolio",
@@ -735,13 +719,9 @@
   "portfolioPhotoSemanticLabel": "Portfolio photo",
   "@portfolioPhotoSemanticLabel": {"description": "Grid tile's accessibility label when the photo has no caption to use instead."},
 
-  "errorPortfolioLoadFailed": "Failed to load portfolio: {error}",
+  "errorPortfolioLoadFailed": "Failed to load portfolio",
   "@errorPortfolioLoadFailed": {
-    "description": "Master portfolio screen error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Master portfolio screen error state."},
 
   "portfolioViewerCloseTooltip": "Close",
   "@portfolioViewerCloseTooltip": {"description": "Fullscreen portfolio viewer's close button tooltip."},
@@ -776,13 +756,9 @@
   "reviewSubmit": "Submit",
   "@reviewSubmit": {"description": "Leave-a-review dialog's submit button."},
 
-  "errorReviewLoadFailed": "Could not load review: {error}",
+  "errorReviewLoadFailed": "Could not load review",
   "@errorReviewLoadFailed": {
-    "description": "Review section error state when loading the existing review fails.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Review section error state when loading the existing review fails."},
 
   "viewOnMapButton": "View on map",
   "@viewOnMapButton": {"description": "Provider detail screen's button opening the mock map screen."},
@@ -1014,21 +990,13 @@
   "changeAvatarRemoveButton": "Remove photo",
   "@changeAvatarRemoveButton": {"description": "Change-avatar dialog's remove-current-photo button, shown only when an avatar is already set."},
 
-  "changeAvatarErrorReadFileFailed": "Failed to read file: {error}",
+  "changeAvatarErrorReadFileFailed": "Failed to read file",
   "@changeAvatarErrorReadFileFailed": {
-    "description": "Change-avatar dialog's error when picking the file fails.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Change-avatar dialog's error when picking the file fails."},
 
-  "changeAvatarErrorSaveFailed": "Failed to update avatar: {error}",
+  "changeAvatarErrorSaveFailed": "Failed to update avatar",
   "@changeAvatarErrorSaveFailed": {
-    "description": "Change-avatar dialog's error when the upload/save request fails.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Change-avatar dialog's error when the upload/save request fails."},
 
   "imagePickerCameraLabel": "Camera",
   "@imagePickerCameraLabel": {"description": "Photo-source bottom sheet option: take a new photo."},
@@ -1198,13 +1166,9 @@
   "loyaltyRedemptionSuccessDone": "Done",
   "@loyaltyRedemptionSuccessDone": {"description": "Redemption success dialog's dismiss action."},
 
-  "errorLoyaltyRedeemFailed": "Couldn't redeem this reward: {error}",
+  "errorLoyaltyRedeemFailed": "Couldn't redeem this reward",
   "@errorLoyaltyRedeemFailed": {
-    "description": "Unexpected (non-LoyaltyException) failure redeeming a reward.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Unexpected (non-LoyaltyException) failure redeeming a reward."},
 
   "errorLoyaltyActionConflict": "This action can no longer be completed. Please refresh and try again.",
   "@errorLoyaltyActionConflict": {"description": "LoyaltyException's fallback message when the server's own message couldn't be parsed."},
@@ -1308,13 +1272,9 @@
   "loyaltyRedemptionCancelledMessage": "Redemption cancelled — your points were refunded.",
   "@loyaltyRedemptionCancelledMessage": {"description": "Snackbar shown after successfully cancelling a redemption."},
 
-  "errorLoyaltyCancelGeneric": "Couldn't cancel this redemption: {error}",
+  "errorLoyaltyCancelGeneric": "Couldn't cancel this redemption",
   "@errorLoyaltyCancelGeneric": {
-    "description": "Unexpected (non-LoyaltyException) failure cancelling a redemption.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Unexpected (non-LoyaltyException) failure cancelling a redemption."},
 
   "loyaltyRedemptionCreatedOn": "Redeemed {date}",
   "@loyaltyRedemptionCreatedOn": {
@@ -1382,13 +1342,9 @@
     "description": "ChatThreadScreen error state when the thread fails to load."
   },
 
-  "errorChatSendFailed": "Couldn't send your message: {error}",
+  "errorChatSendFailed": "Couldn't send your message",
   "@errorChatSendFailed": {
-    "description": "Snackbar shown when sending a plain chat message fails.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Snackbar shown when sending a plain chat message fails."},
 
   "chatComposeLabel": "Message",
   "@chatComposeLabel": {
@@ -1440,13 +1396,9 @@
     "description": "MessagingException message for a 404 from POST /bookings/{id}/messages."
   },
 
-  "errorMessagingGeneric": "Couldn't send your message: {error}",
+  "errorMessagingGeneric": "Couldn't send your message",
   "@errorMessagingGeneric": {
-    "description": "Fallback error message for the message-about-a-booking dialog on an unexpected failure.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Fallback error message for the message-about-a-booking dialog on an unexpected failure."},
 
   "paymentBreakdownTitle": "Payment breakdown",
   "@paymentBreakdownTitle": {"description": "Section header for payment breakdown details."},
@@ -1794,5 +1746,86 @@
   "changeRequestsMoveHeading": "Another time with {worker}",
   "@changeRequestsMoveHeading": {"description": "changeRequestsMoveHeading", "placeholders": {"worker": {"type": "String", "example": "Aigerim"}}},
   "changeRequestsBanner": "{count, plural, =1{1 booking needs your choice} other{{count} bookings need your choice}}",
-  "@changeRequestsBanner": {"description": "changeRequestsBanner", "placeholders": {"count": {"type": "int", "example": "2"}}}
+  "@changeRequestsBanner": {"description": "changeRequestsBanner", "placeholders": {"count": {"type": "int", "example": "2"}}},
+  "mapOpenIn2gis": "Open in 2GIS",
+  "@mapOpenIn2gis": {"description": "Map screen button opening the location in the 2GIS app/site."},
+
+  "mapOpenInGoogle": "Open in Google Maps",
+  "@mapOpenInGoogle": {"description": "Map screen button opening the location in Google Maps (alternative to 2GIS)."},
+  "paymentScreenTitle": "Payment",
+  "@paymentScreenTitle": {"description": "paymentScreenTitle"},
+  "paymentWaitingTitle": "Waiting for payment",
+  "@paymentWaitingTitle": {"description": "paymentWaitingTitle"},
+  "paymentWaitingBody": "Finish paying on the payment page. This screen updates by itself once the payment is confirmed.",
+  "@paymentWaitingBody": {"description": "paymentWaitingBody"},
+  "paymentOpenPageButton": "Open payment page",
+  "@paymentOpenPageButton": {"description": "paymentOpenPageButton"},
+  "paymentCheckStatusButton": "I've paid — check status",
+  "@paymentCheckStatusButton": {"description": "paymentCheckStatusButton"},
+  "paymentNotConfirmedYet": "Not confirmed yet — it can take a minute.",
+  "@paymentNotConfirmedYet": {"description": "paymentNotConfirmedYet"},
+  "paymentFailedTitle": "Payment didn't go through",
+  "@paymentFailedTitle": {"description": "paymentFailedTitle"},
+  "paymentFailedBody": "Your booking is still held for a few minutes. You can try again.",
+  "@paymentFailedBody": {"description": "paymentFailedBody"},
+  "paymentRetryButton": "Try again",
+  "@paymentRetryButton": {"description": "paymentRetryButton"},
+  "paymentExpiredTitle": "Payment not confirmed",
+  "@paymentExpiredTitle": {"description": "paymentExpiredTitle"},
+  "paymentExpiredBody": "We haven't received a confirmation. If you paid, check again in a minute; otherwise the booking is released.",
+  "@paymentExpiredBody": {"description": "paymentExpiredBody"},
+  "paymentCloseButton": "Close",
+  "@paymentCloseButton": {"description": "paymentCloseButton"},
+  "paymentStartError": "Couldn't start the payment. Please try again.",
+  "@paymentStartError": {"description": "paymentStartError"},
+  "paymentOpenFailed": "Couldn't open the payment page.",
+  "@paymentOpenFailed": {"description": "paymentOpenFailed"},
+  "bookingStatusPendingPayment": "Awaiting payment",
+  "@bookingStatusPendingPayment": {"description": "bookingStatusPendingPayment"},
+  "bookingPayNowButton": "Pay now",
+  "@bookingPayNowButton": {"description": "bookingPayNowButton"},
+  "paymentConfirmedSnack": "Payment received — your booking is confirmed.",
+  "@paymentConfirmedSnack": {"description": "paymentConfirmedSnack"},
+  "paymentCardsTitle": "Payment cards",
+  "@paymentCardsTitle": {"description": "paymentCardsTitle"},
+  "paymentCardsIntro": "Pay faster with a saved card. We keep only the card's brand and its last four digits.",
+  "@paymentCardsIntro": {"description": "paymentCardsIntro"},
+  "paymentCardsEmpty": "No saved cards yet.",
+  "@paymentCardsEmpty": {"description": "paymentCardsEmpty"},
+  "paymentCardsSaveSwitch": "Save my card at my next payment",
+  "@paymentCardsSaveSwitch": {"description": "paymentCardsSaveSwitch"},
+  "paymentCardsSaveSwitchHint": "Your card is kept when you next pay online, so you can pay in one tap afterwards.",
+  "@paymentCardsSaveSwitchHint": {"description": "paymentCardsSaveSwitchHint"},
+  "paymentCardsPageOnlyNote": "For now, payments still open the payment page; your saved cards are kept for later.",
+  "@paymentCardsPageOnlyNote": {"description": "paymentCardsPageOnlyNote"},
+  "paymentCardsRemove": "Remove",
+  "@paymentCardsRemove": {"description": "paymentCardsRemove"},
+  "paymentCardsRemoveTitle": "Remove this card?",
+  "@paymentCardsRemoveTitle": {"description": "paymentCardsRemoveTitle"},
+  "paymentCardsRemoveBody": "It will no longer be used for payments.",
+  "@paymentCardsRemoveBody": {"description": "paymentCardsRemoveBody"},
+  "paymentCardsKeep": "Keep",
+  "@paymentCardsKeep": {"description": "paymentCardsKeep"},
+  "paymentCardsRemoveFailed": "Couldn't remove the card. Please try again.",
+  "@paymentCardsRemoveFailed": {"description": "paymentCardsRemoveFailed"},
+  "paymentCardsLoadFailed": "Couldn't load your cards.",
+  "@paymentCardsLoadFailed": {"description": "paymentCardsLoadFailed"},
+  "paymentCardLabel": "{brand} •••• {last4}",
+  "@paymentCardLabel": {"description": "paymentCardLabel", "placeholders": {"brand": {"type": "String"}, "last4": {"type": "String"}}},
+  "paymentCardGenericBrand": "Card",
+  "@paymentCardGenericBrand": {"description": "paymentCardGenericBrand"},
+  "paymentChooseTitle": "How would you like to pay?",
+  "@paymentChooseTitle": {"description": "paymentChooseTitle"},
+  "paymentChooseOtherCard": "Another card (payment page)",
+  "@paymentChooseOtherCard": {"description": "paymentChooseOtherCard"},
+  "paymentChoosePayButton": "Pay",
+  "@paymentChoosePayButton": {"description": "paymentChoosePayButton"},
+  "citiesLoadFailed": "Couldn't load cities. Please try again.",
+  "@citiesLoadFailed": {"description": "citiesLoadFailed"},
+  "citySelectLoading": "Switching city…",
+  "@citySelectLoading": {"description": "citySelectLoading"},
+  "citySelectFailed": "Couldn't change the city. Please try again.",
+  "@citySelectFailed": {"description": "citySelectFailed"},
+  "chatSendTooltip": "Send",
+  "@chatSendTooltip": {"description": "chatSendTooltip"}
 }

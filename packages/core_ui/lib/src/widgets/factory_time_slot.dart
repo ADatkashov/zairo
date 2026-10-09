@@ -14,6 +14,9 @@ enum FactoryTimeSlotState { available, selected, unavailable }
 class FactoryTimeSlot extends StatelessWidget {
   const FactoryTimeSlot({super.key, required this.label, this.state = FactoryTimeSlotState.available, this.onTap});
 
+  /// Smallest width and height a slot is drawn at.
+  static const double minTapTarget = 44;
+
   final String label;
   final FactoryTimeSlotState state;
   final VoidCallback? onTap;
@@ -39,6 +42,8 @@ class FactoryTimeSlot extends StatelessWidget {
         borderRadius: FactoryRadius.smRadius,
         child: Container(
           alignment: Alignment.center,
+          // 44px is the minimum touch target the design system requires.
+          constraints: const BoxConstraints(minWidth: minTapTarget, minHeight: minTapTarget),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
           decoration: BoxDecoration(
             color: bgColor,
@@ -47,7 +52,7 @@ class FactoryTimeSlot extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: FactoryTypography.mono(size: 12, weight: isSelected ? FontWeight.w700 : FontWeight.w500, color: fgColor)
+            style: FactoryTypography.mono(size: 14, weight: isSelected ? FontWeight.w700 : FontWeight.w500, color: fgColor)
                 .copyWith(decoration: isUnavailable ? TextDecoration.lineThrough : null),
           ),
         ),

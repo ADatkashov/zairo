@@ -107,6 +107,12 @@ public class FreedomPayProvider implements PaymentProvider {
         return initiate("init_payment.php", fields, paymentId);
     }
 
+    /** Until the recurring-charge request is confirmed (ADR-0006, Open Questions #1) renewals go through hosted checkout. */
+    @Override
+    public boolean supportsRecurringCharge() {
+        return false;
+    }
+
     @Override
     public ChargeResult chargeRecurring(String recurringProfileId, UUID paymentId, BigDecimal amount,
             String currency) {

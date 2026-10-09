@@ -75,6 +75,17 @@ public interface PaymentProvider {
     ChargeResult chargeRecurring(String recurringProfileId, UUID paymentId, BigDecimal amount, String currency);
 
     /**
+     * Whether {@link #chargeRecurring} actually works for this provider. A
+     * provider that cannot (Freedom Pay, until its recurring-charge docs are
+     * confirmed) returns {@code false}: the renewal job then does not even
+     * try, and asks the owner to renew through the hosted checkout instead —
+     * rather than failing every renewal with an exception.
+     */
+    default boolean supportsRecurringCharge() {
+        return true;
+    }
+
+    /**
      * Server-to-server status check, independent of the webhook — a
      * reconciliation fallback (ADR-0006, Webhook Architecture), not the
      * primary confirmation path. Not yet called anywhere in this codebase;
@@ -89,8 +100,19 @@ public interface PaymentProvider {
         PENDING, SUCCEEDED, FAILED
     }
 
+    /**
+     * {@code cardLast4}/{@code cardBrand} are display-only and nullable —
+     * only filled when the provider already knows the card at initiation
+     * time (the mock does; a redirect provider reports it later, via its
+     * webhook). Never a full card number.
+     */
     record PaymentInitiation(String providerPaymentId, String checkoutUrl, String recurringProfileId,
-            InitiationStatus status, String failureReason) {
+            InitiationStatus status, String failureReason, String cardLast4, String cardBrand) {
+
+        public PaymentInitiation(String providerPaymentId, String checkoutUrl, String recurringProfileId,
+                InitiationStatus status, String failureReason) {
+            this(providerPaymentId, checkoutUrl, recurringProfileId, status, failureReason, null, null);
+        }
     }
 
     record ChargeResult(boolean succeeded, String providerReference, String failureReason) {

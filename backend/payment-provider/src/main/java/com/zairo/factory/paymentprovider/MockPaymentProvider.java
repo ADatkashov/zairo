@@ -31,7 +31,7 @@ public class MockPaymentProvider implements PaymentProvider {
     public PaymentInitiation createRecurringPayment(UUID paymentId, BigDecimal amount, String currency,
             String description, String successUrl, String failureUrl) {
         return new PaymentInitiation("mock_pi_" + paymentId, null, "mock_recurring_" + paymentId,
-                InitiationStatus.SUCCEEDED, null);
+                InitiationStatus.SUCCEEDED, null, "4242", "VISA");
     }
 
     @Override

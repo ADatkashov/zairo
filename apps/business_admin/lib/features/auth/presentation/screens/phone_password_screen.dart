@@ -78,7 +78,7 @@ class _PhonePasswordScreenState extends ConsumerState<PhonePasswordScreen> {
   }
 
   String _message(AppLocalizations l10n, Object error) =>
-      error is AuthException ? error.localizedMessage(l10n) : l10n.errorAuthGeneric(error.toString());
+      error is AuthException ? error.localizedMessage(l10n) : l10n.errorAuthGeneric;
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;

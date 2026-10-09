@@ -67,7 +67,7 @@ class LoyaltyCustomerDetailScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             child: FactoryErrorState(
-              message: l10n.errorLoyaltyCustomersLoadFailed(error.toString()),
+              message: l10n.errorLoyaltyCustomersLoadFailed,
               onRetry: () => ref.invalidate(loyaltyCustomerDetailProvider(key)),
             ),
           ),

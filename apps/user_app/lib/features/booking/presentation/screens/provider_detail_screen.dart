@@ -7,6 +7,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../../../app/router/app_routes.dart';
 import '../../../../core/formatting/initials.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../core/formatting/vertical_label.dart';
 import '../../../auth/data/models/user_summary.dart';
 import '../../../auth/presentation/auth_navigation.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
@@ -26,6 +27,7 @@ import '../../../discovery/data/models/provider_search_result.dart';
 import '../../../discovery/data/models/service_summary.dart';
 import '../../../favorites/presentation/widgets/favorite_button.dart';
 import '../../../payments/data/payment_exception.dart';
+import '../../../payments/data/models/payment.dart';
 import '../../../payments/presentation/providers/payments_providers.dart';
 import '../../../staff/data/models/staff.dart';
 import '../../../staff/data/staff_exception.dart';
@@ -39,6 +41,7 @@ import '../../data/models/payment_plan.dart';
 import '../providers/booking_providers.dart';
 import '../widgets/day_slot_picker.dart';
 import 'booking_confirmation_screen.dart';
+import 'booking_payment_screen.dart';
 
 /// Categories with their own hardcoded staff module (Master/Mechanic/
 /// Cleaner) — every other category falls back to the generic `staff`
@@ -187,7 +190,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                                 ),
                         ),
                       FactoryBadge(
-                        label: _capitalize(widget.provider.vertical),
+                        label: verticalLabel(l10n, widget.provider.vertical),
                       ),
                       if (widget.provider.hasOpenAvailability)
                         FactoryBadge(
@@ -396,6 +399,10 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                         service.durationMinutes,
                       ),
                       price: service.price,
+                      // The service's own currency — the sticky bar and the
+                      // payment summary already use it; without this the row
+                      // fell back to the platform default and could disagree.
+                      currencySymbol: service.currency,
                       selected: _selectedServiceId == service.id,
                       onTap: () => setState(() {
                         if (_selectedServiceId != service.id && anyMode) {
@@ -728,13 +735,27 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       // otherwise the confirmation can't tell a deposit from "pay at venue".
       booking = await _withPaymentAmounts(booking);
 
-      // Charged right after booking creation, in the same flow — see
-      // SESSION_NOTES.md for why this isn't gated behind a webhook yet
-      // (no real payment provider/webhook exists; the mock resolves
-      // synchronously, so there's nothing async to wait on).
+      // Charged right after booking creation, in the same flow. The mock
+      // provider resolves synchronously (SUCCEEDED); a redirect-based one
+      // (Freedom Pay) answers PENDING with a checkout page, and the booking
+      // is only confirmed once its webhook arrives — see BookingPaymentScreen.
+      //
+      // A booking with nothing due online (the business takes no advance
+      // payment, or the service is free) arrives already CONFIRMED — the
+      // customer pays at the venue — so there is no payment to start.
       String? paymentErrorMessage;
+      Payment? payment;
+      var choosePayment = false;
       try {
-        await ref.read(paymentsApiProvider).createPayment(booking.id);
+        if (booking.status == 'PENDING_PAYMENT') {
+          // With saved cards the customer picks how to pay on the payment screen, so no payment yet.
+          final hasCards = (await usableSavedCards(ref.read(paymentsApiProvider))).isNotEmpty;
+          if (!hasCards) {
+            payment = await ref.read(paymentsApiProvider).createPayment(booking.id);
+          } else {
+            choosePayment = true;
+          }
+        }
       } on PaymentException catch (e) {
         paymentErrorMessage = l10n.bookingConfirmedButError(
           e.localizedMessage(l10n),
@@ -742,6 +763,35 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       }
 
       if (!mounted) return;
+      final confirmation = BookingConfirmationArgs(
+        booking: booking,
+        providerId: widget.provider.id,
+        providerName: widget.provider.name,
+        providerVertical: widget.provider.vertical,
+        service: service,
+        slotStartsAt: slotStartsAt,
+        latitude: widget.provider.latitude,
+        longitude: widget.provider.longitude,
+      );
+      if (choosePayment) {
+        context.pushReplacement(
+          AppRoutes.bookingPayment,
+          extra: BookingPaymentArgs(booking: booking, confirmation: confirmation),
+        );
+        return;
+      }
+      if (payment != null && payment.status != 'SUCCEEDED') {
+        // Not paid yet: the customer must pay (or retry) before this is a confirmed booking.
+        context.pushReplacement(
+          AppRoutes.bookingPayment,
+          extra: BookingPaymentArgs(
+            booking: booking,
+            confirmation: confirmation,
+            payment: payment,
+          ),
+        );
+        return;
+      }
       if (paymentErrorMessage != null) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(paymentErrorMessage)));
@@ -751,16 +801,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       // rather than pushing on top of it.
       context.pushReplacement(
         AppRoutes.bookingConfirmation,
-        extra: BookingConfirmationArgs(
-          booking: booking,
-          providerId: widget.provider.id,
-          providerName: widget.provider.name,
-          providerVertical: widget.provider.vertical,
-          service: service,
-          slotStartsAt: slotStartsAt,
-          latitude: widget.provider.latitude,
-          longitude: widget.provider.longitude,
-        ),
+        extra: confirmation,
       );
     } on BookingException catch (e) {
       if (!mounted) return;
@@ -815,7 +856,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.errorBookingGeneric(e.toString()))),
+        SnackBar(content: Text(l10n.errorBookingGeneric)),
       );
       setState(() => _isBooking = false);
     }
@@ -1177,9 +1218,6 @@ class _VehicleOption extends StatelessWidget {
     );
   }
 }
-
-String _capitalize(String s) =>
-    s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';
 
 
 /// Photo-first header: the business's cover photo under a soft scrim, with

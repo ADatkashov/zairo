@@ -249,7 +249,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       if (!mounted) return;
       setState(() {
         _saving = false;
-        _error = e is AuthException ? e.localizedMessage(l10n) : l10n.errorAuthGeneric(e.toString());
+        _error = e is AuthException ? e.localizedMessage(l10n) : l10n.errorAuthGeneric;
       });
     }
   }

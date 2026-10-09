@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/app_localizations.dart';
+import '../../../../core/formatting/vertical_label.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/widgets/change_avatar_dialog.dart';
 import '../../../auth/presentation/widgets/confirm_log_out.dart';
@@ -66,12 +67,16 @@ class DashboardScreen extends ConsumerWidget {
         title: l10n.dashboardGreeting(user.displayName),
         leading: Padding(
           padding: const EdgeInsets.all(FactorySpacing.space2),
-          child: GestureDetector(
-            onTap: () => showChangeAvatarDialog(context, hasCurrentAvatar: user.avatarUrl != null),
-            child: FactoryAvatar(
-              initials: _initialsFor(user.displayName),
-              size: 32,
-              image: user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+          child: Semantics(
+            button: true,
+            label: l10n.changeAvatarDialogTitle,
+            child: GestureDetector(
+              onTap: () => showChangeAvatarDialog(context, hasCurrentAvatar: user.avatarUrl != null),
+              child: FactoryAvatar(
+                initials: _initialsFor(user.displayName),
+                size: 32,
+                image: user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+              ),
             ),
           ),
         ),
@@ -225,7 +230,7 @@ class DashboardScreen extends ConsumerWidget {
                     selectedCity = cities.first.code;
                   }
                   return DropdownButtonFormField<String>(
-                    value: selectedCity,
+                    initialValue: selectedCity,
                     decoration: InputDecoration(
                       labelText: l10n.selectCity,
                       border: const OutlineInputBorder(),
@@ -244,7 +249,7 @@ class DashboardScreen extends ConsumerWidget {
                   );
                 },
                 loading: () => const CircularProgressIndicator(),
-                error: (error, _) => Text('${l10n.errorLoadingCities}: $error'),
+                error: (error, _) => Text(l10n.errorLoadingCities),
               ),
             ],
           );
@@ -649,7 +654,7 @@ class _SalonCard extends StatelessWidget {
               children: [
                 Text(provider.name, style: textTheme.titleSmall),
                 const SizedBox(height: 4),
-                Text(_capitalize(provider.vertical), style: textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
+                Text(verticalLabel(l10n, provider.vertical), style: textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
               ],
             ),
           ),
@@ -839,7 +844,7 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
               data: (cities) {
                 if (cities.isEmpty) return Text(l10n.noCitiesAvailable);
                 return DropdownButtonFormField<String>(
-                  value: _cityCode ?? cities.first.code,
+                  initialValue: _cityCode ?? cities.first.code,
                   decoration: InputDecoration(
                     labelText: l10n.selectCity,
                     border: const OutlineInputBorder(),
@@ -855,7 +860,7 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
                 );
               },
               loading: () => const CircularProgressIndicator(),
-              error: (error, _) => Text('${l10n.errorLoadingCities}: $error'),
+              error: (error, _) => Text(l10n.errorLoadingCities),
             ),
             const SizedBox(height: FactorySpacing.space4),
             if (_error != null)
@@ -899,7 +904,7 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
       ref.invalidate(myProvidersProvider(widget.ownerUserId));
     } catch (e) {
       setState(() {
-        _error = e is BillingException ? e.localizedMessage(l10n) : l10n.errorCreateBusinessFailed(e.toString());
+        _error = e is BillingException ? e.localizedMessage(l10n) : l10n.errorCreateBusinessFailed;
         _isSubmitting = false;
       });
     }

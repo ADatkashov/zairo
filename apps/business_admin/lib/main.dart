@@ -9,6 +9,7 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(
     ProviderScope(
+      retry: appProviderRetry,
       overrides: [
         networkConfigProvider.overrideWithValue(adminNetworkConfig),
       ],

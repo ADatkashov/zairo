@@ -9,6 +9,7 @@ Widget _wrap(Widget child) => MaterialApp(
 );
 
 void main() {
+  narrowPhoneTests();
   _denseButtonTests();
   _authBrandTests();
   _settingsGroupTests();
@@ -123,6 +124,14 @@ void main() {
 
     await tester.tap(find.byType(FactoryTimeSlot));
     expect(tapped, isTrue);
+  });
+
+  testWidgets('FactoryTimeSlot is at least 44x44 so it is easy to tap', (tester) async {
+    await tester.pumpWidget(_wrap(FactoryTimeSlot(label: '9:00', onTap: () {})));
+
+    final size = tester.getSize(find.byType(FactoryTimeSlot));
+    expect(size.height, greaterThanOrEqualTo(44));
+    expect(size.width, greaterThanOrEqualTo(44));
   });
 
   testWidgets('FactoryBadge renders its label', (tester) async {
@@ -997,6 +1006,65 @@ void _settingsGroupTests() {
       await tester.tap(find.text('Language'));
       expect(taps, 1);
       expect(find.byIcon(Icons.language), findsOneWidget);
+    });
+  });
+}
+
+void narrowPhoneTests() {
+  Future<void> pumpNarrow(WidgetTester tester, Widget child) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: factoryLightTheme(),
+        builder: (context, app) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.5)),
+          child: app!,
+        ),
+        home: Scaffold(body: child),
+      ),
+    );
+  }
+
+  group('narrow phone, large text', () {
+    testWidgets('a section header moves its action under the title instead of overflowing', (tester) async {
+      await pumpNarrow(
+        tester,
+        FactorySectionHeader(
+          title: 'A fairly long section title',
+          // Several actions go in a Wrap, so they flow onto a second line when one line isn't enough.
+          trailing: Wrap(
+            alignment: WrapAlignment.end,
+            children: [
+              TextButton(onPressed: () {}, child: const Text('Show removed')),
+              TextButton(onPressed: () {}, child: const Text('Add')),
+            ],
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a dialog taller than the screen scrolls', (tester) async {
+      await pumpNarrow(
+        tester,
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (_) => FactoryDialog(
+                title: 'Title',
+                content: Column(mainAxisSize: MainAxisSize.min, children: [for (var i = 0; i < 20; i++) Text('line $i')]),
+              ),
+            ),
+            child: const Text('open'),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
     });
   });
 }

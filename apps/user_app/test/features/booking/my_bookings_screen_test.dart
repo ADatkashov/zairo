@@ -13,6 +13,8 @@ import 'package:zairo/features/booking/data/models/availability_slot.dart';
 import 'package:zairo/features/booking/data/models/book_again_suggestion.dart';
 import 'package:zairo/features/booking/data/models/booking.dart';
 import 'package:zairo/features/booking/presentation/providers/booking_providers.dart';
+import 'package:zairo/app/router/app_routes.dart';
+import 'package:zairo/features/booking/presentation/screens/booking_payment_screen.dart';
 import 'package:zairo/features/booking/presentation/screens/my_bookings_screen.dart';
 import 'package:zairo/features/messaging/data/messaging_api.dart';
 import 'package:zairo/features/messaging/data/messaging_exception.dart';
@@ -362,6 +364,55 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Cancel booking'), findsOneWidget);
+  });
+
+  testWidgets('a booking awaiting payment is listed with a Pay now button that opens the payment screen', (
+    tester,
+  ) async {
+    final unpaid = Booking(
+      id: 'booking-unpaid',
+      userId: 'user-1',
+      serviceId: 'service-1',
+      availabilitySlotId: 'slot-1',
+      status: 'PENDING_PAYMENT',
+      totalPrice: 20,
+      createdAt: DateTime(2026, 1, 1),
+    );
+    final router = GoRouter(
+      routes: [
+        GoRoute(path: '/', builder: (_, _) => const MyBookingsScreen()),
+        GoRoute(
+          path: AppRoutes.bookingPayment,
+          builder: (_, state) => Text('PAYMENT SCREEN for ${(state.extra! as BookingPaymentArgs).booking.id}'),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(_FakeBookingApi([unpaid])),
+          reviewsApiProvider.overrideWithValue(_FakeReviewsApi()),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp.router(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Awaiting payment'), findsOneWidget);
+    // It can still be cancelled.
+    expect(find.text('Cancel booking'), findsOneWidget);
+
+    await tester.tap(find.text('Pay now'));
+    await tester.pumpAndSettle();
+    expect(find.text('PAYMENT SCREEN for booking-unpaid'), findsOneWidget);
   });
 
   testWidgets('cancelling asks for confirmation, then calls the API and shows a snackbar', (tester) async {

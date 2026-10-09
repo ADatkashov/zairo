@@ -12,6 +12,9 @@ import '../data/business.dart';
 /// actions) so more rows fit and columns can be scanned.
 const double businessesTableMinWidth = 640;
 
+/// Columns the businesses table can be sorted by.
+enum BusinessSortColumn { name, registered }
+
 /// Width of the trailing actions column: room for "Approve" + "Suspend".
 const double _actionsWidth = 200;
 
@@ -31,6 +34,9 @@ class BusinessesTable extends StatelessWidget {
     this.selected = const {},
     this.onToggle,
     this.onToggleAll,
+    this.sortColumn,
+    this.sortAscending = true,
+    this.onSort,
   });
 
   final List<Business> businesses;
@@ -44,6 +50,12 @@ class BusinessesTable extends StatelessWidget {
   final void Function(String id)? onToggle;
   final void Function(bool all)? onToggleAll;
 
+  /// Active sort (null = the default order: pending first, then by name).
+  /// Header cells of sortable columns are buttons when [onSort] is set.
+  final BusinessSortColumn? sortColumn;
+  final bool sortAscending;
+  final void Function(BusinessSortColumn column)? onSort;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -54,6 +66,46 @@ class BusinessesTable extends StatelessWidget {
     final rowHeight = context.factoryProfileOrNull?.rowHeight ?? 40;
 
     final headerStyle = textTheme.labelSmall?.copyWith(color: colors.textTertiary);
+
+    Widget sortableHeader(BusinessSortColumn column, String label, int flex) {
+      final active = sortColumn == column;
+      final text = Text(
+        label.toUpperCase(),
+        style: active ? headerStyle?.copyWith(color: colors.text) : headerStyle,
+      );
+      if (onSort == null) return Expanded(flex: flex, child: text);
+      return Expanded(
+        flex: flex,
+        child: Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: Semantics(
+            button: true,
+            selected: active,
+            child: InkWell(
+              borderRadius: FactoryRadius.smRadius,
+              onTap: () => onSort!(column),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 32),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(child: ExcludeSemantics(child: text)),
+                    if (active) ...[
+                      const SizedBox(width: 2),
+                      Icon(
+                        sortAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                        size: 14,
+                        color: colors.text,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     Widget header() => Padding(
       padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4, vertical: FactorySpacing.space2),
@@ -70,9 +122,9 @@ class BusinessesTable extends StatelessWidget {
                 onChanged: (_) => onToggleAll?.call(selected.length != businesses.length),
               ),
             ),
-          Expanded(flex: 4, child: Text(l10n.businessesColName.toUpperCase(), style: headerStyle)),
+          sortableHeader(BusinessSortColumn.name, l10n.businessesColName, 4),
           Expanded(flex: 2, child: Text(l10n.businessesColType.toUpperCase(), style: headerStyle)),
-          Expanded(flex: 2, child: Text(l10n.businessesColRegistered.toUpperCase(), style: headerStyle)),
+          sortableHeader(BusinessSortColumn.registered, l10n.businessesColRegistered, 2),
           Expanded(flex: 2, child: Text(l10n.businessesColStatus.toUpperCase(), style: headerStyle)),
           const SizedBox(width: _actionsWidth),
         ],

@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../theme/factory_colors.dart';
 import '../theme/factory_radius.dart';
 import '../theme/factory_spacing.dart';
+import '../util/factory_strings.dart';
 import 'factory_badge.dart';
 import 'factory_price_text.dart';
 import 'factory_rating_label.dart';
@@ -38,8 +39,9 @@ class FactoryProviderCard extends StatelessWidget {
     this.image,
     this.isFavorite = false,
     this.onFavoriteToggle,
-    this.favoriteAddSemanticLabel = 'Add to favorites',
-    this.favoriteRemoveSemanticLabel = 'Remove from favorites',
+    this.favoriteAddSemanticLabel,
+    this.favoriteRemoveSemanticLabel,
+    this.pricePrefix,
     this.onTap,
     this.layout = FactoryProviderCardLayout.vertical,
     this.width,
@@ -81,8 +83,12 @@ class FactoryProviderCard extends StatelessWidget {
   /// core_ui has no app-level localization of its own — callers that show
   /// this app in more than English must pass their own translated strings
   /// here rather than relying on the English fallback default.
-  final String favoriteAddSemanticLabel;
-  final String favoriteRemoveSemanticLabel;
+  final String? favoriteAddSemanticLabel;
+  final String? favoriteRemoveSemanticLabel;
+
+  /// Leads the [priceFrom] amount ("from 8 000 ₸"). Null uses the built-in
+  /// localized word from [FactoryStrings].
+  final String? pricePrefix;
 
   final VoidCallback? onTap;
   final FactoryProviderCardLayout layout;
@@ -124,13 +130,20 @@ class FactoryProviderCard extends StatelessWidget {
           if (categoryLabel != null &&
               categoryColor != null &&
               categoryTint != null)
+            // left+right (not just left): the badge is bounded by the photo's
+            // width, so on the 84px photo of a horizontal card FactoryBadge's
+            // FittedBox shrinks the label instead of it being clipped ("Beaut").
             Positioned(
               top: 8,
               left: 8,
-              child: FactoryBadge(
-                label: categoryLabel!,
-                backgroundColor: categoryTint,
-                foregroundColor: categoryColor,
+              right: 8,
+              child: Align(
+                alignment: AlignmentDirectional.topStart,
+                child: FactoryBadge(
+                  label: categoryLabel!,
+                  backgroundColor: categoryTint,
+                  foregroundColor: categoryColor,
+                ),
               ),
             ),
           if (onFavoriteToggle != null)
@@ -140,8 +153,8 @@ class FactoryProviderCard extends StatelessWidget {
               child: _FavoriteButton(
                 isFavorite: isFavorite,
                 onToggle: onFavoriteToggle!,
-                addLabel: favoriteAddSemanticLabel,
-                removeLabel: favoriteRemoveSemanticLabel,
+                addLabel: favoriteAddSemanticLabel ?? FactoryStrings.of(context).addToFavorites,
+                removeLabel: favoriteRemoveSemanticLabel ?? FactoryStrings.of(context).removeFromFavorites,
               ),
             ),
         ],
@@ -165,11 +178,17 @@ class FactoryProviderCard extends StatelessWidget {
           Row(
             children: [
               if (rating != null)
-                FactoryRatingLabel(
-                  rating: rating!,
-                  reviewCount: reviewCount,
-                  iconSize: 11,
-                  semanticLabel: ratingSemanticLabel,
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: AlignmentDirectional.centerStart,
+                    child: FactoryRatingLabel(
+                      rating: rating!,
+                      reviewCount: reviewCount,
+                      iconSize: 11,
+                      semanticLabel: ratingSemanticLabel,
+                    ),
+                  ),
                 ),
               if (rating != null && metaText != null) ...[
                 const SizedBox(width: 5),
@@ -206,7 +225,7 @@ class FactoryProviderCard extends StatelessWidget {
                   FactoryPriceText(
                     amount: priceFrom!,
                     currencySymbol: currencySymbol,
-                    prefix: 'from ',
+                    prefix: pricePrefix ?? FactoryStrings.of(context).priceFrom,
                   ),
                 if (availabilityLabel != null)
                   FactoryBadge(
@@ -294,8 +313,10 @@ class _FavoriteButton extends StatelessWidget {
               fill: isFavorite ? 1 : 0,
               size: 18,
               // The disc behind is always translucent white, so the icon uses
-            // fixed light-theme tones (the dark theme's pale ones would vanish).
-            color: isFavorite ? const Color(0xFFB3372E) : const Color(0xFF5C564C),
+              // fixed light-theme tones (the dark theme's pale ones would vanish).
+              color: isFavorite
+                  ? const Color(0xFFB3372E)
+                  : const Color(0xFF5C564C),
             ),
           ),
         ),

@@ -106,4 +106,68 @@ void main() {
     await pumpConsole(tester, backend: backend, location: '${ConsoleRoutes.finance}?tab=refunds');
     expect(find.text('No failed refunds'), findsOneWidget);
   });
+
+group('commission', () {
+  testWidgets('shows the 0% default and each category with its own or inherited rate', (tester) async {
+    await pumpConsole(tester, backend: defaultBackend(), location: '${ConsoleRoutes.finance}?tab=commission');
+    expect(find.text('Default commission'), findsOneWidget);
+    expect(find.text('0%'), findsWidgets);
+    expect(find.text('Beauty'), findsOneWidget);
+    expect(find.text('8%'), findsOneWidget);
+    expect(find.text('Own rate for this category'), findsOneWidget);
+    expect(find.text('Auto'), findsOneWidget);
+    expect(find.text('Follows the default'), findsOneWidget);
+  });
+
+  testWidgets('an admin sets a category rate; a comma decimal is sent as a number', (tester) async {
+    final backend = defaultBackend();
+    backend.on('PUT', '/platform/commission/categories/c-auto', (_) => FakeReply(commissionJson()));
+    await pumpConsole(tester, backend: backend, location: '${ConsoleRoutes.finance}?tab=commission');
+
+    // Auto is the second card; its "Change" button is the last one.
+    await tester.tap(find.widgetWithText(FilledButton, 'Change').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextFormField, 'Percent (%)'), '7,5');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+
+    expect((backend.calls('PUT', '/platform/commission/categories/c-auto').single.data as Map)['ratePercent'], 7.5);
+    expect(find.text('Commission updated'), findsOneWidget);
+  });
+
+  testWidgets('an out-of-range percent is rejected before anything is sent', (tester) async {
+    final backend = defaultBackend();
+    await pumpConsole(tester, backend: backend, location: '${ConsoleRoutes.finance}?tab=commission');
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Change').first);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextFormField, 'Percent (%)'), '150');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+
+    expect(backend.calls('PUT', '/platform/commission/default'), isEmpty);
+    expect(find.textContaining('from 0 to 100'), findsWidgets);
+  });
+
+  testWidgets('removing a category rate calls DELETE', (tester) async {
+    final backend = defaultBackend();
+    backend.on('DELETE', '/platform/commission/categories/c-beauty', (_) => FakeReply(commissionJson(beautyPercent: null)));
+    await pumpConsole(tester, backend: backend, location: '${ConsoleRoutes.finance}?tab=commission');
+
+    await tester.tap(find.text('Use default'));
+    await tester.pumpAndSettle();
+    expect(backend.calls('DELETE', '/platform/commission/categories/c-beauty'), hasLength(1));
+  });
+
+  testWidgets('support can read the rates but not change them', (tester) async {
+    await pumpConsole(
+      tester,
+      backend: defaultBackend(role: 'PLATFORM_SUPPORT'),
+      location: '${ConsoleRoutes.finance}?tab=commission',
+    );
+    expect(find.text('Beauty'), findsOneWidget);
+    expect(find.text('Change'), findsNothing);
+    expect(find.text('Use default'), findsNothing);
+  });
+});
 }

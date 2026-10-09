@@ -59,6 +59,9 @@ class SubscriptionApiTests {
 
         Map<?, ?> subscription = getMine(owner);
         assertThat(subscription.get("plan")).isEqualTo("FREE");
+        // The price the app shows comes from here, never from a literal in the client.
+        assertThat(subscription.get("proMonthlyPrice")).isEqualTo(29.0);
+        assertThat(subscription.get("currency")).isEqualTo("USD");
         assertThat(subscription.get("status")).isEqualTo("ACTIVE");
         Map<?, ?> limits = (Map<?, ?>) subscription.get("limits");
         assertThat(limits.get("maxProviders")).isEqualTo(1);
