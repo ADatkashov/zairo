@@ -63,10 +63,23 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
 
-    return Scaffold(
+    return DefaultTabController(
+      length: 5,
+      child: Scaffold(
       backgroundColor: colors.bg,
       appBar: FactoryAppBar(
         title: _provider.name,
+        bottom: TabBar(
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
+          tabs: [
+            Tab(text: l10n.salonTabOverview),
+            Tab(text: l10n.salonTabServices),
+            Tab(text: l10n.salonTabTeam),
+            Tab(text: l10n.salonTabBookings),
+            Tab(text: l10n.salonTabSettings),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.star_outline_rounded),
@@ -104,66 +117,94 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          // Invalidates every argument-instance of each family (not just
-          // this provider's, and regardless of a section's current
-          // show-inactive toggle) — simpler and just as correct as threading
-          // every section's local state up here, since re-fetching another
-          // salon's already-cached data too costs nothing a user notices.
-          ref.invalidate(providerDashboardMetricsProvider);
-          ref.invalidate(providerServicesProvider);
-          ref.invalidate(providerSlotsProvider);
-          ref.invalidate(adminMastersProvider);
-          ref.invalidate(adminMechanicsProvider);
-          ref.invalidate(adminCleanersProvider);
-          ref.invalidate(adminStaffProvider);
-          ref.invalidate(providerBookingsProvider);
-          ref.invalidate(providerPayoutsProvider);
-          ref.invalidate(needsAttentionProvider);
-          ref.invalidate(workersProvider);
-        },
-        child: ListView(
-          padding: const EdgeInsets.all(FactorySpacing.space4),
-          children: [
-            _BusinessHeader(
-              provider: _provider,
-              statusLabel: _providerStatusLabel(l10n, _provider.status),
-              statusVariant: _providerStatusVariant(_provider.status),
-            ),
-            const SizedBox(height: FactorySpacing.space6),
-            NeedsAttentionSection(providerId: _provider.id),
-            _DashboardMetricsSection(providerId: _provider.id),
-            const SizedBox(height: FactorySpacing.space6),
-            _ServicesSection(providerId: _provider.id, businessTypeId: _provider.businessTypeId),
-            const SizedBox(height: FactorySpacing.space6),
-            _AvailabilitySection(providerId: _provider.id),
-            if (_provider.vertical == 'beauty') ...[
+      body: TabBarView(
+        children: [
+          _SalonTab(
+            onRefresh: _refresh,
+            children: [
+              _BusinessHeader(
+                provider: _provider,
+                statusLabel: _providerStatusLabel(l10n, _provider.status),
+                statusVariant: _providerStatusVariant(_provider.status),
+              ),
               const SizedBox(height: FactorySpacing.space6),
-              _MastersSection(providerId: _provider.id),
+              NeedsAttentionSection(providerId: _provider.id),
+              _DashboardMetricsSection(providerId: _provider.id),
             ],
-            if (_provider.vertical == 'auto') ...[
+          ),
+          _SalonTab(
+            onRefresh: _refresh,
+            children: [
+              _ServicesSection(providerId: _provider.id, businessTypeId: _provider.businessTypeId),
               const SizedBox(height: FactorySpacing.space6),
-              _MechanicsSection(providerId: _provider.id),
+              _AvailabilitySection(providerId: _provider.id),
             ],
-            if (_provider.vertical == 'cleaning') ...[
+          ),
+          _SalonTab(
+            onRefresh: _refresh,
+            children: [
+              if (_provider.vertical == 'beauty') _MastersSection(providerId: _provider.id),
+              if (_provider.vertical == 'auto') _MechanicsSection(providerId: _provider.id),
+              if (_provider.vertical == 'cleaning') _CleanersSection(providerId: _provider.id),
+              if (!_verticalsWithDedicatedStaffModule.contains(_provider.vertical))
+                _StaffSection(providerId: _provider.id),
               const SizedBox(height: FactorySpacing.space6),
-              _CleanersSection(providerId: _provider.id),
+              TeamScheduleEntry(providerId: _provider.id),
             ],
-            if (!_verticalsWithDedicatedStaffModule.contains(_provider.vertical)) ...[
+          ),
+          _SalonTab(
+            onRefresh: _refresh,
+            children: [
+              _BookingsSection(providerId: _provider.id),
               const SizedBox(height: FactorySpacing.space6),
-              _StaffSection(providerId: _provider.id),
+              _PayoutsSection(providerId: _provider.id),
             ],
-            const SizedBox(height: FactorySpacing.space6),
-            TeamScheduleEntry(providerId: _provider.id),
-            const SizedBox(height: FactorySpacing.space6),
-            _BookingsSection(providerId: _provider.id),
-            const SizedBox(height: FactorySpacing.space6),
-            _BookingSettingsSection(providerId: _provider.id),
-            const SizedBox(height: FactorySpacing.space6),
-            _PayoutsSection(providerId: _provider.id),
-          ],
-        ),
+          ),
+          _SalonTab(
+            onRefresh: _refresh,
+            children: [_BookingSettingsSection(providerId: _provider.id)],
+          ),
+        ],
+      ),
+      ),
+    );
+  }
+
+  Future<void> _refresh() async {
+    // Invalidates every argument-instance of each family (not just
+    // this provider's, and regardless of a section's current
+    // show-inactive toggle) — simpler and just as correct as threading
+    // every section's local state up here, since re-fetching another
+    // salon's already-cached data too costs nothing a user notices.
+    ref.invalidate(providerDashboardMetricsProvider);
+    ref.invalidate(providerServicesProvider);
+    ref.invalidate(providerSlotsProvider);
+    ref.invalidate(adminMastersProvider);
+    ref.invalidate(adminMechanicsProvider);
+    ref.invalidate(adminCleanersProvider);
+    ref.invalidate(adminStaffProvider);
+    ref.invalidate(providerBookingsProvider);
+    ref.invalidate(providerPayoutsProvider);
+    ref.invalidate(needsAttentionProvider);
+    ref.invalidate(workersProvider);
+  }
+}
+
+/// One scrollable, pull-to-refresh page of the business-detail tabs. Each
+/// tab keeps its own scroll position (TabBarView keeps the page alive).
+class _SalonTab extends StatelessWidget {
+  const _SalonTab({required this.onRefresh, required this.children});
+
+  final Future<void> Function() onRefresh;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+        padding: const EdgeInsets.all(FactorySpacing.space4),
+        children: children,
       ),
     );
   }

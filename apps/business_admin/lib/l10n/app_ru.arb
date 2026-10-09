@@ -1012,5 +1012,10 @@
   "billingRemoveCardBody": "Мы перестанем её использовать. PRO действует до {date}, дальше продление оплачивается на странице оплаты.",
   "billingRemoveCardConfirm": "Удалить",
   "billingRemoveCardKeep": "Оставить",
-  "billingRemoveCardFailed": "Не удалось удалить карту. Попробуйте ещё раз."
+  "billingRemoveCardFailed": "Не удалось удалить карту. Попробуйте ещё раз.",
+  "salonTabOverview": "Обзор",
+  "salonTabServices": "Услуги",
+  "salonTabTeam": "Команда",
+  "salonTabBookings": "Записи",
+  "salonTabSettings": "Настройки"
 }

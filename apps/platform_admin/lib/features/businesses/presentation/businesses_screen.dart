@@ -103,6 +103,31 @@ class _BusinessesScreenState extends ConsumerState<BusinessesScreen> {
     );
   }
 
+  BusinessSortColumn? _sortColumn;
+  bool _sortAscending = true;
+
+  /// Explicit column sort when chosen; otherwise pending businesses first
+  /// (they need a decision), then by name.
+  int _comparator(Business a, Business b) {
+    int byName() => a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    final column = _sortColumn;
+    if (column == null) {
+      final byPending = (b.status == 'PENDING' ? 1 : 0) - (a.status == 'PENDING' ? 1 : 0);
+      return byPending != 0 ? byPending : byName();
+    }
+    final direction = _sortAscending ? 1 : -1;
+    switch (column) {
+      case BusinessSortColumn.name:
+        return direction * byName();
+      case BusinessSortColumn.registered:
+        final da = a.createdAt, db = b.createdAt;
+        // Businesses with no date sort last whichever way the column runs.
+        if (da == null || db == null) return da == db ? byName() : (da == null ? 1 : -1);
+        final c = da.compareTo(db);
+        return c != 0 ? direction * c : byName();
+    }
+  }
+
   @override
   void dispose() {
     _search.dispose();
@@ -133,14 +158,10 @@ class _BusinessesScreenState extends ConsumerState<BusinessesScreen> {
           }
           final pending = businesses.where((b) => b.status == 'PENDING').length;
           final needle = _query.trim().toLowerCase();
-          final visible =
-              businesses.where((b) {
-                if (_status != null && b.status != _status) return false;
-                return needle.isEmpty || b.name.toLowerCase().contains(needle);
-              }).toList()..sort((a, b) {
-                final byPending = (b.status == 'PENDING' ? 1 : 0) - (a.status == 'PENDING' ? 1 : 0);
-                return byPending != 0 ? byPending : a.name.toLowerCase().compareTo(b.name.toLowerCase());
-              });
+          final visible = businesses.where((b) {
+            if (_status != null && b.status != _status) return false;
+            return needle.isEmpty || b.name.toLowerCase().contains(needle);
+          }).toList()..sort(_comparator);
 
           // Only rows still on screen stay selected (a filter or a refresh
           // can hide them), so a bulk action never touches unseen rows.
@@ -217,6 +238,13 @@ class _BusinessesScreenState extends ConsumerState<BusinessesScreen> {
                             onToggle: canModerate
                                 ? (id) => setState(() => _selected.contains(id) ? _selected.remove(id) : _selected.add(id))
                                 : null,
+                            sortColumn: _sortColumn,
+                            sortAscending: _sortAscending,
+                            onSort: (column) => setState(() {
+                              // Same column flips direction; a new one starts ascending.
+                              _sortAscending = _sortColumn == column ? !_sortAscending : true;
+                              _sortColumn = column;
+                            }),
                             onToggleAll: (all) => setState(() {
                               _selected.clear();
                               if (all) _selected.addAll(visible.map((b) => b.id));
