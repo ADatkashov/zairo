@@ -594,5 +594,6 @@
   "paymentStartError": "Төлемді бастау мүмкін болмады. Қайта көріңіз.",
   "paymentOpenFailed": "Төлем бетін ашу мүмкін болмады.",
   "bookingStatusPendingPayment": "Төлем күтілуде",
-  "bookingPayNowButton": "Төлеу"
+  "bookingPayNowButton": "Төлеу",
+  "paymentConfirmedSnack": "Төлем алынды — брон расталды."
 }

@@ -217,7 +217,8 @@ public class PaymentsService {
         PaymentInitiation result;
         try {
             result = paymentProvider.createPayment(payment.getId(), payment.getAmount(), payment.getCurrency(),
-                    "Factory booking payment", successUrl, failureUrl);
+                    "Factory booking payment", PaymentReturnUrls.withBooking(successUrl, payment.getBookingId()),
+                    PaymentReturnUrls.withBooking(failureUrl, payment.getBookingId()));
         } catch (RuntimeException e) {
             payment.markFailed("Payment provider error: " + e.getMessage(), Instant.now());
             return;

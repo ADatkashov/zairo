@@ -1823,5 +1823,7 @@
   "bookingStatusPendingPayment": "Awaiting payment",
   "@bookingStatusPendingPayment": {"description": "bookingStatusPendingPayment"},
   "bookingPayNowButton": "Pay now",
-  "@bookingPayNowButton": {"description": "bookingPayNowButton"}
+  "@bookingPayNowButton": {"description": "bookingPayNowButton"},
+  "paymentConfirmedSnack": "Payment received — your booking is confirmed.",
+  "@paymentConfirmedSnack": {"description": "paymentConfirmedSnack"}
 }
