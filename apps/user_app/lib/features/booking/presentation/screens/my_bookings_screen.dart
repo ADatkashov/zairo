@@ -135,11 +135,16 @@ class _BookingsListState extends ConsumerState<_BookingsList> {
             ),
           );
         }
-        final sorted = [...bookings]
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        final filtered = sorted
+        final filtered = bookings
             .where((b) => _tab.statuses.contains(b.status))
-            .toList();
+            .toList()
+          ..sort((a, b) {
+            // The next visit first on "Upcoming"; the most recent first on the
+            // other tabs. A booking without a known start time sorts by when
+            // it was made instead.
+            final byTime = _visitOrKey(a).compareTo(_visitOrKey(b));
+            return _tab == _BookingsTab.upcoming ? byTime : -byTime;
+          });
         return Column(
           children: [
             Padding(
@@ -219,6 +224,10 @@ class _BookingsListState extends ConsumerState<_BookingsList> {
     );
   }
 }
+
+/// The time a booking is ordered by: its appointment start when known,
+/// otherwise when it was made.
+DateTime _visitOrKey(Booking b) => b.startsAt ?? b.createdAt;
 
 /// A pill-style segmented control (Customer App Redesign board,
 /// 2026-09-05) — filters the already-fetched bookings list client-side by
@@ -330,6 +339,58 @@ class _BookAgainButton extends ConsumerWidget {
   }
 }
 
+/// What was booked, with whom and when — the part of a booking card a
+/// customer actually looks for. Each line is shown only if the backend sent it.
+class _BookingHeadline extends StatelessWidget {
+  final Booking booking;
+
+  const _BookingHeadline({required this.booking});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    final start = booking.startsAt?.toLocal();
+    final end = booking.endsAt?.toLocal();
+    final when = start == null
+        ? null
+        : '${formatWeekdayMonthDay(l10n, start)} · ${formatHourMinute(start)}'
+            '${end == null ? '' : '–${formatHourMinute(end)}'}';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (booking.serviceTitle != null)
+            Text(booking.serviceTitle!, style: textTheme.titleSmall),
+          if (booking.providerName != null)
+            Text(
+              booking.providerName!,
+              style: textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+            ),
+          if (when != null) ...[
+            const SizedBox(height: FactorySpacing.space1),
+            Row(
+              children: [
+                Icon(Symbols.event_rounded, size: 16, color: colors.primary),
+                const SizedBox(width: FactorySpacing.space1),
+                Flexible(
+                  child: Text(
+                    when,
+                    style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _BookingCard extends ConsumerStatefulWidget {
   final Booking booking;
   final String userId;
@@ -353,6 +414,8 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (booking.serviceTitle != null || booking.startsAt != null)
+            _BookingHeadline(booking: booking),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
