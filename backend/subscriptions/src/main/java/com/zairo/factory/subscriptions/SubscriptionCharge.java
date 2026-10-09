@@ -61,6 +61,11 @@ public class SubscriptionCharge {
     @Column(name = "recurring_profile_id")
     private String recurringProfileId;
 
+    /** UPGRADE (first PRO payment) or RENEWAL (a later period) — decides what a confirmed webhook does to the subscription. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private SubscriptionChargePurpose purpose = SubscriptionChargePurpose.UPGRADE;
+
     @Column(name = "provider_reference")
     private String providerReference;
 
@@ -86,6 +91,18 @@ public class SubscriptionCharge {
         this.recurringProfileId = recurringProfileId;
         this.createdAt = createdAt;
         this.updatedAt = createdAt;
+    }
+
+    /** A charge for a later billing period rather than the first PRO payment. */
+    public SubscriptionCharge(UUID id, UUID subscriptionId, BigDecimal amount, String currency,
+            PaymentProviderName provider, String recurringProfileId, Instant createdAt,
+            SubscriptionChargePurpose purpose) {
+        this(id, subscriptionId, amount, currency, provider, recurringProfileId, createdAt);
+        this.purpose = purpose;
+    }
+
+    public SubscriptionChargePurpose getPurpose() {
+        return purpose;
     }
 
     public UUID getId() {
