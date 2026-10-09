@@ -244,7 +244,7 @@ class DashboardScreen extends ConsumerWidget {
                   );
                 },
                 loading: () => const CircularProgressIndicator(),
-                error: (error, _) => Text('${l10n.errorLoadingCities}: $error'),
+                error: (error, _) => Text(l10n.errorLoadingCities),
               ),
             ],
           );
@@ -855,7 +855,7 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
                 );
               },
               loading: () => const CircularProgressIndicator(),
-              error: (error, _) => Text('${l10n.errorLoadingCities}: $error'),
+              error: (error, _) => Text(l10n.errorLoadingCities),
             ),
             const SizedBox(height: FactorySpacing.space4),
             if (_error != null)
@@ -899,7 +899,7 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
       ref.invalidate(myProvidersProvider(widget.ownerUserId));
     } catch (e) {
       setState(() {
-        _error = e is BillingException ? e.localizedMessage(l10n) : l10n.errorCreateBusinessFailed(e.toString());
+        _error = e is BillingException ? e.localizedMessage(l10n) : l10n.errorCreateBusinessFailed;
         _isSubmitting = false;
       });
     }

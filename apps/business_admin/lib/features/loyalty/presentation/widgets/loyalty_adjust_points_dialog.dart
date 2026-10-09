@@ -187,7 +187,7 @@ class _AdjustPointsDialogState extends ConsumerState<_AdjustPointsDialog> {
       Navigator.of(context).pop(true);
     } catch (e) {
       setState(() {
-        _error = e is LoyaltyAdminException ? e.localizedMessage(l10n) : l10n.errorLoyaltyActionFailed(e.toString());
+        _error = e is LoyaltyAdminException ? e.localizedMessage(l10n) : l10n.errorLoyaltyActionFailed;
         _isSubmitting = false;
       });
     }

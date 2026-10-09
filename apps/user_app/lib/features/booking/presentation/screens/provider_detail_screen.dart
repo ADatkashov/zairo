@@ -851,7 +851,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.errorBookingGeneric(e.toString()))),
+        SnackBar(content: Text(l10n.errorBookingGeneric)),
       );
       setState(() => _isBooking = false);
     }

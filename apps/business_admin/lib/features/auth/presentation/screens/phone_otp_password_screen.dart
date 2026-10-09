@@ -105,7 +105,7 @@ class _PhoneOtpPasswordScreenState extends ConsumerState<PhoneOtpPasswordScreen>
   }
 
   String _message(AppLocalizations l10n, Object error) =>
-      error is AuthException ? error.localizedMessage(l10n) : l10n.errorAuthGeneric(error.toString());
+      error is AuthException ? error.localizedMessage(l10n) : l10n.errorAuthGeneric;
 
   Future<void> _resend() async {
     final l10n = AppLocalizations.of(context)!;

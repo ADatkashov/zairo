@@ -19,7 +19,7 @@ class ReviewsException implements Exception {
       case 404:
         return l10n.errorReviewsNotFound;
       default:
-        return l10n.errorReviewsActionFailed(serverMessage ?? statusCode?.toString() ?? '');
+        return serverMessage ?? l10n.errorReviewsActionFailed;
     }
   }
 

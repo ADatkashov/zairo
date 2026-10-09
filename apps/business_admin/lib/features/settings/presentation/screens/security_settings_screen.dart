@@ -77,7 +77,7 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
     } on AuthException catch (e) {
       if (mounted) setState(() => _linkError = e.localizedMessage(l10n));
     } catch (e) {
-      if (mounted) setState(() => _linkError = l10n.errorAuthGeneric(e.toString()));
+      if (mounted) setState(() => _linkError = l10n.errorAuthGeneric);
     } finally {
       if (mounted) setState(() => _isLinking = false);
     }

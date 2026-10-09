@@ -117,7 +117,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
           DeleteAccountException(statusCode: 403) => l10n.deleteAccountWrongPassword,
           // 409: the server's own words say exactly what to do first.
           DeleteAccountException(statusCode: 409, :final serverMessage) when serverMessage != null => serverMessage,
-          _ => l10n.errorAuthGeneric(e.toString()),
+          _ => l10n.errorAuthGeneric,
         };
       });
     }
