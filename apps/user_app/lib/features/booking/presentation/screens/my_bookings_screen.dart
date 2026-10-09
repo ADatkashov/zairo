@@ -225,10 +225,6 @@ class _BookingsListState extends ConsumerState<_BookingsList> {
   }
 }
 
-/// The time a booking is ordered by: its appointment start when known,
-/// otherwise when it was made.
-DateTime _visitOrKey(Booking b) => b.startsAt ?? b.createdAt;
-
 /// A pill-style segmented control (Customer App Redesign board,
 /// 2026-09-05) — filters the already-fetched bookings list client-side by
 /// status rather than issuing a new request per tab.
@@ -338,6 +334,10 @@ class _BookAgainButton extends ConsumerWidget {
     );
   }
 }
+
+/// The time a booking is ordered by: its appointment start when known,
+/// otherwise when it was made.
+DateTime _visitOrKey(Booking b) => b.startsAt ?? b.createdAt;
 
 /// What was booked, with whom and when — the part of a booking card a
 /// customer actually looks for. Each line is shown only if the backend sent it.
