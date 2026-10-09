@@ -69,7 +69,7 @@ class _FakeBookingApi extends BookingApi {
       userId: userId,
       serviceId: serviceId,
       availabilitySlotId: availabilitySlotId,
-      status: 'CONFIRMED',
+      status: 'PENDING_PAYMENT',
       totalPrice: totalPrice,
       createdAt: DateTime.now(),
     );
@@ -140,7 +140,7 @@ class _FakeBeautyApi extends BeautyApi {
       userId: userId,
       serviceId: serviceId,
       availabilitySlotId: availabilitySlotId,
-      status: 'CONFIRMED',
+      status: 'PENDING_PAYMENT',
       totalPrice: totalPrice,
       createdAt: DateTime.now(),
     );
@@ -182,7 +182,7 @@ class _FakeAutoApi extends AutoApi {
       userId: userId,
       serviceId: serviceId,
       availabilitySlotId: availabilitySlotId,
-      status: 'CONFIRMED',
+      status: 'PENDING_PAYMENT',
       totalPrice: totalPrice,
       createdAt: DateTime.now(),
     );
@@ -218,7 +218,7 @@ class _FakeStaffApi extends StaffApi {
       userId: userId,
       serviceId: serviceId,
       availabilitySlotId: availabilitySlotId,
-      status: 'CONFIRMED',
+      status: 'PENDING_PAYMENT',
       totalPrice: totalPrice,
       createdAt: DateTime.now(),
     );
@@ -274,7 +274,7 @@ class _FakeWorkforceApi extends WorkforceApi {
       userId: userId,
       serviceId: serviceId,
       availabilitySlotId: 'slot-any',
-      status: 'CONFIRMED',
+      status: 'PENDING_PAYMENT',
       totalPrice: 40,
       createdAt: DateTime.now(),
     );
@@ -938,6 +938,67 @@ void main() {
     );
     await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
+    expect(find.text('Booking confirmed!'), findsOneWidget);
+  });
+
+  testWidgets('a booking with nothing due online is confirmed right away, without starting a payment', (tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    final slot = AvailabilitySlot(
+      id: 'slot-1',
+      providerId: 'provider-1',
+      startsAt: DateTime(2026, 1, 1, 10, 0),
+      endsAt: DateTime(2026, 1, 1, 10, 30),
+      status: 'OPEN',
+    );
+    // The server confirms a booking with no advance payment on creation.
+    final fakeApi = _FakeBookingApi([slot])
+      ..bookingFromGet = Booking(
+        id: 'booking-1',
+        userId: 'user-1',
+        serviceId: 'service-1',
+        availabilitySlotId: 'slot-1',
+        status: 'CONFIRMED',
+        totalPrice: 30,
+        depositAmount: 0,
+        remainingAmount: 30,
+        createdAt: DateTime.now(),
+      );
+    final fakePaymentsApi = _FakePaymentsApi();
+    const provider = ProviderSearchResult(
+      id: 'provider-1',
+      name: 'Test Salon',
+      vertical: 'beauty',
+      status: 'ACTIVE',
+      hasOpenAvailability: true,
+      minPrice: 30,
+      services: [
+        ServiceSummary(id: 'service-1', title: 'Haircut', durationMinutes: 30, price: 30, currency: 'USD'),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(fakeApi),
+          paymentsApiProvider.overrideWithValue(fakePaymentsApi),
+          beautyApiProvider.overrideWithValue(_FakeBeautyApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: _routerApp(provider),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tapVisible(tester, find.text('Haircut'));
+    await tester.pumpAndSettle();
+    await tapVisible(tester, find.text('10:00'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FactoryButton, 'Book'));
+    await tester.pumpAndSettle();
+
+    expect(fakePaymentsApi.lastChargedBookingId, isNull);
+    expect(find.text('Waiting for payment'), findsNothing);
     expect(find.text('Booking confirmed!'), findsOneWidget);
   });
 }
