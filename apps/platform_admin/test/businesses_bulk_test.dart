@@ -29,6 +29,29 @@ void main() {
     expect(find.text('2 selected'), findsNothing);
   });
 
+  testWidgets('clicking the Name header sorts the table, clicking again reverses it', (tester) async {
+    await pumpConsole(
+      tester,
+      backend: defaultBackend(),
+      location: ConsoleRoutes.businesses,
+      size: const Size(1400, 900),
+    );
+
+    double top(String name) => tester.getTopLeft(find.text(name).first).dy;
+    // Default order: the pending business (Glow Salon) comes first.
+    expect(top('Glow Salon'), lessThan(top('Zen Spa')));
+
+    await tester.tap(find.text('BUSINESS'));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.arrow_upward_rounded), findsOneWidget);
+    expect(top('Glow Salon'), lessThan(top('Zen Spa')));
+
+    await tester.tap(find.text('BUSINESS'));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.arrow_downward_rounded), findsOneWidget);
+    expect(top('Zen Spa'), lessThan(top('Glow Salon')));
+  });
+
   testWidgets('a filter can be saved as a view and applied again', (tester) async {
     await pumpConsole(
       tester,
