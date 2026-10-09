@@ -83,7 +83,15 @@ class FactoryEmptyState extends StatelessWidget {
         opacity: t,
         child: Transform.translate(offset: Offset(0, (1 - t) * 12), child: child),
       ),
-      child: content,
+      // Short space (a phone with filters open, large text): scroll instead of overflowing.
+      child: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.hasBoundedHeight ? constraints.maxHeight : 0),
+            child: Center(child: content),
+          ),
+        ),
+      ),
     );
   }
 }

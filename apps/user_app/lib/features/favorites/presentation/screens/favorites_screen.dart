@@ -1,5 +1,6 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
+import '../../../../core/provider_grid.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -155,11 +156,11 @@ class _FavoritesList extends ConsumerWidget {
                 // board, 2026-09-05) — Favorites is a saved-items gallery,
                 // not a results list, so it reads better as a grid than
                 // Search's photo-left rows.
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   mainAxisSpacing: FactorySpacing.space3,
                   crossAxisSpacing: FactorySpacing.space3,
-                  childAspectRatio: 0.78,
+                  childAspectRatio: providerGridAspectRatio(context),
                 ),
                 itemCount: favorites.length,
                 itemBuilder: (context, index) {

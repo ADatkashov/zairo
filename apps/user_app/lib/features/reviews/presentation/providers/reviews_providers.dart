@@ -8,6 +8,7 @@ final reviewsApiProvider = Provider<ReviewsApi>((ref) {
   return ReviewsApi(ref.watch(dioClientProvider));
 });
 
-final reviewForBookingProvider = FutureProvider.autoDispose.family<Review?, String>((ref, bookingId) {
-  return ref.watch(reviewsApiProvider).getReview(bookingId);
-});
+final reviewForBookingProvider = FutureProvider.autoDispose
+    .family<Review?, String>((ref, bookingId) {
+      return ref.watch(reviewsApiProvider).getReview(bookingId);
+    });

@@ -137,7 +137,9 @@ class _BookingsListState extends ConsumerState<_BookingsList> {
         }
         final sorted = [...bookings]
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        final filtered = sorted.where((b) => _tab.statuses.contains(b.status)).toList();
+        final filtered = sorted
+            .where((b) => _tab.statuses.contains(b.status))
+            .toList();
         return Column(
           children: [
             Padding(
@@ -160,7 +162,9 @@ class _BookingsListState extends ConsumerState<_BookingsList> {
                         physics: const AlwaysScrollableScrollPhysics(),
                         children: [
                           Padding(
-                            padding: const EdgeInsets.all(FactorySpacing.space6),
+                            padding: const EdgeInsets.all(
+                              FactorySpacing.space6,
+                            ),
                             child: FactoryEmptyState(
                               icon: Symbols.calendar_month_rounded,
                               title: switch (_tab) {
@@ -352,13 +356,13 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: BookingAmounts(booking: booking, compact: true),
-              ),
+              Expanded(child: BookingAmounts(booking: booking, compact: true)),
               const SizedBox(width: FactorySpacing.space2),
-              FactoryBadge(
-                label: _statusLabel(l10n, booking.status),
-                variant: _statusVariant(booking.status),
+              Flexible(
+                child: FactoryBadge(
+                  label: _statusLabel(l10n, booking.status),
+                  variant: _statusVariant(booking.status),
+                ),
               ),
             ],
           ),
@@ -441,14 +445,15 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
       context.push(
         AppRoutes.chat(
           matched.providerId,
-          providerName: matched.providerName ?? l10n.messagingUnknownBusinessName,
+          providerName:
+              matched.providerName ?? l10n.messagingUnknownBusinessName,
         ),
       );
       return;
     }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(l10n.messageAboutBookingSentMessage)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.messageAboutBookingSentMessage)),
+    );
   }
 
   /// Resumes payment for a booking that is still awaiting it. The payment
@@ -502,9 +507,8 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
       setState(() => _isCancelling = false);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.errorBookingGeneric)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.errorBookingGeneric)));
       setState(() => _isCancelling = false);
     }
   }
@@ -565,9 +569,7 @@ class _MessageAboutBookingDialogState
         FactoryButton(
           label: l10n.messageAboutBookingCancelButton,
           variant: FactoryButtonVariant.text,
-          onPressed: _isSubmitting
-              ? null
-              : () => Navigator.of(context).pop(),
+          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
         ),
         FactoryButton(
           label: l10n.messageAboutBookingSendButton,
