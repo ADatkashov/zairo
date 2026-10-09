@@ -73,6 +73,8 @@ final _free = Subscription(
   currentPeriodStart: _periodStart,
   currentPeriodEnd: _periodEnd,
   cancelAtPeriodEnd: false,
+  proMonthlyPrice: 29,
+  currency: 'KZT',
 );
 
 final _periodStart = DateTime(2026, 1, 1);
@@ -147,6 +149,10 @@ void main() {
     expect(find.text('up to 30'), findsOneWidget);
     expect(find.text('PRO only'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Upgrade to PRO'), findsOneWidget);
+    // The price comes from the server's response, not a literal in the screen.
+    final price = tester.widget<FactoryPriceText>(find.byType(FactoryPriceText));
+    expect(price.amount, 29);
+    expect(price.currencySymbol, 'KZT');
   });
 
   testWidgets('tapping upgrade calls the API and refreshes to show PRO', (tester) async {

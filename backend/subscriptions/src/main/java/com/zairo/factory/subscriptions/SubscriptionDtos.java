@@ -27,18 +27,22 @@ public final class SubscriptionDtos {
                     + "redirect the customer here to complete the charge. The plan/status fields above are still "
                     + "the pre-upgrade values in that case — the subscription becomes PRO only once the provider's "
                     + "webhook confirms the payment, not when this response is returned.")
-            String checkoutUrl) {
+            String checkoutUrl,
+            @Schema(description = "What PRO costs per month, so a client never hardcodes the price.", example = "29.00")
+            BigDecimal proMonthlyPrice,
+            @Schema(description = "ISO 4217 currency PRO is charged in.", example = "USD")
+            String currency) {
 
-        static SubscriptionResponse from(Subscription subscription) {
-            return from(subscription, null);
+        static SubscriptionResponse from(Subscription subscription, String currency) {
+            return from(subscription, null, currency);
         }
 
-        static SubscriptionResponse from(Subscription subscription, String checkoutUrl) {
+        static SubscriptionResponse from(Subscription subscription, String checkoutUrl, String currency) {
             SubscriptionPlan plan = subscription.getPlan();
             return new SubscriptionResponse(subscription.getId(), subscription.getOwnerUserId(), plan,
                     subscription.getStatus(), PlanLimits.from(plan), subscription.getCurrentPeriodStart(),
                     subscription.getCurrentPeriodEnd(), subscription.getGracePeriodEndsAt(),
-                    subscription.isCancelAtPeriodEnd(), checkoutUrl);
+                    subscription.isCancelAtPeriodEnd(), checkoutUrl, SubscriptionPlan.PRO.monthlyPrice, currency);
         }
     }
 
