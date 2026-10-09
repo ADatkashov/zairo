@@ -312,6 +312,13 @@ class _LoggedInView extends ConsumerWidget {
         ),
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
+          title: l10n.paymentCardsTitle,
+          leading: Icon(Symbols.credit_card_rounded, color: colors.textSecondary),
+          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
+          onTap: () => context.push(AppRoutes.paymentCards),
+        ),
+        const SizedBox(height: FactorySpacing.space2),
+        FactorySelectableTile(
           title: l10n.myVehiclesButton,
           leading: Icon(Symbols.directions_car_rounded, color: colors.textSecondary),
           trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),

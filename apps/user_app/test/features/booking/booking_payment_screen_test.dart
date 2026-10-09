@@ -13,6 +13,7 @@ import 'package:zairo/features/booking/presentation/screens/booking_confirmation
 import 'package:zairo/features/booking/presentation/screens/booking_payment_screen.dart';
 import 'package:zairo/features/discovery/data/models/service_summary.dart';
 import 'package:zairo/features/payments/data/models/payment.dart';
+import 'package:zairo/features/payments/data/models/saved_card.dart';
 import 'package:zairo/features/payments/data/payments_api.dart';
 import 'package:zairo/features/payments/presentation/providers/payments_providers.dart';
 import 'package:zairo/l10n/app_localizations.dart';
@@ -36,6 +37,19 @@ class _FakePaymentsApi extends PaymentsApi {
   Payment? existing;
   Payment onCreate = _payment('PENDING', url: 'https://pay.example/checkout/p1');
   int createCalls = 0;
+  SavedCards cards = SavedCards.empty;
+  String? paidWithCard;
+  Payment onSavedCardPayment = _payment('SUCCEEDED');
+
+  @override
+  Future<SavedCards> getSavedCards() async => cards;
+
+  @override
+  Future<Payment> payWithSavedCard(String bookingId, String savedCardId) async {
+    paidWithCard = savedCardId;
+    existing = onSavedCardPayment;
+    return onSavedCardPayment;
+  }
 
   @override
   Future<Payment?> getPayment(String bookingId) async => existing;
@@ -281,6 +295,66 @@ void main() {
 
     expect(h.paymentsApi.createCalls, 1);
     expect(h.opened, [Uri.parse('https://pay.example/checkout/p1')]);
+  });
+
+  testWidgets('with saved cards the customer chooses one and it is charged without a payment page', (tester) async {
+    final h = await _pump(
+      tester,
+      args: BookingPaymentArgs(booking: _booking()),
+      setUp: (h) => h.paymentsApi.cards = const SavedCards(
+        cards: [SavedCard(id: 'card-1', brand: 'VISA', last4: '4242')],
+        saveOnNextPayment: false,
+        canPayWithSavedCard: true,
+      ),
+    );
+
+    expect(find.text('How would you like to pay?'), findsOneWidget);
+    expect(find.text('VISA •••• 4242'), findsOneWidget);
+    expect(h.paymentsApi.createCalls, 0);
+
+    h.bookingApi.status = 'CONFIRMED';
+    await tester.tap(find.widgetWithText(FilledButton, 'Pay'));
+    await tester.pumpAndSettle();
+
+    expect(h.paymentsApi.paidWithCard, 'card-1');
+    expect(h.paymentsApi.createCalls, 0);
+    expect(h.opened, isEmpty);
+  });
+
+  testWidgets('choosing another card goes to the payment page as before', (tester) async {
+    final h = await _pump(
+      tester,
+      args: BookingPaymentArgs(booking: _booking()),
+      setUp: (h) => h.paymentsApi.cards = const SavedCards(
+        cards: [SavedCard(id: 'card-1', brand: 'VISA', last4: '4242')],
+        saveOnNextPayment: false,
+        canPayWithSavedCard: true,
+      ),
+    );
+
+    await tester.tap(find.text('Another card (payment page)'));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Pay'));
+    await tester.pumpAndSettle();
+
+    expect(h.paymentsApi.createCalls, 1);
+    expect(h.paymentsApi.paidWithCard, isNull);
+    expect(h.opened, [Uri.parse('https://pay.example/checkout/p1')]);
+  });
+
+  testWidgets('saved cards that cannot be charged yet do not interrupt the payment', (tester) async {
+    final h = await _pump(
+      tester,
+      args: BookingPaymentArgs(booking: _booking()),
+      setUp: (h) => h.paymentsApi.cards = const SavedCards(
+        cards: [SavedCard(id: 'card-1', brand: 'VISA', last4: '4242')],
+        saveOnNextPayment: false,
+        canPayWithSavedCard: false,
+      ),
+    );
+
+    expect(find.text('How would you like to pay?'), findsNothing);
+    expect(h.paymentsApi.createCalls, 1);
   });
 
   testWidgets('opened from the bookings list, a confirmed payment pops back with true', (tester) async {

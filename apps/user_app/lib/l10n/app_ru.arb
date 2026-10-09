@@ -610,5 +610,22 @@
   "paymentOpenFailed": "Не удалось открыть страницу оплаты.",
   "bookingStatusPendingPayment": "Ожидает оплаты",
   "bookingPayNowButton": "Оплатить",
-  "paymentConfirmedSnack": "Оплата получена — бронь подтверждена."
+  "paymentConfirmedSnack": "Оплата получена — бронь подтверждена.",
+  "paymentCardsTitle": "Платёжные карты",
+  "paymentCardsIntro": "Платите быстрее сохранённой картой. Мы храним только бренд и последние 4 цифры.",
+  "paymentCardsEmpty": "Сохранённых карт пока нет.",
+  "paymentCardsSaveSwitch": "Сохранить карту при следующей оплате",
+  "paymentCardsSaveSwitchHint": "Карта сохранится при следующей онлайн-оплате, и дальше вы сможете платить в одно касание.",
+  "paymentCardsPageOnlyNote": "Пока оплата по-прежнему открывается на странице оплаты; сохранённые карты останутся для будущего.",
+  "paymentCardsRemove": "Удалить",
+  "paymentCardsRemoveTitle": "Удалить эту карту?",
+  "paymentCardsRemoveBody": "Она больше не будет использоваться для оплаты.",
+  "paymentCardsKeep": "Оставить",
+  "paymentCardsRemoveFailed": "Не удалось удалить карту. Попробуйте ещё раз.",
+  "paymentCardsLoadFailed": "Не удалось загрузить карты.",
+  "paymentCardLabel": "{brand} •••• {last4}",
+  "paymentCardGenericBrand": "Карта",
+  "paymentChooseTitle": "Как хотите оплатить?",
+  "paymentChooseOtherCard": "Другая карта (страница оплаты)",
+  "paymentChoosePayButton": "Оплатить"
 }

@@ -20,6 +20,7 @@ import '../../features/discovery/presentation/screens/service_compare_screen.dar
 import '../../features/favorites/presentation/screens/favorites_screen.dart';
 import '../../features/loyalty/presentation/screens/business_loyalty_screen.dart';
 import '../../features/loyalty/presentation/screens/my_redemptions_screen.dart';
+import '../../features/payments/presentation/screens/saved_cards_screen.dart';
 import '../../features/loyalty/presentation/screens/my_rewards_screen.dart';
 import '../../features/main_wrapper/presentation/screens/main_wrapper.dart';
 import '../../features/maps/presentation/screens/provider_map_screen.dart';
@@ -207,6 +208,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.vehicles,
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const VehiclesRoute(),
+      ),
+      GoRoute(
+        path: AppRoutes.paymentCards,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const SavedCardsScreen(),
       ),
       GoRoute(
         path: AppRoutes.support,
