@@ -83,9 +83,13 @@ jobs:
         working-directory: apps/${{ matrix.app }}
         env:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+          # 2GIS (preferred in-app map, MapGL JS in a WebView) — dart-define
+          # only, no native setup. Empty falls back to Google, then the mock.
+          TWOGIS_API_KEY: ${{ secrets.TWOGIS_API_KEY }}
         run: |
           flutter build apk --release \
             --dart-define=MAPS_API_KEY="$MAPS_API_KEY" \
+            --dart-define=TWOGIS_API_KEY="$TWOGIS_API_KEY" \
             --dart-define=API_BASE_URL="$API_BASE_URL"
 
       - name: Upload APK

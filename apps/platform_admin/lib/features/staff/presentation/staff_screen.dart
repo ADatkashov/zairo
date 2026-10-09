@@ -51,7 +51,7 @@ class StaffScreen extends ConsumerWidget {
                 96,
               ),
               children: [
-                const _RoleLegend(),
+                _RoleLegend(accounts: accounts),
                 const SizedBox(height: FactorySpacing.space4),
                 for (final account in accounts)
                   Padding(
@@ -68,7 +68,10 @@ class StaffScreen extends ConsumerWidget {
 }
 
 class _RoleLegend extends StatelessWidget {
-  const _RoleLegend();
+  const _RoleLegend({required this.accounts});
+
+  /// Active people per role are counted from these.
+  final List<PlatformAdminAccount> accounts;
 
   @override
   Widget build(BuildContext context) {
@@ -84,19 +87,34 @@ class _RoleLegend extends StatelessWidget {
           for (final role in const ['PLATFORM_ADMIN', 'PLATFORM_MODERATOR', 'PLATFORM_SUPPORT'])
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: roleLabel(l10n, role),
-                      style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: roleLabel(l10n, role),
+                            style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          TextSpan(
+                            text: ' — ${roleDescription(l10n, role)}',
+                            style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
+                          ),
+                        ],
+                      ),
                     ),
-                    TextSpan(
-                      text: ' — ${roleDescription(l10n, role)}',
-                      style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: FactorySpacing.space3),
+                  // How many active people hold the role.
+                  Icon(Icons.person_outline_rounded, size: 16, color: colors.textSecondary),
+                  const SizedBox(width: 2),
+                  Text(
+                    '${accounts.where((a) => a.active && a.role == role).length}',
+                    style: FactoryTypography.mono(size: 13, color: colors.textSecondary),
+                  ),
+                ],
               ),
             ),
         ],

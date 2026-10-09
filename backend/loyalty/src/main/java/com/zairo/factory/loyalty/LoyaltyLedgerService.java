@@ -292,6 +292,17 @@ public class LoyaltyLedgerService {
         return amount;
     }
 
+    /**
+     * The account with a row lock held until the surrounding transaction ends, creating it if needed. A caller that
+     * checks the balance and then spends it must read it this way: a plain read followed by {@link #consume} would
+     * hold a stale copy once a concurrent spender commits, and fail with an optimistic-lock error instead of
+     * seeing the new balance.
+     */
+    @Transactional
+    public LoyaltyAccount getOrCreateAccountForUpdate(UUID providerId, UUID userId) {
+        return lockAccount(providerId, userId, clock.instant());
+    }
+
     /** Keeps {@link LoyaltyAccount#getCompletedVisits()} in sync with a freshly-recounted total -- see its own doc comment. */
     @Transactional
     public void syncCompletedVisits(UUID providerId, UUID userId, int completedVisits) {

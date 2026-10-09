@@ -31,7 +31,7 @@ class LoyaltySettingsScreen extends ConsumerWidget {
         child: Padding(
           padding: const EdgeInsets.all(FactorySpacing.space4),
           child: FactoryErrorState(
-            message: l10n.errorLoyaltySettingsLoadFailed(error.toString()),
+            message: l10n.errorLoyaltySettingsLoadFailed,
             onRetry: () => ref.invalidate(loyaltySettingsProvider(providerId)),
           ),
         ),
@@ -372,7 +372,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.loyaltySettingsSavedMessage)));
     } catch (e) {
       setState(() {
-        _error = e is LoyaltyAdminException ? e.localizedMessage(l10n) : l10n.errorLoyaltyActionFailed(e.toString());
+        _error = e is LoyaltyAdminException ? e.localizedMessage(l10n) : l10n.errorLoyaltyActionFailed;
         _isSubmitting = false;
       });
     }

@@ -50,95 +50,93 @@ class CitySelectionScreen extends ConsumerWidget {
                   return Semantics(
                     button: true,
                     selected: isSelected,
-                    label: city.name,
-                    excludeSemantics: true,
-                    child: InkWell(
-                      onTap: () => _selectCity(context, ref, city.code),
-                      child: Container(
-                        constraints: const BoxConstraints(minHeight: 56),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: FactorySpacing.space4,
-                          vertical: FactorySpacing.space3,
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
+                    child: GestureDetector(
+                    onTap: () => _selectCity(context, ref, city.code),
+                    child: Container(
+                      color: colors.bg,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: FactorySpacing.space4,
+                        vertical: FactorySpacing.space3,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  city.name,
+                                  style: textTheme.bodyLarge?.copyWith(
+                                    color: colors.text,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                if (city.nameKk != null) ...[
+                                  const SizedBox(height: 4),
                                   Text(
-                                    city.name,
-                                    style: textTheme.bodyLarge?.copyWith(
-                                      color: colors.text,
-                                      fontWeight: FontWeight.w600,
+                                    city.nameKk!,
+                                    style: textTheme.bodySmall?.copyWith(
+                                      color: colors.textSecondary,
                                     ),
                                   ),
-                                  if (city.nameKk != null) ...[
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      city.nameKk!,
-                                      style: textTheme.bodySmall?.copyWith(
-                                        color: colors.textSecondary,
-                                      ),
-                                    ),
-                                  ],
                                 ],
-                              ),
+                              ],
                             ),
-                            if (isSelected)
-                              Icon(
-                                Symbols.check_circle,
-                                color: colors.primary,
-                                fill: 1,
-                              )
-                            else
-                              Icon(
-                                Symbols.radio_button_unchecked,
-                                color: colors.border,
-                              ),
-                          ],
-                        ),
+                          ),
+                          if (isSelected)
+                            Icon(
+                              Symbols.check_circle,
+                              color: colors.primary,
+                              fill: 1,
+                            )
+                          else
+                            Icon(
+                              Symbols.radio_button_unchecked,
+                              color: colors.border,
+                            ),
+                        ],
                       ),
+                    ),
                     ),
                   );
                 },
               );
             },
-            loading: () => const FactoryLoadingState(),
-            error: (error, stack) => _retry(ref, l10n),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) => _CitiesError(
+              message: l10n.citiesLoadFailed,
+              onRetry: () => ref.invalidate(userCurrentCityProvider),
+            ),
           );
         },
-        loading: () => const FactoryLoadingState(),
-        error: (error, stack) => _retry(ref, l10n),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => _CitiesError(
+          message: l10n.citiesLoadFailed,
+          onRetry: () => ref.invalidate(activeCitiesProvider),
+        ),
       ),
     );
   }
-
-  Widget _retry(WidgetRef ref, AppLocalizations l10n) => Center(
-    child: FactoryErrorState(
-      message: l10n.cityLoadFailed,
-      onRetry: () {
-        ref.invalidate(activeCitiesProvider);
-        ref.invalidate(userCurrentCityProvider);
-      },
-    ),
-  );
 
   Future<void> _selectCity(
     BuildContext context,
     WidgetRef ref,
     String cityCode,
   ) async {
-    // Show loading
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.cityLoading)),
-      );
-    }
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(SnackBar(content: Text(l10n.citySelectLoading)));
 
     // Select city via provider
-    final notifier = ref.read(citySelectionProvider.notifier);
-    await notifier.selectCity(cityCode);
+    try {
+      await ref.read(citySelectionProvider.notifier).selectCity(cityCode);
+    } catch (_) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(l10n.citySelectFailed)));
+      return;
+    }
+    messenger.hideCurrentSnackBar();
 
     if (context.mounted) {
       // Refresh the city provider to get updated data
@@ -147,5 +145,22 @@ class CitySelectionScreen extends ConsumerWidget {
       // Pop back and navigate to home
       context.pop();
     }
+  }
+}
+
+class _CitiesError extends StatelessWidget {
+  const _CitiesError({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(FactorySpacing.space4),
+        child: FactoryErrorState(message: message, onRetry: onRetry),
+      ),
+    );
   }
 }

@@ -11,6 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
+  material_symbols_icons: ^4.2960.0
   flutter_riverpod: ^3.4.2
   # URL-addressable owner area (deep links, browser back/refresh on web).
   go_router: ^18.0.1
@@ -30,6 +31,8 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.3
+  # Settings > "my appointments as staff": opens the consumer app's staff cabinet (zairo://app/staff-cabinet).
+  url_launcher: ^6.3.0
   json_annotation: ^4.12.0
   # Sign-in methods shared with the consumer app: Google and Sign in with Apple
   # only obtain a credential on-device; the backend verifies it.

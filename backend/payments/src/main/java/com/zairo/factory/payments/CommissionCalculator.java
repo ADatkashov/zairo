@@ -4,17 +4,13 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Currency;
 import java.util.Locale;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
 /**
  * Computes ZAIRO's marketplace commission split for a SUCCEEDED payment —
- * see {@code docs/adr/0007-marketplace-commission-and-settlement.md}. A
- * single platform-wide rate ({@code payment.commission.rate}), not a
- * per-booking/per-service/per-business override — this codebase has no
- * product requirement for a variable rate yet (same "don't build for a
- * hypothetical" principle as {@code PaymentsService.createPayment}'s doc
- * comment on deposit-vs-full-payment splitting).
+ * see {@code docs/adr/0007-marketplace-commission-and-settlement.md}. The
+ * rate itself is not decided here: {@link CommissionRateService} resolves
+ * it per booking (category override, else the platform default, 0% until a
+ * PLATFORM_ADMIN sets one) and this class only turns a rate into a split.
  *
  * <p><b>Rounds the platform fee, derives the business amount by
  * subtraction</b> — never rounds both sides independently. Rounding
@@ -26,24 +22,18 @@ import org.springframework.stereotype.Component;
  * platformFee == amount} true by construction, not by coincidence — see
  * {@link PaymentAllocation}'s own constructor, which still asserts it.
  */
-@Component
-class CommissionCalculator {
+final class CommissionCalculator {
 
-    private final BigDecimal rate;
-
-    CommissionCalculator(@Value("${payment.commission.rate:0.10}") BigDecimal rate) {
-        if (rate.signum() < 0 || rate.compareTo(BigDecimal.ONE) > 0) {
-            // Fail fast at boot — same "don't silently run on a nonsensical
-            // config value" reasoning as FreedomPayProvider's api-url check.
-            throw new IllegalStateException("payment.commission.rate must be between 0 and 1 (inclusive): " + rate);
-        }
-        this.rate = rate;
+    private CommissionCalculator() {
     }
 
     record Split(BigDecimal businessAmount, BigDecimal platformFee, BigDecimal rate) {
     }
 
-    Split split(BigDecimal amount, String currency) {
+    static Split split(BigDecimal amount, String currency, BigDecimal rate) {
+        if (rate.signum() < 0 || rate.compareTo(BigDecimal.ONE) > 0) {
+            throw new IllegalArgumentException("commission rate must be between 0 and 1 (inclusive): " + rate);
+        }
         int scale = Currency.getInstance(currency.toUpperCase(Locale.ROOT)).getDefaultFractionDigits();
         BigDecimal platformFee = amount.multiply(rate).setScale(Math.max(scale, 0), RoundingMode.HALF_UP);
         BigDecimal businessAmount = amount.subtract(platformFee);

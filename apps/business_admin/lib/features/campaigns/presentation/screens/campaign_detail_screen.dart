@@ -75,7 +75,7 @@ class _CampaignDetailScreenState extends ConsumerState<CampaignDetailScreen> {
           child: Padding(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             child: FactoryErrorState(
-              message: l10n.errorCampaignDetailLoadFailed(error.toString()),
+              message: l10n.errorCampaignDetailLoadFailed,
               onRetry: () => ref.invalidate(campaignDetailProvider(_key)),
             ),
           ),
@@ -135,7 +135,7 @@ class _CampaignDetailScreenState extends ConsumerState<CampaignDetailScreen> {
       invalidateCampaignData(ref, _key);
       setState(() => _isSubmitting = false);
       final message =
-          e is CampaignActionConflictException ? e.localizedMessage(l10n) : l10n.errorCampaignActionFailed(e.toString());
+          e is CampaignActionConflictException ? e.localizedMessage(l10n) : l10n.errorCampaignActionFailed;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     }
   }
@@ -317,7 +317,7 @@ class _TimelineSection extends ConsumerWidget {
       },
       loading: () => const FactoryLoadingState(),
       error: (error, _) => FactoryErrorState(
-        message: l10n.errorCampaignTimelineLoadFailed(error.toString()),
+        message: l10n.errorCampaignTimelineLoadFailed,
         onRetry: () => ref.invalidate(campaignTimelineProvider(providerKey)),
       ),
     );

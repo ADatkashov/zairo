@@ -48,7 +48,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
       body: ListView(
         padding: const EdgeInsets.all(FactorySpacing.space4),
         children: [
-          Text(l10n.deleteAccountWarning, style: textTheme.titleMedium?.copyWith(color: colors.coral)),
+          Text(l10n.deleteAccountWarning, style: textTheme.titleMedium?.copyWith(color: colors.error)),
           const SizedBox(height: FactorySpacing.space3),
           Text(l10n.deleteAccountWhatIsDeleted, style: textTheme.bodyMedium),
           const SizedBox(height: FactorySpacing.space3),
@@ -117,7 +117,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
           DeleteAccountException(statusCode: 403) => l10n.deleteAccountWrongPassword,
           // 409: the server's own words say exactly what to do first.
           DeleteAccountException(statusCode: 409, :final serverMessage) when serverMessage != null => serverMessage,
-          _ => l10n.errorAuthGeneric(e.toString()),
+          _ => l10n.errorAuthGeneric,
         };
       });
     }

@@ -37,6 +37,14 @@ class TestPayments {
             @Override
             public ChargeResult chargeRecurring(String recurringProfileId, UUID paymentId, BigDecimal amount,
                     String currency) {
+                failureController.chargeAttempts.computeIfAbsent(paymentId,
+                        id -> new java.util.concurrent.atomic.AtomicInteger()).incrementAndGet();
+                // Targeted: only the subscription whose recurring profile was queued here is declined, so a
+                // renewal sweep that also happens to charge other tests' subscriptions cannot use it up.
+                var declinesLeft = failureController.declineRecurringByProfile.get(recurringProfileId);
+                if (declinesLeft != null && declinesLeft.getAndUpdate(n -> n > 0 ? n - 1 : 0) > 0) {
+                    return new ChargeResult(false, null, "simulated card decline");
+                }
                 if (failureController.failNextCharge) {
                     failureController.failNextCharge = false;
                     if (failureController.throwOnNextCharge) {
@@ -46,6 +54,11 @@ class TestPayments {
                     return new ChargeResult(false, null, "simulated card decline");
                 }
                 return new ChargeResult(true, "mock_pi_" + paymentId, null);
+            }
+
+            @Override
+            public boolean supportsRecurringCharge() {
+                return !failureController.noRecurringCharge;
             }
 
             @Override
@@ -68,6 +81,12 @@ class TestPayments {
 
             /** Shared by createPayment/createRecurringPayment — same failNextCharge/throwOnNextCharge flags chargeRecurring honors. */
             private PaymentInitiation initiate(UUID paymentId, String recurringProfileId) {
+                failureController.paymentInitiations.incrementAndGet();
+                if (failureController.pendingNextCharge) {
+                    failureController.pendingNextCharge = false;
+                    return new PaymentInitiation("mock_pending_" + paymentId, "https://pay.test/checkout/" + paymentId,
+                            recurringProfileId, InitiationStatus.PENDING, null);
+                }
                 if (failureController.failNextCharge) {
                     failureController.failNextCharge = false;
                     if (failureController.throwOnNextCharge) {
@@ -78,7 +97,8 @@ class TestPayments {
                             "simulated card decline");
                 }
                 return new PaymentInitiation("mock_pi_" + paymentId, null, recurringProfileId,
-                        InitiationStatus.SUCCEEDED, null);
+                        InitiationStatus.SUCCEEDED, null, recurringProfileId == null ? null : "4242",
+                        recurringProfileId == null ? null : "VISA");
             }
         };
     }
@@ -93,6 +113,22 @@ class TestPayments {
         volatile boolean failNextCharge;
         volatile boolean throwOnNextCharge;
         volatile boolean failNextRefund;
+        /** Behave like Freedom Pay today: hosted checkout works, but a stored card cannot be charged by itself. */
+        volatile boolean noRecurringCharge;
+        /** The next createPayment/createRecurringPayment is left PENDING with a checkoutUrl, like a redirect-based provider. */
+        volatile boolean pendingNextCharge;
+        /** How many times a payment was initiated at the provider — proves a repeated request did not start a second one. */
+        final java.util.concurrent.atomic.AtomicInteger paymentInitiations = new java.util.concurrent.atomic.AtomicInteger();
+        /**
+         * Renewal charges to decline, per recurring profile id (the mock profile id is
+         * {@code "mock_recurring_" + the upgrade charge's id}). Unlike {@link #failNextCharge}, nothing but that
+         * one subscription can use these up.
+         */
+        final java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicInteger> declineRecurringByProfile =
+                new java.util.concurrent.ConcurrentHashMap<>();
+        /** How many times chargeRecurring was called per charge id — proves a charge was attempted once, not twice. */
+        final java.util.concurrent.ConcurrentHashMap<UUID, java.util.concurrent.atomic.AtomicInteger> chargeAttempts =
+                new java.util.concurrent.ConcurrentHashMap<>();
         /** Decrementing counter — the next N refund calls fail, then it resolves normally. For PaymentRefundOutboxApiTests. */
         final java.util.concurrent.atomic.AtomicInteger failRefundTimes = new java.util.concurrent.atomic.AtomicInteger();
     }

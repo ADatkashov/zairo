@@ -266,7 +266,28 @@ void main() {
     await tester.pumpAndSettle();
 
     // AllCategoriesScreen: the whole catalog, including what Home cut off.
+    // The rows are cards now, so the later ones sit below the test window.
+    // The list's own Scrollable — the search field has one too.
+    final categoriesList = find
+        .descendant(
+          of: find.descendant(
+            of: find.byType(AllCategoriesScreen),
+            matching: find.byType(ListView),
+          ),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    await tester.scrollUntilVisible(
+      find.text('Category 7'),
+      100,
+      scrollable: categoriesList,
+    );
     expect(find.text('Category 7'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Category 8'),
+      100,
+      scrollable: categoriesList,
+    );
     expect(find.text('Category 8'), findsOneWidget);
   });
 

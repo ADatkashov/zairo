@@ -26,10 +26,13 @@ import '../../../discovery/data/models/provider_search_result.dart';
 import '../../../discovery/data/models/service_summary.dart';
 import '../../../favorites/presentation/widgets/favorite_button.dart';
 import '../../../payments/data/payment_exception.dart';
+import '../../../payments/data/models/payment.dart';
 import '../../../payments/presentation/providers/payments_providers.dart';
 import '../../../staff/data/models/staff.dart';
 import '../../../staff/data/staff_exception.dart';
 import '../../../staff/presentation/providers/staff_providers.dart';
+import '../../../workforce/data/models/any_slot.dart';
+import '../../../workforce/presentation/providers/workforce_providers.dart';
 import '../../data/booking_exception.dart';
 import '../../data/models/availability_slot.dart';
 import '../../data/models/booking.dart';
@@ -37,6 +40,7 @@ import '../../data/models/payment_plan.dart';
 import '../providers/booking_providers.dart';
 import '../widgets/day_slot_picker.dart';
 import 'booking_confirmation_screen.dart';
+import 'booking_payment_screen.dart';
 
 /// Categories with their own hardcoded staff module (Master/Mechanic/
 /// Cleaner) — every other category falls back to the generic `staff`
@@ -62,6 +66,18 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
   String? _selectedVehicleId;
   String? _selectedCleanerId;
   String? _selectedStaffId;
+
+  /// "Any master": the customer picks a time, the system assigns a free person.
+  bool _anyMaster = false;
+
+  /// The selected service's price for the selected person (see build).
+  double? _effectivePrice;
+
+  /// Whether the current selection is booked as "any master" — set during build, read by [_book].
+  bool _anyModeNow = false;
+
+  /// Start time of the picked slot, captured when it is picked (the slot lists differ per mode).
+  DateTime? _selectedSlotStartsAt;
   bool _isBooking = false;
 
   @override
@@ -103,6 +119,30 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
         ? ref.watch(staffProvider(widget.provider.id))
         : const AsyncValue.data(<Staff>[]);
     final staffMembers = staffAsync.value ?? const <Staff>[];
+    // The business's own rules about workers: whether customers may pick a person, or only "any master".
+    final allowChoice =
+        ref.watch(allowsWorkerChoiceProvider(widget.provider.id)).value ?? true;
+    final hasWorkers = masters.isNotEmpty ||
+        mechanics.isNotEmpty ||
+        cleaners.isNotEmpty ||
+        staffMembers.isNotEmpty;
+    final anyMode = hasWorkers && (_anyMaster || !allowChoice);
+    _anyModeNow = anyMode;
+    final selectedWorkerId = _selectedMasterId ??
+        _selectedMechanicId ??
+        _selectedCleanerId ??
+        _selectedStaffId;
+    // A person may charge their own price (the owner's choice); it is shown here, before the customer confirms,
+    // exactly as the server will charge it. "Any master" is always the base price.
+    final serviceForPrice = _selectedService();
+    final workerPrices = serviceForPrice == null
+        ? const <String, double>{}
+        : ref.watch(serviceWorkerPricesProvider((widget.provider.id, serviceForPrice.id))).value ??
+              const <String, double>{};
+    _effectivePrice = serviceForPrice == null
+        ? null
+        : (selectedWorkerId == null || anyMode ? serviceForPrice.price : workerPrices[selectedWorkerId]) ??
+              serviceForPrice.price;
 
     // Back is blocked while the booking request is in flight so a swipe
     // can't leave the user guessing whether it went through.
@@ -126,29 +166,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(FactorySpacing.space4),
                 children: [
-                  Container(
-                    height: 140,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      borderRadius: FactoryRadius.xlRadius,
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [colors.primaryTint, colors.surfaceAlt],
-                      ),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        switch (widget.provider.vertical) {
-                          'auto' => Symbols.directions_car_filled_rounded,
-                          'cleaning' => Symbols.cleaning_services_rounded,
-                          _ => Symbols.content_cut_rounded,
-                        },
-                        size: 48,
-                        color: colors.primaryStrong.withValues(alpha: 0.5),
-                      ),
-                    ),
-                  ),
+                  _ProviderHero(provider: widget.provider),
                   const SizedBox(height: FactorySpacing.space4),
                   Wrap(
                     spacing: 8,
@@ -225,7 +243,22 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                       ),
                     ),
                   ),
-                  if (masters.isNotEmpty) ...[
+                  if (hasWorkers && allowChoice) ...[
+                    const SizedBox(height: FactorySpacing.space6),
+                    _AnyMasterOption(
+                      selected: _anyMaster,
+                      onTap: () => setState(() {
+                        _anyMaster = true;
+                        _selectedMasterId = null;
+                        _selectedMechanicId = null;
+                        _selectedCleanerId = null;
+                        _selectedStaffId = null;
+                        _selectedSlotId = null;
+                        _selectedSlotStartsAt = null;
+                      }),
+                    ),
+                  ],
+                  if (masters.isNotEmpty && allowChoice) ...[
                     const SizedBox(height: FactorySpacing.space6),
                     Text(
                       l10n.mastersSectionTitle,
@@ -240,8 +273,9 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                         child: _MasterOption(
                           master: master,
                           selected: _selectedMasterId == master.id,
-                          onTap: () =>
-                              setState(() => _selectedMasterId = master.id),
+                          onTap: () => _pickWorker(
+                            () => _selectedMasterId = master.id,
+                          ),
                           onViewPortfolio: () => context.push(
                             AppRoutes.portfolio(
                               master.id,
@@ -252,7 +286,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                       ),
                     ),
                   ],
-                  if (mechanics.isNotEmpty) ...[
+                  if (mechanics.isNotEmpty && allowChoice) ...[
                     const SizedBox(height: FactorySpacing.space6),
                     Text(
                       l10n.mechanicsSectionTitle,
@@ -267,13 +301,14 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                         child: _MechanicOption(
                           mechanic: mechanic,
                           selected: _selectedMechanicId == mechanic.id,
-                          onTap: () =>
-                              setState(() => _selectedMechanicId = mechanic.id),
+                          onTap: () => _pickWorker(
+                            () => _selectedMechanicId = mechanic.id,
+                          ),
                         ),
                       ),
                     ),
                   ],
-                  if (cleaners.isNotEmpty) ...[
+                  if (cleaners.isNotEmpty && allowChoice) ...[
                     const SizedBox(height: FactorySpacing.space6),
                     Text(
                       l10n.cleanersSectionTitle,
@@ -288,13 +323,14 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                         child: _CleanerOption(
                           cleaner: cleaner,
                           selected: _selectedCleanerId == cleaner.id,
-                          onTap: () =>
-                              setState(() => _selectedCleanerId = cleaner.id),
+                          onTap: () => _pickWorker(
+                            () => _selectedCleanerId = cleaner.id,
+                          ),
                         ),
                       ),
                     ),
                   ],
-                  if (staffMembers.isNotEmpty) ...[
+                  if (staffMembers.isNotEmpty && allowChoice) ...[
                     const SizedBox(height: FactorySpacing.space6),
                     Text(l10n.staffSectionTitle, style: textTheme.titleMedium),
                     const SizedBox(height: FactorySpacing.space3),
@@ -306,8 +342,9 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                         child: _StaffOption(
                           staff: staff,
                           selected: _selectedStaffId == staff.id,
-                          onTap: () =>
-                              setState(() => _selectedStaffId = staff.id),
+                          onTap: () => _pickWorker(
+                            () => _selectedStaffId = staff.id,
+                          ),
                         ),
                       ),
                     ),
@@ -322,6 +359,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                     const SizedBox(height: FactorySpacing.space3),
                     if (vehicles.isEmpty)
                       FactoryEmptyState(
+                        compact: true,
                         icon: Symbols.directions_car_rounded,
                         title: l10n.vehiclesEmptyTitle,
                         message: l10n.vehiclesEmptyMessage,
@@ -361,8 +399,13 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                       ),
                       price: service.price,
                       selected: _selectedServiceId == service.id,
-                      onTap: () =>
-                          setState(() => _selectedServiceId = service.id),
+                      onTap: () => setState(() {
+                        if (_selectedServiceId != service.id && anyMode) {
+                          _selectedSlotId = null;
+                          _selectedSlotStartsAt = null;
+                        }
+                        _selectedServiceId = service.id;
+                      }),
                     ),
                   ),
                   const SizedBox(height: FactorySpacing.space6),
@@ -371,47 +414,34 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                     style: textTheme.titleMedium,
                   ),
                   const SizedBox(height: FactorySpacing.space3),
-                  slotsAsync.when(
-                    data: (slots) {
-                      final openSlots = slots.where((s) => s.isOpen).toList();
-                      if (openSlots.isEmpty) {
-                        return FactoryEmptyState(
-                          icon: Symbols.event_busy_rounded,
-                          title: l10n.noOpenTimesTitle,
-                          message: l10n.noOpenTimesMessage,
-                        );
-                      }
-                      return DaySlotPicker(
-                        slots: openSlots,
-                        selectedSlotId: _selectedSlotId,
-                        onSelected: (id) =>
-                            setState(() => _selectedSlotId = id),
-                      );
-                    },
-                    loading: () => const FactoryLoadingState(),
-                    error: (error, stackTrace) => FactoryErrorState(
-                      message: l10n.errorAvailabilityLoadFailed,
-                      onRetry: () => ref.invalidate(
-                        availabilitySlotsProvider(widget.provider.id),
-                      ),
-                    ),
+                  _buildTimes(
+                    l10n,
+                    providerSlots: slotsAsync,
+                    hasWorkers: hasWorkers,
+                    anyMode: anyMode,
+                    workerId: selectedWorkerId,
                   ),
                 ],
               ),
             ),
             _BookingCta(
               selectedService: _selectedService(),
+              price: _effectivePrice,
               plan: _paymentPlan(),
               isLoading: _isBooking,
               onPressed:
                   (_selectedServiceId != null &&
                       _selectedSlotId != null &&
-                      (masters.isEmpty || _selectedMasterId != null) &&
-                      (mechanics.isEmpty || _selectedMechanicId != null) &&
+                      (anyMode ||
+                          ((masters.isEmpty || _selectedMasterId != null) &&
+                              (mechanics.isEmpty ||
+                                  _selectedMechanicId != null) &&
+                              (cleaners.isEmpty ||
+                                  _selectedCleanerId != null) &&
+                              (staffMembers.isEmpty ||
+                                  _selectedStaffId != null))) &&
                       (!requiresVehicleSelection ||
                           _selectedVehicleId != null) &&
-                      (cleaners.isEmpty || _selectedCleanerId != null) &&
-                      (staffMembers.isEmpty || _selectedStaffId != null) &&
                       !_isBooking)
                   ? _book
                   : null,
@@ -438,7 +468,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     final service = _selectedService();
     final policy = ref.watch(depositPolicyProvider(widget.provider.id)).value;
     if (service == null || policy == null) return null;
-    return PaymentPlan.fromPolicy(policy, service.price);
+    return PaymentPlan.fromPolicy(policy, _effectivePrice ?? service.price);
   }
 
   ServiceSummary? _selectedService() {
@@ -457,6 +487,120 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     }
     context.push(
       AppRoutes.chat(widget.provider.id, providerName: widget.provider.name),
+    );
+  }
+
+  /// Picking a person (rather than "any master") shows that person's own times, so the previous pick is dropped.
+  void _pickWorker(VoidCallback select) {
+    setState(() {
+      _anyMaster = false;
+      _selectedMasterId = null;
+      _selectedMechanicId = null;
+      _selectedCleanerId = null;
+      _selectedStaffId = null;
+      select();
+      _selectedSlotId = null;
+      _selectedSlotStartsAt = null;
+    });
+  }
+
+  void _onSlotPicked(String slotId, List<AvailabilitySlot> slots) {
+    DateTime? startsAt;
+    for (final slot in slots) {
+      if (slot.id == slotId) {
+        startsAt = slot.startsAt;
+        break;
+      }
+    }
+    setState(() {
+      _selectedSlotId = slotId;
+      _selectedSlotStartsAt = startsAt;
+    });
+  }
+
+  void _invalidateTimes() {
+    ref.invalidate(availabilitySlotsProvider(widget.provider.id));
+    ref.invalidate(workerSlotsProvider);
+    ref.invalidate(anySlotsProvider);
+  }
+
+  /// The times a customer may pick: "any master" merges everyone who does the service, a chosen person shows only
+  /// their own bookable times, and a business without workers keeps the plain provider-level list.
+  Widget _buildTimes(
+    AppLocalizations l10n, {
+    required AsyncValue<List<AvailabilitySlot>> providerSlots,
+    required bool hasWorkers,
+    required bool anyMode,
+    required String? workerId,
+  }) {
+    Widget picker(List<AvailabilitySlot> slots) {
+      final openSlots = slots.where((s) => s.isOpen).toList();
+      if (openSlots.isEmpty) {
+        return FactoryEmptyState(
+          compact: true,
+          icon: Symbols.event_busy_rounded,
+          title: l10n.noOpenTimesTitle,
+          message: l10n.noOpenTimesMessage,
+        );
+      }
+      return DaySlotPicker(
+        slots: openSlots,
+        selectedSlotId: _selectedSlotId,
+        onSelected: (id) => _onSlotPicked(id, openSlots),
+      );
+    }
+
+    Widget hint(String title, String message) => FactoryEmptyState(
+      compact: true,
+      icon: Symbols.schedule_rounded,
+      title: title,
+      message: message,
+    );
+
+    Widget errorView() => FactoryErrorState(
+      message: l10n.errorAvailabilityLoadFailed,
+      onRetry: _invalidateTimes,
+    );
+
+    // Business with no people to choose from: the plain provider-level list, as before.
+    AsyncValue<List<AvailabilitySlot>> legacy() => providerSlots;
+    Widget legacyView() => legacy().when(
+      data: picker,
+      loading: () => const FactoryLoadingState(),
+      error: (error, stackTrace) => errorView(),
+    );
+
+    if (!hasWorkers) return legacyView();
+
+    if (anyMode) {
+      final serviceId = _selectedServiceId;
+      if (serviceId == null) {
+        return hint(l10n.workforceChooseServiceTitle, l10n.workforceChooseServiceMessage);
+      }
+      return ref.watch(anySlotsProvider((widget.provider.id, serviceId))).when(
+        data: (slots) => picker([
+          for (final AnySlot a in slots)
+            AvailabilitySlot(
+              id: a.slotId,
+              providerId: widget.provider.id,
+              startsAt: a.startsAt,
+              endsAt: a.endsAt,
+              status: 'OPEN',
+            ),
+        ]),
+        loading: () => const FactoryLoadingState(),
+        error: (error, stackTrace) => errorView(),
+      );
+    }
+
+    if (workerId == null) {
+      return hint(l10n.workforceChooseMasterTitle, l10n.workforceChooseMasterMessage);
+    }
+    return ref.watch(workerSlotsProvider((widget.provider.id, workerId))).when(
+      data: picker,
+      loading: () => const FactoryLoadingState(),
+      // An older server without the per-person endpoint: fall back to the business's list.
+      error: (error, stackTrace) => legacyView(),
     );
   }
 
@@ -500,13 +644,15 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     // Captured before the booking call below, since a successful booking
     // consumes the slot and the next read of this provider would no longer
     // contain it — needed only to show the "when" on BookingConfirmationScreen.
-    AvailabilitySlot? selectedSlot;
-    for (final slot
-        in ref.read(availabilitySlotsProvider(widget.provider.id)).value ??
-            const <AvailabilitySlot>[]) {
-      if (slot.id == _selectedSlotId) {
-        selectedSlot = slot;
-        break;
+    DateTime? slotStartsAt = _selectedSlotStartsAt;
+    if (slotStartsAt == null) {
+      for (final slot
+          in ref.read(availabilitySlotsProvider(widget.provider.id)).value ??
+              const <AvailabilitySlot>[]) {
+        if (slot.id == _selectedSlotId) {
+          slotStartsAt = slot.startsAt;
+          break;
+        }
       }
     }
     try {
@@ -516,7 +662,18 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       // endpoint so its own rules are enforced server-side; otherwise use
       // Core's plain booking flow, unchanged from before verticals existed.
       Booking booking;
-      if (_selectedMechanicId != null) {
+      if (_anyModeNow && slotStartsAt != null) {
+        // "Any master": the system assigns a free person for the picked time.
+        booking = await ref
+            .read(workforceApiProvider)
+            .bookAny(
+              providerId: widget.provider.id,
+              userId: currentUser.id,
+              serviceId: service.id,
+              startsAt: slotStartsAt,
+              vehicleId: _selectedVehicleId,
+            );
+      } else if (_selectedMechanicId != null) {
         booking = await ref
             .read(autoApiProvider)
             .createAutoBooking(
@@ -525,7 +682,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               vehicleId: _selectedVehicleId!,
               serviceId: service.id,
               availabilitySlotId: _selectedSlotId!,
-              totalPrice: service.price,
+              totalPrice: _effectivePrice ?? service.price,
             );
       } else if (_selectedMasterId != null) {
         booking = await ref
@@ -535,7 +692,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               masterId: _selectedMasterId!,
               serviceId: service.id,
               availabilitySlotId: _selectedSlotId!,
-              totalPrice: service.price,
+              totalPrice: _effectivePrice ?? service.price,
             );
       } else if (_selectedCleanerId != null) {
         booking = await ref
@@ -545,7 +702,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               cleanerId: _selectedCleanerId!,
               serviceId: service.id,
               availabilitySlotId: _selectedSlotId!,
-              totalPrice: service.price,
+              totalPrice: _effectivePrice ?? service.price,
             );
       } else if (_selectedStaffId != null) {
         booking = await ref
@@ -555,7 +712,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               staffId: _selectedStaffId!,
               serviceId: service.id,
               availabilitySlotId: _selectedSlotId!,
-              totalPrice: service.price,
+              totalPrice: _effectivePrice ?? service.price,
             );
       } else {
         booking = await ref
@@ -564,7 +721,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               userId: currentUser.id,
               serviceId: service.id,
               availabilitySlotId: _selectedSlotId!,
-              totalPrice: service.price,
+              totalPrice: _effectivePrice ?? service.price,
             );
       }
 
@@ -573,13 +730,27 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       // otherwise the confirmation can't tell a deposit from "pay at venue".
       booking = await _withPaymentAmounts(booking);
 
-      // Charged right after booking creation, in the same flow — see
-      // SESSION_NOTES.md for why this isn't gated behind a webhook yet
-      // (no real payment provider/webhook exists; the mock resolves
-      // synchronously, so there's nothing async to wait on).
+      // Charged right after booking creation, in the same flow. The mock
+      // provider resolves synchronously (SUCCEEDED); a redirect-based one
+      // (Freedom Pay) answers PENDING with a checkout page, and the booking
+      // is only confirmed once its webhook arrives — see BookingPaymentScreen.
+      //
+      // A booking with nothing due online (the business takes no advance
+      // payment, or the service is free) arrives already CONFIRMED — the
+      // customer pays at the venue — so there is no payment to start.
       String? paymentErrorMessage;
+      Payment? payment;
+      var choosePayment = false;
       try {
-        await ref.read(paymentsApiProvider).createPayment(booking.id);
+        if (booking.status == 'PENDING_PAYMENT') {
+          // With saved cards the customer picks how to pay on the payment screen, so no payment yet.
+          final hasCards = (await usableSavedCards(ref.read(paymentsApiProvider))).isNotEmpty;
+          if (!hasCards) {
+            payment = await ref.read(paymentsApiProvider).createPayment(booking.id);
+          } else {
+            choosePayment = true;
+          }
+        }
       } on PaymentException catch (e) {
         paymentErrorMessage = l10n.bookingConfirmedButError(
           e.localizedMessage(l10n),
@@ -587,6 +758,35 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       }
 
       if (!mounted) return;
+      final confirmation = BookingConfirmationArgs(
+        booking: booking,
+        providerId: widget.provider.id,
+        providerName: widget.provider.name,
+        providerVertical: widget.provider.vertical,
+        service: service,
+        slotStartsAt: slotStartsAt,
+        latitude: widget.provider.latitude,
+        longitude: widget.provider.longitude,
+      );
+      if (choosePayment) {
+        context.pushReplacement(
+          AppRoutes.bookingPayment,
+          extra: BookingPaymentArgs(booking: booking, confirmation: confirmation),
+        );
+        return;
+      }
+      if (payment != null && payment.status != 'SUCCEEDED') {
+        // Not paid yet: the customer must pay (or retry) before this is a confirmed booking.
+        context.pushReplacement(
+          AppRoutes.bookingPayment,
+          extra: BookingPaymentArgs(
+            booking: booking,
+            confirmation: confirmation,
+            payment: payment,
+          ),
+        );
+        return;
+      }
       if (paymentErrorMessage != null) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(paymentErrorMessage)));
@@ -596,66 +796,62 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       // rather than pushing on top of it.
       context.pushReplacement(
         AppRoutes.bookingConfirmation,
-        extra: BookingConfirmationArgs(
-          booking: booking,
-          providerId: widget.provider.id,
-          providerName: widget.provider.name,
-          providerVertical: widget.provider.vertical,
-          service: service,
-          slotStartsAt: selectedSlot?.startsAt,
-          latitude: widget.provider.latitude,
-          longitude: widget.provider.longitude,
-        ),
+        extra: confirmation,
       );
     } on BookingException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
-      ref.invalidate(availabilitySlotsProvider(widget.provider.id));
+      _invalidateTimes();
       setState(() {
         _selectedSlotId = null;
+        _selectedSlotStartsAt = null;
         _isBooking = false;
       });
     } on BeautyException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
-      ref.invalidate(availabilitySlotsProvider(widget.provider.id));
+      _invalidateTimes();
       setState(() {
         _selectedSlotId = null;
+        _selectedSlotStartsAt = null;
         _isBooking = false;
       });
     } on AutoException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
-      ref.invalidate(availabilitySlotsProvider(widget.provider.id));
+      _invalidateTimes();
       setState(() {
         _selectedSlotId = null;
+        _selectedSlotStartsAt = null;
         _isBooking = false;
       });
     } on CleaningException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
-      ref.invalidate(availabilitySlotsProvider(widget.provider.id));
+      _invalidateTimes();
       setState(() {
         _selectedSlotId = null;
+        _selectedSlotStartsAt = null;
         _isBooking = false;
       });
     } on StaffException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
-      ref.invalidate(availabilitySlotsProvider(widget.provider.id));
+      _invalidateTimes();
       setState(() {
         _selectedSlotId = null;
+        _selectedSlotStartsAt = null;
         _isBooking = false;
       });
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.errorBookingGeneric(e.toString()))),
+        SnackBar(content: Text(l10n.errorBookingGeneric)),
       );
       setState(() => _isBooking = false);
     }
@@ -678,12 +874,14 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
 class _BookingCta extends StatelessWidget {
   const _BookingCta({
     required this.selectedService,
+    required this.price,
     required this.plan,
     required this.isLoading,
     required this.onPressed,
   });
 
   final ServiceSummary? selectedService;
+  final double? price;
   final PaymentPlan? plan;
   final bool isLoading;
   final VoidCallback? onPressed;
@@ -697,7 +895,7 @@ class _BookingCta extends StatelessWidget {
     if (p == null) {
       return [
         FactoryPriceText(
-          amount: service.price,
+          amount: price ?? service.price,
           currencySymbol: service.currency,
           fontSize: 16,
           color: colors.text,
@@ -755,6 +953,7 @@ class _BookingCta extends StatelessWidget {
         FactorySpacing.space4,
       ),
       decoration: BoxDecoration(
+        color: colors.surface,
         border: Border(top: BorderSide(color: colors.border)),
       ),
       child: Row(
@@ -924,6 +1123,30 @@ class _CleanerOption extends StatelessWidget {
   }
 }
 
+class _AnyMasterOption extends StatelessWidget {
+  const _AnyMasterOption({required this.selected, required this.onTap});
+
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+
+    return FactorySelectableTile(
+      title: l10n.anyMasterOptionTitle,
+      subtitle: Text(
+        l10n.anyMasterOptionSubtitle,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+      ),
+      leading: Icon(Symbols.groups_rounded, color: colors.textSecondary),
+      selected: selected,
+      onTap: onTap,
+    );
+  }
+}
+
 class _StaffOption extends StatelessWidget {
   const _StaffOption({
     required this.staff,
@@ -993,3 +1216,71 @@ class _VehicleOption extends StatelessWidget {
 
 String _capitalize(String s) =>
     s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';
+
+
+/// Photo-first header: the business's cover photo under a soft scrim, with
+/// the vertical's icon on a tinted gradient while there is no photo (or it
+/// fails to load). Radius follows the app profile.
+class _ProviderHero extends StatelessWidget {
+  const _ProviderHero({required this.provider});
+
+  final ProviderSearchResult provider;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final radius =
+        context.factoryProfileOrNull?.cardBorderRadius ?? FactoryRadius.xlRadius;
+    final fallback = DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [colors.primaryTint, colors.surfaceAlt],
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          switch (provider.vertical) {
+            'auto' => Symbols.directions_car_filled_rounded,
+            'cleaning' => Symbols.cleaning_services_rounded,
+            _ => Symbols.content_cut_rounded,
+          },
+          size: 56,
+          color: colors.primaryStrong.withValues(alpha: 0.5),
+        ),
+      ),
+    );
+
+    return ClipRRect(
+      borderRadius: radius,
+      child: SizedBox(
+        height: 220,
+        width: double.infinity,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (provider.coverPhotoUrl == null)
+              fallback
+            else
+              Image.network(
+                provider.coverPhotoUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => fallback,
+              ),
+            if (provider.coverPhotoUrl != null)
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0x00000000), Color(0x33000000)],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}

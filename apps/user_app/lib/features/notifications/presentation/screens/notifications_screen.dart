@@ -1,5 +1,6 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -37,7 +38,7 @@ class NotificationsScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             child: FactoryErrorState(
-              message: l10n.errorProfileGeneric(error.toString()),
+              message: l10n.errorProfileGeneric,
               onRetry: () => ref.invalidate(authControllerProvider),
             ),
           ),
@@ -109,17 +110,11 @@ class _NotificationsList extends ConsumerWidget {
             Expanded(
               child: RefreshIndicator(
                 onRefresh: refresh,
-                child: ListView.separated(
+                child: ListView(
                   padding: const EdgeInsets.symmetric(
                     horizontal: FactorySpacing.space4,
                   ),
-                  itemCount: notifications.length,
-                  separatorBuilder: (_, _) =>
-                      const SizedBox(height: FactorySpacing.space3),
-                  itemBuilder: (context, index) => _NotificationTile(
-                    notification: notifications[index],
-                    userId: userId,
-                  ),
+                  children: _withDayHeadings(context, notifications, userId),
                 ),
               ),
             ),
@@ -135,6 +130,68 @@ class _NotificationsList extends ConsumerWidget {
             message: l10n.errorNotificationsLoadFailed,
             onRetry: () => ref.invalidate(myNotificationsProvider(userId)),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The notifications (already newest first) with a heading — "Today",
+/// "Yesterday" or the date — before the first one of each day.
+List<Widget> _withDayHeadings(
+  BuildContext context,
+  List<AppNotification> notifications,
+  String userId,
+) {
+  final l10n = AppLocalizations.of(context)!;
+  final locale = Localizations.localeOf(context).toString();
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final yesterday = DateTime(today.year, today.month, today.day - 1);
+  String label(DateTime day) {
+    if (day == today) return l10n.notificationsGroupToday;
+    if (day == yesterday) return l10n.notificationsGroupYesterday;
+    return DateFormat.MMMMd(locale).format(day);
+  }
+
+  final children = <Widget>[];
+  DateTime? current;
+  for (final notification in notifications) {
+    final local = notification.createdAt.toLocal();
+    final day = DateTime(local.year, local.month, local.day);
+    if (day != current) {
+      current = day;
+      children.add(_DayHeading(label: label(day)));
+    }
+    children.add(
+      Padding(
+        padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
+        child: _NotificationTile(notification: notification, userId: userId),
+      ),
+    );
+  }
+  return children;
+}
+
+class _DayHeading extends StatelessWidget {
+  const _DayHeading({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    return Padding(
+      padding: const EdgeInsets.only(
+        top: FactorySpacing.space2,
+        bottom: FactorySpacing.space2,
+      ),
+      child: Semantics(
+        header: true,
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelLarge
+              ?.copyWith(color: colors.textSecondary),
         ),
       ),
     );
@@ -169,7 +226,9 @@ class _NotificationTile extends ConsumerWidget {
           : () async {
               // Capture before awaiting: opening the destination replaces
               // this screen, and the router must not be looked up afterwards.
-              final router = destination == null ? null : GoRouter.maybeOf(context);
+              final router = destination == null
+                  ? null
+                  : GoRouter.maybeOf(context);
               if (!notification.read) {
                 await ref
                     .read(notificationsApiProvider)

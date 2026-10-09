@@ -88,11 +88,19 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
               ),
             )
           else
-            SwitchListTile(
-              title: Text(l10n.securityBiometricToggleTitle),
-              subtitle: Text(l10n.securityBiometricToggleSubtitle),
-              value: _biometricEnabled,
-              onChanged: _loadingBiometric ? null : _onBiometricToggled,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4, vertical: FactorySpacing.space2),
+              child: FactorySettingsGroup(
+                children: [
+                  SwitchListTile(
+                    secondary: const FactoryIconBadge(icon: Icons.fingerprint),
+                    title: Text(l10n.securityBiometricToggleTitle),
+                    subtitle: Text(l10n.securityBiometricToggleSubtitle),
+                    value: _biometricEnabled,
+                    onChanged: _loadingBiometric ? null : _onBiometricToggled,
+                  ),
+                ],
+              ),
             ),
           const SizedBox(height: FactorySpacing.space4),
           Padding(
@@ -100,50 +108,48 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
             child: Text(l10n.securityLinkedAccountsSectionTitle, style: Theme.of(context).textTheme.titleSmall),
           ),
           if (_loadingIdentities)
-            const Padding(
-              padding: EdgeInsets.all(FactorySpacing.space4),
-              child: FactoryLoadingState(),
-            )
+            const Padding(padding: EdgeInsets.all(FactorySpacing.space4), child: FactoryLoadingState())
           else ...[
             if (_linkError != null)
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: FactorySpacing.space4,
-                  vertical: FactorySpacing.space2,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4, vertical: FactorySpacing.space2),
                 child: Text(_linkError!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
               ),
-            ListTile(
-              title: Text(l10n.loginContinueWithGoogle),
-              trailing: _isLinked('GOOGLE')
-                  ? Icon(Icons.check_circle, color: colors.primary)
-                  : TextButton(
-                      onPressed: _isLinking ? null : _linkGoogle,
-                      child: Text(l10n.securityLinkButton),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4, vertical: FactorySpacing.space2),
+              child: FactorySettingsGroup(
+                children: [
+                  ListTile(
+                    leading: const FactoryIconBadge(icon: Icons.account_circle_outlined),
+                    title: Text(l10n.loginContinueWithGoogle),
+                    trailing: _isLinked('GOOGLE')
+                        ? Icon(Icons.check_circle, color: colors.primary)
+                        : TextButton(onPressed: _isLinking ? null : _linkGoogle, child: Text(l10n.securityLinkButton)),
+                  ),
+                  if (ref.watch(appleSignInAvailableProvider).value ?? false)
+                    ListTile(
+                      leading: const FactoryIconBadge(icon: Icons.apple),
+                      title: Text(l10n.loginContinueWithApple),
+                      trailing: _isLinked('APPLE')
+                          ? Icon(Icons.check_circle, color: colors.primary)
+                          : TextButton(onPressed: _isLinking ? null : _linkApple, child: Text(l10n.securityLinkButton)),
                     ),
-            ),
-            if (ref.watch(appleSignInAvailableProvider).value ?? false)
-              ListTile(
-                title: Text(l10n.loginContinueWithApple),
-                trailing: _isLinked('APPLE')
-                    ? Icon(Icons.check_circle, color: colors.primary)
-                    : TextButton(
-                        onPressed: _isLinking ? null : _linkApple,
-                        child: Text(l10n.securityLinkButton),
-                      ),
+                  ListTile(
+                    leading: const FactoryIconBadge(icon: Icons.phone_iphone),
+                    title: Text(l10n.loginContinueWithPhone),
+                    trailing: _isLinked('PHONE')
+                        ? Icon(Icons.check_circle, color: colors.primary)
+                        : TextButton(
+                            onPressed: _isLinking
+                                ? null
+                                : () => Navigator.of(context)
+                                      .push(MaterialPageRoute(builder: (_) => const PhoneLoginScreen(linking: true)))
+                                      .then((_) => _loadIdentities()),
+                            child: Text(l10n.securityLinkButton),
+                          ),
+                  ),
+                ],
               ),
-            ListTile(
-              title: Text(l10n.loginContinueWithPhone),
-              trailing: _isLinked('PHONE')
-                  ? Icon(Icons.check_circle, color: colors.primary)
-                  : TextButton(
-                      onPressed: _isLinking
-                          ? null
-                          : () => Navigator.of(context)
-                              .push(MaterialPageRoute(builder: (_) => const PhoneLoginScreen(linking: true)))
-                              .then((_) => _loadIdentities()),
-                      child: Text(l10n.securityLinkButton),
-                    ),
             ),
           ],
         ],
@@ -182,7 +188,7 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
       await ref.read(authControllerProvider.notifier).linkGoogle(idToken);
       await _loadIdentities();
     } catch (e) {
-      if (mounted) setState(() => _linkError = l10n.errorAuthGeneric(e.toString()));
+      if (mounted) setState(() => _linkError = l10n.errorAuthGeneric);
     } finally {
       if (mounted) setState(() => _isLinking = false);
     }
@@ -200,7 +206,7 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
       await ref.read(authControllerProvider.notifier).linkApple(result.identityToken);
       await _loadIdentities();
     } catch (e) {
-      if (mounted) setState(() => _linkError = l10n.errorAuthGeneric(e.toString()));
+      if (mounted) setState(() => _linkError = l10n.errorAuthGeneric);
     } finally {
       if (mounted) setState(() => _isLinking = false);
     }

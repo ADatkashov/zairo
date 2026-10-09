@@ -13,8 +13,8 @@ class PlatformAdminApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
       onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
-      theme: factoryLightTheme(),
-      darkTheme: factoryDarkTheme(),
+      theme: factoryLightTheme(profile: FactoryAppProfile.platform),
+      darkTheme: factoryDarkTheme(profile: FactoryAppProfile.platform),
       themeMode: ref.watch(themeModeControllerProvider).value,
       locale: ref.watch(localeControllerProvider).value,
       debugShowCheckedModeBanner: false,

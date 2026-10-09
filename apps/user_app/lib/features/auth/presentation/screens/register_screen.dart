@@ -52,6 +52,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           key: _formKey,
           child: ListView(
             children: [
+              const FactoryAuthBrand(markSize: 40),
               FactoryTextField(
                 controller: _displayNameController,
                 label: l10n.registerNameLabel,
@@ -103,7 +104,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   String _errorText(AppLocalizations l10n, Object error) {
     if (error is AuthException) return error.localizedMessage(l10n);
-    return l10n.errorAuthGeneric(error.toString());
+    return l10n.errorAuthGeneric;
   }
 
   void _submit() {

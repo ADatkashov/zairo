@@ -255,7 +255,7 @@ class _RecurringScheduleDialogState extends ConsumerState<RecurringScheduleDialo
       );
     } catch (e) {
       setState(() {
-        _error = e is BillingException ? e.localizedMessage(l10n) : l10n.errorRecurringScheduleFailed(e.toString());
+        _error = e is BillingException ? e.localizedMessage(l10n) : l10n.errorRecurringScheduleFailed;
         _isSubmitting = false;
       });
     }

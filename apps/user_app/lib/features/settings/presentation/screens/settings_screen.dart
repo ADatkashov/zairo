@@ -24,41 +24,58 @@ class SettingsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: FactoryAppBar(title: l10n.settingsTitle),
       body: ListView(
+        padding: const EdgeInsets.all(FactorySpacing.space4),
         children: [
-          SwitchListTile(
-            title: Text(l10n.darkModeTitle),
-            subtitle: Text(
-              l10n.darkModeSubtitle(_themeModeLabel(l10n, themeMode)),
-            ),
-            value: themeMode == ThemeMode.dark,
-            onChanged: (value) {
-              ref
-                  .read(themeModeControllerProvider.notifier)
-                  .setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
-            },
-          ),
-          ListTile(
-            title: Text(l10n.languageSectionTitle),
-            subtitle: Text(_languageLabel(l10n, locale)),
-            trailing: const Icon(Symbols.chevron_right_rounded),
-            onTap: () => _openLanguagePicker(context, ref, l10n, locale),
-          ),
-          ListTile(
-            title: Text(l10n.securityTitle),
-            subtitle: Text(l10n.securitySectionSubtitle),
-            trailing: const Icon(Symbols.chevron_right_rounded),
-            onTap: () => context.push(AppRoutes.securitySettings),
-          ),
-          if (isLoggedIn)
-            ListTile(
-              title: Text(
-                l10n.deleteAccountTitle,
-                style: TextStyle(color: context.factoryColors.coral),
+          FactorySettingsGroup(
+            children: [
+              SwitchListTile(
+                secondary: const FactoryIconBadge(icon: Symbols.dark_mode_rounded),
+                title: Text(l10n.darkModeTitle),
+                subtitle: Text(
+                  l10n.darkModeSubtitle(_themeModeLabel(l10n, themeMode)),
+                ),
+                value: themeMode == ThemeMode.dark,
+                onChanged: (value) {
+                  ref
+                      .read(themeModeControllerProvider.notifier)
+                      .setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
+                },
               ),
-              subtitle: Text(l10n.deleteAccountSubtitle),
-              trailing: const Icon(Symbols.chevron_right_rounded),
-              onTap: () => context.push(AppRoutes.deleteAccount),
-            ),
+              ListTile(
+                leading: const FactoryIconBadge(icon: Symbols.language_rounded),
+                title: Text(l10n.languageSectionTitle),
+                subtitle: Text(_languageLabel(l10n, locale)),
+                trailing: const Icon(Symbols.chevron_right_rounded),
+                onTap: () => _openLanguagePicker(context, ref, l10n, locale),
+              ),
+            ],
+          ),
+          const SizedBox(height: FactorySpacing.space4),
+          FactorySettingsGroup(
+            children: [
+              ListTile(
+                leading: const FactoryIconBadge(icon: Symbols.shield_lock_rounded),
+                title: Text(l10n.securityTitle),
+                subtitle: Text(l10n.securitySectionSubtitle),
+                trailing: const Icon(Symbols.chevron_right_rounded),
+                onTap: () => context.push(AppRoutes.securitySettings),
+              ),
+              if (isLoggedIn)
+                ListTile(
+                  leading: FactoryIconBadge(
+                    icon: Symbols.delete_rounded,
+                    color: context.factoryColors.error,
+                  ),
+                  title: Text(
+                    l10n.deleteAccountTitle,
+                    style: TextStyle(color: context.factoryColors.error),
+                  ),
+                  subtitle: Text(l10n.deleteAccountSubtitle),
+                  trailing: const Icon(Symbols.chevron_right_rounded),
+                  onTap: () => context.push(AppRoutes.deleteAccount),
+                ),
+            ],
+          ),
         ],
       ),
     );

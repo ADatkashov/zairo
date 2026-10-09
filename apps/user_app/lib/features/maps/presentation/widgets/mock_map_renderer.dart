@@ -20,8 +20,9 @@ class MockMapRenderer implements MapRenderer {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
+    // Scrolls on a short screen (large text, landscape) instead of overflowing.
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,

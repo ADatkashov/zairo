@@ -50,7 +50,7 @@ class NotificationBellButton extends ConsumerWidget {
                 width: 10,
                 height: 10,
                 decoration: BoxDecoration(
-                  color: colors.coral,
+                  color: colors.error,
                   shape: BoxShape.circle,
                   border: Border.all(color: colors.surface, width: 1.5),
                 ),

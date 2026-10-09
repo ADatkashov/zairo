@@ -43,6 +43,8 @@ class VehiclesScreen extends ConsumerWidget {
                 icon: Symbols.directions_car_rounded,
                 title: l10n.vehiclesEmptyTitle,
                 message: l10n.vehiclesEmptyMessage,
+                actionLabel: l10n.addVehicleButton,
+                onAction: () => _addVehicle(context, ref),
               ),
             );
           }

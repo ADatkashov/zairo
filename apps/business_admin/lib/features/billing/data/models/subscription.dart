@@ -11,6 +11,16 @@ class Subscription {
   final DateTime? gracePeriodEndsAt;
   final bool cancelAtPeriodEnd;
 
+  /// Set only by upgrade / retry-charge when the payment provider needs the
+  /// owner to pay on its own page. The plan above is still the old one then:
+  /// the provider's webhook, not this response, makes the change.
+  final String? checkoutUrl;
+
+  /// What PRO costs per month and in which currency, as the server charges it.
+  /// Null from an older server: the price row is then left out rather than guessed.
+  final double? proMonthlyPrice;
+  final String? currency;
+
   const Subscription({
     required this.id,
     required this.ownerUserId,
@@ -21,6 +31,9 @@ class Subscription {
     required this.currentPeriodEnd,
     this.gracePeriodEndsAt,
     required this.cancelAtPeriodEnd,
+    this.checkoutUrl,
+    this.proMonthlyPrice,
+    this.currency,
   });
 
   bool get isPro => plan == 'PRO';
@@ -37,6 +50,9 @@ class Subscription {
       gracePeriodEndsAt:
           json['gracePeriodEndsAt'] == null ? null : DateTime.parse(json['gracePeriodEndsAt'] as String),
       cancelAtPeriodEnd: json['cancelAtPeriodEnd'] as bool,
+      checkoutUrl: json['checkoutUrl'] as String?,
+      proMonthlyPrice: (json['proMonthlyPrice'] as num?)?.toDouble(),
+      currency: json['currency'] as String?,
     );
   }
 }

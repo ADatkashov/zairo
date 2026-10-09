@@ -94,13 +94,12 @@ class _PayoutsTabState extends ConsumerState<PayoutsTab> {
                     FactorySpacing.space6,
                   ),
                   children: [
-                    Text(
-                      l10n.payoutsSummary(
+                    _PayoutsSummary(
+                      totals: [for (final e in totals.entries) formatMoney(locale, e.value, e.key)],
+                      caption: l10n.payoutsSummary(
                         sorted.length,
                         totals.entries.map((e) => formatMoney(locale, e.value, e.key)).join(' · '),
                       ),
-                      style: Theme.of(context).textTheme.bodySmall
-                          ?.copyWith(color: context.factoryColors.textSecondary),
                     ),
                     const SizedBox(height: FactorySpacing.space3),
                     for (final payout in sorted)
@@ -119,6 +118,38 @@ class _PayoutsTabState extends ConsumerState<PayoutsTab> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The money at a glance: one big figure per currency (never summed across
+/// currencies), with the plain-language summary underneath.
+class _PayoutsSummary extends StatelessWidget {
+  const _PayoutsSummary({required this.totals, required this.caption});
+
+  final List<String> totals;
+  final String caption;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    return FactoryCard(
+      padding: const EdgeInsets.all(FactorySpacing.space4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: FactorySpacing.space5,
+            runSpacing: FactorySpacing.space1,
+            children: [
+              for (final total in totals)
+                Text(total, style: FactoryTypography.mono(size: 28, weight: FontWeight.w600, color: colors.text)),
+            ],
+          ),
+          const SizedBox(height: FactorySpacing.space1),
+          Text(caption, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textSecondary)),
+        ],
+      ),
     );
   }
 }

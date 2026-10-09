@@ -21,6 +21,8 @@ import '../../../loyalty/presentation/screens/loyalty_screen.dart';
 import '../../../messaging/presentation/screens/business_inbox_screen.dart';
 import '../../../salon/data/models/admin_provider.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
+import '../../../salon/presentation/screens/week_calendar_screen.dart';
+import '../../../salon/presentation/widgets/agenda_row.dart';
 import '../../../salon/presentation/screens/customer_list_screen.dart';
 import '../../../salon/presentation/screens/salon_detail_screen.dart';
 import '../../../salon/presentation/widgets/add_service_dialog.dart';
@@ -64,12 +66,16 @@ class DashboardScreen extends ConsumerWidget {
         title: l10n.dashboardGreeting(user.displayName),
         leading: Padding(
           padding: const EdgeInsets.all(FactorySpacing.space2),
-          child: GestureDetector(
-            onTap: () => showChangeAvatarDialog(context, hasCurrentAvatar: user.avatarUrl != null),
-            child: FactoryAvatar(
-              initials: _initialsFor(user.displayName),
-              size: 32,
-              image: user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+          child: Semantics(
+            button: true,
+            label: l10n.changeAvatarDialogTitle,
+            child: GestureDetector(
+              onTap: () => showChangeAvatarDialog(context, hasCurrentAvatar: user.avatarUrl != null),
+              child: FactoryAvatar(
+                initials: _initialsFor(user.displayName),
+                size: 32,
+                image: user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+              ),
             ),
           ),
         ),
@@ -134,7 +140,7 @@ class DashboardScreen extends ConsumerWidget {
             ]),
             child: ListView.separated(
             padding: const EdgeInsets.all(FactorySpacing.space4),
-            itemCount: providers.length + 4,
+            itemCount: providers.length + 5,
             separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
             itemBuilder: (context, index) {
               if (index == 0) {
@@ -147,9 +153,12 @@ class DashboardScreen extends ConsumerWidget {
                 );
               }
               if (index == 2) {
+                return _TodayAgenda(ownerUserId: user.id);
+              }
+              if (index == 3) {
                 return _QuickActions(providers: providers);
               }
-              if (index == providers.length + 3) {
+              if (index == providers.length + 4) {
                 final subscription = subscriptionAsync.value;
                 final atLimit = subscription != null && providers.length >= subscription.limits.maxProviders;
                 if (atLimit) {
@@ -162,7 +171,7 @@ class DashboardScreen extends ConsumerWidget {
                   onPressed: () => _openCreateSalonDialog(context, ref, user.id),
                 );
               }
-              final provider = providers[index - 3];
+              final provider = providers[index - 4];
               return _SalonCard(
                 provider: provider,
                 onTap: () => Navigator.of(context).push(
@@ -220,7 +229,7 @@ class DashboardScreen extends ConsumerWidget {
                     selectedCity = cities.first.code;
                   }
                   return DropdownButtonFormField<String>(
-                    value: selectedCity,
+                    initialValue: selectedCity,
                     decoration: InputDecoration(
                       labelText: l10n.selectCity,
                       border: const OutlineInputBorder(),
@@ -239,7 +248,7 @@ class DashboardScreen extends ConsumerWidget {
                   );
                 },
                 loading: () => const CircularProgressIndicator(),
-                error: (error, _) => Text('${l10n.errorLoadingCities}: $error'),
+                error: (error, _) => Text(l10n.errorLoadingCities),
               ),
             ],
           );
@@ -306,49 +315,73 @@ class _OwnerOverviewHero extends ConsumerWidget {
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
+    final radius = context.factoryProfileOrNull?.cardBorderRadius ?? FactoryRadius.xlRadius;
+    final secondaryStyle = textTheme.headlineSmall?.copyWith(color: colors.onPrimary);
+
+    // Bento hero: revenue is the one big number, the rest are secondary.
     return Container(
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
-      padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space6, vertical: FactorySpacing.space5),
+      padding: const EdgeInsets.all(FactorySpacing.space6),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [colors.primaryStrong, colors.mint],
+          colors: [colors.primaryStrong, colors.primary],
         ),
-        borderRadius: FactoryRadius.xlRadius,
-        boxShadow: [
-          BoxShadow(color: colors.primaryStrong.withValues(alpha: 0.24), offset: const Offset(0, 16), blurRadius: 32),
-        ],
+        borderRadius: radius,
+        boxShadow: context.factoryElevation(FactoryElevationLevel.lg),
       ),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Positioned(top: -40, right: -20, child: _HeroCircle(size: 160, opacity: 0.12)),
-          Wrap(
-            spacing: FactorySpacing.space8,
-            runSpacing: FactorySpacing.space3,
-            children: [
-              _OverviewStat(
-                value: Text('${overview.businessCount}', style: textTheme.displaySmall?.copyWith(color: colors.onPrimary)),
-                label: l10n.dashboardBusinessesCountLabel,
-              ),
-              _OverviewStat(
-                value: Text('${overview.totalBookings}', style: textTheme.displaySmall?.copyWith(color: colors.onPrimary)),
-                label: l10n.dashboardTotalBookingsLabel,
-              ),
-              _OverviewStat(
-                value: FactoryPriceText(
-                  amount: overview.totalRevenue,
-                  currencySymbol: overview.currency,
-                  fontSize: 24,
-                  color: colors.onPrimary,
+          Positioned(
+            top: -60,
+            right: -50,
+            child: Container(
+              width: 220,
+              height: 220,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                // Ambient glow: radial fade, not a flat disc.
+                gradient: RadialGradient(
+                  colors: [colors.accent.withValues(alpha: 0.42), colors.accent.withValues(alpha: 0)],
                 ),
-                label: l10n.dashboardTotalRevenueLabel,
               ),
-              _OverviewStat(
-                value: Text('${overview.totalCustomers}', style: textTheme.displaySmall?.copyWith(color: colors.onPrimary)),
-                label: l10n.dashboardTotalCustomersLabel,
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.dashboardTotalRevenueLabel,
+                style: textTheme.labelMedium?.copyWith(color: colors.onPrimary.withValues(alpha: 0.8)),
+              ),
+              const SizedBox(height: FactorySpacing.space1),
+              FactoryPriceText(
+                amount: overview.totalRevenue,
+                currencySymbol: overview.currency,
+                fontSize: 40,
+                color: colors.onPrimary,
+              ),
+              const SizedBox(height: FactorySpacing.space5),
+              Wrap(
+                spacing: FactorySpacing.space8,
+                runSpacing: FactorySpacing.space3,
+                children: [
+                  _OverviewStat(
+                    value: Text('${overview.totalBookings}', style: secondaryStyle),
+                    label: l10n.dashboardTotalBookingsLabel,
+                  ),
+                  _OverviewStat(
+                    value: Text('${overview.totalCustomers}', style: secondaryStyle),
+                    label: l10n.dashboardTotalCustomersLabel,
+                  ),
+                  _OverviewStat(
+                    value: Text('${overview.businessCount}', style: secondaryStyle),
+                    label: l10n.dashboardBusinessesCountLabel,
+                  ),
+                ],
               ),
             ],
           ),
@@ -374,25 +407,11 @@ class _OverviewStat extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white.withValues(alpha: 0.85)),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: context.factoryColors.onPrimary.withValues(alpha: 0.8),
+          ),
         ),
       ],
-    );
-  }
-}
-
-class _HeroCircle extends StatelessWidget {
-  const _HeroCircle({required this.size, required this.opacity});
-
-  final double size;
-  final double opacity;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: opacity)),
     );
   }
 }
@@ -824,7 +843,7 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
               data: (cities) {
                 if (cities.isEmpty) return Text(l10n.noCitiesAvailable);
                 return DropdownButtonFormField<String>(
-                  value: _cityCode ?? cities.first.code,
+                  initialValue: _cityCode ?? cities.first.code,
                   decoration: InputDecoration(
                     labelText: l10n.selectCity,
                     border: const OutlineInputBorder(),
@@ -840,7 +859,7 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
                 );
               },
               loading: () => const CircularProgressIndicator(),
-              error: (error, _) => Text('${l10n.errorLoadingCities}: $error'),
+              error: (error, _) => Text(l10n.errorLoadingCities),
             ),
             const SizedBox(height: FactorySpacing.space4),
             if (_error != null)
@@ -884,7 +903,7 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
       ref.invalidate(myProvidersProvider(widget.ownerUserId));
     } catch (e) {
       setState(() {
-        _error = e is BillingException ? e.localizedMessage(l10n) : l10n.errorCreateBusinessFailed(e.toString());
+        _error = e is BillingException ? e.localizedMessage(l10n) : l10n.errorCreateBusinessFailed;
         _isSubmitting = false;
       });
     }
@@ -898,4 +917,61 @@ String _initialsFor(String name) {
     return parts.first.substring(0, parts.first.length >= 2 ? 2 : 1).toUpperCase();
   }
   return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+
+/// Today's bookings across the owner's businesses: time, service, status.
+/// Shows the next few and says so plainly when there are none. While loading
+/// or on error it stays out of the way (the rest of the dashboard still
+/// works without it).
+class _TodayAgenda extends ConsumerWidget {
+  const _TodayAgenda({required this.ownerUserId});
+
+  final String ownerUserId;
+
+  static const int _maxRows = 5;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final agenda = ref.watch(ownerTodayAgendaProvider(ownerUserId)).value;
+    if (agenda == null) return const SizedBox.shrink();
+
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    final multiple = agenda.map((a) => a.providerName).toSet().length > 1;
+
+    return FactoryCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text(l10n.dashboardAgendaTitle, style: textTheme.titleMedium)),
+              TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => WeekCalendarScreen(ownerUserId: ownerUserId)),
+                ),
+                child: Text(l10n.calendarTitle),
+              ),
+            ],
+          ),
+          const SizedBox(height: FactorySpacing.space3),
+          if (agenda.isEmpty)
+            Text(l10n.dashboardAgendaEmpty, style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary))
+          else
+            for (final item in agenda.take(_maxRows))
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space2),
+                child: AgendaRow(item: item, showProvider: multiple),
+              ),
+          if (agenda.length > _maxRows)
+            Text(
+              '+${agenda.length - _maxRows}',
+              style: FactoryTypography.mono(size: 12, color: colors.textTertiary),
+            ),
+        ],
+      ),
+    );
+  }
 }

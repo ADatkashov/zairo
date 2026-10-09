@@ -109,6 +109,31 @@ Map<String, Object?> cityJson(String code, String name, {bool active = true}) =>
   'active': active,
 };
 
+/// Mirrors CommissionSettingsResponse: default 0%, Beauty with its own 8%, Auto following the default.
+Map<String, Object?> commissionJson({num defaultPercent = 0, num? beautyPercent = 8}) => {
+  'defaultPercent': defaultPercent,
+  'categories': [
+    {
+      'categoryId': 'c-beauty',
+      'code': 'beauty',
+      'nameKk': 'Сұлулық',
+      'nameRu': 'Красота',
+      'nameEn': 'Beauty',
+      'overridePercent': beautyPercent,
+      'effectivePercent': beautyPercent ?? defaultPercent,
+    },
+    {
+      'categoryId': 'c-auto',
+      'code': 'auto',
+      'nameKk': 'Авто',
+      'nameRu': 'Авто',
+      'nameEn': 'Auto',
+      'overridePercent': null,
+      'effectivePercent': defaultPercent,
+    },
+  ],
+};
+
 /// A backend with believable data for every area; tests change what they need.
 FakeBackend defaultBackend({String role = 'PLATFORM_ADMIN'}) {
   final backend = FakeBackend();
@@ -138,6 +163,7 @@ FakeBackend defaultBackend({String role = 'PLATFORM_ADMIN'}) {
     final status = o.queryParameters['status'];
     return FakeReply(status == null ? all : all.where((p) => p['status'] == status).toList());
   });
+  backend.reply('GET', '/platform/commission', commissionJson());
   backend.reply('GET', '/platform/payments/failed-refunds', [
     {
       'id': 'pay-9',

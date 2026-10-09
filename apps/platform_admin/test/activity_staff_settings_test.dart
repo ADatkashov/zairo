@@ -31,6 +31,26 @@ void main() {
     expect(find.text('Category created'), findsNothing);
   });
 
+  testWidgets('activity groups by day and an entry expands to its details', (tester) async {
+    await pumpConsole(tester, backend: defaultBackend(), location: ConsoleRoutes.activity);
+
+    // The fixtures are from 5 Oct 2026, so they sit under a dated heading
+    // (not Today / Yesterday).
+    expect(find.text('Today'), findsNothing);
+    expect(find.text('Yesterday'), findsNothing);
+
+    expect(find.text('Entry ID'), findsNothing);
+    await tester.tap(find.text('Business status changed'));
+    await tester.pumpAndSettle();
+    expect(find.text('Entry ID'), findsOneWidget);
+    expect(find.text('e1'), findsOneWidget);
+    expect(find.text('Target'), findsOneWidget);
+
+    await tester.tap(find.text('Business status changed'));
+    await tester.pumpAndSettle();
+    expect(find.text('Entry ID'), findsNothing);
+  });
+
   testWidgets('staff: roles legend, named roles, you cannot turn yourself off, turning off asks first', (tester) async {
     final backend = defaultBackend();
     backend.reply('POST', '/platform/admins/a2/deactivate', adminJson(id: 'a2'));
@@ -48,6 +68,26 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Turn off'));
     await tester.pumpAndSettle();
     expect((backend.calls('POST', '/platform/admins/a2/deactivate').single.data as Map)['reason'], 'left the company');
+  });
+
+  testWidgets('staff: the roles legend counts active people per role', (tester) async {
+    final backend = defaultBackend();
+    backend.reply('GET', '/platform/admins', [
+      adminJson(), // the signed-in admin
+      adminJson(role: 'PLATFORM_MODERATOR', email: 'm1@zairo.kz', name: 'Mara Mod', id: 'a2'),
+      adminJson(role: 'PLATFORM_MODERATOR', email: 'm2@zairo.kz', name: 'Mo Two', id: 'a3'),
+      // Switched off: must not be counted.
+      {...adminJson(role: 'PLATFORM_MODERATOR', email: 'm3@zairo.kz', name: 'Moe Off', id: 'a4'), 'active': false},
+    ]);
+    await pumpConsole(tester, backend: backend, location: ConsoleRoutes.staff);
+
+    final legend = find.ancestor(of: find.text('What each role can do'), matching: find.byType(FactoryCard));
+    expect(legend, findsOneWidget);
+    Finder count(String n) => find.descendant(of: legend, matching: find.text(n));
+    expect(count('1'), findsOneWidget); // admins
+    expect(count('2'), findsOneWidget); // active moderators, not 3
+    expect(count('0'), findsOneWidget); // support
+    expect(count('3'), findsNothing);
   });
 
   testWidgets('staff: adding validates, then creates', (tester) async {

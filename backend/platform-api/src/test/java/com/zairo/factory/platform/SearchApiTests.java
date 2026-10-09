@@ -262,17 +262,23 @@ class SearchApiTests {
     void bayesianRankingPreventsSingleReviewBias() {
         // This test documents the Bayesian rating behavior:
         // A provider with 1 five-star review should NOT rank higher than
-        // a provider with many moderate reviews, even though raw 5.0 > 4.5.
+        // a provider with a long track record, even though raw 5.0 > 4.9.
         String runId = UUID.randomUUID().toString();
-        String vertical = "beauty-bayesian-" + runId;
+        // The vertical column is limited to 50 characters, so only the start of the run id is used.
+        String vertical = "beauty-bayesian-" + runId.substring(0, 8);
         Registered owner = TestAuth.registerOwner(restTemplate, "bayesian-owner-" + runId + "@example.com");
         TestAuth.upgradeToPro(restTemplate, owner);
 
         // Provider A: Many moderate reviews (establishes track record)
         UUID manyModerate = createProvider(owner, "Many Moderate Reviews " + runId, vertical);
         createService(owner, manyModerate, "Cut", new BigDecimal("20.00"));
+        // 27x 5-star + 3x 4-star = 30 reviews averaging 4.9. The Bayesian pull is toward the platform-wide
+        // average, which here includes every other test's reviews (this class shares its database with the whole
+        // suite), so the scenario has to hold for any realistic global average: with the default weight of 25 a
+        // 4.9 track record over 30 reviews beats a lone 5-star review while that average is below ~4.89. (With
+        // a 4.5 track record the bound was ~4.46, which a full-suite run could exceed.)
         for (int i = 0; i < 30; i++) {
-            reviewProviderWithBooking(owner, manyModerate, 4); // 30x 4-star
+            reviewProviderWithBooking(owner, manyModerate, i % 10 == 9 ? 4 : 5);
         }
         approve(manyModerate);
 
@@ -283,7 +289,7 @@ class SearchApiTests {
         approve(singleFivestar);
 
         // When sorted by RATING (Bayesian), manyModerate should rank higher
-        // despite its raw rating (4.0) being lower than singleFivestar (5.0).
+        // despite its raw rating (4.9) being lower than singleFivestar (5.0).
         List<Map> byRating = search(new SearchParams(vertical).sort(SearchSort.RATING));
         List<UUID> ratingOrder = byRating.stream()
                 .map(r -> UUID.fromString(r.get("id").toString()))
@@ -295,7 +301,7 @@ class SearchApiTests {
         Map manyModerateResult = byRating.get(0);
         Map singleFivestarResult = byRating.get(1);
 
-        assertThat(((Number) manyModerateResult.get("averageRating")).doubleValue()).isEqualTo(4.0);
+        assertThat(((Number) manyModerateResult.get("averageRating")).doubleValue()).isEqualTo(4.9);
         assertThat(((Number) manyModerateResult.get("reviewCount")).longValue()).isEqualTo(30L);
 
         assertThat(((Number) singleFivestarResult.get("averageRating")).doubleValue()).isEqualTo(5.0);

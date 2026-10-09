@@ -234,15 +234,17 @@ class BusinessAnalyticsApiTests {
         completeVisit(owner, overdueCustomer, providerId, serviceId, today.minus(44, ChronoUnit.DAYS));
         completeVisit(owner, overdueCustomer, providerId, serviceId, today.minus(30, ChronoUnit.DAYS));
 
-        // A brand-new customer whose first (and only) visit is today -- a "new customer" for a range
-        // covering today.
+        // A brand-new customer whose first (and only) visit is today. "New customer" counts by when the
+        // first booking was made (CustomerProviderProfile.firstVisitAt = first booking's createdAt), and
+        // every booking here is made now -- backdating only moves the slot -- so both customers are new
+        // to a range covering today.
         Registered newCustomer = TestAuth.registerCustomer(restTemplate, "ba-customers-new-" + runId + "@example.com");
         completeVisit(owner, newCustomer, providerId, serviceId, today);
 
         Map<?, ?> customers = getAnalytics(owner, providerId, "customers", today.minus(1, ChronoUnit.DAYS),
                 today.plus(1, ChronoUnit.DAYS));
         assertThat(customers.get("totalCustomers")).isEqualTo(2);
-        assertThat(customers.get("newCustomers")).isEqualTo(1);
+        assertThat(customers.get("newCustomers")).isEqualTo(2);
         long dueForRebooking = ((Number) customers.get("dueForRebooking")).longValue();
         long atRisk = ((Number) customers.get("atRiskCustomers")).longValue();
         assertThat(dueForRebooking + atRisk).isGreaterThanOrEqualTo(1);
@@ -435,7 +437,9 @@ class BusinessAnalyticsApiTests {
         ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
                 new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        return UUID.fromString(response.getBody().get("id").toString());
+        UUID providerId = UUID.fromString(response.getBody().get("id").toString());
+        TestAuth.requireFullPayment(restTemplate, owner, providerId);
+        return providerId;
     }
 
     private UUID createService(Registered owner, UUID providerId, String title, BigDecimal price) {

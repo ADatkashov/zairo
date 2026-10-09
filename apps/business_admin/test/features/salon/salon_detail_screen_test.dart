@@ -432,6 +432,11 @@ class _FakeStaffAdminApi extends StaffAdminApi {
   }
 }
 
+Future<void> _openTab(WidgetTester tester, String label) async {
+  await tester.tap(find.widgetWithText(Tab, label));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   testWidgets('shows services and adding one calls the API and refreshes the list', (tester) async {
     final fakeApi = _FakeSalonAdminApi();
@@ -451,6 +456,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Services');
 
     expect(find.text('No active services.'), findsOneWidget);
 
@@ -495,6 +501,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Services');
 
     // Tooltip 'Edit', not the icon, to disambiguate from the AppBar's
     // 'Edit business' action which uses the same Icons.edit_outlined.
@@ -551,6 +558,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Services');
 
     expect(find.text('Haircut'), findsOneWidget);
     await tester.tap(find.byIcon(Icons.delete_outline));
@@ -566,6 +574,10 @@ void main() {
   });
 
   testWidgets('marking a confirmed booking complete calls the API', (tester) async {
+    // Tall window: the sections below the header must be built to be tapped.
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
     final booking = AdminBooking(
       id: 'b1',
       userId: 'u1',
@@ -592,9 +604,13 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Bookings');
 
     expect(find.text('Mark complete'), findsOneWidget);
 
+    // The photo header pushes the bookings list below the 600px test window.
+    await tester.ensureVisible(find.text('Mark complete'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Mark complete'));
     await tester.pumpAndSettle();
 
@@ -664,6 +680,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Services');
 
     expect(find.text('No active services.'), findsOneWidget);
     expect(find.text('Haircut'), findsNothing);
@@ -685,6 +702,10 @@ void main() {
   });
 
   testWidgets('a deactivated master is hidden by default and reactivating it brings it back', (tester) async {
+    // Tall window: the sections below the header must be built to be tapped.
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
     final fakeApi = _FakeSalonAdminApi();
     final fakeBeautyApi = _FakeBeautyAdminApi([
       const AdminMaster(id: 'm1', providerId: 'p1', displayName: 'Jamie Stylist', active: false),
@@ -705,6 +726,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Team');
 
     expect(find.text('No active masters.'), findsOneWidget);
 
@@ -741,6 +763,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Services');
 
     await tester.tap(find.widgetWithText(TextButton, 'Recurring schedule'));
     await tester.pumpAndSettle();
@@ -784,6 +807,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Team');
 
     // No Masters section for an auto-vertical workshop.
     expect(find.text('Masters'), findsNothing);
@@ -808,6 +832,10 @@ void main() {
   });
 
   testWidgets('a deactivated mechanic is hidden by default and reactivating it brings it back', (tester) async {
+    // Tall window: the sections below the header must be built to be tapped.
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
     final fakeApi = _FakeSalonAdminApi();
     final fakeAutoApi = _FakeAutoAdminApi([
       const AdminMechanic(id: 'm1', providerId: 'p2', displayName: 'Yerlan Mechanic', active: false),
@@ -828,6 +856,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Team');
 
     expect(find.text('No active mechanics.'), findsOneWidget);
 
@@ -867,6 +896,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Team');
 
     // No Masters/Mechanics/Cleaners section for a category without its own
     // dedicated staff module — it falls back to the generic Staff section.
@@ -894,6 +924,10 @@ void main() {
   });
 
   testWidgets('a deactivated staff member is hidden by default and reactivating it brings it back', (tester) async {
+    // Tall window: the sections below the header must be built to be tapped.
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
     final fakeApi = _FakeSalonAdminApi();
     final fakeStaffApi = _FakeStaffAdminApi([
       const AdminStaff(id: 's1', providerId: 'p3', displayName: 'Dr. Aliya', active: false),
@@ -914,6 +948,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Team');
 
     expect(find.text('No active staff.'), findsOneWidget);
 
@@ -962,10 +997,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Overview'), findsOneWidget);
+    // The tab label and the metrics section header share the same word.
+    expect(find.text('Overview'), findsNWidgets(2));
     expect(find.text('10'), findsOneWidget);
     expect(find.text('7'), findsOneWidget);
     expect(find.text('30%'), findsOneWidget);
+    // The cancellation rate is drawn as a ring.
+    expect(find.byType(FactoryProgressRing), findsOneWidget);
     expect(find.text('Top services'), findsOneWidget);
     expect(find.text('Haircut'), findsOneWidget);
   });
@@ -991,6 +1029,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Settings');
 
     // All three options are visible, and the stored 10% shows as a deposit.
     final noPrepayment = find.text('No prepayment');

@@ -90,10 +90,13 @@ class BookingAmounts extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          l10n.bookingPayServicePrice,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
+        Flexible(
+          child: Text(
+            l10n.bookingPayServicePrice,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
+          ),
         ),
+        const SizedBox(width: FactorySpacing.space2),
         FactoryPriceText(amount: booking.totalPrice, fontSize: 16, weight: FontWeight.w700),
       ],
     );
@@ -119,7 +122,8 @@ class _Line extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: textTheme.bodySmall?.copyWith(color: color)),
+            Flexible(child: Text(label, style: textTheme.bodySmall?.copyWith(color: color))),
+            const SizedBox(width: FactorySpacing.space2),
             FactoryPriceText(
               amount: amount,
               fontSize: 13,

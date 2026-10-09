@@ -77,23 +77,23 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
     } on AuthException catch (e) {
       if (mounted) setState(() => _linkError = e.localizedMessage(l10n));
     } catch (e) {
-      if (mounted) setState(() => _linkError = l10n.errorAuthGeneric(e.toString()));
+      if (mounted) setState(() => _linkError = l10n.errorAuthGeneric);
     } finally {
       if (mounted) setState(() => _isLinking = false);
     }
   }
 
   Future<void> _linkGoogle() => _link(() async {
-        final idToken = await ref.read(googleSignInServiceProvider).signIn();
-        if (idToken == null) return; // Canceled — nothing to show.
-        await ref.read(authControllerProvider.notifier).linkGoogle(idToken);
-      });
+    final idToken = await ref.read(googleSignInServiceProvider).signIn();
+    if (idToken == null) return; // Canceled — nothing to show.
+    await ref.read(authControllerProvider.notifier).linkGoogle(idToken);
+  });
 
   Future<void> _linkApple() => _link(() async {
-        final result = await ref.read(appleSignInServiceProvider).signIn();
-        if (result == null) return;
-        await ref.read(authControllerProvider.notifier).linkApple(result.identityToken);
-      });
+    final result = await ref.read(appleSignInServiceProvider).signIn();
+    if (result == null) return;
+    await ref.read(authControllerProvider.notifier).linkApple(result.identityToken);
+  });
 
   Future<void> _onToggled(bool value) async {
     final controller = ref.read(authControllerProvider.notifier);
@@ -130,11 +130,19 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
               ),
             )
           else
-            SwitchListTile(
-              title: Text(l10n.securityBiometricToggleTitle),
-              subtitle: Text(l10n.securityBiometricToggleSubtitle),
-              value: _enabled,
-              onChanged: _loading ? null : _onToggled,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4, vertical: FactorySpacing.space2),
+              child: FactorySettingsGroup(
+                children: [
+                  SwitchListTile(
+                    secondary: const FactoryIconBadge(icon: Icons.fingerprint),
+                    title: Text(l10n.securityBiometricToggleTitle),
+                    subtitle: Text(l10n.securityBiometricToggleSubtitle),
+                    value: _enabled,
+                    onChanged: _loading ? null : _onToggled,
+                  ),
+                ],
+              ),
             ),
           const SizedBox(height: FactorySpacing.space4),
           Padding(
@@ -149,26 +157,37 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
                 padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4, vertical: FactorySpacing.space2),
                 child: Text(_linkError!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
               ),
-            _LinkedRow(
-              title: l10n.loginContinueWithGoogle,
-              linked: _isLinked('GOOGLE'),
-              busy: _isLinking,
-              onLink: _linkGoogle,
-            ),
-            if (ref.watch(appleSignInAvailableProvider).value ?? false)
-              _LinkedRow(
-                title: l10n.loginContinueWithApple,
-                linked: _isLinked('APPLE'),
-                busy: _isLinking,
-                onLink: _linkApple,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4, vertical: FactorySpacing.space2),
+              child: FactorySettingsGroup(
+                children: [
+                  _LinkedRow(
+                    icon: Icons.account_circle_outlined,
+                    title: l10n.loginContinueWithGoogle,
+                    linked: _isLinked('GOOGLE'),
+                    busy: _isLinking,
+                    onLink: _linkGoogle,
+                  ),
+                  if (ref.watch(appleSignInAvailableProvider).value ?? false)
+                    _LinkedRow(
+                      icon: Icons.apple,
+                      title: l10n.loginContinueWithApple,
+                      linked: _isLinked('APPLE'),
+                      busy: _isLinking,
+                      onLink: _linkApple,
+                    ),
+                  _LinkedRow(
+                    icon: Icons.phone_iphone,
+                    title: l10n.loginContinueWithPhone,
+                    linked: _isLinked('PHONE'),
+                    busy: _isLinking,
+                    onLink: () =>
+                        Navigator.of(context)
+                            .push(MaterialPageRoute(builder: (_) => const LinkPhoneScreen()))
+                            .then((_) => _loadIdentities()),
+                  ),
+                ],
               ),
-            _LinkedRow(
-              title: l10n.loginContinueWithPhone,
-              linked: _isLinked('PHONE'),
-              busy: _isLinking,
-              onLink: () => Navigator.of(context)
-                  .push(MaterialPageRoute(builder: (_) => const LinkPhoneScreen()))
-                  .then((_) => _loadIdentities()),
             ),
           ],
         ],
@@ -178,8 +197,15 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
 }
 
 class _LinkedRow extends StatelessWidget {
-  const _LinkedRow({required this.title, required this.linked, required this.busy, required this.onLink});
+  const _LinkedRow({
+    required this.icon,
+    required this.title,
+    required this.linked,
+    required this.busy,
+    required this.onLink,
+  });
 
+  final IconData icon;
   final String title;
   final bool linked;
   final bool busy;
@@ -189,6 +215,7 @@ class _LinkedRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return ListTile(
+      leading: FactoryIconBadge(icon: icon),
       title: Text(title),
       trailing: linked
           ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)

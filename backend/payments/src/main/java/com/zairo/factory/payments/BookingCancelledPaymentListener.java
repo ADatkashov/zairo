@@ -44,10 +44,12 @@ class BookingCancelledPaymentListener {
     private final PaymentRefundRequestRepository refundRequestRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
+    private final PaymentPartialRefundRepository partialRefundRepository;
 
     BookingCancelledPaymentListener(PaymentRepository paymentRepository,
             PaymentRefundRequestRepository refundRequestRepository, ApplicationEventPublisher eventPublisher,
-            Clock clock) {
+            Clock clock, PaymentPartialRefundRepository partialRefundRepository) {
+        this.partialRefundRepository = partialRefundRepository;
         this.paymentRepository = paymentRepository;
         this.refundRequestRepository = refundRequestRepository;
         this.eventPublisher = eventPublisher;
@@ -78,8 +80,13 @@ class BookingCancelledPaymentListener {
      */
     private void createRefundRequest(Payment payment) {
         var now = clock.instant();
+        // What a cheaper replacement already sent back (or still owes back, retried separately) isn't refunded twice.
+        var remaining = payment.getAmount().subtract(partialRefundRepository.totalForPayment(payment.getId()));
+        if (remaining.signum() <= 0) {
+            return;
+        }
         PaymentRefundRequest request = refundRequestRepository.save(new PaymentRefundRequest(UUID.randomUUID(),
-                payment.getId(), payment.getBookingId(), payment.getAmount(), payment.getCurrency(),
+                payment.getId(), payment.getBookingId(), remaining, payment.getCurrency(),
                 payment.getProvider(), payment.getProviderReference(), now));
         payment.markRefundPending(now);
         paymentRepository.save(payment);

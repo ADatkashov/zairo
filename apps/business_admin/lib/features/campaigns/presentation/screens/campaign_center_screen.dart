@@ -243,7 +243,7 @@ class _CampaignCenterBody extends ConsumerWidget {
               error: (error, _) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space4),
                 child: FactoryErrorState(
-                  message: l10n.errorCampaignsLoadFailed(error.toString()),
+                  message: l10n.errorCampaignsLoadFailed,
                   onRetry: () => ref.invalidate(campaignListProvider(key)),
                 ),
               ),
@@ -312,23 +312,116 @@ class _StatsRow extends ConsumerWidget {
     final statsAsync = ref.watch(campaignStatsProvider(providerId));
 
     return statsAsync.when(
-      data: (stats) => Wrap(
-        spacing: FactorySpacing.space3,
-        runSpacing: FactorySpacing.space3,
+      data: (stats) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          FactoryStatTile(label: l10n.campaignKpiActive, value: '${stats.activeCampaigns}'),
-          FactoryStatTile(
+          _RecoveredHero(
             label: l10n.campaignKpiRecoveredRevenue,
             value: formatFactoryMoney(stats.totalRecoveredRevenue, stats.currency),
           ),
-          FactoryStatTile(label: l10n.campaignKpiConversionRate, value: '${(stats.conversionRate * 100).round()}%'),
-          FactoryStatTile(label: l10n.campaignKpiNeedsAttention, value: '${stats.campaignsRequiringAttention}'),
+          const SizedBox(height: FactorySpacing.space3),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _CampaignKpi(label: l10n.campaignKpiActive, value: '${stats.activeCampaigns}'),
+              ),
+              const SizedBox(width: FactorySpacing.space3),
+              Expanded(
+                child: _CampaignKpi(
+                  label: l10n.campaignKpiConversionRate,
+                  value: '${(stats.conversionRate * 100).round()}%',
+                ),
+              ),
+              const SizedBox(width: FactorySpacing.space3),
+              Expanded(
+                child: _CampaignKpi(
+                  label: l10n.campaignKpiNeedsAttention,
+                  value: '${stats.campaignsRequiringAttention}',
+                  highlight: stats.campaignsRequiringAttention > 0,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
       loading: () => const FactoryLoadingState(),
       error: (error, _) => FactoryErrorState(
-        message: l10n.errorCampaignStatsLoadFailed(error.toString()),
+        message: l10n.errorCampaignStatsLoadFailed,
         onRetry: () => ref.invalidate(campaignStatsProvider(providerId)),
+      ),
+    );
+  }
+}
+
+/// The money the campaigns brought back, as the one big figure of the screen
+/// (same hero treatment as the dashboard and analytics).
+class _RecoveredHero extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _RecoveredHero({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final radius = context.factoryProfileOrNull?.cardBorderRadius ?? FactoryRadius.xlRadius;
+    return Container(
+      padding: const EdgeInsets.all(FactorySpacing.space5),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [colors.primaryStrong, colors.primary],
+        ),
+        borderRadius: radius,
+        boxShadow: context.factoryElevation(FactoryElevationLevel.lg),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.onPrimary.withValues(alpha: 0.8)),
+          ),
+          const SizedBox(height: FactorySpacing.space1),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: FactoryTypography.mono(size: 34, weight: FontWeight.w600, color: colors.onPrimary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CampaignKpi extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool highlight;
+
+  const _CampaignKpi({required this.label, required this.value, this.highlight = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    return FactoryCard(
+      padding: const EdgeInsets.all(FactorySpacing.space3),
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(value, style: textTheme.titleLarge?.copyWith(color: highlight ? colors.warning : colors.text)),
+            const SizedBox(height: 2),
+            Text(label, style: textTheme.labelMedium?.copyWith(color: colors.textSecondary)),
+          ],
+        ),
       ),
     );
   }
@@ -354,13 +447,17 @@ class _FunnelSection extends ConsumerWidget {
     final stats = statsAsync.value;
     if (stats == null) return const SizedBox.shrink();
 
-    final totalCampaigns = stats.activeCampaigns +
+    final totalCampaigns =
+        stats.activeCampaigns +
         stats.completedCampaigns +
         stats.failedCampaigns +
         stats.expiredCampaigns +
         stats.cancelledCampaigns;
-    final maxCount = [totalCampaigns, stats.notificationsSent, stats.offersAccepted]
-        .fold(0, (max, v) => v > max ? v : max);
+    final maxCount = [
+      totalCampaigns,
+      stats.notificationsSent,
+      stats.offersAccepted,
+    ].fold(0, (max, v) => v > max ? v : max);
 
     return FactoryCard(
       child: Column(
@@ -459,7 +556,8 @@ class _FiltersSection extends ConsumerWidget {
         FactorySearchField(
           controller: searchController,
           hint: l10n.campaignFilterSearchHint,
-          onSubmitted: (value) => onFiltersChanged(filters.copyWith(search: value.trim(), clearSearch: value.trim().isEmpty)),
+          onSubmitted: (value) =>
+              onFiltersChanged(filters.copyWith(search: value.trim(), clearSearch: value.trim().isEmpty)),
         ),
         const SizedBox(height: FactorySpacing.space3),
         Wrap(
@@ -533,7 +631,7 @@ class _FiltersSection extends ConsumerWidget {
             FactoryChip(
               label: datePreset == _DatePreset.custom && customRange != null
                   ? '${DateFormat.yMMMd(Localizations.localeOf(context).toString()).format(customRange!.start)} – '
-                      '${DateFormat.yMMMd(Localizations.localeOf(context).toString()).format(customRange!.end)}'
+                        '${DateFormat.yMMMd(Localizations.localeOf(context).toString()).format(customRange!.end)}'
                   : l10n.analyticsPeriodCustom,
               selected: datePreset == _DatePreset.custom,
               icon: Icons.calendar_month_outlined,
