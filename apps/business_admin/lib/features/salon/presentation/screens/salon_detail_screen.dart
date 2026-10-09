@@ -8,6 +8,7 @@ import 'package:image_cropper/image_cropper.dart';
 import '../../../../core/formatting/month_day_time.dart';
 import '../../../../core/image/pick_and_crop_image.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../core/formatting/vertical_label.dart';
 import '../../../auto/data/models/admin_mechanic.dart';
 import '../../../auto/presentation/providers/auto_admin_providers.dart';
 import '../../../auto/presentation/widgets/add_mechanic_dialog.dart';
@@ -221,6 +222,11 @@ String _providerStatusLabel(AppLocalizations l10n, String status) => switch (sta
       'ACTIVE' => l10n.providerStatusActive,
       'PENDING' => l10n.providerStatusPending,
       'SUSPENDED' => l10n.providerStatusSuspended,
+      _ => _capitalize(status),
+    };
+
+String _slotStatusLabel(AppLocalizations l10n, String status) => switch (status) {
+      'BOOKED' => l10n.slotStatusBooked,
       _ => _capitalize(status),
     };
 
@@ -669,7 +675,7 @@ class _BusinessHeader extends StatelessWidget {
                 runSpacing: 8,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  FactoryBadge(label: _capitalize(provider.vertical)),
+                  FactoryBadge(label: verticalLabel(AppLocalizations.of(context)!, provider.vertical)),
                   FactoryBadge(label: statusLabel, variant: statusVariant),
                 ],
               ),
@@ -1164,7 +1170,7 @@ class _DaySlots extends StatelessWidget {
                     label: Text(
                       s.status == 'OPEN'
                           ? formatHourMinute(s.startsAt.toLocal())
-                          : '${formatHourMinute(s.startsAt.toLocal())} · ${_capitalize(s.status)}',
+                          : '${formatHourMinute(s.startsAt.toLocal())} · ${_slotStatusLabel(l10n, s.status)}',
                     ),
                     onDeleted: s.status == 'OPEN' ? () => onDelete(s) : null,
                   ),

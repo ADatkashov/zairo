@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/app_localizations.dart';
+import '../../../../core/formatting/vertical_label.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/widgets/confirm_log_out.dart';
 import '../../../salon/data/models/admin_provider.dart';
@@ -147,7 +148,7 @@ class _PendingSalonCard extends StatelessWidget {
             children: [
               Text(provider.name, style: textTheme.titleSmall),
               const SizedBox(height: FactorySpacing.space2),
-              FactoryBadge(label: _capitalize(provider.vertical)),
+              FactoryBadge(label: verticalLabel(AppLocalizations.of(context)!, provider.vertical)),
             ],
           ),
           Wrap(
@@ -167,6 +168,3 @@ class _PendingSalonCard extends StatelessWidget {
     );
   }
 }
-
-String _capitalize(String s) =>
-    s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1).toLowerCase()}';

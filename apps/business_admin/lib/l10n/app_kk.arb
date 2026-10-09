@@ -45,9 +45,9 @@
   "addBusinessDialogTitle": "Бизнес қосу",
   "businessNameLabel": "Бизнес атауы",
   "businessCategoryLabel": "Санат",
-  "verticalBeautyLabel": "Beauty",
-  "verticalAutoLabel": "Auto",
-  "verticalCleaningLabel": "Cleaning",
+  "verticalBeautyLabel": "Сұлулық",
+  "verticalAutoLabel": "Авто",
+  "verticalCleaningLabel": "Тазалау",
   "createButton": "Құру",
   "errorBusinessesLoadFailed": "Бизнестеріңізді жүктеу мүмкін болмады.",
   "noBusinessesYetTitle": "Сізде әзірге бизнес жоқ",
@@ -349,7 +349,7 @@
   "imagePickerCameraLabel": "Камера",
   "imagePickerGalleryLabel": "Галерея",
 
-  "campaignCenterNavLabel": "Науқандар орталығы",
+  "campaignCenterNavLabel": "Науқандар",
   "campaignCenterScreenTitle": "Науқандар орталығы",
   "campaignCenterSubtitle": "Smart Fill, Rebook және Reactivation науқандарын қадағалап, назар аударуды қажет ететін нәрсеге әрекет етіңіз.",
   "campaignCenterNoBusinesses": "Науқандарын көру үшін алдымен бизнес құрыңыз.",
@@ -728,6 +728,7 @@
   "noCitiesAvailable": "Қол жетімді қалалар жоқ",
   "errorLoadingCities": "Қалалар жүктелуінде қате",
 
+  "slotStatusBooked": "Брондалған",
   "slotsDaySummary": "{open} бос · {booked} брондалған",
 
   "slotsDaysShowAll": "Барлық күндерді көрсету (тағы {count})",

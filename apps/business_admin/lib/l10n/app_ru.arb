@@ -45,9 +45,9 @@
   "addBusinessDialogTitle": "Добавить бизнес",
   "businessNameLabel": "Название бизнеса",
   "businessCategoryLabel": "Категория",
-  "verticalBeautyLabel": "Beauty",
-  "verticalAutoLabel": "Auto",
-  "verticalCleaningLabel": "Cleaning",
+  "verticalBeautyLabel": "Красота",
+  "verticalAutoLabel": "Авто",
+  "verticalCleaningLabel": "Клининг",
   "createButton": "Создать",
   "errorBusinessesLoadFailed": "Не удалось загрузить ваши бизнесы.",
   "noBusinessesYetTitle": "У вас пока нет бизнесов",
@@ -349,7 +349,7 @@
   "imagePickerCameraLabel": "Камера",
   "imagePickerGalleryLabel": "Галерея",
 
-  "campaignCenterNavLabel": "Центр кампаний",
+  "campaignCenterNavLabel": "Кампании",
   "campaignCenterScreenTitle": "Центр кампаний",
   "campaignCenterSubtitle": "Отслеживайте все кампании Smart Fill, Rebook и Reactivation и реагируйте на то, что требует внимания.",
   "campaignCenterNoBusinesses": "Сначала создайте бизнес, чтобы увидеть его кампании.",
@@ -737,6 +737,7 @@
   "noCitiesAvailable": "Нет доступных городов",
   "errorLoadingCities": "Ошибка при загрузке городов",
 
+  "slotStatusBooked": "Занято",
   "slotsDaySummary": "{open} свободно · {booked} занято",
 
   "slotsDaysShowAll": "Показать все дни (ещё {count})",
