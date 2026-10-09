@@ -1064,7 +1064,7 @@
   "imagePickerGalleryLabel": "Gallery",
   "@imagePickerGalleryLabel": {"description": "Photo-source bottom sheet option: pick an existing photo."},
 
-  "campaignCenterNavLabel": "Campaign Center",
+  "campaignCenterNavLabel": "Campaigns",
   "@campaignCenterNavLabel": {"description": "Sidebar/AppBar nav label for the Campaign Center top-level destination."},
 
   "campaignCenterScreenTitle": "Campaign Center",
@@ -2034,6 +2034,8 @@
   "errorLoadingCities": "Error loading cities",
   "@errorLoadingCities": {"description": "Error message shown when cities fail to load."},
 
+  "slotStatusBooked": "Booked",
+  "@slotStatusBooked": {"description": "Suffix on a slot chip in the business detail schedule once the slot is booked (an open slot shows only its time)."},
   "slotsDaySummary": "{open} open · {booked} booked",
   "@slotsDaySummary": {"description": "Per-day summary of open and booked time slots.", "placeholders": {"open": {"type": "int"}, "booked": {"type": "int"}}},
 

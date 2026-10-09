@@ -255,15 +255,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                     padding: const EdgeInsets.all(
                                       FactorySpacing.space4,
                                     ),
-                                    gridDelegate:
-                                        SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: columns,
-                                          mainAxisSpacing:
-                                              FactorySpacing.space4,
-                                          crossAxisSpacing:
-                                              FactorySpacing.space4,
-                                          childAspectRatio: providerGridAspectRatio(context),
-                                        ),
+                                    gridDelegate: providerGridDelegate(
+                                      context,
+                                      crossAxisCount: columns,
+                                      spacing: FactorySpacing.space4,
+                                    ),
                                     itemCount: results.length,
                                     itemBuilder: (context, index) {
                                       final result = results[index];

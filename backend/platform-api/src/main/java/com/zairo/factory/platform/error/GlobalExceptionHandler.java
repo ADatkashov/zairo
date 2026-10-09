@@ -6,11 +6,15 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.AnnotatedElementUtils;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -90,6 +94,34 @@ class GlobalExceptionHandler {
     ResponseEntity<ApiError> handleNoResource(HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiError.of(404, "Not Found", "No such endpoint or resource", request.getRequestURI()));
+    }
+
+    // Like NoResourceFoundException above, Spring MVC throws these three as plain exceptions
+    // whose status lives on ErrorResponse#getStatusCode, so they fell through to
+    // handleUnexpected and a client that used the wrong HTTP method or Content-Type got an
+    // opaque 500 (and an ERROR stack trace in the log) instead of a 405 / 415 / 406.
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    ResponseEntity<ApiError> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex,
+            HttpServletRequest request) {
+        ResponseEntity.BodyBuilder response = ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED);
+        if (ex.getSupportedHttpMethods() != null) {
+            response.allow(ex.getSupportedHttpMethods().toArray(new HttpMethod[0]));
+        }
+        return response.body(ApiError.of(405, "Method Not Allowed",
+                "Method " + ex.getMethod() + " is not supported for this endpoint", request.getRequestURI()));
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    ResponseEntity<ApiError> handleMediaTypeNotSupported(HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(ApiError.of(415,
+                "Unsupported Media Type", "Content type is not supported — send application/json",
+                request.getRequestURI()));
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
+    ResponseEntity<ApiError> handleMediaTypeNotAcceptable(HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(ApiError.of(406, "Not Acceptable",
+                "This endpoint can only respond with application/json", request.getRequestURI()));
     }
 
     @ExceptionHandler(ResponseStatusException.class)

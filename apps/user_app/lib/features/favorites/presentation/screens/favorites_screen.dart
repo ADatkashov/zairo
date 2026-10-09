@@ -156,11 +156,10 @@ class _FavoritesList extends ConsumerWidget {
                 // board, 2026-09-05) — Favorites is a saved-items gallery,
                 // not a results list, so it reads better as a grid than
                 // Search's photo-left rows.
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: FactorySpacing.space3,
-                  crossAxisSpacing: FactorySpacing.space3,
-                  childAspectRatio: providerGridAspectRatio(context),
+                gridDelegate: providerGridDelegate(
+                  context,
+                  crossAxisCount: providerGridColumns(context),
+                  spacing: FactorySpacing.space3,
                 ),
                 itemCount: favorites.length,
                 itemBuilder: (context, index) {
