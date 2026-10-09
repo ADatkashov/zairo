@@ -290,6 +290,7 @@ class _LinkAccountDialogState extends State<_LinkAccountDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
+      scrollable: true,
       title: Text(l10n.linkAccountTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,

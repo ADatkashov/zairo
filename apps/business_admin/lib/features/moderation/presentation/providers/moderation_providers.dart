@@ -7,6 +7,7 @@ import '../../../salon/presentation/providers/salon_providers.dart';
 /// a separate admin API class — it's the same Provider resource, just a
 /// different, privileged view of it (see backend's
 /// ProviderController.updateStatus()).
-final pendingProvidersProvider = FutureProvider.autoDispose<List<AdminProvider>>((ref) {
-  return ref.watch(salonAdminApiProvider).listProvidersByStatus('PENDING');
-});
+final pendingProvidersProvider =
+    FutureProvider.autoDispose<List<AdminProvider>>((ref) {
+      return ref.watch(salonAdminApiProvider).listProvidersByStatus('PENDING');
+    });

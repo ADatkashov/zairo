@@ -213,7 +213,7 @@ class _ConversationCard extends ConsumerWidget {
             Container(
               width: 10,
               height: 10,
-              decoration: BoxDecoration(color: colors.coral, shape: BoxShape.circle),
+              decoration: BoxDecoration(color: colors.error, shape: BoxShape.circle),
             ),
             const SizedBox(width: FactorySpacing.space2),
           ],

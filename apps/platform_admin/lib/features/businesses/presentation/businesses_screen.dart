@@ -382,7 +382,12 @@ class _BusinessCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: FactorySpacing.space2),
-              ToneBadge(label: businessStatusLabel(l10n, business.status), tone: businessStatusTone(business.status)),
+              Flexible(
+                child: ToneBadge(
+                  label: businessStatusLabel(l10n, business.status),
+                  tone: businessStatusTone(business.status),
+                ),
+              ),
             ],
           ),
           if (actions.isNotEmpty) ...[

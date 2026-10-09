@@ -441,7 +441,7 @@ class _BookAgainSection extends ConsumerWidget {
         ),
         const SizedBox(height: FactorySpacing.space3),
         SizedBox(
-          height: 96,
+          height: 96 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0),
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: suggestions.length,

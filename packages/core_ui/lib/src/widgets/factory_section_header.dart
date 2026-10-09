@@ -24,21 +24,34 @@ class FactorySectionHeader extends StatelessWidget {
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
 
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: textTheme.titleSmall?.copyWith(color: colors.text, fontWeight: FontWeight.w700),
-          ),
-        ),
-        if (trailing != null)
-          trailing!
-        else if (actionLabel != null && onActionTap != null)
-          TextButton(onPressed: onActionTap, child: Text(actionLabel!)),
-      ],
+    final trailingWidget = trailing ??
+        (actionLabel != null && onActionTap != null
+            ? TextButton(onPressed: onActionTap, child: Text(actionLabel!))
+            : null);
+
+    // Title left, action right. When both don't fit on one line (a phone, large text) the action
+    // moves under the title instead of squeezing it or overflowing.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth;
+        return Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: textTheme.titleSmall?.copyWith(color: colors.text, fontWeight: FontWeight.w700),
+              ),
+            ),
+            if (trailingWidget != null)
+              ConstrainedBox(constraints: BoxConstraints(maxWidth: maxWidth), child: trailingWidget),
+          ],
+        );
+      },
     );
   }
 }

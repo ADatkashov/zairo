@@ -630,5 +630,6 @@
   "paymentChoosePayButton": "Оплатить",
   "citiesLoadFailed": "Не удалось загрузить города. Попробуйте ещё раз.",
   "citySelectLoading": "Меняем город…",
-  "citySelectFailed": "Не удалось сменить город. Попробуйте ещё раз."
+  "citySelectFailed": "Не удалось сменить город. Попробуйте ещё раз.",
+  "chatSendTooltip": "Отправить"
 }

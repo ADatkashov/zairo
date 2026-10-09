@@ -47,7 +47,10 @@ class CitySelectionScreen extends ConsumerWidget {
                   final city = cities[index];
                   final isSelected = currentCity?.code == city.code;
 
-                  return GestureDetector(
+                  return Semantics(
+                    button: true,
+                    selected: isSelected,
+                    child: GestureDetector(
                     onTap: () => _selectCity(context, ref, city.code),
                     child: Container(
                       color: colors.bg,
@@ -93,6 +96,7 @@ class CitySelectionScreen extends ConsumerWidget {
                             ),
                         ],
                       ),
+                    ),
                     ),
                   );
                 },
