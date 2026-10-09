@@ -11,6 +11,18 @@ class Booking {
   final double? remainingAmount;
   final DateTime createdAt;
 
+  // What the booking references by id, resolved by the backend for display.
+  // All nullable: an older backend (or a reference that no longer resolves)
+  // simply leaves them out, and the UI falls back to what it always showed.
+  final String? serviceTitle;
+  final String? providerId;
+  final String? providerName;
+  final String? providerVertical;
+
+  /// When the appointment starts and ends (the booked slot's times).
+  final DateTime? startsAt;
+  final DateTime? endsAt;
+
   const Booking({
     required this.id,
     required this.userId,
@@ -21,6 +33,12 @@ class Booking {
     this.depositAmount,
     this.remainingAmount,
     required this.createdAt,
+    this.serviceTitle,
+    this.providerId,
+    this.providerName,
+    this.providerVertical,
+    this.startsAt,
+    this.endsAt,
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
@@ -38,6 +56,15 @@ class Booking {
           ? (json['remainingAmount'] as num).toDouble()
           : null,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      serviceTitle: json['serviceTitle'] as String?,
+      providerId: json['providerId'] as String?,
+      providerName: json['providerName'] as String?,
+      providerVertical: json['providerVertical'] as String?,
+      startsAt: _parseInstant(json['startsAt']),
+      endsAt: _parseInstant(json['endsAt']),
     );
   }
 }
+
+DateTime? _parseInstant(Object? value) =>
+    value is String ? DateTime.tryParse(value) : null;
