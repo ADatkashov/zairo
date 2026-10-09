@@ -85,6 +85,7 @@ class _Harness {
   final opened = <Uri>[];
   bool launchSucceeds = true;
   bool? poppedWith;
+  late GoRouter router;
 }
 
 Future<_Harness> _pump(
@@ -95,7 +96,7 @@ Future<_Harness> _pump(
 }) async {
   final h = _Harness();
   setUp?.call(h);
-  final router = GoRouter(
+  final router = h.router = GoRouter(
     initialLocation: pushedFromList ? '/list' : '/pay',
     initialExtra: pushedFromList ? null : args,
     routes: [
@@ -113,12 +114,19 @@ Future<_Harness> _pump(
         ),
       ),
       GoRoute(path: '/pay', builder: (context, state) => BookingPaymentScreen(args: state.extra! as BookingPaymentArgs)),
+      // A fresh route, like the deep link `zairo://app/payment-result` opens: the old stack is gone.
+      GoRoute(
+        path: '/return',
+        builder: (context, state) => BookingPaymentScreen(
+          args: BookingPaymentArgs(booking: _booking(), fromReturn: true),
+        ),
+      ),
       GoRoute(
         path: AppRoutes.bookingConfirmation,
         builder: (context, state) =>
             Text('CONFIRMED PAGE ${(state.extra! as BookingConfirmationArgs).booking.status}'),
       ),
-      GoRoute(path: AppRoutes.bookings, builder: (context, state) => const Text('BOOKINGS PAGE')),
+      GoRoute(path: AppRoutes.bookings, builder: (context, state) => const Scaffold(body: Text('BOOKINGS PAGE'))),
     ],
   );
   await tester.pumpWidget(
@@ -303,5 +311,60 @@ void main() {
 
     expect(find.text('open payment'), findsOneWidget);
     expect(h.poppedWith, isFalse);
+  });
+
+  testWidgets('coming back from the payment page only reads the payment: it neither charges again nor reopens the page', (
+    tester,
+  ) async {
+    final h = await _pump(
+      tester,
+      args: BookingPaymentArgs(booking: _booking(), fromReturn: true),
+      setUp: (h) => h.paymentsApi.existing = _payment('PENDING', url: 'https://pay.example/checkout/p1'),
+    );
+
+    expect(h.paymentsApi.createCalls, 0);
+    expect(h.opened, isEmpty);
+    expect(find.text('Waiting for payment'), findsOneWidget);
+
+    // The webhook lands: the booking is confirmed, and with no confirmation details it ends on the bookings list.
+    h.bookingApi.status = 'CONFIRMED';
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(find.text('BOOKINGS PAGE'), findsOneWidget);
+    expect(find.text('Payment received — your booking is confirmed.'), findsOneWidget);
+  });
+
+  testWidgets('coming back after a failed payment shows it as failed without starting a new one', (tester) async {
+    final h = await _pump(
+      tester,
+      args: BookingPaymentArgs(booking: _booking(), fromReturn: true),
+      setUp: (h) => h.paymentsApi.existing = _payment('FAILED'),
+    );
+
+    expect(find.text("Payment didn't go through"), findsOneWidget);
+    expect(h.paymentsApi.createCalls, 0);
+    expect(h.opened, isEmpty);
+  });
+
+  testWidgets('the booking details survive the deep link replacing the screen, so "Booking confirmed" still shows them', (
+    tester,
+  ) async {
+    final h = await _pump(
+      tester,
+      args: BookingPaymentArgs(
+        booking: _booking(),
+        confirmation: _confirmation(),
+        payment: _payment('PENDING', url: 'https://pay.example/checkout/p1'),
+      ),
+    );
+    expect(find.text('Waiting for payment'), findsOneWidget);
+
+    // The customer pays; the app is reopened by the deep link, replacing the whole stack.
+    h.paymentsApi.existing = _payment('SUCCEEDED');
+    h.bookingApi.status = 'CONFIRMED';
+    h.router.go('/return');
+    await tester.pumpAndSettle();
+
+    expect(find.text('CONFIRMED PAGE CONFIRMED'), findsOneWidget);
   });
 }

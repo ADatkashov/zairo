@@ -58,6 +58,7 @@ class PlatformInsightsApiTests {
         UUID providerId = UUID.fromString(restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
                 new HttpEntity<>(providerRequest, TestAuth.authHeaders(owner.accessToken())), Map.class).getBody()
                 .get("id").toString());
+        TestAuth.requireFullPayment(restTemplate, owner, providerId);
         var serviceRequest = new CreateServiceRequest("Dashboard Service", 30, new BigDecimal("15.00"), "USD");
         UUID serviceId = UUID.fromString(restTemplate.exchange("/api/v1/providers/" + providerId + "/services",
                 HttpMethod.POST, new HttpEntity<>(serviceRequest, TestAuth.authHeaders(owner.accessToken())),
