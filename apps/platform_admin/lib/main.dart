@@ -9,6 +9,7 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(
     ProviderScope(
+      retry: appProviderRetry,
       overrides: [networkConfigProvider.overrideWithValue(platformNetworkConfig)],
       child: const PlatformAdminApp(),
     ),
