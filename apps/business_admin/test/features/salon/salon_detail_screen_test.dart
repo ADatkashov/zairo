@@ -432,6 +432,11 @@ class _FakeStaffAdminApi extends StaffAdminApi {
   }
 }
 
+Future<void> _openTab(WidgetTester tester, String label) async {
+  await tester.tap(find.widgetWithText(Tab, label));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   testWidgets('shows services and adding one calls the API and refreshes the list', (tester) async {
     final fakeApi = _FakeSalonAdminApi();
@@ -451,6 +456,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Services');
 
     expect(find.text('No active services.'), findsOneWidget);
 
@@ -495,6 +501,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Services');
 
     // Tooltip 'Edit', not the icon, to disambiguate from the AppBar's
     // 'Edit business' action which uses the same Icons.edit_outlined.
@@ -551,6 +558,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Services');
 
     expect(find.text('Haircut'), findsOneWidget);
     await tester.tap(find.byIcon(Icons.delete_outline));
@@ -596,6 +604,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Bookings');
 
     expect(find.text('Mark complete'), findsOneWidget);
 
@@ -671,6 +680,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Services');
 
     expect(find.text('No active services.'), findsOneWidget);
     expect(find.text('Haircut'), findsNothing);
@@ -716,6 +726,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Team');
 
     expect(find.text('No active masters.'), findsOneWidget);
 
@@ -752,6 +763,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Services');
 
     await tester.tap(find.widgetWithText(TextButton, 'Recurring schedule'));
     await tester.pumpAndSettle();
@@ -795,6 +807,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Team');
 
     // No Masters section for an auto-vertical workshop.
     expect(find.text('Masters'), findsNothing);
@@ -843,6 +856,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Team');
 
     expect(find.text('No active mechanics.'), findsOneWidget);
 
@@ -882,6 +896,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Team');
 
     // No Masters/Mechanics/Cleaners section for a category without its own
     // dedicated staff module — it falls back to the generic Staff section.
@@ -933,6 +948,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Team');
 
     expect(find.text('No active staff.'), findsOneWidget);
 
@@ -981,7 +997,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Overview'), findsOneWidget);
+    // The tab label and the metrics section header share the same word.
+    expect(find.text('Overview'), findsNWidgets(2));
     expect(find.text('10'), findsOneWidget);
     expect(find.text('7'), findsOneWidget);
     expect(find.text('30%'), findsOneWidget);
@@ -1012,6 +1029,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openTab(tester, 'Settings');
 
     // All three options are visible, and the stored 10% shows as a deposit.
     final noPrepayment = find.text('No prepayment');

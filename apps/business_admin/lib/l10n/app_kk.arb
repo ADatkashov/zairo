@@ -1012,5 +1012,10 @@
   "paymentRemainingInfo": "Қызмет көрсету күні төленеді",
   "bookingSettingsTitle": "Брондау параметрлері",
   "depositPercentageLabel": "Депозит пайызы (%)",
-  "depositPercentageSaved": "Депозит пайызы жаңартылды"
+  "depositPercentageSaved": "Депозит пайызы жаңартылды",
+  "salonTabOverview": "Шолу",
+  "salonTabServices": "Қызметтер",
+  "salonTabTeam": "Команда",
+  "salonTabBookings": "Жазылулар",
+  "salonTabSettings": "Баптаулар"
 }
