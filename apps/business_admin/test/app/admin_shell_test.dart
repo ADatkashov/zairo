@@ -107,7 +107,7 @@ void main() {
     await pumpAdminApp(tester, overrides: _ownerOverrides());
 
     expect(find.byType(AdminSidebar), findsNothing);
-    for (final label in ['Dashboard', 'Messages', 'Campaign Center', 'Loyalty', 'More']) {
+    for (final label in ['Dashboard', 'Messages', 'Campaigns', 'Loyalty', 'More']) {
       expect(find.text(label), findsWidgets, reason: label);
     }
     // The six unlabeled shortcut icons are gone; only log out is left.

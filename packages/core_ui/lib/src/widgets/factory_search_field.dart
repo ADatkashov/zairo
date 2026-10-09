@@ -3,6 +3,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../theme/factory_colors.dart';
 import '../theme/factory_radius.dart';
+import '../util/factory_strings.dart';
 import 'factory_icon_button.dart';
 
 /// The entry point into Search & Discovery — distinct from
@@ -17,11 +18,11 @@ class FactorySearchField extends StatelessWidget {
     this.onChanged,
     this.onSubmitted,
     this.onFilterTap,
-    this.filterSemanticLabel = 'Filters',
+    this.filterSemanticLabel,
     this.filterActive = false,
     this.autofocus = false,
     this.onCleared,
-    this.clearSemanticLabel = 'Clear',
+    this.clearSemanticLabel,
   });
 
   final TextEditingController? controller;
@@ -34,7 +35,7 @@ class FactorySearchField extends StatelessWidget {
   /// than English should pass their own translated string here rather than
   /// relying on the English default (same convention as
   /// FactoryProviderCard's favorite labels).
-  final String filterSemanticLabel;
+  final String? filterSemanticLabel;
 
   /// Tints the filter button the same way a selected [FactoryChip] reads —
   /// set this when [onFilterTap] leads to a filter set that isn't the
@@ -50,7 +51,7 @@ class FactorySearchField extends StatelessWidget {
   final VoidCallback? onCleared;
 
   /// Same localization convention as [filterSemanticLabel].
-  final String clearSemanticLabel;
+  final String? clearSemanticLabel;
 
   Widget? _suffix(BuildContext context) {
     final filter = onFilterTap == null
@@ -58,7 +59,7 @@ class FactorySearchField extends StatelessWidget {
         : FactoryIconButton(
             icon: Symbols.tune_rounded,
             onPressed: onFilterTap,
-            semanticLabel: filterSemanticLabel,
+            semanticLabel: filterSemanticLabel ?? FactoryStrings.of(context).filters,
             isActive: filterActive,
           );
     final controller = this.controller;
@@ -75,7 +76,7 @@ class FactorySearchField extends StatelessWidget {
                   controller.clear();
                   onCleared!();
                 },
-                semanticLabel: clearSemanticLabel,
+                semanticLabel: clearSemanticLabel ?? FactoryStrings.of(context).clear,
               );
         if (clear == null) return filter ?? const SizedBox.shrink();
         if (filter == null) return clear;

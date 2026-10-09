@@ -49,13 +49,9 @@
   "errorAuthInvalidCredentials": "Invalid email or password.",
   "@errorAuthInvalidCredentials": {"description": "401 from POST /auth/login."},
 
-  "errorAuthGeneric": "Something went wrong: {error}",
+  "errorAuthGeneric": "Something went wrong",
   "@errorAuthGeneric": {
-    "description": "Unexpected (non-AuthException) failure during login/register.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Unexpected (non-AuthException) failure during login/register."},
 
   "logOutTooltip": "Log out",
   "@logOutTooltip": {"description": "Log-out icon button tooltip, shown on Dashboard and Moderation."},
@@ -150,13 +146,9 @@
   "createBusinessButton": "Create business",
   "@createBusinessButton": {"description": "Zero-businesses form's submit button."},
 
-  "errorCreateBusinessFailed": "Failed to create business: {error}",
+  "errorCreateBusinessFailed": "Failed to create business",
   "@errorCreateBusinessFailed": {
-    "description": "Zero-businesses form's error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Zero-businesses form's error state."},
 
   "validationBusinessNameRequired": "Enter a business name",
   "@validationBusinessNameRequired": {"description": "Business name validation error."},
@@ -191,13 +183,9 @@
   "validationLatLngInvalid": "Latitude/longitude must be valid numbers",
   "@validationLatLngInvalid": {"description": "Edit-business dialog's coordinate validation error."},
 
-  "errorSaveBusinessFailed": "Failed to save business: {error}",
+  "errorSaveBusinessFailed": "Failed to save business",
   "@errorSaveBusinessFailed": {
-    "description": "Edit-business dialog's error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Edit-business dialog's error state."},
 
   "dashboardMetricsSectionTitle": "Overview",
   "@dashboardMetricsSectionTitle": {"description": "Salon detail screen's dashboard-metrics section header."},
@@ -277,13 +265,9 @@
     "placeholders": {"count": {"type": "int"}}
   },
 
-  "errorDashboardLoadFailed": "Failed to load dashboard: {error}",
+  "errorDashboardLoadFailed": "Failed to load dashboard",
   "@errorDashboardLoadFailed": {
-    "description": "Dashboard section's error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Dashboard section's error state."},
 
   "businessAnalyticsTooltip": "Business analytics",
   "@businessAnalyticsTooltip": {"description": "Salon detail screen's AppBar icon button opening the Business Intelligence Dashboard."},
@@ -481,13 +465,9 @@
     }
   },
 
-  "errorAnalyticsLoadFailed": "Failed to load analytics: {error}",
+  "errorAnalyticsLoadFailed": "Failed to load analytics",
   "@errorAnalyticsLoadFailed": {
-    "description": "Business Intelligence Dashboard section's error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Business Intelligence Dashboard section's error state."},
 
   "smartFillCampaignsScreenTitle": "Smart Fill Campaigns",
   "@smartFillCampaignsScreenTitle": {"description": "Action Center drill-down screen's AppBar title."},
@@ -546,13 +526,9 @@
   "noActiveServices": "No active services.",
   "@noActiveServices": {"description": "Services section empty state, active only."},
 
-  "errorServicesLoadFailed": "Failed to load services: {error}",
+  "errorServicesLoadFailed": "Failed to load services",
   "@errorServicesLoadFailed": {
-    "description": "Services section error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Services section error state."},
 
   "removedBadge": "Removed",
   "@removedBadge": {"description": "Badge on a deactivated service/master row."},
@@ -572,13 +548,9 @@
   "noSlotsYet": "No time slots yet.",
   "@noSlotsYet": {"description": "Availability section empty state."},
 
-  "errorAvailabilityLoadFailed": "Failed to load availability: {error}",
+  "errorAvailabilityLoadFailed": "Failed to load availability",
   "@errorAvailabilityLoadFailed": {
-    "description": "Availability section error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Availability section error state."},
 
   "mastersSectionTitle": "Masters",
   "@mastersSectionTitle": {"description": "Salon detail screen's masters section header."},
@@ -589,13 +561,9 @@
   "noActiveMasters": "No active masters.",
   "@noActiveMasters": {"description": "Masters section empty state, active only."},
 
-  "errorMastersLoadFailed": "Failed to load masters: {error}",
+  "errorMastersLoadFailed": "Failed to load masters",
   "@errorMastersLoadFailed": {
-    "description": "Masters section error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Masters section error state."},
 
   "manageServicesTooltip": "Services this master offers",
   "@manageServicesTooltip": {"description": "Master row's manage-services icon button tooltip and dialog title."},
@@ -615,13 +583,9 @@
   "noActiveMechanics": "No active mechanics.",
   "@noActiveMechanics": {"description": "Mechanics section empty state, active only."},
 
-  "errorMechanicsLoadFailed": "Failed to load mechanics: {error}",
+  "errorMechanicsLoadFailed": "Failed to load mechanics",
   "@errorMechanicsLoadFailed": {
-    "description": "Mechanics section error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Mechanics section error state."},
 
   "removeMechanicTooltip": "Remove mechanic",
   "@removeMechanicTooltip": {"description": "Mechanic row's remove icon button tooltip."},
@@ -641,13 +605,9 @@
   "noActiveCleaners": "No active cleaners.",
   "@noActiveCleaners": {"description": "Cleaners section empty state, active only."},
 
-  "errorCleanersLoadFailed": "Failed to load cleaners: {error}",
+  "errorCleanersLoadFailed": "Failed to load cleaners",
   "@errorCleanersLoadFailed": {
-    "description": "Cleaners section error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Cleaners section error state."},
 
   "removeCleanerTooltip": "Remove cleaner",
   "@removeCleanerTooltip": {"description": "Cleaner row's remove icon button tooltip."},
@@ -667,13 +627,9 @@
   "noActiveStaff": "No active staff.",
   "@noActiveStaff": {"description": "Staff section empty state, active only."},
 
-  "errorStaffLoadFailed": "Failed to load staff: {error}",
+  "errorStaffLoadFailed": "Failed to load staff",
   "@errorStaffLoadFailed": {
-    "description": "Staff section error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Staff section error state."},
 
   "removeStaffTooltip": "Remove staff member",
   "@removeStaffTooltip": {"description": "Staff row's remove icon button tooltip."},
@@ -690,13 +646,9 @@
   "noBookingsYet": "No bookings yet.",
   "@noBookingsYet": {"description": "Bookings section empty state."},
 
-  "errorBookingsLoadFailed": "Failed to load bookings: {error}",
+  "errorBookingsLoadFailed": "Failed to load bookings",
   "@errorBookingsLoadFailed": {
-    "description": "Bookings section error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Bookings section error state."},
 
   "markCompleteButton": "Mark complete",
   "@markCompleteButton": {"description": "Button on a CONFIRMED booking row."},
@@ -725,13 +677,9 @@
   "noPayoutsYet": "No settlements yet — payouts appear once a booking is marked complete.",
   "@noPayoutsYet": {"description": "Payouts section empty state."},
 
-  "errorPayoutsLoadFailed": "Failed to load settlements: {error}",
+  "errorPayoutsLoadFailed": "Failed to load settlements",
   "@errorPayoutsLoadFailed": {
-    "description": "Payouts section error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Payouts section error state."},
 
   "payoutStatusPayable": "Payable",
   "payoutStatusProcessing": "Processing",
@@ -769,21 +717,13 @@
   "validationServiceFields": "Enter a title, a positive duration, and a valid price",
   "@validationServiceFields": {"description": "Add/edit service dialog's validation error."},
 
-  "errorServiceSaveFailed": "Failed to save service: {error}",
+  "errorServiceSaveFailed": "Failed to save service",
   "@errorServiceSaveFailed": {
-    "description": "Edit-service dialog's error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Edit-service dialog's error state."},
 
-  "errorServiceAddFailed": "Failed to add service: {error}",
+  "errorServiceAddFailed": "Failed to add service",
   "@errorServiceAddFailed": {
-    "description": "Add-service dialog's error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Add-service dialog's error state."},
 
 
   "pickDateLabel": "Pick a date",
@@ -795,13 +735,9 @@
   "validationSlotFields": "Pick a date, a start time, and a positive duration",
   "@validationSlotFields": {"description": "Add-slot dialog's validation error."},
 
-  "errorAddSlotFailed": "Failed to add slot: {error}",
+  "errorAddSlotFailed": "Failed to add slot",
   "@errorAddSlotFailed": {
-    "description": "Add-slot dialog's error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Add-slot dialog's error state."},
 
   "recurringScheduleButton": "Recurring schedule",
   "@recurringScheduleButton": {"description": "Button that opens the recurring-schedule dialog."},
@@ -845,13 +781,9 @@
     }
   },
 
-  "errorRecurringScheduleFailed": "Failed to generate schedule: {error}",
+  "errorRecurringScheduleFailed": "Failed to generate schedule",
   "@errorRecurringScheduleFailed": {
-    "description": "Recurring-schedule dialog's error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Recurring-schedule dialog's error state."},
 
   "weekdayMon": "Mon",
   "@weekdayMon": {"description": "Short Monday label for the recurring-schedule day-of-week chips."},
@@ -880,13 +812,9 @@
   "validationMasterNameRequired": "Enter a name",
   "@validationMasterNameRequired": {"description": "Add-master dialog's validation error."},
 
-  "errorAddMasterFailed": "Failed to add master: {error}",
+  "errorAddMasterFailed": "Failed to add master",
   "@errorAddMasterFailed": {
-    "description": "Add-master dialog's error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Add-master dialog's error state."},
 
   "addMechanicDialogTitle": "Add a mechanic",
   "@addMechanicDialogTitle": {"description": "Add-mechanic dialog title."},
@@ -897,13 +825,9 @@
   "validationMechanicNameRequired": "Enter a name",
   "@validationMechanicNameRequired": {"description": "Add-mechanic dialog's validation error."},
 
-  "errorAddMechanicFailed": "Failed to add mechanic: {error}",
+  "errorAddMechanicFailed": "Failed to add mechanic",
   "@errorAddMechanicFailed": {
-    "description": "Add-mechanic dialog's error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Add-mechanic dialog's error state."},
 
   "addCleanerDialogTitle": "Add a cleaner",
   "@addCleanerDialogTitle": {"description": "Add-cleaner dialog title."},
@@ -914,13 +838,9 @@
   "validationCleanerNameRequired": "Enter a name",
   "@validationCleanerNameRequired": {"description": "Add-cleaner dialog's validation error."},
 
-  "errorAddCleanerFailed": "Failed to add cleaner: {error}",
+  "errorAddCleanerFailed": "Failed to add cleaner",
   "@errorAddCleanerFailed": {
-    "description": "Add-cleaner dialog's error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Add-cleaner dialog's error state."},
 
   "addStaffDialogTitle": "Add a staff member",
   "@addStaffDialogTitle": {"description": "Add-staff dialog title."},
@@ -931,13 +851,9 @@
   "validationStaffNameRequired": "Enter a name",
   "@validationStaffNameRequired": {"description": "Add-staff dialog's validation error."},
 
-  "errorAddStaffFailed": "Failed to add staff member: {error}",
+  "errorAddStaffFailed": "Failed to add staff member",
   "@errorAddStaffFailed": {
-    "description": "Add-staff dialog's error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Add-staff dialog's error state."},
 
   "addPortfolioDialogTitle": "Add a portfolio photo",
   "@addPortfolioDialogTitle": {"description": "Add-portfolio-item dialog title."},
@@ -954,21 +870,13 @@
   "validationChoosePhoto": "Choose a photo first",
   "@validationChoosePhoto": {"description": "Add-portfolio-item dialog's validation error."},
 
-  "errorReadFileFailed": "Failed to read file: {error}",
+  "errorReadFileFailed": "Failed to read file",
   "@errorReadFileFailed": {
-    "description": "Add-portfolio-item dialog's file-picker error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Add-portfolio-item dialog's file-picker error state."},
 
-  "errorAddPhotoFailed": "Failed to add photo: {error}",
+  "errorAddPhotoFailed": "Failed to add photo",
   "@errorAddPhotoFailed": {
-    "description": "Add-portfolio-item dialog's submit error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Add-portfolio-item dialog's submit error state."},
 
   "manageServicesDialogTitle": "Services this master offers",
   "@manageServicesDialogTitle": {"description": "Manage-master-services dialog title (same text as the row's tooltip)."},
@@ -1133,13 +1041,9 @@
   "changeAvatarRemoveButton": "Remove photo",
   "@changeAvatarRemoveButton": {"description": "Change-avatar dialog's remove-current-photo button, shown only when an avatar is already set."},
 
-  "errorAvatarUpdateFailed": "Failed to update avatar: {error}",
+  "errorAvatarUpdateFailed": "Failed to update avatar",
   "@errorAvatarUpdateFailed": {
-    "description": "Change-avatar dialog's error when the upload/save request fails.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Change-avatar dialog's error when the upload/save request fails."},
 
   "changePhotoTooltip": "Change photo",
   "@changePhotoTooltip": {"description": "Icon button tooltip on a master/mechanic/cleaner/staff row that opens the change-photo dialog."},
@@ -1150,13 +1054,9 @@
   "removePhotoButton": "Remove photo",
   "@removePhotoButton": {"description": "Change-photo dialog's remove-current-photo button, shown only when a photo is already set."},
 
-  "errorUpdatePhotoFailed": "Failed to update photo: {error}",
+  "errorUpdatePhotoFailed": "Failed to update photo",
   "@errorUpdatePhotoFailed": {
-    "description": "Change-photo dialog's error when the upload/save request fails.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Change-photo dialog's error when the upload/save request fails."},
 
   "imagePickerCameraLabel": "Camera",
   "@imagePickerCameraLabel": {"description": "Photo-source bottom sheet option: take a new photo."},
@@ -1164,7 +1064,7 @@
   "imagePickerGalleryLabel": "Gallery",
   "@imagePickerGalleryLabel": {"description": "Photo-source bottom sheet option: pick an existing photo."},
 
-  "campaignCenterNavLabel": "Campaign Center",
+  "campaignCenterNavLabel": "Campaigns",
   "@campaignCenterNavLabel": {"description": "Sidebar/AppBar nav label for the Campaign Center top-level destination."},
 
   "campaignCenterScreenTitle": "Campaign Center",
@@ -1224,56 +1124,32 @@
   "campaignListLoadMore": "Load more",
   "@campaignListLoadMore": {"description": "Campaign Center list's load-more-pages button."},
 
-  "errorCampaignsLoadFailed": "Couldn't load campaigns: {error}",
+  "errorCampaignsLoadFailed": "Couldn't load campaigns",
   "@errorCampaignsLoadFailed": {
-    "description": "Campaign Center list's error state message.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Campaign Center list's error state message."},
 
-  "errorCampaignStatsLoadFailed": "Couldn't load campaign stats: {error}",
+  "errorCampaignStatsLoadFailed": "Couldn't load campaign stats",
   "@errorCampaignStatsLoadFailed": {
-    "description": "Campaign Center KPI row's error state message.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Campaign Center KPI row's error state message."},
 
-  "errorCampaignDetailLoadFailed": "Couldn't load this campaign: {error}",
+  "errorCampaignDetailLoadFailed": "Couldn't load this campaign",
   "@errorCampaignDetailLoadFailed": {
-    "description": "CampaignDetailScreen's error state message.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "CampaignDetailScreen's error state message."},
 
-  "errorCampaignTimelineLoadFailed": "Couldn't load the timeline: {error}",
+  "errorCampaignTimelineLoadFailed": "Couldn't load the timeline",
   "@errorCampaignTimelineLoadFailed": {
-    "description": "CampaignDetailScreen's timeline section error state message.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "CampaignDetailScreen's timeline section error state message."},
 
-  "errorSmartActionsLoadFailed": "Couldn't load smart actions: {error}",
+  "errorSmartActionsLoadFailed": "Couldn't load smart actions",
   "@errorSmartActionsLoadFailed": {
-    "description": "Smart Action Center section's error state message.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Smart Action Center section's error state message."},
 
   "errorCampaignActionConflict": "That action no longer applies — the campaign's status was refreshed.",
   "@errorCampaignActionConflict": {"description": "Snackbar shown when a pause/resume/cancel/retry call returns 409 Conflict."},
 
-  "errorCampaignActionFailed": "Couldn't complete that action: {error}",
+  "errorCampaignActionFailed": "Couldn't complete that action",
   "@errorCampaignActionFailed": {
-    "description": "Snackbar shown when a pause/resume/cancel/retry call fails for any other reason.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Snackbar shown when a pause/resume/cancel/retry call fails for any other reason."},
 
   "campaignTypeSmartFill": "Smart Fill",
   "@campaignTypeSmartFill": {"description": "CampaignType.smartFill's display label."},
@@ -1526,55 +1402,27 @@
   "loyaltyTabTiers": "Tiers",
   "@loyaltyTabTiers": {"description": "Loyalty tab label."},
 
-  "errorLoyaltySettingsLoadFailed": "Couldn't load loyalty settings: {error}",
+  "errorLoyaltySettingsLoadFailed": "Couldn't load loyalty settings",
   "@errorLoyaltySettingsLoadFailed": {
-    "description": "LoyaltySettingsScreen's error state message.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
-  "errorLoyaltyOverviewLoadFailed": "Couldn't load the loyalty overview: {error}",
+    "description": "LoyaltySettingsScreen's error state message."},
+  "errorLoyaltyOverviewLoadFailed": "Couldn't load the loyalty overview",
   "@errorLoyaltyOverviewLoadFailed": {
-    "description": "LoyaltyOverviewScreen's error state message.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
-  "errorLoyaltyRewardsLoadFailed": "Couldn't load rewards: {error}",
+    "description": "LoyaltyOverviewScreen's error state message."},
+  "errorLoyaltyRewardsLoadFailed": "Couldn't load rewards",
   "@errorLoyaltyRewardsLoadFailed": {
-    "description": "LoyaltyRewardsScreen's error state message.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
-  "errorLoyaltyCustomersLoadFailed": "Couldn't load the loyalty roster: {error}",
+    "description": "LoyaltyRewardsScreen's error state message."},
+  "errorLoyaltyCustomersLoadFailed": "Couldn't load the loyalty roster",
   "@errorLoyaltyCustomersLoadFailed": {
-    "description": "LoyaltyCustomersScreen/LoyaltyCustomerDetailScreen's error state message.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
-  "errorLoyaltyRedemptionsLoadFailed": "Couldn't load redemptions: {error}",
+    "description": "LoyaltyCustomersScreen/LoyaltyCustomerDetailScreen's error state message."},
+  "errorLoyaltyRedemptionsLoadFailed": "Couldn't load redemptions",
   "@errorLoyaltyRedemptionsLoadFailed": {
-    "description": "LoyaltyRedemptionsScreen's error state message.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
-  "errorLoyaltyMilestonesLoadFailed": "Couldn't load milestones: {error}",
+    "description": "LoyaltyRedemptionsScreen's error state message."},
+  "errorLoyaltyMilestonesLoadFailed": "Couldn't load milestones",
   "@errorLoyaltyMilestonesLoadFailed": {
-    "description": "LoyaltyMilestonesScreen's error state message.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
-  "errorLoyaltyTiersLoadFailed": "Couldn't load tiers: {error}",
+    "description": "LoyaltyMilestonesScreen's error state message."},
+  "errorLoyaltyTiersLoadFailed": "Couldn't load tiers",
   "@errorLoyaltyTiersLoadFailed": {
-    "description": "LoyaltyTiersScreen's error state message.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "LoyaltyTiersScreen's error state message."},
   "errorLoyaltyValidationFailed": "Some of these values aren't valid. Please check the form.",
   "@errorLoyaltyValidationFailed": {"description": "LoyaltyAdminException's generic 400 fallback when the backend sent no message."},
   "errorLoyaltyForbidden": "You don't have access to this business's loyalty program.",
@@ -1583,13 +1431,9 @@
   "@errorLoyaltyNotFound": {"description": "LoyaltyAdminException's 404 message."},
   "errorLoyaltyConflict": "That action can't be completed right now.",
   "@errorLoyaltyConflict": {"description": "LoyaltyAdminException's generic 409 fallback when the backend sent no message."},
-  "errorLoyaltyActionFailed": "Something went wrong: {error}",
+  "errorLoyaltyActionFailed": "Something went wrong",
   "@errorLoyaltyActionFailed": {
-    "description": "LoyaltyAdminException's generic fallback for an unexpected status code.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "LoyaltyAdminException's generic fallback for an unexpected status code."},
 
   "loyaltyOverviewTotalMembers": "Total members",
   "@loyaltyOverviewTotalMembers": {"description": "Loyalty overview tile label."},
@@ -1992,11 +1836,9 @@
   "@reviewsEmptyTitle": {"description": "ReviewsScreen's empty state title."},
   "reviewsEmptyMessage": "Reviews from completed bookings will show up here.",
   "@reviewsEmptyMessage": {"description": "ReviewsScreen's empty state message."},
-  "errorReviewsLoadFailed": "Couldn't load reviews: {error}",
+  "errorReviewsLoadFailed": "Couldn't load reviews",
   "@errorReviewsLoadFailed": {
-    "description": "ReviewsScreen's error state message.",
-    "placeholders": {"error": {"type": "String"}}
-  },
+    "description": "ReviewsScreen's error state message."},
   "reviewsLoadMore": "Load more",
   "@reviewsLoadMore": {"description": "ReviewsScreen's pagination button."},
   "reviewLifecycleReceived": "Received",
@@ -2030,11 +1872,9 @@
   "@errorReviewsForbidden": {"description": "ReviewsException's message for a 403 response."},
   "errorReviewsNotFound": "This review could not be found.",
   "@errorReviewsNotFound": {"description": "ReviewsException's message for a 404 response."},
-  "errorReviewsActionFailed": "Something went wrong: {error}",
+  "errorReviewsActionFailed": "Something went wrong",
   "@errorReviewsActionFailed": {
-    "description": "ReviewsException's message for any other response.",
-    "placeholders": {"error": {"type": "String"}}
-  },
+    "description": "ReviewsException's message for any other response."},
 
   "automationCenterNavLabel": "Automation Center",
   "@automationCenterNavLabel": {"description": "Sidebar/AppBar nav label for AutomationCenterScreen."},
@@ -2044,11 +1884,9 @@
   "@automationCenterNoBusinesses": {"description": "AutomationCenterScreen's empty state when the owner has no businesses yet."},
   "automationCenterIntro": "Turn Smart Fill, Rebook and Reactivation on or off, tune how they decide who to nudge, and set when they're allowed to send anything at all.",
   "@automationCenterIntro": {"description": "AutomationCenterScreen's intro paragraph."},
-  "errorAutomationSettingsLoadFailed": "Couldn't load automation settings: {error}",
+  "errorAutomationSettingsLoadFailed": "Couldn't load automation settings",
   "@errorAutomationSettingsLoadFailed": {
-    "description": "AutomationCenterScreen's error state message.",
-    "placeholders": {"error": {"type": "String"}}
-  },
+    "description": "AutomationCenterScreen's error state message."},
   "automationSectionSmartFill": "Smart Fill",
   "@automationSectionSmartFill": {"description": "AutomationSettingsForm section header."},
   "automationSmartFillEnableTitle": "Smart Fill",
@@ -2109,11 +1947,9 @@
   "@errorAutomationValidationFailed": {"description": "AutomationException's message for a 400 response with no server message."},
   "errorAutomationForbidden": "You don't have access to this business's automation settings.",
   "@errorAutomationForbidden": {"description": "AutomationException's message for a 403 response."},
-  "errorAutomationActionFailed": "Something went wrong: {error}",
+  "errorAutomationActionFailed": "Something went wrong",
   "@errorAutomationActionFailed": {
-    "description": "AutomationException's message for any other response.",
-    "placeholders": {"error": {"type": "String"}}
-  },
+    "description": "AutomationException's message for any other response."},
 
   "messagingNavLabel": "Messages",
   "@messagingNavLabel": {"description": "Sidebar/AppBar nav label for the business inbox top-level destination."},
@@ -2133,29 +1969,17 @@
   "messagingUnknownCustomer": "Customer",
   "@messagingUnknownCustomer": {"description": "Fallback shown in place of a conversation's customerDisplayName when the backend has none."},
 
-  "errorConversationsLoadFailed": "Couldn't load conversations: {error}",
+  "errorConversationsLoadFailed": "Couldn't load conversations",
   "@errorConversationsLoadFailed": {
-    "description": "BusinessInboxScreen's error state message.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "BusinessInboxScreen's error state message."},
 
-  "errorMessagesLoadFailed": "Couldn't load messages: {error}",
+  "errorMessagesLoadFailed": "Couldn't load messages",
   "@errorMessagesLoadFailed": {
-    "description": "BusinessChatThreadScreen's error state message.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "BusinessChatThreadScreen's error state message."},
 
-  "errorMessageSendFailed": "Couldn't send message: {error}",
+  "errorMessageSendFailed": "Couldn't send message",
   "@errorMessageSendFailed": {
-    "description": "Snackbar shown when replying in a conversation fails.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Snackbar shown when replying in a conversation fails."},
 
   "chatEmptyThread": "No messages yet. Say hello!",
   "@chatEmptyThread": {"description": "BusinessChatThreadScreen's empty state before the first message."},
@@ -2210,6 +2034,8 @@
   "errorLoadingCities": "Error loading cities",
   "@errorLoadingCities": {"description": "Error message shown when cities fail to load."},
 
+  "slotStatusBooked": "Booked",
+  "@slotStatusBooked": {"description": "Suffix on a slot chip in the business detail schedule once the slot is booked (an open slot shows only its time)."},
   "slotsDaySummary": "{open} open · {booked} booked",
   "@slotsDaySummary": {"description": "Per-day summary of open and booked time slots.", "placeholders": {"open": {"type": "int"}, "booked": {"type": "int"}}},
 
@@ -2360,8 +2186,8 @@
   "@loyaltyBirthdaysBonusAwarded": {"description": "Loyalty birthdays: loyaltyBirthdaysBonusAwarded", "placeholders": {"points": {"type": "int"}}},
   "loyaltyBirthdaysBonusPending": "+{points} pts on the day",
   "@loyaltyBirthdaysBonusPending": {"description": "Loyalty birthdays: loyaltyBirthdaysBonusPending", "placeholders": {"points": {"type": "int"}}},
-  "errorLoyaltyBirthdaysLoadFailed": "Couldn't load birthdays: {error}",
-  "@errorLoyaltyBirthdaysLoadFailed": {"description": "Loyalty birthdays: errorLoyaltyBirthdaysLoadFailed", "placeholders": {"error": {"type": "String"}}},
+  "errorLoyaltyBirthdaysLoadFailed": "Couldn't load birthdays",
+  "@errorLoyaltyBirthdaysLoadFailed": {"description": "Loyalty birthdays: errorLoyaltyBirthdaysLoadFailed"},
   "biometricEnrollEnable": "Enable",
   "@biometricEnrollEnable": {"description": "Accept button on the enable-biometric dialog."},
   "biometricEnrollMessage": "Use Face ID or your fingerprint to unlock ZAIRO next time, instead of logging in again.",
@@ -2451,13 +2277,9 @@
   "validationPickCatalogService": "Pick a service from the list, a positive duration, and a valid price",
   "@validationPickCatalogService": {"description": "Add service dialog validation error when using the catalog."},
 
-  "errorCatalogServicesLoad": "Could not load the service list: {error}",
+  "errorCatalogServicesLoad": "Could not load the service list",
   "@errorCatalogServicesLoad": {
-    "description": "Add service dialog: catalog list failed to load.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Add service dialog: catalog list failed to load."},
 
   "masterPhoneLabel": "Phone of a registered user",
   "@masterPhoneLabel": {"description": "Add-master dialog."},
@@ -2661,5 +2483,47 @@
   "noShowCorrectionFailed": "Couldn't change it. Please try again.",
   "@noShowCorrectionFailed": {"description": "noShowCorrectionFailed"},
   "needsAttentionWorkerNotAccepted": "{worker} hasn't accepted this yet",
-  "@needsAttentionWorkerNotAccepted": {"description": "needsAttentionWorkerNotAccepted", "placeholders": {"worker": {"type": "String", "example": "Aigerim"}}}
+  "@needsAttentionWorkerNotAccepted": {"description": "needsAttentionWorkerNotAccepted", "placeholders": {"worker": {"type": "String", "example": "Aigerim"}}},
+  "billingWaitingForPayment": "Waiting for payment confirmation…",
+  "@billingWaitingForPayment": {"description": "billingWaitingForPayment"},
+  "billingWaitingCheckNow": "Check now",
+  "@billingWaitingCheckNow": {"description": "billingWaitingCheckNow"},
+  "billingUpgradeConfirmed": "Payment received — you're on PRO.",
+  "@billingUpgradeConfirmed": {"description": "billingUpgradeConfirmed"},
+  "billingCheckoutOpenFailed": "Couldn't open the payment page. Please try again.",
+  "@billingCheckoutOpenFailed": {"description": "billingCheckoutOpenFailed"},
+  "billingPaymentMethodTitle": "Payment method",
+  "@billingPaymentMethodTitle": {"description": "billingPaymentMethodTitle"},
+  "billingCardLabel": "{brand} •••• {last4}",
+  "@billingCardLabel": {"description": "billingCardLabel", "placeholders": {"brand": {"type": "String"}, "last4": {"type": "String"}}},
+  "billingCardGenericBrand": "Card",
+  "@billingCardGenericBrand": {"description": "billingCardGenericBrand"},
+  "billingAutoRenewOn": "Renews automatically on {date}.",
+  "@billingAutoRenewOn": {"description": "billingAutoRenewOn", "placeholders": {"date": {"type": "String"}}},
+  "billingManualRenewal": "Each renewal is paid on the payment page — we'll ask you when it's due.",
+  "@billingManualRenewal": {"description": "billingManualRenewal"},
+  "billingNoSavedCard": "No saved card. You'll be asked to pay when your plan renews.",
+  "@billingNoSavedCard": {"description": "billingNoSavedCard"},
+  "billingRemoveCardButton": "Remove card",
+  "@billingRemoveCardButton": {"description": "billingRemoveCardButton"},
+  "billingRemoveCardTitle": "Remove this card?",
+  "@billingRemoveCardTitle": {"description": "billingRemoveCardTitle"},
+  "billingRemoveCardBody": "We'll stop using it. PRO continues until {date}; after that you'll pay the renewal on the payment page.",
+  "@billingRemoveCardBody": {"description": "billingRemoveCardBody", "placeholders": {"date": {"type": "String"}}},
+  "billingRemoveCardConfirm": "Remove",
+  "@billingRemoveCardConfirm": {"description": "billingRemoveCardConfirm"},
+  "billingRemoveCardKeep": "Keep card",
+  "@billingRemoveCardKeep": {"description": "billingRemoveCardKeep"},
+  "billingRemoveCardFailed": "Couldn't remove the card. Please try again.",
+  "@billingRemoveCardFailed": {"description": "billingRemoveCardFailed"},
+  "salonTabOverview": "Overview",
+  "@salonTabOverview": {"description": "Tab label on the business detail screen."},
+  "salonTabServices": "Services",
+  "@salonTabServices": {"description": "Tab label on the business detail screen."},
+  "salonTabTeam": "Team",
+  "@salonTabTeam": {"description": "Tab label on the business detail screen."},
+  "salonTabBookings": "Bookings",
+  "@salonTabBookings": {"description": "Tab label on the business detail screen."},
+  "salonTabSettings": "Settings",
+  "@salonTabSettings": {"description": "Tab label on the business detail screen."}
 }

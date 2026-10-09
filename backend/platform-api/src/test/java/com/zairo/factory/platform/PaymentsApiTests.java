@@ -58,6 +58,7 @@ class PaymentsApiTests {
         ResponseEntity<Map> providerResponse = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
                 new HttpEntity<>(providerRequest, TestAuth.authHeaders(owner.accessToken())), Map.class);
         UUID providerId = UUID.fromString(providerResponse.getBody().get("id").toString());
+        TestAuth.requireFullPayment(restTemplate, owner, providerId);
 
         var serviceRequest = new CreateServiceRequest("Pay Service", 30, new BigDecimal("35.00"), "USD");
         ResponseEntity<Map> serviceResponse = restTemplate.exchange("/api/v1/providers/" + providerId + "/services",
@@ -128,6 +129,7 @@ class PaymentsApiTests {
         ResponseEntity<Map> providerResponse = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
                 new HttpEntity<>(providerRequest, TestAuth.authHeaders(owner.accessToken())), Map.class);
         UUID providerId = UUID.fromString(providerResponse.getBody().get("id").toString());
+        TestAuth.requireFullPayment(restTemplate, owner, providerId);
 
         var serviceRequest = new CreateServiceRequest("Refund Service", 30, new BigDecimal("40.00"), "USD");
         ResponseEntity<Map> serviceResponse = restTemplate.exchange("/api/v1/providers/" + providerId + "/services",
@@ -186,6 +188,76 @@ class PaymentsApiTests {
         // Same payment id across the failed attempt and the successful retry —
         // this IS the idempotency key a real provider would rely on.
         assertThat(retry.getBody().get("id")).isEqualTo(paymentId.toString());
+    }
+
+    @Test
+    void payingAgainWhileACheckoutIsStillPendingReturnsThatSamePaymentInsteadOfStartingAnother() {
+        BookingForPayment bfp = createBookingForPayment("pending-", new BigDecimal("27.00"));
+        UUID bookingId = bfp.bookingId();
+        var customerAuth = new HttpEntity<>(null, TestAuth.authHeaders(bfp.customer().accessToken()));
+
+        failureController.pendingNextCharge = true;
+        int initiationsBefore = failureController.paymentInitiations.get();
+        ResponseEntity<Map> first = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.POST, customerAuth, Map.class);
+        assertThat(first.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(first.getBody().get("status")).isEqualTo("PENDING");
+        String checkoutUrl = first.getBody().get("checkoutUrl").toString();
+        assertThat(checkoutUrl).startsWith("https://pay.test/checkout/");
+
+        // A second tap on "Pay" (or the app resuming): same payment, same checkout, no new provider call.
+        ResponseEntity<Map> second = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.POST, customerAuth, Map.class);
+        assertThat(second.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(second.getBody().get("id")).isEqualTo(first.getBody().get("id"));
+        assertThat(second.getBody().get("status")).isEqualTo("PENDING");
+        assertThat(second.getBody().get("checkoutUrl")).isEqualTo(checkoutUrl);
+        assertThat(failureController.paymentInitiations.get()).isEqualTo(initiationsBefore + 1);
+
+        // And the booking still has exactly one payment to read back.
+        ResponseEntity<Map> read = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.GET, customerAuth, Map.class);
+        assertThat(read.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(read.getBody().get("id")).isEqualTo(first.getBody().get("id"));
+    }
+
+    @Test
+    void aBookingWithNothingDueOnlineIsConfirmedAtOnceAndHasNoPaymentToMake() {
+        String runId = UUID.randomUUID().toString();
+        Registered customer = TestAuth.registerCustomer(restTemplate, "free-customer-" + runId + "@example.com");
+        Registered owner = TestAuth.registerOwner(restTemplate, "free-owner-" + runId + "@example.com");
+        // A provider that takes no advance payment (the default) — deliberately NOT requireFullPayment.
+        var providerRequest = new CreateProviderRequest(owner.userId(), "Pay At Venue Salon " + runId, "beauty");
+        ResponseEntity<Map> providerResponse = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
+                new HttpEntity<>(providerRequest, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        UUID providerId = UUID.fromString(providerResponse.getBody().get("id").toString());
+        UUID serviceId = createService(owner, providerId, "Pay At Venue Service", new BigDecimal("40.00"));
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+
+        var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("40.00"));
+        ResponseEntity<Map> created = restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
+                new HttpEntity<>(bookingRequest, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(created.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        // Confirmed on creation: nothing to pay online, so nothing to wait for.
+        assertThat(created.getBody().get("status")).isEqualTo("CONFIRMED");
+        assertThat(((Number) created.getBody().get("depositAmount")).doubleValue()).isEqualTo(0.0);
+        UUID bookingId = UUID.fromString(created.getBody().get("id").toString());
+
+        // There is no payment to make, and the customer is not charged the full price online.
+        var customerAuth = new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken()));
+        ResponseEntity<Map> pay = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.POST, customerAuth, Map.class);
+        assertThat(pay.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        ResponseEntity<Map> read = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.GET, customerAuth, Map.class);
+        assertThat(read.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        // Still a real, cancellable booking.
+        ResponseEntity<Map> cancel = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/cancel",
+                HttpMethod.POST, customerAuth, Map.class);
+        assertThat(cancel.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(cancel.getBody().get("status")).isEqualTo("CANCELLED");
     }
 
     @Test
@@ -517,6 +589,7 @@ class PaymentsApiTests {
         ResponseEntity<Map> providerResponse = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
                 new HttpEntity<>(providerRequest, TestAuth.authHeaders(owner.accessToken())), Map.class);
         UUID providerId = UUID.fromString(providerResponse.getBody().get("id").toString());
+        TestAuth.requireFullPayment(restTemplate, owner, providerId);
 
         var serviceRequest = new CreateServiceRequest(prefix + "Service", 30, price, "USD");
         ResponseEntity<Map> serviceResponse = restTemplate.exchange("/api/v1/providers/" + providerId + "/services",
@@ -542,7 +615,9 @@ class PaymentsApiTests {
         ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
                 new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        return UUID.fromString(response.getBody().get("id").toString());
+        UUID providerId = UUID.fromString(response.getBody().get("id").toString());
+        TestAuth.requireFullPayment(restTemplate, owner, providerId);
+        return providerId;
     }
 
     private UUID createService(Registered owner, UUID providerId, String title, BigDecimal price) {

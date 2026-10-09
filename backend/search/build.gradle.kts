@@ -28,4 +28,8 @@ dependencies {
     // real identity (CurrentUser) — same reasoning as every other
     // self-service-only endpoint in this codebase.
     implementation(project(":auth"))
+
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.assertj:assertj-core")
 }

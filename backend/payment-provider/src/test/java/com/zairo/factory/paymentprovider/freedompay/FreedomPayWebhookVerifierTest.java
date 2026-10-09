@@ -33,6 +33,30 @@ class FreedomPayWebhookVerifierTest {
     }
 
     @Test
+    void theRecurringProfileAndCardDetailsAreCarriedWhenPresentAndNullWhenNot() {
+        Map<String, String> plain = fields("pay-4", "subscription-charge:pay-4", "29.00", "USD", "1");
+        VerifiedWebhook none = verifier.verify(plain);
+        assertEquals(null, none.recurringProfileId());
+        assertEquals(null, none.cardPan());
+
+        Map<String, String> withCard = new LinkedHashMap<>();
+        withCard.put("pg_payment_id", "pay-5");
+        withCard.put("pg_order_id", "subscription-charge:pay-5");
+        withCard.put("pg_amount", "29.00");
+        withCard.put("pg_currency", "USD");
+        withCard.put("pg_result", "1");
+        withCard.put("pg_recurring_profile_id", "rp-123");
+        withCard.put("pg_card_pan", "4242 42** **** 4242");
+        withCard.put("pg_card_brand", "VISA");
+        withCard.put("pg_sig", FreedomPaySignature.compute(SCRIPT_NAME, withCard, SECRET_KEY));
+        VerifiedWebhook some = verifier.verify(withCard);
+        assertTrue(some.signatureValid());
+        assertEquals("rp-123", some.recurringProfileId());
+        assertEquals("4242 42** **** 4242", some.cardPan());
+        assertEquals("VISA", some.cardBrand());
+    }
+
+    @Test
     void pgResultZeroMeansNotSucceeded() {
         Map<String, String> fields = fields("pay-2", "booking-payment:pay-2", "25.00", "USD", "0");
         assertFalse(verifier.verify(fields).paymentSucceeded());

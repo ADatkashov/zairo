@@ -95,12 +95,16 @@ class AdminSidebar extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: compact ? MainAxisAlignment.center : MainAxisAlignment.start,
                 children: [
-                  GestureDetector(
-                    onTap: () => showChangeAvatarDialog(context, hasCurrentAvatar: user.avatarUrl != null),
-                    child: FactoryAvatar(
-                      initials: _initialsFor(user.displayName),
-                      size: 34,
-                      image: user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+                  Semantics(
+                    button: true,
+                    label: AppLocalizations.of(context)!.changeAvatarDialogTitle,
+                    child: GestureDetector(
+                      onTap: () => showChangeAvatarDialog(context, hasCurrentAvatar: user.avatarUrl != null),
+                      child: FactoryAvatar(
+                        initials: _initialsFor(user.displayName),
+                        size: 34,
+                        image: user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+                      ),
                     ),
                   ),
                   if (!compact) ...[
@@ -163,7 +167,8 @@ class _SidebarNavItem extends StatelessWidget {
               Badge(
                 isLabelVisible: destination.badgeCount > 0,
                 label: Text(destination.badgeCount > 9 ? '9+' : '${destination.badgeCount}'),
-                backgroundColor: colors.coral,
+                backgroundColor: colors.error,
+                textColor: colors.bg,
                 child: Icon(selected ? destination.selectedIcon : destination.icon, size: 20, color: color),
               ),
               if (!compact) ...[

@@ -46,7 +46,7 @@ class FactorySettingsGroup extends StatelessWidget {
 }
 
 /// The tinted rounded-square icon at the start of a settings row. [color]
-/// defaults to the primary color; pass `colors.coral` (or error) for a
+/// defaults to the primary color; pass `colors.error` for a
 /// destructive row.
 class FactoryIconBadge extends StatelessWidget {
   const FactoryIconBadge({super.key, required this.icon, this.color});

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/app_localizations.dart';
+import '../../../../core/formatting/vertical_label.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/widgets/confirm_log_out.dart';
 import '../../../salon/data/models/admin_provider.dart';
@@ -31,9 +32,9 @@ class ModerationScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             tooltip: l10n.settingsButtonTooltip,
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
-            ),
+            onPressed: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
           ),
           IconButton(
             icon: const Icon(Icons.logout),
@@ -48,7 +49,8 @@ class ModerationScreen extends ConsumerWidget {
       ),
       body: pendingAsync.when(
         data: (providers) {
-          Future<void> refresh() => ref.refresh(pendingProvidersProvider.future);
+          Future<void> refresh() =>
+              ref.refresh(pendingProvidersProvider.future);
 
           if (providers.isEmpty) {
             return RefreshIndicator(
@@ -75,19 +77,26 @@ class ModerationScreen extends ConsumerWidget {
             child: ListView.separated(
               padding: const EdgeInsets.all(FactorySpacing.space4),
               itemCount: providers.length,
-              separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
+              separatorBuilder: (_, _) =>
+                  const SizedBox(height: FactorySpacing.space3),
               itemBuilder: (context, index) => _PendingSalonCard(
                 provider: providers[index],
                 onSuspend: () async {
                   await ref
                       .read(salonAdminApiProvider)
-                      .updateProviderStatus(providerId: providers[index].id, status: 'SUSPENDED');
+                      .updateProviderStatus(
+                        providerId: providers[index].id,
+                        status: 'SUSPENDED',
+                      );
                   ref.invalidate(pendingProvidersProvider);
                 },
                 onApprove: () async {
                   await ref
                       .read(salonAdminApiProvider)
-                      .updateProviderStatus(providerId: providers[index].id, status: 'ACTIVE');
+                      .updateProviderStatus(
+                        providerId: providers[index].id,
+                        status: 'ACTIVE',
+                      );
                   ref.invalidate(pendingProvidersProvider);
                 },
               ),
@@ -110,7 +119,11 @@ class ModerationScreen extends ConsumerWidget {
 }
 
 class _PendingSalonCard extends StatelessWidget {
-  const _PendingSalonCard({required this.provider, required this.onSuspend, required this.onApprove});
+  const _PendingSalonCard({
+    required this.provider,
+    required this.onSuspend,
+    required this.onApprove,
+  });
 
   final AdminProvider provider;
   final VoidCallback onSuspend;
@@ -122,25 +135,31 @@ class _PendingSalonCard extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return FactoryCard(
-      child: Row(
+      // Name on the left, actions on the right; on a phone the actions wrap under the name.
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        runSpacing: FactorySpacing.space2,
+        spacing: FactorySpacing.space2,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(provider.name, style: textTheme.titleSmall),
-                const SizedBox(height: FactorySpacing.space2),
-                FactoryBadge(label: _capitalize(provider.vertical)),
-              ],
-            ),
-          ),
-          const SizedBox(width: FactorySpacing.space2),
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              FactoryButton(label: l10n.suspendButton, variant: FactoryButtonVariant.text, onPressed: onSuspend),
-              const SizedBox(width: FactorySpacing.space2),
+              Text(provider.name, style: textTheme.titleSmall),
+              const SizedBox(height: FactorySpacing.space2),
+              FactoryBadge(label: verticalLabel(AppLocalizations.of(context)!, provider.vertical)),
+            ],
+          ),
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: FactorySpacing.space2,
+            children: [
+              FactoryButton(
+                label: l10n.suspendButton,
+                variant: FactoryButtonVariant.text,
+                onPressed: onSuspend,
+              ),
               FactoryButton(label: l10n.approveButton, onPressed: onApprove),
             ],
           ),
@@ -149,5 +168,3 @@ class _PendingSalonCard extends StatelessWidget {
     );
   }
 }
-
-String _capitalize(String s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1).toLowerCase()}';

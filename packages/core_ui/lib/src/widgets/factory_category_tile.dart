@@ -30,6 +30,9 @@ class FactoryCategoryTile extends StatelessWidget {
   /// without a Material icon existing for it in this app's code. [icon]
   /// stays required as the fallback for rows that predate that field.
   final String? emoji;
+
+  /// Width of the label under the icon — [FactoryCategoryTile.labelWidth].
+  static const double labelWidth = 72;
   final bool selected;
   final VoidCallback? onTap;
 
@@ -82,13 +85,19 @@ class FactoryCategoryTile extends StatelessWidget {
               ),
               const SizedBox(height: FactorySpacing.space2),
               SizedBox(
-                width: 64,
+                width: labelWidth,
                 child: Text(
                   label,
                   textAlign: TextAlign.center,
-                  maxLines: 1,
+                  // Two lines: "All categories" / "Cleaning services" are
+                  // common labels and a single ellipsized line hid half of them.
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: textTheme.labelMedium?.copyWith(
+                    // labelMedium tracks +0.8 for uppercase eyebrows; sentence-case
+                    // category names read (and fit) better untracked.
+                    letterSpacing: 0,
+                    height: 1.2,
                     color: selected ? colors.text : colors.textSecondary,
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                   ),

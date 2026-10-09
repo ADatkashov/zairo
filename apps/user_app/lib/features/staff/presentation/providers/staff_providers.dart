@@ -8,6 +8,9 @@ final staffApiProvider = Provider<StaffApi>((ref) {
   return StaffApi(ref.watch(dioClientProvider));
 });
 
-final staffProvider = FutureProvider.autoDispose.family<List<Staff>, String>((ref, providerId) {
+final staffProvider = FutureProvider.autoDispose.family<List<Staff>, String>((
+  ref,
+  providerId,
+) {
   return ref.watch(staffApiProvider).listStaff(providerId);
 });

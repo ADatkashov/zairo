@@ -3,20 +3,9 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/formatting/next_available.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../core/formatting/vertical_label.dart';
 import '../../../catalog/presentation/category_icon.dart';
 import '../../data/models/provider_search_result.dart';
-
-/// The three known verticals' display label, mirroring the filter chips in
-/// search_screen.dart — `result.vertical` is the same raw backend code
-/// ('beauty'/'auto'/'cleaning') those chips filter by. An unrecognized
-/// vertical (a future one the app hasn't shipped copy for yet) falls back
-/// to the raw code rather than crashing on a missing case.
-String _verticalLabel(AppLocalizations l10n, String vertical) => switch (vertical) {
-  'beauty' => l10n.discoveryVerticalBeauty,
-  'auto' => l10n.discoveryVerticalAuto,
-  'cleaning' => l10n.discoveryVerticalCleaning,
-  _ => vertical,
-};
 
 /// Adapts a backend search result to Factory's shared
 /// `core_ui.FactoryProviderCard` — kept as this app's own thin wrapper
@@ -49,7 +38,7 @@ class ProviderCard extends StatelessWidget {
     final accent = colorForCategory(context, result.vertical);
     return core_ui.FactoryProviderCard(
       title: result.name,
-      categoryLabel: _verticalLabel(l10n, result.vertical),
+      categoryLabel: verticalLabel(l10n, result.vertical),
       categoryColor: accent?.color,
       categoryTint: accent?.tint,
       image: result.coverPhotoUrl == null
@@ -70,9 +59,14 @@ class ProviderCard extends StatelessWidget {
                 ),
               ),
             ),
+      // The category badge already names the vertical when the category has
+      // an accent; only fall back to spelling it out (localized, never the raw
+      // backend code) when there is no badge to carry it.
       metaText: result.distanceKm != null
-          ? l10n.cardDistanceAndVertical(result.distanceKm!.toStringAsFixed(1), result.vertical)
-          : result.vertical,
+          ? (accent != null
+              ? l10n.distanceKmShort(result.distanceKm!.toStringAsFixed(1))
+              : l10n.cardDistanceAndVertical(result.distanceKm!.toStringAsFixed(1), verticalLabel(l10n, result.vertical)))
+          : (accent != null ? null : verticalLabel(l10n, result.vertical)),
       priceFrom: result.minPrice,
       rating: result.averageRating,
       reviewCount: result.reviewCount,

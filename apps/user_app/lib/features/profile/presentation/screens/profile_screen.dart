@@ -46,7 +46,7 @@ class ProfileScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             child: FactoryErrorState(
-              message: l10n.errorProfileGeneric(error.toString()),
+              message: l10n.errorProfileGeneric,
               onRetry: () => ref.invalidate(authControllerProvider),
             ),
           ),
@@ -164,7 +164,10 @@ class _LoggedInView extends ConsumerWidget {
           child: Column(
             children: [
               Center(
-                child: GestureDetector(
+                child: Semantics(
+                  button: true,
+                  label: l10n.changeAvatarDialogTitle,
+                  child: GestureDetector(
                   onTap: () => showChangeAvatarDialog(context, hasCurrentAvatar: avatarUrl != null),
                   child: Stack(
                     children: [
@@ -187,6 +190,7 @@ class _LoggedInView extends ConsumerWidget {
                         ),
                       ),
                     ],
+                  ),
                   ),
                 ),
               ),
@@ -312,6 +316,13 @@ class _LoggedInView extends ConsumerWidget {
         ),
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
+          title: l10n.paymentCardsTitle,
+          leading: Icon(Symbols.credit_card_rounded, color: colors.textSecondary),
+          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
+          onTap: () => context.push(AppRoutes.paymentCards),
+        ),
+        const SizedBox(height: FactorySpacing.space2),
+        FactorySelectableTile(
           title: l10n.myVehiclesButton,
           leading: Icon(Symbols.directions_car_rounded, color: colors.textSecondary),
           trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
@@ -398,9 +409,9 @@ class _LogOutButton extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Symbols.logout_rounded, size: 18, color: colors.coral),
+                Icon(Symbols.logout_rounded, size: 18, color: colors.error),
                 const SizedBox(width: 8),
-                Text(l10n.profileLogOut, style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.coral)),
+                Text(l10n.profileLogOut, style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.error)),
               ],
             ),
           ),

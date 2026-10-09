@@ -60,7 +60,12 @@ class _StaffCabinetScreenState extends ConsumerState<StaffCabinetScreen> {
                   selectedStaffId: selected.staffId,
                   onSelect: (id) => setState(() => _selectedStaffId = id),
                 ),
-              Expanded(child: _MembershipView(key: ValueKey(selected.staffId), membership: selected)),
+              Expanded(
+                child: _MembershipView(
+                  key: ValueKey(selected.staffId),
+                  membership: selected,
+                ),
+              ),
             ],
           );
         },
@@ -91,7 +96,8 @@ class _BusinessSwitcher extends StatelessWidget {
           vertical: FactorySpacing.space2,
         ),
         itemCount: memberships.length,
-        separatorBuilder: (context, index) => const SizedBox(width: FactorySpacing.space2),
+        separatorBuilder: (context, index) =>
+            const SizedBox(width: FactorySpacing.space2),
         itemBuilder: (context, index) {
           final m = memberships[index];
           final pending = m.pendingCount > 0 ? ' (${m.pendingCount})' : '';
@@ -124,11 +130,15 @@ class _MembershipView extends ConsumerWidget {
           if (!membership.active)
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                FactorySpacing.space4, 0, FactorySpacing.space4, FactorySpacing.space2,
+                FactorySpacing.space4,
+                0,
+                FactorySpacing.space4,
+                FactorySpacing.space2,
               ),
               child: Text(
                 l10n.staffCabinetInactiveNotice,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.error),
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: colors.error),
               ),
             ),
           TabBar(
@@ -170,9 +180,13 @@ class _MembershipHeader extends StatelessWidget {
       child: Row(
         children: [
           FactoryAvatar(
-            initials: membership.displayName.isEmpty ? '?' : membership.displayName[0].toUpperCase(),
+            initials: membership.displayName.isEmpty
+                ? '?'
+                : membership.displayName[0].toUpperCase(),
             size: FactoryAvatarSize.lg,
-            image: membership.photoUrl != null ? NetworkImage(membership.photoUrl!) : null,
+            image: membership.photoUrl != null
+                ? NetworkImage(membership.photoUrl!)
+                : null,
           ),
           const SizedBox(width: FactorySpacing.space3),
           Expanded(
@@ -182,16 +196,27 @@ class _MembershipHeader extends StatelessWidget {
                 Text(membership.providerName, style: textTheme.titleMedium),
                 Text(
                   membership.displayName,
-                  style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colors.textSecondary,
+                  ),
                 ),
                 if (rating != null)
                   Row(
                     children: [
-                      Icon(Symbols.star_rounded, size: 16, color: colors.warning, fill: 1),
+                      Icon(
+                        Symbols.star_rounded,
+                        size: 16,
+                        color: colors.warning,
+                        fill: 1,
+                      ),
                       const SizedBox(width: 2),
-                      Text(
-                        '${rating.toStringAsFixed(1)} · ${l10n.staffCabinetReviewsCount(membership.reviewCount)}',
-                        style: textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                      Flexible(
+                        child: Text(
+                          '${rating.toStringAsFixed(1)} · ${l10n.staffCabinetReviewsCount(membership.reviewCount)}',
+                          style: textTheme.bodySmall?.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -199,9 +224,11 @@ class _MembershipHeader extends StatelessWidget {
             ),
           ),
           if (membership.pendingCount > 0)
-            FactoryBadge(
-              label: l10n.staffCabinetPendingBadge(membership.pendingCount),
-              variant: FactoryBadgeVariant.limited,
+            Flexible(
+              child: FactoryBadge(
+                label: l10n.staffCabinetPendingBadge(membership.pendingCount),
+                variant: FactoryBadgeVariant.limited,
+              ),
             ),
         ],
       ),
@@ -218,7 +245,9 @@ class _AppointmentsList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final appointments = ref.watch(staffAppointmentsProvider(membership.staffId));
+    final appointments = ref.watch(
+      staffAppointmentsProvider(membership.staffId),
+    );
 
     return appointments.when(
       loading: () => const FactoryLoadingState(),
@@ -227,21 +256,29 @@ class _AppointmentsList extends ConsumerWidget {
           padding: const EdgeInsets.all(FactorySpacing.space4),
           child: FactoryErrorState(
             message: l10n.staffCabinetLoadFailed,
-            onRetry: () => ref.invalidate(staffAppointmentsProvider(membership.staffId)),
+            onRetry: () =>
+                ref.invalidate(staffAppointmentsProvider(membership.staffId)),
           ),
         ),
       ),
       data: (all) {
         final now = DateTime.now();
         bool isUpcoming(StaffAppointment a) =>
-            a.endsAt.isAfter(now) && (a.status == 'CONFIRMED' || a.status == 'PENDING_PAYMENT');
+            a.endsAt.isAfter(now) &&
+            (a.status == 'CONFIRMED' || a.status == 'PENDING_PAYMENT');
         final rows = all.where((a) => isUpcoming(a) == upcoming).toList()
-          ..sort((a, b) => upcoming ? a.startsAt.compareTo(b.startsAt) : b.startsAt.compareTo(a.startsAt));
+          ..sort(
+            (a, b) => upcoming
+                ? a.startsAt.compareTo(b.startsAt)
+                : b.startsAt.compareTo(a.startsAt),
+          );
 
         if (rows.isEmpty) {
           return FactoryEmptyState(
             icon: Symbols.event_available_rounded,
-            title: upcoming ? l10n.staffCabinetEmptyUpcoming : l10n.staffCabinetEmptyHistory,
+            title: upcoming
+                ? l10n.staffCabinetEmptyUpcoming
+                : l10n.staffCabinetEmptyHistory,
             message: '',
           );
         }
@@ -253,7 +290,8 @@ class _AppointmentsList extends ConsumerWidget {
           child: ListView.separated(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             itemCount: rows.length,
-            separatorBuilder: (context, index) => const SizedBox(height: FactorySpacing.space3),
+            separatorBuilder: (context, index) =>
+                const SizedBox(height: FactorySpacing.space3),
             itemBuilder: (context, index) => _AppointmentCard(
               staffId: membership.staffId,
               active: membership.active,
@@ -267,7 +305,11 @@ class _AppointmentsList extends ConsumerWidget {
 }
 
 class _AppointmentCard extends ConsumerStatefulWidget {
-  const _AppointmentCard({required this.staffId, required this.active, required this.appointment});
+  const _AppointmentCard({
+    required this.staffId,
+    required this.active,
+    required this.appointment,
+  });
 
   final String staffId;
   final bool active;
@@ -280,16 +322,25 @@ class _AppointmentCard extends ConsumerStatefulWidget {
 class _AppointmentCardState extends ConsumerState<_AppointmentCard> {
   bool _busy = false;
 
-  Future<void> _run(Future<void> Function(StaffCabinetApiAccess api) action) async {
+  Future<void> _run(
+    Future<void> Function(StaffCabinetApiAccess api) action,
+  ) async {
     final l10n = AppLocalizations.of(context)!;
     setState(() => _busy = true);
     try {
-      await action(StaffCabinetApiAccess(ref, widget.staffId, widget.appointment.bookingId));
+      await action(
+        StaffCabinetApiAccess(
+          ref,
+          widget.staffId,
+          widget.appointment.bookingId,
+        ),
+      );
       ref.invalidate(staffAppointmentsProvider(widget.staffId));
       ref.invalidate(staffMembershipsProvider);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.staffCabinetActionFailed)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.staffCabinetActionFailed)));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -317,7 +368,9 @@ class _AppointmentCardState extends ConsumerState<_AppointmentCard> {
         Builder(
           builder: (dialogContext) => FactoryButton(
             label: confirmLabel,
-            variant: destructive ? FactoryButtonVariant.danger : FactoryButtonVariant.primary,
+            variant: destructive
+                ? FactoryButtonVariant.danger
+                : FactoryButtonVariant.primary,
             onPressed: () => Navigator.of(dialogContext).pop(true),
           ),
         ),
@@ -346,15 +399,20 @@ class _AppointmentCardState extends ConsumerState<_AppointmentCard> {
                   style: textTheme.titleSmall,
                 ),
               ),
-              FactoryBadge(label: _statusLabel(l10n, a.status), variant: _statusVariant(a.status)),
+              FactoryBadge(
+                label: _statusLabel(l10n, a.status),
+                variant: _statusVariant(a.status),
+              ),
             ],
           ),
           const SizedBox(height: FactorySpacing.space2),
-          if (a.serviceTitle != null) Text(a.serviceTitle!, style: textTheme.bodyLarge),
+          if (a.serviceTitle != null)
+            Text(a.serviceTitle!, style: textTheme.bodyLarge),
           Text(
             [
               a.customerName ?? l10n.staffCabinetAnonymousCustomer,
-              if (a.customerPhone != null && a.customerPhone!.isNotEmpty) a.customerPhone!,
+              if (a.customerPhone != null && a.customerPhone!.isNotEmpty)
+                a.customerPhone!,
             ].join(' · '),
             style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
           ),
@@ -363,7 +421,10 @@ class _AppointmentCardState extends ConsumerState<_AppointmentCard> {
             style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
           ),
           if (a.status == 'CANCELLED' && a.cancellationReason != null)
-            Text(a.cancellationReason!, style: textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
+            Text(
+              a.cancellationReason!,
+              style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+            ),
           if (a.status == 'CONFIRMED' || a.status == 'PENDING_PAYMENT')
             Padding(
               padding: const EdgeInsets.only(top: FactorySpacing.space2),
@@ -371,12 +432,14 @@ class _AppointmentCardState extends ConsumerState<_AppointmentCard> {
                 a.staffDeclinedAt != null
                     ? l10n.staffCabinetDeclinedBadge
                     : a.status != 'CONFIRMED'
-                        ? ''
-                        : a.staffConfirmedAt == null
-                            ? l10n.staffCabinetAwaitingBadge
-                            : l10n.staffCabinetAcceptedBadge,
+                    ? ''
+                    : a.staffConfirmedAt == null
+                    ? l10n.staffCabinetAwaitingBadge
+                    : l10n.staffCabinetAcceptedBadge,
                 style: textTheme.bodySmall?.copyWith(
-                  color: a.staffDeclinedAt != null || a.staffConfirmedAt != null ? colors.textTertiary : colors.warning,
+                  color: a.staffDeclinedAt != null || a.staffConfirmedAt != null
+                      ? colors.textTertiary
+                      : colors.warning,
                 ),
               ),
             ),
@@ -392,14 +455,18 @@ class _AppointmentCardState extends ConsumerState<_AppointmentCard> {
                       label: l10n.staffCabinetAcceptButton,
                       dense: true,
                       isLoading: _busy,
-                      onPressed: canAct ? () => _run((api) => api.accept()) : null,
+                      onPressed: canAct
+                          ? () => _run((api) => api.accept())
+                          : null,
                     ),
                   if (a.canComplete)
                     FactoryButton(
                       label: l10n.staffCabinetCompleteButton,
                       variant: FactoryButtonVariant.secondary,
                       dense: true,
-                      onPressed: canAct ? () => _run((api) => api.complete()) : null,
+                      onPressed: canAct
+                          ? () => _run((api) => api.complete())
+                          : null,
                     ),
                   if (a.canMarkNoShow)
                     FactoryButton(
@@ -412,7 +479,8 @@ class _AppointmentCardState extends ConsumerState<_AppointmentCard> {
                               final ok = await _confirm(
                                 title: l10n.staffCabinetNoShowConfirmTitle,
                                 message: l10n.staffCabinetNoShowConfirmMessage,
-                                confirmLabel: l10n.staffCabinetConfirmNoShowButton,
+                                confirmLabel:
+                                    l10n.staffCabinetConfirmNoShowButton,
                               );
                               if (ok) await _run((api) => api.markNoShow());
                             },
@@ -428,7 +496,8 @@ class _AppointmentCardState extends ConsumerState<_AppointmentCard> {
                               final ok = await _confirm(
                                 title: l10n.staffCabinetDeclineConfirmTitle,
                                 message: l10n.staffCabinetDeclineConfirmMessage,
-                                confirmLabel: l10n.staffCabinetConfirmDeclineButton,
+                                confirmLabel:
+                                    l10n.staffCabinetConfirmDeclineButton,
                                 destructive: false,
                               );
                               if (ok) await _run((api) => api.cannotAttend());
@@ -451,27 +520,31 @@ class StaffCabinetApiAccess {
   final String _staffId;
   final String _bookingId;
 
-  Future<void> accept() => _ref.read(staffCabinetApiProvider).accept(_staffId, _bookingId);
-  Future<void> cannotAttend() => _ref.read(staffCabinetApiProvider).cannotAttend(_staffId, _bookingId);
-  Future<void> complete() => _ref.read(staffCabinetApiProvider).complete(_staffId, _bookingId);
-  Future<void> markNoShow() => _ref.read(staffCabinetApiProvider).markNoShow(_staffId, _bookingId);
+  Future<void> accept() =>
+      _ref.read(staffCabinetApiProvider).accept(_staffId, _bookingId);
+  Future<void> cannotAttend() =>
+      _ref.read(staffCabinetApiProvider).cannotAttend(_staffId, _bookingId);
+  Future<void> complete() =>
+      _ref.read(staffCabinetApiProvider).complete(_staffId, _bookingId);
+  Future<void> markNoShow() =>
+      _ref.read(staffCabinetApiProvider).markNoShow(_staffId, _bookingId);
 }
 
 String _statusLabel(AppLocalizations l10n, String status) => switch (status) {
-      'CONFIRMED' => l10n.bookingStatusConfirmed,
-      'COMPLETED' => l10n.bookingStatusCompleted,
-      'CANCELLED' => l10n.bookingStatusCancelled,
-      'PENDING_PAYMENT' => l10n.staffCabinetStatusPendingPayment,
-      'NO_SHOW' => l10n.staffCabinetStatusNoShow,
-      _ => status,
-    };
+  'CONFIRMED' => l10n.bookingStatusConfirmed,
+  'COMPLETED' => l10n.bookingStatusCompleted,
+  'CANCELLED' => l10n.bookingStatusCancelled,
+  'PENDING_PAYMENT' => l10n.staffCabinetStatusPendingPayment,
+  'NO_SHOW' => l10n.staffCabinetStatusNoShow,
+  _ => status,
+};
 
 FactoryBadgeVariant _statusVariant(String status) => switch (status) {
-      'CONFIRMED' => FactoryBadgeVariant.available,
-      'COMPLETED' => FactoryBadgeVariant.verified,
-      'CANCELLED' || 'NO_SHOW' => FactoryBadgeVariant.error,
-      _ => FactoryBadgeVariant.neutral,
-    };
+  'CONFIRMED' => FactoryBadgeVariant.available,
+  'COMPLETED' => FactoryBadgeVariant.verified,
+  'CANCELLED' || 'NO_SHOW' => FactoryBadgeVariant.error,
+  _ => FactoryBadgeVariant.neutral,
+};
 
 class _RatingView extends ConsumerWidget {
   const _RatingView({required this.membership});
@@ -492,7 +565,8 @@ class _RatingView extends ConsumerWidget {
           padding: const EdgeInsets.all(FactorySpacing.space4),
           child: FactoryErrorState(
             message: l10n.staffCabinetLoadFailed,
-            onRetry: () => ref.invalidate(staffRatingProvider(membership.staffId)),
+            onRetry: () =>
+                ref.invalidate(staffRatingProvider(membership.staffId)),
           ),
         ),
       ),
@@ -504,7 +578,10 @@ class _RatingView extends ConsumerWidget {
             message: '',
           );
         }
-        final maxCount = data.distribution.fold<int>(1, (m, c) => c > m ? c : m);
+        final maxCount = data.distribution.fold<int>(
+          1,
+          (m, c) => c > m ? c : m,
+        );
         return ListView(
           padding: const EdgeInsets.all(FactorySpacing.space4),
           children: [
@@ -519,7 +596,9 @@ class _RatingView extends ConsumerWidget {
                       ),
                       Text(
                         l10n.staffCabinetReviewsCount(data.reviewCount),
-                        style: textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -532,11 +611,20 @@ class _RatingView extends ConsumerWidget {
                             padding: const EdgeInsets.symmetric(vertical: 2),
                             child: Row(
                               children: [
-                                SizedBox(width: 14, child: Text('$stars', style: textTheme.bodySmall)),
+                                SizedBox(
+                                  width: 14,
+                                  child: Text(
+                                    '$stars',
+                                    style: textTheme.bodySmall,
+                                  ),
+                                ),
                                 const SizedBox(width: FactorySpacing.space2),
                                 Expanded(
                                   child: LinearProgressIndicator(
-                                    value: (stars <= data.distribution.length ? data.distribution[stars - 1] : 0) /
+                                    value:
+                                        (stars <= data.distribution.length
+                                            ? data.distribution[stars - 1]
+                                            : 0) /
                                         maxCount,
                                     minHeight: 6,
                                     color: colors.warning,
@@ -606,7 +694,9 @@ class _ReviewCard extends StatelessWidget {
               padding: const EdgeInsets.only(top: FactorySpacing.space2),
               child: Text(
                 '${l10n.staffCabinetBusinessReply}: ${review.businessReply}',
-                style: textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                style: textTheme.bodySmall?.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
             ),
           Padding(

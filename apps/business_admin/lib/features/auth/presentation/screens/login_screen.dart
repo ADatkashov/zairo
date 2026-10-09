@@ -190,7 +190,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   String _errorText(AppLocalizations l10n, Object error) {
     if (error is AuthException) return error.localizedMessage(l10n);
-    return l10n.errorAuthGeneric(error.toString());
+    return l10n.errorAuthGeneric;
   }
 
   void _submit() {
@@ -290,6 +290,7 @@ class _LinkAccountDialogState extends State<_LinkAccountDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
+      scrollable: true,
       title: Text(l10n.linkAccountTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,
