@@ -32,7 +32,12 @@ class FactoryTypography {
       fontWeight: weight,
       color: color,
       fontFeatures: const [FontFeature.tabularFigures()],
-    );
+      // JetBrains Mono has no tenge sign (U+20B8) — the platform's main
+      // currency — so without an explicit fallback "12 400 ₸" renders the
+      // symbol in an arbitrary system font (or a missing-glyph box on
+      // devices/web builds without one). Golos Text is already loaded for
+      // all body copy and carries the glyph.
+    ).copyWith(fontFamilyFallback: [GoogleFonts.golosText(fontWeight: weight).fontFamily!]);
   }
 
   static TextTheme textTheme(Color baseColor) {
