@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/beauty/presentation/screens/master_portfolio_screen.dart';
 import '../../features/booking/presentation/screens/booking_confirmation_screen.dart';
 import '../../features/booking/presentation/screens/booking_payment_screen.dart';
+import '../../features/booking/presentation/screens/payment_result_screen.dart';
 import '../../features/staff/presentation/screens/staff_cabinet_screen.dart';
 import '../../features/booking/presentation/screens/my_bookings_screen.dart';
 import '../../features/booking/presentation/screens/provider_detail_screen.dart';
@@ -59,6 +60,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.citySelection,
         builder: (context, state) => const CitySelectionScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.paymentResult,
+        parentNavigatorKey: rootNavigatorKey,
+        // Without a booking there is nothing to check — the bookings list is the next best place.
+        redirect: (context, state) =>
+            (state.uri.queryParameters['booking'] ?? '').isEmpty ? AppRoutes.bookings : null,
+        builder: (context, state) =>
+            PaymentResultScreen(bookingId: state.uri.queryParameters['booking']!),
       ),
       GoRoute(
         path: AppRoutes.bookingPayment,

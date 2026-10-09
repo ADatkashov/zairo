@@ -185,8 +185,8 @@ FREEDOMPAY_API_URL=<хост из мерчант-кабинета Freedom Pay>
 FREEDOMPAY_MERCHANT_ID=<merchant id>
 FREEDOMPAY_SECRET_KEY=<secret key>                     # НИКОГДА в git
 FREEDOMPAY_RESULT_NOTIFY_SCRIPT_NAME=<script name из кабинета>  # см. ADR-0006 Open Questions #6
-PAYMENT_SUCCESS_URL=<куда вернуть браузер клиента>
-PAYMENT_FAILURE_URL=<куда вернуть браузер клиента>
+PAYMENT_SUCCESS_URL=https://<адрес API>/pay/return/success   # страница возврата, открывает приложение
+PAYMENT_FAILURE_URL=https://<адрес API>/pay/return/failure
 ```
 
 Комиссия **не** настраивается переменной окружения: её меняет
@@ -198,6 +198,20 @@ PLATFORM_ADMIN в консоли (Финансы → Комиссия) или ч
 иначе ставка по умолчанию. Изменение действует только для новых оплат —
 уже созданные `PaymentAllocation` хранят ставку на момент оплаты. Каждое
 изменение пишется в аудит-лог платформы.
+
+### Возврат в приложение после оплаты
+
+`PAYMENT_SUCCESS_URL` / `PAYMENT_FAILURE_URL` указывают на страницы самого API
+(`PaymentReturnController`): они публичные, без авторизации, и открывают приложение
+по ссылке `zairo://app/payment-result?status=success|failure&booking=<id>` (плюс кнопка
+«Открыть приложение», потому что браузер может не пустить автоматический переход).
+К адресу бэкенд сам добавляет `?booking=<id>` (`PaymentReturnUrls`). В приложении ссылка
+открывает `PaymentResultScreen`, который читает бронь и платёж с сервера и ждёт подтверждения
+webhook'а: **сама ссылка ничего не доказывает**. Если клиент вернулся не по ссылке (закрыл
+страницу, ссылка не открылась), экран оплаты всё равно опрашивает сервер и реагирует на
+возвращение в приложение. Схема `zairo://` зарегистрирована в Android-манифесте и iOS
+`Info.plist`; https-ссылки приложений (App Links / Universal Links) потребуют подтверждённого
+домена и пока не настроены.
 
 ## 12. Какие вопросы требуют подтверждения от Freedom Pay
 

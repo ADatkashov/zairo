@@ -19,7 +19,7 @@ import 'booking_confirmation_screen.dart';
 /// What the payment route (`AppRoutes.bookingPayment`) needs, handed over as
 /// the route's `extra`.
 class BookingPaymentArgs {
-  const BookingPaymentArgs({required this.booking, this.confirmation, this.payment});
+  const BookingPaymentArgs({required this.booking, this.confirmation, this.payment, this.fromReturn = false});
 
   /// The booking being paid for (it is awaiting payment).
   final Booking booking;
@@ -30,7 +30,18 @@ class BookingPaymentArgs {
 
   /// The payment the booking flow has just created, so it is not created twice.
   final Payment? payment;
+
+  /// Opened because the customer came back from the payment page (deep link
+  /// `zairo://app/payment-result`): only reads where the payment stands — it
+  /// never starts a new payment and never re-opens the payment page.
+  final bool fromReturn;
 }
+
+/// The confirmation details the booking flow had when it sent the customer to
+/// pay, by booking id. Coming back from the payment page can replace the whole
+/// navigation stack (the deep link opens a fresh route), so the screen that
+/// shows "Booking confirmed!" finds the details here instead of losing them.
+final pendingConfirmationsProvider = Provider<Map<String, BookingConfirmationArgs>>((ref) => {});
 
 enum _Phase { starting, waiting, failed, expired }
 
@@ -72,7 +83,12 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen> wit
     _payment = widget.args.payment;
     // After the first frame: starting needs the screen's context (localizations).
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _start();
+      if (!mounted) return;
+      final confirmation = widget.args.confirmation;
+      if (confirmation != null) {
+        ref.read(pendingConfirmationsProvider)[_booking.id] = confirmation;
+      }
+      _start();
     });
   }
 
@@ -93,6 +109,17 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen> wit
 
   Future<void> _start() async {
     try {
+      if (widget.args.fromReturn) {
+        // Back from the payment page: read where the payment stands, nothing else.
+        final payment = await ref.read(paymentsApiProvider).getPayment(_booking.id);
+        if (!mounted) return;
+        if (payment == null) {
+          setState(() => _phase = _Phase.failed);
+        } else {
+          await _apply(payment, launch: false);
+        }
+        return;
+      }
       final payment = _payment ?? await _currentOrNewPayment();
       if (!mounted) return;
       await _apply(payment, launch: true);
@@ -198,12 +225,15 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen> wit
     _timer?.cancel();
     ref.invalidate(myBookingsProvider(booking.userId));
     ref.invalidate(paymentForBookingProvider(booking.id));
-    final confirmation = widget.args.confirmation;
+    final confirmation = widget.args.confirmation ?? ref.read(pendingConfirmationsProvider).remove(booking.id);
     if (confirmation != null) {
       context.pushReplacement(AppRoutes.bookingConfirmation, extra: confirmation.withBooking(booking));
     } else if (context.canPop()) {
       context.pop(true);
     } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.paymentConfirmedSnack)),
+      );
       context.go(AppRoutes.bookings);
     }
   }

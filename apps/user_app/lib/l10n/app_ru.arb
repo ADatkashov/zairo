@@ -609,5 +609,6 @@
   "paymentStartError": "Не удалось начать оплату. Попробуйте ещё раз.",
   "paymentOpenFailed": "Не удалось открыть страницу оплаты.",
   "bookingStatusPendingPayment": "Ожидает оплаты",
-  "bookingPayNowButton": "Оплатить"
+  "bookingPayNowButton": "Оплатить",
+  "paymentConfirmedSnack": "Оплата получена — бронь подтверждена."
 }
