@@ -996,5 +996,21 @@
   "noShowCorrectionFailed": "Не получилось изменить. Попробуйте ещё раз.",
   "@noShowCorrectionFailed": {"description": "noShowCorrectionFailed"},
   "needsAttentionWorkerNotAccepted": "{worker} ещё не принял(а) эту запись",
-  "@needsAttentionWorkerNotAccepted": {"description": "needsAttentionWorkerNotAccepted", "placeholders": {"worker": {"type": "String", "example": "Aigerim"}}}
+  "@needsAttentionWorkerNotAccepted": {"description": "needsAttentionWorkerNotAccepted", "placeholders": {"worker": {"type": "String", "example": "Aigerim"}}},
+  "billingWaitingForPayment": "Ждём подтверждение оплаты…",
+  "billingWaitingCheckNow": "Проверить",
+  "billingUpgradeConfirmed": "Оплата получена — у вас PRO.",
+  "billingCheckoutOpenFailed": "Не удалось открыть страницу оплаты. Попробуйте ещё раз.",
+  "billingPaymentMethodTitle": "Способ оплаты",
+  "billingCardLabel": "{brand} •••• {last4}",
+  "billingCardGenericBrand": "Карта",
+  "billingAutoRenewOn": "Автопродление: {date}.",
+  "billingManualRenewal": "Каждое продление оплачивается на странице оплаты — мы напомним, когда придёт срок.",
+  "billingNoSavedCard": "Карта не сохранена. При продлении вас попросят оплатить.",
+  "billingRemoveCardButton": "Удалить карту",
+  "billingRemoveCardTitle": "Удалить эту карту?",
+  "billingRemoveCardBody": "Мы перестанем её использовать. PRO действует до {date}, дальше продление оплачивается на странице оплаты.",
+  "billingRemoveCardConfirm": "Удалить",
+  "billingRemoveCardKeep": "Оставить",
+  "billingRemoveCardFailed": "Не удалось удалить карту. Попробуйте ещё раз."
 }

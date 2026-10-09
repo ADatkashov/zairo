@@ -57,6 +57,19 @@ public final class SubscriptionDtos {
         }
     }
 
+    @Schema(description = "The card the subscription renews with. Display data only — never a full card number.")
+    public record PaymentMethodResponse(
+            @Schema(description = "False when no card is stored; the other card fields are then null.")
+            boolean saved,
+            @Schema(example = "VISA", nullable = true) String brand,
+            @Schema(example = "4242", nullable = true) String last4,
+            Instant addedAt,
+            @Schema(description = "True when the renewal will really be charged by itself: the provider can charge a "
+                    + "stored card, one is stored, the plan is PRO and no downgrade is scheduled. False means the owner "
+                    + "pays each renewal in checkout.")
+            boolean autoRenew) {
+    }
+
     public record PlanLimits(int maxProviders, int maxStaffPerProvider,
             @Schema(description = "Integer.MAX_VALUE means unlimited.") int maxBookingsPerMonth,
             boolean recurringScheduleAllowed) {

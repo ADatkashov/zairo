@@ -41,6 +41,15 @@ class PaymentReturnApiTests {
     }
 
     @Test
+    void aSubscriptionPaymentReturnsToTheBusinessAppBillingScreen() {
+        ResponseEntity<String> page = restTemplate.getForEntity(
+                "/pay/return/success?for=subscription&charge=" + java.util.UUID.randomUUID(), String.class);
+        assertThat(page.getStatusCode().value()).isEqualTo(200);
+        assertThat(page.getBody()).contains("zairoadmin://app/billing?status=success")
+                .doesNotContain("zairo://app/payment-result");
+    }
+
+    @Test
     void theFailurePageAndAPostRedirectBothWork() {
         UUID booking = UUID.randomUUID();
 

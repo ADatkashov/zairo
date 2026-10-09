@@ -57,6 +57,11 @@ class TestPayments {
             }
 
             @Override
+            public boolean supportsRecurringCharge() {
+                return !failureController.noRecurringCharge;
+            }
+
+            @Override
             public PaymentStatusResult getPaymentStatus(UUID paymentId, String providerPaymentId) {
                 return new PaymentStatusResult(InitiationStatus.SUCCEEDED, providerPaymentId);
             }
@@ -92,7 +97,8 @@ class TestPayments {
                             "simulated card decline");
                 }
                 return new PaymentInitiation("mock_pi_" + paymentId, null, recurringProfileId,
-                        InitiationStatus.SUCCEEDED, null);
+                        InitiationStatus.SUCCEEDED, null, recurringProfileId == null ? null : "4242",
+                        recurringProfileId == null ? null : "VISA");
             }
         };
     }
@@ -107,6 +113,8 @@ class TestPayments {
         volatile boolean failNextCharge;
         volatile boolean throwOnNextCharge;
         volatile boolean failNextRefund;
+        /** Behave like Freedom Pay today: hosted checkout works, but a stored card cannot be charged by itself. */
+        volatile boolean noRecurringCharge;
         /** The next createPayment/createRecurringPayment is left PENDING with a checkoutUrl, like a redirect-based provider. */
         volatile boolean pendingNextCharge;
         /** How many times a payment was initiated at the provider — proves a repeated request did not start a second one. */

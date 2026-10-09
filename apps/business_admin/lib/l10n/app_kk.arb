@@ -987,5 +987,21 @@
   "noShowCorrectionFailed": "Өзгерту мүмкін болмады. Қайталап көріңіз.",
   "@noShowCorrectionFailed": {"description": "noShowCorrectionFailed"},
   "needsAttentionWorkerNotAccepted": "{worker} бұл жазылымды әлі қабылдаған жоқ",
-  "@needsAttentionWorkerNotAccepted": {"description": "needsAttentionWorkerNotAccepted", "placeholders": {"worker": {"type": "String", "example": "Aigerim"}}}
+  "@needsAttentionWorkerNotAccepted": {"description": "needsAttentionWorkerNotAccepted", "placeholders": {"worker": {"type": "String", "example": "Aigerim"}}},
+  "billingWaitingForPayment": "Төлемнің расталуын күтудеміз…",
+  "billingWaitingCheckNow": "Тексеру",
+  "billingUpgradeConfirmed": "Төлем алынды — сізде PRO.",
+  "billingCheckoutOpenFailed": "Төлем бетін ашу мүмкін болмады. Қайталап көріңіз.",
+  "billingPaymentMethodTitle": "Төлем әдісі",
+  "billingCardLabel": "{brand} •••• {last4}",
+  "billingCardGenericBrand": "Карта",
+  "billingAutoRenewOn": "Автоматты ұзарту: {date}.",
+  "billingManualRenewal": "Әр ұзартуды төлем бетінде төлейсіз — мерзімі келгенде еске саламыз.",
+  "billingNoSavedCard": "Карта сақталмаған. Ұзарту кезінде төлеуді сұраймыз.",
+  "billingRemoveCardButton": "Картаны жою",
+  "billingRemoveCardTitle": "Бұл картаны жою керек пе?",
+  "billingRemoveCardBody": "Біз оны қолданбаймыз. PRO {date} дейін жұмыс істейді, одан кейін ұзартуды төлем бетінде төлейсіз.",
+  "billingRemoveCardConfirm": "Жою",
+  "billingRemoveCardKeep": "Қалдыру",
+  "billingRemoveCardFailed": "Картаны жою мүмкін болмады. Қайталап көріңіз."
 }
