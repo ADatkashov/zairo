@@ -130,13 +130,20 @@ class FactoryProviderCard extends StatelessWidget {
           if (categoryLabel != null &&
               categoryColor != null &&
               categoryTint != null)
+            // left+right (not just left): the badge is bounded by the photo's
+            // width, so on the 84px photo of a horizontal card FactoryBadge's
+            // FittedBox shrinks the label instead of it being clipped ("Beaut").
             Positioned(
               top: 8,
               left: 8,
-              child: FactoryBadge(
-                label: categoryLabel!,
-                backgroundColor: categoryTint,
-                foregroundColor: categoryColor,
+              right: 8,
+              child: Align(
+                alignment: AlignmentDirectional.topStart,
+                child: FactoryBadge(
+                  label: categoryLabel!,
+                  backgroundColor: categoryTint,
+                  foregroundColor: categoryColor,
+                ),
               ),
             ),
           if (onFavoriteToggle != null)

@@ -275,6 +275,7 @@ class _ComposeBar extends StatelessWidget {
               label: l10n.chatComposeLabel,
               controller: controller,
               enabled: !isSending,
+              minLines: 1,
               maxLines: 4,
               textInputAction: TextInputAction.newline,
             ),
