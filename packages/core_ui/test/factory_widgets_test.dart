@@ -126,6 +126,14 @@ void main() {
     expect(tapped, isTrue);
   });
 
+  testWidgets('FactoryTimeSlot is at least 44x44 so it is easy to tap', (tester) async {
+    await tester.pumpWidget(_wrap(FactoryTimeSlot(label: '9:00', onTap: () {})));
+
+    final size = tester.getSize(find.byType(FactoryTimeSlot));
+    expect(size.height, greaterThanOrEqualTo(44));
+    expect(size.width, greaterThanOrEqualTo(44));
+  });
+
   testWidgets('FactoryBadge renders its label', (tester) async {
     await tester.pumpWidget(
       _wrap(
