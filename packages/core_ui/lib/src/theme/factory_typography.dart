@@ -11,7 +11,16 @@ class FactoryTypography {
   const FactoryTypography._();
 
   static TextStyle _display({required double size, required double height, FontWeight weight = FontWeight.w700}) {
-    return GoogleFonts.unbounded(fontSize: size, height: height / size, fontWeight: weight, letterSpacing: -0.2);
+    // Unbounded has none of Kazakh's extra Cyrillic letters (ә ғ қ ң ө ұ ү һ),
+    // so every headline with one rendered it in an arbitrary system font or a
+    // missing-glyph box. Golos Text covers them all and is already loaded for
+    // body copy; it only ever supplies the glyphs Unbounded lacks.
+    return GoogleFonts.unbounded(
+      fontSize: size,
+      height: height / size,
+      fontWeight: weight,
+      letterSpacing: -0.2,
+    ).copyWith(fontFamilyFallback: [GoogleFonts.golosText(fontWeight: weight).fontFamily!]);
   }
 
   static TextStyle _body({

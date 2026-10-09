@@ -40,6 +40,7 @@ class FactoryProviderCard extends StatelessWidget {
     this.onFavoriteToggle,
     this.favoriteAddSemanticLabel = 'Add to favorites',
     this.favoriteRemoveSemanticLabel = 'Remove from favorites',
+    this.pricePrefix = 'from ',
     this.onTap,
     this.layout = FactoryProviderCardLayout.vertical,
     this.width,
@@ -83,6 +84,10 @@ class FactoryProviderCard extends StatelessWidget {
   /// here rather than relying on the English fallback default.
   final String favoriteAddSemanticLabel;
   final String favoriteRemoveSemanticLabel;
+
+  /// Leads the [priceFrom] amount ("from 8 000 ₸"). Callers pass the localized
+  /// word — the English default only exists so the widget stays usable alone.
+  final String pricePrefix;
 
   final VoidCallback? onTap;
   final FactoryProviderCardLayout layout;
@@ -212,7 +217,7 @@ class FactoryProviderCard extends StatelessWidget {
                   FactoryPriceText(
                     amount: priceFrom!,
                     currencySymbol: currencySymbol,
-                    prefix: 'from ',
+                    prefix: pricePrefix,
                   ),
                 if (availabilityLabel != null)
                   FactoryBadge(

@@ -70,10 +70,16 @@ class ProviderCard extends StatelessWidget {
                 ),
               ),
             ),
+      // The category badge already names the vertical when the category has
+      // an accent; only fall back to spelling it out (localized, never the raw
+      // backend code) when there is no badge to carry it.
       metaText: result.distanceKm != null
-          ? l10n.cardDistanceAndVertical(result.distanceKm!.toStringAsFixed(1), result.vertical)
-          : result.vertical,
+          ? (accent != null
+              ? l10n.distanceKmShort(result.distanceKm!.toStringAsFixed(1))
+              : l10n.cardDistanceAndVertical(result.distanceKm!.toStringAsFixed(1), _verticalLabel(l10n, result.vertical)))
+          : (accent != null ? null : _verticalLabel(l10n, result.vertical)),
       priceFrom: result.minPrice,
+      pricePrefix: l10n.providerCardPricePrefix,
       rating: result.averageRating,
       reviewCount: result.reviewCount,
       ratingSemanticLabel: result.averageRating == null

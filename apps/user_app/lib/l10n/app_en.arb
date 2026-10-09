@@ -542,6 +542,8 @@
     }
   },
 
+  "providerCardPricePrefix": "from ",
+  "@providerCardPricePrefix": {"description": "Word placed before the lowest price on a provider card, with its trailing space (\"from 8 000 ₸\")."},
   "distanceKmShort": "{distanceKm} km",
   "@distanceKmShort": {
     "description": "A bare distance value, no surrounding sentence — Home's Recommended row.",
