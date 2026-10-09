@@ -26,6 +26,7 @@ import '../../../discovery/data/models/provider_search_result.dart';
 import '../../../discovery/data/models/service_summary.dart';
 import '../../../favorites/presentation/widgets/favorite_button.dart';
 import '../../../payments/data/payment_exception.dart';
+import '../../../payments/data/models/payment.dart';
 import '../../../payments/presentation/providers/payments_providers.dart';
 import '../../../staff/data/models/staff.dart';
 import '../../../staff/data/staff_exception.dart';
@@ -39,6 +40,7 @@ import '../../data/models/payment_plan.dart';
 import '../providers/booking_providers.dart';
 import '../widgets/day_slot_picker.dart';
 import 'booking_confirmation_screen.dart';
+import 'booking_payment_screen.dart';
 
 /// Categories with their own hardcoded staff module (Master/Mechanic/
 /// Cleaner) — every other category falls back to the generic `staff`
@@ -728,13 +730,14 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       // otherwise the confirmation can't tell a deposit from "pay at venue".
       booking = await _withPaymentAmounts(booking);
 
-      // Charged right after booking creation, in the same flow — see
-      // SESSION_NOTES.md for why this isn't gated behind a webhook yet
-      // (no real payment provider/webhook exists; the mock resolves
-      // synchronously, so there's nothing async to wait on).
+      // Charged right after booking creation, in the same flow. The mock
+      // provider resolves synchronously (SUCCEEDED); a redirect-based one
+      // (Freedom Pay) answers PENDING with a checkout page, and the booking
+      // is only confirmed once its webhook arrives — see BookingPaymentScreen.
       String? paymentErrorMessage;
+      Payment? payment;
       try {
-        await ref.read(paymentsApiProvider).createPayment(booking.id);
+        payment = await ref.read(paymentsApiProvider).createPayment(booking.id);
       } on PaymentException catch (e) {
         paymentErrorMessage = l10n.bookingConfirmedButError(
           e.localizedMessage(l10n),
@@ -742,6 +745,28 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       }
 
       if (!mounted) return;
+      final confirmation = BookingConfirmationArgs(
+        booking: booking,
+        providerId: widget.provider.id,
+        providerName: widget.provider.name,
+        providerVertical: widget.provider.vertical,
+        service: service,
+        slotStartsAt: slotStartsAt,
+        latitude: widget.provider.latitude,
+        longitude: widget.provider.longitude,
+      );
+      if (payment != null && payment.status != 'SUCCEEDED') {
+        // Not paid yet: the customer must pay (or retry) before this is a confirmed booking.
+        context.pushReplacement(
+          AppRoutes.bookingPayment,
+          extra: BookingPaymentArgs(
+            booking: booking,
+            confirmation: confirmation,
+            payment: payment,
+          ),
+        );
+        return;
+      }
       if (paymentErrorMessage != null) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(paymentErrorMessage)));
@@ -751,16 +776,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       // rather than pushing on top of it.
       context.pushReplacement(
         AppRoutes.bookingConfirmation,
-        extra: BookingConfirmationArgs(
-          booking: booking,
-          providerId: widget.provider.id,
-          providerName: widget.provider.name,
-          providerVertical: widget.provider.vertical,
-          service: service,
-          slotStartsAt: slotStartsAt,
-          latitude: widget.provider.latitude,
-          longitude: widget.provider.longitude,
-        ),
+        extra: confirmation,
       );
     } on BookingException catch (e) {
       if (!mounted) return;

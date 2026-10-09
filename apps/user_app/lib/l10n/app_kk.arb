@@ -578,5 +578,21 @@
   "changeRequestsBanner": "{count, plural, =1{1 жазылым таңдауыңызды күтуде} other{{count} жазылым таңдауыңызды күтуде}}",
   "@changeRequestsBanner": {"description": "changeRequestsBanner", "placeholders": {"count": {"type": "int", "example": "2"}}},
   "mapOpenIn2gis": "2GIS-те ашу",
-  "mapOpenInGoogle": "Google Maps-те ашу"
+  "mapOpenInGoogle": "Google Maps-те ашу",
+  "paymentScreenTitle": "Төлем",
+  "paymentWaitingTitle": "Төлемді күтудеміз",
+  "paymentWaitingBody": "Төлемді төлем бетінде аяқтаңыз. Төлем расталған соң бұл экран өзі жаңарады.",
+  "paymentOpenPageButton": "Төлем бетін ашу",
+  "paymentCheckStatusButton": "Төледім — күйін тексеру",
+  "paymentNotConfirmedYet": "Әзірге расталмады — бір минут кетуі мүмкін.",
+  "paymentFailedTitle": "Төлем өтпеді",
+  "paymentFailedBody": "Брон әлі бірнеше минут сізде ұсталады. Қайта көруге болады.",
+  "paymentRetryButton": "Қайта көру",
+  "paymentExpiredTitle": "Төлем расталмады",
+  "paymentExpiredBody": "Растау алынбады. Төлесеңіз — бір минуттан соң қайта тексеріңіз; әйтпесе брон алынып тасталады.",
+  "paymentCloseButton": "Жабу",
+  "paymentStartError": "Төлемді бастау мүмкін болмады. Қайта көріңіз.",
+  "paymentOpenFailed": "Төлем бетін ашу мүмкін болмады.",
+  "bookingStatusPendingPayment": "Төлем күтілуде",
+  "bookingPayNowButton": "Төлеу"
 }

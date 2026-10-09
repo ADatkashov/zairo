@@ -26,7 +26,7 @@ class TwoGisMapsRenderer implements MapRenderer {
 
 /// JSON is a valid JS literal, but `</script>` inside a string would still
 /// end the script tag early — hence the `<` escape.
-String _jsLiteral(Object? value) => jsonEncode(value).replaceAll('<', r'<');
+String _jsLiteral(Object? value) => jsonEncode(value).replaceAll('<', '\\u003c');
 
 /// The page the WebView loads. Public for tests: it is plain string building
 /// and the part that has to escape the provider's name safely.

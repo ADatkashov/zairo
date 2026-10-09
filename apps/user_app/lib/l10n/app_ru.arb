@@ -593,5 +593,21 @@
   "changeRequestsBanner": "{count, plural, =1{1 запись ждёт вашего выбора} few{{count} записи ждут вашего выбора} many{{count} записей ждут вашего выбора} other{{count} записи ждут вашего выбора}}",
   "@changeRequestsBanner": {"description": "changeRequestsBanner", "placeholders": {"count": {"type": "int", "example": "2"}}},
   "mapOpenIn2gis": "Открыть в 2ГИС",
-  "mapOpenInGoogle": "Открыть в Google Maps"
+  "mapOpenInGoogle": "Открыть в Google Maps",
+  "paymentScreenTitle": "Оплата",
+  "paymentWaitingTitle": "Ждём оплату",
+  "paymentWaitingBody": "Завершите оплату на странице платежа. Экран обновится сам, когда платёж подтвердится.",
+  "paymentOpenPageButton": "Открыть страницу оплаты",
+  "paymentCheckStatusButton": "Я оплатил — проверить статус",
+  "paymentNotConfirmedYet": "Пока не подтверждено — это может занять минуту.",
+  "paymentFailedTitle": "Оплата не прошла",
+  "paymentFailedBody": "Бронь ещё несколько минут удерживается за вами. Можно попробовать снова.",
+  "paymentRetryButton": "Попробовать снова",
+  "paymentExpiredTitle": "Оплата не подтверждена",
+  "paymentExpiredBody": "Подтверждение не получено. Если вы оплатили — проверьте ещё раз через минуту; иначе бронь будет снята.",
+  "paymentCloseButton": "Закрыть",
+  "paymentStartError": "Не удалось начать оплату. Попробуйте ещё раз.",
+  "paymentOpenFailed": "Не удалось открыть страницу оплаты.",
+  "bookingStatusPendingPayment": "Ожидает оплаты",
+  "bookingPayNowButton": "Оплатить"
 }
