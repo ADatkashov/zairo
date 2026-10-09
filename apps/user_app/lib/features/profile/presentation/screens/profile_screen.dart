@@ -164,7 +164,10 @@ class _LoggedInView extends ConsumerWidget {
           child: Column(
             children: [
               Center(
-                child: GestureDetector(
+                child: Semantics(
+                  button: true,
+                  label: l10n.changeAvatarDialogTitle,
+                  child: GestureDetector(
                   onTap: () => showChangeAvatarDialog(context, hasCurrentAvatar: avatarUrl != null),
                   child: Stack(
                     children: [
@@ -187,6 +190,7 @@ class _LoggedInView extends ConsumerWidget {
                         ),
                       ),
                     ],
+                  ),
                   ),
                 ),
               ),

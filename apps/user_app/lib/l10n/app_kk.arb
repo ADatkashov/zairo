@@ -630,5 +630,6 @@
   "bookingConfirmationPaidLabel": "Төленді: {amount}",
   "bookingConfirmationRemainingLabel": "Қалдық: {amount}",
   "bookingPaymentInstructions": "{amount} депозит есептен шығарылды. Қалған {remaining} соманы қызмет көрсету күні қолма-қол немесе онлайн төлеуге болады.",
-  "selectCity": "Қаланы таңдаңыз"
+  "selectCity": "Қаланы таңдаңыз",
+  "chatSendTooltip": "Жіберу"
 }

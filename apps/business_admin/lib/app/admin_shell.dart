@@ -95,12 +95,16 @@ class AdminSidebar extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: compact ? MainAxisAlignment.center : MainAxisAlignment.start,
                 children: [
-                  GestureDetector(
-                    onTap: () => showChangeAvatarDialog(context, hasCurrentAvatar: user.avatarUrl != null),
-                    child: FactoryAvatar(
-                      initials: _initialsFor(user.displayName),
-                      size: 34,
-                      image: user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+                  Semantics(
+                    button: true,
+                    label: AppLocalizations.of(context)!.changeAvatarDialogTitle,
+                    child: GestureDetector(
+                      onTap: () => showChangeAvatarDialog(context, hasCurrentAvatar: user.avatarUrl != null),
+                      child: FactoryAvatar(
+                        initials: _initialsFor(user.displayName),
+                        size: 34,
+                        image: user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+                      ),
                     ),
                   ),
                   if (!compact) ...[

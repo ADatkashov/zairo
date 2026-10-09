@@ -1817,5 +1817,7 @@
   "citySelectLoading": "Switching city…",
   "@citySelectLoading": {"description": "citySelectLoading"},
   "citySelectFailed": "Couldn't change the city. Please try again.",
-  "@citySelectFailed": {"description": "citySelectFailed"}
+  "@citySelectFailed": {"description": "citySelectFailed"},
+  "chatSendTooltip": "Send",
+  "@chatSendTooltip": {"description": "chatSendTooltip"}
 }
