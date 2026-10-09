@@ -79,7 +79,6 @@ class ProviderCard extends StatelessWidget {
               : l10n.cardDistanceAndVertical(result.distanceKm!.toStringAsFixed(1), _verticalLabel(l10n, result.vertical)))
           : (accent != null ? null : _verticalLabel(l10n, result.vertical)),
       priceFrom: result.minPrice,
-      pricePrefix: l10n.providerCardPricePrefix,
       rating: result.averageRating,
       reviewCount: result.reviewCount,
       ratingSemanticLabel: result.averageRating == null

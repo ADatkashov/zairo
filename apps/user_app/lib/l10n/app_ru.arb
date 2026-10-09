@@ -172,7 +172,6 @@
   "nextAvailableTodayLabel": "Сегодня {time}",
   "nextAvailableTomorrowLabel": "Завтра {time}",
   "cardDistanceAndVertical": "{distanceKm} км · {vertical}",
-  "providerCardPricePrefix": "от ",
   "distanceKmShort": "{distanceKm} км",
   "providerDistanceAway": "{distanceKm} км от вас",
   "mapDistanceFromYou": "{distanceKm} км от вас",

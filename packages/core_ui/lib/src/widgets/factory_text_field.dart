@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../util/factory_strings.dart';
+
 /// A single-value input — phone, name, promo code. [label] is required and
 /// always renders as `InputDecoration.labelText`, never `hintText`: the
 /// design system's InputField spec calls for "a persistent visible label —
@@ -75,7 +77,9 @@ class _FactoryTextFieldState extends State<FactoryTextField> {
         (w.obscureText
             ? IconButton(
                 icon: Icon(_revealed ? Icons.visibility_off : Icons.visibility),
-                tooltip: _revealed ? 'Hide password' : 'Show password',
+                tooltip: _revealed
+                    ? FactoryStrings.of(context).hidePassword
+                    : FactoryStrings.of(context).showPassword,
                 onPressed: () => setState(() => _revealed = !_revealed),
               )
             : null);
