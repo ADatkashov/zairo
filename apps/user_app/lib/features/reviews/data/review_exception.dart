@@ -5,10 +5,7 @@ import '../../../l10n/app_localizations.dart';
 /// can't call AppLocalizations itself) throws one of these; the widget
 /// that catches it (which does have a context) resolves the actual string
 /// via [localizedMessage] at display time.
-enum ReviewErrorKey {
-  duplicateOrNotCompleted,
-  invalidRating,
-}
+enum ReviewErrorKey { duplicateOrNotCompleted, invalidRating }
 
 class ReviewException implements Exception {
   final ReviewErrorKey key;
@@ -16,9 +13,10 @@ class ReviewException implements Exception {
   const ReviewException(this.key);
 
   String localizedMessage(AppLocalizations l10n) => switch (key) {
-        ReviewErrorKey.duplicateOrNotCompleted => l10n.errorReviewDuplicateOrNotCompleted,
-        ReviewErrorKey.invalidRating => l10n.errorReviewInvalidRating,
-      };
+    ReviewErrorKey.duplicateOrNotCompleted =>
+      l10n.errorReviewDuplicateOrNotCompleted,
+    ReviewErrorKey.invalidRating => l10n.errorReviewInvalidRating,
+  };
 
   @override
   String toString() => 'ReviewException($key)';

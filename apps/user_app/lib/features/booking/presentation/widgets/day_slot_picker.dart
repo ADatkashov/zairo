@@ -42,7 +42,7 @@ class _DaySlotPickerState extends State<DaySlotPicker> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          height: 76,
+          height: 76 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0),
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: days.length,
