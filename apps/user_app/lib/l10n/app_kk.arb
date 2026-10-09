@@ -172,7 +172,6 @@
   "nextAvailableTodayLabel": "Бүгін {time}",
   "nextAvailableTomorrowLabel": "Ертең {time}",
   "cardDistanceAndVertical": "{distanceKm} км · {vertical}",
-  "providerCardPricePrefix": "бастап ",
   "distanceKmShort": "{distanceKm} км",
   "providerDistanceAway": "{distanceKm} км қашықтықта",
   "mapDistanceFromYou": "Сізден {distanceKm} км қашықтықта",
