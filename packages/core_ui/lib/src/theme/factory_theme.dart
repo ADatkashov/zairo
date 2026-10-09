@@ -195,7 +195,6 @@ ThemeData _factoryTheme(FactoryColors colors, FactoryAppProfile? profile) {
       dividerColor: colors.border,
       dividerHeight: 1,
       overlayColor: WidgetStatePropertyAll(colors.primaryTint.withValues(alpha: 0.5)),
-      tabAlignment: TabAlignment.start,
     ),
     progressIndicatorTheme: ProgressIndicatorThemeData(
       color: colors.primary,

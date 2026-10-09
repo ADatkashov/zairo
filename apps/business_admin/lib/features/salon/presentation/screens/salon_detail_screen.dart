@@ -71,6 +71,7 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
         title: _provider.name,
         bottom: TabBar(
           isScrollable: true,
+          tabAlignment: TabAlignment.start,
           tabs: [
             Tab(text: l10n.salonTabOverview),
             Tab(text: l10n.salonTabServices),
