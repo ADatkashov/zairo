@@ -734,10 +734,16 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       // provider resolves synchronously (SUCCEEDED); a redirect-based one
       // (Freedom Pay) answers PENDING with a checkout page, and the booking
       // is only confirmed once its webhook arrives — see BookingPaymentScreen.
+      //
+      // A booking with nothing due online (the business takes no advance
+      // payment, or the service is free) arrives already CONFIRMED — the
+      // customer pays at the venue — so there is no payment to start.
       String? paymentErrorMessage;
       Payment? payment;
       try {
-        payment = await ref.read(paymentsApiProvider).createPayment(booking.id);
+        if (booking.status == 'PENDING_PAYMENT') {
+          payment = await ref.read(paymentsApiProvider).createPayment(booking.id);
+        }
       } on PaymentException catch (e) {
         paymentErrorMessage = l10n.bookingConfirmedButError(
           e.localizedMessage(l10n),
