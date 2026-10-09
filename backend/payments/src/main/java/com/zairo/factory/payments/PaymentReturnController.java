@@ -34,14 +34,21 @@ public class PaymentReturnController {
 
     @RequestMapping(value = "/pay/return/{outcome}", method = { RequestMethod.GET, RequestMethod.POST })
     public ResponseEntity<byte[]> returnPage(@PathVariable String outcome,
-            @RequestParam(name = "booking", required = false) String booking) {
+            @RequestParam(name = "booking", required = false) String booking,
+            @RequestParam(name = "for", required = false) String purpose) {
         if (!OUTCOMES.contains(outcome)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
-        String deepLink = "zairo://app/payment-result?status=" + outcome;
-        UUID bookingId = parseUuid(booking);
-        if (bookingId != null) {
-            deepLink += "&booking=" + bookingId;
+        String deepLink;
+        if ("subscription".equals(purpose)) {
+            // A PRO subscription is paid by a business owner: back to the business app's Billing screen.
+            deepLink = "zairoadmin://app/billing?status=" + outcome;
+        } else {
+            deepLink = "zairo://app/payment-result?status=" + outcome;
+            UUID bookingId = parseUuid(booking);
+            if (bookingId != null) {
+                deepLink += "&booking=" + bookingId;
+            }
         }
         return ResponseEntity.ok()
                 .contentType(new MediaType("text", "html", StandardCharsets.UTF_8))
