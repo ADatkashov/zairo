@@ -7,6 +7,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../../../app/router/app_routes.dart';
 import '../../../../core/formatting/initials.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../core/formatting/vertical_label.dart';
 import '../../../auth/data/models/user_summary.dart';
 import '../../../auth/presentation/auth_navigation.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
@@ -189,7 +190,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                                 ),
                         ),
                       FactoryBadge(
-                        label: _capitalize(widget.provider.vertical),
+                        label: verticalLabel(l10n, widget.provider.vertical),
                       ),
                       if (widget.provider.hasOpenAvailability)
                         FactoryBadge(
@@ -1217,9 +1218,6 @@ class _VehicleOption extends StatelessWidget {
     );
   }
 }
-
-String _capitalize(String s) =>
-    s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';
 
 
 /// Photo-first header: the business's cover photo under a soft scrim, with

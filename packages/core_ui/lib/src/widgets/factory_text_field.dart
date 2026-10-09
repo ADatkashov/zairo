@@ -28,6 +28,7 @@ class FactoryTextField extends StatefulWidget {
     this.keyboardType,
     this.textInputAction,
     this.maxLines = 1,
+    this.minLines,
     this.suffixIcon,
     this.prefixIcon,
     this.onChanged,
@@ -47,6 +48,10 @@ class FactoryTextField extends StatefulWidget {
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
   final int maxLines;
+
+  /// Lines the field occupies while empty. Leave null for [maxLines] to also
+  /// be its height; a growing composer (chat) passes 1 with a larger [maxLines].
+  final int? minLines;
   final Widget? suffixIcon;
   final Widget? prefixIcon;
   final ValueChanged<String>? onChanged;
@@ -92,6 +97,7 @@ class _FactoryTextFieldState extends State<FactoryTextField> {
       keyboardType: w.keyboardType,
       textInputAction: w.textInputAction,
       maxLines: w.obscureText ? 1 : w.maxLines,
+      minLines: w.obscureText ? null : w.minLines,
       onChanged: w.onChanged,
       onFieldSubmitted: w.onSubmitted,
       validator: w.validator,
