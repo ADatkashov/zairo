@@ -349,14 +349,53 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
     final colors = context.factoryColors;
     final booking = widget.booking;
 
+    final textTheme = Theme.of(context).textTheme;
+    final serviceTitle = booking.serviceTitle;
+    final providerName = booking.providerName;
+    final startsAt = booking.startsAt;
+
     return FactoryCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: BookingAmounts(booking: booking, compact: true)),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (serviceTitle != null && serviceTitle.isNotEmpty)
+                      Text(
+                        serviceTitle,
+                        style: textTheme.titleMedium,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    if (providerName != null && providerName.isNotEmpty)
+                      Text(
+                        providerName,
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    if (startsAt != null)
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          top: FactorySpacing.space1,
+                        ),
+                        child: Text(
+                          l10n.bookingAppointmentLabel(
+                            formatMonthDayTime(l10n, startsAt.toLocal()),
+                          ),
+                          style: textTheme.bodyMedium,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
               const SizedBox(width: FactorySpacing.space2),
               Flexible(
                 child: FactoryBadge(
@@ -366,6 +405,8 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
               ),
             ],
           ),
+          const SizedBox(height: FactorySpacing.space2),
+          BookingAmounts(booking: booking, compact: true),
           const SizedBox(height: FactorySpacing.space2),
           Text(
             l10n.bookedOnLabel(

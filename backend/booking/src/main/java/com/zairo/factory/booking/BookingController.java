@@ -41,9 +41,12 @@ public class BookingController {
     private final BookingRepository bookingRepository;
     private final AvailabilitySlotRepository availabilitySlotRepository;
     private final ProviderOwnership providerOwnership;
+    private final BookingResponseAssembler responseAssembler;
 
     public BookingController(BookingService bookingService, BookingRepository bookingRepository,
-            AvailabilitySlotRepository availabilitySlotRepository, ProviderOwnership providerOwnership) {
+            AvailabilitySlotRepository availabilitySlotRepository, ProviderOwnership providerOwnership,
+            BookingResponseAssembler responseAssembler) {
+        this.responseAssembler = responseAssembler;
         this.bookingService = bookingService;
         this.bookingRepository = bookingRepository;
         this.availabilitySlotRepository = availabilitySlotRepository;
@@ -111,7 +114,7 @@ public class BookingController {
             providerOwnership.requireOwner(slot.getProviderId(), callerId);
         }
 
-        return BookingResponse.from(booking);
+        return responseAssembler.assemble(booking);
     }
 
     @Operation(summary = "Mark a booking complete", description = "Only a CONFIRMED booking can be completed "
@@ -174,7 +177,8 @@ public class BookingController {
 
     @Operation(summary = "List a user's bookings", description = "Owner-only: the caller must be the exact "
             + "user named by `userId`.")
-    @ApiResponse(responseCode = "200", description = "The user's bookings (empty list if none)")
+    @ApiResponse(responseCode = "200", description = "The user's bookings (empty list if none), each enriched "
+            + "with serviceTitle, providerId/providerName/providerVertical and startsAt/endsAt")
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @SecurityRequirement(name = "bearerAuth")
@@ -185,7 +189,7 @@ public class BookingController {
         if (!callerId.equals(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot view another user's bookings");
         }
-        return bookingRepository.findByUserId(userId).stream().map(BookingResponse::from).toList();
+        return responseAssembler.assemble(bookingRepository.findByUserId(userId));
     }
 
     @Operation(summary = "List a provider's received bookings", description = "For the Business Admin app: "
