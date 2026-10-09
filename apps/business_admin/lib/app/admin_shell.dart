@@ -167,7 +167,8 @@ class _SidebarNavItem extends StatelessWidget {
               Badge(
                 isLabelVisible: destination.badgeCount > 0,
                 label: Text(destination.badgeCount > 9 ? '9+' : '${destination.badgeCount}'),
-                backgroundColor: colors.coral,
+                backgroundColor: colors.error,
+                textColor: colors.bg,
                 child: Icon(selected ? destination.selectedIcon : destination.icon, size: 20, color: color),
               ),
               if (!compact) ...[
