@@ -58,6 +58,7 @@ class PaymentsApiTests {
         ResponseEntity<Map> providerResponse = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
                 new HttpEntity<>(providerRequest, TestAuth.authHeaders(owner.accessToken())), Map.class);
         UUID providerId = UUID.fromString(providerResponse.getBody().get("id").toString());
+        TestAuth.requireFullPayment(restTemplate, owner, providerId);
 
         var serviceRequest = new CreateServiceRequest("Pay Service", 30, new BigDecimal("35.00"), "USD");
         ResponseEntity<Map> serviceResponse = restTemplate.exchange("/api/v1/providers/" + providerId + "/services",
@@ -128,6 +129,7 @@ class PaymentsApiTests {
         ResponseEntity<Map> providerResponse = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
                 new HttpEntity<>(providerRequest, TestAuth.authHeaders(owner.accessToken())), Map.class);
         UUID providerId = UUID.fromString(providerResponse.getBody().get("id").toString());
+        TestAuth.requireFullPayment(restTemplate, owner, providerId);
 
         var serviceRequest = new CreateServiceRequest("Refund Service", 30, new BigDecimal("40.00"), "USD");
         ResponseEntity<Map> serviceResponse = restTemplate.exchange("/api/v1/providers/" + providerId + "/services",
@@ -217,6 +219,45 @@ class PaymentsApiTests {
                 HttpMethod.GET, customerAuth, Map.class);
         assertThat(read.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(read.getBody().get("id")).isEqualTo(first.getBody().get("id"));
+    }
+
+    @Test
+    void aBookingWithNothingDueOnlineIsConfirmedAtOnceAndHasNoPaymentToMake() {
+        String runId = UUID.randomUUID().toString();
+        Registered customer = TestAuth.registerCustomer(restTemplate, "free-customer-" + runId + "@example.com");
+        Registered owner = TestAuth.registerOwner(restTemplate, "free-owner-" + runId + "@example.com");
+        // A provider that takes no advance payment (the default) — deliberately NOT requireFullPayment.
+        var providerRequest = new CreateProviderRequest(owner.userId(), "Pay At Venue Salon " + runId, "beauty");
+        ResponseEntity<Map> providerResponse = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
+                new HttpEntity<>(providerRequest, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        UUID providerId = UUID.fromString(providerResponse.getBody().get("id").toString());
+        UUID serviceId = createService(owner, providerId, "Pay At Venue Service", new BigDecimal("40.00"));
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+
+        var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("40.00"));
+        ResponseEntity<Map> created = restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
+                new HttpEntity<>(bookingRequest, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(created.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        // Confirmed on creation: nothing to pay online, so nothing to wait for.
+        assertThat(created.getBody().get("status")).isEqualTo("CONFIRMED");
+        assertThat(((Number) created.getBody().get("depositAmount")).doubleValue()).isEqualTo(0.0);
+        UUID bookingId = UUID.fromString(created.getBody().get("id").toString());
+
+        // There is no payment to make, and the customer is not charged the full price online.
+        var customerAuth = new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken()));
+        ResponseEntity<Map> pay = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.POST, customerAuth, Map.class);
+        assertThat(pay.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        ResponseEntity<Map> read = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
+                HttpMethod.GET, customerAuth, Map.class);
+        assertThat(read.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        // Still a real, cancellable booking.
+        ResponseEntity<Map> cancel = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/cancel",
+                HttpMethod.POST, customerAuth, Map.class);
+        assertThat(cancel.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(cancel.getBody().get("status")).isEqualTo("CANCELLED");
     }
 
     @Test
@@ -548,6 +589,7 @@ class PaymentsApiTests {
         ResponseEntity<Map> providerResponse = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
                 new HttpEntity<>(providerRequest, TestAuth.authHeaders(owner.accessToken())), Map.class);
         UUID providerId = UUID.fromString(providerResponse.getBody().get("id").toString());
+        TestAuth.requireFullPayment(restTemplate, owner, providerId);
 
         var serviceRequest = new CreateServiceRequest(prefix + "Service", 30, price, "USD");
         ResponseEntity<Map> serviceResponse = restTemplate.exchange("/api/v1/providers/" + providerId + "/services",
@@ -573,7 +615,9 @@ class PaymentsApiTests {
         ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
                 new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        return UUID.fromString(response.getBody().get("id").toString());
+        UUID providerId = UUID.fromString(response.getBody().get("id").toString());
+        TestAuth.requireFullPayment(restTemplate, owner, providerId);
+        return providerId;
     }
 
     private UUID createService(Registered owner, UUID providerId, String title, BigDecimal price) {
