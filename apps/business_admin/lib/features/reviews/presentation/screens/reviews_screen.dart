@@ -18,7 +18,11 @@ class ReviewsScreen extends ConsumerStatefulWidget {
   final String providerId;
   final String providerName;
 
-  const ReviewsScreen({super.key, required this.providerId, required this.providerName});
+  const ReviewsScreen({
+    super.key,
+    required this.providerId,
+    required this.providerName,
+  });
 
   @override
   ConsumerState<ReviewsScreen> createState() => _ReviewsScreenState();
@@ -38,12 +42,19 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
   }
 
   Future<void> _reply(ProviderReview review) async {
-    final result = await showReviewReplyDialog(context, reviewId: review.id, existingReply: review.businessReply);
+    final result = await showReviewReplyDialog(
+      context,
+      reviewId: review.id,
+      existingReply: review.businessReply,
+    );
     if (result == null) return;
     setState(() {
       final index = _items.indexWhere((r) => r.id == review.id);
       if (index != -1) {
-        _items[index] = review.copyWithReply(businessReply: result.reply, businessReplyAt: result.repliedAt);
+        _items[index] = review.copyWithReply(
+          businessReply: result.reply,
+          businessReplyAt: result.repliedAt,
+        );
       }
     });
   }
@@ -70,7 +81,9 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
 
     return Scaffold(
       backgroundColor: colors.bg,
-      appBar: FactoryAppBar(title: l10n.reviewsScreenTitle(widget.providerName)),
+      appBar: FactoryAppBar(
+        title: l10n.reviewsScreenTitle(widget.providerName),
+      ),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(providerReviewsProvider);
@@ -82,7 +95,11 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
             if (_items.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: FactorySpacing.space4),
-                child: _ReviewsSummary(items: _items, average: _averageRating(_items), awaitingReply: awaitingReply),
+                child: _ReviewsSummary(
+                  items: _items,
+                  average: _averageRating(_items),
+                  awaitingReply: awaitingReply,
+                ),
               ),
             if (_items.isEmpty)
               pageAsync.when(
@@ -93,15 +110,21 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                         message: l10n.reviewsEmptyMessage,
                       )
                     : const Padding(
-                        padding: EdgeInsets.symmetric(vertical: FactorySpacing.space6),
+                        padding: EdgeInsets.symmetric(
+                          vertical: FactorySpacing.space6,
+                        ),
                         child: FactoryLoadingState(),
                       ),
                 loading: () => const Padding(
-                  padding: EdgeInsets.symmetric(vertical: FactorySpacing.space6),
+                  padding: EdgeInsets.symmetric(
+                    vertical: FactorySpacing.space6,
+                  ),
                   child: FactoryLoadingState(),
                 ),
                 error: (error, _) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space4),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: FactorySpacing.space4,
+                  ),
                   child: FactoryErrorState(
                     message: l10n.errorReviewsLoadFailed,
                     onRetry: () => ref.invalidate(providerReviewsProvider(key)),
@@ -133,14 +156,19 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
     );
   }
 
-  double _averageRating(List<ProviderReview> items) =>
-      items.isEmpty ? 0 : items.map((r) => r.rating).reduce((a, b) => a + b) / items.length;
+  double _averageRating(List<ProviderReview> items) => items.isEmpty
+      ? 0
+      : items.map((r) => r.rating).reduce((a, b) => a + b) / items.length;
 }
 
 /// Bento summary: the average is the one big number, next to a 5→1 star
 /// distribution; total and "awaiting reply" sit underneath as secondary facts.
 class _ReviewsSummary extends StatelessWidget {
-  const _ReviewsSummary({required this.items, required this.average, required this.awaitingReply});
+  const _ReviewsSummary({
+    required this.items,
+    required this.average,
+    required this.awaitingReply,
+  });
 
   final List<ProviderReview> items;
   final double average;
@@ -151,7 +179,10 @@ class _ReviewsSummary extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
-    final counts = {for (var star = 5; star >= 1; star--) star: items.where((r) => r.rating == star).length};
+    final counts = {
+      for (var star = 5; star >= 1; star--)
+        star: items.where((r) => r.rating == star).length,
+    };
 
     return FactoryCard(
       padding: const EdgeInsets.all(FactorySpacing.space4),
@@ -161,32 +192,43 @@ class _ReviewsSummary extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    average.toStringAsFixed(1),
-                    style: FactoryTypography.mono(size: 40, weight: FontWeight.w600, color: colors.text),
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (var i = 1; i <= 5; i++)
-                        Icon(
-                          i <= average.round() ? Icons.star_rounded : Icons.star_outline_rounded,
-                          size: 16,
-                          color: colors.accent,
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    l10n.reviewsAverageRatingLabel,
-                    style: textTheme.labelMedium?.copyWith(color: colors.textSecondary),
-                  ),
-                ],
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 120),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      average.toStringAsFixed(1),
+                      style: FactoryTypography.mono(
+                        size: 40,
+                        weight: FontWeight.w600,
+                        color: colors.text,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (var i = 1; i <= 5; i++)
+                          Icon(
+                            i <= average.round()
+                                ? Icons.star_rounded
+                                : Icons.star_outline_rounded,
+                            size: 16,
+                            color: colors.accent,
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      l10n.reviewsAverageRatingLabel,
+                      style: textTheme.labelMedium?.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(width: FactorySpacing.space5),
               Expanded(
@@ -201,23 +243,32 @@ class _ReviewsSummary extends StatelessWidget {
                               width: 12,
                               child: Text(
                                 '${entry.key}',
-                                style: FactoryTypography.mono(size: 12, color: colors.textSecondary),
+                                style: FactoryTypography.mono(
+                                  size: 12,
+                                  color: colors.textSecondary,
+                                ),
                               ),
                             ),
                             const SizedBox(width: FactorySpacing.space2),
                             Expanded(
                               child: ClipRRect(
-                                borderRadius: BorderRadius.circular(FactoryRadius.sm),
+                                borderRadius: BorderRadius.circular(
+                                  FactoryRadius.sm,
+                                ),
                                 child: TweenAnimationBuilder<double>(
                                   tween: Tween(end: entry.value / items.length),
-                                  duration: FactoryMotion.resolve(context, FactoryMotion.slow),
-                                  curve: FactoryMotion.standard,
-                                  builder: (context, v, _) => LinearProgressIndicator(
-                                    value: v,
-                                    minHeight: 6,
-                                    backgroundColor: colors.primaryTint,
-                                    color: colors.accentInk,
+                                  duration: FactoryMotion.resolve(
+                                    context,
+                                    FactoryMotion.slow,
                                   ),
+                                  curve: FactoryMotion.standard,
+                                  builder: (context, v, _) =>
+                                      LinearProgressIndicator(
+                                        value: v,
+                                        minHeight: 6,
+                                        backgroundColor: colors.primaryTint,
+                                        color: colors.accentInk,
+                                      ),
                                 ),
                               ),
                             ),
@@ -233,7 +284,10 @@ class _ReviewsSummary extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _StatTile(value: '${items.length}', label: l10n.reviewsTotalCountLabel),
+                child: _StatTile(
+                  value: '${items.length}',
+                  label: l10n.reviewsTotalCountLabel,
+                ),
               ),
               const SizedBox(width: FactorySpacing.space3),
               Expanded(
@@ -256,7 +310,11 @@ class _StatTile extends StatelessWidget {
   final String label;
   final bool highlight;
 
-  const _StatTile({required this.value, required this.label, this.highlight = false});
+  const _StatTile({
+    required this.value,
+    required this.label,
+    this.highlight = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -264,15 +322,29 @@ class _StatTile extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     // A tinted well, not a card: it lives inside the summary card.
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space3, horizontal: FactorySpacing.space3),
-      decoration: BoxDecoration(color: colors.surfaceAlt, borderRadius: FactoryRadius.mdRadius),
+      padding: const EdgeInsets.symmetric(
+        vertical: FactorySpacing.space3,
+        horizontal: FactorySpacing.space3,
+      ),
+      decoration: BoxDecoration(
+        color: colors.surfaceAlt,
+        borderRadius: FactoryRadius.mdRadius,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(value, style: textTheme.titleLarge?.copyWith(color: highlight ? colors.warning : colors.text)),
+          Text(
+            value,
+            style: textTheme.titleLarge?.copyWith(
+              color: highlight ? colors.warning : colors.text,
+            ),
+          ),
           const SizedBox(height: 2),
-          Text(label, style: textTheme.labelMedium?.copyWith(color: colors.textSecondary)),
+          Text(
+            label,
+            style: textTheme.labelMedium?.copyWith(color: colors.textSecondary),
+          ),
         ],
       ),
     );
@@ -302,7 +374,12 @@ class _ReviewLifecycleStepper extends StatelessWidget {
         Row(
           children: [
             _StepDot(done: true, colors: colors),
-            Expanded(child: Container(height: 2, color: review.hasReply ? colors.primary : colors.border)),
+            Expanded(
+              child: Container(
+                height: 2,
+                color: review.hasReply ? colors.primary : colors.border,
+              ),
+            ),
             _StepDot(done: review.hasReply, colors: colors),
           ],
         ),
@@ -312,17 +389,24 @@ class _ReviewLifecycleStepper extends StatelessWidget {
             Expanded(
               child: Text(
                 l10n.reviewLifecycleReceived,
-                style: textTheme.labelSmall?.copyWith(color: colors.textSecondary),
+                style: textTheme.labelSmall?.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
             ),
             Expanded(
               child: Text(
                 review.hasReply
-                    ? l10n.reviewLifecycleRepliedOn(DateFormat.yMMMd(locale).format(review.businessReplyAt!.toLocal()))
+                    ? l10n.reviewLifecycleRepliedOn(
+                        DateFormat.yMMMd(locale)
+                            .format(review.businessReplyAt!.toLocal()),
+                      )
                     : l10n.reviewLifecyclePending,
                 textAlign: TextAlign.end,
                 style: textTheme.labelSmall?.copyWith(
-                  color: review.hasReply ? colors.textSecondary : colors.textTertiary,
+                  color: review.hasReply
+                      ? colors.textSecondary
+                      : colors.textTertiary,
                 ),
               ),
             ),
@@ -408,14 +492,23 @@ class _ReviewCard extends StatelessWidget {
                 children: [
                   Text(
                     l10n.reviewOwnerReplyLabel,
-                    style: textTheme.labelSmall?.copyWith(color: colors.primaryStrong, fontWeight: FontWeight.w700),
+                    style: textTheme.labelSmall?.copyWith(
+                      color: colors.primaryStrong,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 2),
-                  Text(review.businessReply!, style: textTheme.bodySmall?.copyWith(color: colors.text)),
+                  Text(
+                    review.businessReply!,
+                    style: textTheme.bodySmall?.copyWith(color: colors.text),
+                  ),
                   const SizedBox(height: FactorySpacing.space2),
                   Align(
                     alignment: Alignment.centerRight,
-                    child: TextButton(onPressed: onReply, child: Text(l10n.reviewEditReplyButton)),
+                    child: TextButton(
+                      onPressed: onReply,
+                      child: Text(l10n.reviewEditReplyButton),
+                    ),
                   ),
                 ],
               ),
