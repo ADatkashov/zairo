@@ -851,3 +851,15 @@ chargeRecurring` продолжает бросать `UnsupportedRecurringCharge
 Booking payment flow (`createPayment`, `getPaymentStatus`, `refund`,
 webhook-обработка) не тронут вообще — эта задача была строго
 scoped к `chargeRecurring`, изменений вне него нет.
+
+## Update (2026-10-09): bookings with nothing due online
+
+"A booking is never confirmed without a successful payment" holds for every
+booking that actually requires an online payment. A booking whose advance
+payment is zero (provider policy `NO_PAYMENT`, or a free service) has nothing
+to wait for: `BookingService.createBooking` confirms it immediately and
+publishes `BookingConfirmedEvent`; no `Payment` row exists for it and
+`POST /bookings/{id}/payments` answers 409 (not awaiting payment). Previously
+such a booking stayed `PENDING_PAYMENT` and the charge endpoint billed the
+full price, contradicting what the customer was shown ("pay at the venue").
+

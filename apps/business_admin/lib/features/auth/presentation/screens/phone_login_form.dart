@@ -102,7 +102,7 @@ class _PhoneLoginFormState extends ConsumerState<PhoneLoginForm> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = l10n.errorAuthGeneric(e.toString());
+        _error = l10n.errorAuthGeneric;
         _isSubmitting = false;
       });
     }

@@ -31,12 +31,22 @@ class TestClock {
         private final ZoneId zone;
 
         MutableClock(Instant initial, ZoneId zone) {
-            this.instant = new AtomicReference<>(initial);
+            this.instant = new AtomicReference<>(precisionOfTheDatabase(initial));
             this.zone = zone;
         }
 
         void advanceTo(Instant newInstant) {
-            instant.set(newInstant);
+            instant.set(precisionOfTheDatabase(newInstant));
+        }
+
+        /**
+         * Postgres stores timestamps to the microsecond and rounds what it is given. This clock never moves on its
+         * own, so a nanosecond-precise instant would come back from the database a fraction of a microsecond
+         * <em>later</em> than the clock itself — and a row stamped "due now" would then never look due while the
+         * clock stands still (about every other run, depending on the nanoseconds of the instant).
+         */
+        private static Instant precisionOfTheDatabase(Instant instant) {
+            return instant.truncatedTo(java.time.temporal.ChronoUnit.MICROS);
         }
 
         @Override

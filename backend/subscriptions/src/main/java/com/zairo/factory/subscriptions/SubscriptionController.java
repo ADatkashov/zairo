@@ -9,7 +9,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -19,11 +22,17 @@ public class SubscriptionController {
 
     private final SubscriptionService subscriptionService;
     private final SubscriptionRenewalService subscriptionRenewalService;
+    private final SubscriptionPaymentMethodService paymentMethodService;
+    private final String currency;
 
     public SubscriptionController(SubscriptionService subscriptionService,
-            SubscriptionRenewalService subscriptionRenewalService) {
+            SubscriptionRenewalService subscriptionRenewalService,
+            SubscriptionPaymentMethodService paymentMethodService,
+            @org.springframework.beans.factory.annotation.Value("${app.platform.default-currency:USD}") String currency) {
+        this.currency = currency;
         this.subscriptionService = subscriptionService;
         this.subscriptionRenewalService = subscriptionRenewalService;
+        this.paymentMethodService = paymentMethodService;
     }
 
     @Operation(summary = "Get my subscription", description = "Always returns something — a subscription is "
@@ -34,7 +43,7 @@ public class SubscriptionController {
     @GetMapping("/api/v1/subscriptions/me")
     public SubscriptionResponse getMine(HttpServletRequest httpRequest) {
         UUID ownerUserId = CurrentUser.requireUserId(httpRequest);
-        return SubscriptionResponse.from(subscriptionService.getOrCreate(ownerUserId));
+        return SubscriptionResponse.from(subscriptionService.getOrCreate(ownerUserId), currency);
     }
 
     @Operation(summary = "Upgrade to PRO", description = "Charges the PRO monthly price immediately through the "
@@ -48,7 +57,7 @@ public class SubscriptionController {
     public SubscriptionResponse upgrade(HttpServletRequest httpRequest) {
         UUID ownerUserId = CurrentUser.requireUserId(httpRequest);
         SubscriptionService.SubscriptionUpgradeResult result = subscriptionService.upgradeToPro(ownerUserId);
-        return SubscriptionResponse.from(result.subscription(), result.checkoutUrl());
+        return SubscriptionResponse.from(result.subscription(), result.checkoutUrl(), currency);
     }
 
     @Operation(summary = "Downgrade to FREE", description = "Self-service, takes effect at the end of the "
@@ -60,7 +69,7 @@ public class SubscriptionController {
     @PostMapping("/api/v1/subscriptions/downgrade")
     public SubscriptionResponse downgrade(HttpServletRequest httpRequest) {
         UUID ownerUserId = CurrentUser.requireUserId(httpRequest);
-        return SubscriptionResponse.from(subscriptionService.downgradeToFreeAtPeriodEnd(ownerUserId));
+        return SubscriptionResponse.from(subscriptionService.downgradeToFreeAtPeriodEnd(ownerUserId), currency);
     }
 
     @Operation(summary = "Retry a past-due charge now", description = "The Billing screen's grace-period "
@@ -75,7 +84,38 @@ public class SubscriptionController {
     @PostMapping("/api/v1/subscriptions/retry-charge")
     public SubscriptionResponse retryCharge(HttpServletRequest httpRequest) {
         UUID ownerUserId = CurrentUser.requireUserId(httpRequest);
-        return SubscriptionResponse.from(subscriptionRenewalService.retryPastDueCharge(ownerUserId));
+        SubscriptionService.SubscriptionUpgradeResult result = subscriptionRenewalService
+                .retryPastDueCharge(ownerUserId);
+        return SubscriptionResponse.from(result.subscription(), result.checkoutUrl(), currency);
+    }
+
+    @Operation(summary = "My saved payment card", description = "The card the subscription renews with — brand "
+            + "and last four digits only. {@code saved=false} when none is stored.")
+    @ApiResponse(responseCode = "200", description = "The stored card, or saved=false")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/subscriptions/me/payment-method")
+    public SubscriptionDtos.PaymentMethodResponse getPaymentMethod(HttpServletRequest httpRequest) {
+        UUID ownerUserId = CurrentUser.requireUserId(httpRequest);
+        Subscription subscription = subscriptionService.getOrCreate(ownerUserId);
+        return paymentMethodService.find(subscription.getId())
+                .map(method -> new SubscriptionDtos.PaymentMethodResponse(true, method.getCardBrand(),
+                        method.getCardLast4(), method.getCreatedAt(),
+                        paymentMethodService.autoRenewActive(subscription, true)))
+                .orElseGet(() -> new SubscriptionDtos.PaymentMethodResponse(false, null, null, null, false));
+    }
+
+    @Operation(summary = "Remove my saved payment card", description = "Forgets the stored card on our side, so "
+            + "it is never charged again; PRO continues until the end of the paid period and the next renewal "
+            + "is paid in checkout. Idempotent.")
+    @ApiResponse(responseCode = "204", description = "No card is stored any more")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @SecurityRequirement(name = "bearerAuth")
+    @DeleteMapping("/api/v1/subscriptions/me/payment-method")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removePaymentMethod(HttpServletRequest httpRequest) {
+        UUID ownerUserId = CurrentUser.requireUserId(httpRequest);
+        paymentMethodService.remove(subscriptionService.getOrCreate(ownerUserId).getId());
     }
 
     @Operation(summary = "List my subscription charges", description = "The Billing screen's invoice history "

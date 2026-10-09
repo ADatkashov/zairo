@@ -33,5 +33,13 @@ class City {
 
   factory City.fromJson(Map<String, dynamic> json) => _$CityFromJson(json);
 
+  /// The name to show for [languageCode]. The backend only stores an English
+  /// and a Kazakh name, so Kazakh gets [nameKk] (when set) and every other
+  /// language falls back to [name].
+  String nameFor(String languageCode) {
+    final kk = nameKk;
+    return languageCode == 'kk' && kk != null && kk.isNotEmpty ? kk : name;
+  }
+
   Map<String, dynamic> toJson() => _$CityToJson(this);
 }

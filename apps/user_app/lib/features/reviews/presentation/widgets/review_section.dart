@@ -70,8 +70,7 @@ class ReviewSection extends ConsumerWidget {
         width: 20,
         child: CircularProgressIndicator(strokeWidth: 2),
       ),
-      error: (error, stackTrace) =>
-          Text(l10n.errorReviewLoadFailed(error.toString())),
+      error: (error, stackTrace) => Text(l10n.errorReviewLoadFailed),
     );
   }
 
@@ -116,41 +115,43 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
     final colors = context.factoryColors;
     return FactoryDialog(
       title: l10n.reviewLeaveButton,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: List.generate(
-              5,
-              (i) => IconButton(
-                onPressed: _isSubmitting
-                    ? null
-                    : () => setState(() => _rating = i + 1),
-                tooltip: l10n.starRatingSemanticLabel(i + 1),
-                icon: Icon(
-                  Symbols.star_rounded,
-                  fill: i < _rating ? 1 : 0,
-                  color: colors.accent,
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              children: List.generate(
+                5,
+                (i) => IconButton(
+                  onPressed: _isSubmitting
+                      ? null
+                      : () => setState(() => _rating = i + 1),
+                  tooltip: l10n.starRatingSemanticLabel(i + 1),
+                  icon: Icon(
+                    Symbols.star_rounded,
+                    fill: i < _rating ? 1 : 0,
+                    color: colors.accent,
+                  ),
                 ),
               ),
             ),
-          ),
-          FactoryTextField(
-            controller: _commentController,
-            enabled: !_isSubmitting,
-            label: l10n.reviewCommentHint,
-            maxLines: 3,
-          ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                _error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
+            FactoryTextField(
+              controller: _commentController,
+              enabled: !_isSubmitting,
+              label: l10n.reviewCommentHint,
+              maxLines: 3,
             ),
-        ],
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+          ],
+        ),
       ),
       actions: [
         FactoryButton(
@@ -194,7 +195,7 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
     } catch (e) {
       final l10n = AppLocalizations.of(context)!;
       setState(() {
-        _error = l10n.errorReviewSubmitFailed(e.toString());
+        _error = l10n.errorReviewSubmitFailed;
         _isSubmitting = false;
       });
     }

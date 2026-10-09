@@ -33,7 +33,7 @@ class LoyaltyAdminException implements Exception {
       case 409:
         return serverMessage ?? l10n.errorLoyaltyConflict;
       default:
-        return l10n.errorLoyaltyActionFailed(serverMessage ?? statusCode?.toString() ?? '');
+        return serverMessage ?? l10n.errorLoyaltyActionFailed;
     }
   }
 

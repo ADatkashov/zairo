@@ -323,5 +323,19 @@
   "activityYesterday": "Кеше",
   "activityDetailTime": "Уақыты",
   "activityDetailTarget": "Нысан",
-  "activityDetailEntryId": "Жазба ID"
+  "activityDetailEntryId": "Жазба ID",
+  "financeCommission": "Комиссия",
+  "commissionDefaultTitle": "Әдепкі комиссия",
+  "commissionDefaultHelp": "Өз мөлшерлемесі жоқ барлық санаттарға қолданылады. 0% — платформа комиссия алмайды.",
+  "commissionCategoriesTitle": "Санаттар бойынша",
+  "commissionOwnRate": "Санаттың өз мөлшерлемесі",
+  "commissionFollowsDefault": "Әдепкі бойынша",
+  "commissionChange": "Өзгерту",
+  "commissionUseDefault": "Әдепкіге қайтару",
+  "commissionEditMessage": "Әр брондау төлемінің пайызы, 0-ден 100-ге дейін. Жаңа төлемдерге қолданылады; бұрынғы төлемдер өз мөлшерлемесін сақтайды.",
+  "commissionField": "Пайыз (%)",
+  "commissionSave": "Сақтау",
+  "commissionSaved": "Комиссия жаңартылды",
+  "commissionReset": "Санат қайтадан әдепкі мөлшерлемені қолданады",
+  "commissionInvalid": "0-ден 100-ге дейінгі санды енгізіңіз (үтірден кейін 2 таңбаға дейін)"
 }

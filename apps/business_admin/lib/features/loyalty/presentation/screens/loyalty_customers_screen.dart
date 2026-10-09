@@ -109,7 +109,7 @@ class _LoyaltyCustomersScreenState extends ConsumerState<LoyaltyCustomersScreen>
               error: (error, _) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space4),
                 child: FactoryErrorState(
-                  message: l10n.errorLoyaltyCustomersLoadFailed(error.toString()),
+                  message: l10n.errorLoyaltyCustomersLoadFailed,
                   onRetry: () => ref.invalidate(loyaltyCustomersProvider(key)),
                 ),
               ),

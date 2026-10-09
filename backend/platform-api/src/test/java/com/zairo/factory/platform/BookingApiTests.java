@@ -75,6 +75,43 @@ class BookingApiTests {
     }
 
     @Test
+    void aBookingSaysWhatWasBookedWithWhomAndWhenEverywhereItIsReturned() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "details-owner-" + runId + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "details-customer-" + runId + "@example.com");
+
+        UUID providerId = createProvider(owner, "Details Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Gel manicure", new BigDecimal("20.00"));
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
+        Instant end = start.plus(30, ChronoUnit.MINUTES);
+        UUID slotId = createSlot(owner, providerId, start, end);
+
+        ResponseEntity<Map> created = createBooking(customer,
+                new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("20.00")));
+        assertThat(created.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        UUID bookingId = UUID.fromString(created.getBody().get("id").toString());
+
+        ResponseEntity<Map[]> mine = restTemplate.exchange("/api/v1/users/" + customer.userId() + "/bookings",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map[].class);
+        ResponseEntity<Map> byId = restTemplate.exchange("/api/v1/bookings/" + bookingId, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        ResponseEntity<Map[]> received = restTemplate.exchange("/api/v1/providers/" + providerId + "/bookings",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map[].class);
+
+        assertThat(mine.getBody()).hasSize(1);
+        assertThat(received.getBody()).hasSize(1);
+        for (Map<?, ?> booking : new Map<?, ?>[] {created.getBody(), mine.getBody()[0], byId.getBody(),
+                received.getBody()[0]}) {
+            assertThat(booking.get("serviceTitle")).isEqualTo("Gel manicure");
+            assertThat(booking.get("providerId")).isEqualTo(providerId.toString());
+            assertThat(booking.get("providerName")).isEqualTo("Details Salon " + runId);
+            assertThat(booking.get("providerVertical")).isEqualTo("beauty");
+            assertThat(Instant.parse(booking.get("startsAt").toString())).isEqualTo(start);
+            assertThat(Instant.parse(booking.get("endsAt").toString())).isEqualTo(end);
+        }
+    }
+
+    @Test
     void customerCancelsTheirOwnConfirmedBookingAndTheSlotReopens() {
         String runId = UUID.randomUUID().toString();
         Registered customer = TestAuth.registerCustomer(restTemplate, "cancel-customer-" + runId + "@example.com");
@@ -508,12 +545,58 @@ class BookingApiTests {
                 .isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
+    @Test
+    void customerBookingListAndGetCarryServiceTitleBusinessAndAppointmentTimes() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "enrich-owner-" + runId + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "enrich-customer-" + runId + "@example.com");
+
+        String providerName = "Enrich Salon " + runId;
+        UUID providerId = createProvider(owner, providerName);
+        UUID haircutId = createService(owner, providerId, "Haircut", new BigDecimal("15.00"));
+        UUID colorId = createService(owner, providerId, "Coloring", new BigDecimal("40.00"));
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
+        Instant end = start.plus(30, ChronoUnit.MINUTES);
+        UUID slot1 = createSlot(owner, providerId, start, end);
+        UUID slot2 = createSlot(owner, providerId, start.plus(3, ChronoUnit.HOURS),
+                start.plus(4, ChronoUnit.HOURS));
+        UUID bookingId = UUID.fromString(createBooking(customer, new CreateBookingRequest(customer.userId(),
+                haircutId, slot1, new BigDecimal("15.00"))).getBody().get("id").toString());
+        createBooking(customer, new CreateBookingRequest(customer.userId(), colorId, slot2,
+                new BigDecimal("40.00")));
+
+        ResponseEntity<Map[]> list = restTemplate.exchange("/api/v1/users/" + customer.userId() + "/bookings",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map[].class);
+        assertThat(list.getBody()).hasSize(2);
+        Map first = java.util.Arrays.stream(list.getBody())
+                .filter(b -> bookingId.toString().equals(b.get("id"))).findFirst().orElseThrow();
+        assertThat(first.get("serviceTitle")).isEqualTo("Haircut");
+        assertThat(first.get("providerId")).isEqualTo(providerId.toString());
+        assertThat(first.get("providerName")).isEqualTo(providerName);
+        assertThat(first.get("providerVertical")).isEqualTo("beauty");
+        assertThat(Instant.parse(first.get("startsAt").toString())).isEqualTo(start);
+        assertThat(Instant.parse(first.get("endsAt").toString())).isEqualTo(end);
+        // Existing fields are untouched for older clients.
+        assertThat(first.get("serviceId")).isEqualTo(haircutId.toString());
+        assertThat(first.get("availabilitySlotId")).isEqualTo(slot1.toString());
+        assertThat(java.util.Arrays.stream(list.getBody()).map(b -> b.get("serviceTitle")))
+                .containsExactlyInAnyOrder("Haircut", "Coloring");
+
+        ResponseEntity<Map> single = restTemplate.exchange("/api/v1/bookings/" + bookingId, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(single.getBody().get("serviceTitle")).isEqualTo("Haircut");
+        assertThat(single.getBody().get("providerName")).isEqualTo(providerName);
+        assertThat(Instant.parse(single.getBody().get("startsAt").toString())).isEqualTo(start);
+    }
+
     private UUID createProvider(Registered owner, String name) {
         var request = new CreateProviderRequest(owner.userId(), name, "beauty");
         ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
                 new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        return UUID.fromString(response.getBody().get("id").toString());
+        UUID providerId = UUID.fromString(response.getBody().get("id").toString());
+        TestAuth.requireFullPayment(restTemplate, owner, providerId);
+        return providerId;
     }
 
     private UUID createService(Registered owner, UUID providerId, String title, BigDecimal price) {

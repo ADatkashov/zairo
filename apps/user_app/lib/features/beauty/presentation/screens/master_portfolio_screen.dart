@@ -120,7 +120,7 @@ class MasterPortfolioScreen extends ConsumerWidget {
         loading: () => const FactoryLoadingState(),
         error: (error, stackTrace) => Center(
           child: FactoryErrorState(
-            message: l10n.errorPortfolioLoadFailed(error.toString()),
+            message: l10n.errorPortfolioLoadFailed,
             onRetry: () => ref.invalidate(masterPortfolioProvider(masterId)),
           ),
         ),

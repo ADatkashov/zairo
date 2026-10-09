@@ -27,18 +27,22 @@ public final class SubscriptionDtos {
                     + "redirect the customer here to complete the charge. The plan/status fields above are still "
                     + "the pre-upgrade values in that case — the subscription becomes PRO only once the provider's "
                     + "webhook confirms the payment, not when this response is returned.")
-            String checkoutUrl) {
+            String checkoutUrl,
+            @Schema(description = "What PRO costs per month, so a client never hardcodes the price.", example = "29.00")
+            BigDecimal proMonthlyPrice,
+            @Schema(description = "ISO 4217 currency PRO is charged in.", example = "USD")
+            String currency) {
 
-        static SubscriptionResponse from(Subscription subscription) {
-            return from(subscription, null);
+        static SubscriptionResponse from(Subscription subscription, String currency) {
+            return from(subscription, null, currency);
         }
 
-        static SubscriptionResponse from(Subscription subscription, String checkoutUrl) {
+        static SubscriptionResponse from(Subscription subscription, String checkoutUrl, String currency) {
             SubscriptionPlan plan = subscription.getPlan();
             return new SubscriptionResponse(subscription.getId(), subscription.getOwnerUserId(), plan,
                     subscription.getStatus(), PlanLimits.from(plan), subscription.getCurrentPeriodStart(),
                     subscription.getCurrentPeriodEnd(), subscription.getGracePeriodEndsAt(),
-                    subscription.isCancelAtPeriodEnd(), checkoutUrl);
+                    subscription.isCancelAtPeriodEnd(), checkoutUrl, SubscriptionPlan.PRO.monthlyPrice, currency);
         }
     }
 
@@ -55,6 +59,19 @@ public final class SubscriptionDtos {
             return new SubscriptionChargeResponse(charge.getId(), charge.getAmount(), charge.getCurrency(),
                     charge.getStatus(), charge.getCreatedAt());
         }
+    }
+
+    @Schema(description = "The card the subscription renews with. Display data only — never a full card number.")
+    public record PaymentMethodResponse(
+            @Schema(description = "False when no card is stored; the other card fields are then null.")
+            boolean saved,
+            @Schema(example = "VISA", nullable = true) String brand,
+            @Schema(example = "4242", nullable = true) String last4,
+            Instant addedAt,
+            @Schema(description = "True when the renewal will really be charged by itself: the provider can charge a "
+                    + "stored card, one is stored, the plan is PRO and no downgrade is scheduled. False means the owner "
+                    + "pays each renewal in checkout.")
+            boolean autoRenew) {
     }
 
     public record PlanLimits(int maxProviders, int maxStaffPerProvider,

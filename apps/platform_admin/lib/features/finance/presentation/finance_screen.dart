@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../../../core/widgets/common.dart';
 import '../../../l10n/app_localizations.dart';
+import 'commission_tab.dart';
 import 'payouts_tab.dart';
 import 'refunds_tab.dart';
 
 /// Money in motion: what businesses are owed (payouts) and money that has to
-/// go back to customers (refunds). `/finance?tab=refunds` opens the second tab.
+/// go back to customers (refunds), plus the marketplace commission rates.
+/// `/finance?tab=refunds` opens the second tab, `?tab=commission` the third.
 class FinanceScreen extends StatelessWidget {
   const FinanceScreen({super.key, this.initialTab});
 
@@ -18,17 +20,22 @@ class FinanceScreen extends StatelessWidget {
     return DefaultTabController(
       // A new key per deep link so the tab follows the URL.
       key: ValueKey(initialTab),
-      length: 2,
-      initialIndex: initialTab == 'refunds' ? 1 : 0,
+      length: 3,
+      initialIndex: switch (initialTab) {
+        'refunds' => 1,
+        'commission' => 2,
+        _ => 0,
+      },
       child: AreaScaffold(
         title: l10n.navFinance,
         bottom: TabBar(
           tabs: [
             Tab(text: l10n.financePayouts),
             Tab(text: l10n.financeRefunds),
+            Tab(text: l10n.financeCommission),
           ],
         ),
-        body: const ContentFrame(child: TabBarView(children: [PayoutsTab(), RefundsTab()])),
+        body: const ContentFrame(child: TabBarView(children: [PayoutsTab(), RefundsTab(), CommissionTab()])),
       ),
     );
   }

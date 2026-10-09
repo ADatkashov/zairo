@@ -243,6 +243,7 @@ class _WorkerScheduleScreenState extends ConsumerState<WorkerScheduleScreen> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<int>(
+                    isExpanded: true,
                     initialValue: _slotMinutes,
                     decoration: InputDecoration(labelText: l10n.workerScheduleSlotLength),
                     items: [
@@ -255,6 +256,7 @@ class _WorkerScheduleScreenState extends ConsumerState<WorkerScheduleScreen> {
                 const SizedBox(width: FactorySpacing.space3),
                 Expanded(
                   child: DropdownButtonFormField<int>(
+                    isExpanded: true,
                     initialValue: _breakMinutes,
                     decoration: InputDecoration(labelText: l10n.workerScheduleBreak),
                     items: [

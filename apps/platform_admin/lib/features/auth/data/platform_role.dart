@@ -24,6 +24,9 @@ class PlatformPermissions {
   /// Mark payouts processing / paid / failed.
   bool get canSettlePayouts => isAdmin;
 
+  /// Change the marketplace commission (platform default and per category).
+  bool get canEditCommission => isAdmin;
+
   /// Add, deactivate and reactivate staff accounts.
   bool get canManageStaff => isAdmin;
 

@@ -53,6 +53,14 @@ abstract final class AppRoutes {
 
   /// Needs a `BookingConfirmationArgs` as `extra`.
   static const bookingConfirmation = '/booking-confirmation';
+
+  /// Pay for a booking that is still awaiting payment. Needs a
+  /// `BookingPaymentArgs` as `extra`; pops with `true` once it is paid.
+  static const bookingPayment = '/booking-payment';
+
+  /// Where `zairo://app/payment-result?status=success|failure&booking=<id>` lands: the link the
+  /// payment provider's return page opens after the customer has paid (or not).
+  static const paymentResult = '/payment-result';
   static const notifications = '/notifications';
   static const favorites = '/favorites';
   static const messages = '/messages';
@@ -63,6 +71,7 @@ abstract final class AppRoutes {
   static const changeRequests = '/change-requests';
   static const redemptions = '/redemptions';
   static const vehicles = '/vehicles';
+  static const paymentCards = '/payment-cards';
   static const support = '/support';
   static const about = '/about';
   static const settings = '/settings';

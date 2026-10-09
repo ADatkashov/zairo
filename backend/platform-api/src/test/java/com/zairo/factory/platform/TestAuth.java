@@ -47,6 +47,21 @@ final class TestAuth {
         return new Registered(userId, body.get("accessToken").toString());
     }
 
+    /**
+     * Makes the provider charge the full price online. A provider takes no advance payment by default, and
+     * a booking with nothing due online is confirmed on creation with no payment at all — so a test that
+     * walks a booking through "pay -> confirm" (and everything that hangs off a payment: commission,
+     * payout, refund) first has to ask for an online payment.
+     */
+    static void requireFullPayment(TestRestTemplate restTemplate, Registered owner, UUID providerId) {
+        var response = restTemplate.exchange("/api/v1/payment-settings?providerId=" + providerId, HttpMethod.PUT,
+                new HttpEntity<>(Map.of("depositType", "FULL_PAYMENT"), authHeaders(owner.accessToken())),
+                Map.class);
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new IllegalStateException("Could not require full payment: " + response.getStatusCode());
+        }
+    }
+
     static HttpHeaders authHeaders(String accessToken) {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);

@@ -16,8 +16,7 @@ class CommissionCalculatorTest {
 
     @Test
     void splits15000KztAt10PercentIntoTheTasksOwnWorkedExample() {
-        CommissionCalculator calculator = new CommissionCalculator(new BigDecimal("0.10"));
-        CommissionCalculator.Split split = calculator.split(new BigDecimal("15000"), "KZT");
+        CommissionCalculator.Split split = CommissionCalculator.split(new BigDecimal("15000"), "KZT", new BigDecimal("0.10"));
 
         // BigDecimal.equals is scale-sensitive (5 != 5.00) — the computed
         // values carry KZT's 2-decimal scale from CommissionCalculator's own
@@ -29,25 +28,25 @@ class CommissionCalculatorTest {
 
     @Test
     void businessAmountPlusPlatformFeeAlwaysEqualsTheOriginalAmountEvenWhenRoundingIsInvolved() {
-        CommissionCalculator calculator = new CommissionCalculator(new BigDecimal("0.10"));
         BigDecimal amount = new BigDecimal("19.99");
-        CommissionCalculator.Split split = calculator.split(amount, "USD");
+        CommissionCalculator.Split split = CommissionCalculator.split(amount, "USD", new BigDecimal("0.10"));
 
         assertEquals(amount, split.businessAmount().add(split.platformFee()));
     }
 
     @Test
     void aZeroRateMeansNoCommissionAtAll() {
-        CommissionCalculator calculator = new CommissionCalculator(BigDecimal.ZERO);
-        CommissionCalculator.Split split = calculator.split(new BigDecimal("100.00"), "USD");
+        CommissionCalculator.Split split = CommissionCalculator.split(new BigDecimal("100.00"), "USD", BigDecimal.ZERO);
 
         assertEquals(new BigDecimal("0.00"), split.platformFee());
         assertEquals(new BigDecimal("100.00"), split.businessAmount());
     }
 
     @Test
-    void rejectsAnOutOfRangeRateAtConstructionRatherThanAtSplitTime() {
-        assertThrows(IllegalStateException.class, () -> new CommissionCalculator(new BigDecimal("1.5")));
-        assertThrows(IllegalStateException.class, () -> new CommissionCalculator(new BigDecimal("-0.1")));
+    void rejectsAnOutOfRangeRate() {
+        assertThrows(IllegalArgumentException.class,
+                () -> CommissionCalculator.split(new BigDecimal("100"), "KZT", new BigDecimal("1.5")));
+        assertThrows(IllegalArgumentException.class,
+                () -> CommissionCalculator.split(new BigDecimal("100"), "KZT", new BigDecimal("-0.1")));
     }
 }
