@@ -32,7 +32,7 @@ class LoyaltyOverviewScreen extends ConsumerWidget {
               child: FactoryLoadingState(),
             ),
             error: (error, _) => FactoryErrorState(
-              message: l10n.errorLoyaltyOverviewLoadFailed(error.toString()),
+              message: l10n.errorLoyaltyOverviewLoadFailed,
               onRetry: () => ref.invalidate(loyaltyOverviewProvider(providerId)),
             ),
           ),

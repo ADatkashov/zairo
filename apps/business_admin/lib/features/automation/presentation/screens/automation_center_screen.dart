@@ -125,7 +125,7 @@ class _AutomationCenterBody extends ConsumerWidget {
               child: Padding(
                 padding: const EdgeInsets.all(FactorySpacing.space4),
                 child: FactoryErrorState(
-                  message: l10n.errorAutomationSettingsLoadFailed(error.toString()),
+                  message: l10n.errorAutomationSettingsLoadFailed,
                   onRetry: () => ref.invalidate(automationSettingsProvider(providerId)),
                 ),
               ),

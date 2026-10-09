@@ -48,7 +48,7 @@ class ManageStaffServicesDialog extends ConsumerWidget {
           padding: EdgeInsets.all(FactorySpacing.space6),
           child: Center(child: CircularProgressIndicator()),
         ),
-        error: (error, stackTrace) => Text(l10n.errorServicesLoadFailed(error.toString())),
+        error: (error, stackTrace) => Text(l10n.errorServicesLoadFailed),
       ),
       actions: [
         FactoryButton(

@@ -305,7 +305,7 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = AppLocalizations.of(context)!.errorReadFileFailed(e.toString()));
+      setState(() => _error = AppLocalizations.of(context)!.errorReadFileFailed);
     }
   }
 
@@ -351,7 +351,7 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
       Navigator.of(context).pop(updated);
     } catch (e) {
       setState(() {
-        _error = l10n.errorSaveBusinessFailed(e.toString());
+        _error = l10n.errorSaveBusinessFailed;
         _isSubmitting = false;
       });
     }
@@ -449,7 +449,7 @@ class _ChangePhotoDialogState extends ConsumerState<_ChangePhotoDialog> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = AppLocalizations.of(context)!.errorReadFileFailed(e.toString()));
+      setState(() => _error = AppLocalizations.of(context)!.errorReadFileFailed);
     }
   }
 
@@ -465,7 +465,7 @@ class _ChangePhotoDialogState extends ConsumerState<_ChangePhotoDialog> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = AppLocalizations.of(context)!.errorUpdatePhotoFailed(e.toString());
+        _error = AppLocalizations.of(context)!.errorUpdatePhotoFailed;
         _isSubmitting = false;
       });
     }
@@ -487,7 +487,7 @@ class _ChangePhotoDialogState extends ConsumerState<_ChangePhotoDialog> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = AppLocalizations.of(context)!.errorUpdatePhotoFailed(e.toString());
+        _error = AppLocalizations.of(context)!.errorUpdatePhotoFailed;
         _isSubmitting = false;
       });
     }
@@ -555,7 +555,7 @@ class _DashboardMetricsSection extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
             child: LinearProgressIndicator(),
           ),
-          error: (error, stackTrace) => Text(l10n.errorDashboardLoadFailed(error.toString())),
+          error: (error, stackTrace) => Text(l10n.errorDashboardLoadFailed),
         ),
       ],
     );
@@ -896,7 +896,7 @@ class _ServicesSection extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
             child: LinearProgressIndicator(),
           ),
-          error: (error, stackTrace) => Text(l10n.errorServicesLoadFailed(error.toString())),
+          error: (error, stackTrace) => Text(l10n.errorServicesLoadFailed),
         ),
       ],
     );
@@ -1051,7 +1051,7 @@ class _AvailabilitySectionState extends ConsumerState<_AvailabilitySection> {
             padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
             child: LinearProgressIndicator(),
           ),
-          error: (error, stackTrace) => Text(l10n.errorAvailabilityLoadFailed(error.toString())),
+          error: (error, stackTrace) => Text(l10n.errorAvailabilityLoadFailed),
         ),
       ],
     );
@@ -1217,7 +1217,7 @@ class _MastersSection extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
             child: LinearProgressIndicator(),
           ),
-          error: (error, stackTrace) => Text(l10n.errorMastersLoadFailed(error.toString())),
+          error: (error, stackTrace) => Text(l10n.errorMastersLoadFailed),
         ),
       ],
     );
@@ -1380,7 +1380,7 @@ class _MechanicsSection extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
             child: LinearProgressIndicator(),
           ),
-          error: (error, stackTrace) => Text(l10n.errorMechanicsLoadFailed(error.toString())),
+          error: (error, stackTrace) => Text(l10n.errorMechanicsLoadFailed),
         ),
       ],
     );
@@ -1536,7 +1536,7 @@ class _CleanersSection extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
             child: LinearProgressIndicator(),
           ),
-          error: (error, stackTrace) => Text(l10n.errorCleanersLoadFailed(error.toString())),
+          error: (error, stackTrace) => Text(l10n.errorCleanersLoadFailed),
         ),
       ],
     );
@@ -1692,7 +1692,7 @@ class _StaffSection extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
             child: LinearProgressIndicator(),
           ),
-          error: (error, stackTrace) => Text(l10n.errorStaffLoadFailed(error.toString())),
+          error: (error, stackTrace) => Text(l10n.errorStaffLoadFailed),
         ),
       ],
     );
@@ -1805,7 +1805,7 @@ class _BookingsSection extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
             child: LinearProgressIndicator(),
           ),
-          error: (error, stackTrace) => Text(l10n.errorBookingsLoadFailed(error.toString())),
+          error: (error, stackTrace) => Text(l10n.errorBookingsLoadFailed),
         ),
       ],
     );
@@ -1905,7 +1905,7 @@ class _PayoutsSection extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
             child: LinearProgressIndicator(),
           ),
-          error: (error, stackTrace) => Text(l10n.errorPayoutsLoadFailed(error.toString())),
+          error: (error, stackTrace) => Text(l10n.errorPayoutsLoadFailed),
         ),
       ],
     );
@@ -2124,7 +2124,7 @@ class _BookingSettingsSectionState extends ConsumerState<_BookingSettingsSection
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.errorSaveBusinessFailed(e.toString()))),
+        SnackBar(content: Text(l10n.errorSaveBusinessFailed)),
       );
       setState(() => _isEditing = false);
     }

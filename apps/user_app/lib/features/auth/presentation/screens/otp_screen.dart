@@ -131,7 +131,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       setState(() => _error = e.localizedMessage(l10n));
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = l10n.errorAuthGeneric(e.toString()));
+      setState(() => _error = l10n.errorAuthGeneric);
     } finally {
       if (mounted) setState(() => _isResending = false);
     }
@@ -161,7 +161,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       } catch (e) {
         if (!mounted) return;
         setState(() {
-          _error = l10n.errorAuthGeneric(e.toString());
+          _error = l10n.errorAuthGeneric;
           _isSubmitting = false;
         });
       }
@@ -174,7 +174,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     if (authState.hasError) {
       final error = authState.error;
       setState(() {
-        _error = error is AuthException ? error.localizedMessage(l10n) : l10n.errorAuthGeneric(error.toString());
+        _error = error is AuthException ? error.localizedMessage(l10n) : l10n.errorAuthGeneric;
         _isSubmitting = false;
       });
       return;

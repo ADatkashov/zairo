@@ -243,7 +243,7 @@ class _CampaignCenterBody extends ConsumerWidget {
               error: (error, _) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space4),
                 child: FactoryErrorState(
-                  message: l10n.errorCampaignsLoadFailed(error.toString()),
+                  message: l10n.errorCampaignsLoadFailed,
                   onRetry: () => ref.invalidate(campaignListProvider(key)),
                 ),
               ),
@@ -347,7 +347,7 @@ class _StatsRow extends ConsumerWidget {
       ),
       loading: () => const FactoryLoadingState(),
       error: (error, _) => FactoryErrorState(
-        message: l10n.errorCampaignStatsLoadFailed(error.toString()),
+        message: l10n.errorCampaignStatsLoadFailed,
         onRetry: () => ref.invalidate(campaignStatsProvider(providerId)),
       ),
     );

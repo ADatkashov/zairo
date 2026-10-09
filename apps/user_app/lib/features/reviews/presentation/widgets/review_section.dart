@@ -71,7 +71,7 @@ class ReviewSection extends ConsumerWidget {
         child: CircularProgressIndicator(strokeWidth: 2),
       ),
       error: (error, stackTrace) =>
-          Text(l10n.errorReviewLoadFailed(error.toString())),
+          Text(l10n.errorReviewLoadFailed),
     );
   }
 
@@ -194,7 +194,7 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
     } catch (e) {
       final l10n = AppLocalizations.of(context)!;
       setState(() {
-        _error = l10n.errorReviewSubmitFailed(e.toString());
+        _error = l10n.errorReviewSubmitFailed;
         _isSubmitting = false;
       });
     }

@@ -99,14 +99,16 @@ class CitySelectionScreen extends ConsumerWidget {
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, stack) => Center(
-              child: Text('Error: $error'),
+            error: (error, stack) => _CitiesError(
+              message: l10n.citiesLoadFailed,
+              onRetry: () => ref.invalidate(userCurrentCityProvider),
             ),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Text('Error loading cities: $error'),
+        error: (error, stack) => _CitiesError(
+          message: l10n.citiesLoadFailed,
+          onRetry: () => ref.invalidate(activeCitiesProvider),
         ),
       ),
     );
@@ -117,16 +119,20 @@ class CitySelectionScreen extends ConsumerWidget {
     WidgetRef ref,
     String cityCode,
   ) async {
-    // Show loading
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Loading...')),
-      );
-    }
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(SnackBar(content: Text(l10n.citySelectLoading)));
 
     // Select city via provider
-    final notifier = ref.read(citySelectionProvider.notifier);
-    await notifier.selectCity(cityCode);
+    try {
+      await ref.read(citySelectionProvider.notifier).selectCity(cityCode);
+    } catch (_) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(l10n.citySelectFailed)));
+      return;
+    }
+    messenger.hideCurrentSnackBar();
 
     if (context.mounted) {
       // Refresh the city provider to get updated data
@@ -135,5 +141,22 @@ class CitySelectionScreen extends ConsumerWidget {
       // Pop back and navigate to home
       context.pop();
     }
+  }
+}
+
+class _CitiesError extends StatelessWidget {
+  const _CitiesError({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(FactorySpacing.space4),
+        child: FactoryErrorState(message: message, onRetry: onRetry),
+      ),
+    );
   }
 }
