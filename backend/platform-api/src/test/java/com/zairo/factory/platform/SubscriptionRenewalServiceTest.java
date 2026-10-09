@@ -69,7 +69,7 @@ class SubscriptionRenewalServiceTest {
         Map<?, ?> upgraded = upgrade(owner);
         Instant originalPeriodEnd = Instant.parse(upgraded.get("currentPeriodEnd").toString());
 
-        setNextChargeToFail();
+        declineRenewalCharges(owner, 1);
         clock.advanceTo(originalPeriodEnd.plus(1, ChronoUnit.DAYS));
         subscriptionRenewalService.renewDueSubscriptions();
 
@@ -88,7 +88,7 @@ class SubscriptionRenewalServiceTest {
         Map<?, ?> upgraded = upgrade(owner);
         Instant originalPeriodEnd = Instant.parse(upgraded.get("currentPeriodEnd").toString());
 
-        setNextChargeToFail();
+        declineRenewalCharges(owner, 1);
         clock.advanceTo(originalPeriodEnd.plus(1, ChronoUnit.DAYS));
         subscriptionRenewalService.renewDueSubscriptions();
         assertThat(getMine(owner).get("status")).isEqualTo("PAST_DUE");
@@ -129,7 +129,7 @@ class SubscriptionRenewalServiceTest {
                 + "@example.com");
         Instant originalPeriodEnd = Instant.parse(upgrade(owner).get("currentPeriodEnd").toString());
 
-        setNextChargeToFail();
+        declineRenewalCharges(owner, 1);
         clock.advanceTo(originalPeriodEnd.plus(1, ChronoUnit.DAYS));
         subscriptionRenewalService.renewDueSubscriptions();
         assertThat(getMine(owner).get("status")).isEqualTo("PAST_DUE");
@@ -154,26 +154,21 @@ class SubscriptionRenewalServiceTest {
                 + "@example.com");
         Instant originalPeriodEnd = Instant.parse(upgrade(owner).get("currentPeriodEnd").toString());
 
-        setNextChargeToFail();
+        declineRenewalCharges(owner, 2);
         clock.advanceTo(originalPeriodEnd.plus(1, ChronoUnit.DAYS));
         subscriptionRenewalService.renewDueSubscriptions();
         Instant graceEndsAt = Instant.parse(getMine(owner).get("gracePeriodEndsAt").toString());
         java.util.UUID failedChargeId = latestChargeId(owner);
         assertThat(failureController.chargeAttempts.get(failedChargeId).get()).isEqualTo(1);
 
-        failureController.failAllRecurringCharges = true;
-        try {
-            // Same day: skipped, still one attempt.
-            subscriptionRenewalService.retryPastDueSubscriptions();
-            assertThat(failureController.chargeAttempts.get(failedChargeId).get()).isEqualTo(1);
+        // Same day: skipped, still one attempt.
+        subscriptionRenewalService.retryPastDueSubscriptions();
+        assertThat(failureController.chargeAttempts.get(failedChargeId).get()).isEqualTo(1);
 
-            // Next day: one more attempt, which fails again.
-            clock.advanceTo(clock.instant().plus(1, ChronoUnit.DAYS));
-            subscriptionRenewalService.retryPastDueSubscriptions();
-            subscriptionRenewalService.retryPastDueSubscriptions();
-        } finally {
-            failureController.failAllRecurringCharges = false;
-        }
+        // Next day: one more attempt, which fails again (the second queued decline).
+        clock.advanceTo(clock.instant().plus(1, ChronoUnit.DAYS));
+        subscriptionRenewalService.retryPastDueSubscriptions();
+        subscriptionRenewalService.retryPastDueSubscriptions();
 
         assertThat(failureController.chargeAttempts.get(failedChargeId).get()).isEqualTo(2);
         Map<?, ?> stillPastDue = getMine(owner);
@@ -187,7 +182,7 @@ class SubscriptionRenewalServiceTest {
                 + "@example.com");
         Instant originalPeriodEnd = Instant.parse(upgrade(owner).get("currentPeriodEnd").toString());
 
-        setNextChargeToFail();
+        declineRenewalCharges(owner, 1);
         clock.advanceTo(originalPeriodEnd.plus(1, ChronoUnit.DAYS));
         subscriptionRenewalService.renewDueSubscriptions();
         java.util.UUID failedChargeId = latestChargeId(owner);
@@ -250,8 +245,13 @@ class SubscriptionRenewalServiceTest {
         return java.util.UUID.fromString(((Map<?, ?>) charges(owner).get(0)).get("id").toString());
     }
 
-    private void setNextChargeToFail() {
-        failureController.failNextCharge = true;
+    /**
+     * Declines the next {@code times} renewal charges of this owner's subscription only. Right after the upgrade
+     * the owner has exactly one charge, whose id is the mock recurring profile's.
+     */
+    private void declineRenewalCharges(Registered owner, int times) {
+        String profileId = "mock_recurring_" + latestChargeId(owner);
+        failureController.declineRecurringByProfile.put(profileId, new java.util.concurrent.atomic.AtomicInteger(times));
     }
 
     private Map<?, ?> getMine(Registered owner) {

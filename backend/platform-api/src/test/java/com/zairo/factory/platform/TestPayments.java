@@ -39,7 +39,10 @@ class TestPayments {
                     String currency) {
                 failureController.chargeAttempts.computeIfAbsent(paymentId,
                         id -> new java.util.concurrent.atomic.AtomicInteger()).incrementAndGet();
-                if (failureController.failAllRecurringCharges) {
+                // Targeted: only the subscription whose recurring profile was queued here is declined, so a
+                // renewal sweep that also happens to charge other tests' subscriptions cannot use it up.
+                var declinesLeft = failureController.declineRecurringByProfile.get(recurringProfileId);
+                if (declinesLeft != null && declinesLeft.getAndUpdate(n -> n > 0 ? n - 1 : 0) > 0) {
                     return new ChargeResult(false, null, "simulated card decline");
                 }
                 if (failureController.failNextCharge) {
@@ -108,8 +111,13 @@ class TestPayments {
         volatile boolean pendingNextCharge;
         /** How many times a payment was initiated at the provider — proves a repeated request did not start a second one. */
         final java.util.concurrent.atomic.AtomicInteger paymentInitiations = new java.util.concurrent.atomic.AtomicInteger();
-        /** Every recurring (renewal) charge is declined while set — unlike failNextCharge, no other subscription in the shared DB can use it up. */
-        volatile boolean failAllRecurringCharges;
+        /**
+         * Renewal charges to decline, per recurring profile id (the mock profile id is
+         * {@code "mock_recurring_" + the upgrade charge's id}). Unlike {@link #failNextCharge}, nothing but that
+         * one subscription can use these up.
+         */
+        final java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicInteger> declineRecurringByProfile =
+                new java.util.concurrent.ConcurrentHashMap<>();
         /** How many times chargeRecurring was called per charge id — proves a charge was attempted once, not twice. */
         final java.util.concurrent.ConcurrentHashMap<UUID, java.util.concurrent.atomic.AtomicInteger> chargeAttempts =
                 new java.util.concurrent.ConcurrentHashMap<>();
