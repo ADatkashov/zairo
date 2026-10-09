@@ -1003,5 +1003,14 @@
   "billingRemoveCardBody": "Біз оны қолданбаймыз. PRO {date} дейін жұмыс істейді, одан кейін ұзартуды төлем бетінде төлейсіз.",
   "billingRemoveCardConfirm": "Жою",
   "billingRemoveCardKeep": "Қалдыру",
-  "billingRemoveCardFailed": "Картаны жою мүмкін болмады. Қайталап көріңіз."
+  "billingRemoveCardFailed": "Картаны жою мүмкін болмады. Қайталап көріңіз.",
+  "paymentBreakdownTitle": "Төлем есебі",
+  "paymentTotalPrice": "Жалпы құны",
+  "paymentDepositAmount": "Қазір төленетін депозит",
+  "paymentDepositPercentage": "Депозит {percentage}%",
+  "paymentRemainingAmount": "Қалдық",
+  "paymentRemainingInfo": "Қызмет көрсету күні төленеді",
+  "bookingSettingsTitle": "Брондау параметрлері",
+  "depositPercentageLabel": "Депозит пайызы (%)",
+  "depositPercentageSaved": "Депозит пайызы жаңартылды"
 }

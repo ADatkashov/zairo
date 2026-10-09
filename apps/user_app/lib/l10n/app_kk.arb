@@ -615,5 +615,20 @@
   "paymentChoosePayButton": "Төлеу",
   "citiesLoadFailed": "Қалаларды жүктеу мүмкін болмады. Қайталап көріңіз.",
   "citySelectLoading": "Қала ауыстырылуда…",
-  "citySelectFailed": "Қаланы ауыстыру мүмкін болмады. Қайталап көріңіз."
+  "citySelectFailed": "Қаланы ауыстыру мүмкін болмады. Қайталап көріңіз.",
+  "paymentBreakdownTitle": "Төлем есебі",
+  "paymentTotalPrice": "Жалпы құны",
+  "paymentDepositAmount": "Қазір төленетін депозит",
+  "paymentDepositPercentage": "Депозит {percentage}%",
+  "paymentRemainingAmount": "Қалдық",
+  "paymentRemainingInfo": "Қызмет көрсету күні төленеді",
+  "paymentMethodsTitle": "Төлем тәсілдері",
+  "paymentMethodOnline": "Онлайн төлем",
+  "paymentMethodCash": "Келген кезде қолма-қол төлем",
+  "paymentStatusPending": "Күтілуде",
+  "paymentStatusProcessing": "Өңделуде",
+  "bookingConfirmationPaidLabel": "Төленді: {amount}",
+  "bookingConfirmationRemainingLabel": "Қалдық: {amount}",
+  "bookingPaymentInstructions": "{amount} депозит есептен шығарылды. Қалған {remaining} соманы қызмет көрсету күні қолма-қол немесе онлайн төлеуге болады.",
+  "selectCity": "Қаланы таңдаңыз"
 }
