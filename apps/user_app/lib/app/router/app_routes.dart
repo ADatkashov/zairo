@@ -53,6 +53,10 @@ abstract final class AppRoutes {
 
   /// Needs a `BookingConfirmationArgs` as `extra`.
   static const bookingConfirmation = '/booking-confirmation';
+
+  /// Pay for a booking that is still awaiting payment. Needs a
+  /// `BookingPaymentArgs` as `extra`; pops with `true` once it is paid.
+  static const bookingPayment = '/booking-payment';
   static const notifications = '/notifications';
   static const favorites = '/favorites';
   static const messages = '/messages';

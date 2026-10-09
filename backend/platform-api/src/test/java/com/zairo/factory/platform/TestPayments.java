@@ -73,6 +73,12 @@ class TestPayments {
 
             /** Shared by createPayment/createRecurringPayment — same failNextCharge/throwOnNextCharge flags chargeRecurring honors. */
             private PaymentInitiation initiate(UUID paymentId, String recurringProfileId) {
+                failureController.paymentInitiations.incrementAndGet();
+                if (failureController.pendingNextCharge) {
+                    failureController.pendingNextCharge = false;
+                    return new PaymentInitiation("mock_pending_" + paymentId, "https://pay.test/checkout/" + paymentId,
+                            recurringProfileId, InitiationStatus.PENDING, null);
+                }
                 if (failureController.failNextCharge) {
                     failureController.failNextCharge = false;
                     if (failureController.throwOnNextCharge) {
@@ -98,6 +104,10 @@ class TestPayments {
         volatile boolean failNextCharge;
         volatile boolean throwOnNextCharge;
         volatile boolean failNextRefund;
+        /** The next createPayment/createRecurringPayment is left PENDING with a checkoutUrl, like a redirect-based provider. */
+        volatile boolean pendingNextCharge;
+        /** How many times a payment was initiated at the provider — proves a repeated request did not start a second one. */
+        final java.util.concurrent.atomic.AtomicInteger paymentInitiations = new java.util.concurrent.atomic.AtomicInteger();
         /** Every recurring (renewal) charge is declined while set — unlike failNextCharge, no other subscription in the shared DB can use it up. */
         volatile boolean failAllRecurringCharges;
         /** How many times chargeRecurring was called per charge id — proves a charge was attempted once, not twice. */

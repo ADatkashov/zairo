@@ -20,6 +20,7 @@ import 'package:zairo/features/booking/data/models/availability_slot.dart';
 import 'package:zairo/features/booking/data/models/booking.dart';
 import 'package:zairo/features/booking/presentation/providers/booking_providers.dart';
 import 'package:zairo/features/booking/presentation/screens/booking_confirmation_screen.dart';
+import 'package:zairo/features/booking/presentation/screens/booking_payment_screen.dart';
 import 'package:zairo/features/booking/presentation/screens/provider_detail_screen.dart';
 import 'package:zairo/features/discovery/data/models/provider_search_result.dart';
 import 'package:zairo/features/discovery/data/models/service_summary.dart';
@@ -80,6 +81,9 @@ class _FakePaymentsApi extends PaymentsApi {
 
   String? lastChargedBookingId;
 
+  /// What the charge answers — 'PENDING' is a redirect-based provider (Freedom Pay) leaving a checkout page.
+  String chargeStatus = 'SUCCEEDED';
+
   @override
   Future<Payment> createPayment(String bookingId) async {
     lastChargedBookingId = bookingId;
@@ -88,7 +92,8 @@ class _FakePaymentsApi extends PaymentsApi {
       bookingId: bookingId,
       amount: 30,
       currency: 'USD',
-      status: 'SUCCEEDED',
+      status: chargeStatus,
+      checkoutUrl: chargeStatus == 'PENDING' ? 'https://pay.example/checkout/payment-1' : null,
       createdAt: DateTime.now(),
     );
   }
@@ -310,6 +315,10 @@ Widget _routerApp(ProviderSearchResult provider) => MaterialApp.router(
             path: AppRoutes.bookingConfirmation,
             builder: (_, state) =>
                 BookingConfirmationScreen.fromArgs(state.extra! as BookingConfirmationArgs),
+          ),
+          GoRoute(
+            path: AppRoutes.bookingPayment,
+            builder: (_, state) => BookingPaymentScreen(args: state.extra! as BookingPaymentArgs),
           ),
         ],
       ),
@@ -851,5 +860,84 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('No open times'), findsOneWidget);
+  });
+
+  testWidgets('a payment that is still pending sends the customer to pay instead of showing "confirmed"', (tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    final slot = AvailabilitySlot(
+      id: 'slot-1',
+      providerId: 'provider-1',
+      startsAt: DateTime(2026, 1, 1, 10, 0),
+      endsAt: DateTime(2026, 1, 1, 10, 30),
+      status: 'OPEN',
+    );
+    final fakeApi = _FakeBookingApi([slot])
+      ..bookingFromGet = Booking(
+        id: 'booking-1',
+        userId: 'user-1',
+        serviceId: 'service-1',
+        availabilitySlotId: 'slot-1',
+        status: 'PENDING_PAYMENT',
+        totalPrice: 30,
+        createdAt: DateTime.now(),
+      );
+    final fakePaymentsApi = _FakePaymentsApi()..chargeStatus = 'PENDING';
+    final opened = <Uri>[];
+    const provider = ProviderSearchResult(
+      id: 'provider-1',
+      name: 'Test Salon',
+      vertical: 'beauty',
+      status: 'ACTIVE',
+      hasOpenAvailability: true,
+      minPrice: 30,
+      services: [
+        ServiceSummary(id: 'service-1', title: 'Haircut', durationMinutes: 30, price: 30, currency: 'USD'),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(fakeApi),
+          paymentsApiProvider.overrideWithValue(fakePaymentsApi),
+          beautyApiProvider.overrideWithValue(_FakeBeautyApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+          checkoutLauncherProvider.overrideWithValue((uri) async {
+            opened.add(uri);
+            return true;
+          }),
+        ],
+        child: _routerApp(provider),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tapVisible(tester, find.text('Haircut'));
+    await tester.pumpAndSettle();
+    await tapVisible(tester, find.text('10:00'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FactoryButton, 'Book'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Booking confirmed!'), findsNothing);
+    expect(find.text('Waiting for payment'), findsOneWidget);
+    expect(opened, [Uri.parse('https://pay.example/checkout/payment-1')]);
+
+    // The webhook confirms the booking: now (and only now) the confirmation appears.
+    fakeApi.bookingFromGet = Booking(
+      id: 'booking-1',
+      userId: 'user-1',
+      serviceId: 'service-1',
+      availabilitySlotId: 'slot-1',
+      status: 'CONFIRMED',
+      totalPrice: 30,
+      createdAt: DateTime.now(),
+    );
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+    expect(find.text('Booking confirmed!'), findsOneWidget);
   });
 }
