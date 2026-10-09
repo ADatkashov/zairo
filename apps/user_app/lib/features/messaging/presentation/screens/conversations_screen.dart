@@ -41,7 +41,7 @@ class ConversationsScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             child: FactoryErrorState(
-              message: l10n.errorProfileGeneric(error.toString()),
+              message: l10n.errorProfileGeneric,
               onRetry: () => ref.invalidate(authControllerProvider),
             ),
           ),
@@ -76,6 +76,8 @@ class _ConversationsList extends ConsumerWidget {
                       icon: Symbols.forum_rounded,
                       title: l10n.conversationsEmptyTitle,
                       message: l10n.conversationsEmptyMessage,
+                      actionLabel: l10n.conversationsFindBusinessButton,
+                      onAction: () => context.go(AppRoutes.search()),
                     ),
                   ),
                 ),
@@ -158,7 +160,7 @@ class _ConversationTile extends ConsumerWidget {
             Container(
               width: 10,
               height: 10,
-              decoration: BoxDecoration(color: colors.coral, shape: BoxShape.circle),
+              decoration: BoxDecoration(color: colors.error, shape: BoxShape.circle),
             ),
             const SizedBox(width: FactorySpacing.space2),
           ],

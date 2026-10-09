@@ -6,10 +6,12 @@ import com.zairo.factory.booking.Booking;
 import com.zairo.factory.booking.BookingRepository;
 import com.zairo.factory.booking.BookingService;
 import com.zairo.factory.booking.SlotNotAvailableException;
+import com.zairo.factory.booking.WorkerAvailabilityGuard;
 import com.zairo.factory.providers.ProviderOwnership;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,11 +33,13 @@ public class StaffBookingService {
     private final BookingRepository bookingRepository;
     private final AvailabilitySlotRepository availabilitySlotRepository;
     private final ProviderOwnership providerOwnership;
+    private final ObjectProvider<WorkerAvailabilityGuard> availabilityGuards;
 
     public StaffBookingService(StaffRepository staffRepository,
             StaffServiceLinkRepository staffServiceLinkRepository, StaffBookingRepository staffBookingRepository,
             BookingService bookingService, BookingRepository bookingRepository,
-            AvailabilitySlotRepository availabilitySlotRepository, ProviderOwnership providerOwnership) {
+            AvailabilitySlotRepository availabilitySlotRepository, ProviderOwnership providerOwnership,
+            ObjectProvider<WorkerAvailabilityGuard> availabilityGuards) {
         this.staffRepository = staffRepository;
         this.staffServiceLinkRepository = staffServiceLinkRepository;
         this.staffBookingRepository = staffBookingRepository;
@@ -43,6 +47,7 @@ public class StaffBookingService {
         this.bookingRepository = bookingRepository;
         this.availabilitySlotRepository = availabilitySlotRepository;
         this.providerOwnership = providerOwnership;
+        this.availabilityGuards = availabilityGuards;
     }
 
     @Transactional
@@ -66,7 +71,10 @@ public class StaffBookingService {
                     "Availability slot " + availabilitySlotId + " belongs to a different staff member");
         }
 
-        Booking booking = bookingService.createBooking(userId, serviceId, availabilitySlotId, totalPrice);
+        // Workforce rules (not double-booked elsewhere, not off, choice allowed): see WorkerAvailabilityGuard.
+        availabilityGuards.orderedStream().forEach(guard -> guard.requireBookable(staffId, slot, userId));
+
+        Booking booking = bookingService.createBooking(userId, serviceId, availabilitySlotId, totalPrice, staffId);
         staffBookingRepository.save(new StaffBooking(UUID.randomUUID(), booking.getId(), staffId, Instant.now()));
         return new StaffBookingResult(booking, staffId);
     }

@@ -55,11 +55,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(FactorySpacing.space6),
-                child: Text(
-                  l10n.customerListEmpty,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
-                ),
+                child: FactoryEmptyState(icon: Icons.groups_outlined, title: l10n.customerListEmpty, message: ''),
               ),
             );
           }
@@ -87,10 +83,11 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                     ? Center(
                         child: Padding(
                           padding: const EdgeInsets.all(FactorySpacing.space6),
-                          child: Text(
-                            l10n.customerListNoMatch,
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
+                          child: FactoryEmptyState(
+                            icon: Icons.search_off_rounded,
+                            title: l10n.customerListNoMatch,
+                            message: '',
+                            compact: true,
                           ),
                         ),
                       )
@@ -106,7 +103,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
         },
         loading: () => const FactoryLoadingState(),
         error: (error, _) => FactoryErrorState(
-          message: l10n.errorAnalyticsLoadFailed(error.toString()),
+          message: l10n.errorAnalyticsLoadFailed,
           onRetry: () => ref.invalidate(customerListProvider((providerId, retentionStatus))),
         ),
       ),
@@ -125,52 +122,74 @@ class _CustomerCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
 
+    final name = customer.displayName ?? customer.email ?? '—';
+
     return FactoryCard(
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  customer.displayName ?? customer.email ?? '—',
-                  style: Theme.of(context).textTheme.titleSmall,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: FactorySpacing.space3),
-              FactoryPriceText(amount: customer.totalSpent, fontSize: 14),
-            ],
-          ),
-          if (customer.favouriteServiceTitle != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              customer.favouriteServiceTitle!,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-            ),
-          ],
-          const SizedBox(height: FactorySpacing.space2),
-          Wrap(
-            spacing: FactorySpacing.space3,
-            runSpacing: 4,
-            children: [
-              if (customer.lastVisitAt != null)
-                Text(
-                  l10n.customerListLastVisitLabel(DateFormat.yMMMd(locale).format(customer.lastVisitAt!.toLocal())),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              if (customer.nextExpectedVisitAt != null)
-                Text(
-                  l10n.customerListNextExpectedLabel(
-                    DateFormat.yMMMd(locale).format(customer.nextExpectedVisitAt!.toLocal()),
-                  ),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-            ],
-          ),
+          FactoryAvatar(initials: _initialsFor(name), size: FactoryAvatarSize.md),
+          const SizedBox(width: FactorySpacing.space3),
+          Expanded(child: _details(context, l10n, colors)),
         ],
       ),
     );
   }
+
+  Widget _details(BuildContext context, AppLocalizations l10n, FactoryColors colors) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                customer.displayName ?? customer.email ?? '—',
+                style: Theme.of(context).textTheme.titleSmall,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: FactorySpacing.space3),
+            FactoryPriceText(amount: customer.totalSpent, fontSize: 14),
+          ],
+        ),
+        if (customer.favouriteServiceTitle != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            customer.favouriteServiceTitle!,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+          ),
+        ],
+        const SizedBox(height: FactorySpacing.space2),
+        Wrap(
+          spacing: FactorySpacing.space3,
+          runSpacing: 4,
+          children: [
+            if (customer.lastVisitAt != null)
+              Text(
+                l10n.customerListLastVisitLabel(DateFormat.yMMMd(locale).format(customer.lastVisitAt!.toLocal())),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            if (customer.nextExpectedVisitAt != null)
+              Text(
+                l10n.customerListNextExpectedLabel(
+                  DateFormat.yMMMd(locale).format(customer.nextExpectedVisitAt!.toLocal()),
+                ),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+String _initialsFor(String name) {
+  final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+  if (parts.isEmpty) return '?';
+  if (parts.length == 1) {
+    return parts.first.substring(0, parts.first.length >= 2 ? 2 : 1).toUpperCase();
+  }
+  return (parts[0][0] + parts[1][0]).toUpperCase();
 }

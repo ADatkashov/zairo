@@ -1,3 +1,5 @@
+import '../../features/maps/data/map_provider.dart';
+
 /// Links handed to the phone's own calendar / maps apps (via `launchUrl`),
 /// built without any extra plugin: both are plain https URLs that open the
 /// installed app when there is one and the website otherwise.
@@ -27,10 +29,33 @@ abstract final class ExternalLinks {
     });
   }
 
-  /// Turn-by-turn directions to a point, from wherever the user is.
-  static Uri directionsTo({required double latitude, required double longitude}) =>
-      Uri.https('www.google.com', '/maps/dir/', {
-        'api': '1',
-        'destination': '$latitude,$longitude',
-      });
+  /// Turn-by-turn directions to a point, from wherever the user is. 2GIS by
+  /// default (the map people in Kazakhstan actually use); Google Maps is the
+  /// alternative. Both are https links that open the installed app if there
+  /// is one and the website otherwise.
+  static Uri directionsTo({
+    required double latitude,
+    required double longitude,
+    MapProvider provider = MapProvider.twoGis,
+  }) => switch (provider) {
+    // 2GIS puts longitude first.
+    MapProvider.twoGis => Uri.https('2gis.kz', '/routeSearch/rsType/car/to/$longitude,$latitude'),
+    MapProvider.google => Uri.https('www.google.com', '/maps/dir/', {
+      'api': '1',
+      'destination': '$latitude,$longitude',
+    }),
+  };
+
+  /// The point itself on the map (no routing).
+  static Uri showOnMap({
+    required double latitude,
+    required double longitude,
+    MapProvider provider = MapProvider.twoGis,
+  }) => switch (provider) {
+    MapProvider.twoGis => Uri.https('2gis.kz', '/geo/$longitude,$latitude'),
+    MapProvider.google => Uri.https('www.google.com', '/maps/search/', {
+      'api': '1',
+      'query': '$latitude,$longitude',
+    }),
+  };
 }

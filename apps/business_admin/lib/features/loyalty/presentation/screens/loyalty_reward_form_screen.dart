@@ -316,7 +316,7 @@ class _LoyaltyRewardFormScreenState extends ConsumerState<LoyaltyRewardFormScree
       Navigator.of(context).pop(true);
     } catch (e) {
       setState(() {
-        _error = e is LoyaltyAdminException ? e.localizedMessage(l10n) : l10n.errorLoyaltyActionFailed(e.toString());
+        _error = e is LoyaltyAdminException ? e.localizedMessage(l10n) : l10n.errorLoyaltyActionFailed;
         _isSubmitting = false;
       });
     }
@@ -356,7 +356,7 @@ class _ServicePicker extends ConsumerWidget {
         );
       },
       loading: () => const LinearProgressIndicator(),
-      error: (error, _) => Text(l10n.errorLoyaltyRewardsLoadFailed(error.toString())),
+      error: (error, _) => Text(l10n.errorLoyaltyRewardsLoadFailed),
     );
   }
 }

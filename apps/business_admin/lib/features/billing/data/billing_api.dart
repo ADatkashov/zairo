@@ -1,5 +1,6 @@
 import 'package:core_network/core_network.dart';
 
+import 'models/payment_method.dart';
 import 'models/subscription.dart';
 import 'models/subscription_charge.dart';
 
@@ -28,10 +29,23 @@ class BillingApi {
   }
 
   /// The Billing screen's grace-period banner's "Fix" button — only valid
-  /// while [Subscription.status] is PAST_DUE (409 otherwise).
+  /// while [Subscription.status] is PAST_DUE (409 otherwise). When the
+  /// provider can't charge the stored card by itself, the result carries a
+  /// [Subscription.checkoutUrl] to pay on instead.
   Future<Subscription> retryPastDueCharge() async {
     final response = await _dioClient.post('/subscriptions/retry-charge');
     return Subscription.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// The card the subscription renews with ([PaymentMethod.saved] false when none).
+  Future<PaymentMethod> getPaymentMethod() async {
+    final response = await _dioClient.get('/subscriptions/me/payment-method');
+    return PaymentMethod.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// Forgets the stored card on the server (idempotent).
+  Future<void> removePaymentMethod() async {
+    await _dioClient.delete('/subscriptions/me/payment-method');
   }
 
   /// The Billing screen's invoice history — most recent charge first.

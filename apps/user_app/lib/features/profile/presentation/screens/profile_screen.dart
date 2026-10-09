@@ -15,6 +15,7 @@ import '../../../auth/presentation/screens/register_screen.dart';
 import '../../../booking/presentation/providers/booking_providers.dart';
 import '../../../messaging/presentation/providers/message_seen_provider.dart';
 import '../../../notifications/presentation/widgets/notification_bell_button.dart';
+import '../../../staff/presentation/providers/staff_cabinet_providers.dart';
 import '../../../favorites/presentation/providers/favorites_providers.dart';
 import '../widgets/change_avatar_dialog.dart';
 
@@ -39,15 +40,13 @@ class ProfileScreen extends ConsumerWidget {
         ],
       ),
       body: authState.when(
-        data: (user) => user == null
-            ? const _LoggedOutView()
-            : _LoggedInView(user: user),
+        data: (user) => user == null ? const _LoggedOutView() : _LoggedInView(user: user),
         loading: () => const FactoryLoadingState(),
         error: (error, stackTrace) => Center(
           child: Padding(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             child: FactoryErrorState(
-              message: l10n.errorProfileGeneric(error.toString()),
+              message: l10n.errorProfileGeneric,
               onRetry: () => ref.invalidate(authControllerProvider),
             ),
           ),
@@ -88,6 +87,56 @@ class _LoggedOutView extends StatelessWidget {
   }
 }
 
+/// Soft gradient header with an ambient glow behind the avatar — the
+/// consumer app's profile treatment, so the person is the first thing seen.
+class _ProfileHeader extends StatelessWidget {
+  const _ProfileHeader({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final radius = context.factoryProfileOrNull?.cardBorderRadius ?? FactoryRadius.xlRadius;
+    return Container(
+      width: double.infinity,
+      clipBehavior: Clip.antiAlias,
+      padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space6, horizontal: FactorySpacing.space4),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [colors.primaryTint, colors.surface],
+        ),
+        borderRadius: radius,
+        border: Border.all(color: colors.border),
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
+        children: [
+          Positioned(
+            top: -90,
+            child: IgnorePointer(
+              child: Container(
+                width: 240,
+                height: 240,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [colors.accent.withValues(alpha: 0.28), colors.accent.withValues(alpha: 0)],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
 class _LoggedInView extends ConsumerWidget {
   final UserSummary user;
 
@@ -104,54 +153,59 @@ class _LoggedInView extends ConsumerWidget {
     final textTheme = Theme.of(context).textTheme;
     final bookingsCount = ref.watch(myBookingsProvider(userId)).value?.length;
     final favoritesCount = ref.watch(myFavoritesProvider(userId)).value?.length;
+    // Only people who were added as staff somewhere get the cabinet entry.
+    final staffMemberships = ref.watch(staffMembershipsProvider).value ?? const [];
+    final staffPending = staffMemberships.fold<int>(0, (sum, m) => sum + m.pendingCount);
 
     return ListView(
       padding: const EdgeInsets.all(FactorySpacing.space4),
       children: [
-        const SizedBox(height: FactorySpacing.space4),
-        Center(
-          child: GestureDetector(
-            onTap: () => showChangeAvatarDialog(context, hasCurrentAvatar: avatarUrl != null),
-            child: Stack(
-              children: [
-                FactoryAvatar(
-                  initials: initialsFor(displayName),
-                  size: FactoryAvatarSize.xl,
-                  image: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                ),
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: colors.primary,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: colors.bg, width: 2),
-                    ),
-                    child: Icon(Icons.edit, size: 14, color: colors.onPrimary),
+        _ProfileHeader(
+          child: Column(
+            children: [
+              Center(
+                child: Semantics(
+                  button: true,
+                  label: l10n.changeAvatarDialogTitle,
+                  child: GestureDetector(
+                  onTap: () => showChangeAvatarDialog(context, hasCurrentAvatar: avatarUrl != null),
+                  child: Stack(
+                    children: [
+                      FactoryAvatar(
+                        initials: initialsFor(displayName),
+                        size: FactoryAvatarSize.xl,
+                        image: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                      ),
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: colors.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: colors.bg, width: 2),
+                          ),
+                          child: Icon(Icons.edit, size: 14, color: colors.onPrimary),
+                        ),
+                      ),
+                    ],
+                  ),
                   ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: FactorySpacing.space3),
+              Center(
+                child: Text(displayName, style: textTheme.headlineSmall, textAlign: TextAlign.center),
+              ),
+              const SizedBox(height: FactorySpacing.space1),
+              if (email != null)
+                Center(
+                  child: Text(email, style: textTheme.bodyMedium?.copyWith(color: colors.textTertiary)),
+                ),
+            ],
           ),
         ),
-        const SizedBox(height: FactorySpacing.space3),
-        Center(
-          child: Text(
-            displayName,
-            style: textTheme.headlineSmall,
-            textAlign: TextAlign.center,
-          ),
-        ),
-        const SizedBox(height: FactorySpacing.space1),
-        if (email != null)
-          Center(
-            child: Text(
-              email,
-              style: textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
-            ),
-          ),
         const SizedBox(height: FactorySpacing.space6),
         FactoryCard(
           child: Row(
@@ -190,15 +244,30 @@ class _LoggedInView extends ConsumerWidget {
             ],
           ),
         ),
+        if (staffMemberships.isNotEmpty) ...[
+          const SizedBox(height: FactorySpacing.space6),
+          FactorySelectableTile(
+            title: l10n.staffCabinetTitle,
+            leading: Icon(Symbols.work_rounded, color: colors.textSecondary),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (staffPending > 0) ...[
+                  FactoryBadge(label: '$staffPending', variant: FactoryBadgeVariant.limited),
+                  const SizedBox(width: FactorySpacing.space2),
+                ],
+                Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
+              ],
+            ),
+            onTap: () => context.push(AppRoutes.staffCabinet),
+          ),
+        ],
         const SizedBox(height: FactorySpacing.space6),
         FactorySelectableTile(
           title: l10n.editProfileButton,
           // Nudge to fill in the birthday: it powers greetings and bonuses.
           subtitle: user.birthDate == null
-              ? Text(
-                  l10n.editProfileBirthdayPrompt,
-                  style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-                )
+              ? Text(l10n.editProfileBirthdayPrompt, style: textTheme.bodySmall?.copyWith(color: colors.textTertiary))
               : null,
           leading: Icon(Symbols.edit_rounded, color: colors.textSecondary),
           trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
@@ -247,15 +316,16 @@ class _LoggedInView extends ConsumerWidget {
         ),
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
+          title: l10n.paymentCardsTitle,
+          leading: Icon(Symbols.credit_card_rounded, color: colors.textSecondary),
+          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
+          onTap: () => context.push(AppRoutes.paymentCards),
+        ),
+        const SizedBox(height: FactorySpacing.space2),
+        FactorySelectableTile(
           title: l10n.myVehiclesButton,
-          leading: Icon(
-            Symbols.directions_car_rounded,
-            color: colors.textSecondary,
-          ),
-          trailing: Icon(
-            Symbols.chevron_right_rounded,
-            color: colors.textTertiary,
-          ),
+          leading: Icon(Symbols.directions_car_rounded, color: colors.textSecondary),
+          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
           onTap: () => context.push(AppRoutes.vehicles),
         ),
         const SizedBox(height: FactorySpacing.space5),
@@ -263,24 +333,15 @@ class _LoggedInView extends ConsumerWidget {
         const SizedBox(height: FactorySpacing.space3),
         FactorySelectableTile(
           title: l10n.supportTitle,
-          leading: Icon(
-            Symbols.support_agent_rounded,
-            color: colors.textSecondary,
-          ),
-          trailing: Icon(
-            Symbols.chevron_right_rounded,
-            color: colors.textTertiary,
-          ),
+          leading: Icon(Symbols.support_agent_rounded, color: colors.textSecondary),
+          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
           onTap: () => context.push(AppRoutes.support),
         ),
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
           title: l10n.aboutTitle,
           leading: Icon(Symbols.info_rounded, color: colors.textSecondary),
-          trailing: Icon(
-            Symbols.chevron_right_rounded,
-            color: colors.textTertiary,
-          ),
+          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
           onTap: () => context.push(AppRoutes.about),
         ),
         const SizedBox(height: FactorySpacing.space6),
@@ -348,13 +409,9 @@ class _LogOutButton extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Symbols.logout_rounded, size: 18, color: colors.coral),
+                Icon(Symbols.logout_rounded, size: 18, color: colors.error),
                 const SizedBox(width: 8),
-                Text(
-                  l10n.profileLogOut,
-                  style: Theme.of(context).textTheme.labelLarge
-                      ?.copyWith(color: colors.coral),
-                ),
+                Text(l10n.profileLogOut, style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.error)),
               ],
             ),
           ),

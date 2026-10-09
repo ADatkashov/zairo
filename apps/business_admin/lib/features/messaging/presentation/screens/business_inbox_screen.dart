@@ -61,11 +61,7 @@ class _BusinessInboxScreenState extends ConsumerState<BusinessInboxScreen> {
           if (_providerId == null || !providers.any((p) => p.id == _providerId)) {
             _providerId = providers.first.id;
           }
-          return _BusinessInboxBody(
-            providerId: _providerId!,
-            providers: providers,
-            onSelectProvider: _selectProvider,
-          );
+          return _BusinessInboxBody(providerId: _providerId!, providers: providers, onSelectProvider: _selectProvider);
         },
         loading: () => const FactoryLoadingState(),
         error: (error, _) => Center(
@@ -87,11 +83,7 @@ class _BusinessInboxBody extends ConsumerWidget {
   final List<AdminProvider> providers;
   final ValueChanged<String> onSelectProvider;
 
-  const _BusinessInboxBody({
-    required this.providerId,
-    required this.providers,
-    required this.onSelectProvider,
-  });
+  const _BusinessInboxBody({required this.providerId, required this.providers, required this.onSelectProvider});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -118,11 +110,7 @@ class _BusinessInboxBody extends ConsumerWidget {
                 ? Padding(
                     padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space6),
                     child: Center(
-                      child: Text(
-                        l10n.businessInboxEmpty,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
-                      ),
+                      child: FactoryEmptyState(icon: Icons.forum_outlined, title: l10n.businessInboxEmpty, message: ''),
                     ),
                   )
                 : Column(
@@ -150,7 +138,7 @@ class _BusinessInboxBody extends ConsumerWidget {
             error: (error, _) => Padding(
               padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space4),
               child: FactoryErrorState(
-                message: l10n.errorConversationsLoadFailed(error.toString()),
+                message: l10n.errorConversationsLoadFailed,
                 onRetry: () => ref.invalidate(providerInboxProvider(providerId)),
               ),
             ),
@@ -222,7 +210,11 @@ class _ConversationCard extends ConsumerWidget {
             ),
           ),
           if (isNew) ...[
-            Container(width: 10, height: 10, decoration: BoxDecoration(color: colors.coral, shape: BoxShape.circle)),
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(color: colors.error, shape: BoxShape.circle),
+            ),
             const SizedBox(width: FactorySpacing.space2),
           ],
           Icon(Icons.chevron_right, color: colors.textTertiary),

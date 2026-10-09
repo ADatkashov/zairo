@@ -64,7 +64,7 @@ class SmartActionCenterSection extends ConsumerWidget {
           },
           loading: () => const FactoryLoadingState(),
           error: (error, _) => FactoryErrorState(
-            message: l10n.errorSmartActionsLoadFailed(error.toString()),
+            message: l10n.errorSmartActionsLoadFailed,
             onRetry: () => ref.invalidate(smartActionsProvider(providerId)),
           ),
         ),
@@ -144,7 +144,7 @@ class _SmartActionCardState extends ConsumerState<_SmartActionCard> {
       if (!mounted) return;
       setState(() => _isRetrying = false);
       final message =
-          e is CampaignActionConflictException ? e.localizedMessage(l10n) : l10n.errorCampaignActionFailed(e.toString());
+          e is CampaignActionConflictException ? e.localizedMessage(l10n) : l10n.errorCampaignActionFailed;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
       ref.invalidate(smartActionsProvider(widget.providerId));
     }

@@ -114,6 +114,7 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
                             height: MediaQuery.of(context).size.height * 0.6,
                             child: Center(
                               child: FactoryEmptyState(
+                                compact: true,
                                 icon: Symbols.forum_rounded,
                                 title: l10n.chatThreadEmptyTitle,
                                 message: l10n.chatThreadEmptyMessage,
@@ -181,7 +182,7 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.errorChatSendFailed(e.toString()))));
+      ).showSnackBar(SnackBar(content: Text(l10n.errorChatSendFailed)));
     } finally {
       if (mounted) setState(() => _isSending = false);
     }
@@ -280,6 +281,7 @@ class _ComposeBar extends StatelessWidget {
           ),
           const SizedBox(width: FactorySpacing.space2),
           IconButton.filled(
+            tooltip: AppLocalizations.of(context)!.chatSendTooltip,
             onPressed: isSending ? null : onSend,
             icon: isSending
                 ? SizedBox(

@@ -110,15 +110,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               children: [
                 const Align(alignment: Alignment.centerRight, child: _LanguagePicker()),
                 const SizedBox(height: FactorySpacing.space6),
-                const Center(child: FactoryLogomark(size: 60)),
-                const SizedBox(height: FactorySpacing.space4),
-                Text(l10n.appTitle, textAlign: TextAlign.center, style: textTheme.headlineSmall),
-                const SizedBox(height: FactorySpacing.space2),
-                Text(
-                  l10n.loginSubtitle,
-                  textAlign: TextAlign.center,
-                  style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
-                ),
+                FactoryAuthBrand(title: l10n.appTitle, subtitle: l10n.loginSubtitle),
                 const SizedBox(height: FactorySpacing.space6),
                 if (expired) ...[
                   _Notice(icon: Icons.timer_off_outlined, message: l10n.loginSessionExpired),

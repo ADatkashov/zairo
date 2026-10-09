@@ -86,7 +86,7 @@ class _BusinessChatThreadScreenState extends ConsumerState<BusinessChatThreadScr
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSending = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.errorMessageSendFailed(e.toString()))));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.errorMessageSendFailed)));
     }
   }
 
@@ -166,7 +166,7 @@ class _BusinessChatThreadScreenState extends ConsumerState<BusinessChatThreadScr
                   child: Padding(
                     padding: const EdgeInsets.all(FactorySpacing.space4),
                     child: FactoryErrorState(
-                      message: l10n.errorMessagesLoadFailed(error.toString()),
+                      message: l10n.errorMessagesLoadFailed,
                       onRetry: () => ref.invalidate(conversationThreadProvider(widget.conversationId)),
                     ),
                   ),

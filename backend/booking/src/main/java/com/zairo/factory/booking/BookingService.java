@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.util.UUID;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
@@ -34,12 +35,13 @@ public class BookingService {
     private final ApplicationEventPublisher eventPublisher;
     private final EntityManager entityManager;
     private final PaymentSettingsService paymentSettingsService;
+    private final ObjectProvider<WorkerPriceResolver> workerPriceResolvers;
 
     public BookingService(AvailabilitySlotRepository availabilitySlotRepository, BookingRepository bookingRepository,
             ProviderRepository providerRepository, ServiceOfferingRepository serviceOfferingRepository,
             ProviderOwnership providerOwnership, SubscriptionLimitService subscriptionLimitService,
             ApplicationEventPublisher eventPublisher, EntityManager entityManager,
-            PaymentSettingsService paymentSettingsService) {
+            PaymentSettingsService paymentSettingsService, ObjectProvider<WorkerPriceResolver> workerPriceResolvers) {
         this.availabilitySlotRepository = availabilitySlotRepository;
         this.bookingRepository = bookingRepository;
         this.providerRepository = providerRepository;
@@ -49,13 +51,16 @@ public class BookingService {
         this.eventPublisher = eventPublisher;
         this.entityManager = entityManager;
         this.paymentSettingsService = paymentSettingsService;
+        this.workerPriceResolvers = workerPriceResolvers;
     }
 
     /**
      * Atomically claims the slot (OPEN -> BOOKED) and creates a booking in
      * one transaction — starting at {@link BookingStatus#PENDING_PAYMENT},
      * <b>not</b> CONFIRMED (see ADR-0006: a booking is never confirmed
-     * without a successful payment). {@code @Version} on AvailabilitySlot
+     * without a successful payment). The one exception is a booking with
+     * nothing due online (no advance payment required, or a free service):
+     * it has no payment to wait for and is CONFIRMED right here. {@code @Version} on AvailabilitySlot
      * means a concurrent request for the same slot fails with
      * OptimisticLockingFailureException, which we turn into 409 — the slot
      * can't be double-booked even under concurrent requests.
@@ -69,6 +74,17 @@ public class BookingService {
      */
     @Transactional
     public Booking createBooking(UUID userId, UUID serviceId, UUID availabilitySlotId, BigDecimal totalPrice) {
+        return createBooking(userId, serviceId, availabilitySlotId, totalPrice, null);
+    }
+
+    /**
+     * As {@link #createBooking(UUID, UUID, UUID, BigDecimal)}, for a booking with a named worker: the price is the
+     * worker's own when the business set one (see {@link WorkerPriceResolver}), otherwise the service's price.
+     * Either way it is fixed here and never changes afterwards.
+     */
+    @Transactional
+    public Booking createBooking(UUID userId, UUID serviceId, UUID availabilitySlotId, BigDecimal totalPrice,
+            UUID workerId) {
         AvailabilitySlot slot = availabilitySlotRepository.findById(availabilitySlotId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Availability slot not found: " + availabilitySlotId));
@@ -138,20 +154,36 @@ public class BookingService {
         // Load payment settings for this provider to capture them at booking time
         PaymentSettings settings = paymentSettingsService.getOrCreateSettings(slot.getProviderId());
 
+        BigDecimal price = service.getPrice();
+        if (workerId != null) {
+            for (WorkerPriceResolver resolver : workerPriceResolvers.orderedStream().toList()) {
+                price = resolver.priceFor(slot.getProviderId(), workerId, serviceId).orElse(price);
+            }
+        }
+
         // Calculate deposit amount based on settings
         BigDecimal depositAmount = DepositCalculator.calculateDepositAmount(
-                service.getPrice(), settings.getDepositType(), settings.getDepositValueType(),
-                settings.getDepositValue());
+                price, settings.getDepositType(), settings.getDepositValueType(), settings.getDepositValue());
 
         Booking booking = new Booking(UUID.randomUUID(), userId, serviceId, availabilitySlotId,
-                BookingStatus.PENDING_PAYMENT, service.getPrice(), service.getCurrency(), Instant.now(),
+                BookingStatus.PENDING_PAYMENT, price, service.getCurrency(), Instant.now(),
                 settings.getDepositType(), settings.getDepositValueType(), settings.getDepositValue(),
                 depositAmount, service.getCityCode());
+        // Nothing is due online (the provider takes no advance payment, or the service is free): there is
+        // no payment to wait for, so the booking is confirmed right here instead of sitting in
+        // PENDING_PAYMENT until the unpaid-booking sweep cancels it. The customer pays at the venue.
+        boolean nothingToPayOnline = depositAmount.signum() <= 0;
+        if (nothingToPayOnline) {
+            booking.markConfirmed();
+        }
         booking = bookingRepository.save(booking);
 
         eventPublisher.publishEvent(new BookingAttemptedEvent(userId, serviceId, slot.getProviderId(), true, null));
         eventPublisher.publishEvent(new AvailabilitySlotBookedEvent(slot.getId(), booking.getId(),
                 slot.getProviderId()));
+        if (nothingToPayOnline) {
+            eventPublisher.publishEvent(new BookingConfirmedEvent(booking.getId(), userId, slot.getProviderId()));
+        }
         return booking;
     }
 
@@ -226,17 +258,26 @@ public class BookingService {
      */
     @Transactional
     public Booking completeBooking(UUID bookingId, UUID callerId) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
-                        + bookingId));
-
-        AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
-                        + booking.getAvailabilitySlotId()));
+        Booking booking = loadBooking(bookingId);
+        AvailabilitySlot slot = loadSlot(booking);
         providerOwnership.requireOwner(slot.getProviderId(), callerId);
+        return doComplete(booking, slot);
+    }
 
+    /**
+     * Same as {@link #completeBooking} but WITHOUT the provider-owner check — for a caller that has already
+     * authorised the actor some other way (the staff module checks the booking really belongs to the calling
+     * staff member). Never expose this directly from a controller.
+     */
+    @Transactional
+    public Booking completeBookingAuthorized(UUID bookingId) {
+        Booking booking = loadBooking(bookingId);
+        return doComplete(booking, loadSlot(booking));
+    }
+
+    private Booking doComplete(Booking booking, AvailabilitySlot slot) {
         if (booking.getStatus() != BookingStatus.CONFIRMED) {
-            throw new InvalidBookingStateException("Booking is not in a completable state: " + bookingId
+            throw new InvalidBookingStateException("Booking is not in a completable state: " + booking.getId()
                     + " (status=" + booking.getStatus() + ")");
         }
 
@@ -245,6 +286,18 @@ public class BookingService {
         eventPublisher.publishEvent(new BookingCompletedEvent(completed.getId(), completed.getUserId(),
                 slot.getProviderId(), completed.getServiceId()));
         return completed;
+    }
+
+    private Booking loadBooking(UUID bookingId) {
+        return bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
+                        + bookingId));
+    }
+
+    private AvailabilitySlot loadSlot(Booking booking) {
+        return availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
+                        + booking.getAvailabilitySlotId()));
     }
 
     /**
@@ -294,6 +347,95 @@ public class BookingService {
     }
 
     /**
+     * Provider-side cancellation (a staff member declining or cancelling an appointment). Same state guard,
+     * slot release and {@link BookingCancelledEvent} (so payments refund and the customer is told) as the
+     * customer flow, but without the customer-ownership check — the caller must already have authorised the
+     * actor (see the staff module). Never expose this directly from a controller.
+     */
+    @Transactional
+    public Booking cancelBookingAuthorized(UUID bookingId, String reason) {
+        Booking booking = loadBooking(bookingId);
+        if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            throw new InvalidBookingStateException("Booking is not in a cancellable state: " + bookingId
+                    + " (status=" + booking.getStatus() + ")");
+        }
+        AvailabilitySlot slot = loadSlot(booking);
+        slot.markOpen();
+        availabilitySlotRepository.save(slot);
+
+        booking.markCancelled(reason);
+        Booking cancelled = bookingRepository.save(booking);
+        eventPublisher.publishEvent(new BookingCancelledEvent(cancelled.getId(), cancelled.getUserId(),
+                slot.getProviderId()));
+        return cancelled;
+    }
+
+    /**
+     * Moves an active booking to another open slot of the same business — another time, or another worker's slot at
+     * the same time. The new slot is claimed atomically (so two moves can't take it), the old one is released. Like
+     * the other {@code *Authorized} methods this skips the actor check: the caller (workforce) has already authorised
+     * the actor. The customer is told only when the time actually changes.
+     */
+    @Transactional
+    public Booking moveToSlotAuthorized(UUID bookingId, UUID newSlotId) {
+        Booking booking = loadBooking(bookingId);
+        if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            throw new InvalidBookingStateException("Booking is not in a movable state: " + bookingId
+                    + " (status=" + booking.getStatus() + ")");
+        }
+        AvailabilitySlot oldSlot = loadSlot(booking);
+        if (oldSlot.getId().equals(newSlotId)) {
+            return booking;
+        }
+        AvailabilitySlot newSlot = availabilitySlotRepository.findById(newSlotId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
+                        + newSlotId));
+        if (!newSlot.getProviderId().equals(oldSlot.getProviderId())) {
+            throw new SlotNotAvailableException("That time belongs to a different business");
+        }
+        if (newSlot.getStatus() != AvailabilityStatus.OPEN) {
+            throw new SlotNotAvailableException("That time is not available: " + newSlotId);
+        }
+        try {
+            newSlot.markBooked();
+            availabilitySlotRepository.saveAndFlush(newSlot);
+        } catch (OptimisticLockingFailureException e) {
+            // Someone else claimed it between our read and the write.
+            throw new SlotNotAvailableException("That time was just taken: " + newSlotId);
+        }
+        oldSlot.markOpen();
+        availabilitySlotRepository.save(oldSlot);
+
+        booking.moveToSlot(newSlotId);
+        Booking moved = bookingRepository.save(booking);
+        boolean timeChanged = !oldSlot.getStartsAt().equals(newSlot.getStartsAt())
+                || !oldSlot.getEndsAt().equals(newSlot.getEndsAt());
+        if (timeChanged) {
+            eventPublisher.publishEvent(new BookingMovedEvent(moved.getId(), moved.getUserId(),
+                    newSlot.getProviderId(), newSlot.getStartsAt()));
+        }
+        return moved;
+    }
+
+    /** {@link #markNoShow} without the provider-owner check — see {@link #completeBookingAuthorized}. */
+    @Transactional
+    public Booking markNoShowAuthorized(UUID bookingId) {
+        Booking booking = loadBooking(bookingId);
+        return doNoShow(booking, loadSlot(booking));
+    }
+
+    private Booking doNoShow(Booking booking, AvailabilitySlot slot) {
+        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new InvalidBookingStateException("Booking is not in a no-show-able state: " + booking.getId()
+                    + " (status=" + booking.getStatus() + ")");
+        }
+        booking.markNoShow();
+        Booking noShow = bookingRepository.save(booking);
+        eventPublisher.publishEvent(new BookingNoShowEvent(noShow.getId(), noShow.getUserId(), slot.getProviderId()));
+        return noShow;
+    }
+
+    /**
      * Provider-owner-initiated — the customer didn't show up for a
      * CONFIRMED slot. Same status guard as {@link #completeBooking}
      * (mutually exclusive terminal outcomes for a kept vs. missed
@@ -304,24 +446,60 @@ public class BookingService {
      */
     @Transactional
     public Booking markNoShow(UUID bookingId, UUID callerId) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
-                        + bookingId));
-
+        Booking booking = loadBooking(bookingId);
         if (booking.getStatus() != BookingStatus.CONFIRMED) {
             throw new InvalidBookingStateException("Booking is not in a no-show-able state: " + bookingId
                     + " (status=" + booking.getStatus() + ")");
         }
-
-        AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
-                        + booking.getAvailabilitySlotId()));
+        AvailabilitySlot slot = loadSlot(booking);
         providerOwnership.requireOwner(slot.getProviderId(), callerId);
+        return doNoShow(booking, slot);
+    }
 
-        booking.markNoShow();
-        Booking noShow = bookingRepository.save(booking);
-        eventPublisher.publishEvent(new BookingNoShowEvent(noShow.getId(), noShow.getUserId(), slot.getProviderId()));
-        return noShow;
+    /**
+     * Lowers the agreed price of an active booking (it moved to a cheaper worker). Never raises it. Publishes
+     * {@link BookingPriceReducedEvent} so payments can return what was already paid above the new price. For a
+     * caller that has already authorised the actor (workforce); never expose this directly from a controller.
+     */
+    @Transactional
+    public Booking reducePriceAuthorized(UUID bookingId, BigDecimal newTotal) {
+        Booking booking = loadBooking(bookingId);
+        if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            throw new InvalidBookingStateException("Booking price can't change in this state: " + bookingId
+                    + " (status=" + booking.getStatus() + ")");
+        }
+        BigDecimal oldTotal = booking.getTotalPrice();
+        if (newTotal == null || newTotal.signum() < 0 || newTotal.compareTo(oldTotal) >= 0) {
+            return booking;
+        }
+        AvailabilitySlot slot = loadSlot(booking);
+        booking.reduceTotalPrice(newTotal);
+        Booking saved = bookingRepository.save(booking);
+        eventPublisher.publishEvent(new BookingPriceReducedEvent(saved.getId(), saved.getUserId(),
+                slot.getProviderId(), oldTotal, newTotal, saved.getCurrency()));
+        return saved;
+    }
+
+    /**
+     * Provider-owner correction of a wrong "no-show": the customer did come. Behaves exactly like a normal
+     * completion (same event, so the payout and loyalty points follow). The opposite correction —
+     * COMPLETED back to anything else — is deliberately not offered: completion has already created the
+     * business's payout and the customer's points, and undoing those is a money decision, not a status flip.
+     */
+    @Transactional
+    public Booking correctNoShowToCompleted(UUID bookingId, UUID callerId) {
+        Booking booking = loadBooking(bookingId);
+        if (booking.getStatus() != BookingStatus.NO_SHOW) {
+            throw new InvalidBookingStateException("Only a no-show can be corrected to completed: " + bookingId
+                    + " (status=" + booking.getStatus() + ")");
+        }
+        AvailabilitySlot slot = loadSlot(booking);
+        providerOwnership.requireOwner(slot.getProviderId(), callerId);
+        booking.markCompleted();
+        Booking completed = bookingRepository.save(booking);
+        eventPublisher.publishEvent(new BookingCompletedEvent(completed.getId(), completed.getUserId(),
+                slot.getProviderId(), completed.getServiceId()));
+        return completed;
     }
 
     /**

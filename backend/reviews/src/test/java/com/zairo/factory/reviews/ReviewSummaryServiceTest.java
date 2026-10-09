@@ -75,9 +75,9 @@ class ReviewSummaryServiceTest {
         ProviderRatingSummary summary = results.get(providerId);
         assertThat(summary.averageRating()).isEqualTo(4.2);
         assertThat(summary.reviewCount()).isEqualTo(5);
-        // Bayesian: (5/(5+25)) * 4.2 + (25/30) * 3.5 = 0.167*4.2 + 0.833*3.5 ≈ 3.63
+        // Bayesian: (5/(5+25)) * 4.2 + (25/30) * 3.5 = 0.7 + 2.917 ≈ 3.62
         assertThat(summary.bayesianRating())
-                .isCloseTo(3.63, org.assertj.core.data.Offset.offset(0.01));
+                .isCloseTo(3.62, org.assertj.core.data.Offset.offset(0.01));
     }
 
     @Test
@@ -97,9 +97,9 @@ class ReviewSummaryServiceTest {
         ProviderRatingSummary summary = results.get(providerId);
         assertThat(summary.averageRating()).isEqualTo(1.0);
         assertThat(summary.reviewCount()).isEqualTo(5);
-        // Bayesian: (5/(5+25)) * 1.0 + (25/30) * 3.5 ≈ 2.79
+        // Bayesian: (5/(5+25)) * 1.0 + (25/30) * 3.5 ≈ 3.08
         assertThat(summary.bayesianRating())
-                .isCloseTo(2.79, org.assertj.core.data.Offset.offset(0.01));
+                .isCloseTo(3.08, org.assertj.core.data.Offset.offset(0.01));
     }
 
     @Test
@@ -163,7 +163,7 @@ class ReviewSummaryServiceTest {
         ProviderRatingSummary summary = results.get(providerId);
         assertThat(summary.averageRating()).isEqualTo(4.2);
         assertThat(summary.bayesianRating())
-                .isCloseTo(3.63, org.assertj.core.data.Offset.offset(0.01));
+                .isCloseTo(3.62, org.assertj.core.data.Offset.offset(0.01));
     }
 
     @Test
@@ -229,9 +229,10 @@ class ReviewSummaryServiceTest {
         assertThat(s2.averageRating()).isEqualTo(4.0);
         assertThat(s3.averageRating()).isEqualTo(3.0);
 
-        // Ranking should be: s2 > s3 > s1 (based on Bayesian scores)
-        assertThat(s2.bayesianRating()).isGreaterThan(s3.bayesianRating());
-        assertThat(s3.bayesianRating()).isGreaterThan(s1.bayesianRating());
+        // Bayesian scores with m=25, global=3.5: s2 = 3.83, s1 = 3.56 (one review is pulled hard toward the
+        // average), s3 = 3.10 (100 reviews at 3.0 stay close to 3.0) -> ranking s2 > s1 > s3.
+        assertThat(s2.bayesianRating()).isGreaterThan(s1.bayesianRating());
+        assertThat(s1.bayesianRating()).isGreaterThan(s3.bayesianRating());
     }
 
     @Test

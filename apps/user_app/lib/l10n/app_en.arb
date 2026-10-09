@@ -48,13 +48,9 @@
   "errorReviewInvalidRating": "Rating must be between 1 and 5.",
   "@errorReviewInvalidRating": {"description": "400 from POST .../reviews — the rating value failed validation."},
 
-  "errorReviewSubmitFailed": "Failed to submit review: {error}",
+  "errorReviewSubmitFailed": "Failed to submit review",
   "@errorReviewSubmitFailed": {
-    "description": "Unexpected (non-ReviewException) failure submitting a review.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Unexpected (non-ReviewException) failure submitting a review."},
 
   "emailLabel": "Email",
   "@emailLabel": {"description": "Email text field label."},
@@ -101,13 +97,9 @@
   "errorAuthInvalidCredentials": "Invalid email or password.",
   "@errorAuthInvalidCredentials": {"description": "401 from POST /auth/login."},
 
-  "errorAuthGeneric": "Something went wrong: {error}",
+  "errorAuthGeneric": "Something went wrong",
   "@errorAuthGeneric": {
-    "description": "Unexpected (non-AuthException) failure during login/register.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Unexpected (non-AuthException) failure during login/register."},
 
   "errorAuthInvalidResetToken": "This code is invalid or has expired. Request a new one.",
   "@errorAuthInvalidResetToken": {"description": "401 from POST /auth/reset-password."},
@@ -296,13 +288,9 @@
     }
   },
 
-  "errorBookingGeneric": "Booking failed: {error}",
+  "errorBookingGeneric": "Booking failed",
   "@errorBookingGeneric": {
-    "description": "Unexpected (non-Booking/Beauty exception) failure creating a booking.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Unexpected (non-Booking/Beauty exception) failure creating a booking."},
 
   "homeSearchPrompt": "What service are you looking for?",
   "@homeSearchPrompt": {"description": "Home screen's tap-to-search entry field placeholder."},
@@ -582,7 +570,7 @@
   "bookingsEmptyTitle": "No bookings yet",
   "@bookingsEmptyTitle": {"description": "My Bookings screen empty state title."},
 
-  "bookingsEmptyMessage": "Once you book a service, it will show up here.",
+  "bookingsEmptyMessage": "Pick a service and a time — your bookings and reminders will live here.",
   "@bookingsEmptyMessage": {"description": "My Bookings screen empty state message."},
 
   "errorBookingsLoadFailed": "Couldn't load your bookings.",
@@ -620,7 +608,7 @@
   "favoritesEmptyTitle": "No favorites yet",
   "@favoritesEmptyTitle": {"description": "Favorites screen empty state title."},
 
-  "favoritesEmptyMessage": "Providers you favorite will show up here.",
+  "favoritesEmptyMessage": "Tap the heart on a salon or workshop to keep it here for quick booking.",
   "@favoritesEmptyMessage": {"description": "Favorites screen empty state message."},
 
   "errorFavoritesLoadFailed": "Couldn't load your favorites.",
@@ -629,10 +617,16 @@
   "notificationsTitle": "Notifications",
   "@notificationsTitle": {"description": "Notifications screen app bar title."},
 
+  "notificationsGroupToday": "Today",
+  "@notificationsGroupToday": {"description": "Notifications screen day heading for today."},
+
+  "notificationsGroupYesterday": "Yesterday",
+  "@notificationsGroupYesterday": {"description": "Notifications screen day heading for yesterday."},
+
   "notificationsEmptyTitle": "No notifications yet",
   "@notificationsEmptyTitle": {"description": "Notifications screen empty state title."},
 
-  "notificationsEmptyMessage": "Booking updates and reminders will show up here.",
+  "notificationsEmptyMessage": "We'll let you know when a booking is confirmed, changed or coming up.",
   "@notificationsEmptyMessage": {"description": "Notifications screen empty state message."},
 
   "errorNotificationsLoadFailed": "Couldn't load your notifications.",
@@ -678,13 +672,9 @@
   "profileTitle": "Profile",
   "@profileTitle": {"description": "Profile screen app bar title."},
 
-  "errorProfileGeneric": "Something went wrong: {error}",
+  "errorProfileGeneric": "Something went wrong",
   "@errorProfileGeneric": {
-    "description": "Profile screen error state when the auth session fails to resolve.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Profile screen error state when the auth session fails to resolve."},
 
   "profileLoggedOutTitle": "You're not logged in",
   "@profileLoggedOutTitle": {"description": "Profile screen's logged-out empty state title."},
@@ -701,7 +691,7 @@
   "mapPlaceholderTitle": "Map view placeholder",
   "@mapPlaceholderTitle": {"description": "Mock map screen's placeholder heading."},
 
-  "mapPlaceholderMessage": "Real map rendering (Google Maps/Mapbox/OSM) is wired in once the project has a map provider account.",
+  "mapPlaceholderMessage": "Real map rendering (2GIS, with Google Maps as an alternative) is wired in once a map API key is configured.",
   "@mapPlaceholderMessage": {"description": "Mock map screen's explanatory placeholder text."},
 
   "masterPortfolioTitle": "{masterName} — Portfolio",
@@ -721,13 +711,9 @@
   "portfolioPhotoSemanticLabel": "Portfolio photo",
   "@portfolioPhotoSemanticLabel": {"description": "Grid tile's accessibility label when the photo has no caption to use instead."},
 
-  "errorPortfolioLoadFailed": "Failed to load portfolio: {error}",
+  "errorPortfolioLoadFailed": "Failed to load portfolio",
   "@errorPortfolioLoadFailed": {
-    "description": "Master portfolio screen error state.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Master portfolio screen error state."},
 
   "portfolioViewerCloseTooltip": "Close",
   "@portfolioViewerCloseTooltip": {"description": "Fullscreen portfolio viewer's close button tooltip."},
@@ -762,13 +748,9 @@
   "reviewSubmit": "Submit",
   "@reviewSubmit": {"description": "Leave-a-review dialog's submit button."},
 
-  "errorReviewLoadFailed": "Could not load review: {error}",
+  "errorReviewLoadFailed": "Could not load review",
   "@errorReviewLoadFailed": {
-    "description": "Review section error state when loading the existing review fails.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Review section error state when loading the existing review fails."},
 
   "viewOnMapButton": "View on map",
   "@viewOnMapButton": {"description": "Provider detail screen's button opening the mock map screen."},
@@ -785,7 +767,7 @@
   "noOpenTimesTitle": "No open times",
   "@noOpenTimesTitle": {"description": "Provider detail screen empty state title when there are no open slots."},
 
-  "noOpenTimesMessage": "Check back later or try another provider.",
+  "noOpenTimesMessage": "No free times right now. Message the business to ask, or try another one.",
   "@noOpenTimesMessage": {"description": "Provider detail screen empty state message when there are no open slots."},
 
   "errorAvailabilityLoadFailed": "Couldn't load availability.",
@@ -1000,21 +982,13 @@
   "changeAvatarRemoveButton": "Remove photo",
   "@changeAvatarRemoveButton": {"description": "Change-avatar dialog's remove-current-photo button, shown only when an avatar is already set."},
 
-  "changeAvatarErrorReadFileFailed": "Failed to read file: {error}",
+  "changeAvatarErrorReadFileFailed": "Failed to read file",
   "@changeAvatarErrorReadFileFailed": {
-    "description": "Change-avatar dialog's error when picking the file fails.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Change-avatar dialog's error when picking the file fails."},
 
-  "changeAvatarErrorSaveFailed": "Failed to update avatar: {error}",
+  "changeAvatarErrorSaveFailed": "Failed to update avatar",
   "@changeAvatarErrorSaveFailed": {
-    "description": "Change-avatar dialog's error when the upload/save request fails.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Change-avatar dialog's error when the upload/save request fails."},
 
   "imagePickerCameraLabel": "Camera",
   "@imagePickerCameraLabel": {"description": "Photo-source bottom sheet option: take a new photo."},
@@ -1034,7 +1008,7 @@
   "myRewardsEmptyTitle": "No rewards yet",
   "@myRewardsEmptyTitle": {"description": "My Rewards empty state title — the customer has no loyalty account anywhere yet."},
 
-  "myRewardsEmptyMessage": "Complete a booking at any business to start earning points — each business runs its own rewards program, entirely separate from the others.",
+  "myRewardsEmptyMessage": "Book a service to start earning points. Each business has its own rewards, separate from the others.",
   "@myRewardsEmptyMessage": {"description": "My Rewards empty state message, explaining what loyalty is."},
 
   "errorMyRewardsLoadFailed": "Couldn't load your rewards.",
@@ -1184,13 +1158,9 @@
   "loyaltyRedemptionSuccessDone": "Done",
   "@loyaltyRedemptionSuccessDone": {"description": "Redemption success dialog's dismiss action."},
 
-  "errorLoyaltyRedeemFailed": "Couldn't redeem this reward: {error}",
+  "errorLoyaltyRedeemFailed": "Couldn't redeem this reward",
   "@errorLoyaltyRedeemFailed": {
-    "description": "Unexpected (non-LoyaltyException) failure redeeming a reward.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Unexpected (non-LoyaltyException) failure redeeming a reward."},
 
   "errorLoyaltyActionConflict": "This action can no longer be completed. Please refresh and try again.",
   "@errorLoyaltyActionConflict": {"description": "LoyaltyException's fallback message when the server's own message couldn't be parsed."},
@@ -1201,7 +1171,7 @@
   "loyaltyHistoryEmptyTitle": "No activity yet",
   "@loyaltyHistoryEmptyTitle": {"description": "Points history screen's empty state title."},
 
-  "loyaltyHistoryEmptyMessage": "Your points activity with this business will show up here.",
+  "loyaltyHistoryEmptyMessage": "Points you earn or spend at this business will be listed here.",
   "@loyaltyHistoryEmptyMessage": {"description": "Points history screen's empty state message."},
 
   "errorLoyaltyHistoryLoadFailed": "Couldn't load points history.",
@@ -1253,7 +1223,7 @@
   "loyaltyRedemptionsEmptyTitle": "No redemptions yet",
   "@loyaltyRedemptionsEmptyTitle": {"description": "My Redemptions empty state title."},
 
-  "loyaltyRedemptionsEmptyMessage": "Rewards you redeem at any business will show up here as codes.",
+  "loyaltyRedemptionsEmptyMessage": "When you redeem a reward, its code will appear here.",
   "@loyaltyRedemptionsEmptyMessage": {"description": "My Redemptions empty state message."},
 
   "errorLoyaltyRedemptionsLoadFailed": "Couldn't load your redemptions.",
@@ -1294,13 +1264,9 @@
   "loyaltyRedemptionCancelledMessage": "Redemption cancelled — your points were refunded.",
   "@loyaltyRedemptionCancelledMessage": {"description": "Snackbar shown after successfully cancelling a redemption."},
 
-  "errorLoyaltyCancelGeneric": "Couldn't cancel this redemption: {error}",
+  "errorLoyaltyCancelGeneric": "Couldn't cancel this redemption",
   "@errorLoyaltyCancelGeneric": {
-    "description": "Unexpected (non-LoyaltyException) failure cancelling a redemption.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Unexpected (non-LoyaltyException) failure cancelling a redemption."},
 
   "loyaltyRedemptionCreatedOn": "Redeemed {date}",
   "@loyaltyRedemptionCreatedOn": {
@@ -1333,7 +1299,7 @@
     "description": "ConversationsScreen empty state title."
   },
 
-  "conversationsEmptyMessage": "Message a business to start a conversation.",
+  "conversationsEmptyMessage": "Open a business and tap the chat icon to ask a question before you book.",
   "@conversationsEmptyMessage": {
     "description": "ConversationsScreen empty state body."
   },
@@ -1358,7 +1324,7 @@
     "description": "ChatThreadScreen empty state title before any message has been sent."
   },
 
-  "chatThreadEmptyMessage": "Send a message to start the conversation.",
+  "chatThreadEmptyMessage": "Say hello or ask about a time. Replies will show up here.",
   "@chatThreadEmptyMessage": {
     "description": "ChatThreadScreen empty state body."
   },
@@ -1368,13 +1334,9 @@
     "description": "ChatThreadScreen error state when the thread fails to load."
   },
 
-  "errorChatSendFailed": "Couldn't send your message: {error}",
+  "errorChatSendFailed": "Couldn't send your message",
   "@errorChatSendFailed": {
-    "description": "Snackbar shown when sending a plain chat message fails.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Snackbar shown when sending a plain chat message fails."},
 
   "chatComposeLabel": "Message",
   "@chatComposeLabel": {
@@ -1426,13 +1388,9 @@
     "description": "MessagingException message for a 404 from POST /bookings/{id}/messages."
   },
 
-  "errorMessagingGeneric": "Couldn't send your message: {error}",
+  "errorMessagingGeneric": "Couldn't send your message",
   "@errorMessagingGeneric": {
-    "description": "Fallback error message for the message-about-a-booking dialog on an unexpected failure.",
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+    "description": "Fallback error message for the message-about-a-booking dialog on an unexpected failure."},
 
   "paymentBreakdownTitle": "Payment breakdown",
   "@paymentBreakdownTitle": {"description": "Section header for payment breakdown details."},
@@ -1639,11 +1597,11 @@
   "@searchResetFilters": {"description": "Button in the empty Search results that clears the query and every filter."},
   "bookingsFindServiceButton": "Find a service",
   "@bookingsFindServiceButton": {"description": "Empty Bookings state: jumps to the Search tab."},
-  "bookingsTabEmptyUpcoming": "No upcoming bookings. Pick a service and a time that suits you.",
+  "bookingsTabEmptyUpcoming": "Choose a service and a time that suits you.",
   "@bookingsTabEmptyUpcoming": {"description": "Empty 'Upcoming' tab of My bookings."},
-  "bookingsTabEmptyCompleted": "Completed visits will show up here.",
+  "bookingsTabEmptyCompleted": "Finished visits appear here, and you can leave a review for each.",
   "@bookingsTabEmptyCompleted": {"description": "Empty 'Completed' tab of My bookings."},
-  "bookingsTabEmptyCancelled": "You have no cancelled bookings.",
+  "bookingsTabEmptyCancelled": "If you cancel a booking, it will be listed here.",
   "@bookingsTabEmptyCancelled": {"description": "Empty 'Cancelled' tab of My bookings."},
   "profileSectionActivity": "My activity",
   "@profileSectionActivity": {"description": "Profile list group header: favorites, messages, rewards, coupons, vehicles."},
@@ -1675,6 +1633,191 @@
   "@authStepLabel": {"description": "Progress label at the top of the phone sign-in screens.", "placeholders": {"step": {"type": "int"}, "total": {"type": "int"}}},
   "authChangeNumber": "Change number",
   "@authChangeNumber": {"description": "Phone sign-in step 2: goes back to re-enter the phone number."},
-  "cityLoadFailed": "Couldn't load cities",
-  "cityLoading": "Loading…"
+  "favoritesBrowseButton": "Explore places",
+  "@favoritesBrowseButton": {"description": "favoritesBrowseButton"},
+  "conversationsFindBusinessButton": "Find a business",
+  "@conversationsFindBusinessButton": {"description": "conversationsFindBusinessButton"},
+  "bookingsTabEmptyTitleUpcoming": "Nothing coming up",
+  "@bookingsTabEmptyTitleUpcoming": {"description": "bookingsTabEmptyTitleUpcoming"},
+  "bookingsTabEmptyTitleCompleted": "No visits yet",
+  "@bookingsTabEmptyTitleCompleted": {"description": "bookingsTabEmptyTitleCompleted"},
+  "bookingsTabEmptyTitleCancelled": "No cancellations",
+  "@bookingsTabEmptyTitleCancelled": {"description": "bookingsTabEmptyTitleCancelled"},
+  "staffCabinetTitle": "My work",
+  "@staffCabinetTitle": {"description": "Staff cabinet: Title"},
+  "staffCabinetTabUpcoming": "Upcoming",
+  "@staffCabinetTabUpcoming": {"description": "Staff cabinet: TabUpcoming"},
+  "staffCabinetTabHistory": "History",
+  "@staffCabinetTabHistory": {"description": "Staff cabinet: TabHistory"},
+  "staffCabinetTabRating": "Rating",
+  "@staffCabinetTabRating": {"description": "Staff cabinet: TabRating"},
+  "staffCabinetEmptyUpcoming": "No upcoming appointments",
+  "@staffCabinetEmptyUpcoming": {"description": "Staff cabinet: EmptyUpcoming"},
+  "staffCabinetEmptyHistory": "No past appointments yet",
+  "@staffCabinetEmptyHistory": {"description": "Staff cabinet: EmptyHistory"},
+  "staffCabinetAwaitingBadge": "Needs your confirmation",
+  "@staffCabinetAwaitingBadge": {"description": "Staff cabinet: AwaitingBadge"},
+  "staffCabinetAcceptedBadge": "Accepted by you",
+  "@staffCabinetAcceptedBadge": {"description": "Staff cabinet: AcceptedBadge"},
+  "staffCabinetStatusPendingPayment": "Awaiting payment",
+  "@staffCabinetStatusPendingPayment": {"description": "Staff cabinet: StatusPendingPayment"},
+  "staffCabinetStatusNoShow": "No-show",
+  "@staffCabinetStatusNoShow": {"description": "Staff cabinet: StatusNoShow"},
+  "staffCabinetAcceptButton": "Accept",
+  "@staffCabinetAcceptButton": {"description": "Staff cabinet: AcceptButton"},
+  "staffCabinetDeclineButton": "Can't attend",
+  "@staffCabinetDeclineButton": {"description": "Staff cabinet: DeclineButton"},
+  "staffCabinetCompleteButton": "Complete",
+  "@staffCabinetCompleteButton": {"description": "Staff cabinet: CompleteButton"},
+  "staffCabinetNoShowButton": "No-show",
+  "@staffCabinetNoShowButton": {"description": "Staff cabinet: NoShowButton"},
+  "staffCabinetDeclineConfirmTitle": "Can't attend this appointment?",
+  "@staffCabinetDeclineConfirmTitle": {"description": "Staff cabinet: DeclineConfirmTitle"},
+  "staffCabinetDeclineConfirmMessage": "The business owner will be notified and will decide what to do: assign a colleague, move it or cancel. The booking stays as it is until then.",
+  "@staffCabinetDeclineConfirmMessage": {"description": "Staff cabinet: DeclineConfirmMessage"},
+  "staffCabinetNoShowConfirmTitle": "Mark as no-show?",
+  "@staffCabinetNoShowConfirmTitle": {"description": "Staff cabinet: NoShowConfirmTitle"},
+  "staffCabinetNoShowConfirmMessage": "Use this when the customer didn't come. It can't be undone.",
+  "@staffCabinetNoShowConfirmMessage": {"description": "Staff cabinet: NoShowConfirmMessage"},
+  "staffCabinetKeepButton": "Keep",
+  "@staffCabinetKeepButton": {"description": "Staff cabinet: KeepButton"},
+  "staffCabinetConfirmDeclineButton": "Tell the owner",
+  "@staffCabinetConfirmDeclineButton": {"description": "Staff cabinet: ConfirmDeclineButton"},
+  "staffCabinetConfirmNoShowButton": "Mark no-show",
+  "@staffCabinetConfirmNoShowButton": {"description": "Staff cabinet: ConfirmNoShowButton"},
+  "staffCabinetActionFailed": "Couldn't update the appointment. Please try again.",
+  "@staffCabinetActionFailed": {"description": "Staff cabinet: ActionFailed"},
+  "staffCabinetLoadFailed": "Couldn't load your appointments.",
+  "@staffCabinetLoadFailed": {"description": "Staff cabinet: LoadFailed"},
+  "staffCabinetInactiveNotice": "Your profile at this business is deactivated — you can view appointments but not change them.",
+  "@staffCabinetInactiveNotice": {"description": "Staff cabinet: InactiveNotice"},
+  "staffCabinetPendingBadge": "{count} to confirm",
+  "@staffCabinetPendingBadge": {"description": "Staff cabinet: PendingBadge", "placeholders": {"count": {"type": "int", "example": "3"}}},
+  "staffCabinetNoReviews": "No reviews yet",
+  "@staffCabinetNoReviews": {"description": "Staff cabinet: NoReviews"},
+  "staffCabinetReviewsCount": "{count} reviews",
+  "@staffCabinetReviewsCount": {"description": "Staff cabinet: ReviewsCount", "placeholders": {"count": {"type": "int", "example": "3"}}},
+  "staffCabinetBusinessReply": "Business reply",
+  "@staffCabinetBusinessReply": {"description": "Staff cabinet: BusinessReply"},
+  "staffCabinetAnonymousCustomer": "Customer",
+  "@staffCabinetAnonymousCustomer": {"description": "Staff cabinet: AnonymousCustomer"},
+  "staffCabinetAverageRatingLabel": "Average rating",
+  "@staffCabinetAverageRatingLabel": {"description": "Staff cabinet: AverageRatingLabel"},
+  "staffCabinetDeclinedBadge": "Sent to the owner",
+  "@staffCabinetDeclinedBadge": {"description": "staffCabinetDeclinedBadge"},
+  "anyMasterOptionTitle": "Any master",
+  "@anyMasterOptionTitle": {"description": "anyMasterOptionTitle"},
+  "anyMasterOptionSubtitle": "We'll assign whoever is free at the time you pick",
+  "@anyMasterOptionSubtitle": {"description": "anyMasterOptionSubtitle"},
+  "workforceChooseMasterTitle": "Who would you like to see?",
+  "@workforceChooseMasterTitle": {"description": "workforceChooseMasterTitle"},
+  "workforceChooseMasterMessage": "Pick a master, or \"Any master\", to see the available times.",
+  "@workforceChooseMasterMessage": {"description": "workforceChooseMasterMessage"},
+  "workforceChooseServiceTitle": "Choose a service first",
+  "@workforceChooseServiceTitle": {"description": "workforceChooseServiceTitle"},
+  "workforceChooseServiceMessage": "The times for \"Any master\" depend on the service you pick.",
+  "@workforceChooseServiceMessage": {"description": "workforceChooseServiceMessage"},
+  "changeRequestsTitle": "Changes to your bookings",
+  "@changeRequestsTitle": {"description": "changeRequestsTitle"},
+  "changeRequestsEmpty": "Nothing to decide",
+  "@changeRequestsEmpty": {"description": "changeRequestsEmpty"},
+  "changeRequestsFailed": "That didn't work — the options may have changed. Please check again.",
+  "@changeRequestsFailed": {"description": "changeRequestsFailed"},
+  "changeRequestsCancelConfirmTitle": "Cancel this booking?",
+  "@changeRequestsCancelConfirmTitle": {"description": "changeRequestsCancelConfirmTitle"},
+  "changeRequestsCancelConfirmMessage": "The booking is cancelled and a paid amount is refunded in full.",
+  "@changeRequestsCancelConfirmMessage": {"description": "changeRequestsCancelConfirmMessage"},
+  "changeRequestsKeep": "Keep",
+  "@changeRequestsKeep": {"description": "changeRequestsKeep"},
+  "changeRequestsCancel": "Cancel and refund",
+  "@changeRequestsCancel": {"description": "changeRequestsCancel"},
+  "changeRequestsReplaceHeading": "Same time, another specialist",
+  "@changeRequestsReplaceHeading": {"description": "changeRequestsReplaceHeading"},
+  "changeRequestsCantMakeIt": "{worker} can't make it. Please choose what to do.",
+  "@changeRequestsCantMakeIt": {"description": "changeRequestsCantMakeIt", "placeholders": {"worker": {"type": "String", "example": "Aigerim"}}},
+  "changeRequestsMoveHeading": "Another time with {worker}",
+  "@changeRequestsMoveHeading": {"description": "changeRequestsMoveHeading", "placeholders": {"worker": {"type": "String", "example": "Aigerim"}}},
+  "changeRequestsBanner": "{count, plural, =1{1 booking needs your choice} other{{count} bookings need your choice}}",
+  "@changeRequestsBanner": {"description": "changeRequestsBanner", "placeholders": {"count": {"type": "int", "example": "2"}}},
+  "mapOpenIn2gis": "Open in 2GIS",
+  "@mapOpenIn2gis": {"description": "Map screen button opening the location in the 2GIS app/site."},
+
+  "mapOpenInGoogle": "Open in Google Maps",
+  "@mapOpenInGoogle": {"description": "Map screen button opening the location in Google Maps (alternative to 2GIS)."},
+  "paymentScreenTitle": "Payment",
+  "@paymentScreenTitle": {"description": "paymentScreenTitle"},
+  "paymentWaitingTitle": "Waiting for payment",
+  "@paymentWaitingTitle": {"description": "paymentWaitingTitle"},
+  "paymentWaitingBody": "Finish paying on the payment page. This screen updates by itself once the payment is confirmed.",
+  "@paymentWaitingBody": {"description": "paymentWaitingBody"},
+  "paymentOpenPageButton": "Open payment page",
+  "@paymentOpenPageButton": {"description": "paymentOpenPageButton"},
+  "paymentCheckStatusButton": "I've paid — check status",
+  "@paymentCheckStatusButton": {"description": "paymentCheckStatusButton"},
+  "paymentNotConfirmedYet": "Not confirmed yet — it can take a minute.",
+  "@paymentNotConfirmedYet": {"description": "paymentNotConfirmedYet"},
+  "paymentFailedTitle": "Payment didn't go through",
+  "@paymentFailedTitle": {"description": "paymentFailedTitle"},
+  "paymentFailedBody": "Your booking is still held for a few minutes. You can try again.",
+  "@paymentFailedBody": {"description": "paymentFailedBody"},
+  "paymentRetryButton": "Try again",
+  "@paymentRetryButton": {"description": "paymentRetryButton"},
+  "paymentExpiredTitle": "Payment not confirmed",
+  "@paymentExpiredTitle": {"description": "paymentExpiredTitle"},
+  "paymentExpiredBody": "We haven't received a confirmation. If you paid, check again in a minute; otherwise the booking is released.",
+  "@paymentExpiredBody": {"description": "paymentExpiredBody"},
+  "paymentCloseButton": "Close",
+  "@paymentCloseButton": {"description": "paymentCloseButton"},
+  "paymentStartError": "Couldn't start the payment. Please try again.",
+  "@paymentStartError": {"description": "paymentStartError"},
+  "paymentOpenFailed": "Couldn't open the payment page.",
+  "@paymentOpenFailed": {"description": "paymentOpenFailed"},
+  "bookingStatusPendingPayment": "Awaiting payment",
+  "@bookingStatusPendingPayment": {"description": "bookingStatusPendingPayment"},
+  "bookingPayNowButton": "Pay now",
+  "@bookingPayNowButton": {"description": "bookingPayNowButton"},
+  "paymentConfirmedSnack": "Payment received — your booking is confirmed.",
+  "@paymentConfirmedSnack": {"description": "paymentConfirmedSnack"},
+  "paymentCardsTitle": "Payment cards",
+  "@paymentCardsTitle": {"description": "paymentCardsTitle"},
+  "paymentCardsIntro": "Pay faster with a saved card. We keep only the card's brand and its last four digits.",
+  "@paymentCardsIntro": {"description": "paymentCardsIntro"},
+  "paymentCardsEmpty": "No saved cards yet.",
+  "@paymentCardsEmpty": {"description": "paymentCardsEmpty"},
+  "paymentCardsSaveSwitch": "Save my card at my next payment",
+  "@paymentCardsSaveSwitch": {"description": "paymentCardsSaveSwitch"},
+  "paymentCardsSaveSwitchHint": "Your card is kept when you next pay online, so you can pay in one tap afterwards.",
+  "@paymentCardsSaveSwitchHint": {"description": "paymentCardsSaveSwitchHint"},
+  "paymentCardsPageOnlyNote": "For now, payments still open the payment page; your saved cards are kept for later.",
+  "@paymentCardsPageOnlyNote": {"description": "paymentCardsPageOnlyNote"},
+  "paymentCardsRemove": "Remove",
+  "@paymentCardsRemove": {"description": "paymentCardsRemove"},
+  "paymentCardsRemoveTitle": "Remove this card?",
+  "@paymentCardsRemoveTitle": {"description": "paymentCardsRemoveTitle"},
+  "paymentCardsRemoveBody": "It will no longer be used for payments.",
+  "@paymentCardsRemoveBody": {"description": "paymentCardsRemoveBody"},
+  "paymentCardsKeep": "Keep",
+  "@paymentCardsKeep": {"description": "paymentCardsKeep"},
+  "paymentCardsRemoveFailed": "Couldn't remove the card. Please try again.",
+  "@paymentCardsRemoveFailed": {"description": "paymentCardsRemoveFailed"},
+  "paymentCardsLoadFailed": "Couldn't load your cards.",
+  "@paymentCardsLoadFailed": {"description": "paymentCardsLoadFailed"},
+  "paymentCardLabel": "{brand} •••• {last4}",
+  "@paymentCardLabel": {"description": "paymentCardLabel", "placeholders": {"brand": {"type": "String"}, "last4": {"type": "String"}}},
+  "paymentCardGenericBrand": "Card",
+  "@paymentCardGenericBrand": {"description": "paymentCardGenericBrand"},
+  "paymentChooseTitle": "How would you like to pay?",
+  "@paymentChooseTitle": {"description": "paymentChooseTitle"},
+  "paymentChooseOtherCard": "Another card (payment page)",
+  "@paymentChooseOtherCard": {"description": "paymentChooseOtherCard"},
+  "paymentChoosePayButton": "Pay",
+  "@paymentChoosePayButton": {"description": "paymentChoosePayButton"},
+  "citiesLoadFailed": "Couldn't load cities. Please try again.",
+  "@citiesLoadFailed": {"description": "citiesLoadFailed"},
+  "citySelectLoading": "Switching city…",
+  "@citySelectLoading": {"description": "citySelectLoading"},
+  "citySelectFailed": "Couldn't change the city. Please try again.",
+  "@citySelectFailed": {"description": "citySelectFailed"},
+  "chatSendTooltip": "Send",
+  "@chatSendTooltip": {"description": "chatSendTooltip"}
 }

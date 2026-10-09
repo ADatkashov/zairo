@@ -43,7 +43,14 @@ class FactoryChip extends StatelessWidget {
                 Icon(icon, size: 12, color: fg),
                 const SizedBox(width: 6),
               ],
-              Text(label, style: textTheme.bodySmall?.copyWith(color: fg, fontWeight: FontWeight.w500)),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodySmall?.copyWith(color: fg, fontWeight: FontWeight.w500),
+                ),
+              ),
             ],
           ),
         ),

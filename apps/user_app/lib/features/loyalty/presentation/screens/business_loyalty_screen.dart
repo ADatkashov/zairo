@@ -217,7 +217,7 @@ class _BusinessLoyaltyScreenState extends ConsumerState<BusinessLoyaltyScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.errorLoyaltyRedeemFailed(e.toString()))));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.errorLoyaltyRedeemFailed)));
     } finally {
       if (mounted) setState(() => _redeemingRewardId = null);
     }
@@ -309,6 +309,7 @@ class _RewardsSection extends ConsumerWidget {
       data: (rewards) {
         if (rewards.isEmpty) {
           return FactoryEmptyState(
+            compact: true,
             icon: Symbols.redeem_rounded,
             title: l10n.loyaltyRewardsEmptyTitle,
             message: l10n.loyaltyRewardsEmptyMessage,

@@ -164,7 +164,9 @@ public class BusinessAnalyticsService {
                 .limit(MAX_REVENUE_BREAKDOWN_ROWS)
                 .toList();
 
+        // Bookings on a shared (not person-specific) slot have no employee and belong to no staff row.
         Map<UUID, List<Booking>> byStaff = paidBookings.stream()
+                .filter(b -> employeeIdOf(b, slotById) != null)
                 .collect(Collectors.groupingBy(b -> employeeIdOf(b, slotById)));
         List<StaffRevenue> revenueByStaff = byStaff.entrySet().stream()
                 .map(e -> new StaffRevenue(e.getKey(), sumPayments(e.getValue(), paymentByBookingId),

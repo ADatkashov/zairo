@@ -162,13 +162,10 @@ app:
 payment:
   # mock (local/test, default) | freedompay (staging/production).
   provider: ${PAYMENT_PROVIDER:mock}
-  # ZAIRO's marketplace commission, as a fraction of the payment amount
-  # (0.10 = 10%) — see ADR-0007 (docs/adr/0007-marketplace-commission-and-settlement.md)
-  # and payments.CommissionCalculator. Applied uniformly to every booking
-  # payment; there is no per-business/per-service override today (no real
-  # product requirement for one yet).
-  commission:
-    rate: ${PAYMENT_COMMISSION_RATE:0.10}
+  # ZAIRO's marketplace commission is NOT configured here: it is edited at
+  # runtime by PLATFORM_ADMIN (platform-wide default, 0% until changed, plus
+  # optional per-category overrides) — see payments.CommissionRateService and
+  # V91__create_commission_rate.sql.
   # Where the customer's browser lands after hosted checkout — generic to
   # any redirect-based provider (not Freedom-Pay-specific: Stripe Checkout
   # would need the exact same pair), which is why this sits under `payment`

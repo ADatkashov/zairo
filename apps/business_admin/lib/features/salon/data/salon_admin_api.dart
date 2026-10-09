@@ -10,6 +10,7 @@ import 'models/admin_slot.dart';
 import 'models/business_analytics.dart';
 import 'models/dashboard_metrics.dart';
 import 'models/recurring_schedule_result.dart';
+import 'models/schedule_entry.dart';
 
 /// Wraps Core's providers/services/booking REST endpoints from the owner's
 /// point of view — no new backend surface beyond the two additions this
@@ -308,6 +309,17 @@ class SalonAdminApi {
     final response = await _dioClient.get('/providers/$providerId/bookings');
     final data = response.data as List<dynamic>;
     return data.map((e) => AdminBooking.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// The provider's bookings whose slot starts in [from, to) (UTC), oldest
+  /// first, each with its slot's start and end. Cancelled ones are included.
+  Future<List<ScheduleEntry>> fetchSchedule(String providerId, {required DateTime from, required DateTime to}) async {
+    final response = await _dioClient.get(
+      '/providers/$providerId/schedule',
+      queryParameters: {'from': from.toUtc().toIso8601String(), 'to': to.toUtc().toIso8601String()},
+    );
+    final data = response.data as List<dynamic>;
+    return data.map((e) => ScheduleEntry.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   Future<AdminBooking> completeBooking(String bookingId) async {

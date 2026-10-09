@@ -164,7 +164,7 @@ class _Attention extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4, vertical: FactorySpacing.space2),
               child: Row(
                 children: [
-                  Icon(item.icon, color: colors.coral),
+                  Icon(item.icon, color: colors.error),
                   const SizedBox(width: FactorySpacing.space3),
                   Expanded(child: Text(item.text, style: Theme.of(context).textTheme.bodyMedium)),
                   TextButton(onPressed: () => context.go(item.path), child: Text(item.action)),
@@ -250,9 +250,12 @@ class _Section extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         tile.value(locale),
-                        style: textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: tile.warn ? colors.coral : colors.text,
+                        // Figures are data: mono + tabular so a column of
+                        // tiles lines up; warnings use the AA-safe error hue.
+                        style: FactoryTypography.mono(
+                          size: 22,
+                          weight: FontWeight.w600,
+                          color: tile.warn ? colors.error : colors.text,
                         ),
                       ),
                     ],

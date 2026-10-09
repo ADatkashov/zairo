@@ -22,6 +22,7 @@ public class SubscriptionService {
     private final SubscriptionRepository subscriptionRepository;
     private final SubscriptionChargeRepository subscriptionChargeRepository;
     private final PaymentProvider paymentProvider;
+    private final SubscriptionPaymentMethodService paymentMethodService;
     private final PaymentProviderName providerName;
     private final String defaultCurrency;
     private final String successUrl;
@@ -29,13 +30,14 @@ public class SubscriptionService {
 
     public SubscriptionService(SubscriptionRepository subscriptionRepository,
             SubscriptionChargeRepository subscriptionChargeRepository, PaymentProvider paymentProvider,
-            @Value("${payment.provider:mock}") String providerName,
+            SubscriptionPaymentMethodService paymentMethodService, @Value("${payment.provider:mock}") String providerName,
             @Value("${app.platform.default-currency:USD}") String defaultCurrency,
             @Value("${payment.return.success-url:}") String successUrl,
             @Value("${payment.return.failure-url:}") String failureUrl) {
         this.subscriptionRepository = subscriptionRepository;
         this.subscriptionChargeRepository = subscriptionChargeRepository;
         this.paymentProvider = paymentProvider;
+        this.paymentMethodService = paymentMethodService;
         this.providerName = PaymentProviderName.valueOf(providerName.toUpperCase());
         this.defaultCurrency = defaultCurrency;
         this.successUrl = successUrl;
@@ -97,7 +99,8 @@ public class SubscriptionService {
         PaymentInitiation result;
         try {
             result = paymentProvider.createRecurringPayment(charge.getId(), charge.getAmount(), charge.getCurrency(),
-                    "Factory PRO subscription", successUrl, failureUrl);
+                    "Factory PRO subscription", returnUrl(successUrl, charge),
+                    returnUrl(failureUrl, charge));
         } catch (RuntimeException e) {
             charge.markFailed("Payment provider error: " + e.getMessage(), Instant.now());
             subscriptionChargeRepository.save(charge);
@@ -121,8 +124,22 @@ public class SubscriptionService {
 
         charge.markSucceeded(result.providerPaymentId(), Instant.now());
         subscriptionChargeRepository.save(charge);
+        paymentMethodService.save(subscription.getId(), result.recurringProfileId(), result.cardLast4(),
+                result.cardBrand());
         subscription.markUpgradedToPro(Instant.now());
         return new SubscriptionUpgradeResult(subscriptionRepository.save(subscription), null);
+    }
+
+    /**
+     * Tags the provider's return URL so the return page knows this was a
+     * subscription payment (it opens the business app's Billing screen, not
+     * the customer app). Blank stays blank.
+     */
+    static String returnUrl(String base, SubscriptionCharge charge) {
+        if (base == null || base.isBlank()) {
+            return base;
+        }
+        return base + (base.contains("?") ? "&" : "?") + "for=subscription&charge=" + charge.getId();
     }
 
     /** {@code checkoutUrl} is non-null only when a real provider left the charge PENDING — see {@link #upgradeToPro}. */

@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 import 'package:core_network/core_network.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:dio/dio.dart';
@@ -208,67 +209,118 @@ void main() {
     },
   );
 
-  testWidgets('tapping a booking notification marks it read and opens Bookings', (
-    tester,
-  ) async {
-    final fakeApi = _FakeNotificationsApi([
-      AppNotification(
-        id: 'n1',
-        type: 'BOOKING_REMINDER',
-        title: 'Reminder',
-        body: 'Your visit is tomorrow.',
-        read: false,
-        createdAt: DateTime(2026, 1, 1, 10),
-      ),
-    ]);
-    final router = GoRouter(
-      initialLocation: '/notifications',
-      routes: [
-        GoRoute(path: '/notifications', builder: (_, _) => const NotificationsScreen()),
-        GoRoute(path: '/bookings', builder: (_, _) => const Scaffold(body: Text('Bookings page'))),
-      ],
-    );
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          notificationsApiProvider.overrideWithValue(fakeApi),
-          authControllerProvider.overrideWith(_LoggedInAuthController.new),
-        ],
-        child: MaterialApp.router(
-          theme: factoryLightTheme(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          routerConfig: router,
+  testWidgets(
+    'tapping a booking notification marks it read and opens Bookings',
+    (tester) async {
+      final fakeApi = _FakeNotificationsApi([
+        AppNotification(
+          id: 'n1',
+          type: 'BOOKING_REMINDER',
+          title: 'Reminder',
+          body: 'Your visit is tomorrow.',
+          read: false,
+          createdAt: DateTime(2026, 1, 1, 10),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      ]);
+      final router = GoRouter(
+        initialLocation: '/notifications',
+        routes: [
+          GoRoute(
+            path: '/notifications',
+            builder: (_, _) => const NotificationsScreen(),
+          ),
+          GoRoute(
+            path: '/bookings',
+            builder: (_, _) => const Scaffold(body: Text('Bookings page')),
+          ),
+        ],
+      );
 
-    await tester.tap(find.text('Reminder'));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            notificationsApiProvider.overrideWithValue(fakeApi),
+            authControllerProvider.overrideWith(_LoggedInAuthController.new),
+          ],
+          child: MaterialApp.router(
+            theme: factoryLightTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    expect(fakeApi.markedReadIds, ['n1']);
-    expect(find.text('Bookings page'), findsOneWidget);
-  });
+      await tester.tap(find.text('Reminder'));
+      await tester.pumpAndSettle();
 
-  testWidgets('a read notification with no destination does nothing when tapped', (
+      expect(fakeApi.markedReadIds, ['n1']);
+      expect(find.text('Bookings page'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'a read notification with no destination does nothing when tapped',
+    (tester) async {
+      final fakeApi = _FakeNotificationsApi([
+        AppNotification(
+          id: 'n1',
+          type: 'SOMETHING_NEW',
+          title: 'Hello',
+          body: 'No route for this one.',
+          read: true,
+          createdAt: DateTime(2026, 1, 1, 10),
+        ),
+      ]);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            notificationsApiProvider.overrideWithValue(fakeApi),
+            authControllerProvider.overrideWith(_LoggedInAuthController.new),
+          ],
+          child: MaterialApp(
+            theme: factoryLightTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const NotificationsScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Hello'));
+      await tester.pumpAndSettle();
+
+      expect(fakeApi.markedReadIds, isEmpty);
+      expect(find.text('Hello'), findsOneWidget);
+    },
+  );
+
+  testWidgets('groups notifications under Today, Yesterday and a date', (
     tester,
   ) async {
-    final fakeApi = _FakeNotificationsApi([
-      AppNotification(
-        id: 'n1',
-        type: 'SOMETHING_NEW',
-        title: 'Hello',
-        body: 'No route for this one.',
-        read: true,
-        createdAt: DateTime(2026, 1, 1, 10),
-      ),
-    ]);
+    final now = DateTime.now();
+    AppNotification at(String id, DateTime when) => AppNotification(
+      id: id,
+      type: 'BOOKING_CONFIRMED',
+      title: 'Title $id',
+      body: 'Body $id',
+      read: true,
+      createdAt: when,
+    );
+    final notifications = [
+      at('a', now),
+      at('b', now.subtract(const Duration(days: 1))),
+      at('c', now.subtract(const Duration(days: 10))),
+    ];
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          notificationsApiProvider.overrideWithValue(fakeApi),
+          notificationsApiProvider.overrideWithValue(
+            _FakeNotificationsApi(notifications),
+          ),
           authControllerProvider.overrideWith(_LoggedInAuthController.new),
         ],
         child: MaterialApp(
@@ -281,10 +333,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Hello'));
-    await tester.pumpAndSettle();
-
-    expect(fakeApi.markedReadIds, isEmpty);
-    expect(find.text('Hello'), findsOneWidget);
+    expect(find.text('Today'), findsOneWidget);
+    expect(find.text('Yesterday'), findsOneWidget);
+    final older = now.subtract(const Duration(days: 10));
+    expect(find.text(DateFormat.MMMMd('en').format(older)), findsOneWidget);
+    expect(find.text('Title a'), findsOneWidget);
+    expect(find.text('Title c'), findsOneWidget);
   });
 }

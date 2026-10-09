@@ -66,8 +66,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           key: _formKey,
           child: ListView(
             children: [
-              const Center(child: FactoryLogomark(size: 56)),
-              const SizedBox(height: FactorySpacing.space6),
+              const FactoryAuthBrand(),
+              const SizedBox(height: FactorySpacing.space4),
               if (_showEmailForm) ...[
                 FactoryTextField(
                   controller: _emailController,
@@ -163,7 +163,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   String _errorText(AppLocalizations l10n, Object error) {
     if (error is AuthException) return error.localizedMessage(l10n);
-    return l10n.errorAuthGeneric(error.toString());
+    return l10n.errorAuthGeneric;
   }
 
   void _submit() {

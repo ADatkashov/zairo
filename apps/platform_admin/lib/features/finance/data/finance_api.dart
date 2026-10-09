@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/platform_http.dart';
+import 'commission_models.dart';
 import 'finance_models.dart';
 
 /// Payouts (`/platform/payouts`) and payments (`/platform/payments`). Reads
@@ -44,6 +45,26 @@ class FinanceApi {
     return (response.data as List<dynamic>).map((e) => RefundRequest.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  Future<CommissionSettings> commission() async {
+    final response = await _dio.get('/platform/commission');
+    return CommissionSettings.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<CommissionSettings> setDefaultCommission(num percent) async {
+    final response = await _dio.put('/platform/commission/default', data: {'ratePercent': percent});
+    return CommissionSettings.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<CommissionSettings> setCategoryCommission(String categoryId, num percent) async {
+    final response = await _dio.put('/platform/commission/categories/$categoryId', data: {'ratePercent': percent});
+    return CommissionSettings.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<CommissionSettings> clearCategoryCommission(String categoryId) async {
+    final response = await _dio.delete('/platform/commission/categories/$categoryId');
+    return CommissionSettings.fromJson(response.data as Map<String, dynamic>);
+  }
+
   Future<ReconciliationResult> reconcile(String paymentId) async {
     final response = await _dio.post('/platform/payments/$paymentId/reconcile');
     return ReconciliationResult.fromJson(response.data as Map<String, dynamic>);
@@ -63,4 +84,8 @@ final failedRefundsProvider = FutureProvider.autoDispose<List<FailedRefundPaymen
 
 final refundRequestsProvider = FutureProvider.autoDispose.family<List<RefundRequest>, String>(
   (ref, status) => ref.watch(financeApiProvider).refundRequests(status),
+);
+
+final commissionProvider = FutureProvider.autoDispose<CommissionSettings>(
+  (ref) => ref.watch(financeApiProvider).commission(),
 );

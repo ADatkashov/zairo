@@ -60,7 +60,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       key: _emailFormKey,
       child: ListView(
         children: [
-          Text(l10n.forgotPasswordInstructions),
+          FactoryAuthBrand(markSize: 40, subtitle: l10n.forgotPasswordInstructions),
           const SizedBox(height: FactorySpacing.space4),
           FactoryTextField(
             controller: _emailController,
@@ -89,7 +89,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       key: _resetFormKey,
       child: ListView(
         children: [
-          Text(l10n.forgotPasswordCodeSentMessage),
+          FactoryAuthBrand(markSize: 40, subtitle: l10n.forgotPasswordCodeSentMessage),
           const SizedBox(height: FactorySpacing.space4),
           FactoryTextField(
             controller: _codeController,
@@ -137,7 +137,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = l10n.errorAuthGeneric(e.toString());
+        _error = l10n.errorAuthGeneric;
         _isSubmitting = false;
       });
     }
@@ -167,7 +167,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = l10n.errorAuthGeneric(e.toString());
+        _error = l10n.errorAuthGeneric;
         _isSubmitting = false;
       });
     }

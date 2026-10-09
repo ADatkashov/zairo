@@ -39,7 +39,7 @@ class MyRewardsScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(FactorySpacing.space4),
             child: FactoryErrorState(
-              message: l10n.errorProfileGeneric(error.toString()),
+              message: l10n.errorProfileGeneric,
               onRetry: () => ref.invalidate(authControllerProvider),
             ),
           ),
@@ -74,6 +74,8 @@ class _MyRewardsList extends ConsumerWidget {
                       icon: Symbols.redeem_rounded,
                       title: l10n.myRewardsEmptyTitle,
                       message: l10n.myRewardsEmptyMessage,
+                      actionLabel: l10n.bookingsFindServiceButton,
+                      onAction: () => context.go(AppRoutes.search()),
                     ),
                   ),
                 ),

@@ -315,7 +315,7 @@ class _AutomationSettingsFormState extends ConsumerState<AutomationSettingsForm>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.automationSettingsSavedMessage)));
     } catch (e) {
       setState(() {
-        _error = e is AutomationException ? e.localizedMessage(l10n) : l10n.errorAutomationActionFailed(e.toString());
+        _error = e is AutomationException ? e.localizedMessage(l10n) : l10n.errorAutomationActionFailed;
         _isSubmitting = false;
       });
     }
