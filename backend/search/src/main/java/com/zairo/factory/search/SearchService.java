@@ -165,22 +165,7 @@ public class SearchService {
             // Bayesian ranking: providers with few reviews get pulled toward global average,
             // preventing single-review 5-star from outranking established providers.
             // Tie-breaker: raw rating, then review count, then provider id for stability.
-            case RATING -> {
-                yield Comparator
-                        .comparingDouble((ProviderSearchResult r) -> {
-                            ProviderRatingSummary summary = ratings.get(r.id());
-                            return summary != null ? summary.bayesianRating() : -1.0;
-                        }).reversed()
-                        .thenComparingDouble((ProviderSearchResult r) -> {
-                            ProviderRatingSummary summary = ratings.get(r.id());
-                            return summary != null && summary.averageRating() > 0 ? summary.averageRating() : -1.0;
-                        }).reversed()
-                        .thenComparingLong((ProviderSearchResult r) -> {
-                            ProviderRatingSummary summary = ratings.get(r.id());
-                            return summary != null ? summary.reviewCount() : -1;
-                        }).reversed()
-                        .thenComparing(ProviderSearchResult::id);
-            }
+            case RATING -> ratingComparator(ratings);
             case RECOMMENDED -> Comparator.comparing(ProviderSearchResult::hasOpenAvailability).reversed()
                     .thenComparing(r -> r.distanceKm() == null ? Double.MAX_VALUE : r.distanceKm())
                     .thenComparing(r -> r.minPrice() == null ? BigDecimal.valueOf(Long.MAX_VALUE) : r.minPrice());
@@ -230,5 +215,30 @@ public class SearchService {
                 provider.getStatus(), hasOpenAvailability, minPrice, serviceSummaries, distanceKm,
                 provider.getLatitude(), provider.getLongitude(), rating == null ? null : rating.averageRating(),
                 rating == null ? null : rating.reviewCount(), nextAvailableSlot, provider.getCoverPhotoUrl());
+    }
+
+    /**
+     * Best Bayesian rating first; ties go to the higher raw rating, then to more reviews, then to the id (so the
+     * order is stable). Providers without reviews have no summary and sort last.
+     *
+     * <p>Each key is reversed on its own: {@code Comparator.reversed()} flips the <em>whole</em> chain built so far,
+     * so chaining {@code .reversed()} after every {@code thenComparing} (as this once did) left the raw-rating
+     * tie-break ascending, i.e. the lower raw rating won a tie.
+     */
+    static Comparator<ProviderSearchResult> ratingComparator(Map<UUID, ProviderRatingSummary> ratings) {
+        return Comparator
+                .comparingDouble((ProviderSearchResult r) -> {
+                    ProviderRatingSummary summary = ratings.get(r.id());
+                    return summary != null ? summary.bayesianRating() : -1.0;
+                }).reversed()
+                .thenComparing(Comparator.comparingDouble((ProviderSearchResult r) -> {
+                    ProviderRatingSummary summary = ratings.get(r.id());
+                    return summary != null && summary.averageRating() > 0 ? summary.averageRating() : -1.0;
+                }).reversed())
+                .thenComparing(Comparator.comparingLong((ProviderSearchResult r) -> {
+                    ProviderRatingSummary summary = ratings.get(r.id());
+                    return summary != null ? summary.reviewCount() : -1;
+                }).reversed())
+                .thenComparing(ProviderSearchResult::id);
     }
 }
