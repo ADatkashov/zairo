@@ -11,6 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
+  material_symbols_icons: ^4.2960.0
   flutter_riverpod: ^3.4.2
   # URL-addressable owner area (deep links, browser back/refresh on web).
   go_router: ^18.0.1

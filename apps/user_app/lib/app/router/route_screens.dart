@@ -76,7 +76,7 @@ class VehiclesRoute extends ConsumerWidget {
       loading: () => const _RouteMessage(child: FactoryLoadingState()),
       error: (error, stackTrace) => _RouteMessage(
         child: FactoryErrorState(
-          message: l10n.errorProfileGeneric(error.toString()),
+          message: l10n.errorProfileGeneric,
           onRetry: () => ref.invalidate(authControllerProvider),
         ),
       ),
@@ -107,7 +107,7 @@ class EditProfileRoute extends ConsumerWidget {
       loading: () => const _RouteMessage(child: FactoryLoadingState()),
       error: (error, stackTrace) => _RouteMessage(
         child: FactoryErrorState(
-          message: l10n.errorProfileGeneric(error.toString()),
+          message: l10n.errorProfileGeneric,
           onRetry: () => ref.invalidate(authControllerProvider),
         ),
       ),

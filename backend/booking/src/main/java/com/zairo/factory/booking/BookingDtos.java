@@ -62,21 +62,51 @@ public final class BookingDtos {
             @Schema(description = "Null unless status is CANCELLED and the customer gave one.", example = "Change of plans")
             String cancellationReason,
             @Schema(description = "City code where the service is offered (e.g., 'almaty', 'shymkent').", example = "almaty")
-            String cityCode) {
+            String cityCode,
+            @Schema(description = "Title of the booked service. Null only if the service can no longer be "
+                    + "resolved.", example = "Women's haircut")
+            String serviceTitle,
+            @Schema(description = "The business the booking is with.", example = "550e8400-e29b-41d4-a716-446655440000")
+            UUID providerId,
+            @Schema(description = "Name of the business the booking is with.", example = "Nur Beauty Salon")
+            String providerName,
+            @Schema(description = "The business's vertical code ('beauty', 'auto', 'cleaning').", example = "beauty")
+            String providerVertical,
+            @Schema(description = "When the appointment starts (the booked slot's start).")
+            Instant startsAt,
+            @Schema(description = "When the appointment ends (the booked slot's end).")
+            Instant endsAt) {
+
+        /**
+         * What a booking only references by id — the service, the business and the slot — resolved for display, so a
+         * client can say what was booked, where and when without a round trip per booking.
+         */
+        record Details(String serviceTitle, UUID providerId, String providerName, String providerVertical,
+                Instant startsAt, Instant endsAt) {
+            static final Details NONE = new Details(null, null, null, null, null, null);
+        }
+
+        /** The bare booking, with no resolved details (they serialize as null). */
         static BookingResponse from(Booking booking) {
+            return from(booking, Details.NONE);
+        }
+
+        static BookingResponse from(Booking booking, Details details) {
             return new BookingResponse(booking.getId(), booking.getUserId(), booking.getServiceId(),
                     booking.getAvailabilitySlotId(), booking.getStatus(), booking.getTotalPrice(),
                     booking.getCurrency(), booking.getDepositType(), booking.getDepositValueType(),
                     booking.getDepositValue(), booking.getDepositAmount(), booking.getPaidAmount(),
                     booking.getRemainingAmount(), booking.getCreatedAt(), booking.getCancellationReason(),
-                    booking.getCityCode());
+                    booking.getCityCode(), details.serviceTitle(), details.providerId(), details.providerName(),
+                    details.providerVertical(), details.startsAt(), details.endsAt());
         }
     }
 
     /**
      * One row of a provider's schedule: a booking together with when its
-     * slot starts and ends. {@link BookingResponse} has no times (a booking
-     * only references its slot), so an agenda needs this join.
+     * slot starts and ends, in a lean shape for an agenda of many rows
+     * ({@link BookingResponse} carries the same times, plus the service and
+     * business names, for the customer-facing views).
      */
     public record ScheduleEntryResponse(
             @Schema(example = "550e8400-e29b-41d4-a716-446655440000") UUID bookingId,

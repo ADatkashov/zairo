@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../theme/factory_colors.dart';
 import '../theme/factory_motion.dart';
 import '../theme/factory_spacing.dart';
+import '../util/factory_strings.dart';
 import 'factory_button.dart';
 
 /// A human-readable message plus a retry action — never a raw exception.
@@ -16,12 +17,14 @@ class FactoryErrorState extends StatelessWidget {
     super.key,
     required this.message,
     required this.onRetry,
-    this.retryLabel = 'Try again',
+    this.retryLabel,
   });
 
   final String message;
   final VoidCallback onRetry;
-  final String retryLabel;
+
+  /// Defaults to a built-in translation (see [FactoryStrings]).
+  final String? retryLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +52,7 @@ class FactoryErrorState extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: FactorySpacing.space5),
-          FactoryButton(label: retryLabel, variant: FactoryButtonVariant.secondary, onPressed: onRetry),
+          FactoryButton(label: retryLabel ?? FactoryStrings.of(context).retry, variant: FactoryButtonVariant.secondary, onPressed: onRetry),
         ],
       ),
     );

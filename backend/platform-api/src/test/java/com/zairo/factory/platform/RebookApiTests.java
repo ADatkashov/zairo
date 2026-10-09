@@ -303,7 +303,9 @@ class RebookApiTests {
         ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
                 new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        return UUID.fromString(response.getBody().get("id").toString());
+        UUID providerId = UUID.fromString(response.getBody().get("id").toString());
+        TestAuth.requireFullPayment(restTemplate, owner, providerId);
+        return providerId;
     }
 
     private UUID createService(Registered owner, UUID providerId, String title, BigDecimal price) {

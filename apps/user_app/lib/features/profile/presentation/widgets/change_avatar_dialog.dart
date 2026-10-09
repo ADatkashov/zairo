@@ -94,7 +94,7 @@ class _ChangeAvatarDialogState extends ConsumerState<_ChangeAvatarDialog> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = AppLocalizations.of(context)!.changeAvatarErrorReadFileFailed(e.toString()));
+      setState(() => _error = AppLocalizations.of(context)!.changeAvatarErrorReadFileFailed);
     }
   }
 
@@ -110,7 +110,7 @@ class _ChangeAvatarDialogState extends ConsumerState<_ChangeAvatarDialog> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = AppLocalizations.of(context)!.changeAvatarErrorSaveFailed(e.toString());
+        _error = AppLocalizations.of(context)!.changeAvatarErrorSaveFailed;
         _isSubmitting = false;
       });
     }
@@ -132,7 +132,7 @@ class _ChangeAvatarDialogState extends ConsumerState<_ChangeAvatarDialog> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = AppLocalizations.of(context)!.changeAvatarErrorSaveFailed(e.toString());
+        _error = AppLocalizations.of(context)!.changeAvatarErrorSaveFailed;
         _isSubmitting = false;
       });
     }

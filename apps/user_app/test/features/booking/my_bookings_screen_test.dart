@@ -2,6 +2,7 @@ import 'package:core_network/core_network.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -13,6 +14,8 @@ import 'package:zairo/features/booking/data/models/availability_slot.dart';
 import 'package:zairo/features/booking/data/models/book_again_suggestion.dart';
 import 'package:zairo/features/booking/data/models/booking.dart';
 import 'package:zairo/features/booking/presentation/providers/booking_providers.dart';
+import 'package:zairo/app/router/app_routes.dart';
+import 'package:zairo/features/booking/presentation/screens/booking_payment_screen.dart';
 import 'package:zairo/features/booking/presentation/screens/my_bookings_screen.dart';
 import 'package:zairo/features/messaging/data/messaging_api.dart';
 import 'package:zairo/features/messaging/data/messaging_exception.dart';
@@ -196,6 +199,99 @@ void main() {
     expect(find.text('Leave a review'), findsNothing);
   });
 
+  testWidgets('shows service, business and appointment time on every tab',
+      (tester) async {
+    Booking make(String id, String status, String title, String business,
+            DateTime startsAt) =>
+        Booking(
+          id: id,
+          userId: 'user-1',
+          serviceId: 'service-$id',
+          availabilitySlotId: 'slot-$id',
+          status: status,
+          totalPrice: 20,
+          createdAt: DateTime(2026, 1, 1),
+          serviceTitle: title,
+          providerName: business,
+          providerId: 'provider-1',
+          providerVertical: 'beauty',
+          // Local wall-clock time, sent as the UTC instant the API returns.
+          startsAt: startsAt.toUtc(),
+          endsAt: startsAt.add(const Duration(minutes: 30)).toUtc(),
+        );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(
+            _FakeBookingApi([
+              make('1', 'CONFIRMED', 'Haircut', 'Salon Aurora',
+                  DateTime(2026, 10, 5, 14, 30)),
+              make('2', 'COMPLETED', 'Manicure', 'Nail Bar',
+                  DateTime(2026, 9, 1, 9, 5)),
+              make('3', 'CANCELLED', 'Coloring', 'Studio K',
+                  DateTime(2026, 8, 20, 18, 0)),
+            ]),
+          ),
+          reviewsApiProvider.overrideWithValue(_FakeReviewsApi()),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const MyBookingsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Haircut'), findsOneWidget);
+    expect(find.text('Salon Aurora'), findsOneWidget);
+    expect(find.text('Mon, Oct 5 · 14:30–15:00'), findsOneWidget);
+
+    await tester.tap(find.text('Completed'));
+    await tester.pumpAndSettle();
+    expect(find.text('Manicure'), findsOneWidget);
+    expect(find.text('Nail Bar'), findsOneWidget);
+    expect(find.text('Tue, Sep 1 · 09:05–09:35'), findsOneWidget);
+
+    await tester.tap(find.text('Cancelled'));
+    await tester.pumpAndSettle();
+    expect(find.text('Coloring'), findsOneWidget);
+    expect(find.text('Studio K'), findsOneWidget);
+    expect(find.text('Thu, Aug 20 · 18:00–18:30'), findsOneWidget);
+  });
+
+  test('Booking.fromJson tolerates missing enrichment fields', () {
+    final json = {
+      'id': 'b',
+      'userId': 'u',
+      'serviceId': 's',
+      'availabilitySlotId': 'sl',
+      'status': 'CONFIRMED',
+      'totalPrice': 10,
+      'createdAt': '2026-01-01T00:00:00Z',
+    };
+    final plain = Booking.fromJson(json);
+    expect(plain.serviceTitle, isNull);
+    expect(plain.startsAt, isNull);
+
+    final enriched = Booking.fromJson({
+      ...json,
+      'serviceTitle': 'Haircut',
+      'providerId': 'p',
+      'providerName': 'Salon',
+      'providerVertical': 'beauty',
+      'startsAt': '2026-10-05T09:30:00Z',
+      'endsAt': '2026-10-05T10:00:00Z',
+    });
+    expect(enriched.serviceTitle, 'Haircut');
+    expect(enriched.providerName, 'Salon');
+    expect(enriched.startsAt, DateTime.utc(2026, 10, 5, 9, 30));
+  });
+
   testWidgets('shows the review section only for completed bookings', (tester) async {
     final booking = Booking(
       id: 'booking-1',
@@ -269,6 +365,55 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Cancel booking'), findsOneWidget);
+  });
+
+  testWidgets('a booking awaiting payment is listed with a Pay now button that opens the payment screen', (
+    tester,
+  ) async {
+    final unpaid = Booking(
+      id: 'booking-unpaid',
+      userId: 'user-1',
+      serviceId: 'service-1',
+      availabilitySlotId: 'slot-1',
+      status: 'PENDING_PAYMENT',
+      totalPrice: 20,
+      createdAt: DateTime(2026, 1, 1),
+    );
+    final router = GoRouter(
+      routes: [
+        GoRoute(path: '/', builder: (_, _) => const MyBookingsScreen()),
+        GoRoute(
+          path: AppRoutes.bookingPayment,
+          builder: (_, state) => Text('PAYMENT SCREEN for ${(state.extra! as BookingPaymentArgs).booking.id}'),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(_FakeBookingApi([unpaid])),
+          reviewsApiProvider.overrideWithValue(_FakeReviewsApi()),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp.router(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Awaiting payment'), findsOneWidget);
+    // It can still be cancelled.
+    expect(find.text('Cancel booking'), findsOneWidget);
+
+    await tester.tap(find.text('Pay now'));
+    await tester.pumpAndSettle();
+    expect(find.text('PAYMENT SCREEN for booking-unpaid'), findsOneWidget);
   });
 
   testWidgets('cancelling asks for confirmation, then calls the API and shows a snackbar', (tester) async {
@@ -539,5 +684,78 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('provider provider-9'), findsOneWidget);
+  });
+
+  Future<void> pumpBookings(WidgetTester tester, List<Booking> bookings) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(_FakeBookingApi(bookings)),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const MyBookingsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  Booking withDetails(String id, {required DateTime starts, String title = 'Gel manicure'}) => Booking(
+    id: id,
+    userId: 'user-1',
+    serviceId: 'service-$id',
+    availabilitySlotId: 'slot-$id',
+    status: 'CONFIRMED',
+    totalPrice: 8000,
+    createdAt: DateTime(2026, 1, 1),
+    serviceTitle: title,
+    providerId: 'provider-1',
+    providerName: 'Nur Beauty Salon',
+    providerVertical: 'beauty',
+    startsAt: starts,
+    endsAt: starts.add(const Duration(hours: 1)),
+  );
+
+  testWidgets('a booking says what was booked, with whom and when', (tester) async {
+    await pumpBookings(tester, [withDetails('b1', starts: DateTime(2026, 10, 10, 10))]);
+
+    expect(find.text('Gel manicure'), findsOneWidget);
+    expect(find.text('Nur Beauty Salon'), findsOneWidget);
+    expect(find.text('Sat, Oct 10 · 10:00–11:00'), findsOneWidget);
+  });
+
+  testWidgets('a booking without resolved details still renders as before', (tester) async {
+    await pumpBookings(tester, [
+      Booking(
+        id: 'b1',
+        userId: 'user-1',
+        serviceId: 's1',
+        availabilitySlotId: 'slot-1',
+        status: 'CONFIRMED',
+        totalPrice: 8000,
+        createdAt: DateTime(2026, 1, 1),
+      ),
+    ]);
+
+    expect(find.text('8 000 ₸'), findsOneWidget);
+    expect(find.text('Confirmed'), findsOneWidget);
+    expect(find.byIcon(Symbols.event_rounded), findsNothing);
+  });
+
+  testWidgets('upcoming shows the soonest visit first', (tester) async {
+    await pumpBookings(tester, [
+      // Made first but happens last, so it must not be listed first.
+      withDetails('late', starts: DateTime(2026, 11, 20, 12), title: 'Later visit'),
+      withDetails('soon', starts: DateTime(2026, 10, 10, 10), title: 'Sooner visit'),
+    ]);
+
+    final sooner = tester.getTopLeft(find.text('Sooner visit')).dy;
+    final later = tester.getTopLeft(find.text('Later visit')).dy;
+    expect(sooner, lessThan(later));
   });
 }

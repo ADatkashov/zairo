@@ -188,7 +188,7 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
       await ref.read(authControllerProvider.notifier).linkGoogle(idToken);
       await _loadIdentities();
     } catch (e) {
-      if (mounted) setState(() => _linkError = l10n.errorAuthGeneric(e.toString()));
+      if (mounted) setState(() => _linkError = l10n.errorAuthGeneric);
     } finally {
       if (mounted) setState(() => _isLinking = false);
     }
@@ -206,7 +206,7 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
       await ref.read(authControllerProvider.notifier).linkApple(result.identityToken);
       await _loadIdentities();
     } catch (e) {
-      if (mounted) setState(() => _linkError = l10n.errorAuthGeneric(e.toString()));
+      if (mounted) setState(() => _linkError = l10n.errorAuthGeneric);
     } finally {
       if (mounted) setState(() => _isLinking = false);
     }

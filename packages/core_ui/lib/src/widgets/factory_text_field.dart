@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../util/factory_strings.dart';
+
 /// A single-value input — phone, name, promo code. [label] is required and
 /// always renders as `InputDecoration.labelText`, never `hintText`: the
 /// design system's InputField spec calls for "a persistent visible label —
@@ -26,6 +28,7 @@ class FactoryTextField extends StatefulWidget {
     this.keyboardType,
     this.textInputAction,
     this.maxLines = 1,
+    this.minLines,
     this.suffixIcon,
     this.prefixIcon,
     this.onChanged,
@@ -45,6 +48,10 @@ class FactoryTextField extends StatefulWidget {
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
   final int maxLines;
+
+  /// Lines the field occupies while empty. Leave null for [maxLines] to also
+  /// be its height; a growing composer (chat) passes 1 with a larger [maxLines].
+  final int? minLines;
   final Widget? suffixIcon;
   final Widget? prefixIcon;
   final ValueChanged<String>? onChanged;
@@ -75,7 +82,9 @@ class _FactoryTextFieldState extends State<FactoryTextField> {
         (w.obscureText
             ? IconButton(
                 icon: Icon(_revealed ? Icons.visibility_off : Icons.visibility),
-                tooltip: _revealed ? 'Hide password' : 'Show password',
+                tooltip: _revealed
+                    ? FactoryStrings.of(context).hidePassword
+                    : FactoryStrings.of(context).showPassword,
                 onPressed: () => setState(() => _revealed = !_revealed),
               )
             : null);
@@ -88,6 +97,7 @@ class _FactoryTextFieldState extends State<FactoryTextField> {
       keyboardType: w.keyboardType,
       textInputAction: w.textInputAction,
       maxLines: w.obscureText ? 1 : w.maxLines,
+      minLines: w.obscureText ? null : w.minLines,
       onChanged: w.onChanged,
       onFieldSubmitted: w.onSubmitted,
       validator: w.validator,

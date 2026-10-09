@@ -8,6 +8,7 @@ import 'package:image_cropper/image_cropper.dart';
 import '../../../../core/formatting/month_day_time.dart';
 import '../../../../core/image/pick_and_crop_image.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../core/formatting/vertical_label.dart';
 import '../../../auto/data/models/admin_mechanic.dart';
 import '../../../auto/presentation/providers/auto_admin_providers.dart';
 import '../../../auto/presentation/widgets/add_mechanic_dialog.dart';
@@ -63,10 +64,23 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
 
-    return Scaffold(
+    return DefaultTabController(
+      length: 5,
+      child: Scaffold(
       backgroundColor: colors.bg,
       appBar: FactoryAppBar(
         title: _provider.name,
+        bottom: TabBar(
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
+          tabs: [
+            Tab(text: l10n.salonTabOverview),
+            Tab(text: l10n.salonTabServices),
+            Tab(text: l10n.salonTabTeam),
+            Tab(text: l10n.salonTabBookings),
+            Tab(text: l10n.salonTabSettings),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.star_outline_rounded),
@@ -104,66 +118,94 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          // Invalidates every argument-instance of each family (not just
-          // this provider's, and regardless of a section's current
-          // show-inactive toggle) — simpler and just as correct as threading
-          // every section's local state up here, since re-fetching another
-          // salon's already-cached data too costs nothing a user notices.
-          ref.invalidate(providerDashboardMetricsProvider);
-          ref.invalidate(providerServicesProvider);
-          ref.invalidate(providerSlotsProvider);
-          ref.invalidate(adminMastersProvider);
-          ref.invalidate(adminMechanicsProvider);
-          ref.invalidate(adminCleanersProvider);
-          ref.invalidate(adminStaffProvider);
-          ref.invalidate(providerBookingsProvider);
-          ref.invalidate(providerPayoutsProvider);
-          ref.invalidate(needsAttentionProvider);
-          ref.invalidate(workersProvider);
-        },
-        child: ListView(
-          padding: const EdgeInsets.all(FactorySpacing.space4),
-          children: [
-            _BusinessHeader(
-              provider: _provider,
-              statusLabel: _providerStatusLabel(l10n, _provider.status),
-              statusVariant: _providerStatusVariant(_provider.status),
-            ),
-            const SizedBox(height: FactorySpacing.space6),
-            NeedsAttentionSection(providerId: _provider.id),
-            _DashboardMetricsSection(providerId: _provider.id),
-            const SizedBox(height: FactorySpacing.space6),
-            _ServicesSection(providerId: _provider.id, businessTypeId: _provider.businessTypeId),
-            const SizedBox(height: FactorySpacing.space6),
-            _AvailabilitySection(providerId: _provider.id),
-            if (_provider.vertical == 'beauty') ...[
+      body: TabBarView(
+        children: [
+          _SalonTab(
+            onRefresh: _refresh,
+            children: [
+              _BusinessHeader(
+                provider: _provider,
+                statusLabel: _providerStatusLabel(l10n, _provider.status),
+                statusVariant: _providerStatusVariant(_provider.status),
+              ),
               const SizedBox(height: FactorySpacing.space6),
-              _MastersSection(providerId: _provider.id),
+              NeedsAttentionSection(providerId: _provider.id),
+              _DashboardMetricsSection(providerId: _provider.id),
             ],
-            if (_provider.vertical == 'auto') ...[
+          ),
+          _SalonTab(
+            onRefresh: _refresh,
+            children: [
+              _ServicesSection(providerId: _provider.id, businessTypeId: _provider.businessTypeId),
               const SizedBox(height: FactorySpacing.space6),
-              _MechanicsSection(providerId: _provider.id),
+              _AvailabilitySection(providerId: _provider.id),
             ],
-            if (_provider.vertical == 'cleaning') ...[
+          ),
+          _SalonTab(
+            onRefresh: _refresh,
+            children: [
+              if (_provider.vertical == 'beauty') _MastersSection(providerId: _provider.id),
+              if (_provider.vertical == 'auto') _MechanicsSection(providerId: _provider.id),
+              if (_provider.vertical == 'cleaning') _CleanersSection(providerId: _provider.id),
+              if (!_verticalsWithDedicatedStaffModule.contains(_provider.vertical))
+                _StaffSection(providerId: _provider.id),
               const SizedBox(height: FactorySpacing.space6),
-              _CleanersSection(providerId: _provider.id),
+              TeamScheduleEntry(providerId: _provider.id),
             ],
-            if (!_verticalsWithDedicatedStaffModule.contains(_provider.vertical)) ...[
+          ),
+          _SalonTab(
+            onRefresh: _refresh,
+            children: [
+              _BookingsSection(providerId: _provider.id),
               const SizedBox(height: FactorySpacing.space6),
-              _StaffSection(providerId: _provider.id),
+              _PayoutsSection(providerId: _provider.id),
             ],
-            const SizedBox(height: FactorySpacing.space6),
-            TeamScheduleEntry(providerId: _provider.id),
-            const SizedBox(height: FactorySpacing.space6),
-            _BookingsSection(providerId: _provider.id),
-            const SizedBox(height: FactorySpacing.space6),
-            _BookingSettingsSection(providerId: _provider.id),
-            const SizedBox(height: FactorySpacing.space6),
-            _PayoutsSection(providerId: _provider.id),
-          ],
-        ),
+          ),
+          _SalonTab(
+            onRefresh: _refresh,
+            children: [_BookingSettingsSection(providerId: _provider.id)],
+          ),
+        ],
+      ),
+      ),
+    );
+  }
+
+  Future<void> _refresh() async {
+    // Invalidates every argument-instance of each family (not just
+    // this provider's, and regardless of a section's current
+    // show-inactive toggle) — simpler and just as correct as threading
+    // every section's local state up here, since re-fetching another
+    // salon's already-cached data too costs nothing a user notices.
+    ref.invalidate(providerDashboardMetricsProvider);
+    ref.invalidate(providerServicesProvider);
+    ref.invalidate(providerSlotsProvider);
+    ref.invalidate(adminMastersProvider);
+    ref.invalidate(adminMechanicsProvider);
+    ref.invalidate(adminCleanersProvider);
+    ref.invalidate(adminStaffProvider);
+    ref.invalidate(providerBookingsProvider);
+    ref.invalidate(providerPayoutsProvider);
+    ref.invalidate(needsAttentionProvider);
+    ref.invalidate(workersProvider);
+  }
+}
+
+/// One scrollable, pull-to-refresh page of the business-detail tabs. Each
+/// tab keeps its own scroll position (TabBarView keeps the page alive).
+class _SalonTab extends StatelessWidget {
+  const _SalonTab({required this.onRefresh, required this.children});
+
+  final Future<void> Function() onRefresh;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+        padding: const EdgeInsets.all(FactorySpacing.space4),
+        children: children,
       ),
     );
   }
@@ -180,6 +222,11 @@ String _providerStatusLabel(AppLocalizations l10n, String status) => switch (sta
       'ACTIVE' => l10n.providerStatusActive,
       'PENDING' => l10n.providerStatusPending,
       'SUSPENDED' => l10n.providerStatusSuspended,
+      _ => _capitalize(status),
+    };
+
+String _slotStatusLabel(AppLocalizations l10n, String status) => switch (status) {
+      'BOOKED' => l10n.slotStatusBooked,
       _ => _capitalize(status),
     };
 
@@ -305,7 +352,7 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = AppLocalizations.of(context)!.errorReadFileFailed(e.toString()));
+      setState(() => _error = AppLocalizations.of(context)!.errorReadFileFailed);
     }
   }
 
@@ -351,7 +398,7 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
       Navigator.of(context).pop(updated);
     } catch (e) {
       setState(() {
-        _error = l10n.errorSaveBusinessFailed(e.toString());
+        _error = l10n.errorSaveBusinessFailed;
         _isSubmitting = false;
       });
     }
@@ -449,7 +496,7 @@ class _ChangePhotoDialogState extends ConsumerState<_ChangePhotoDialog> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = AppLocalizations.of(context)!.errorReadFileFailed(e.toString()));
+      setState(() => _error = AppLocalizations.of(context)!.errorReadFileFailed);
     }
   }
 
@@ -465,7 +512,7 @@ class _ChangePhotoDialogState extends ConsumerState<_ChangePhotoDialog> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = AppLocalizations.of(context)!.errorUpdatePhotoFailed(e.toString());
+        _error = AppLocalizations.of(context)!.errorUpdatePhotoFailed;
         _isSubmitting = false;
       });
     }
@@ -487,7 +534,7 @@ class _ChangePhotoDialogState extends ConsumerState<_ChangePhotoDialog> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = AppLocalizations.of(context)!.errorUpdatePhotoFailed(e.toString());
+        _error = AppLocalizations.of(context)!.errorUpdatePhotoFailed;
         _isSubmitting = false;
       });
     }
@@ -555,7 +602,7 @@ class _DashboardMetricsSection extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
             child: LinearProgressIndicator(),
           ),
-          error: (error, stackTrace) => Text(l10n.errorDashboardLoadFailed(error.toString())),
+          error: (error, stackTrace) => Text(l10n.errorDashboardLoadFailed),
         ),
       ],
     );
@@ -628,7 +675,7 @@ class _BusinessHeader extends StatelessWidget {
                 runSpacing: 8,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  FactoryBadge(label: _capitalize(provider.vertical)),
+                  FactoryBadge(label: verticalLabel(AppLocalizations.of(context)!, provider.vertical)),
                   FactoryBadge(label: statusLabel, variant: statusVariant),
                 ],
               ),
@@ -840,8 +887,9 @@ class _ServicesSection extends ConsumerWidget {
       children: [
         FactorySectionHeader(
           title: l10n.servicesSectionTitle,
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
+          trailing: Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               FactoryButton(
                 label: showInactive ? l10n.hideRemovedButton : l10n.showRemovedButton,
@@ -896,7 +944,7 @@ class _ServicesSection extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
             child: LinearProgressIndicator(),
           ),
-          error: (error, stackTrace) => Text(l10n.errorServicesLoadFailed(error.toString())),
+          error: (error, stackTrace) => Text(l10n.errorServicesLoadFailed),
         ),
       ],
     );
@@ -949,6 +997,9 @@ class _ServiceAdminRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(l10n.serviceDurationMinutes(service.durationMinutes),
                     style: textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
+                // Below the title, not beside the price: a wide button here left the title no room on a phone.
+                if (!service.active)
+                  FactoryButton(label: l10n.reactivateButton, variant: FactoryButtonVariant.text, onPressed: onReactivate),
               ],
             ),
           ),
@@ -961,9 +1012,7 @@ class _ServiceAdminRow extends StatelessWidget {
                 IconButton(icon: const Icon(Icons.edit_outlined), tooltip: l10n.editTooltip, onPressed: onEdit),
                 IconButton(icon: const Icon(Icons.delete_outline), tooltip: l10n.removeTooltip, onPressed: onRemove),
               ],
-            )
-          else
-            FactoryButton(label: l10n.reactivateButton, variant: FactoryButtonVariant.text, onPressed: onReactivate),
+            ),
         ],
       ),
     );
@@ -996,8 +1045,9 @@ class _AvailabilitySectionState extends ConsumerState<_AvailabilitySection> {
       children: [
         FactorySectionHeader(
           title: l10n.availabilitySectionTitle,
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
+          trailing: Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               FactoryButton(
                 icon: Icons.event_repeat,
@@ -1051,7 +1101,7 @@ class _AvailabilitySectionState extends ConsumerState<_AvailabilitySection> {
             padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
             child: LinearProgressIndicator(),
           ),
-          error: (error, stackTrace) => Text(l10n.errorAvailabilityLoadFailed(error.toString())),
+          error: (error, stackTrace) => Text(l10n.errorAvailabilityLoadFailed),
         ),
       ],
     );
@@ -1120,7 +1170,7 @@ class _DaySlots extends StatelessWidget {
                     label: Text(
                       s.status == 'OPEN'
                           ? formatHourMinute(s.startsAt.toLocal())
-                          : '${formatHourMinute(s.startsAt.toLocal())} · ${_capitalize(s.status)}',
+                          : '${formatHourMinute(s.startsAt.toLocal())} · ${_slotStatusLabel(l10n, s.status)}',
                     ),
                     onDeleted: s.status == 'OPEN' ? () => onDelete(s) : null,
                   ),
@@ -1149,8 +1199,9 @@ class _MastersSection extends ConsumerWidget {
       children: [
         FactorySectionHeader(
           title: l10n.mastersSectionTitle,
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
+          trailing: Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               FactoryButton(
                 label: showInactive ? l10n.hideRemovedButton : l10n.showRemovedButton,
@@ -1217,7 +1268,7 @@ class _MastersSection extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
             child: LinearProgressIndicator(),
           ),
-          error: (error, stackTrace) => Text(l10n.errorMastersLoadFailed(error.toString())),
+          error: (error, stackTrace) => Text(l10n.errorMastersLoadFailed),
         ),
       ],
     );
@@ -1316,8 +1367,9 @@ class _MechanicsSection extends ConsumerWidget {
       children: [
         FactorySectionHeader(
           title: l10n.mechanicsSectionTitle,
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
+          trailing: Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               FactoryButton(
                 label: showInactive ? l10n.hideRemovedButton : l10n.showRemovedButton,
@@ -1380,7 +1432,7 @@ class _MechanicsSection extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
             child: LinearProgressIndicator(),
           ),
-          error: (error, stackTrace) => Text(l10n.errorMechanicsLoadFailed(error.toString())),
+          error: (error, stackTrace) => Text(l10n.errorMechanicsLoadFailed),
         ),
       ],
     );
@@ -1472,8 +1524,9 @@ class _CleanersSection extends ConsumerWidget {
       children: [
         FactorySectionHeader(
           title: l10n.cleanersSectionTitle,
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
+          trailing: Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               FactoryButton(
                 label: showInactive ? l10n.hideRemovedButton : l10n.showRemovedButton,
@@ -1536,7 +1589,7 @@ class _CleanersSection extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
             child: LinearProgressIndicator(),
           ),
-          error: (error, stackTrace) => Text(l10n.errorCleanersLoadFailed(error.toString())),
+          error: (error, stackTrace) => Text(l10n.errorCleanersLoadFailed),
         ),
       ],
     );
@@ -1628,8 +1681,9 @@ class _StaffSection extends ConsumerWidget {
       children: [
         FactorySectionHeader(
           title: l10n.staffSectionTitle,
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
+          trailing: Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               FactoryButton(
                 label: showInactive ? l10n.hideRemovedButton : l10n.showRemovedButton,
@@ -1692,7 +1746,7 @@ class _StaffSection extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
             child: LinearProgressIndicator(),
           ),
-          error: (error, stackTrace) => Text(l10n.errorStaffLoadFailed(error.toString())),
+          error: (error, stackTrace) => Text(l10n.errorStaffLoadFailed),
         ),
       ],
     );
@@ -1805,7 +1859,7 @@ class _BookingsSection extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
             child: LinearProgressIndicator(),
           ),
-          error: (error, stackTrace) => Text(l10n.errorBookingsLoadFailed(error.toString())),
+          error: (error, stackTrace) => Text(l10n.errorBookingsLoadFailed),
         ),
       ],
     );
@@ -1905,7 +1959,7 @@ class _PayoutsSection extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: FactorySpacing.space2),
             child: LinearProgressIndicator(),
           ),
-          error: (error, stackTrace) => Text(l10n.errorPayoutsLoadFailed(error.toString())),
+          error: (error, stackTrace) => Text(l10n.errorPayoutsLoadFailed),
         ),
       ],
     );
@@ -2124,7 +2178,7 @@ class _BookingSettingsSectionState extends ConsumerState<_BookingSettingsSection
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.errorSaveBusinessFailed(e.toString()))),
+        SnackBar(content: Text(l10n.errorSaveBusinessFailed)),
       );
       setState(() => _isEditing = false);
     }

@@ -135,8 +135,9 @@ public class NotificationService {
 
     public void sendSubscriptionPaymentFailedEmail(String toEmail) {
         emailProvider.send(toEmail, "Subscription payment failed",
-                "We couldn't charge your PRO subscription. Please update your payment details — your plan "
-                        + "will be downgraded to FREE if this isn't resolved within the grace period.");
+                "We couldn't renew your PRO subscription. Please open Billing in the app and pay for the "
+                        + "renewal (or update your card) — your plan will be downgraded to FREE if this isn't "
+                        + "resolved within the grace period.");
     }
 
     public void sendSubscriptionDowngradedEmail(String toEmail) {

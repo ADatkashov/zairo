@@ -95,7 +95,7 @@ class _ReviewReplyDialogState extends ConsumerState<_ReviewReplyDialog> {
       Navigator.of(context).pop(result);
     } catch (e) {
       setState(() {
-        _error = e is ReviewsException ? e.localizedMessage(l10n) : l10n.errorReviewsActionFailed(e.toString());
+        _error = e is ReviewsException ? e.localizedMessage(l10n) : l10n.errorReviewsActionFailed;
         _isSubmitting = false;
       });
     }

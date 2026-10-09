@@ -99,6 +99,10 @@ public class Payment {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    /** Started so that the card used is saved once the payment succeeds (see SavedCardService). */
+    @Column(name = "save_card", nullable = false)
+    private boolean saveCard;
+
     /** Optimistic lock — guards against two concurrent webhook deliveries for the same payment double-processing it. */
     @Version
     private int version;
@@ -183,6 +187,14 @@ public class Payment {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public boolean isSaveCard() {
+        return saveCard;
+    }
+
+    void setSaveCard(boolean saveCard) {
+        this.saveCard = saveCard;
     }
 
     /** Provider accepted the request but hasn't confirmed the outcome yet — a real (redirect-based) provider's normal path. */

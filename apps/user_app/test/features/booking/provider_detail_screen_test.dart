@@ -20,10 +20,12 @@ import 'package:zairo/features/booking/data/models/availability_slot.dart';
 import 'package:zairo/features/booking/data/models/booking.dart';
 import 'package:zairo/features/booking/presentation/providers/booking_providers.dart';
 import 'package:zairo/features/booking/presentation/screens/booking_confirmation_screen.dart';
+import 'package:zairo/features/booking/presentation/screens/booking_payment_screen.dart';
 import 'package:zairo/features/booking/presentation/screens/provider_detail_screen.dart';
 import 'package:zairo/features/discovery/data/models/provider_search_result.dart';
 import 'package:zairo/features/discovery/data/models/service_summary.dart';
 import 'package:zairo/features/payments/data/models/payment.dart';
+import 'package:zairo/features/payments/data/models/saved_card.dart';
 import 'package:zairo/features/payments/data/payments_api.dart';
 import 'package:zairo/features/payments/presentation/providers/payments_providers.dart';
 import 'package:zairo/features/staff/data/models/staff.dart';
@@ -68,7 +70,7 @@ class _FakeBookingApi extends BookingApi {
       userId: userId,
       serviceId: serviceId,
       availabilitySlotId: availabilitySlotId,
-      status: 'CONFIRMED',
+      status: 'PENDING_PAYMENT',
       totalPrice: totalPrice,
       createdAt: DateTime.now(),
     );
@@ -81,6 +83,12 @@ class _FakePaymentsApi extends PaymentsApi {
   String? lastChargedBookingId;
 
   @override
+  Future<SavedCards> getSavedCards() async => SavedCards.empty;
+
+  /// What the charge answers — 'PENDING' is a redirect-based provider (Freedom Pay) leaving a checkout page.
+  String chargeStatus = 'SUCCEEDED';
+
+  @override
   Future<Payment> createPayment(String bookingId) async {
     lastChargedBookingId = bookingId;
     return Payment(
@@ -88,7 +96,8 @@ class _FakePaymentsApi extends PaymentsApi {
       bookingId: bookingId,
       amount: 30,
       currency: 'USD',
-      status: 'SUCCEEDED',
+      status: chargeStatus,
+      checkoutUrl: chargeStatus == 'PENDING' ? 'https://pay.example/checkout/payment-1' : null,
       createdAt: DateTime.now(),
     );
   }
@@ -135,7 +144,7 @@ class _FakeBeautyApi extends BeautyApi {
       userId: userId,
       serviceId: serviceId,
       availabilitySlotId: availabilitySlotId,
-      status: 'CONFIRMED',
+      status: 'PENDING_PAYMENT',
       totalPrice: totalPrice,
       createdAt: DateTime.now(),
     );
@@ -177,7 +186,7 @@ class _FakeAutoApi extends AutoApi {
       userId: userId,
       serviceId: serviceId,
       availabilitySlotId: availabilitySlotId,
-      status: 'CONFIRMED',
+      status: 'PENDING_PAYMENT',
       totalPrice: totalPrice,
       createdAt: DateTime.now(),
     );
@@ -213,7 +222,7 @@ class _FakeStaffApi extends StaffApi {
       userId: userId,
       serviceId: serviceId,
       availabilitySlotId: availabilitySlotId,
-      status: 'CONFIRMED',
+      status: 'PENDING_PAYMENT',
       totalPrice: totalPrice,
       createdAt: DateTime.now(),
     );
@@ -269,7 +278,7 @@ class _FakeWorkforceApi extends WorkforceApi {
       userId: userId,
       serviceId: serviceId,
       availabilitySlotId: 'slot-any',
-      status: 'CONFIRMED',
+      status: 'PENDING_PAYMENT',
       totalPrice: 40,
       createdAt: DateTime.now(),
     );
@@ -310,6 +319,10 @@ Widget _routerApp(ProviderSearchResult provider) => MaterialApp.router(
             path: AppRoutes.bookingConfirmation,
             builder: (_, state) =>
                 BookingConfirmationScreen.fromArgs(state.extra! as BookingConfirmationArgs),
+          ),
+          GoRoute(
+            path: AppRoutes.bookingPayment,
+            builder: (_, state) => BookingPaymentScreen(args: state.extra! as BookingPaymentArgs),
           ),
         ],
       ),
@@ -359,6 +372,9 @@ void main() {
 
     expect(find.text('4.2'), findsOneWidget);
     expect(find.text('(55)'), findsOneWidget);
+    // The service row shows the service's own currency, not the platform default.
+    expect(find.text(r'30 $'), findsOneWidget);
+    expect(find.text('30 ₸'), findsNothing);
 
     final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');
     expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNull);
@@ -851,5 +867,145 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('No open times'), findsOneWidget);
+  });
+
+  testWidgets('a payment that is still pending sends the customer to pay instead of showing "confirmed"', (tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    final slot = AvailabilitySlot(
+      id: 'slot-1',
+      providerId: 'provider-1',
+      startsAt: DateTime(2026, 1, 1, 10, 0),
+      endsAt: DateTime(2026, 1, 1, 10, 30),
+      status: 'OPEN',
+    );
+    final fakeApi = _FakeBookingApi([slot])
+      ..bookingFromGet = Booking(
+        id: 'booking-1',
+        userId: 'user-1',
+        serviceId: 'service-1',
+        availabilitySlotId: 'slot-1',
+        status: 'PENDING_PAYMENT',
+        totalPrice: 30,
+        createdAt: DateTime.now(),
+      );
+    final fakePaymentsApi = _FakePaymentsApi()..chargeStatus = 'PENDING';
+    final opened = <Uri>[];
+    const provider = ProviderSearchResult(
+      id: 'provider-1',
+      name: 'Test Salon',
+      vertical: 'beauty',
+      status: 'ACTIVE',
+      hasOpenAvailability: true,
+      minPrice: 30,
+      services: [
+        ServiceSummary(id: 'service-1', title: 'Haircut', durationMinutes: 30, price: 30, currency: 'USD'),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(fakeApi),
+          paymentsApiProvider.overrideWithValue(fakePaymentsApi),
+          beautyApiProvider.overrideWithValue(_FakeBeautyApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+          checkoutLauncherProvider.overrideWithValue((uri) async {
+            opened.add(uri);
+            return true;
+          }),
+        ],
+        child: _routerApp(provider),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tapVisible(tester, find.text('Haircut'));
+    await tester.pumpAndSettle();
+    await tapVisible(tester, find.text('10:00'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FactoryButton, 'Book'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Booking confirmed!'), findsNothing);
+    expect(find.text('Waiting for payment'), findsOneWidget);
+    expect(opened, [Uri.parse('https://pay.example/checkout/payment-1')]);
+
+    // The webhook confirms the booking: now (and only now) the confirmation appears.
+    fakeApi.bookingFromGet = Booking(
+      id: 'booking-1',
+      userId: 'user-1',
+      serviceId: 'service-1',
+      availabilitySlotId: 'slot-1',
+      status: 'CONFIRMED',
+      totalPrice: 30,
+      createdAt: DateTime.now(),
+    );
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+    expect(find.text('Booking confirmed!'), findsOneWidget);
+  });
+
+  testWidgets('a booking with nothing due online is confirmed right away, without starting a payment', (tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    final slot = AvailabilitySlot(
+      id: 'slot-1',
+      providerId: 'provider-1',
+      startsAt: DateTime(2026, 1, 1, 10, 0),
+      endsAt: DateTime(2026, 1, 1, 10, 30),
+      status: 'OPEN',
+    );
+    // The server confirms a booking with no advance payment on creation.
+    final fakeApi = _FakeBookingApi([slot])
+      ..bookingFromGet = Booking(
+        id: 'booking-1',
+        userId: 'user-1',
+        serviceId: 'service-1',
+        availabilitySlotId: 'slot-1',
+        status: 'CONFIRMED',
+        totalPrice: 30,
+        depositAmount: 0,
+        remainingAmount: 30,
+        createdAt: DateTime.now(),
+      );
+    final fakePaymentsApi = _FakePaymentsApi();
+    const provider = ProviderSearchResult(
+      id: 'provider-1',
+      name: 'Test Salon',
+      vertical: 'beauty',
+      status: 'ACTIVE',
+      hasOpenAvailability: true,
+      minPrice: 30,
+      services: [
+        ServiceSummary(id: 'service-1', title: 'Haircut', durationMinutes: 30, price: 30, currency: 'USD'),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(fakeApi),
+          paymentsApiProvider.overrideWithValue(fakePaymentsApi),
+          beautyApiProvider.overrideWithValue(_FakeBeautyApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: _routerApp(provider),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tapVisible(tester, find.text('Haircut'));
+    await tester.pumpAndSettle();
+    await tapVisible(tester, find.text('10:00'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FactoryButton, 'Book'));
+    await tester.pumpAndSettle();
+
+    expect(fakePaymentsApi.lastChargedBookingId, isNull);
+    expect(find.text('Waiting for payment'), findsNothing);
+    expect(find.text('Booking confirmed!'), findsOneWidget);
   });
 }

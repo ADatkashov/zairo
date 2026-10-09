@@ -67,7 +67,11 @@ public class FreedomPayWebhookVerifier {
         // value). See ADR-0006's Webhook Architecture for why this shapes
         // payment_webhook_event's (provider, event_id) constraint the way
         // it does.
-        return new VerifiedWebhook(true, null, providerPaymentId, orderId, succeeded, amount, currency);
+        // Card-on-file details: pg_recurring_profile_id is documented on the init response; the card
+        // fields below are UNCONFIRMED names (display only) — absent just means "no card shown".
+        return new VerifiedWebhook(true, null, providerPaymentId, orderId, succeeded, amount, currency,
+                blankToNull(fields.get("pg_recurring_profile_id")), blankToNull(fields.get("pg_card_pan")),
+                blankToNull(fields.get("pg_card_brand")));
     }
 
     private static BigDecimal parseAmount(String raw) {
@@ -81,8 +85,19 @@ public class FreedomPayWebhookVerifier {
         }
     }
 
+    private static String blankToNull(String raw) {
+        return raw == null || raw.isBlank() ? null : raw.trim();
+    }
+
     public record VerifiedWebhook(boolean signatureValid, String invalidReason, String providerPaymentId,
-            String orderId, boolean paymentSucceeded, BigDecimal amount, String currency) {
+            String orderId, boolean paymentSucceeded, BigDecimal amount, String currency,
+            String recurringProfileId, String cardPan, String cardBrand) {
+
+        public VerifiedWebhook(boolean signatureValid, String invalidReason, String providerPaymentId,
+                String orderId, boolean paymentSucceeded, BigDecimal amount, String currency) {
+            this(signatureValid, invalidReason, providerPaymentId, orderId, paymentSucceeded, amount, currency,
+                    null, null, null);
+        }
 
         static VerifiedWebhook invalid(String reason) {
             return new VerifiedWebhook(false, reason, null, null, false, null, null);
