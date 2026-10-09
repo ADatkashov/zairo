@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../theme/factory_colors.dart';
 import '../theme/factory_radius.dart';
 import '../theme/factory_spacing.dart';
+import '../util/factory_strings.dart';
 import 'factory_badge.dart';
 import 'factory_price_text.dart';
 import 'factory_rating_label.dart';
@@ -38,8 +39,8 @@ class FactoryProviderCard extends StatelessWidget {
     this.image,
     this.isFavorite = false,
     this.onFavoriteToggle,
-    this.favoriteAddSemanticLabel = 'Add to favorites',
-    this.favoriteRemoveSemanticLabel = 'Remove from favorites',
+    this.favoriteAddSemanticLabel,
+    this.favoriteRemoveSemanticLabel,
     this.onTap,
     this.layout = FactoryProviderCardLayout.vertical,
     this.width,
@@ -81,8 +82,8 @@ class FactoryProviderCard extends StatelessWidget {
   /// core_ui has no app-level localization of its own — callers that show
   /// this app in more than English must pass their own translated strings
   /// here rather than relying on the English fallback default.
-  final String favoriteAddSemanticLabel;
-  final String favoriteRemoveSemanticLabel;
+  final String? favoriteAddSemanticLabel;
+  final String? favoriteRemoveSemanticLabel;
 
   final VoidCallback? onTap;
   final FactoryProviderCardLayout layout;
@@ -140,8 +141,8 @@ class FactoryProviderCard extends StatelessWidget {
               child: _FavoriteButton(
                 isFavorite: isFavorite,
                 onToggle: onFavoriteToggle!,
-                addLabel: favoriteAddSemanticLabel,
-                removeLabel: favoriteRemoveSemanticLabel,
+                addLabel: favoriteAddSemanticLabel ?? FactoryStrings.of(context).addToFavorites,
+                removeLabel: favoriteRemoveSemanticLabel ?? FactoryStrings.of(context).removeFromFavorites,
               ),
             ),
         ],

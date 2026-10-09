@@ -525,5 +525,7 @@
   "discardChangesKeepEditing": "Продолжить",
   "discardChangesDiscard": "Отменить",
   "authStepLabel": "Шаг {step} из {total}",
-  "authChangeNumber": "Изменить номер"
+  "authChangeNumber": "Изменить номер",
+  "cityLoadFailed": "Не удалось загрузить города",
+  "cityLoading": "Загрузка…"
 }
