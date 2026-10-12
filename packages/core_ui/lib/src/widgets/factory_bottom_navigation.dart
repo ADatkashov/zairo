@@ -80,11 +80,17 @@ class FactoryBottomNavigation extends StatefulWidget {
     required this.selectedIndex,
     required this.onDestinationSelected,
     this.centerAction,
+    this.onFanOpenChanged,
   });
 
   final List<FactoryNavDestination> destinations;
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
+
+  /// Called when the quick-action fan opens or closes. While it is open the
+  /// bar itself answers the system Back button (by closing the fan), so a
+  /// parent that also handles Back should stand down; this tells it when.
+  final ValueChanged<bool>? onFanOpenChanged;
 
   /// Round action placed between the first and second half of
   /// [destinations]. Tab indexes reported by [onDestinationSelected] stay
@@ -96,7 +102,10 @@ class FactoryBottomNavigation extends StatefulWidget {
 
   /// Diameter of the round action, and how far it rises above the bar.
   static const double _actionSize = 56;
-  static const double _actionRise = 14;
+  static const double _actionRise = 30;
+
+  /// Gap between the round button and the edge of the bar's cut-out.
+  static const double _notchGap = 6;
 
   @override
   State<FactoryBottomNavigation> createState() => _FactoryBottomNavigationState();
@@ -108,6 +117,21 @@ class _FactoryBottomNavigationState extends State<FactoryBottomNavigation> with 
   late final AnimationController _fan = AnimationController(vsync: this, duration: FactoryMotion.base);
 
   bool get _fanOpen => _fan.status == AnimationStatus.forward || _fan.status == AnimationStatus.completed;
+
+  bool _reportedOpen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fan.addStatusListener((_) {
+      if (!mounted) return;
+      setState(() {}); // PopScope.canPop follows _fanOpen
+      if (_fanOpen != _reportedOpen) {
+        _reportedOpen = _fanOpen;
+        widget.onFanOpenChanged?.call(_fanOpen);
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -165,11 +189,20 @@ class _FactoryBottomNavigationState extends State<FactoryBottomNavigation> with 
 
     final bar = Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-      decoration: BoxDecoration(
+      decoration: ShapeDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colors.border),
-        boxShadow: context.factoryElevation(FactoryElevationLevel.lg),
+        shadows: context.factoryElevation(FactoryElevationLevel.lg),
+        shape: action == null
+            ? RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+                side: BorderSide(color: colors.border),
+              )
+            : _NotchedBarBorder(
+                side: BorderSide(color: colors.border),
+                radius: FactoryBottomNavigation._actionSize / 2 + FactoryBottomNavigation._notchGap,
+                // The button's centre sits 2px above the bar's top edge.
+                centerRise: FactoryBottomNavigation._actionRise - FactoryBottomNavigation._actionSize / 2,
+              ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -182,7 +215,7 @@ class _FactoryBottomNavigationState extends State<FactoryBottomNavigation> with 
       ),
     );
 
-    return SafeArea(
+    final nav = SafeArea(
       minimum: const EdgeInsets.fromLTRB(14, 0, 14, 14),
       child: action == null
           ? bar
@@ -231,6 +264,16 @@ class _FactoryBottomNavigationState extends State<FactoryBottomNavigation> with 
                 ),
               ],
             ),
+    );
+
+    if (action == null || action.quickActions.isEmpty) return nav;
+    // System Back closes an open fan first; only then does it navigate.
+    return PopScope(
+      canPop: !_fanOpen,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _fanOpen) _toggleFan();
+      },
+      child: nav,
     );
   }
 }
@@ -385,18 +428,15 @@ class _ActionButton extends StatelessWidget {
       expanded: expanded,
       label: action.label,
       excludeSemantics: true,
+      // No ring any more: the bar's cut-out is the frame. A soft halo of the
+      // brand colour ties the button to the active-tab tint.
       child: Container(
-        width: FactoryBottomNavigation._actionSize + 12,
-        height: FactoryBottomNavigation._actionSize + 12,
-        // A ring in the surface colour makes the button look cut out of the
-        // bar, and a soft halo of the brand colour ties it to the tab tint.
+        width: FactoryBottomNavigation._actionSize,
+        height: FactoryBottomNavigation._actionSize,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: colors.surface,
-          border: Border.all(color: colors.border),
-          boxShadow: [BoxShadow(color: colors.primary.withValues(alpha: 0.22), blurRadius: 20, spreadRadius: 1)],
+          boxShadow: [BoxShadow(color: colors.primary.withValues(alpha: 0.28), blurRadius: 18, spreadRadius: 1)],
         ),
-        padding: const EdgeInsets.all(6),
         child: Material(
           color: colors.primary,
           shape: const CircleBorder(),
@@ -412,6 +452,80 @@ class _ActionButton extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The bar outline: a rounded rectangle with a round bite taken out of the
+/// top edge at the centre. The circle of the bite has [radius] and its centre
+/// is [centerRise] above the top edge; its two shoulders are eased into the
+/// edge with a cubic curve instead of meeting it at a sharp corner.
+class _NotchedBarBorder extends ShapeBorder {
+  const _NotchedBarBorder({required this.side, required this.radius, required this.centerRise});
+
+  final BorderSide side;
+  final double radius;
+  final double centerRise;
+
+  static const double _corner = 24;
+
+  /// Where the shoulder curve starts, measured from the notch circle's edge.
+  static const double _shoulder = 14;
+
+  @override
+  EdgeInsetsGeometry get dimensions => EdgeInsets.all(side.width);
+
+  @override
+  Path getInnerPath(Rect rect, {TextDirection? textDirection}) => getOuterPath(rect, textDirection: textDirection);
+
+  @override
+  Path getOuterPath(Rect rect, {TextDirection? textDirection}) {
+    final cx = rect.center.dx;
+    final top = rect.top;
+    final c = Offset(cx, top - centerRise);
+    // The circle meets the top edge at +-xi from the centre line.
+    final xi = math.sqrt(math.max(0, radius * radius - centerRise * centerRise));
+    // Join the shoulder to the circle at 70deg from straight down.
+    const phi = 70 * math.pi / 180;
+    final sin = math.sin(phi);
+    final cos = math.cos(phi);
+    final joinL = Offset(c.dx - radius * sin, c.dy + radius * cos);
+    final joinR = Offset(c.dx + radius * sin, c.dy + radius * cos);
+    // Tangent of the circle at the join (heading down and inwards).
+    final tangent = Offset(cos, sin);
+    const k = 7.0;
+    final startL = Offset(cx - xi - _shoulder, top);
+    final startR = Offset(cx + xi + _shoulder, top);
+
+    return Path()
+      ..moveTo(rect.left + _corner, top)
+      ..lineTo(startL.dx, top)
+      ..cubicTo(startL.dx + _shoulder * 0.6, top, joinL.dx - tangent.dx * k, joinL.dy - tangent.dy * k, joinL.dx, joinL.dy)
+      ..arcToPoint(joinR, radius: Radius.circular(radius), clockwise: false)
+      ..cubicTo(joinR.dx + tangent.dx * k, joinR.dy - tangent.dy * k, startR.dx - _shoulder * 0.6, top, startR.dx, top)
+      ..lineTo(rect.right - _corner, top)
+      ..arcToPoint(Offset(rect.right, top + _corner), radius: const Radius.circular(_corner))
+      ..lineTo(rect.right, rect.bottom - _corner)
+      ..arcToPoint(Offset(rect.right - _corner, rect.bottom), radius: const Radius.circular(_corner))
+      ..lineTo(rect.left + _corner, rect.bottom)
+      ..arcToPoint(Offset(rect.left, rect.bottom - _corner), radius: const Radius.circular(_corner))
+      ..lineTo(rect.left, top + _corner)
+      ..arcToPoint(Offset(rect.left + _corner, top), radius: const Radius.circular(_corner))
+      ..close();
+  }
+
+  @override
+  void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {
+    if (side.style == BorderStyle.none) return;
+    canvas.drawPath(
+      getOuterPath(rect, textDirection: textDirection),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = side.width
+        ..color = side.color,
+    );
+  }
+
+  @override
+  ShapeBorder scale(double t) => _NotchedBarBorder(side: side.scale(t), radius: radius * t, centerRise: centerRise * t);
 }
 
 class _NavItem extends StatelessWidget {

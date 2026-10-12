@@ -9,13 +9,24 @@ import '../../../../app/router/tab_reselect.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../messaging/presentation/providers/message_seen_provider.dart';
 
-class MainWrapper extends ConsumerWidget {
+class MainWrapper extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
 
   const MainWrapper({super.key, required this.navigationShell});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MainWrapper> createState() => _MainWrapperState();
+}
+
+class _MainWrapperState extends ConsumerState<MainWrapper> {
+  /// The "+" fan is open. The bar closes it on Back by itself, so this
+  /// wrapper must not also jump to Home for that same Back press.
+  bool _fanOpen = false;
+
+  StatefulNavigationShell get navigationShell => widget.navigationShell;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final newMessages = ref.watch(newMessagesCountProvider);
 
@@ -26,11 +37,12 @@ class MainWrapper extends ConsumerWidget {
     return PopScope(
       canPop: navigationShell.currentIndex == 0,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) navigationShell.goBranch(0);
+        if (!didPop && !_fanOpen) navigationShell.goBranch(0);
       },
       child: Scaffold(
         body: navigationShell,
         bottomNavigationBar: FactoryBottomNavigation(
+          onFanOpenChanged: (open) => _fanOpen = open,
           selectedIndex: navigationShell.currentIndex,
           onDestinationSelected: (index) {
             // Tapping the tab you are on: back to its root *and* to the top.

@@ -944,6 +944,66 @@ void main() {
     expect(picked, ['msg']);
   });
 
+  testWidgets('system Back closes an open fan first and only then leaves the screen', (tester) async {
+    tester.view.physicalSize = const Size(390, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    final openStates = <bool>[];
+    final navigatorKey = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navigatorKey,
+        theme: factoryLightTheme(),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => Scaffold(
+                    body: const Text('second page'),
+                    bottomNavigationBar: FactoryBottomNavigation(
+                      destinations: const [
+                        FactoryNavDestination(icon: Icons.home_rounded, label: 'Home'),
+                        FactoryNavDestination(icon: Icons.person_rounded, label: 'Profile'),
+                      ],
+                      selectedIndex: 0,
+                      onDestinationSelected: (_) {},
+                      onFanOpenChanged: openStates.add,
+                      centerAction: FactoryNavAction(
+                        icon: Icons.add_rounded,
+                        label: 'Quick actions',
+                        quickActions: [FactoryNavQuickAction(icon: Icons.chat_bubble_rounded, label: 'Messages', onTap: () {})],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text('Messages'), findsOneWidget);
+    expect(openStates, [true]);
+
+    // First Back: the fan closes, the page stays.
+    await navigatorKey.currentState!.maybePop();
+    await tester.pumpAndSettle();
+    expect(find.text('Messages'), findsNothing);
+    expect(find.text('second page'), findsOneWidget);
+    expect(openStates, [true, false]);
+
+    // Second Back: leaves the page as usual.
+    await navigatorKey.currentState!.maybePop();
+    await tester.pumpAndSettle();
+    expect(find.text('second page'), findsNothing);
+  });
+
   testWidgets('FactoryBottomNavigation draws a count badge only when there is something to count', (
     tester,
   ) async {
