@@ -264,20 +264,40 @@ jobs:
             sudo apt-get install -y openjdk-21-jdk-headless
             echo 'export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64' >> "$BASH_ENV"
             echo 'export PATH=$JAVA_HOME/bin:$PATH' >> "$BASH_ENV"
+      # MinIO no longer publishes Docker images (quay.io and Docker Hub pulls are
+      # denied), so build the server from source and cache the binary.
+      - restore_cache:
+          keys:
+            - minio-bin-RELEASE.2025-04-22T22-12-26Z-v1
+      - run:
+          name: Build MinIO
+          command: |
+            if [ -x "$HOME/minio-bin/minio" ]; then
+              echo "MinIO binary restored from cache"; exit 0
+            fi
+            curl -fsSL https://go.dev/dl/go1.24.2.linux-amd64.tar.gz | sudo tar -C /usr/local -xzf -
+            export PATH=/usr/local/go/bin:$PATH
+            git clone --depth 1 --branch RELEASE.2025-04-22T22-12-26Z \
+              https://github.com/minio/minio.git /tmp/minio-src
+            mkdir -p "$HOME/minio-bin"
+            cd /tmp/minio-src
+            CGO_ENABLED=0 go build -trimpath -o "$HOME/minio-bin/minio" .
+      - save_cache:
+          key: minio-bin-RELEASE.2025-04-22T22-12-26Z-v1
+          paths:
+            - ~/minio-bin
       - run:
           name: Start MinIO
           command: |
-            # MinIO no longer publishes images (minio/minio is gone from Docker Hub and
-            # quay.io/minio/minio is not pullable), so this uses Bitnami's frozen copy
-            # of the same server, pinned to a tag. Its entrypoint starts the server itself.
-            docker run -d --name minio -p 9000:9000 -p 9001:9001 \
-              -e MINIO_ROOT_USER=app_factory -e MINIO_ROOT_PASSWORD=app_factory_secret \
-              bitnamilegacy/minio:2025.7.23-debian-12-r5
+            mkdir -p /tmp/minio-data
+            MINIO_ROOT_USER=app_factory MINIO_ROOT_PASSWORD=app_factory_secret \
+              nohup "$HOME/minio-bin/minio" server /tmp/minio-data \
+              --address ":9000" --console-address ":9001" >/tmp/minio.log 2>&1 &
             for _ in $(seq 1 30); do
               curl -sf http://localhost:9000/minio/health/live >/dev/null && exit 0
               sleep 1
             done
-            echo "MinIO did not become ready"; docker logs minio; exit 1
+            echo "MinIO did not become ready"; cat /tmp/minio.log; exit 1
       - restore_cache:
           keys:
             - gradle-api-v1-{{ checksum "backend/build.gradle.kts" }}
@@ -410,13 +430,24 @@ workflows:
           requires:
             - test-platform-admin
 
-  # Test gate. Runs on every branch (unit tests + Flutter), and the heavier
-  # platform-api end-to-end run on the long-lived branches only. To save CI
-  # quota, narrow the `filters` of the two cheap jobs to develop/test/master.
+  # Test gate. Runs on the long-lived branches only (develop/test/master) to
+  # save CI quota; feature branches are not built.
   checks:
     jobs:
-      - backend-unit-tests
+      - backend-unit-tests:
+          filters:
+            branches:
+              only:
+                - develop
+                - test
+                - master
       - flutter-check:
+          filters:
+            branches:
+              only:
+                - develop
+                - test
+                - master
           matrix:
             parameters:
               package:
