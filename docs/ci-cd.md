@@ -188,9 +188,11 @@ also appears here, but only on a `backend-ci.yml` run that failed.
 - ~~No deployment of any kind.~~ **Partially done — see §12.** A real,
   free-tier cloud deployment path exists now (Neon Postgres + a
   Docker-based host + S3-compatible object storage) — CI itself still
-  doesn't auto-deploy anywhere (§12's Render setup is manual, and
-  `main`/`test`/`master` pushes don't trigger it), but there's finally
-  somewhere to point one at, if that's ever added.
+  doesn't deploy anything itself. The Render service (§12) is created
+  manually, but it auto-deploys on its own: Render watches the `test`
+  branch of `adatkashov/zairo` (auto-deploy on every commit), so a push to
+  `test` — i.e. merging the `develop` → `test` PR — redeploys the backend.
+  `develop` and `master` pushes don't trigger a deploy.
 - ~~No Docker image build.~~ **Done — `backend/Dockerfile`** (a plain
   multi-stage Dockerfile, not `bootBuildImage`'s Cloud Native Buildpacks —
   see §12 for why: a Docker-runtime image is what every free-tier host in
@@ -263,10 +265,11 @@ building this, not guessed at:
 5. **GitHub Environments for `test` → `staging` → `production`**, each
    with its own secrets and (for `staging`/`production`) a required
    reviewer, once there's an actual place each of those points at. §12's
-   Render deployment is that place today, created manually — wiring an
-   actual auto-deploy-on-push GitHub Actions job to it (rather than
-   Render's own auto-deploy-on-push, which is what's configured now) is
-   what this item would still add.
+   Render deployment is that place today, created manually and
+   auto-deploying from the `test` branch only (Render's own
+   auto-deploy-on-commit, which is what's configured now) — wiring an
+   actual deploy GitHub Actions job to it instead is what this item would
+   still add.
 
 ## 10. Android release signing
 
@@ -542,7 +545,11 @@ dashboard itself has no such limitation):
    still the dev-default values committed in `application.yml`, or unset.
    Set every real value from "Where the real values live" below *before*
    adding this variable, or the service will fail to boot.
-6. **Create Web Service.** First build takes a few minutes (full Gradle
+6. **Branch / auto-deploy**: set **Branch** to `test` and leave
+   **Auto-Deploy** on (trigger: *On Commit*). This is how the live
+   service `zairo-backend` is configured: only pushes to `test` deploy
+   it; `develop` and `master` do not.
+7. **Create Web Service.** First build takes a few minutes (full Gradle
    build from scratch, no cache yet). Render gives the service a public
    URL like `https://zairo-backend.onrender.com` once it's live —
    `https://<that-url>/actuator/health` should return `{"status":"UP"}`.
