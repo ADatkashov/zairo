@@ -19,6 +19,7 @@ class MoreScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final permissions = ref.watch(permissionsProvider);
     final paths = [
+      ConsoleRoutes.catalog,
       ConsoleRoutes.cities,
       ConsoleRoutes.activity,
       if (permissions.canManageStaff) ConsoleRoutes.staff,

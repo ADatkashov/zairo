@@ -114,3 +114,4 @@ belong on the same review list as the rest:
 | `reviewsSortNewest` / `reviewsSortHighest` / `reviewsSortLowest` | "Алдымен жаңалары" / "Алдымен жоғары бағалар" / "Алдымен төмен бағалар" | sort chips; length on a narrow phone |
 | `reviewsNoMatchTitle` / `reviewsNoMatchMessage` / `reviewsResetFilters` | "Сәйкес пікір жоқ" / "Басқа бағаны таңдаңыз немесе барлық пікірді көрсетіңіз." / "Барлығын көрсету" | |
 | `navNewBooking` | "Жаңа жазылу" | label of the + button (new booking) |
+| `navQuickActions` (business_admin, platform_admin) | "Жылдам әрекеттер" | label of the + button (quick actions) |

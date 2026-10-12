@@ -298,7 +298,7 @@ class _Fan extends StatelessWidget {
 
   static const double _radius = 96;
   static const double _item = 52;
-  static const double _labelWidth = 84;
+  static const double _labelWidth = 112;
 
   @override
   Widget build(BuildContext context) {
@@ -633,6 +633,39 @@ class _CountBadge extends StatelessWidget {
           height: 1,
         ),
       ),
+    );
+  }
+}
+
+/// Wraps a screen's own "Back goes to the home tab" rule so it stands down
+/// while the bar's quick-action fan is open (the bar closes the fan on Back
+/// itself). Pass the `setFanOpen` handed to [builder] as
+/// [FactoryBottomNavigation.onFanOpenChanged].
+class FactoryFanBackScope extends StatefulWidget {
+  const FactoryFanBackScope({super.key, required this.canPop, required this.onBack, required this.builder});
+
+  /// Whether Back may leave the screen (false once it should go "home" first).
+  final bool canPop;
+
+  /// What Back does when [canPop] is false and no fan is open.
+  final VoidCallback onBack;
+  final Widget Function(BuildContext context, ValueChanged<bool> setFanOpen) builder;
+
+  @override
+  State<FactoryFanBackScope> createState() => _FactoryFanBackScopeState();
+}
+
+class _FactoryFanBackScopeState extends State<FactoryFanBackScope> {
+  bool _fanOpen = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: widget.canPop,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && !_fanOpen) widget.onBack();
+      },
+      child: widget.builder(context, (open) => _fanOpen = open),
     );
   }
 }
