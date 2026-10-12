@@ -47,8 +47,8 @@ class _PhoneLoginFormState extends ConsumerState<PhoneLoginForm> {
             label: l10n.registerPhoneLabel,
             hint: '+7 700 123 45 67',
             keyboardType: TextInputType.phone,
-            validator: (value) =>
-                (value == null || value.trim().length < 8) ? l10n.validationPhoneRequired : null,
+            inputFormatters: const [KzPhoneInputFormatter()],
+            validator: (value) => isCompleteKzPhone(value) ? null : l10n.validationPhoneRequired,
           ),
           const SizedBox(height: FactorySpacing.space5),
           if (_error != null)
