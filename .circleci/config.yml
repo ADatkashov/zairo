@@ -434,3 +434,4 @@ workflows:
                 - develop
                 - test
                 - master
+                - ccr-a58eebf2-6d9dge # TEMPORARY: verify the MinIO image before merging; remove right after
