@@ -449,6 +449,11 @@ workflows:
                 - develop
                 - test
                 - master
+          # The Flutter jobs are the expensive ones (~5 min each, x7), while
+          # backend-api-tests fails fast when its environment is broken. Wait for
+          # it so a broken backend gate does not burn the Flutter quota.
+          requires:
+            - backend-api-tests
           matrix:
             parameters:
               package:
