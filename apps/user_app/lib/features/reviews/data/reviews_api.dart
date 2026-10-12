@@ -1,6 +1,7 @@
 import 'package:core_network/core_network.dart';
 import 'package:dio/dio.dart';
 
+import 'models/public_review.dart';
 import 'models/review.dart';
 import 'review_exception.dart';
 
@@ -23,6 +24,25 @@ class ReviewsApi {
       }
       rethrow;
     }
+  }
+
+  Future<ReviewSummary> getSummary(String providerId) async {
+    final response = await _dioClient.get(
+      '/providers/$providerId/reviews/summary',
+    );
+    return ReviewSummary.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// Newest first; the first [size] reviews.
+  Future<PublicReviewsPage> getPublicReviews(
+    String providerId, {
+    int size = 20,
+  }) async {
+    final response = await _dioClient.get(
+      '/providers/$providerId/reviews/public',
+      queryParameters: {'page': 0, 'size': size},
+    );
+    return PublicReviewsPage.fromJson(response.data as Map<String, dynamic>);
   }
 
   Future<Review> createReview({

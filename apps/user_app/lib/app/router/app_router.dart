@@ -25,6 +25,7 @@ import '../../features/payments/presentation/screens/saved_cards_screen.dart';
 import '../../features/loyalty/presentation/screens/my_rewards_screen.dart';
 import '../../features/main_wrapper/presentation/screens/main_wrapper.dart';
 import '../../features/maps/presentation/screens/provider_map_screen.dart';
+import '../../features/reviews/presentation/screens/reviews_screen.dart';
 import '../../features/messaging/presentation/screens/chat_thread_screen.dart';
 import '../../features/messaging/presentation/screens/conversations_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
@@ -154,6 +155,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           }
           return ProviderDetailRoute(providerId: state.pathParameters['id']!, startAtBooking: book);
         },
+      ),
+      GoRoute(
+        path: '/provider/:id/reviews',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => ReviewsScreen(
+          providerId: state.pathParameters['id']!,
+          providerName: state.uri.queryParameters['name'],
+        ),
       ),
       GoRoute(
         path: AppRoutes.notifications,

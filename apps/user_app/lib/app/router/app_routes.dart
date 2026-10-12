@@ -89,6 +89,10 @@ abstract final class AppRoutes {
   static String provider(String providerId, {bool book = false}) =>
       book ? '/provider/$providerId?book=1' : '/provider/$providerId';
 
+  /// All public reviews of a business, with the rating breakdown.
+  static String reviews(String providerId, {String? providerName}) =>
+      _withName('/provider/$providerId/reviews', providerName);
+
   static String chat(String providerId, {String? providerName}) =>
       _withName('/messages/$providerId', providerName);
 

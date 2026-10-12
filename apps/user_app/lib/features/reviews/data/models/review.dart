@@ -6,6 +6,7 @@ class Review {
   final int rating;
   final String? comment;
   final DateTime createdAt;
+  final String? businessReply;
 
   const Review({
     required this.id,
@@ -13,6 +14,7 @@ class Review {
     required this.rating,
     required this.comment,
     required this.createdAt,
+    this.businessReply,
   });
 
   factory Review.fromJson(Map<String, dynamic> json) {
@@ -22,6 +24,7 @@ class Review {
       rating: json['rating'] as int,
       comment: json['comment'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      businessReply: json['businessReply'] as String?,
     );
   }
 }

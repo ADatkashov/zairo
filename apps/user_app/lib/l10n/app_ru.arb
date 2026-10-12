@@ -649,5 +649,15 @@
 
   "welcomeStart": "Начать",
 
-  "welcomeSkip": "Пропустить"
+  "welcomeSkip": "Пропустить",
+
+  "reviewsTitle": "Отзывы",
+  "reviewsBasedOn": "{count, plural, one{На основе {count} отзыва} few{На основе {count} отзывов} many{На основе {count} отзывов} other{На основе {count} отзыва}}",
+  "reviewsSeeAll": "Все отзывы",
+  "reviewsEmptyTitle": "Пока нет отзывов",
+  "reviewsEmptyMessage": "Отзывы появляются после визита. Запишитесь и будьте первым, кто расскажет, как всё прошло.",
+  "reviewsBusinessReply": "Ответ бизнеса",
+  "reviewsShowMore": "Показать ещё",
+  "reviewsError": "Не удалось загрузить отзывы. Попробуйте ещё раз.",
+  "reviewsStarRowSemantic": "{stars, plural, one{{stars} звезда} few{{stars} звезды} many{{stars} звёзд} other{{stars} звезды}}: {count}"
 }

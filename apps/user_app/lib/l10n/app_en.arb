@@ -1846,5 +1846,24 @@
   "@welcomeStart": {"description": "Button on the last welcome page that closes the welcome and opens the app."},
 
   "welcomeSkip": "Skip",
-  "@welcomeSkip": {"description": "Button that closes the welcome without reading the remaining pages."}
+  "@welcomeSkip": {"description": "Button that closes the welcome without reading the remaining pages."},
+
+  "reviewsTitle": "Reviews",
+  "@reviewsTitle": {"description": "Reviews screen title."},
+  "reviewsBasedOn": "{count, plural, one{Based on {count} review} other{Based on {count} reviews}}",
+  "@reviewsBasedOn": {"description": "Under the average rating.", "placeholders": {"count": {"type": "int"}}},
+  "reviewsSeeAll": "All reviews",
+  "@reviewsSeeAll": {"description": "Link from the business screen to all reviews."},
+  "reviewsEmptyTitle": "No reviews yet",
+  "@reviewsEmptyTitle": {"description": "Reviews empty state title."},
+  "reviewsEmptyMessage": "Reviews appear after a visit. Book and be the first to share how it went.",
+  "@reviewsEmptyMessage": {"description": "Reviews empty state message."},
+  "reviewsBusinessReply": "Reply from the business",
+  "@reviewsBusinessReply": {"description": "Label above the business reply."},
+  "reviewsShowMore": "Show more",
+  "@reviewsShowMore": {"description": "Load more reviews."},
+  "reviewsError": "Could not load reviews. Please try again.",
+  "@reviewsError": {"description": "Reviews load error."},
+  "reviewsStarRowSemantic": "{stars, plural, one{{stars} star} other{{stars} stars}}: {count}",
+  "@reviewsStarRowSemantic": {"description": "Screen reader label for a star-distribution bar.", "placeholders": {"stars": {"type": "int"}, "count": {"type": "int"}}}
 }

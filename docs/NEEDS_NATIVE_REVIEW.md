@@ -105,3 +105,8 @@ belong on the same review list as the rest:
 | `welcomeTitle3` | "Қанша төлейтініңіз бірден көрінеді" | word order and "бірден көрінеді" |
 | `welcomeBody3` | "Жалпы сома, алдын ала төлем және орнында төленетін қалдық — жазылуды растағанға дейін." | "алдын ала төлем" for deposit, "орнында төленетін қалдық" for the rest paid at the venue |
 | `welcomeNext` / `welcomeStart` / `welcomeSkip` | "Әрі қарай" / "Бастау" / "Өткізіп жіберу" | button wording |
+| `reviewsTitle` / `reviewsSeeAll` | "Пікірлер" / "Барлық пікір" | "пікір" vs "шолу" for reviews |
+| `reviewsBasedOn` | "{count} пікір негізінде" | Kazakh has no plural forms here; "негізінде" for "based on" |
+| `reviewsEmptyTitle` / `reviewsEmptyMessage` | "Әзірге пікір жоқ" / "Пікірлер келуден кейін пайда болады. Жазылып, алғашқы болып әсеріңізбен бөлісіңіз." | natural phrasing of "after a visit" |
+| `reviewsBusinessReply` | "Бизнестің жауабы" | |
+| `reviewsShowMore` / `reviewsError` / `reviewsStarRowSemantic` | "Тағы көрсету" / "Пікірлерді жүктеу мүмкін болмады. Қайталап көріңіз." / "{stars} жұлдыз: {count}" | |
