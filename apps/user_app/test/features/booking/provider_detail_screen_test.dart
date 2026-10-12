@@ -22,6 +22,7 @@ import 'package:zairo/features/booking/presentation/providers/booking_providers.
 import 'package:zairo/features/booking/presentation/screens/booking_confirmation_screen.dart';
 import 'package:zairo/features/booking/presentation/screens/booking_payment_screen.dart';
 import 'package:zairo/features/booking/presentation/screens/provider_detail_screen.dart';
+import 'package:zairo/features/booking/presentation/widgets/booking_stepper.dart';
 import 'package:zairo/features/discovery/data/models/provider_search_result.dart';
 import 'package:zairo/features/discovery/data/models/service_summary.dart';
 import 'package:zairo/features/payments/data/models/payment.dart';
@@ -328,7 +329,93 @@ Widget _routerApp(ProviderSearchResult provider) => MaterialApp.router(
       ),
     );
 
+/// Taps "Book", then confirms the pre-payment summary sheet when one opens
+/// (a logged-out customer skips it and goes straight to the login gate).
+Future<void> bookAndConfirm(WidgetTester tester, Finder book) async {
+  await tester.tap(book);
+  await tester.pumpAndSettle();
+  for (final label in ['Confirm and pay', 'Confirm booking']) {
+    final confirm = find.widgetWithText(FactoryButton, label);
+    if (confirm.evaluate().isNotEmpty) {
+      await tester.tap(confirm);
+      return;
+    }
+  }
+}
+
 void main() {
+  testWidgets('the pre-payment summary shows the booking; Change creates nothing, Confirm books', (tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    final slot = AvailabilitySlot(
+      id: 'slot-1',
+      providerId: 'provider-1',
+      startsAt: DateTime(2026, 1, 1, 10, 0),
+      endsAt: DateTime(2026, 1, 1, 10, 30),
+      status: 'OPEN',
+    );
+    final fakeApi = _FakeBookingApi([slot]);
+    const provider = ProviderSearchResult(
+      id: 'provider-1',
+      name: 'Test Salon',
+      vertical: 'beauty',
+      status: 'ACTIVE',
+      hasOpenAvailability: true,
+      minPrice: 30,
+      services: [
+        ServiceSummary(id: 'service-1', title: 'Haircut', durationMinutes: 30, price: 30, currency: 'USD'),
+      ],
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(fakeApi),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          beautyApiProvider.overrideWithValue(_FakeBeautyApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: _routerApp(provider),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The progress bar follows the selection: service -> time -> confirm.
+    BookingStepper stepper() => tester.widget<BookingStepper>(find.byType(BookingStepper));
+    expect(stepper().step, 0);
+    await tapVisible(tester, find.text('Haircut'));
+    await tester.pumpAndSettle();
+    expect(stepper().step, 1);
+    await tapVisible(tester, find.text('10:00'));
+    await tester.pumpAndSettle();
+    expect(stepper().step, 2);
+
+    // "Book" opens the summary instead of booking.
+    await tester.tap(find.widgetWithText(FactoryButton, 'Book'));
+    await tester.pumpAndSettle();
+    expect(find.text('Check your booking'), findsOneWidget);
+    expect(find.text('Haircut'), findsWidgets);
+    expect(find.text('Test Salon'), findsWidgets);
+    expect(fakeApi.lastBookingCall, isNull, reason: 'nothing is created before Confirm');
+
+    // Change: back to the selection, still nothing created, selection kept.
+    await tester.tap(find.widgetWithText(FactoryButton, 'Change'));
+    await tester.pumpAndSettle();
+    expect(find.text('Check your booking'), findsNothing);
+    expect(fakeApi.lastBookingCall, isNull);
+    expect(stepper().step, 2);
+
+    // Confirm: now it books.
+    await tester.tap(find.widgetWithText(FactoryButton, 'Book'));
+    await tester.pumpAndSettle();
+    final confirm = find.widgetWithText(FactoryButton, 'Confirm booking').evaluate().isNotEmpty
+        ? find.widgetWithText(FactoryButton, 'Confirm booking')
+        : find.widgetWithText(FactoryButton, 'Confirm and pay');
+    await tester.tap(confirm);
+    await tester.pumpAndSettle();
+    expect(fakeApi.lastBookingCall, isNotNull);
+  });
+
   testWidgets('selecting a service and slot enables booking and submits the right data', (tester) async {
     // Tall viewport: the price summary bar would otherwise cover the slot chips.
     tester.view.physicalSize = const Size(800, 1600);
@@ -386,7 +473,7 @@ void main() {
 
     expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNotNull);
 
-    await tester.tap(bookButtonFinder);
+    await bookAndConfirm(tester, bookButtonFinder);
     await tester.pumpAndSettle();
 
     expect(fakeApi.lastBookingCall, {
@@ -470,7 +557,7 @@ void main() {
 
     expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNotNull);
 
-    await tester.tap(bookButtonFinder);
+    await bookAndConfirm(tester, bookButtonFinder);
     await tester.pumpAndSettle();
 
     expect(fakeBeautyApi.lastBeautyBookingCall, {
@@ -563,7 +650,7 @@ void main() {
 
     expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNotNull);
 
-    await tester.tap(bookButtonFinder);
+    await bookAndConfirm(tester, bookButtonFinder);
     await tester.pumpAndSettle();
 
     expect(fakeAutoApi.lastAutoBookingCall, {
@@ -645,7 +732,7 @@ void main() {
 
     expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNotNull);
 
-    await tester.tap(bookButtonFinder);
+    await bookAndConfirm(tester, bookButtonFinder);
     await tester.pumpAndSettle();
 
     expect(fakeStaffApi.lastStaffBookingCall, {
@@ -660,6 +747,9 @@ void main() {
   });
 
   testWidgets('"Any master" merges the times and books for the picked time without naming a person', (tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
     final fakeBookingApi = _FakeBookingApi(const []);
     final fakeWorkforce = _FakeWorkforceApi(
       anySlotList: [
@@ -721,7 +811,7 @@ void main() {
 
     // No person was named, yet booking is enabled.
     expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNotNull);
-    await tester.tap(bookButtonFinder);
+    await bookAndConfirm(tester, bookButtonFinder);
     await tester.pumpAndSettle();
 
     expect(fakeWorkforce.lastAnyCall?['serviceId'], 'service-1');
@@ -839,7 +929,7 @@ void main() {
 
   testWidgets('opened from a "Book" button it starts at the booking steps, not at the top', (tester) async {
     // A short phone, so the page is longer than the screen and can scroll.
-    tester.view.physicalSize = const Size(390, 520);
+    tester.view.physicalSize = const Size(390, 600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
     const provider = ProviderSearchResult(
@@ -884,6 +974,9 @@ void main() {
   });
 
   testWidgets('shows a message when there are no open slots', (tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
     final fakeApi = _FakeBookingApi(const []);
     const provider = ProviderSearchResult(
       id: 'provider-2',
@@ -970,7 +1063,7 @@ void main() {
     await tester.pumpAndSettle();
     await tapVisible(tester, find.text('10:00'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FactoryButton, 'Book'));
+    await bookAndConfirm(tester, find.widgetWithText(FactoryButton, 'Book'));
     await tester.pump();
     await tester.pump();
     await tester.pump();
@@ -1047,7 +1140,7 @@ void main() {
     await tester.pumpAndSettle();
     await tapVisible(tester, find.text('10:00'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FactoryButton, 'Book'));
+    await bookAndConfirm(tester, find.widgetWithText(FactoryButton, 'Book'));
     await tester.pumpAndSettle();
 
     expect(fakePaymentsApi.lastChargedBookingId, isNull);

@@ -115,3 +115,8 @@ belong on the same review list as the rest:
 | `reviewsNoMatchTitle` / `reviewsNoMatchMessage` / `reviewsResetFilters` | "Сәйкес пікір жоқ" / "Басқа бағаны таңдаңыз немесе барлық пікірді көрсетіңіз." / "Барлығын көрсету" | |
 | `navNewBooking` | "Жаңа жазылу" | label of the + button (new booking) |
 | `navQuickActions` (business_admin, platform_admin) | "Жылдам әрекеттер" | label of the + button (quick actions) |
+| `bookingStepService` / `bookingStepTime` / `bookingStepConfirm` | "Қызмет" / "Уақыт" / "Төлем" | booking progress bar labels |
+| `bookingStepSemantic` | "{step}-қадам / {total}: {label}" | screen-reader wording "step N of M" |
+| `bookingReviewTitle` / `bookingReviewConfirmPay` / `bookingReviewConfirmFree` / `bookingReviewChange` | "Жазылуды тексеріңіз" / "Растап, төлеу" / "Жазылуды растау" / "Өзгерту" | pre-payment summary sheet |
+| `bookingReviewServiceLabel` / `bookingReviewPersonLabel` / `bookingReviewAnyPerson` / `bookingReviewPlaceLabel` | "Қызмет" / "Маман" / "Алғашқы бос маман" / "Бизнес" | summary row labels |
+| `bookingReviewTotal` | "Барлығы" | total price row |

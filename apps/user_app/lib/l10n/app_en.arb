@@ -1885,5 +1885,32 @@
   "@reviewsResetFilters": {"description": "Reviews screen filter/sort/empty text."},
 
   "navNewBooking": "New booking",
-  "@navNewBooking": {"description": "Screen-reader label of the round + button in the middle of the bottom bar; opens the category picker to start a booking."}
+  "@navNewBooking": {"description": "Screen-reader label of the round + button in the middle of the bottom bar; opens the category picker to start a booking."},
+
+  "bookingStepService": "Service",
+  "@bookingStepService": {"description": "Step label in the booking progress bar: choose a service."},
+  "bookingStepTime": "Time",
+  "@bookingStepTime": {"description": "Step label: choose a time."},
+  "bookingStepConfirm": "Confirm",
+  "@bookingStepConfirm": {"description": "Step label: confirm and pay."},
+  "bookingStepSemantic": "Step {step} of {total}: {label}",
+  "@bookingStepSemantic": {"description": "Screen-reader text of the booking progress bar.", "placeholders": {"step": {"type": "int"}, "total": {"type": "int"}, "label": {"type": "String"}}},
+  "bookingReviewTitle": "Check your booking",
+  "@bookingReviewTitle": {"description": "Title of the sheet shown before the booking is created."},
+  "bookingReviewServiceLabel": "Service",
+  "@bookingReviewServiceLabel": {"description": "Label of the service row in the pre-payment summary."},
+  "bookingReviewPersonLabel": "Specialist",
+  "@bookingReviewPersonLabel": {"description": "Label of the chosen specialist row (master / mechanic / cleaner)."},
+  "bookingReviewAnyPerson": "First available",
+  "@bookingReviewAnyPerson": {"description": "Value shown instead of a specialist when the customer chose \"any\"."},
+  "bookingReviewPlaceLabel": "Business",
+  "@bookingReviewPlaceLabel": {"description": "Label of the business row in the pre-payment summary."},
+  "bookingReviewConfirmPay": "Confirm and pay",
+  "@bookingReviewConfirmPay": {"description": "Button of the pre-payment summary when something is charged now."},
+  "bookingReviewConfirmFree": "Confirm booking",
+  "@bookingReviewConfirmFree": {"description": "Button of the pre-payment summary when nothing is charged now."},
+  "bookingReviewChange": "Change",
+  "@bookingReviewChange": {"description": "Button of the pre-payment summary that goes back to the selection."},
+  "bookingReviewTotal": "Total",
+  "@bookingReviewTotal": {"description": "Total price row of the pre-payment summary when the payment policy is unknown."}
 }

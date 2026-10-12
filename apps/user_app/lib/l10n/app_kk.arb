@@ -670,5 +670,19 @@
   "reviewsNoMatchMessage": "Басқа бағаны таңдаңыз немесе барлық пікірді көрсетіңіз.",
   "reviewsResetFilters": "Барлығын көрсету",
 
-  "navNewBooking": "Жаңа жазылу"
+  "navNewBooking": "Жаңа жазылу",
+
+  "bookingStepService": "Қызмет",
+  "bookingStepTime": "Уақыт",
+  "bookingStepConfirm": "Төлем",
+  "bookingStepSemantic": "{step}-қадам / {total}: {label}",
+  "bookingReviewTitle": "Жазылуды тексеріңіз",
+  "bookingReviewServiceLabel": "Қызмет",
+  "bookingReviewPersonLabel": "Маман",
+  "bookingReviewAnyPerson": "Алғашқы бос маман",
+  "bookingReviewPlaceLabel": "Бизнес",
+  "bookingReviewConfirmPay": "Растап, төлеу",
+  "bookingReviewConfirmFree": "Жазылуды растау",
+  "bookingReviewChange": "Өзгерту",
+  "bookingReviewTotal": "Барлығы"
 }
