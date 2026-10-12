@@ -41,4 +41,8 @@ dependencies {
     // RebookProperties' global defaults -- one-directional (rebook-engine
     // -> automation), same as every other cross-module reference here.
     implementation(project(":automation"))
+
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.assertj:assertj-core")
 }
