@@ -30,6 +30,7 @@ import '../../../favorites/presentation/widgets/favorite_button.dart';
 import '../../../payments/data/payment_exception.dart';
 import '../../../payments/data/models/payment.dart';
 import '../../../payments/presentation/providers/payments_providers.dart';
+import '../../../reviews/presentation/widgets/reviews_preview.dart';
 import '../../../staff/data/models/staff.dart';
 import '../../../staff/data/staff_exception.dart';
 import '../../../staff/presentation/providers/staff_providers.dart';
@@ -471,6 +472,10 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                     hasWorkers: hasWorkers,
                     anyMode: anyMode,
                     workerId: selectedWorkerId,
+                  ),
+                  ReviewsPreview(
+                    providerId: widget.provider.id,
+                    providerName: widget.provider.name,
                   ),
                 ],
               ),
