@@ -34,6 +34,8 @@ class _EmptyDiscoveryApi extends DiscoveryApi {
 void main() {
   test('AppRoutes builds the URLs the router declares', () {
     expect(AppRoutes.provider('p-1'), '/provider/p-1');
+    // The "Book" button on a card asks for the booking steps right away.
+    expect(AppRoutes.provider('p-1', book: true), '/provider/p-1?book=1');
     expect(AppRoutes.chat('p-1'), '/messages/p-1');
     expect(
       AppRoutes.chat('p-1', providerName: 'Glow & Co'),

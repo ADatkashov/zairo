@@ -62,6 +62,10 @@ class ServiceCompareScreen extends ConsumerWidget {
                   AppRoutes.provider(result.id),
                   extra: result,
                 ),
+                onBook: () => context.push(
+                  AppRoutes.provider(result.id, book: true),
+                  extra: result,
+                ),
               );
             },
           );

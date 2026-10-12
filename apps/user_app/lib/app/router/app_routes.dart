@@ -83,7 +83,11 @@ abstract final class AppRoutes {
 
   /// [extra] may carry the already-loaded `ProviderSearchResult`; without it
   /// (deep link, web refresh) the screen looks the provider up by id.
-  static String provider(String providerId) => '/provider/$providerId';
+  ///
+  /// With [book] the business opens already scrolled to the booking steps
+  /// (services, then times) — what a "Book" button on a card wants.
+  static String provider(String providerId, {bool book = false}) =>
+      book ? '/provider/$providerId?book=1' : '/provider/$providerId';
 
   static String chat(String providerId, {String? providerName}) =>
       _withName('/messages/$providerId', providerName);

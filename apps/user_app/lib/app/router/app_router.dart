@@ -148,10 +148,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) {
           final extra = state.extra;
+          final book = state.uri.queryParameters['book'] == '1';
           if (extra is ProviderSearchResult) {
-            return ProviderDetailScreen(provider: extra);
+            return ProviderDetailScreen(provider: extra, startAtBooking: book);
           }
-          return ProviderDetailRoute(providerId: state.pathParameters['id']!);
+          return ProviderDetailRoute(providerId: state.pathParameters['id']!, startAtBooking: book);
         },
       ),
       GoRoute(
