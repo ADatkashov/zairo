@@ -10,6 +10,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../data/models/business_type.dart';
 import '../../data/models/catalog_service.dart';
 import '../../data/models/category.dart';
+import '../../data/models/subsphere.dart';
 import '../category_icon.dart';
 import '../providers/catalog_providers.dart';
 
@@ -325,6 +326,9 @@ class _CatalogServicesSheet extends ConsumerWidget {
     final colors = context.factoryColors;
     final languageCode = Localizations.localeOf(context).languageCode;
     final servicesAsync = ref.watch(catalogServicesProvider(businessType.id));
+    // Grouping is a nicety: if the subspheres fail to load the services still
+    // show, just as one flat list.
+    final subspheres = ref.watch(subspheresProvider(businessType.id)).value ?? const [];
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -360,16 +364,30 @@ class _CatalogServicesSheet extends ConsumerWidget {
                     child: ListView(
                       shrinkWrap: true,
                       children: [
-                        for (final service in services)
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(service.nameFor(languageCode)),
-                            trailing: Icon(
-                              Symbols.chevron_right_rounded,
-                              color: colors.textTertiary,
+                        for (final group in _groupServices(services, subspheres, languageCode)) ...[
+                          if (group.title != null)
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                top: FactorySpacing.space3,
+                                bottom: FactorySpacing.space1,
+                              ),
+                              child: Text(
+                                group.title!,
+                                style: Theme.of(context).textTheme.labelLarge
+                                    ?.copyWith(color: colors.textTertiary),
+                              ),
                             ),
-                            onTap: () => Navigator.of(context).pop(service),
-                          ),
+                          for (final service in group.services)
+                            ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(service.nameFor(languageCode)),
+                              trailing: Icon(
+                                Symbols.chevron_right_rounded,
+                                color: colors.textTertiary,
+                              ),
+                              onTap: () => Navigator.of(context).pop(service),
+                            ),
+                        ],
                       ],
                     ),
                   ),
@@ -383,6 +401,41 @@ class _CatalogServicesSheet extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _ServiceGroup {
+  const _ServiceGroup(this.title, this.services);
+
+  /// null for services that sit directly under the sphere (no header).
+  final String? title;
+  final List<CatalogService> services;
+}
+
+/// Services without a subsphere first (no header), then one titled group per
+/// subsphere in its sort order; each group keeps the catalog's own order. A
+/// service whose subsphere is unknown (e.g. it failed to load) stays in the
+/// headerless group.
+List<_ServiceGroup> _groupServices(
+  List<CatalogService> services,
+  List<Subsphere> subspheres,
+  String languageCode,
+) {
+  final bySortOrder = [...services]..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+  final known = {for (final s in subspheres) s.id};
+  final ungrouped = [
+    for (final s in bySortOrder)
+      if (s.subsphereId == null || !known.contains(s.subsphereId)) s,
+  ];
+  final orderedSubspheres = [...subspheres]..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+  return [
+    if (ungrouped.isNotEmpty) _ServiceGroup(null, ungrouped),
+    for (final subsphere in orderedSubspheres)
+      if (bySortOrder.any((s) => s.subsphereId == subsphere.id))
+        _ServiceGroup(
+          subsphere.nameFor(languageCode),
+          [for (final s in bySortOrder) if (s.subsphereId == subsphere.id) s],
+        ),
+  ];
 }
 
 class _SphereRow extends StatelessWidget {

@@ -9,6 +9,7 @@ import 'package:zairo/features/catalog/data/catalog_api.dart';
 import 'package:zairo/features/catalog/data/models/business_type.dart';
 import 'package:zairo/features/catalog/data/models/catalog_service.dart';
 import 'package:zairo/features/catalog/data/models/category.dart';
+import 'package:zairo/features/catalog/data/models/subsphere.dart';
 import 'package:zairo/features/catalog/presentation/providers/catalog_providers.dart';
 import 'package:zairo/features/catalog/presentation/screens/all_categories_screen.dart';
 import 'package:zairo/l10n/app_localizations.dart';
@@ -30,16 +31,23 @@ class _FakeCatalogApi extends CatalogApi {
   }
 
   @override
-  Future<List<CatalogService>> listCatalogServices(String businessTypeId) async => const [
-        CatalogService(
-          id: 'svc-1',
-          businessTypeId: 'bt-1',
-          nameKk: 'Шаш алу',
-          nameRu: 'Мужская стрижка',
-          nameEn: "Men's haircut",
-          sortOrder: 1,
-        ),
-      ];
+  Future<List<Subsphere>> listSubspheres(String businessTypeId) async => subspheres;
+
+  @override
+  Future<List<CatalogService>> listCatalogServices(String businessTypeId) async => services;
+
+  List<Subsphere> subspheres = const [];
+
+  List<CatalogService> services = const [
+    CatalogService(
+      id: 'svc-1',
+      businessTypeId: 'bt-1',
+      nameKk: 'Шаш алу',
+      nameRu: 'Мужская стрижка',
+      nameEn: "Men's haircut",
+      sortOrder: 1,
+    ),
+  ];
 }
 
 const _beauty = Category(
@@ -257,5 +265,52 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text("compare svc-1 Men's haircut"), findsOneWidget);
+  });
+
+  testWidgets('a sphere with subspheres groups its catalog services under titled headers', (tester) async {
+    CatalogService service(String id, String nameEn, int sortOrder, [String? subsphereId]) => CatalogService(
+      id: id,
+      businessTypeId: 'bt-1',
+      nameKk: nameEn,
+      nameRu: nameEn,
+      nameEn: nameEn,
+      sortOrder: sortOrder,
+      subsphereId: subsphereId,
+    );
+    Subsphere subsphere(String id, String nameEn, int sortOrder) => Subsphere(
+      id: id,
+      businessTypeId: 'bt-1',
+      code: id,
+      nameKk: nameEn,
+      nameRu: nameEn,
+      nameEn: nameEn,
+      sortOrder: sortOrder,
+    );
+    final fakeApi = _FakeCatalogApi(const [_beauty], const {
+      'cat-beauty': [_haircuts],
+    })
+      ..subspheres = [subsphere('ss-nails', 'Nails', 2), subsphere('ss-hair', 'Hair', 1)]
+      ..services = [
+        service('svc-manicure', 'Manicure', 3, 'ss-nails'),
+        service('svc-mens', "Men's haircut", 8, 'ss-hair'),
+        service('svc-womens', "Women's haircut", 1, 'ss-hair'),
+        service('svc-misc', 'Walk-in consultation', 20),
+      ];
+    await _pump(tester, fakeApi);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Beauty'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Compare prices for services in this sphere'));
+    await tester.pumpAndSettle();
+
+    double top(String text) => tester.getTopLeft(find.text(text)).dy;
+    expect(find.text('Hair'), findsOneWidget);
+    expect(find.text('Nails'), findsOneWidget);
+    expect(top('Walk-in consultation'), lessThan(top('Hair')));
+    expect(top('Hair'), lessThan(top("Women's haircut")));
+    expect(top("Women's haircut"), lessThan(top("Men's haircut")));
+    expect(top("Men's haircut"), lessThan(top('Nails')));
+    expect(top('Nails'), lessThan(top('Manicure')));
   });
 }

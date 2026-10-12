@@ -5,6 +5,7 @@ import '../../data/catalog_api.dart';
 import '../../data/models/business_type.dart';
 import '../../data/models/catalog_service.dart';
 import '../../data/models/category.dart';
+import '../../data/models/subsphere.dart';
 
 final catalogApiProvider = Provider<CatalogApi>((ref) {
   return CatalogApi(ref.watch(dioClientProvider));
@@ -29,4 +30,10 @@ final businessTypesProvider = FutureProvider.autoDispose.family<List<BusinessTyp
 /// A sphere's catalog services, fetched when the compare-prices sheet opens.
 final catalogServicesProvider = FutureProvider.autoDispose.family<List<CatalogService>, String>((ref, businessTypeId) {
   return ref.watch(catalogApiProvider).listCatalogServices(businessTypeId);
+});
+
+/// A sphere's subspheres, used to group its services in the compare-prices
+/// sheet. Empty for spheres without any.
+final subspheresProvider = FutureProvider.autoDispose.family<List<Subsphere>, String>((ref, businessTypeId) {
+  return ref.watch(catalogApiProvider).listSubspheres(businessTypeId);
 });
