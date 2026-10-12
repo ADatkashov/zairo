@@ -124,4 +124,38 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
 
         long getTotal();
     }
+
+    /**
+     * The public list with optional filters. {@code rating} null = any star;
+     * {@code withCommentOnly} drops reviews that are just a star count;
+     * {@code sort} is one of newest / highest / lowest (ties always newest
+     * first). The ORDER BY is a fixed CASE, not a client-supplied column, so
+     * there is nothing to inject; callers pass an unsorted Pageable.
+     */
+    @Query(value = """
+            select r.id as id, r.booking_id as bookingId, b.user_id as userId, r.rating as rating,
+                   r.comment as comment, r.created_at as createdAt, r.business_reply as businessReply,
+                   r.business_reply_at as businessReplyAt
+            from review r
+            join booking b on b.id = r.booking_id
+            join availability_slot s on s.id = b.availability_slot_id
+            where s.provider_id = :providerId
+              and (cast(:rating as integer) is null or r.rating = cast(:rating as integer))
+              and (:withCommentOnly = false or (r.comment is not null and btrim(r.comment) <> ''))
+            order by case when :sort = 'highest' then r.rating end desc nulls last,
+                     case when :sort = 'lowest' then r.rating end asc nulls last,
+                     r.created_at desc
+            """,
+            countQuery = """
+            select count(*)
+            from review r
+            join booking b on b.id = r.booking_id
+            join availability_slot s on s.id = b.availability_slot_id
+            where s.provider_id = :providerId
+              and (cast(:rating as integer) is null or r.rating = cast(:rating as integer))
+              and (:withCommentOnly = false or (r.comment is not null and btrim(r.comment) <> ''))
+            """,
+            nativeQuery = true)
+    Page<ProviderReviewRow> findPublic(@Param("providerId") UUID providerId, @Param("rating") Integer rating,
+            @Param("withCommentOnly") boolean withCommentOnly, @Param("sort") String sort, Pageable pageable);
 }

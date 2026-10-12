@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -125,15 +126,21 @@ public class ReviewController {
     }
 
     @Operation(summary = "List a provider's public reviews", description = """
-            Public (no token), newest first, page size capped at 50. Authors are abbreviated to first name \
+            Public (no token), newest first by default (`sort=highest|lowest` to reorder; `rating=1..5` and \
+            `withComment=true` to filter), page size capped at 50. Authors are abbreviated to first name \
             plus last initial; no booking or user ids are exposed. Includes the business's reply when there \
             is one.""")
     @ApiResponse(responseCode = "200", description = "Page of reviews")
     @GetMapping("/api/v1/providers/{providerId}/reviews/public")
     public Page<PublicReviewResponse> listPublic(
-            @Parameter(description = "The provider's id.") @PathVariable UUID providerId, Pageable pageable) {
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
+            @Parameter(description = "Only this star rating (1-5).") @RequestParam(required = false) Integer rating,
+            @Parameter(description = "Only reviews that have written text.")
+            @RequestParam(defaultValue = "false") boolean withComment,
+            @Parameter(description = "newest (default), highest or lowest.")
+            @RequestParam(required = false) String sort, Pageable pageable) {
         Pageable capped = PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), 50));
-        Page<ReviewRepository.ProviderReviewRow> rows = reviewService.listPublic(providerId, capped);
+        Page<ReviewRepository.ProviderReviewRow> rows = reviewService.listPublic(providerId, rating, withComment, sort, capped);
 
         Map<UUID, String> namesByUserId = userRepository
                 .findAllById(rows.map(ReviewRepository.ProviderReviewRow::getUserId).toList()).stream()

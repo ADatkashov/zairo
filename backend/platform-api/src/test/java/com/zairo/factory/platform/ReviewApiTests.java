@@ -245,6 +245,16 @@ class ReviewApiTests {
         assertThat(first.containsKey("customerName")).isFalse();
         assertThat(first.get("authorName").toString()).doesNotContain("@");
 
+        // Filters and sort: the only review is 4 stars with text.
+        Map<?, ?> fiveStars = restTemplate.getForEntity("/api/v1/providers/" + providerId
+                + "/reviews/public?rating=5", Map.class).getBody();
+        assertThat((java.util.List<?>) fiveStars.get("content")).isEmpty();
+        Map<?, ?> withText = restTemplate.getForEntity("/api/v1/providers/" + providerId
+                + "/reviews/public?withComment=true&sort=lowest", Map.class).getBody();
+        assertThat((java.util.List<?>) withText.get("content")).hasSize(1);
+        assertThat(restTemplate.getForEntity("/api/v1/providers/" + providerId
+                + "/reviews/public?sort=bogus", Map.class).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+
         ResponseEntity<Map> summary = restTemplate.getForEntity("/api/v1/providers/" + providerId
                 + "/reviews/summary", Map.class);
         assertThat(summary.getStatusCode()).isEqualTo(HttpStatus.OK);

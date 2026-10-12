@@ -110,3 +110,6 @@ belong on the same review list as the rest:
 | `reviewsEmptyTitle` / `reviewsEmptyMessage` | "Әзірге пікір жоқ" / "Пікірлер келуден кейін пайда болады. Жазылып, алғашқы болып әсеріңізбен бөлісіңіз." | natural phrasing of "after a visit" |
 | `reviewsBusinessReply` | "Бизнестің жауабы" | |
 | `reviewsShowMore` / `reviewsError` / `reviewsStarRowSemantic` | "Тағы көрсету" / "Пікірлерді жүктеу мүмкін болмады. Қайталап көріңіз." / "{stars} жұлдыз: {count}" | |
+| `reviewsFilterAll` / `reviewsFilterWithText` | "Барлығы" / "Мәтінімен" | filter chips |
+| `reviewsSortNewest` / `reviewsSortHighest` / `reviewsSortLowest` | "Алдымен жаңалары" / "Алдымен жоғары бағалар" / "Алдымен төмен бағалар" | sort chips; length on a narrow phone |
+| `reviewsNoMatchTitle` / `reviewsNoMatchMessage` / `reviewsResetFilters` | "Сәйкес пікір жоқ" / "Басқа бағаны таңдаңыз немесе барлық пікірді көрсетіңіз." / "Барлығын көрсету" | |

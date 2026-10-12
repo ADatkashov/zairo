@@ -42,4 +42,12 @@ class ReviewSummaryDistributionTest {
         assertThat(summary.total()).isEqualTo(1);
         assertThat(summary.average()).isEqualTo(5.0);
     }
+
+    @Test
+    void sortDefaultsToNewestAndRejectsUnknownValues() {
+        assertThat(ReviewService.normalizeSort(null)).isEqualTo("newest");
+        assertThat(ReviewService.normalizeSort(" HIGHEST ")).isEqualTo("highest");
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> ReviewService.normalizeSort("random"))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    }
 }

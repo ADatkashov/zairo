@@ -74,3 +74,6 @@ class ReviewSummary {
     );
   }
 }
+
+/// Wire values match the backend's `sort` parameter.
+enum ReviewSort { newest, highest, lowest }
