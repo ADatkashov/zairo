@@ -17,4 +17,8 @@ dependencies {
     implementation(project(":vertical-auto"))
     implementation(project(":vertical-cleaning"))
     implementation(project(":staff"))
+
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.assertj:assertj-core")
 }
