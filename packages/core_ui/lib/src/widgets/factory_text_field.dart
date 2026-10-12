@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../util/factory_strings.dart';
 
@@ -36,6 +37,7 @@ class FactoryTextField extends StatefulWidget {
     this.focusNode,
     this.validator,
     this.autovalidateMode,
+    this.inputFormatters,
   });
 
   final String label;
@@ -64,6 +66,9 @@ class FactoryTextField extends StatefulWidget {
   /// (e.g. server-side) error.
   final FormFieldValidator<String>? validator;
   final AutovalidateMode? autovalidateMode;
+
+  /// Live input masks/filters, e.g. [KzPhoneInputFormatter].
+  final List<TextInputFormatter>? inputFormatters;
 
   @override
   State<FactoryTextField> createState() => _FactoryTextFieldState();
@@ -95,6 +100,7 @@ class _FactoryTextFieldState extends State<FactoryTextField> {
       readOnly: w.readOnly,
       obscureText: hidden,
       keyboardType: w.keyboardType,
+      inputFormatters: w.inputFormatters,
       textInputAction: w.textInputAction,
       maxLines: w.obscureText ? 1 : w.maxLines,
       minLines: w.obscureText ? null : w.minLines,
