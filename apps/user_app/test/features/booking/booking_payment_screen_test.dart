@@ -181,6 +181,8 @@ void main() {
     expect(h.opened, [Uri.parse('https://pay.example/checkout/p1')]);
     expect(find.text('Waiting for payment'), findsOneWidget);
     expect(find.text('Open payment page'), findsOneWidget);
+    // The booking progress bar: service and time are done, payment is the current step.
+    expect(find.bySemanticsLabel('Step 3 of 3: Payment'), findsOneWidget);
 
     // Still unpaid on the server: nothing changes, the page is not opened again.
     await tester.pump(const Duration(seconds: 3));

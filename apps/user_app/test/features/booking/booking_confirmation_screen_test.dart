@@ -48,7 +48,9 @@ void main() {
 
     expect(find.text('Aigerim Beauty Studio'), findsOneWidget);
     expect(find.text('Haircut'), findsOneWidget);
-    expect(find.byIcon(Symbols.check_rounded), findsOneWidget);
+    // Three finished steps in the progress bar, plus the success mark.
+    expect(find.byIcon(Symbols.check_rounded), findsNWidgets(4));
+    expect(find.bySemanticsLabel('All steps done'), findsOneWidget);
     expect(find.byIcon(Symbols.content_cut_rounded), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -66,7 +68,7 @@ void main() {
     // One frame, no settling: the animation duration resolves to zero.
     await tester.pump();
 
-    final opacity = tester.widget<Opacity>(find.ancestor(of: find.byIcon(Symbols.check_rounded), matching: find.byType(Opacity)).first);
+    final opacity = tester.widget<Opacity>(find.ancestor(of: find.byIcon(Symbols.check_rounded).last, matching: find.byType(Opacity)).first);
     expect(opacity.opacity, 1);
   });
 

@@ -684,5 +684,6 @@
   "bookingReviewConfirmPay": "Подтвердить и оплатить",
   "bookingReviewConfirmFree": "Подтвердить запись",
   "bookingReviewChange": "Изменить",
-  "bookingReviewTotal": "Итого"
+  "bookingReviewTotal": "Итого",
+  "bookingStepsDone": "Все шаги пройдены"
 }

@@ -55,7 +55,7 @@ void main() {
 
     await tester.pumpWidget(_app(const Scaffold(body: BookingStepper(step: 2))));
     await tester.pumpAndSettle();
-    expect(find.bySemanticsLabel('Step 3 of 3: Confirm'), findsOneWidget);
+    expect(find.bySemanticsLabel('Step 3 of 3: Payment'), findsOneWidget);
   });
 
   testWidgets('with a deposit the sheet shows what is paid now and offers to pay', (tester) async {
