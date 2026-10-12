@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.TestRestTemplate;
@@ -25,6 +26,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * Against a real Postgres (Testcontainers) — public reads against the
@@ -51,6 +53,31 @@ class CatalogApiTests {
 
     @Autowired
     private CredentialRepository credentialRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    private List<UUID> seededServiceIds = List.of();
+
+    /**
+     * The test schema switches the V94 starter services off (see
+     * V9000__test_deactivate_seeded_catalog_services.sql) so free-text services in
+     * other tests aren't rejected by ServiceCatalogPolicy. The tests that check
+     * the seed itself turn them back on for their own duration only.
+     */
+    private void activateSeededServices() {
+        seededServiceIds = jdbcTemplate.queryForList(
+                "select id from catalog_service where status = 'INACTIVE'", UUID.class);
+        jdbcTemplate.update("update catalog_service set status = 'ACTIVE' where status = 'INACTIVE'");
+    }
+
+    @AfterEach
+    void restoreSeededServices() {
+        for (UUID id : seededServiceIds) {
+            jdbcTemplate.update("update catalog_service set status = 'INACTIVE' where id = ?", id);
+        }
+        seededServiceIds = List.of();
+    }
 
     @Test
     void publicReadsReturnTheSeededCatalog() {
@@ -229,6 +256,7 @@ class CatalogApiTests {
 
     @Test
     void everySeededCategoryHasStarterCatalogServices() {
+        activateSeededServices();
         // Other tests in this suite create their own categories and business
         // types (no services) in the same database, so only the categories
         // seeded by V25/V39/V41 are checked here.
@@ -278,6 +306,7 @@ class CatalogApiTests {
 
     @Test
     void largeBusinessTypesGroupTheirServicesIntoSubspheres() {
+        activateSeededServices();
         ResponseEntity<List> subspheres = restTemplate.getForEntity(
                 "/api/v1/business-types/" + SEEDED_BEAUTY_SALON_BUSINESS_TYPE_ID + "/subspheres", List.class);
         assertThat(subspheres.getStatusCode()).isEqualTo(HttpStatus.OK);
