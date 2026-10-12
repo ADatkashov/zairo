@@ -17,7 +17,7 @@ services:
 
   # S3-compatible object storage for local dev (media, portfolio photos, ...)
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: app_factory
