@@ -103,7 +103,7 @@ void main() {
     final field = find.byType(TextFormField).first;
     await tester.enterText(field, '+7 7001234');
     await tester.pump();
-    expect(find.text('+7 700 123 4'), findsOneWidget);
+    expect(tester.widget<EditableText>(find.byType(EditableText).first).controller.text, '+7 700 123 4');
 
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
@@ -112,7 +112,7 @@ void main() {
 
     await tester.enterText(field, '87001234567');
     await tester.pump();
-    expect(find.text('+7 700 123 45 67'), findsOneWidget);
+    expect(tester.widget<EditableText>(find.byType(EditableText).first).controller.text, '+7 700 123 45 67');
   });
 
   testWidgets('a new phone requests an OTP and advances to the registration screen', (tester) async {
