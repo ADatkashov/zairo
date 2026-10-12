@@ -68,10 +68,14 @@ Testcontainerized, so it's started as a plain `docker run` step before
 the Gradle build, using the exact image, ports, and dev credentials
 `infrastructure/docker-compose.yml` already uses locally
 (`app_factory` / `app_factory_secret`, bucket `factory-media`). It's
-`docker run` and not a `services:` container because the official
-`quay.io/minio/minio` image has no default `CMD` — `services:` has no field for
-supplying one, so the workflow starts and health-checks it as an
-explicit step instead.
+`docker run` rather than a `services:` container so the workflow can
+health-check it explicitly before the Gradle build starts.
+
+The image is `bitnamilegacy/minio` pinned to a tag: MinIO stopped
+publishing images (`minio/minio` is gone from Docker Hub and
+`quay.io/minio/minio` can no longer be pulled), and Bitnami's frozen copy
+is the same server. Its entrypoint starts the server itself, so no command
+is passed.
 
 On failure, `backend/**/build/reports/tests/**` (JUnit HTML reports) are
 uploaded as a workflow artifact for 14 days so a failure can be
