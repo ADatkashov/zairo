@@ -315,7 +315,7 @@ jobs:
           name: Install dependencies
           command: |
             apt-get update
-            apt-get install -y git openssh-client curl wget unzip xz-utils ca-certificates
+            apt-get install -y git openssh-client curl wget unzip xz-utils ca-certificates python3
       - checkout
       - run:
           name: Install Flutter
@@ -341,14 +341,27 @@ jobs:
           working_directory: << parameters.package >>
           command: flutter analyze
       - run:
-          name: flutter test
+          name: flutter test (with coverage)
           working_directory: << parameters.package >>
           command: |
             if find test -name '*_test.dart' -type f 2>/dev/null | grep -q .; then
-              flutter test --reporter expanded
+              flutter test --coverage --reporter expanded
             else
               echo "WARNING: << parameters.package >> has no *_test.dart files -- nothing to run"
             fi
+      - run:
+          # Line coverage of hand-written code must not drop below the package's
+          # entry in config/coverage-thresholds.json (a ratchet: it only goes up).
+          name: Coverage gate
+          command: |
+            if [ -f "<< parameters.package >>/coverage/lcov.info" ]; then
+              python3 scripts/check_coverage.py "<< parameters.package >>"
+            else
+              echo "no coverage data for << parameters.package >> (no tests): gate skipped"
+            fi
+      - store_artifacts:
+          path: << parameters.package >>/coverage/lcov.info
+          destination: coverage/<< parameters.package >>/lcov.info
 
 workflows:
   flutter-ci:
