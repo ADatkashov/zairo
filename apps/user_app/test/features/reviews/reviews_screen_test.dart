@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:zairo/features/reviews/data/models/public_review.dart';
 import 'package:zairo/features/reviews/data/reviews_api.dart';
 import 'package:zairo/features/reviews/presentation/providers/reviews_providers.dart';
@@ -210,6 +211,9 @@ void main() {
   testWidgets(
     'a star chip filters, tapping it again clears, and an empty result offers a reset',
     (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
       final api = _FakeApi(
         summary: const ReviewSummary(
           average: 5,
@@ -235,6 +239,65 @@ void main() {
       expect(api.calls.last.rating, isNull);
     },
   );
+
+  testWidgets('the Book button opens the business at its booking steps', (
+    tester,
+  ) async {
+    final api = _FakeApi(
+      summary: const ReviewSummary(
+        average: 5,
+        total: 1,
+        distribution: [0, 0, 0, 0, 1],
+      ),
+      reviews: [_review('r1', comment: 'x')],
+    );
+    final router = GoRouter(
+      initialLocation: '/reviews',
+      routes: [
+        GoRoute(
+          path: '/reviews',
+          builder: (_, _) => const ReviewsScreen(providerId: 'p-1'),
+        ),
+        GoRoute(
+          path: '/provider/:id',
+          builder: (_, state) =>
+              Text('detail ${state.pathParameters['id']} ${state.uri.query}'),
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [reviewsApiProvider.overrideWithValue(api)],
+        child: MaterialApp.router(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(FactoryButton, 'Book'));
+    await tester.pumpAndSettle();
+    expect(find.text('detail p-1 book=1'), findsOneWidget);
+  });
+
+  testWidgets('the Book button is also there when there are no reviews', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _FakeApi(
+        summary: const ReviewSummary(
+          average: null,
+          total: 0,
+          distribution: [0, 0, 0, 0, 0],
+        ),
+      ),
+    );
+    expect(find.widgetWithText(FactoryButton, 'Book'), findsOneWidget);
+  });
 
   testWidgets('renders in Russian and Kazakh without overflow at large text', (
     tester,
