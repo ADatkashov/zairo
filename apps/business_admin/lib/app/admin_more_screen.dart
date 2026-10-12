@@ -10,7 +10,7 @@ import '../l10n/app_localizations.dart';
 import 'admin_routes.dart';
 
 /// The "More" tab of the phone/tablet shell: the destinations that don't earn
-/// a slot in a five-item bottom bar (Automation, Subscription, Settings). The
+/// a slot in the bottom bar (Loyalty, Automation, Subscription, Settings). The
 /// desktop sidebar lists all of them directly.
 class AdminMoreScreen extends ConsumerWidget {
   const AdminMoreScreen({super.key});
@@ -42,6 +42,11 @@ class AdminMoreScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(FactorySpacing.space4),
         children: [
+          tile(
+            icon: Icons.loyalty_outlined,
+            label: l10n.loyaltyNavLabel,
+            onTap: () => context.go(AdminRoutes.loyalty),
+          ),
           if (ownerUserId != null)
             tile(
               icon: Icons.bolt_outlined,

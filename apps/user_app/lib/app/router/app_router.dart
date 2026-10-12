@@ -13,6 +13,7 @@ import '../../features/booking/presentation/screens/provider_detail_screen.dart'
 import '../../features/catalog/presentation/screens/all_categories_screen.dart';
 import '../../features/city/presentation/screens/city_selection_screen.dart';
 import '../../features/city/presentation/widgets/city_onboarding_gate.dart';
+import '../../features/onboarding/presentation/screens/welcome_screen.dart';
 import '../../features/discovery/data/models/provider_search_result.dart';
 import '../../features/discovery/presentation/screens/home_screen.dart';
 import '../../features/discovery/presentation/screens/search_screen.dart';
@@ -24,6 +25,7 @@ import '../../features/payments/presentation/screens/saved_cards_screen.dart';
 import '../../features/loyalty/presentation/screens/my_rewards_screen.dart';
 import '../../features/main_wrapper/presentation/screens/main_wrapper.dart';
 import '../../features/maps/presentation/screens/provider_map_screen.dart';
+import '../../features/reviews/presentation/screens/reviews_screen.dart';
 import '../../features/messaging/presentation/screens/chat_thread_screen.dart';
 import '../../features/messaging/presentation/screens/conversations_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
@@ -58,6 +60,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     routes: [
+      GoRoute(
+        path: AppRoutes.welcome,
+        builder: (context, state) => const WelcomeScreen(),
+      ),
       GoRoute(
         path: AppRoutes.citySelection,
         builder: (context, state) => const CitySelectionScreen(),
@@ -143,11 +149,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) {
           final extra = state.extra;
+          final book = state.uri.queryParameters['book'] == '1';
           if (extra is ProviderSearchResult) {
-            return ProviderDetailScreen(provider: extra);
+            return ProviderDetailScreen(provider: extra, startAtBooking: book);
           }
-          return ProviderDetailRoute(providerId: state.pathParameters['id']!);
+          return ProviderDetailRoute(providerId: state.pathParameters['id']!, startAtBooking: book);
         },
+      ),
+      GoRoute(
+        path: '/provider/:id/reviews',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => ReviewsScreen(
+          providerId: state.pathParameters['id']!,
+          providerName: state.uri.queryParameters['name'],
+        ),
       ),
       GoRoute(
         path: AppRoutes.notifications,
@@ -253,7 +268,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/',
                 builder: (context, state) => const ScrollToTopOnTabReselect(
                   tabIndex: 0,
-                  child: CityOnboardingGate(child: HomeScreen()),
+                  child: CityOnboardingGate(showWelcome: true, child: HomeScreen()),
                 ),
               ),
             ],

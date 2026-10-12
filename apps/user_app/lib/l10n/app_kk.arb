@@ -631,5 +631,59 @@
   "bookingConfirmationRemainingLabel": "Қалдық: {amount}",
   "bookingPaymentInstructions": "{amount} депозит есептен шығарылды. Қалған {remaining} соманы қызмет көрсету күні қолма-қол немесе онлайн төлеуге болады.",
   "selectCity": "Қаланы таңдаңыз",
-  "chatSendTooltip": "Жіберу"
+  "chatSendTooltip": "Жіберу",
+
+  "welcomeTitle1": "Барлық қызметтер жақын жерде",
+
+  "welcomeBody1": "Сұлулық, авто және тазалау қызметтері — бір қолданбада.",
+
+  "welcomeTitle2": "Уақытты таңдап, онлайн жазылыңыз",
+
+  "welcomeBody2": "Бос уақытты көріп, бірнеше рет түртіп жазылыңыз.",
+
+  "welcomeTitle3": "Қанша төлейтініңіз бірден көрінеді",
+
+  "welcomeBody3": "Жалпы сома, алдын ала төлем және орнында төленетін қалдық — жазылуды растағанға дейін.",
+
+  "welcomeNext": "Әрі қарай",
+
+  "welcomeStart": "Бастау",
+
+  "welcomeSkip": "Өткізіп жіберу",
+
+  "reviewsTitle": "Пікірлер",
+  "reviewsBasedOn": "{count, plural, other{{count} пікір негізінде}}",
+  "reviewsSeeAll": "Барлық пікір",
+  "reviewsEmptyTitle": "Әзірге пікір жоқ",
+  "reviewsEmptyMessage": "Пікірлер келуден кейін пайда болады. Жазылып, алғашқы болып әсеріңізбен бөлісіңіз.",
+  "reviewsBusinessReply": "Бизнестің жауабы",
+  "reviewsShowMore": "Тағы көрсету",
+  "reviewsError": "Пікірлерді жүктеу мүмкін болмады. Қайталап көріңіз.",
+  "reviewsStarRowSemantic": "{stars} жұлдыз: {count}",
+
+  "reviewsFilterAll": "Барлығы",
+  "reviewsFilterWithText": "Мәтінімен",
+  "reviewsSortNewest": "Алдымен жаңалары",
+  "reviewsSortHighest": "Алдымен жоғары бағалар",
+  "reviewsSortLowest": "Алдымен төмен бағалар",
+  "reviewsNoMatchTitle": "Сәйкес пікір жоқ",
+  "reviewsNoMatchMessage": "Басқа бағаны таңдаңыз немесе барлық пікірді көрсетіңіз.",
+  "reviewsResetFilters": "Барлығын көрсету",
+
+  "navNewBooking": "Жаңа жазылу",
+
+  "bookingStepService": "Қызмет",
+  "bookingStepTime": "Уақыт",
+  "bookingStepConfirm": "Төлем",
+  "bookingStepSemantic": "{step}-қадам / {total}: {label}",
+  "bookingReviewTitle": "Жазылуды тексеріңіз",
+  "bookingReviewServiceLabel": "Қызмет",
+  "bookingReviewPersonLabel": "Маман",
+  "bookingReviewAnyPerson": "Алғашқы бос маман",
+  "bookingReviewPlaceLabel": "Бизнес",
+  "bookingReviewConfirmPay": "Растап, төлеу",
+  "bookingReviewConfirmFree": "Жазылуды растау",
+  "bookingReviewChange": "Өзгерту",
+  "bookingReviewTotal": "Барлығы",
+  "bookingStepsDone": "Барлық қадам аяқталды"
 }

@@ -87,8 +87,10 @@ class _LoggedOutView extends StatelessWidget {
   }
 }
 
-/// Soft gradient header with an ambient glow behind the avatar — the
-/// consumer app's profile treatment, so the person is the first thing seen.
+/// Brand-colour header with an ambient brass glow behind the avatar — the
+/// same deep-green block as the Home availability hero, so the person is the
+/// first thing seen and the app reads as one family. Text inside it uses
+/// `onPrimary`, which flips to near-black on the bright mint of the dark theme.
 class _ProfileHeader extends StatelessWidget {
   const _ProfileHeader({required this.child});
 
@@ -104,12 +106,11 @@ class _ProfileHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space6, horizontal: FactorySpacing.space4),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [colors.primaryTint, colors.surface],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [colors.primaryStrong, colors.primary],
         ),
         borderRadius: radius,
-        border: Border.all(color: colors.border),
       ),
       child: Stack(
         clipBehavior: Clip.none,
@@ -124,7 +125,7 @@ class _ProfileHeader extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [colors.accent.withValues(alpha: 0.28), colors.accent.withValues(alpha: 0)],
+                    colors: [colors.accent.withValues(alpha: 0.42), colors.accent.withValues(alpha: 0)],
                   ),
                 ),
               ),
@@ -133,6 +134,29 @@ class _ProfileHeader extends StatelessWidget {
           child,
         ],
       ),
+    );
+  }
+}
+
+/// A menu row's icon on a small tinted plate, in the same category colours as
+/// the Home tiles — so a long list of identical grey outlines becomes scannable.
+class _MenuIcon extends StatelessWidget {
+  const _MenuIcon(this.icon, {this.color, this.tint});
+
+  final IconData icon;
+
+  /// Icon and plate colours; both null gives the neutral plate.
+  final Color? color;
+  final Color? tint;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(color: tint ?? colors.surfaceAlt, borderRadius: FactoryRadius.mdRadius),
+      child: Icon(icon, size: 20, color: color ?? colors.textSecondary),
     );
   }
 }
@@ -171,10 +195,15 @@ class _LoggedInView extends ConsumerWidget {
                   onTap: () => showChangeAvatarDialog(context, hasCurrentAvatar: avatarUrl != null),
                   child: Stack(
                     children: [
-                      FactoryAvatar(
-                        initials: initialsFor(displayName),
-                        size: FactoryAvatarSize.xl,
-                        image: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                      // A ring in onPrimary lifts the avatar off the green header.
+                      Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(color: colors.onPrimary, shape: BoxShape.circle),
+                        child: FactoryAvatar(
+                          initials: initialsFor(displayName),
+                          size: FactoryAvatarSize.xl,
+                          image: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                        ),
                       ),
                       Positioned(
                         right: 0,
@@ -196,12 +225,12 @@ class _LoggedInView extends ConsumerWidget {
               ),
               const SizedBox(height: FactorySpacing.space3),
               Center(
-                child: Text(displayName, style: textTheme.headlineSmall, textAlign: TextAlign.center),
+                child: Text(displayName, style: textTheme.headlineSmall?.copyWith(color: colors.onPrimary), textAlign: TextAlign.center),
               ),
               const SizedBox(height: FactorySpacing.space1),
               if (email != null)
                 Center(
-                  child: Text(email, style: textTheme.bodyMedium?.copyWith(color: colors.textTertiary)),
+                  child: Text(email, style: textTheme.bodyMedium?.copyWith(color: colors.onPrimary.withValues(alpha: 0.82))),
                 ),
             ],
           ),
@@ -248,7 +277,7 @@ class _LoggedInView extends ConsumerWidget {
           const SizedBox(height: FactorySpacing.space6),
           FactorySelectableTile(
             title: l10n.staffCabinetTitle,
-            leading: Icon(Symbols.work_rounded, color: colors.textSecondary),
+            leading: _MenuIcon(Symbols.work_rounded, color: colors.primary, tint: colors.primaryTint),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -269,7 +298,7 @@ class _LoggedInView extends ConsumerWidget {
           subtitle: user.birthDate == null
               ? Text(l10n.editProfileBirthdayPrompt, style: textTheme.bodySmall?.copyWith(color: colors.textTertiary))
               : null,
-          leading: Icon(Symbols.edit_rounded, color: colors.textSecondary),
+          leading: _MenuIcon(Symbols.edit_rounded, color: colors.primary, tint: colors.primaryTint),
           trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
           onTap: () => context.push(AppRoutes.editProfile),
         ),
@@ -280,14 +309,14 @@ class _LoggedInView extends ConsumerWidget {
         // not a button — a list row is where people look for it.
         FactorySelectableTile(
           title: l10n.myFavoritesTitle,
-          leading: Icon(Symbols.favorite_rounded, color: colors.textSecondary),
+          leading: _MenuIcon(Symbols.favorite_rounded, color: colors.coral, tint: colors.coralTint),
           trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
           onTap: () => context.push(AppRoutes.favorites),
         ),
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
           title: l10n.messagesTitle,
-          leading: Icon(Symbols.forum_rounded, color: colors.textSecondary),
+          leading: _MenuIcon(Symbols.forum_rounded, color: colors.lavender, tint: colors.lavenderTint),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -303,28 +332,28 @@ class _LoggedInView extends ConsumerWidget {
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
           title: l10n.myRewardsTitle,
-          leading: Icon(Symbols.redeem_rounded, color: colors.textSecondary),
+          leading: _MenuIcon(Symbols.redeem_rounded, color: colors.accentInk, tint: colors.accentTint.withValues(alpha: 0.45)),
           trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
           onTap: () => context.push(AppRoutes.rewards),
         ),
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
           title: l10n.loyaltyRedemptionsTitle,
-          leading: Icon(Symbols.confirmation_number_rounded, color: colors.textSecondary),
+          leading: _MenuIcon(Symbols.confirmation_number_rounded, color: colors.mint, tint: colors.mintTint),
           trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
           onTap: () => context.push(AppRoutes.redemptions),
         ),
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
           title: l10n.paymentCardsTitle,
-          leading: Icon(Symbols.credit_card_rounded, color: colors.textSecondary),
+          leading: _MenuIcon(Symbols.credit_card_rounded, color: colors.primary, tint: colors.primaryTint),
           trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
           onTap: () => context.push(AppRoutes.paymentCards),
         ),
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
           title: l10n.myVehiclesButton,
-          leading: Icon(Symbols.directions_car_rounded, color: colors.textSecondary),
+          leading: _MenuIcon(Symbols.directions_car_rounded, color: colors.lavender, tint: colors.lavenderTint),
           trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
           onTap: () => context.push(AppRoutes.vehicles),
         ),
@@ -333,14 +362,14 @@ class _LoggedInView extends ConsumerWidget {
         const SizedBox(height: FactorySpacing.space3),
         FactorySelectableTile(
           title: l10n.supportTitle,
-          leading: Icon(Symbols.support_agent_rounded, color: colors.textSecondary),
+          leading: _MenuIcon(Symbols.support_agent_rounded, color: colors.mint, tint: colors.mintTint),
           trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
           onTap: () => context.push(AppRoutes.support),
         ),
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
           title: l10n.aboutTitle,
-          leading: Icon(Symbols.info_rounded, color: colors.textSecondary),
+          leading: _MenuIcon(Symbols.info_rounded),
           trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
           onTap: () => context.push(AppRoutes.about),
         ),
