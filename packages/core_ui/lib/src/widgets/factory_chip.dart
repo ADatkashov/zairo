@@ -47,10 +47,17 @@ class FactoryChip extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (icon != null || selected) ...[
-                Icon(icon ?? Symbols.check_rounded, size: 12, fill: icon != null && iconFilled ? 1 : 0, color: fg),
-                const SizedBox(width: 6),
+              // Selected always shows the check, also next to an own icon, so
+              // the state is never carried by tint and border alone.
+              if (selected) ...[
+                Icon(Symbols.check_rounded, size: 12, color: fg),
+                const SizedBox(width: 4),
               ],
+              if (icon != null) ...[
+                Icon(icon, size: 12, fill: iconFilled ? 1 : 0, color: fg),
+                const SizedBox(width: 6),
+              ] else if (selected)
+                const SizedBox(width: 2),
               Flexible(
                 child: Text(
                   label,
