@@ -6,6 +6,7 @@ import '../theme/factory_radius.dart';
 import '../theme/factory_spacing.dart';
 import '../util/factory_strings.dart';
 import 'factory_badge.dart';
+import 'factory_photo_placeholder.dart';
 import 'factory_price_text.dart';
 import 'factory_rating_label.dart';
 
@@ -37,6 +38,7 @@ class FactoryProviderCard extends StatelessWidget {
     this.categoryColor,
     this.categoryTint,
     this.image,
+    this.placeholderIcon,
     this.isFavorite = false,
     this.onFavoriteToggle,
     this.favoriteAddSemanticLabel,
@@ -77,6 +79,10 @@ class FactoryProviderCard extends StatelessWidget {
   final Color? categoryTint;
 
   final Widget? image;
+
+  /// Shown on the tinted placeholder when there is no [image] — usually the
+  /// category's icon. Null keeps a plain tinted fill.
+  final IconData? placeholderIcon;
   final bool isFavorite;
   final ValueChanged<bool>? onFavoriteToggle;
 
@@ -117,14 +123,10 @@ class FactoryProviderCard extends StatelessWidget {
                   ),
             child:
                 image ??
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [colors.primaryTint, colors.surfaceAlt],
-                    ),
-                  ),
+                FactoryPhotoPlaceholder(
+                  icon: placeholderIcon,
+                  color: categoryColor,
+                  tint: categoryTint,
                 ),
           ),
           if (categoryLabel != null &&

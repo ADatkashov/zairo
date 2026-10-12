@@ -169,6 +169,50 @@ void main() {
     expect((theme.errorBorder as OutlineInputBorder).borderSide.color, FactoryColors.light.error);
   });
 
+  testWidgets('FactoryPhotoPlaceholder shows the category icon, and nothing without one', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        SizedBox(
+          width: 160,
+          height: 128,
+          child: FactoryPhotoPlaceholder(icon: Symbols.content_cut_rounded, color: FactoryColors.light.coral, tint: FactoryColors.light.coralTint),
+        ),
+      ),
+    );
+    expect(find.byIcon(Symbols.content_cut_rounded), findsOneWidget);
+    // The icon is drawn inside a box that scales with the slot, never past 56.
+    expect(tester.getSize(find.byType(FittedBox)).height, inInclusiveRange(40, 56));
+
+    // A small side-photo slot gets a smaller icon, still inside the slot.
+    await tester.pumpWidget(
+      _wrap(const SizedBox(width: 84, height: 84, child: FactoryPhotoPlaceholder(icon: Symbols.content_cut_rounded))),
+    );
+    expect(tester.getSize(find.byType(FittedBox)).height, lessThan(40));
+
+    await tester.pumpWidget(_wrap(const SizedBox(width: 160, height: 128, child: FactoryPhotoPlaceholder())));
+    expect(find.byType(Icon), findsNothing);
+  });
+
+  testWidgets('FactoryProviderCard without a photo falls back to the category placeholder', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        SizedBox(
+          width: 168,
+          child: FactoryProviderCard(
+            title: 'Studio',
+            placeholderIcon: Symbols.directions_car_filled_rounded,
+            categoryLabel: 'Auto',
+            categoryColor: FactoryColors.light.lavender,
+            categoryTint: FactoryColors.light.lavenderTint,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(FactoryPhotoPlaceholder), findsOneWidget);
+    expect(find.byIcon(Symbols.directions_car_filled_rounded), findsOneWidget);
+  });
+
   testWidgets('FactoryBadge renders its label', (tester) async {
     await tester.pumpWidget(
       _wrap(
