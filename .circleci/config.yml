@@ -267,9 +267,22 @@ jobs:
       - run:
           name: Start MinIO
           command: |
-            docker run -d --name minio -p 9000:9000 -p 9001:9001 \
-              -e MINIO_ROOT_USER=app_factory -e MINIO_ROOT_PASSWORD=app_factory_secret \
-              quay.io/minio/minio:latest server /data --console-address ":9001"
+            # `quay.io/minio/minio:latest` is no longer pullable (unauthorized),
+            # so pin a release and fall back across registries.
+            started=""
+            for image in \
+              quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z \
+              minio/minio:RELEASE.2025-04-22T22-12-26Z \
+              quay.io/minio/minio:latest; do
+              if docker run -d --name minio -p 9000:9000 -p 9001:9001 \
+                -e MINIO_ROOT_USER=app_factory -e MINIO_ROOT_PASSWORD=app_factory_secret \
+                "$image" server /data --console-address ":9001"; then
+                started="$image"; break
+              fi
+              docker rm -f minio >/dev/null 2>&1 || true
+            done
+            [ -n "$started" ] || { echo "no MinIO image could be pulled"; exit 1; }
+            echo "MinIO image: $started"
             for _ in $(seq 1 30); do
               curl -sf http://localhost:9000/minio/health/live >/dev/null && exit 0
               sleep 1
