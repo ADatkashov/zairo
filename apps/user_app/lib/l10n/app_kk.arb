@@ -668,5 +668,7 @@
   "reviewsSortLowest": "Алдымен төмен бағалар",
   "reviewsNoMatchTitle": "Сәйкес пікір жоқ",
   "reviewsNoMatchMessage": "Басқа бағаны таңдаңыз немесе барлық пікірді көрсетіңіз.",
-  "reviewsResetFilters": "Барлығын көрсету"
+  "reviewsResetFilters": "Барлығын көрсету",
+
+  "navNewBooking": "Жаңа жазылу"
 }

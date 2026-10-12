@@ -842,6 +842,108 @@ void main() {
     },
   );
 
+  testWidgets('FactoryBottomNavigation centre action sits in the middle, fires on tap and keeps tab indexes', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    int? selected;
+    var actionTaps = 0;
+    await tester.pumpWidget(
+      _wrap(
+        FactoryBottomNavigation(
+          destinations: const [
+            FactoryNavDestination(icon: Icons.home_rounded, label: 'Home'),
+            FactoryNavDestination(icon: Icons.search_rounded, label: 'Search'),
+            FactoryNavDestination(icon: Icons.calendar_month_rounded, label: 'Bookings'),
+            FactoryNavDestination(icon: Icons.person_rounded, label: 'Profile'),
+          ],
+          selectedIndex: 0,
+          onDestinationSelected: (i) => selected = i,
+          centerAction: FactoryNavAction(icon: Icons.add_rounded, label: 'New booking', onTap: () => actionTaps++),
+        ),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+
+    final centre = tester.getCenter(find.byIcon(Icons.add_rounded));
+    expect(centre.dx, closeTo(195, 1), reason: 'centred on a 390px screen');
+    expect(tester.getCenter(find.text('Search')).dx, lessThan(centre.dx));
+    expect(tester.getCenter(find.text('Bookings')).dx, greaterThan(centre.dx));
+
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    expect(actionTaps, 1);
+    expect(selected, isNull, reason: 'the action is not a tab');
+
+    await tester.tap(find.text('Bookings'));
+    expect(selected, 2, reason: 'indexes are those of the destinations list');
+    expect(find.bySemanticsLabel('New booking'), findsOneWidget);
+  });
+
+  testWidgets('FactoryBottomNavigation centre action with quick actions opens a fan, picks one and closes', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    final picked = <String>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: factoryLightTheme(),
+        home: Scaffold(
+          bottomNavigationBar: FactoryBottomNavigation(
+            destinations: const [
+              FactoryNavDestination(icon: Icons.home_rounded, label: 'Home'),
+              FactoryNavDestination(icon: Icons.person_rounded, label: 'Profile'),
+            ],
+            selectedIndex: 0,
+            onDestinationSelected: (_) {},
+            centerAction: FactoryNavAction(
+              icon: Icons.add_rounded,
+              label: 'Quick actions',
+              quickActions: [
+                FactoryNavQuickAction(icon: Icons.event_available_rounded, label: 'Book', onTap: () => picked.add('book')),
+                FactoryNavQuickAction(icon: Icons.chat_bubble_rounded, label: 'Messages', onTap: () => picked.add('msg')),
+                FactoryNavQuickAction(icon: Icons.favorite_rounded, label: 'Favorites', onTap: () => picked.add('fav')),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Messages'), findsNothing, reason: 'closed by default');
+
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('Book'), findsOneWidget);
+    expect(find.text('Messages'), findsOneWidget);
+    expect(find.text('Favorites'), findsOneWidget);
+    // Fanned out left-to-right above the button.
+    expect(tester.getCenter(find.text('Book')).dx, lessThan(tester.getCenter(find.text('Messages')).dx));
+    expect(tester.getCenter(find.text('Favorites')).dx, greaterThan(tester.getCenter(find.text('Messages')).dx));
+    // While open the dimmed page hides the real button, so a copy is drawn on top.
+    expect(find.byIcon(Icons.add_rounded), findsNWidgets(2));
+    expect(
+      tester.getCenter(find.text('Messages')).dy,
+      lessThan(tester.getCenter(find.byIcon(Icons.add_rounded).last).dy),
+    );
+
+    await tester.tap(find.text('Messages'));
+    await tester.pumpAndSettle();
+    expect(picked, ['msg']);
+    expect(find.text('Messages'), findsNothing, reason: 'the fan closes after a pick');
+
+    // Re-open, then dismiss by tapping the dimmed page.
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(20, 100));
+    await tester.pumpAndSettle();
+    expect(find.text('Favorites'), findsNothing);
+    expect(picked, ['msg']);
+  });
+
   testWidgets('FactoryBottomNavigation draws a count badge only when there is something to count', (
     tester,
   ) async {

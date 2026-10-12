@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../../app/router/app_routes.dart';
 import '../../../../app/router/tab_reselect.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../messaging/presentation/providers/message_seen_provider.dart';
@@ -41,6 +42,36 @@ class MainWrapper extends ConsumerWidget {
               initialLocation: index == navigationShell.currentIndex,
             );
           },
+          // "+" fans out shortcuts that otherwise take two or three taps:
+          // start a booking (pick a category, land in Search filtered to it),
+          // messages and favorites (both live under Profile). An action, not
+          // a tab, so the tab indexes below are unchanged.
+          centerAction: FactoryNavAction(
+            icon: Symbols.add_rounded,
+            label: l10n.navNewBooking,
+            quickActions: [
+              FactoryNavQuickAction(
+                icon: Symbols.event_available_rounded,
+                label: l10n.navNewBooking,
+                onTap: () async {
+                  final code = await context.push<String>(AppRoutes.categories);
+                  if (code != null && context.mounted) {
+                    context.go(AppRoutes.search(category: code));
+                  }
+                },
+              ),
+              FactoryNavQuickAction(
+                icon: Symbols.chat_bubble_rounded,
+                label: l10n.messagesTitle,
+                onTap: () => context.push(AppRoutes.messages),
+              ),
+              FactoryNavQuickAction(
+                icon: Symbols.favorite_rounded,
+                label: l10n.myFavoritesTitle,
+                onTap: () => context.push(AppRoutes.favorites),
+              ),
+            ],
+          ),
           // Icon names match BottomNav.dc.html's own `icon` field verbatim
           // (home/search/calendar_month/person) — "Записи" uses
           // calendar_month in the design board, not event_note.
