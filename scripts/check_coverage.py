@@ -23,6 +23,13 @@ EXCLUDED = (
     "*/l10n/*",  # generated localizations
 )
 
+# Platform and Flutter-version differences move the line count by a few lines
+# between a developer machine and CI (e.g. 5713 vs 5709 hit lines for the same
+# tests), so the gate allows this many percentage points below the threshold.
+# It is a tolerance for noise, not room to let coverage slide: the thresholds
+# themselves only ever go up.
+TOLERANCE = 0.3
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 THRESHOLDS = os.path.join(ROOT, "config", "coverage-thresholds.json")
 
@@ -75,9 +82,10 @@ def main():
                 fh.write("\n")
             print(f"threshold for {package} raised {floor} -> {new}")
         return
-    if percent + 1e-9 < floor:
-        sys.exit(f"FAIL: coverage {percent:.2f}% is below the {floor}% threshold for {package}")
-    print(f"OK: at or above the {floor}% threshold")
+    if percent + 1e-9 < floor - TOLERANCE:
+        sys.exit(f"FAIL: coverage {percent:.2f}% is below the {floor}% threshold for {package} "
+                 f"(tolerance {TOLERANCE} points)")
+    print(f"OK: at or above the {floor}% threshold (tolerance {TOLERANCE} points)")
 
 
 if __name__ == "__main__":
