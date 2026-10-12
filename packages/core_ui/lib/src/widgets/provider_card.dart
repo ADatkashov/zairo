@@ -6,6 +6,8 @@ import '../theme/factory_radius.dart';
 import '../theme/factory_spacing.dart';
 import '../util/factory_strings.dart';
 import 'factory_badge.dart';
+import 'factory_button.dart';
+import 'factory_photo_placeholder.dart';
 import 'factory_price_text.dart';
 import 'factory_rating_label.dart';
 
@@ -37,6 +39,9 @@ class FactoryProviderCard extends StatelessWidget {
     this.categoryColor,
     this.categoryTint,
     this.image,
+    this.placeholderIcon,
+    this.actionLabel,
+    this.onAction,
     this.isFavorite = false,
     this.onFavoriteToggle,
     this.favoriteAddSemanticLabel,
@@ -77,6 +82,10 @@ class FactoryProviderCard extends StatelessWidget {
   final Color? categoryTint;
 
   final Widget? image;
+
+  /// Shown on the tinted placeholder when there is no [image] — usually the
+  /// category's icon. Null keeps a plain tinted fill.
+  final IconData? placeholderIcon;
   final bool isFavorite;
   final ValueChanged<bool>? onFavoriteToggle;
 
@@ -91,6 +100,13 @@ class FactoryProviderCard extends StatelessWidget {
   final String? pricePrefix;
 
   final VoidCallback? onTap;
+
+  /// An optional primary action under the price row — "Book" — that goes
+  /// straight to what the card is for, instead of the card's own tap (which
+  /// opens the business from the top). Both [actionLabel] and [onAction] are
+  /// needed for the button to show; the card stays tappable either way.
+  final String? actionLabel;
+  final VoidCallback? onAction;
   final FactoryProviderCardLayout layout;
 
   /// Only meaningful for [FactoryProviderCardLayout.vertical], where the card
@@ -117,14 +133,10 @@ class FactoryProviderCard extends StatelessWidget {
                   ),
             child:
                 image ??
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [colors.primaryTint, colors.surfaceAlt],
-                    ),
-                  ),
+                FactoryPhotoPlaceholder(
+                  icon: placeholderIcon,
+                  color: categoryColor,
+                  tint: categoryTint,
                 ),
           ),
           if (categoryLabel != null &&
@@ -233,6 +245,16 @@ class FactoryProviderCard extends StatelessWidget {
                     variant: FactoryBadgeVariant.available,
                   ),
               ],
+            ),
+          ],
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(height: FactorySpacing.space3),
+            // Full 48px height: it is a phone tap target, not a dense toolbar button.
+            FactoryButton(
+              label: actionLabel!,
+              variant: FactoryButtonVariant.tonal,
+              expand: true,
+              onPressed: onAction,
             ),
           ],
         ],

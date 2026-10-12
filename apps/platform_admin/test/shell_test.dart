@@ -27,10 +27,10 @@ void main() {
     expect(find.byTooltip('Cities'), findsOneWidget);
   });
 
-  testWidgets('phone: bottom bar with five tabs; the rest is behind More, and back returns to More', (tester) async {
+  testWidgets('phone: four tabs around a "+"; the rest is behind More or the "+", and back returns to More', (tester) async {
     await pumpConsole(tester, backend: defaultBackend(), size: const Size(390, 800));
     expect(find.byType(FactoryBottomNavigation), findsOneWidget);
-    for (final label in ['Dashboard', 'Businesses', 'Catalog', 'Finance', 'More']) {
+    for (final label in ['Dashboard', 'Businesses', 'Finance', 'More']) {
       expect(
         find.descendant(of: find.byType(FactoryBottomNavigation), matching: find.text(label)),
         findsOneWidget,
@@ -40,6 +40,7 @@ void main() {
 
     await tester.tap(find.descendant(of: find.byType(FactoryBottomNavigation), matching: find.text('More')));
     await tester.pumpAndSettle();
+    expect(find.text('Catalog'), findsOneWidget);
     expect(find.text('Cities'), findsOneWidget);
     expect(find.text('Activity'), findsOneWidget);
     expect(find.text('Staff'), findsOneWidget);
@@ -50,13 +51,36 @@ void main() {
     expect(find.text('Almaty'), findsOneWidget);
     // More stays highlighted while one of its areas is open.
     final nav = tester.widget<FactoryBottomNavigation>(find.byType(FactoryBottomNavigation));
-    expect(nav.selectedIndex, 4);
+    expect(nav.selectedIndex, 3);
 
     // System back goes back to More, not out of the app.
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(find.text('Staff'), findsOneWidget);
     expect(find.text('Almaty'), findsNothing);
+  });
+
+  testWidgets('phone: the "+" fans out shortcuts; Back closes the fan first, then goes home', (tester) async {
+    await pumpConsole(tester, backend: defaultBackend(), size: const Size(390, 800));
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pumpAndSettle();
+    for (final label in ['Catalog', 'Cities', 'Activity']) {
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
+
+    // Back with the fan open closes it and stays on the dashboard.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Cities'), findsNothing);
+    expect(find.text('Hello, Aida'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cities'));
+    await tester.pumpAndSettle();
+    expect(find.text('Almaty'), findsOneWidget);
+    // Opened from the "+": More stays highlighted, Back returns to More.
+    expect(tester.widget<FactoryBottomNavigation>(find.byType(FactoryBottomNavigation)).selectedIndex, 3);
   });
 
   testWidgets('staff is for admins only: not listed for a moderator, and the URL redirects home', (tester) async {

@@ -29,8 +29,9 @@ const consoleBranchPaths = [
   ConsoleRoutes.more, // 8
 ];
 
-/// Branch indexes the phone's bottom bar shows; the fifth tab is "More".
-const phoneTabBranches = [0, 1, 2, 4, 8];
+/// Branch indexes the phone's bottom bar shows (two, the "+", two); the last
+/// tab is "More". Catalog is reached through the "+" and "More".
+const phoneTabBranches = [0, 1, 4, 8];
 
 /// Areas a phone reaches through "More".
-const moreBranches = {3, 5, 6, 7};
+const moreBranches = {2, 3, 5, 6, 7};

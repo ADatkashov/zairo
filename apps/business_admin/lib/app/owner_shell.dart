@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../features/auth/presentation/providers/auth_providers.dart';
 import '../features/messaging/presentation/providers/message_seen_provider.dart';
 import '../l10n/app_localizations.dart';
+import 'admin_routes.dart';
 import 'admin_shell.dart';
 
 /// Tracks how many full screens are pushed on top of one branch's root, so the
@@ -68,8 +69,9 @@ class OwnerShell extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
   final List<BranchDepthObserver> depthObservers;
 
-  /// Phone tabs → router branches. The fifth tab is "More".
-  static const _phoneTabBranches = [0, 1, 2, 3, 7];
+  /// Phone tabs → router branches: two, the "+", two. The last tab is "More";
+  /// Loyalty is reached through the "+" and "More".
+  static const _phoneTabBranches = [0, 1, 2, 7];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -114,18 +116,16 @@ class OwnerShell extends ConsumerWidget {
 
   Widget _phone(BuildContext context, AppLocalizations l10n, int newMessages) {
     final current = navigationShell.currentIndex;
-    // Automation / Subscription / Settings are reached through "More", so
+    // Loyalty / Automation / Subscription / Settings are reached through "More", so
     // while one of them is open the More tab stays highlighted.
-    final selectedTab = _phoneTabBranches.contains(current) ? _phoneTabBranches.indexOf(current) : 4;
+    final selectedTab = _phoneTabBranches.contains(current) ? _phoneTabBranches.indexOf(current) : _phoneTabBranches.length - 1;
 
     // Back from any other area returns to the Dashboard first; only from the
     // Dashboard does it leave the app.
-    return PopScope(
+    return FactoryFanBackScope(
       canPop: current == 0,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) navigationShell.goBranch(0);
-      },
-      child: Scaffold(
+      onBack: () => navigationShell.goBranch(0),
+      builder: (context, setFanOpen) => Scaffold(
         body: navigationShell,
         bottomNavigationBar: ValueListenableBuilder<int>(
           valueListenable: depthObservers[current].depth,
@@ -133,12 +133,35 @@ class OwnerShell extends ConsumerWidget {
             if (depth > 0) return const SizedBox.shrink();
             return FactoryBottomNavigation(
               selectedIndex: selectedTab,
+              onFanOpenChanged: setFanOpen,
               onDestinationSelected: (tab) => _goBranch(_phoneTabBranches[tab]),
+              // "+": shortcuts to the areas that no longer have a tab of
+              // their own (they are also listed under "More").
+              centerAction: FactoryNavAction(
+                icon: Icons.add_rounded,
+                label: l10n.navQuickActions,
+                quickActions: [
+                  FactoryNavQuickAction(
+                    icon: Icons.loyalty_rounded,
+                    label: l10n.loyaltyNavLabel,
+                    onTap: () => _goBranch(adminBranchPaths.indexOf(AdminRoutes.loyalty)),
+                  ),
+                  FactoryNavQuickAction(
+                    icon: Icons.bolt_rounded,
+                    label: l10n.automationCenterNavLabel,
+                    onTap: () => _goBranch(adminBranchPaths.indexOf(AdminRoutes.automation)),
+                  ),
+                  FactoryNavQuickAction(
+                    icon: Icons.receipt_long_rounded,
+                    label: l10n.billingScreenTitle,
+                    onTap: () => _goBranch(adminBranchPaths.indexOf(AdminRoutes.billing)),
+                  ),
+                ],
+              ),
               destinations: [
                 FactoryNavDestination(icon: Icons.dashboard_rounded, label: l10n.navDashboard),
                 FactoryNavDestination(icon: Icons.forum_rounded, label: l10n.messagingNavLabel, badgeCount: newMessages),
                 FactoryNavDestination(icon: Icons.campaign_rounded, label: l10n.campaignCenterNavLabel),
-                FactoryNavDestination(icon: Icons.loyalty_rounded, label: l10n.loyaltyNavLabel),
                 FactoryNavDestination(icon: Icons.more_horiz_rounded, label: l10n.navMore),
               ],
             );

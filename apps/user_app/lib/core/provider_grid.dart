@@ -18,6 +18,10 @@ int providerGridColumns(BuildContext context) {
   return 2;
 }
 
+/// Height a "Book" button adds to a vertical provider card: the 48px button
+/// plus the gap above it.
+const double providerCardActionHeight = 60;
+
 /// Grid delegate for vertical provider cards. On a phone the card's height
 /// follows its width (see [providerGridAspectRatio]). On a wider screen a
 /// width-driven height makes the cards grow ever taller while the photo stays
@@ -27,6 +31,7 @@ SliverGridDelegate providerGridDelegate(
   BuildContext context, {
   required int crossAxisCount,
   required double spacing,
+  double actionHeight = 0,
 }) {
   final media = MediaQuery.of(context);
   if (media.size.width < 600) {
@@ -43,6 +48,6 @@ SliverGridDelegate providerGridDelegate(
     crossAxisCount: crossAxisCount,
     mainAxisSpacing: spacing,
     crossAxisSpacing: spacing,
-    mainAxisExtent: photoHeight + textBlockHeight * media.textScaler.scale(1).clamp(1.0, 2.0),
+    mainAxisExtent: photoHeight + textBlockHeight * media.textScaler.scale(1).clamp(1.0, 2.0) + actionHeight,
   );
 }

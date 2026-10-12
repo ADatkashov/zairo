@@ -8,6 +8,9 @@
 abstract final class AppRoutes {
   static const citySelection = '/city-selection';
 
+  /// The three-page welcome shown once on the very first launch.
+  static const welcome = '/welcome';
+
   /// The Search tab, optionally pre-filtered (`/search?category=beauty&q=…`).
   static String search({String? category, String? query}) {
     final params = <String, String>{
@@ -80,7 +83,15 @@ abstract final class AppRoutes {
 
   /// [extra] may carry the already-loaded `ProviderSearchResult`; without it
   /// (deep link, web refresh) the screen looks the provider up by id.
-  static String provider(String providerId) => '/provider/$providerId';
+  ///
+  /// With [book] the business opens already scrolled to the booking steps
+  /// (services, then times) — what a "Book" button on a card wants.
+  static String provider(String providerId, {bool book = false}) =>
+      book ? '/provider/$providerId?book=1' : '/provider/$providerId';
+
+  /// All public reviews of a business, with the rating breakdown.
+  static String reviews(String providerId, {String? providerName}) =>
+      _withName('/provider/$providerId/reviews', providerName);
 
   static String chat(String providerId, {String? providerName}) =>
       _withName('/messages/$providerId', providerName);

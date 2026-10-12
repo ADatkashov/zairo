@@ -20,6 +20,10 @@ import '../../data/models/provider_search_result.dart';
 class ProviderCard extends StatelessWidget {
   final ProviderSearchResult result;
   final VoidCallback? onTap;
+
+  /// "Book" on the card: opens the business already at the booking steps. Null
+  /// shows no button.
+  final VoidCallback? onBook;
   final core_ui.FactoryProviderCardLayout layout;
   final double? width;
 
@@ -27,6 +31,7 @@ class ProviderCard extends StatelessWidget {
     super.key,
     required this.result,
     this.onTap,
+    this.onBook,
     this.layout = core_ui.FactoryProviderCardLayout.horizontal,
     this.width,
   });
@@ -34,7 +39,6 @@ class ProviderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
     final accent = colorForCategory(context, result.vertical);
     return core_ui.FactoryProviderCard(
       title: result.name,
@@ -46,19 +50,16 @@ class ProviderCard extends StatelessWidget {
           : Image.network(
               result.coverPhotoUrl!,
               fit: BoxFit.cover,
-              // A broken/expired URL renders the same tinted fill
+              // A broken/expired URL renders the same placeholder
               // FactoryProviderCard itself uses when `image` is null,
               // instead of Flutter's default red-box error widget.
-              errorBuilder: (context, error, stackTrace) => DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [colors.primaryTint, colors.surfaceAlt],
-                  ),
-                ),
+              errorBuilder: (context, error, stackTrace) => core_ui.FactoryPhotoPlaceholder(
+                icon: iconForCategory(result.vertical),
+                color: accent?.color,
+                tint: accent?.tint,
               ),
             ),
+      placeholderIcon: iconForCategory(result.vertical),
       // The category badge already names the vertical when the category has
       // an accent; only fall back to spelling it out (localized, never the raw
       // backend code) when there is no badge to carry it.
@@ -84,6 +85,8 @@ class ProviderCard extends StatelessWidget {
           ? formatNextAvailable(l10n, result.nextAvailableSlot!.toLocal())
           : (result.hasOpenAvailability ? l10n.availableTodayLabel : null),
       onTap: onTap,
+      actionLabel: onBook == null ? null : l10n.bookButton,
+      onAction: onBook,
       layout: layout,
       width: width,
     );

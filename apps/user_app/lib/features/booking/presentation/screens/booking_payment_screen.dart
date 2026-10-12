@@ -16,6 +16,7 @@ import '../../../payments/presentation/screens/saved_cards_screen.dart' show sav
 import '../../data/models/booking.dart';
 import '../../data/models/payment_plan.dart';
 import '../providers/booking_providers.dart';
+import '../widgets/booking_stepper.dart';
 import 'booking_confirmation_screen.dart';
 
 /// What the payment route (`AppRoutes.bookingPayment`) needs, handed over as
@@ -337,6 +338,8 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen> wit
         child: ListView(
           padding: const EdgeInsets.all(FactorySpacing.space4),
           children: [
+            const BookingStepper(step: 2),
+            const SizedBox(height: FactorySpacing.space4),
             Center(child: FactoryPriceText(amount: amount, fontSize: 28, weight: FontWeight.w800)),
             const SizedBox(height: FactorySpacing.space4),
             Text(l10n.paymentChooseTitle, style: textTheme.titleMedium),
@@ -416,6 +419,7 @@ class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen> wit
         child: ListView(
           padding: const EdgeInsets.all(FactorySpacing.space4),
           children: [
+            const BookingStepper(step: 2),
             const SizedBox(height: FactorySpacing.space6),
             Center(
               child: _phase == _Phase.starting
