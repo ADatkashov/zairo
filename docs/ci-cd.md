@@ -273,7 +273,7 @@ building this, not guessed at:
 A real, Play-Store-eligible release build now exists, kept deliberately
 separate from the always-on `build-artifacts.yml` pipeline (see §8's
 note): `android-release.yml`, triggered manually
-(**Actions → Android Release → Run workflow**, pick `both` or one app).
+(**Actions → Android Release → Run workflow**, pick `all` or one app).
 It produces a **release-signed APK and AAB** and publishes both as a
 **GitHub Release** — a permanent page with a stable download link,
 openable straight from a phone browser (repo → **Releases** tab, or the
@@ -301,15 +301,15 @@ existing `build-artifacts.yml` job changed.
 Secrets, immediately before the build and deleted again immediately after
 (its `Remove decoded keystore and key.properties` step, `if: always()`).
 
-**One shared keystore, two key aliases** — one `ANDROID_KEYSTORE_BASE64`
-secret covers both apps; `user_app` and `business_admin` each sign with
+**One shared keystore, three key aliases** — one `ANDROID_KEYSTORE_BASE64`
+secret covers all apps; `user_app`, `business_admin` and `platform_admin` each sign with
 their own alias inside it, so a compromised/rotated alias for one app
 doesn't require touching the other's.
 
 ### Required GitHub Secrets
 
 Add these under **repo → Settings → Secrets and variables → Actions → New
-repository secret**. All six are required before `android-release.yml`
+repository secret**. All eight are required before `android-release.yml`
 can succeed — it checks for them explicitly and fails with a clear
 `::error::` naming whichever are missing, rather than an opaque Gradle
 signing failure.
@@ -317,17 +317,19 @@ signing failure.
 | Secret name | Value |
 |---|---|
 | `ANDROID_KEYSTORE_BASE64` | The keystore file, base64-encoded, as one line |
-| `ANDROID_KEYSTORE_PASSWORD` | The keystore's store password (shared by both aliases) |
+| `ANDROID_KEYSTORE_PASSWORD` | The keystore's store password (shared by all aliases) |
 | `ANDROID_KEY_ALIAS_USER_APP` | Key alias for `user_app` inside the keystore |
 | `ANDROID_KEY_PASSWORD_USER_APP` | That alias's key password |
 | `ANDROID_KEY_ALIAS_BUSINESS_ADMIN` | Key alias for `business_admin` inside the keystore |
 | `ANDROID_KEY_PASSWORD_BUSINESS_ADMIN` | That alias's key password |
+| `ANDROID_KEY_ALIAS_PLATFORM_ADMIN` | Key alias for `platform_admin` inside the keystore |
+| `ANDROID_KEY_PASSWORD_PLATFORM_ADMIN` | That alias's key password |
 
 ### Generating a keystore from scratch
 
 Only needed once (or if the keystore is ever lost/rotated — see the
 warning below). Requires a JDK (`keytool` ships with it). One keystore,
-two aliases:
+three aliases:
 
 ```bash
 keytool -genkeypair -v \
@@ -343,6 +345,13 @@ keytool -genkeypair -v \
   -alias business_admin_upload \
   -keyalg RSA -keysize 2048 -validity 10000 \
   -dname "CN=Zairo Business Admin, OU=Factory, O=Zairo, L=Almaty, ST=Almaty, C=KZ"
+
+keytool -genkeypair -v \
+  -keystore zairo-release-upload.jks \
+  -storetype JKS \
+  -alias platform_admin_upload \
+  -keyalg RSA -keysize 2048 -validity 10000 \
+  -dname "CN=Zairo Platform Admin, OU=Factory, O=Zairo, L=Almaty, ST=Almaty, C=KZ"
 ```
 
 (`-validity 10000` ≈ 27 years — Google requires an upload key's
