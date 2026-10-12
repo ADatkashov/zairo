@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../app/router/app_routes.dart';
 import '../../../../core/formatting/initials.dart';
+import '../../../../core/provider_grid.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../maps/data/geo_point.dart';
 import '../../../auth/data/models/user_summary.dart';
@@ -197,7 +198,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     )
                   else
                     SizedBox(
-                      height: 252,
+                      // The card's own height plus the "Book" button under it.
+                      height: 252 + providerCardActionHeight,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: topRated.length,
@@ -211,6 +213,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             width: 168,
                             onTap: () => context.push(
                               AppRoutes.provider(result.id),
+                              extra: result,
+                            ),
+                            onBook: () => context.push(
+                              AppRoutes.provider(result.id, book: true),
                               extra: result,
                             ),
                           );

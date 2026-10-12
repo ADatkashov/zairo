@@ -1,5 +1,6 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -52,7 +53,11 @@ const _verticalsWithDedicatedStaffModule = {'beauty', 'auto', 'cleaning'};
 class ProviderDetailScreen extends ConsumerStatefulWidget {
   final ProviderSearchResult provider;
 
-  const ProviderDetailScreen({super.key, required this.provider});
+  /// Open already scrolled to the booking steps (services, then times) instead
+  /// of the top — set by the "Book" button on a provider card.
+  final bool startAtBooking;
+
+  const ProviderDetailScreen({super.key, required this.provider, this.startAtBooking = false});
 
   @override
   ConsumerState<ProviderDetailScreen> createState() =>
@@ -80,6 +85,25 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
   /// Start time of the picked slot, captured when it is picked (the slot lists differ per mode).
   DateTime? _selectedSlotStartsAt;
   bool _isBooking = false;
+
+  /// Marks where the booking steps begin — just above the first of them.
+  final _bookingStartKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.startAtBooking) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final anchor = _bookingStartKey.currentContext;
+        if (!mounted || anchor == null) return;
+        Scrollable.ensureVisible(
+          anchor,
+          duration: FactoryMotion.resolve(context, FactoryMotion.base),
+          curve: FactoryMotion.standard,
+        );
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -166,6 +190,11 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.all(FactorySpacing.space4),
+                // The anchor sits below the hero and the info, so build well past the
+                // first screenful: it has to exist before it can be scrolled to.
+                // Finite on purpose — an infinite extent breaks semantics ("non-finite
+                // rect") for screen readers.
+                scrollCacheExtent: widget.startAtBooking ? const ScrollCacheExtent.pixels(4000) : null,
                 children: [
                   _ProviderHero(provider: widget.provider),
                   const SizedBox(height: FactorySpacing.space4),
@@ -244,6 +273,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                       ),
                     ),
                   ),
+                  SizedBox.shrink(key: _bookingStartKey),
                   if (hasWorkers && allowChoice) ...[
                     const SizedBox(height: FactorySpacing.space6),
                     _AnyMasterOption(

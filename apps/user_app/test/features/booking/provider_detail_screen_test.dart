@@ -837,6 +837,52 @@ void main() {
     expect(find.textContaining('45'), findsWidgets);
   });
 
+  testWidgets('opened from a "Book" button it starts at the booking steps, not at the top', (tester) async {
+    // A short phone, so the page is longer than the screen and can scroll.
+    tester.view.physicalSize = const Size(390, 520);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    const provider = ProviderSearchResult(
+      id: 'provider-1',
+      name: 'Test Salon',
+      vertical: 'beauty',
+      status: 'ACTIVE',
+      hasOpenAvailability: true,
+      minPrice: 30,
+      services: [
+        ServiceSummary(id: 'service-1', title: 'Haircut', durationMinutes: 30, price: 30, currency: 'USD'),
+      ],
+    );
+    Widget app({required bool startAtBooking}) => ProviderScope(
+      overrides: [
+        bookingApiProvider.overrideWithValue(_FakeBookingApi(const [])),
+        beautyApiProvider.overrideWithValue(_FakeBeautyApi()),
+        authControllerProvider.overrideWith(_LoggedInAuthController.new),
+      ],
+      child: MaterialApp(
+        theme: factoryLightTheme(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        // A key per mode: the second pump must build a fresh screen, not update the first.
+        home: ProviderDetailScreen(key: ValueKey(startAtBooking), provider: provider, startAtBooking: startAtBooking),
+      ),
+    );
+
+    // Normally the page opens at the top: the services sit a long way down.
+    await tester.pumpWidget(app(startAtBooking: false));
+    await tester.pumpAndSettle();
+    final normalTop = tester.getTopLeft(find.text('Services')).dy;
+
+    // From the Book button the page has scrolled to the booking steps, so the
+    // same section is much nearer the top of the screen.
+    await tester.pumpWidget(app(startAtBooking: true));
+    await tester.pumpAndSettle();
+    final bookTop = tester.getTopLeft(find.text('Services')).dy;
+
+    expect(bookTop, lessThan(normalTop - 100));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('shows a message when there are no open slots', (tester) async {
     final fakeApi = _FakeBookingApi(const []);
     const provider = ProviderSearchResult(

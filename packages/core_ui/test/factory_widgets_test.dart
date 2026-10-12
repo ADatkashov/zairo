@@ -240,6 +240,42 @@ void main() {
     expect(tester.getTopLeft(slots.at(0)).dy, tester.getTopLeft(slots.at(2)).dy);
   });
 
+  testWidgets('FactoryProviderCard shows a Book button that acts on its own, not as a card tap', (tester) async {
+    var cardTaps = 0;
+    var bookTaps = 0;
+    await tester.pumpWidget(
+      _wrap(
+        SizedBox(
+          width: 168,
+          child: FactoryProviderCard(
+            title: 'Studio',
+            onTap: () => cardTaps++,
+            actionLabel: 'Book',
+            onAction: () => bookTaps++,
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Book'));
+    expect(bookTaps, 1);
+    expect(cardTaps, 0);
+
+    // The button is a full phone tap target.
+    expect(tester.getSize(find.byType(FilledButton)).height, greaterThanOrEqualTo(44));
+
+    await tester.tap(find.text('Studio'));
+    expect(cardTaps, 1);
+  });
+
+  testWidgets('FactoryProviderCard has no button unless it is given both a label and an action', (tester) async {
+    await tester.pumpWidget(_wrap(const SizedBox(width: 168, child: FactoryProviderCard(title: 'Studio', actionLabel: 'Book'))));
+    expect(find.byType(FilledButton), findsNothing);
+
+    await tester.pumpWidget(_wrap(SizedBox(width: 168, child: FactoryProviderCard(title: 'Studio', onAction: () {}))));
+    expect(find.byType(FilledButton), findsNothing);
+  });
+
   testWidgets('FactoryBadge renders its label', (tester) async {
     await tester.pumpWidget(
       _wrap(

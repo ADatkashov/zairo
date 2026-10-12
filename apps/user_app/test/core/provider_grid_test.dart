@@ -40,6 +40,28 @@ void main() {
     expect(desktop.mainAxisExtent, 232);
   });
 
+  testWidgets('a "Book" button adds its height to the fixed card height on a wide screen', (tester) async {
+    late SliverGridDelegateWithFixedCrossAxisCount plain;
+    late SliverGridDelegateWithFixedCrossAxisCount withButton;
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) {
+            plain = providerGridDelegate(context, crossAxisCount: 4, spacing: 12) as SliverGridDelegateWithFixedCrossAxisCount;
+            withButton = providerGridDelegate(context, crossAxisCount: 4, spacing: 12, actionHeight: providerCardActionHeight)
+                as SliverGridDelegateWithFixedCrossAxisCount;
+            return const SizedBox();
+          },
+        ),
+      ),
+    );
+
+    expect(withButton.mainAxisExtent, plain.mainAxisExtent! + providerCardActionHeight);
+  });
+
   testWidgets('the fixed height grows with the system font', (tester) async {
     final big = await _delegate(tester, const Size(1400, 900), textScale: 1.5);
     expect(big.mainAxisExtent, 128 + 104 * 1.5);

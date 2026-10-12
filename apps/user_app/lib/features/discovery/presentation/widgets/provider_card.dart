@@ -20,6 +20,10 @@ import '../../data/models/provider_search_result.dart';
 class ProviderCard extends StatelessWidget {
   final ProviderSearchResult result;
   final VoidCallback? onTap;
+
+  /// "Book" on the card: opens the business already at the booking steps. Null
+  /// shows no button.
+  final VoidCallback? onBook;
   final core_ui.FactoryProviderCardLayout layout;
   final double? width;
 
@@ -27,6 +31,7 @@ class ProviderCard extends StatelessWidget {
     super.key,
     required this.result,
     this.onTap,
+    this.onBook,
     this.layout = core_ui.FactoryProviderCardLayout.horizontal,
     this.width,
   });
@@ -80,6 +85,8 @@ class ProviderCard extends StatelessWidget {
           ? formatNextAvailable(l10n, result.nextAvailableSlot!.toLocal())
           : (result.hasOpenAvailability ? l10n.availableTodayLabel : null),
       onTap: onTap,
+      actionLabel: onBook == null ? null : l10n.bookButton,
+      onAction: onBook,
       layout: layout,
       width: width,
     );
