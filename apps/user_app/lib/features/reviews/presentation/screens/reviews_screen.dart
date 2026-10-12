@@ -116,7 +116,12 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
             child: ListView(
               padding: const EdgeInsets.all(FactorySpacing.space4),
               children: [
-                ReviewSummaryCard(summary: summary),
+                ReviewSummaryCard(
+                  summary: summary,
+                  selectedRating: _rating,
+                  onRatingTap: (stars) =>
+                      _change(() => _rating = _rating == stars ? null : stars),
+                ),
                 const SizedBox(height: FactorySpacing.space4),
                 _FilterBar(
                   rating: _rating,
@@ -257,9 +262,19 @@ class _FilterBar extends StatelessWidget {
 
 /// "4.8 ★★★★★ — based on 128 reviews" plus one bar per star, 5 down to 1.
 class ReviewSummaryCard extends StatelessWidget {
-  const ReviewSummaryCard({super.key, required this.summary});
+  const ReviewSummaryCard({
+    super.key,
+    required this.summary,
+    this.selectedRating,
+    this.onRatingTap,
+  });
 
   final ReviewSummary summary;
+
+  /// The star count currently filtered on, if any; its bar is emphasised and
+  /// the others dim. With [onRatingTap] null the bars are plain read-only.
+  final int? selectedRating;
+  final ValueChanged<int>? onRatingTap;
 
   @override
   Widget build(BuildContext context) {
@@ -311,6 +326,13 @@ class ReviewSummaryCard extends StatelessWidget {
                     stars: stars,
                     count: summary.distribution[stars - 1],
                     total: summary.total,
+                    selected: selectedRating == stars,
+                    dimmed: selectedRating != null && selectedRating != stars,
+                    onTap:
+                        onRatingTap == null ||
+                            summary.distribution[stars - 1] == 0
+                        ? null
+                        : () => onRatingTap!(stars),
                   ),
               ],
             ),
@@ -326,59 +348,87 @@ class _DistributionBar extends StatelessWidget {
     required this.stars,
     required this.count,
     required this.total,
+    this.selected = false,
+    this.dimmed = false,
+    this.onTap,
   });
 
   final int stars;
   final int count;
   final int total;
+  final bool selected;
+  final bool dimmed;
+
+  /// Null = not a filter (read-only, or no reviews with this many stars).
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     return Semantics(
+      button: onTap != null,
+      selected: selected,
       label: l10n.reviewsStarRowSemantic(stars, count),
       excludeSemantics: true,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 12,
-              child: Text(
-                '$stars',
-                style: FactoryTypography.mono(
-                  size: 12,
-                  color: colors.textSecondary,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: ConstrainedBox(
+          // Shorter than the 44px chips below, which are the full-size way
+          // to filter; five 44px rows would make this card taller than the
+          // list's first screen.
+          constraints: const BoxConstraints(minHeight: 30),
+          child: AnimatedOpacity(
+            opacity: dimmed ? 0.45 : 1,
+            duration: const Duration(milliseconds: 150),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 12,
+                  child: Text(
+                    '$stars',
+                    style: FactoryTypography.mono(
+                      size: 12,
+                      weight: selected ? FontWeight.w700 : FontWeight.w600,
+                      color: selected ? colors.primary : colors.textSecondary,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            Icon(Symbols.star_rounded, size: 12, fill: 1, color: colors.accent),
-            const SizedBox(width: 6),
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: total == 0 ? 0 : count / total,
-                  minHeight: 6,
-                  backgroundColor: colors.surfaceAlt,
+                Icon(
+                  Symbols.star_rounded,
+                  size: 12,
+                  fill: 1,
                   color: colors.accent,
                 ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            SizedBox(
-              width: 28,
-              child: Text(
-                '$count',
-                textAlign: TextAlign.end,
-                style: FactoryTypography.mono(
-                  size: 12,
-                  color: colors.textTertiary,
+                const SizedBox(width: 6),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: total == 0 ? 0 : count / total,
+                      minHeight: selected ? 8 : 6,
+                      backgroundColor: colors.surfaceAlt,
+                      color: colors.accent,
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 28,
+                  child: Text(
+                    '$count',
+                    textAlign: TextAlign.end,
+                    style: FactoryTypography.mono(
+                      size: 12,
+                      weight: selected ? FontWeight.w700 : FontWeight.w600,
+                      color: selected ? colors.primary : colors.textTertiary,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

@@ -107,6 +107,9 @@ void main() {
   testWidgets(
     'shows summary, distribution, review text and the business reply',
     (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
       final api = _FakeApi(
         summary: const ReviewSummary(
           average: 4.6,
@@ -237,6 +240,46 @@ void main() {
       await tester.tap(find.text('Show all'));
       await tester.pumpAndSettle();
       expect(api.calls.last.rating, isNull);
+    },
+  );
+
+  testWidgets(
+    'tapping a star bar filters on it, tapping again clears; empty bars are inert',
+    (tester) async {
+      final api = _FakeApi(
+        summary: const ReviewSummary(
+          average: 4.5,
+          total: 10,
+          distribution: [0, 0, 0, 4, 6],
+        ),
+        reviews: [_review('r1', comment: 'x')],
+      );
+      await _pump(tester, api);
+
+      final fourStarBar = find.bySemanticsLabel('4 stars: 4');
+      await tester.tap(fourStarBar);
+      await tester.pumpAndSettle();
+      expect(api.calls.last.rating, 4);
+      expect(
+        tester
+            .widget<FactoryChip>(find.widgetWithText(FactoryChip, '4'))
+            .selected,
+        isTrue,
+        reason: 'the chip row shows the same filter',
+      );
+
+      await tester.tap(fourStarBar);
+      await tester.pumpAndSettle();
+      expect(api.calls.last.rating, isNull);
+
+      final callsBefore = api.calls.length;
+      await tester.tap(find.bySemanticsLabel('1 star: 0'));
+      await tester.pumpAndSettle();
+      expect(
+        api.calls.length,
+        callsBefore,
+        reason: 'a 0-review bar is not a filter',
+      );
     },
   );
 
