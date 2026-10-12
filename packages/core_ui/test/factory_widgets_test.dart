@@ -160,6 +160,14 @@ void main() {
     expect(find.byIcon(Symbols.check_rounded), findsNothing);
   });
 
+  testWidgets('FactoryChip draws its icon outlined by default and solid with iconFilled', (tester) async {
+    await tester.pumpWidget(_wrap(const FactoryChip(label: '5', icon: Symbols.star_rounded)));
+    expect(tester.widget<Icon>(find.byIcon(Symbols.star_rounded)).fill, 0);
+
+    await tester.pumpWidget(_wrap(const FactoryChip(label: '5', icon: Symbols.star_rounded, iconFilled: true)));
+    expect(tester.widget<Icon>(find.byIcon(Symbols.star_rounded)).fill, 1);
+  });
+
   testWidgets('input fields use the tonal fill with a hairline and a 2px focus ring', (tester) async {
     final theme = factoryLightTheme().inputDecorationTheme;
     expect(theme.filled, isTrue);

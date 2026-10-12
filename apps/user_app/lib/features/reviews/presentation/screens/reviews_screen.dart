@@ -237,6 +237,7 @@ class _FilterBar extends StatelessWidget {
             FactoryChip(
               label: '$stars',
               icon: Symbols.star_rounded,
+              iconFilled: true,
               selected: rating == stars,
               onTap: () => onRating(rating == stars ? null : stars),
             ),
