@@ -1,5 +1,6 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -29,6 +30,7 @@ import '../../../favorites/presentation/widgets/favorite_button.dart';
 import '../../../payments/data/payment_exception.dart';
 import '../../../payments/data/models/payment.dart';
 import '../../../payments/presentation/providers/payments_providers.dart';
+import '../../../reviews/presentation/widgets/reviews_preview.dart';
 import '../../../staff/data/models/staff.dart';
 import '../../../staff/data/staff_exception.dart';
 import '../../../staff/presentation/providers/staff_providers.dart';
@@ -39,6 +41,8 @@ import '../../data/models/availability_slot.dart';
 import '../../data/models/booking.dart';
 import '../../data/models/payment_plan.dart';
 import '../providers/booking_providers.dart';
+import '../widgets/booking_review_sheet.dart';
+import '../widgets/booking_stepper.dart';
 import '../widgets/day_slot_picker.dart';
 import 'booking_confirmation_screen.dart';
 import 'booking_payment_screen.dart';
@@ -52,7 +56,11 @@ const _verticalsWithDedicatedStaffModule = {'beauty', 'auto', 'cleaning'};
 class ProviderDetailScreen extends ConsumerStatefulWidget {
   final ProviderSearchResult provider;
 
-  const ProviderDetailScreen({super.key, required this.provider});
+  /// Open already scrolled to the booking steps (services, then times) instead
+  /// of the top — set by the "Book" button on a provider card.
+  final bool startAtBooking;
+
+  const ProviderDetailScreen({super.key, required this.provider, this.startAtBooking = false});
 
   @override
   ConsumerState<ProviderDetailScreen> createState() =>
@@ -80,6 +88,25 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
   /// Start time of the picked slot, captured when it is picked (the slot lists differ per mode).
   DateTime? _selectedSlotStartsAt;
   bool _isBooking = false;
+
+  /// Marks where the booking steps begin — just above the first of them.
+  final _bookingStartKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.startAtBooking) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final anchor = _bookingStartKey.currentContext;
+        if (!mounted || anchor == null) return;
+        Scrollable.ensureVisible(
+          anchor,
+          duration: FactoryMotion.resolve(context, FactoryMotion.base),
+          curve: FactoryMotion.standard,
+        );
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -166,6 +193,11 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.all(FactorySpacing.space4),
+                // The anchor sits below the hero and the info, so build well past the
+                // first screenful: it has to exist before it can be scrolled to.
+                // Finite on purpose — an infinite extent breaks semantics ("non-finite
+                // rect") for screen readers.
+                scrollCacheExtent: widget.startAtBooking ? const ScrollCacheExtent.pixels(4000) : null,
                 children: [
                   _ProviderHero(provider: widget.provider),
                   const SizedBox(height: FactorySpacing.space4),
@@ -175,7 +207,17 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       if (widget.provider.averageRating != null)
-                        FactoryRatingLabel(
+                        InkWell(
+                          onTap: () => context.push(
+                            AppRoutes.reviews(widget.provider.id, providerName: widget.provider.name),
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(minHeight: 44),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                FactoryRatingLabel(
                           rating: widget.provider.averageRating!,
                           reviewCount: widget.provider.reviewCount,
                           semanticLabel: widget.provider.reviewCount == null
@@ -188,6 +230,12 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                                       .toStringAsFixed(1),
                                   widget.provider.reviewCount!,
                                 ),
+                        ),
+                                const SizedBox(width: 4),
+                                Icon(Symbols.chevron_right_rounded, size: 16, color: colors.textTertiary),
+                              ],
+                            ),
+                          ),
                         ),
                       FactoryBadge(
                         label: verticalLabel(l10n, widget.provider.vertical),
@@ -244,6 +292,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                       ),
                     ),
                   ),
+                  SizedBox.shrink(key: _bookingStartKey),
                   if (hasWorkers && allowChoice) ...[
                     const SizedBox(height: FactorySpacing.space6),
                     _AnyMasterOption(
@@ -426,10 +475,15 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                     anyMode: anyMode,
                     workerId: selectedWorkerId,
                   ),
+                  ReviewsPreview(
+                    providerId: widget.provider.id,
+                    providerName: widget.provider.name,
+                  ),
                 ],
               ),
             ),
             _BookingCta(
+              step: _selectedServiceId == null ? 0 : (_selectedSlotId == null ? 1 : 2),
               selectedService: _selectedService(),
               price: _effectivePrice,
               plan: _paymentPlan(),
@@ -448,7 +502,13 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                       (!requiresVehicleSelection ||
                           _selectedVehicleId != null) &&
                       !_isBooking)
-                  ? _book
+                  ? () => _reviewThenBook(
+                      personName: !hasWorkers
+                          ? null
+                          : (anyMode
+                                ? ''
+                                : _workerName(masters, mechanics, cleaners, staffMembers, selectedWorkerId)),
+                    )
                   : null,
             ),
           ],
@@ -623,6 +683,59 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
         );
     ref.invalidate(vehiclesProvider(userId));
     setState(() => _selectedVehicleId = vehicle.id);
+  }
+
+  /// The display name of the picked specialist, whichever vertical's list it
+  /// comes from; null when none is picked.
+  String? _workerName(
+    List<Master> masters,
+    List<Mechanic> mechanics,
+    List<Cleaner> cleaners,
+    List<Staff> staff,
+    String? id,
+  ) {
+    if (id == null) return null;
+    for (final m in masters) {
+      if (m.id == id) return m.displayName;
+    }
+    for (final m in mechanics) {
+      if (m.id == id) return m.displayName;
+    }
+    for (final c in cleaners) {
+      if (c.id == id) return c.displayName;
+    }
+    for (final s in staff) {
+      if (s.id == id) return s.displayName;
+    }
+    return null;
+  }
+
+  /// One last look at what is being booked, before anything is created or
+  /// charged. Only "Confirm" goes on to [_book] (which keeps its own login
+  /// gate and every per-vertical rule untouched); a logged-out customer skips
+  /// the summary and goes straight to that gate.
+  Future<void> _reviewThenBook({required String? personName}) async {
+    final service = _selectedService();
+    final signedIn = (await ref.read(authControllerProvider.future)) != null;
+    if (!mounted) return;
+    if (service == null || !signedIn) {
+      await _book();
+      return;
+    }
+    final confirmed = await showBookingReviewSheet(
+      context,
+      BookingReviewData(
+        providerName: widget.provider.name,
+        serviceTitle: service.title,
+        durationMinutes: service.durationMinutes,
+        price: _effectivePrice ?? service.price,
+        currencySymbol: service.currency,
+        startsAt: _selectedSlotStartsAt,
+        personName: personName,
+        plan: _paymentPlan(),
+      ),
+    );
+    if (confirmed && mounted) await _book();
   }
 
   Future<void> _book() async {
@@ -878,6 +991,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
 /// risky for a real-money flow, and that reasoning still holds.
 class _BookingCta extends StatelessWidget {
   const _BookingCta({
+    required this.step,
     required this.selectedService,
     required this.price,
     required this.plan,
@@ -885,6 +999,8 @@ class _BookingCta extends StatelessWidget {
     required this.onPressed,
   });
 
+  /// Zero-based step of the booking progress bar (service, time, confirm).
+  final int step;
   final ServiceSummary? selectedService;
   final double? price;
   final PaymentPlan? plan;
@@ -961,7 +1077,12 @@ class _BookingCta extends StatelessWidget {
         color: colors.surface,
         border: Border(top: BorderSide(color: colors.border)),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          BookingStepper(step: step),
+          const SizedBox(height: FactorySpacing.space3),
+          Row(
         children: [
           if (selectedService != null) ...[
             Expanded(
@@ -997,6 +1118,8 @@ class _BookingCta extends StatelessWidget {
                 onPressed: onPressed,
               ),
             ),
+        ],
+      ),
         ],
       ),
     );

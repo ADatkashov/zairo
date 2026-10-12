@@ -197,6 +197,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     };
                     void openProvider(ProviderSearchResult result) => context
                         .push(AppRoutes.provider(result.id), extra: result);
+                    void bookProvider(ProviderSearchResult result) => context
+                        .push(AppRoutes.provider(result.id, book: true), extra: result);
 
                     return Column(
                       children: [
@@ -248,6 +250,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                       return ProviderCard(
                                         result: result,
                                         onTap: () => openProvider(result),
+                                        onBook: () => bookProvider(result),
                                       );
                                     },
                                   )
@@ -259,6 +262,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                       context,
                                       crossAxisCount: columns,
                                       spacing: FactorySpacing.space4,
+                                      // Room for the "Book" button under each card.
+                                      actionHeight: providerCardActionHeight,
                                     ),
                                     itemCount: results.length,
                                     itemBuilder: (context, index) {
@@ -268,6 +273,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                         layout:
                                             FactoryProviderCardLayout.vertical,
                                         onTap: () => openProvider(result),
+                                        onBook: () => bookProvider(result),
                                       );
                                     },
                                   ),
