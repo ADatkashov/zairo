@@ -213,6 +213,33 @@ void main() {
     expect(find.byIcon(Symbols.directions_car_filled_rounded), findsOneWidget);
   });
 
+  testWidgets('FactoryTimeSlot keeps its own width inside a Wrap instead of filling the row', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        const SizedBox(
+          width: 300,
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              FactoryTimeSlot(label: '10:00'),
+              FactoryTimeSlot(label: '12:00'),
+              FactoryTimeSlot(label: '14:30', state: FactoryTimeSlotState.selected),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final slots = find.byType(FactoryTimeSlot);
+    // Three slots fit on one row, each far narrower than the 300px offered.
+    for (var i = 0; i < 3; i++) {
+      expect(tester.getSize(slots.at(i)).width, lessThan(100));
+      expect(tester.getSize(slots.at(i)).height, greaterThanOrEqualTo(44));
+    }
+    expect(tester.getTopLeft(slots.at(0)).dy, tester.getTopLeft(slots.at(2)).dy);
+  });
+
   testWidgets('FactoryBadge renders its label', (tester) async {
     await tester.pumpWidget(
       _wrap(
