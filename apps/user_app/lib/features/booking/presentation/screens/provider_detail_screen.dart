@@ -204,7 +204,17 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       if (widget.provider.averageRating != null)
-                        FactoryRatingLabel(
+                        InkWell(
+                          onTap: () => context.push(
+                            AppRoutes.reviews(widget.provider.id, providerName: widget.provider.name),
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(minHeight: 44),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                FactoryRatingLabel(
                           rating: widget.provider.averageRating!,
                           reviewCount: widget.provider.reviewCount,
                           semanticLabel: widget.provider.reviewCount == null
@@ -217,6 +227,12 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                                       .toStringAsFixed(1),
                                   widget.provider.reviewCount!,
                                 ),
+                        ),
+                                const SizedBox(width: 4),
+                                Icon(Symbols.chevron_right_rounded, size: 16, color: colors.textTertiary),
+                              ],
+                            ),
+                          ),
                         ),
                       FactoryBadge(
                         label: verticalLabel(l10n, widget.provider.vertical),

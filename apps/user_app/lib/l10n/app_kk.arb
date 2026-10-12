@@ -649,5 +649,15 @@
 
   "welcomeStart": "Бастау",
 
-  "welcomeSkip": "Өткізіп жіберу"
+  "welcomeSkip": "Өткізіп жіберу",
+
+  "reviewsTitle": "Пікірлер",
+  "reviewsBasedOn": "{count, plural, other{{count} пікір негізінде}}",
+  "reviewsSeeAll": "Барлық пікір",
+  "reviewsEmptyTitle": "Әзірге пікір жоқ",
+  "reviewsEmptyMessage": "Пікірлер келуден кейін пайда болады. Жазылып, алғашқы болып әсеріңізбен бөлісіңіз.",
+  "reviewsBusinessReply": "Бизнестің жауабы",
+  "reviewsShowMore": "Тағы көрсету",
+  "reviewsError": "Пікірлерді жүктеу мүмкін болмады. Қайталап көріңіз.",
+  "reviewsStarRowSemantic": "{stars} жұлдыз: {count}"
 }
