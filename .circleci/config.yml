@@ -407,13 +407,24 @@ workflows:
           requires:
             - test-platform-admin
 
-  # Test gate. Runs on every branch (unit tests + Flutter), and the heavier
-  # platform-api end-to-end run on the long-lived branches only. To save CI
-  # quota, narrow the `filters` of the two cheap jobs to develop/test/master.
+  # Test gate. Runs on the long-lived branches only (develop/test/master) to
+  # save CI quota; feature branches are not built.
   checks:
     jobs:
-      - backend-unit-tests
+      - backend-unit-tests:
+          filters:
+            branches:
+              only:
+                - develop
+                - test
+                - master
       - flutter-check:
+          filters:
+            branches:
+              only:
+                - develop
+                - test
+                - master
           matrix:
             parameters:
               package:
