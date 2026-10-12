@@ -1,5 +1,4 @@
 import 'package:core_ui/core_ui.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 String _type(String text) => const KzPhoneInputFormatter()
