@@ -26,6 +26,7 @@ Future<_MemoryStorage> _pump(
   WidgetTester tester, {
   required City? city,
   Map<String, String>? stored,
+  bool showWelcome = false,
 }) async {
   final storage = _MemoryStorage(stored);
   await tester.pumpWidget(
@@ -39,7 +40,13 @@ Future<_MemoryStorage> _pump(
           routes: [
             GoRoute(
               path: '/',
-              builder: (_, _) => const CityOnboardingGate(child: Scaffold(body: Text('home'))),
+              builder: (_, _) => CityOnboardingGate(showWelcome: showWelcome, child: const Scaffold(body: Text('home'))),
+            ),
+            GoRoute(
+              path: '/welcome',
+              builder: (context, _) => Scaffold(
+                body: TextButton(onPressed: () => context.pop(), child: const Text('welcome page')),
+              ),
             ),
             GoRoute(path: '/city-selection', builder: (_, _) => const Scaffold(body: Text('pick a city'))),
           ],
@@ -81,5 +88,41 @@ void main() {
 
     expect(find.text('home'), findsOneWidget);
     expect(find.text('pick a city'), findsNothing);
+  });
+
+  testWidgets('with the welcome on, the first launch shows it first and the city picker after it', (tester) async {
+    final storage = await _pump(tester, city: null, showWelcome: true);
+
+    expect(find.text('welcome page'), findsOneWidget);
+    expect(find.text('pick a city'), findsNothing);
+    expect(storage.values[welcomeDoneKey], '1');
+
+    await tester.tap(find.text('welcome page'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('pick a city'), findsOneWidget);
+    expect(storage.values[cityOnboardingDoneKey], '1');
+  });
+
+  testWidgets('the welcome is shown once: a second launch skips straight to the normal flow', (tester) async {
+    await _pump(tester, city: _almaty, showWelcome: true, stored: {welcomeDoneKey: '1'});
+
+    expect(find.text('welcome page'), findsNothing);
+    expect(find.text('home'), findsOneWidget);
+  });
+
+  testWidgets('an existing user who just updated does not get the welcome', (tester) async {
+    // They already went through the city prompt on an older version.
+    final storage = await _pump(tester, city: null, showWelcome: true, stored: {cityOnboardingDoneKey: '1'});
+
+    expect(find.text('welcome page'), findsNothing);
+    expect(find.text('pick a city'), findsNothing);
+    expect(storage.values[welcomeDoneKey], '1');
+  });
+
+  testWidgets('the welcome stays off for callers that do not ask for it', (tester) async {
+    await _pump(tester, city: _almaty);
+
+    expect(find.text('welcome page'), findsNothing);
   });
 }

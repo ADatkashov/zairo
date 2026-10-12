@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../app/router/app_routes.dart';
 import '../../../../core/formatting/initials.dart';
+import '../../../../core/provider_grid.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../maps/data/geo_point.dart';
 import '../../../auth/data/models/user_summary.dart';
@@ -160,20 +161,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   const SizedBox(height: FactorySpacing.space4),
                   _SearchEntry(onTap: () => context.go(AppRoutes.search(category: _vertical))),
-                  const SizedBox(height: FactorySpacing.space4),
+                  // The one block of real colour sits right under the search, so
+                  // the first screen has a focal point (and a reason to tap)
+                  // before the category row. Only when something is open today.
+                  if (openCount > 0) ...[
+                    const SizedBox(height: FactorySpacing.space4),
+                    _AvailabilityHero(
+                      count: openCount,
+                      onViewAll: () => context.go(AppRoutes.search(category: _vertical)),
+                    ),
+                  ],
+                  const SizedBox(height: FactorySpacing.space5),
                   Text(l10n.homeCategoriesTitle, style: textTheme.titleSmall),
                   const SizedBox(height: FactorySpacing.space3),
                   _CategoryGrid(
                     selectedCode: _vertical,
                     onSelect: (code) => setState(() => _vertical = code),
                   ),
-                  if (openCount > 0) ...[
-                    const SizedBox(height: FactorySpacing.space5),
-                    _AvailabilityHero(
-                      count: openCount,
-                      onViewAll: () => context.go(AppRoutes.search(category: _vertical)),
-                    ),
-                  ],
                   if (user != null) ...[
                     const SizedBox(height: FactorySpacing.space6),
                     _BookAgainSection(userId: user.id),
@@ -194,7 +198,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     )
                   else
                     SizedBox(
-                      height: 252,
+                      // The card's own height plus the "Book" button under it.
+                      height: 252 + providerCardActionHeight,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: topRated.length,
@@ -208,6 +213,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             width: 168,
                             onTap: () => context.push(
                               AppRoutes.provider(result.id),
+                              extra: result,
+                            ),
+                            onBook: () => context.push(
+                              AppRoutes.provider(result.id, book: true),
                               extra: result,
                             ),
                           );
@@ -724,9 +733,18 @@ class _AvailabilityHero extends StatelessWidget {
             ),
           ),
           Positioned(
-            bottom: -40,
-            right: 40,
-            child: _HeroCircle(size: 90, opacity: 0.1),
+            bottom: 12,
+            right: 22,
+            // Decorative: says "free slots" at a glance without taking any
+            // width from the text.
+            child: ExcludeSemantics(
+              child: Icon(
+                Symbols.event_available_rounded,
+                size: 48,
+                fill: 1,
+                color: colors.onPrimary.withValues(alpha: 0.22),
+              ),
+            ),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -767,25 +785,6 @@ class _AvailabilityHero extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _HeroCircle extends StatelessWidget {
-  const _HeroCircle({required this.size, required this.opacity});
-
-  final double size;
-  final double opacity;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white.withValues(alpha: opacity),
       ),
     );
   }

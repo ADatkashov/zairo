@@ -41,7 +41,10 @@ class FactoryTimeSlot extends StatelessWidget {
         onTap: isUnavailable ? null : onTap,
         borderRadius: FactoryRadius.smRadius,
         child: Container(
-          alignment: Alignment.center,
+          // Deliberately no `alignment:` — a Container with an alignment expands
+          // to the full width it is offered, so in a Wrap every slot turned into
+          // a full-width row. The Center below shrink-wraps the label instead
+          // and still centres it inside the 44px minimum.
           // 44px is the minimum touch target the design system requires.
           constraints: const BoxConstraints(minWidth: minTapTarget, minHeight: minTapTarget),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
@@ -50,10 +53,14 @@ class FactoryTimeSlot extends StatelessWidget {
             borderRadius: FactoryRadius.smRadius,
             border: Border.all(color: isSelected ? colors.primary : colors.border, width: 1.5),
           ),
-          child: Text(
-            label,
-            style: FactoryTypography.mono(size: 14, weight: isSelected ? FontWeight.w700 : FontWeight.w500, color: fgColor)
-                .copyWith(decoration: isUnavailable ? TextDecoration.lineThrough : null),
+          child: Center(
+            widthFactor: 1,
+            heightFactor: 1,
+            child: Text(
+              label,
+              style: FactoryTypography.mono(size: 14, weight: isSelected ? FontWeight.w700 : FontWeight.w500, color: fgColor)
+                  .copyWith(decoration: isUnavailable ? TextDecoration.lineThrough : null),
+            ),
           ),
         ),
       ),

@@ -2525,5 +2525,7 @@
   "salonTabBookings": "Bookings",
   "@salonTabBookings": {"description": "Tab label on the business detail screen."},
   "salonTabSettings": "Settings",
-  "@salonTabSettings": {"description": "Tab label on the business detail screen."}
+  "@salonTabSettings": {"description": "Tab label on the business detail screen."},
+  "navQuickActions": "Quick actions",
+  "@navQuickActions": {"description": "Screen-reader label of the round + button in the middle of the phone bottom bar; opens a fan of shortcuts."}
 }

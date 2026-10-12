@@ -21,6 +21,7 @@ export 'src/widgets/factory_app_bar.dart';
 export 'src/widgets/factory_avatar.dart';
 export 'src/widgets/factory_badge.dart';
 export 'src/widgets/factory_payment_breakdown.dart';
+export 'src/widgets/factory_photo_placeholder.dart';
 export 'src/widgets/factory_progress_ring.dart';
 export 'src/widgets/factory_sparkline.dart';
 export 'src/widgets/factory_trend_badge.dart';

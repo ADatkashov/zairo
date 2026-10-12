@@ -107,7 +107,7 @@ void main() {
     await pumpAdminApp(tester, overrides: _ownerOverrides());
 
     expect(find.byType(AdminSidebar), findsNothing);
-    for (final label in ['Dashboard', 'Messages', 'Campaigns', 'Loyalty', 'More']) {
+    for (final label in ['Dashboard', 'Messages', 'Campaigns', 'More']) {
       expect(find.text(label), findsWidgets, reason: label);
     }
     // The six unlabeled shortcut icons are gone; only log out is left.
@@ -117,6 +117,7 @@ void main() {
 
     await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
+    expect(find.text('Loyalty'), findsOneWidget);
     expect(find.text('Subscription'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
     expect(find.text('You have no businesses yet'), findsNothing);
@@ -125,6 +126,29 @@ void main() {
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(find.text('You have no businesses yet'), findsOneWidget);
+  });
+
+  testWidgets('phone: the "+" fans out Loyalty / Automation / Subscription; Back closes the fan first', (tester) async {
+    _size(tester, const Size(400, 800));
+    await pumpAdminApp(tester, overrides: _ownerOverrides());
+
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pumpAndSettle();
+    for (final label in ['Loyalty', 'Subscription']) {
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
+
+    // Back with the fan open only closes it; the Dashboard stays.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Loyalty'), findsNothing);
+    expect(find.text('You have no businesses yet'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Subscription'));
+    await tester.pumpAndSettle();
+    expect(find.text('PRO plan'), findsOneWidget);
   });
 
   testWidgets('a link straight to an area opens it, and More stays highlighted on a phone', (tester) async {
