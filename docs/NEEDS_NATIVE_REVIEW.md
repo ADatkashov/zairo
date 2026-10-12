@@ -113,3 +113,4 @@ belong on the same review list as the rest:
 | `reviewsFilterAll` / `reviewsFilterWithText` | "Барлығы" / "Мәтінімен" | filter chips |
 | `reviewsSortNewest` / `reviewsSortHighest` / `reviewsSortLowest` | "Алдымен жаңалары" / "Алдымен жоғары бағалар" / "Алдымен төмен бағалар" | sort chips; length on a narrow phone |
 | `reviewsNoMatchTitle` / `reviewsNoMatchMessage` / `reviewsResetFilters` | "Сәйкес пікір жоқ" / "Басқа бағаны таңдаңыз немесе барлық пікірді көрсетіңіз." / "Барлығын көрсету" | |
+| `navNewBooking` | "Жаңа жазылу" | label of the + button (new booking) |

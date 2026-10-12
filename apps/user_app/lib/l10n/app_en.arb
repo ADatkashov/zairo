@@ -1882,5 +1882,8 @@
   "reviewsNoMatchMessage": "Try another rating or show all reviews.",
   "@reviewsNoMatchMessage": {"description": "Reviews screen filter/sort/empty text."},
   "reviewsResetFilters": "Show all",
-  "@reviewsResetFilters": {"description": "Reviews screen filter/sort/empty text."}
+  "@reviewsResetFilters": {"description": "Reviews screen filter/sort/empty text."},
+
+  "navNewBooking": "New booking",
+  "@navNewBooking": {"description": "Screen-reader label of the round + button in the middle of the bottom bar; opens the category picker to start a booking."}
 }
