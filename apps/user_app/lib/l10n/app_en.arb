@@ -1819,5 +1819,32 @@
   "citySelectFailed": "Couldn't change the city. Please try again.",
   "@citySelectFailed": {"description": "citySelectFailed"},
   "chatSendTooltip": "Send",
-  "@chatSendTooltip": {"description": "chatSendTooltip"}
+  "@chatSendTooltip": {"description": "chatSendTooltip"},
+
+  "welcomeTitle1": "Every service nearby",
+  "@welcomeTitle1": {"description": "Headline of the first welcome page, shown once on the first launch."},
+
+  "welcomeBody1": "Beauty, auto and cleaning in one app.",
+  "@welcomeBody1": {"description": "Supporting text of the first welcome page."},
+
+  "welcomeTitle2": "Pick a time and book online",
+  "@welcomeTitle2": {"description": "Headline of the second welcome page."},
+
+  "welcomeBody2": "See open slots and book in a few taps.",
+  "@welcomeBody2": {"description": "Supporting text of the second welcome page."},
+
+  "welcomeTitle3": "See what you pay up front",
+  "@welcomeTitle3": {"description": "Headline of the third welcome page."},
+
+  "welcomeBody3": "The total, the deposit and the rest at the venue, before you confirm.",
+  "@welcomeBody3": {"description": "Supporting text of the third welcome page: payment is shown before the booking is confirmed."},
+
+  "welcomeNext": "Next",
+  "@welcomeNext": {"description": "Button that goes to the next welcome page."},
+
+  "welcomeStart": "Get started",
+  "@welcomeStart": {"description": "Button on the last welcome page that closes the welcome and opens the app."},
+
+  "welcomeSkip": "Skip",
+  "@welcomeSkip": {"description": "Button that closes the welcome without reading the remaining pages."}
 }

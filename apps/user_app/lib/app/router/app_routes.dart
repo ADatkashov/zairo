@@ -8,6 +8,9 @@
 abstract final class AppRoutes {
   static const citySelection = '/city-selection';
 
+  /// The three-page welcome shown once on the very first launch.
+  static const welcome = '/welcome';
+
   /// The Search tab, optionally pre-filtered (`/search?category=beauty&q=…`).
   static String search({String? category, String? query}) {
     final params = <String, String>{

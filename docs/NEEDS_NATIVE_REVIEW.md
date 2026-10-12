@@ -88,3 +88,20 @@ breakdown texts in both apps (`paymentBreakdownTitle`, `paymentTotalPrice`,
 `bookingConfirmationPaidLabel`, `bookingConfirmationRemainingLabel`,
 `bookingPaymentInstructions`, `selectCity`. A `l10n_parity_test.dart` in each
 app now fails if a key is added to English without Russian and Kazakh.
+
+## apps/user_app — welcome pages (added 2026-10-12)
+
+Written for the first-launch welcome (`welcomeTitle1..3`, `welcomeBody1..3`,
+`welcomeNext`, `welcomeStart`, `welcomeSkip`), **not by a native speaker**. They
+read as natural Kazakh to a non-native audit but have not been checked, so they
+belong on the same review list as the rest:
+
+| Key | kk value | What to confirm |
+|---|---|---|
+| `welcomeTitle1` | "Барлық қызметтер жақын жерде" | "жақын жерде" for "nearby" |
+| `welcomeBody1` | "Сұлулық, авто және тазалау қызметтері — бір қолданбада." | "авто" as a loanword; "тазалау" for cleaning services |
+| `welcomeTitle2` | "Уақытты таңдап, онлайн жазылыңыз" | "жазылыңыз" for "book" (as elsewhere in the app) |
+| `welcomeBody2` | "Бос уақытты көріп, бірнеше рет түртіп жазылыңыз." | "бірнеше рет түртіп" for "in a few taps" |
+| `welcomeTitle3` | "Қанша төлейтініңіз бірден көрінеді" | word order and "бірден көрінеді" |
+| `welcomeBody3` | "Жалпы сома, алдын ала төлем және орнында төленетін қалдық — жазылуды растағанға дейін." | "алдын ала төлем" for deposit, "орнында төленетін қалдық" for the rest paid at the venue |
+| `welcomeNext` / `welcomeStart` / `welcomeSkip` | "Әрі қарай" / "Бастау" / "Өткізіп жіберу" | button wording |
