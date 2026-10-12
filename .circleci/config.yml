@@ -267,9 +267,12 @@ jobs:
       - run:
           name: Start MinIO
           command: |
+            # MinIO no longer publishes images (minio/minio is gone from Docker Hub and
+            # quay.io/minio/minio is not pullable), so this uses Bitnami's frozen copy
+            # of the same server, pinned to a tag. Its entrypoint starts the server itself.
             docker run -d --name minio -p 9000:9000 -p 9001:9001 \
               -e MINIO_ROOT_USER=app_factory -e MINIO_ROOT_PASSWORD=app_factory_secret \
-              quay.io/minio/minio:latest server /data --console-address ":9001"
+              bitnamilegacy/minio:2025.7.23-debian-12-r5
             for _ in $(seq 1 30); do
               curl -sf http://localhost:9000/minio/health/live >/dev/null && exit 0
               sleep 1
