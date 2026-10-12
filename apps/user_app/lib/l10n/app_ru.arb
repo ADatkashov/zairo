@@ -659,5 +659,14 @@
   "reviewsBusinessReply": "Ответ бизнеса",
   "reviewsShowMore": "Показать ещё",
   "reviewsError": "Не удалось загрузить отзывы. Попробуйте ещё раз.",
-  "reviewsStarRowSemantic": "{stars, plural, one{{stars} звезда} few{{stars} звезды} many{{stars} звёзд} other{{stars} звезды}}: {count}"
+  "reviewsStarRowSemantic": "{stars, plural, one{{stars} звезда} few{{stars} звезды} many{{stars} звёзд} other{{stars} звезды}}: {count}",
+
+  "reviewsFilterAll": "Все",
+  "reviewsFilterWithText": "С текстом",
+  "reviewsSortNewest": "Сначала новые",
+  "reviewsSortHighest": "Сначала высокие",
+  "reviewsSortLowest": "Сначала низкие",
+  "reviewsNoMatchTitle": "Нет подходящих отзывов",
+  "reviewsNoMatchMessage": "Выберите другую оценку или покажите все отзывы.",
+  "reviewsResetFilters": "Показать все"
 }

@@ -19,11 +19,23 @@ final reviewSummaryProvider = FutureProvider.autoDispose
       return ref.watch(reviewsApiProvider).getSummary(providerId);
     });
 
-typedef PublicReviewsKey = ({String providerId, int size});
+typedef PublicReviewsKey = ({
+  String providerId,
+  int size,
+  int? rating,
+  bool withCommentOnly,
+  ReviewSort sort,
+});
 
 final publicReviewsProvider = FutureProvider.autoDispose
     .family<PublicReviewsPage, PublicReviewsKey>((ref, key) {
       return ref
           .watch(reviewsApiProvider)
-          .getPublicReviews(key.providerId, size: key.size);
+          .getPublicReviews(
+            key.providerId,
+            size: key.size,
+            rating: key.rating,
+            withCommentOnly: key.withCommentOnly,
+            sort: key.sort,
+          );
     });

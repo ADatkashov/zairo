@@ -27,21 +27,36 @@ class ReviewsScreen extends ConsumerStatefulWidget {
 
 class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
   int _size = _pageSize;
+  int? _rating;
+  bool _withCommentOnly = false;
+  ReviewSort _sort = ReviewSort.newest;
+
+  bool get _filtered => _rating != null || _withCommentOnly;
+
+  PublicReviewsKey get _key => (
+    providerId: widget.providerId,
+    size: _size,
+    rating: _rating,
+    withCommentOnly: _withCommentOnly,
+    sort: _sort,
+  );
+
+  /// Any change of filter or order starts again from the first page.
+  void _change(VoidCallback update) => setState(() {
+    update();
+    _size = _pageSize;
+  });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final summaryAsync = ref.watch(reviewSummaryProvider(widget.providerId));
-    final pageAsync = ref.watch(
-      publicReviewsProvider((providerId: widget.providerId, size: _size)),
-    );
+    final pageAsync = ref.watch(publicReviewsProvider(_key));
 
     Future<void> refresh() async {
       ref.invalidate(reviewSummaryProvider(widget.providerId));
-      ref.invalidate(
-        publicReviewsProvider((providerId: widget.providerId, size: _size)),
-      );
+      ref.invalidate(publicReviewsProvider(_key));
       await ref.read(reviewSummaryProvider(widget.providerId).future);
     }
 
@@ -76,6 +91,15 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
               children: [
                 ReviewSummaryCard(summary: summary),
                 const SizedBox(height: FactorySpacing.space4),
+                _FilterBar(
+                  rating: _rating,
+                  withCommentOnly: _withCommentOnly,
+                  sort: _sort,
+                  onRating: (v) => _change(() => _rating = v),
+                  onWithComment: (v) => _change(() => _withCommentOnly = v),
+                  onSort: (v) => _change(() => _sort = v),
+                ),
+                const SizedBox(height: FactorySpacing.space3),
                 ...pageAsync.when(
                   loading: () => [
                     const Padding(
@@ -90,6 +114,22 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                     ),
                   ],
                   data: (page) => [
+                    if (page.reviews.isEmpty)
+                      FactoryEmptyState(
+                        compact: true,
+                        icon: Symbols.filter_alt_off_rounded,
+                        title: l10n.reviewsNoMatchTitle,
+                        message: l10n.reviewsNoMatchMessage,
+                        actionLabel: _filtered
+                            ? l10n.reviewsResetFilters
+                            : null,
+                        onAction: _filtered
+                            ? () => _change(() {
+                                _rating = null;
+                                _withCommentOnly = false;
+                              })
+                            : null,
+                      ),
                     for (final review in page.reviews) ...[
                       ReviewCard(review: review),
                       const SizedBox(height: FactorySpacing.space3),
@@ -107,6 +147,83 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
           );
         },
       ),
+    );
+  }
+}
+
+/// Two rows of chips: what to show (all / a star count / only with text) and
+/// the order (newest / highest / lowest). Both scroll sideways on a narrow
+/// phone instead of wrapping into a tall block above the list.
+class _FilterBar extends StatelessWidget {
+  const _FilterBar({
+    required this.rating,
+    required this.withCommentOnly,
+    required this.sort,
+    required this.onRating,
+    required this.onWithComment,
+    required this.onSort,
+  });
+
+  final int? rating;
+  final bool withCommentOnly;
+  final ReviewSort sort;
+  final ValueChanged<int?> onRating;
+  final ValueChanged<bool> onWithComment;
+  final ValueChanged<ReviewSort> onSort;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final sortLabels = {
+      ReviewSort.newest: l10n.reviewsSortNewest,
+      ReviewSort.highest: l10n.reviewsSortHighest,
+      ReviewSort.lowest: l10n.reviewsSortLowest,
+    };
+
+    Widget row(List<Widget> chips) => SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final chip in chips) ...[chip, const SizedBox(width: 8)],
+        ],
+      ),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        row([
+          FactoryChip(
+            label: l10n.reviewsFilterAll,
+            selected: rating == null && !withCommentOnly,
+            onTap: () {
+              onRating(null);
+              onWithComment(false);
+            },
+          ),
+          for (var stars = 5; stars >= 1; stars--)
+            FactoryChip(
+              label: '$stars',
+              icon: Symbols.star_rounded,
+              selected: rating == stars,
+              onTap: () => onRating(rating == stars ? null : stars),
+            ),
+          FactoryChip(
+            label: l10n.reviewsFilterWithText,
+            selected: withCommentOnly,
+            onTap: () => onWithComment(!withCommentOnly),
+          ),
+        ]),
+        const SizedBox(height: 8),
+        row([
+          for (final entry in sortLabels.entries)
+            FactoryChip(
+              label: entry.value,
+              selected: sort == entry.key,
+              onTap: () => onSort(entry.key),
+            ),
+        ]),
+      ],
     );
   }
 }

@@ -1865,5 +1865,22 @@
   "reviewsError": "Could not load reviews. Please try again.",
   "@reviewsError": {"description": "Reviews load error."},
   "reviewsStarRowSemantic": "{stars, plural, one{{stars} star} other{{stars} stars}}: {count}",
-  "@reviewsStarRowSemantic": {"description": "Screen reader label for a star-distribution bar.", "placeholders": {"stars": {"type": "int"}, "count": {"type": "int"}}}
+  "@reviewsStarRowSemantic": {"description": "Screen reader label for a star-distribution bar.", "placeholders": {"stars": {"type": "int"}, "count": {"type": "int"}}},
+
+  "reviewsFilterAll": "All",
+  "@reviewsFilterAll": {"description": "Reviews screen filter/sort/empty text."},
+  "reviewsFilterWithText": "With text",
+  "@reviewsFilterWithText": {"description": "Reviews screen filter/sort/empty text."},
+  "reviewsSortNewest": "Newest",
+  "@reviewsSortNewest": {"description": "Reviews screen filter/sort/empty text."},
+  "reviewsSortHighest": "Highest rated",
+  "@reviewsSortHighest": {"description": "Reviews screen filter/sort/empty text."},
+  "reviewsSortLowest": "Lowest rated",
+  "@reviewsSortLowest": {"description": "Reviews screen filter/sort/empty text."},
+  "reviewsNoMatchTitle": "No matching reviews",
+  "@reviewsNoMatchTitle": {"description": "Reviews screen filter/sort/empty text."},
+  "reviewsNoMatchMessage": "Try another rating or show all reviews.",
+  "@reviewsNoMatchMessage": {"description": "Reviews screen filter/sort/empty text."},
+  "reviewsResetFilters": "Show all",
+  "@reviewsResetFilters": {"description": "Reviews screen filter/sort/empty text."}
 }

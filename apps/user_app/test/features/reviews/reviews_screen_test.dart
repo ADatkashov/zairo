@@ -21,6 +21,7 @@ class _FakeApi extends ReviewsApi {
   final List<PublicReview> reviews;
   final bool hasMore;
   final requestedSizes = <int>[];
+  final calls = <({int? rating, bool withCommentOnly, ReviewSort sort})>[];
 
   @override
   Future<ReviewSummary> getSummary(String providerId) async => summary;
@@ -29,8 +30,12 @@ class _FakeApi extends ReviewsApi {
   Future<PublicReviewsPage> getPublicReviews(
     String providerId, {
     int size = 20,
+    int? rating,
+    bool withCommentOnly = false,
+    ReviewSort sort = ReviewSort.newest,
   }) async {
     requestedSizes.add(size);
+    calls.add((rating: rating, withCommentOnly: withCommentOnly, sort: sort));
     return PublicReviewsPage(reviews: reviews, hasMore: hasMore);
   }
 }
@@ -156,6 +161,80 @@ void main() {
     await tester.pumpAndSettle();
     expect(api.requestedSizes.last, 40);
   });
+
+  testWidgets('filter and sort chips re-query the server and restart paging', (
+    tester,
+  ) async {
+    final api = _FakeApi(
+      summary: const ReviewSummary(
+        average: 5,
+        total: 30,
+        distribution: [0, 0, 0, 0, 30],
+      ),
+      reviews: [_review('r1', comment: 'x')],
+      hasMore: true,
+    );
+    await _pump(tester, api);
+    await tester.ensureVisible(find.text('Show more'));
+    await tester.tap(find.text('Show more'));
+    await tester.pumpAndSettle();
+    expect(api.requestedSizes.last, 40);
+
+    await tester.tap(find.text('With text'));
+    await tester.pumpAndSettle();
+    expect(api.calls.last, (
+      rating: null,
+      withCommentOnly: true,
+      sort: ReviewSort.newest,
+    ));
+    expect(
+      api.requestedSizes.last,
+      20,
+      reason: 'a new filter starts from the first page',
+    );
+
+    await tester.tap(find.text('Highest rated'));
+    await tester.pumpAndSettle();
+    expect(api.calls.last, (
+      rating: null,
+      withCommentOnly: true,
+      sort: ReviewSort.highest,
+    ));
+
+    await tester.tap(find.text('All'));
+    await tester.pumpAndSettle();
+    expect(api.calls.last.withCommentOnly, isFalse);
+    expect(api.calls.last.rating, isNull);
+  });
+
+  testWidgets(
+    'a star chip filters, tapping it again clears, and an empty result offers a reset',
+    (tester) async {
+      final api = _FakeApi(
+        summary: const ReviewSummary(
+          average: 5,
+          total: 30,
+          distribution: [0, 0, 0, 0, 30],
+        ),
+      );
+      await _pump(tester, api);
+      expect(find.text('No matching reviews'), findsOneWidget);
+      expect(
+        find.text('Show all'),
+        findsNothing,
+        reason: 'nothing to reset yet',
+      );
+
+      await tester.tap(find.widgetWithText(FactoryChip, '3'));
+      await tester.pumpAndSettle();
+      expect(api.calls.last.rating, 3);
+      expect(find.text('Show all'), findsOneWidget);
+
+      await tester.tap(find.text('Show all'));
+      await tester.pumpAndSettle();
+      expect(api.calls.last.rating, isNull);
+    },
+  );
 
   testWidgets('renders in Russian and Kazakh without overflow at large text', (
     tester,

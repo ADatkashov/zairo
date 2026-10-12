@@ -659,5 +659,14 @@
   "reviewsBusinessReply": "Бизнестің жауабы",
   "reviewsShowMore": "Тағы көрсету",
   "reviewsError": "Пікірлерді жүктеу мүмкін болмады. Қайталап көріңіз.",
-  "reviewsStarRowSemantic": "{stars} жұлдыз: {count}"
+  "reviewsStarRowSemantic": "{stars} жұлдыз: {count}",
+
+  "reviewsFilterAll": "Барлығы",
+  "reviewsFilterWithText": "Мәтінімен",
+  "reviewsSortNewest": "Алдымен жаңалары",
+  "reviewsSortHighest": "Алдымен жоғары бағалар",
+  "reviewsSortLowest": "Алдымен төмен бағалар",
+  "reviewsNoMatchTitle": "Сәйкес пікір жоқ",
+  "reviewsNoMatchMessage": "Басқа бағаны таңдаңыз немесе барлық пікірді көрсетіңіз.",
+  "reviewsResetFilters": "Барлығын көрсету"
 }

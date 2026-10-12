@@ -113,8 +113,25 @@ public class ReviewService {
      * the controller turns it into the privacy-safe public DTO.
      */
     @Transactional(readOnly = true)
-    public Page<ReviewRepository.ProviderReviewRow> listPublic(UUID providerId, Pageable pageable) {
-        return reviewRepository.findByProviderId(providerId, pageable);
+    public Page<ReviewRepository.ProviderReviewRow> listPublic(UUID providerId, Integer rating,
+            boolean withCommentOnly, String sort, Pageable pageable) {
+        if (rating != null && (rating < 1 || rating > 5)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "rating must be between 1 and 5: " + rating);
+        }
+        return reviewRepository.findPublic(providerId, rating, withCommentOnly, normalizeSort(sort), pageable);
+    }
+
+    /** newest (default) / highest / lowest, case-insensitive; anything else is a 400. */
+    static String normalizeSort(String sort) {
+        if (sort == null || sort.isBlank()) {
+            return "newest";
+        }
+        String s = sort.trim().toLowerCase(java.util.Locale.ROOT);
+        if (!s.equals("newest") && !s.equals("highest") && !s.equals("lowest")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "sort must be newest, highest or lowest: " + sort);
+        }
+        return s;
     }
 
     @Transactional(readOnly = true)

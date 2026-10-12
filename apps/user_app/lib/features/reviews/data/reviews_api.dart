@@ -34,13 +34,24 @@ class ReviewsApi {
   }
 
   /// Newest first; the first [size] reviews.
+  /// The first [size] reviews, newest first unless [sort] says otherwise.
+  /// [rating] (1-5) and [withCommentOnly] filter on the server.
   Future<PublicReviewsPage> getPublicReviews(
     String providerId, {
     int size = 20,
+    int? rating,
+    bool withCommentOnly = false,
+    ReviewSort sort = ReviewSort.newest,
   }) async {
     final response = await _dioClient.get(
       '/providers/$providerId/reviews/public',
-      queryParameters: {'page': 0, 'size': size},
+      queryParameters: {
+        'page': 0,
+        'size': size,
+        'rating': ?rating,
+        if (withCommentOnly) 'withComment': true,
+        if (sort != ReviewSort.newest) 'sort': sort.name,
+      },
     );
     return PublicReviewsPage.fromJson(response.data as Map<String, dynamic>);
   }
