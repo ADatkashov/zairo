@@ -684,5 +684,6 @@
   "bookingReviewConfirmPay": "Растап, төлеу",
   "bookingReviewConfirmFree": "Жазылуды растау",
   "bookingReviewChange": "Өзгерту",
-  "bookingReviewTotal": "Барлығы"
+  "bookingReviewTotal": "Барлығы",
+  "bookingStepsDone": "Барлық қадам аяқталды"
 }

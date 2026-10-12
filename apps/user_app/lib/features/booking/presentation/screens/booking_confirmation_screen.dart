@@ -14,6 +14,7 @@ import '../../../discovery/data/models/service_summary.dart';
 import '../../../payments/presentation/widgets/payment_status_chip.dart';
 import '../../data/models/booking.dart';
 import '../providers/booking_providers.dart';
+import '../widgets/booking_stepper.dart';
 import '../widgets/booking_payment_summary.dart';
 
 /// Board 19 (v2 design audit) — the booking flow previously ended with a
@@ -151,6 +152,8 @@ class BookingConfirmationScreen extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.all(FactorySpacing.space4),
                 children: [
+                  const BookingStepper(step: BookingStepper.count),
+                  const SizedBox(height: FactorySpacing.space6),
                   const Center(child: _SuccessMark()),
                   const SizedBox(height: FactorySpacing.space4),
                   Text(

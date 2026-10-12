@@ -120,3 +120,4 @@ belong on the same review list as the rest:
 | `bookingReviewTitle` / `bookingReviewConfirmPay` / `bookingReviewConfirmFree` / `bookingReviewChange` | "Жазылуды тексеріңіз" / "Растап, төлеу" / "Жазылуды растау" / "Өзгерту" | pre-payment summary sheet |
 | `bookingReviewServiceLabel` / `bookingReviewPersonLabel` / `bookingReviewAnyPerson` / `bookingReviewPlaceLabel` | "Қызмет" / "Маман" / "Алғашқы бос маман" / "Бизнес" | summary row labels |
 | `bookingReviewTotal` | "Барлығы" | total price row |
+| `bookingStepsDone` | "Барлық қадам аяқталды" | progress bar, booking confirmed |
