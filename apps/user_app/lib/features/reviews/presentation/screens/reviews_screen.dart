@@ -1,9 +1,11 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../../app/router/app_routes.dart';
 import '../../../../core/formatting/initials.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../data/models/public_review.dart';
@@ -63,6 +65,31 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
     return Scaffold(
       backgroundColor: colors.bg,
       appBar: FactoryAppBar(title: widget.providerName ?? l10n.reviewsTitle),
+      // Always there, also when there are no reviews: reading them is the
+      // last step before deciding, so "book" must not need a trip back.
+      // Replaces this screen so Back returns to wherever the user came from
+      // (usually the business page), not to a second copy of this screen.
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(
+            FactorySpacing.space4,
+            FactorySpacing.space3,
+            FactorySpacing.space4,
+            FactorySpacing.space3,
+          ),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            border: Border(top: BorderSide(color: colors.border)),
+          ),
+          child: FactoryButton(
+            label: l10n.bookButton,
+            expand: true,
+            onPressed: () => context.pushReplacement(
+              AppRoutes.provider(widget.providerId, book: true),
+            ),
+          ),
+        ),
+      ),
       body: summaryAsync.when(
         loading: () => const FactoryLoadingState(),
         error: (_, _) => Center(
