@@ -103,4 +103,25 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
 
         Instant getBusinessReplyAt();
     }
+
+    /**
+     * Review count per star for one provider — same indexed join as the
+     * queries above, grouped by rating. Stars nobody gave simply don't
+     * appear; {@link ReviewSummaryService}-style callers fill the gaps with 0.
+     */
+    @Query(value = """
+            select r.rating as rating, count(*) as total
+            from review r
+            join booking b on b.id = r.booking_id
+            join availability_slot s on s.id = b.availability_slot_id
+            where s.provider_id = :providerId
+            group by r.rating
+            """, nativeQuery = true)
+    List<RatingCountRow> countByRatingForProvider(@Param("providerId") UUID providerId);
+
+    interface RatingCountRow {
+        int getRating();
+
+        long getTotal();
+    }
 }

@@ -3,8 +3,10 @@ package com.zairo.factory.reviews;
 import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.reviews.ReviewDtos.CreateReviewRequest;
 import com.zairo.factory.reviews.ReviewDtos.ProviderReviewResponse;
+import com.zairo.factory.reviews.ReviewDtos.PublicReviewResponse;
 import com.zairo.factory.reviews.ReviewDtos.ReplyToReviewRequest;
 import com.zairo.factory.reviews.ReviewDtos.ReviewResponse;
+import com.zairo.factory.reviews.ReviewDtos.ReviewSummaryResponse;
 import com.zairo.factory.users.User;
 import com.zairo.factory.users.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,6 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -119,5 +122,35 @@ public class ReviewController {
         return rows.map(row -> new ProviderReviewResponse(row.getId(), row.getBookingId(),
                 namesByUserId.getOrDefault(row.getUserId(), "Customer"), row.getRating(), row.getComment(),
                 row.getCreatedAt(), row.getBusinessReply(), row.getBusinessReplyAt()));
+    }
+
+    @Operation(summary = "List a provider's public reviews", description = """
+            Public (no token), newest first, page size capped at 50. Authors are abbreviated to first name \
+            plus last initial; no booking or user ids are exposed. Includes the business's reply when there \
+            is one.""")
+    @ApiResponse(responseCode = "200", description = "Page of reviews")
+    @GetMapping("/api/v1/providers/{providerId}/reviews/public")
+    public Page<PublicReviewResponse> listPublic(
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId, Pageable pageable) {
+        Pageable capped = PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), 50));
+        Page<ReviewRepository.ProviderReviewRow> rows = reviewService.listPublic(providerId, capped);
+
+        Map<UUID, String> namesByUserId = userRepository
+                .findAllById(rows.map(ReviewRepository.ProviderReviewRow::getUserId).toList()).stream()
+                .collect(Collectors.toMap(User::getId, u -> ReviewerNames.abbreviate(u.getDisplayName())));
+
+        return rows.map(row -> new PublicReviewResponse(row.getId(),
+                namesByUserId.getOrDefault(row.getUserId(), ReviewerNames.FALLBACK), row.getRating(),
+                row.getComment(), row.getCreatedAt(), row.getBusinessReply(), row.getBusinessReplyAt()));
+    }
+
+    @Operation(summary = "A provider's rating summary", description = """
+            Public (no token). Average (one decimal), total count and the count per star 1..5 -- the data \
+            behind the "4.8 from 128 reviews" header and distribution bars.""")
+    @ApiResponse(responseCode = "200", description = "The summary; total 0 and average null when unreviewed")
+    @GetMapping("/api/v1/providers/{providerId}/reviews/summary")
+    public ReviewSummaryResponse summary(
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId) {
+        return reviewService.summarize(providerId);
     }
 }
