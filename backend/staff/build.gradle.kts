@@ -28,4 +28,8 @@ dependencies {
 
     // Picking an existing user reads their display name / avatar.
     implementation(project(":users"))
+
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.assertj:assertj-core")
 }
