@@ -275,4 +275,21 @@ class CatalogApiTests {
             assertThat(service.get("nameEn")).isEqualTo("Manicure");
         });
     }
+
+    @Test
+    void largeBusinessTypesGroupTheirServicesIntoSubspheres() {
+        ResponseEntity<List> subspheres = restTemplate.getForEntity(
+                "/api/v1/business-types/" + SEEDED_BEAUTY_SALON_BUSINESS_TYPE_ID + "/subspheres", List.class);
+        assertThat(subspheres.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(subspheres.getBody()).extracting(entry -> ((Map<?, ?>) entry).get("code"))
+                .contains("beauty_salon_hair", "beauty_salon_nails", "beauty_salon_face");
+
+        Map<?, ?> hair = (Map<?, ?>) subspheres.getBody().stream()
+                .filter(entry -> "beauty_salon_hair".equals(((Map<?, ?>) entry).get("code")))
+                .findFirst().orElseThrow();
+        ResponseEntity<List> hairServices = restTemplate.getForEntity(
+                "/api/v1/subspheres/" + hair.get("id") + "/services", List.class);
+        assertThat(hairServices.getBody()).extracting(entry -> ((Map<?, ?>) entry).get("nameEn"))
+                .contains("Women's haircut", "Hair coloring");
+    }
 }
