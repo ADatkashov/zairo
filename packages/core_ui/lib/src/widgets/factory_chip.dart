@@ -14,12 +14,15 @@ import '../theme/factory_spacing.dart';
 /// check mark (state is never colour alone), not a solid primary pill — it
 /// stays calm in a long row of filters and keeps AA contrast on every theme.
 class FactoryChip extends StatelessWidget {
-  const FactoryChip({super.key, required this.label, this.selected = false, this.onTap, this.icon});
+  const FactoryChip({super.key, required this.label, this.selected = false, this.onTap, this.icon, this.iconFilled = false});
 
   final String label;
   final bool selected;
   final VoidCallback? onTap;
   final IconData? icon;
+
+  /// Draw [icon] solid instead of outlined (a rating star, say).
+  final bool iconFilled;
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +48,7 @@ class FactoryChip extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (icon != null || selected) ...[
-                Icon(icon ?? Symbols.check_rounded, size: 12, color: fg),
+                Icon(icon ?? Symbols.check_rounded, size: 12, fill: icon != null && iconFilled ? 1 : 0, color: fg),
                 const SizedBox(width: 6),
               ],
               Flexible(
