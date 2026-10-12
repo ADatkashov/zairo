@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public final class ReviewDtos {
@@ -48,5 +49,29 @@ public final class ReviewDtos {
             @Schema(description = "The reviewing customer's display name.", example = "Aisha K.") String customerName,
             int rating, String comment, Instant createdAt,
             String businessReply, Instant businessReplyAt) {
+    }
+
+    /**
+     * One row of the public reviews list. Deliberately has no bookingId or
+     * userId, and the author is abbreviated ("Aisha K.") — anyone can read
+     * this, so it must not identify a customer beyond a first name.
+     */
+    public record PublicReviewResponse(
+            UUID id,
+            @Schema(description = "First name plus last initial; never an email or phone.", example = "Aisha K.")
+            String authorName,
+            @Schema(example = "5") int rating,
+            @Schema(example = "Loved the service!") String comment,
+            Instant createdAt,
+            @Schema(description = "The business's reply — null until they post one.") String businessReply,
+            Instant businessReplyAt) {
+    }
+
+    public record ReviewSummaryResponse(
+            @Schema(description = "Mean rating rounded to one decimal; null when there are no reviews.",
+                    example = "4.8") Double average,
+            @Schema(example = "128") long total,
+            @Schema(description = "Review count for stars 1..5, always five entries (index 0 = 1 star).",
+                    example = "[0, 1, 3, 20, 104]") List<Long> distribution) {
     }
 }

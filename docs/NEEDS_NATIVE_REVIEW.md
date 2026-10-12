@@ -88,3 +88,36 @@ breakdown texts in both apps (`paymentBreakdownTitle`, `paymentTotalPrice`,
 `bookingConfirmationPaidLabel`, `bookingConfirmationRemainingLabel`,
 `bookingPaymentInstructions`, `selectCity`. A `l10n_parity_test.dart` in each
 app now fails if a key is added to English without Russian and Kazakh.
+
+## apps/user_app — welcome pages (added 2026-10-12)
+
+Written for the first-launch welcome (`welcomeTitle1..3`, `welcomeBody1..3`,
+`welcomeNext`, `welcomeStart`, `welcomeSkip`), **not by a native speaker**. They
+read as natural Kazakh to a non-native audit but have not been checked, so they
+belong on the same review list as the rest:
+
+| Key | kk value | What to confirm |
+|---|---|---|
+| `welcomeTitle1` | "Барлық қызметтер жақын жерде" | "жақын жерде" for "nearby" |
+| `welcomeBody1` | "Сұлулық, авто және тазалау қызметтері — бір қолданбада." | "авто" as a loanword; "тазалау" for cleaning services |
+| `welcomeTitle2` | "Уақытты таңдап, онлайн жазылыңыз" | "жазылыңыз" for "book" (as elsewhere in the app) |
+| `welcomeBody2` | "Бос уақытты көріп, бірнеше рет түртіп жазылыңыз." | "бірнеше рет түртіп" for "in a few taps" |
+| `welcomeTitle3` | "Қанша төлейтініңіз бірден көрінеді" | word order and "бірден көрінеді" |
+| `welcomeBody3` | "Жалпы сома, алдын ала төлем және орнында төленетін қалдық — жазылуды растағанға дейін." | "алдын ала төлем" for deposit, "орнында төленетін қалдық" for the rest paid at the venue |
+| `welcomeNext` / `welcomeStart` / `welcomeSkip` | "Әрі қарай" / "Бастау" / "Өткізіп жіберу" | button wording |
+| `reviewsTitle` / `reviewsSeeAll` | "Пікірлер" / "Барлық пікір" | "пікір" vs "шолу" for reviews |
+| `reviewsBasedOn` | "{count} пікір негізінде" | Kazakh has no plural forms here; "негізінде" for "based on" |
+| `reviewsEmptyTitle` / `reviewsEmptyMessage` | "Әзірге пікір жоқ" / "Пікірлер келуден кейін пайда болады. Жазылып, алғашқы болып әсеріңізбен бөлісіңіз." | natural phrasing of "after a visit" |
+| `reviewsBusinessReply` | "Бизнестің жауабы" | |
+| `reviewsShowMore` / `reviewsError` / `reviewsStarRowSemantic` | "Тағы көрсету" / "Пікірлерді жүктеу мүмкін болмады. Қайталап көріңіз." / "{stars} жұлдыз: {count}" | |
+| `reviewsFilterAll` / `reviewsFilterWithText` | "Барлығы" / "Мәтінімен" | filter chips |
+| `reviewsSortNewest` / `reviewsSortHighest` / `reviewsSortLowest` | "Алдымен жаңалары" / "Алдымен жоғары бағалар" / "Алдымен төмен бағалар" | sort chips; length on a narrow phone |
+| `reviewsNoMatchTitle` / `reviewsNoMatchMessage` / `reviewsResetFilters` | "Сәйкес пікір жоқ" / "Басқа бағаны таңдаңыз немесе барлық пікірді көрсетіңіз." / "Барлығын көрсету" | |
+| `navNewBooking` | "Жаңа жазылу" | label of the + button (new booking) |
+| `navQuickActions` (business_admin, platform_admin) | "Жылдам әрекеттер" | label of the + button (quick actions) |
+| `bookingStepService` / `bookingStepTime` / `bookingStepConfirm` | "Қызмет" / "Уақыт" / "Төлем" | booking progress bar labels |
+| `bookingStepSemantic` | "{step}-қадам / {total}: {label}" | screen-reader wording "step N of M" |
+| `bookingReviewTitle` / `bookingReviewConfirmPay` / `bookingReviewConfirmFree` / `bookingReviewChange` | "Жазылуды тексеріңіз" / "Растап, төлеу" / "Жазылуды растау" / "Өзгерту" | pre-payment summary sheet |
+| `bookingReviewServiceLabel` / `bookingReviewPersonLabel` / `bookingReviewAnyPerson` / `bookingReviewPlaceLabel` | "Қызмет" / "Маман" / "Алғашқы бос маман" / "Бизнес" | summary row labels |
+| `bookingReviewTotal` | "Барлығы" | total price row |
+| `bookingStepsDone` | "Барлық қадам аяқталды" | progress bar, booking confirmed |

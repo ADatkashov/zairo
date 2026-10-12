@@ -82,6 +82,23 @@ void main() {
     expect(find.text('Log out'), findsOneWidget);
   });
 
+  testWidgets('the header is brand-coloured with readable text, and menu rows carry tinted icon plates', (tester) async {
+    await tester.pumpWidget(_wrap(_LoggedInAuthController()));
+    await tester.pumpAndSettle();
+
+    final colors = FactoryColors.light;
+    // Name and email sit on the green header, so they use onPrimary.
+    expect(tester.widget<Text>(find.text('Aigerim K.')).style?.color, colors.onPrimary);
+    expect(tester.widget<Text>(find.text('aigerim@example.com')).style?.color?.a, closeTo(0.82, 0.01));
+
+    // The favourites row shows its heart on a coral plate, not a bare grey outline.
+    await tester.scrollUntilVisible(find.text('My vehicles'), 200);
+    final plates = tester
+        .widgetList<Container>(find.byType(Container))
+        .where((c) => c.decoration is BoxDecoration && (c.decoration! as BoxDecoration).color == colors.coralTint);
+    expect(plates, isNotEmpty);
+  });
+
   testWidgets('shows booking and favorite counts in the stat row', (tester) async {
     final booking = Booking(
       id: 'booking-1',

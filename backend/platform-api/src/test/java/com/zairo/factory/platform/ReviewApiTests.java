@@ -219,7 +219,51 @@ class ReviewApiTests {
         assertThat(repliedAgain.getBody().get("businessReply")).isEqualTo("Update: we fixed our scheduling!");
     }
 
-    private record BookingContext(Registered owner, Registered customer, UUID bookingId) {
+    @Test
+    void publicReviewsAndSummaryNeedNoTokenAndHideCustomerIdentity() {
+        BookingContext ctx = createConfirmedBooking("pub");
+        restTemplate.exchange("/api/v1/bookings/" + ctx.bookingId() + "/complete", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(ctx.owner().accessToken())), Map.class);
+        UUID reviewId = UUID.fromString(restTemplate.exchange("/api/v1/bookings/" + ctx.bookingId() + "/reviews",
+                HttpMethod.POST, new HttpEntity<>(new CreateReviewRequest(4, "Nice"),
+                        TestAuth.authHeaders(ctx.customer().accessToken())), Map.class).getBody().get("id")
+                .toString());
+        restTemplate.exchange("/api/v1/reviews/" + reviewId + "/reply", HttpMethod.POST,
+                new HttpEntity<>(Map.of("reply", "Thanks!"), TestAuth.authHeaders(ctx.owner().accessToken())),
+                Map.class);
+        UUID providerId = ctx.providerId();
+
+        // No Authorization header on either call.
+        ResponseEntity<Map> page = restTemplate.getForEntity("/api/v1/providers/" + providerId
+                + "/reviews/public", Map.class);
+        assertThat(page.getStatusCode()).isEqualTo(HttpStatus.OK);
+        var first = (Map<?, ?>) ((java.util.List<?>) page.getBody().get("content")).get(0);
+        assertThat(first.get("comment")).isEqualTo("Nice");
+        assertThat(first.get("businessReply")).isEqualTo("Thanks!");
+        assertThat(first.containsKey("bookingId")).isFalse();
+        assertThat(first.containsKey("userId")).isFalse();
+        assertThat(first.containsKey("customerName")).isFalse();
+        assertThat(first.get("authorName").toString()).doesNotContain("@");
+
+        // Filters and sort: the only review is 4 stars with text.
+        Map<?, ?> fiveStars = restTemplate.getForEntity("/api/v1/providers/" + providerId
+                + "/reviews/public?rating=5", Map.class).getBody();
+        assertThat((java.util.List<?>) fiveStars.get("content")).isEmpty();
+        Map<?, ?> withText = restTemplate.getForEntity("/api/v1/providers/" + providerId
+                + "/reviews/public?withComment=true&sort=lowest", Map.class).getBody();
+        assertThat((java.util.List<?>) withText.get("content")).hasSize(1);
+        assertThat(restTemplate.getForEntity("/api/v1/providers/" + providerId
+                + "/reviews/public?sort=bogus", Map.class).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+
+        ResponseEntity<Map> summary = restTemplate.getForEntity("/api/v1/providers/" + providerId
+                + "/reviews/summary", Map.class);
+        assertThat(summary.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(summary.getBody().get("total")).isEqualTo(1);
+        assertThat(summary.getBody().get("average")).isEqualTo(4.0);
+        assertThat(summary.getBody().get("distribution")).isEqualTo(java.util.List.of(0, 0, 0, 1, 0));
+    }
+
+    private record BookingContext(Registered owner, Registered customer, UUID bookingId, UUID providerId) {
     }
 
     /** Owner -> provider -> service -> slot -> booking -> paid (CONFIRMED, not yet completed) — the shared
@@ -258,6 +302,6 @@ class ReviewApiTests {
         restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments", HttpMethod.POST,
                 new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
 
-        return new BookingContext(owner, customer, bookingId);
+        return new BookingContext(owner, customer, bookingId, providerId);
     }
 }

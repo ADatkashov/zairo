@@ -160,6 +160,23 @@ void main() {
     expect(find.byIcon(Symbols.check_rounded), findsNothing);
   });
 
+  testWidgets('a selected FactoryChip with its own icon shows the check as well', (tester) async {
+    await tester.pumpWidget(_wrap(const FactoryChip(label: '5', icon: Symbols.star_rounded, selected: true)));
+    expect(find.byIcon(Symbols.check_rounded), findsOneWidget);
+    expect(find.byIcon(Symbols.star_rounded), findsOneWidget);
+
+    await tester.pumpWidget(_wrap(const FactoryChip(label: '5', icon: Symbols.star_rounded)));
+    expect(find.byIcon(Symbols.check_rounded), findsNothing);
+  });
+
+  testWidgets('FactoryChip draws its icon outlined by default and solid with iconFilled', (tester) async {
+    await tester.pumpWidget(_wrap(const FactoryChip(label: '5', icon: Symbols.star_rounded)));
+    expect(tester.widget<Icon>(find.byIcon(Symbols.star_rounded)).fill, 0);
+
+    await tester.pumpWidget(_wrap(const FactoryChip(label: '5', icon: Symbols.star_rounded, iconFilled: true)));
+    expect(tester.widget<Icon>(find.byIcon(Symbols.star_rounded)).fill, 1);
+  });
+
   testWidgets('input fields use the tonal fill with a hairline and a 2px focus ring', (tester) async {
     final theme = factoryLightTheme().inputDecorationTheme;
     expect(theme.filled, isTrue);
@@ -167,6 +184,113 @@ void main() {
     expect((theme.enabledBorder as OutlineInputBorder).borderSide.color, FactoryColors.light.border);
     expect((theme.focusedBorder as OutlineInputBorder).borderSide.width, 2);
     expect((theme.errorBorder as OutlineInputBorder).borderSide.color, FactoryColors.light.error);
+  });
+
+  testWidgets('FactoryPhotoPlaceholder shows the category icon, and nothing without one', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        SizedBox(
+          width: 160,
+          height: 128,
+          child: FactoryPhotoPlaceholder(icon: Symbols.content_cut_rounded, color: FactoryColors.light.coral, tint: FactoryColors.light.coralTint),
+        ),
+      ),
+    );
+    expect(find.byIcon(Symbols.content_cut_rounded), findsOneWidget);
+    // The icon is drawn inside a box that scales with the slot, never past 56.
+    expect(tester.getSize(find.byType(FittedBox)).height, inInclusiveRange(40, 56));
+
+    // A small side-photo slot gets a smaller icon, still inside the slot.
+    await tester.pumpWidget(
+      _wrap(const SizedBox(width: 84, height: 84, child: FactoryPhotoPlaceholder(icon: Symbols.content_cut_rounded))),
+    );
+    expect(tester.getSize(find.byType(FittedBox)).height, lessThan(40));
+
+    await tester.pumpWidget(_wrap(const SizedBox(width: 160, height: 128, child: FactoryPhotoPlaceholder())));
+    expect(find.byType(Icon), findsNothing);
+  });
+
+  testWidgets('FactoryProviderCard without a photo falls back to the category placeholder', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        SizedBox(
+          width: 168,
+          child: FactoryProviderCard(
+            title: 'Studio',
+            placeholderIcon: Symbols.directions_car_filled_rounded,
+            categoryLabel: 'Auto',
+            categoryColor: FactoryColors.light.lavender,
+            categoryTint: FactoryColors.light.lavenderTint,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(FactoryPhotoPlaceholder), findsOneWidget);
+    expect(find.byIcon(Symbols.directions_car_filled_rounded), findsOneWidget);
+  });
+
+  testWidgets('FactoryTimeSlot keeps its own width inside a Wrap instead of filling the row', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        const SizedBox(
+          width: 300,
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              FactoryTimeSlot(label: '10:00'),
+              FactoryTimeSlot(label: '12:00'),
+              FactoryTimeSlot(label: '14:30', state: FactoryTimeSlotState.selected),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final slots = find.byType(FactoryTimeSlot);
+    // Three slots fit on one row, each far narrower than the 300px offered.
+    for (var i = 0; i < 3; i++) {
+      expect(tester.getSize(slots.at(i)).width, lessThan(100));
+      expect(tester.getSize(slots.at(i)).height, greaterThanOrEqualTo(44));
+    }
+    expect(tester.getTopLeft(slots.at(0)).dy, tester.getTopLeft(slots.at(2)).dy);
+  });
+
+  testWidgets('FactoryProviderCard shows a Book button that acts on its own, not as a card tap', (tester) async {
+    var cardTaps = 0;
+    var bookTaps = 0;
+    await tester.pumpWidget(
+      _wrap(
+        SizedBox(
+          width: 168,
+          child: FactoryProviderCard(
+            title: 'Studio',
+            onTap: () => cardTaps++,
+            actionLabel: 'Book',
+            onAction: () => bookTaps++,
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Book'));
+    expect(bookTaps, 1);
+    expect(cardTaps, 0);
+
+    // The button is a full phone tap target.
+    expect(tester.getSize(find.byType(FilledButton)).height, greaterThanOrEqualTo(44));
+
+    await tester.tap(find.text('Studio'));
+    expect(cardTaps, 1);
+  });
+
+  testWidgets('FactoryProviderCard has no button unless it is given both a label and an action', (tester) async {
+    await tester.pumpWidget(_wrap(const SizedBox(width: 168, child: FactoryProviderCard(title: 'Studio', actionLabel: 'Book'))));
+    expect(find.byType(FilledButton), findsNothing);
+
+    await tester.pumpWidget(_wrap(SizedBox(width: 168, child: FactoryProviderCard(title: 'Studio', onAction: () {}))));
+    expect(find.byType(FilledButton), findsNothing);
   });
 
   testWidgets('FactoryBadge renders its label', (tester) async {
@@ -717,6 +841,168 @@ void main() {
       expect(find.text('More'), findsOneWidget);
     },
   );
+
+  testWidgets('FactoryBottomNavigation centre action sits in the middle, fires on tap and keeps tab indexes', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    int? selected;
+    var actionTaps = 0;
+    await tester.pumpWidget(
+      _wrap(
+        FactoryBottomNavigation(
+          destinations: const [
+            FactoryNavDestination(icon: Icons.home_rounded, label: 'Home'),
+            FactoryNavDestination(icon: Icons.search_rounded, label: 'Search'),
+            FactoryNavDestination(icon: Icons.calendar_month_rounded, label: 'Bookings'),
+            FactoryNavDestination(icon: Icons.person_rounded, label: 'Profile'),
+          ],
+          selectedIndex: 0,
+          onDestinationSelected: (i) => selected = i,
+          centerAction: FactoryNavAction(icon: Icons.add_rounded, label: 'New booking', onTap: () => actionTaps++),
+        ),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+
+    final centre = tester.getCenter(find.byIcon(Icons.add_rounded));
+    expect(centre.dx, closeTo(195, 1), reason: 'centred on a 390px screen');
+    expect(tester.getCenter(find.text('Search')).dx, lessThan(centre.dx));
+    expect(tester.getCenter(find.text('Bookings')).dx, greaterThan(centre.dx));
+
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    expect(actionTaps, 1);
+    expect(selected, isNull, reason: 'the action is not a tab');
+
+    await tester.tap(find.text('Bookings'));
+    expect(selected, 2, reason: 'indexes are those of the destinations list');
+    expect(find.bySemanticsLabel('New booking'), findsOneWidget);
+  });
+
+  testWidgets('FactoryBottomNavigation centre action with quick actions opens a fan, picks one and closes', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    final picked = <String>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: factoryLightTheme(),
+        home: Scaffold(
+          bottomNavigationBar: FactoryBottomNavigation(
+            destinations: const [
+              FactoryNavDestination(icon: Icons.home_rounded, label: 'Home'),
+              FactoryNavDestination(icon: Icons.person_rounded, label: 'Profile'),
+            ],
+            selectedIndex: 0,
+            onDestinationSelected: (_) {},
+            centerAction: FactoryNavAction(
+              icon: Icons.add_rounded,
+              label: 'Quick actions',
+              quickActions: [
+                FactoryNavQuickAction(icon: Icons.event_available_rounded, label: 'Book', onTap: () => picked.add('book')),
+                FactoryNavQuickAction(icon: Icons.chat_bubble_rounded, label: 'Messages', onTap: () => picked.add('msg')),
+                FactoryNavQuickAction(icon: Icons.favorite_rounded, label: 'Favorites', onTap: () => picked.add('fav')),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Messages'), findsNothing, reason: 'closed by default');
+
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('Book'), findsOneWidget);
+    expect(find.text('Messages'), findsOneWidget);
+    expect(find.text('Favorites'), findsOneWidget);
+    // Fanned out left-to-right above the button.
+    expect(tester.getCenter(find.text('Book')).dx, lessThan(tester.getCenter(find.text('Messages')).dx));
+    expect(tester.getCenter(find.text('Favorites')).dx, greaterThan(tester.getCenter(find.text('Messages')).dx));
+    // While open the dimmed page hides the real button, so a copy is drawn on top.
+    expect(find.byIcon(Icons.add_rounded), findsNWidgets(2));
+    expect(
+      tester.getCenter(find.text('Messages')).dy,
+      lessThan(tester.getCenter(find.byIcon(Icons.add_rounded).last).dy),
+    );
+
+    await tester.tap(find.text('Messages'));
+    await tester.pumpAndSettle();
+    expect(picked, ['msg']);
+    expect(find.text('Messages'), findsNothing, reason: 'the fan closes after a pick');
+
+    // Re-open, then dismiss by tapping the dimmed page.
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(20, 100));
+    await tester.pumpAndSettle();
+    expect(find.text('Favorites'), findsNothing);
+    expect(picked, ['msg']);
+  });
+
+  testWidgets('system Back closes an open fan first and only then leaves the screen', (tester) async {
+    tester.view.physicalSize = const Size(390, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    final openStates = <bool>[];
+    final navigatorKey = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navigatorKey,
+        theme: factoryLightTheme(),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => Scaffold(
+                    body: const Text('second page'),
+                    bottomNavigationBar: FactoryBottomNavigation(
+                      destinations: const [
+                        FactoryNavDestination(icon: Icons.home_rounded, label: 'Home'),
+                        FactoryNavDestination(icon: Icons.person_rounded, label: 'Profile'),
+                      ],
+                      selectedIndex: 0,
+                      onDestinationSelected: (_) {},
+                      onFanOpenChanged: openStates.add,
+                      centerAction: FactoryNavAction(
+                        icon: Icons.add_rounded,
+                        label: 'Quick actions',
+                        quickActions: [FactoryNavQuickAction(icon: Icons.chat_bubble_rounded, label: 'Messages', onTap: () {})],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text('Messages'), findsOneWidget);
+    expect(openStates, [true]);
+
+    // First Back: the fan closes, the page stays.
+    await navigatorKey.currentState!.maybePop();
+    await tester.pumpAndSettle();
+    expect(find.text('Messages'), findsNothing);
+    expect(find.text('second page'), findsOneWidget);
+    expect(openStates, [true, false]);
+
+    // Second Back: leaves the page as usual.
+    await navigatorKey.currentState!.maybePop();
+    await tester.pumpAndSettle();
+    expect(find.text('second page'), findsNothing);
+  });
 
   testWidgets('FactoryBottomNavigation draws a count badge only when there is something to count', (
     tester,
