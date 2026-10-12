@@ -106,4 +106,37 @@ public class ReviewService {
         providerOwnership.requireOwner(providerId, callerId);
         return reviewRepository.findByProviderId(providerId, pageable);
     }
+
+    /**
+     * Public, newest first. No ownership check -- this is the page any
+     * customer reads before booking. Same row projection as the owner list;
+     * the controller turns it into the privacy-safe public DTO.
+     */
+    @Transactional(readOnly = true)
+    public Page<ReviewRepository.ProviderReviewRow> listPublic(UUID providerId, Pageable pageable) {
+        return reviewRepository.findByProviderId(providerId, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public ReviewDtos.ReviewSummaryResponse summarize(UUID providerId) {
+        return summarize(reviewRepository.countByRatingForProvider(providerId));
+    }
+
+    static ReviewDtos.ReviewSummaryResponse summarize(java.util.List<ReviewRepository.RatingCountRow> rows) {
+        long[] counts = new long[5];
+        for (ReviewRepository.RatingCountRow row : rows) {
+            if (row.getRating() >= 1 && row.getRating() <= 5) {
+                counts[row.getRating() - 1] += row.getTotal();
+            }
+        }
+        long total = 0;
+        long weighted = 0;
+        for (int i = 0; i < 5; i++) {
+            total += counts[i];
+            weighted += counts[i] * (i + 1);
+        }
+        Double average = total == 0 ? null : Math.round(weighted * 10.0 / total) / 10.0;
+        return new ReviewDtos.ReviewSummaryResponse(average, total,
+                java.util.Arrays.stream(counts).boxed().toList());
+    }
 }
