@@ -36,6 +36,7 @@ export 'src/widgets/factory_empty_state.dart';
 export 'package:core_region/core_region.dart' show RegionDefaults, currencySymbolFor;
 export 'src/util/factory_strings.dart';
 export 'src/util/group_by_day.dart';
+export 'src/util/phone_formatter.dart';
 export 'src/widgets/factory_error_state.dart';
 export 'src/widgets/factory_icon_button.dart';
 export 'src/widgets/factory_loading_state.dart';

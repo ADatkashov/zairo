@@ -94,6 +94,27 @@ void main() {
     expect(fakeApi.lastRequestedPhone, isNull);
   });
 
+  testWidgets('formats the typed number as +7 XXX XXX XX XX and rejects an incomplete one', (tester) async {
+    final fakeApi = _FakeAuthApi();
+    await tester.pumpWidget(_wrap(fakeApi));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    final field = find.byType(TextFormField).first;
+    await tester.enterText(field, '+7 7001234');
+    await tester.pump();
+    expect(tester.widget<EditableText>(find.byType(EditableText).first).controller.text, '+7 700 123 4');
+
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(find.text('Enter your phone'), findsOneWidget);
+    expect(fakeApi.lastRequestedPhone, isNull);
+
+    await tester.enterText(field, '87001234567');
+    await tester.pump();
+    expect(tester.widget<EditableText>(find.byType(EditableText).first).controller.text, '+7 700 123 45 67');
+  });
+
   testWidgets('a new phone requests an OTP and advances to the registration screen', (tester) async {
     final fakeApi = _FakeAuthApi();
     await tester.pumpWidget(_wrap(fakeApi));
