@@ -41,6 +41,8 @@ import '../../data/models/availability_slot.dart';
 import '../../data/models/booking.dart';
 import '../../data/models/payment_plan.dart';
 import '../providers/booking_providers.dart';
+import '../widgets/booking_review_sheet.dart';
+import '../widgets/booking_stepper.dart';
 import '../widgets/day_slot_picker.dart';
 import 'booking_confirmation_screen.dart';
 import 'booking_payment_screen.dart';
@@ -481,6 +483,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               ),
             ),
             _BookingCta(
+              step: _selectedServiceId == null ? 0 : (_selectedSlotId == null ? 1 : 2),
               selectedService: _selectedService(),
               price: _effectivePrice,
               plan: _paymentPlan(),
@@ -499,7 +502,13 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                       (!requiresVehicleSelection ||
                           _selectedVehicleId != null) &&
                       !_isBooking)
-                  ? _book
+                  ? () => _reviewThenBook(
+                      personName: !hasWorkers
+                          ? null
+                          : (anyMode
+                                ? ''
+                                : _workerName(masters, mechanics, cleaners, staffMembers, selectedWorkerId)),
+                    )
                   : null,
             ),
           ],
@@ -674,6 +683,59 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
         );
     ref.invalidate(vehiclesProvider(userId));
     setState(() => _selectedVehicleId = vehicle.id);
+  }
+
+  /// The display name of the picked specialist, whichever vertical's list it
+  /// comes from; null when none is picked.
+  String? _workerName(
+    List<Master> masters,
+    List<Mechanic> mechanics,
+    List<Cleaner> cleaners,
+    List<Staff> staff,
+    String? id,
+  ) {
+    if (id == null) return null;
+    for (final m in masters) {
+      if (m.id == id) return m.displayName;
+    }
+    for (final m in mechanics) {
+      if (m.id == id) return m.displayName;
+    }
+    for (final c in cleaners) {
+      if (c.id == id) return c.displayName;
+    }
+    for (final s in staff) {
+      if (s.id == id) return s.displayName;
+    }
+    return null;
+  }
+
+  /// One last look at what is being booked, before anything is created or
+  /// charged. Only "Confirm" goes on to [_book] (which keeps its own login
+  /// gate and every per-vertical rule untouched); a logged-out customer skips
+  /// the summary and goes straight to that gate.
+  Future<void> _reviewThenBook({required String? personName}) async {
+    final service = _selectedService();
+    final signedIn = (await ref.read(authControllerProvider.future)) != null;
+    if (!mounted) return;
+    if (service == null || !signedIn) {
+      await _book();
+      return;
+    }
+    final confirmed = await showBookingReviewSheet(
+      context,
+      BookingReviewData(
+        providerName: widget.provider.name,
+        serviceTitle: service.title,
+        durationMinutes: service.durationMinutes,
+        price: _effectivePrice ?? service.price,
+        currencySymbol: service.currency,
+        startsAt: _selectedSlotStartsAt,
+        personName: personName,
+        plan: _paymentPlan(),
+      ),
+    );
+    if (confirmed && mounted) await _book();
   }
 
   Future<void> _book() async {
@@ -929,6 +991,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
 /// risky for a real-money flow, and that reasoning still holds.
 class _BookingCta extends StatelessWidget {
   const _BookingCta({
+    required this.step,
     required this.selectedService,
     required this.price,
     required this.plan,
@@ -936,6 +999,8 @@ class _BookingCta extends StatelessWidget {
     required this.onPressed,
   });
 
+  /// Zero-based step of the booking progress bar (service, time, confirm).
+  final int step;
   final ServiceSummary? selectedService;
   final double? price;
   final PaymentPlan? plan;
@@ -1012,7 +1077,12 @@ class _BookingCta extends StatelessWidget {
         color: colors.surface,
         border: Border(top: BorderSide(color: colors.border)),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          BookingStepper(step: step),
+          const SizedBox(height: FactorySpacing.space3),
+          Row(
         children: [
           if (selectedService != null) ...[
             Expanded(
@@ -1048,6 +1118,8 @@ class _BookingCta extends StatelessWidget {
                 onPressed: onPressed,
               ),
             ),
+        ],
+      ),
         ],
       ),
     );

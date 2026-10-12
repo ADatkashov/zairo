@@ -670,5 +670,19 @@
   "reviewsNoMatchMessage": "Выберите другую оценку или покажите все отзывы.",
   "reviewsResetFilters": "Показать все",
 
-  "navNewBooking": "Новая запись"
+  "navNewBooking": "Новая запись",
+
+  "bookingStepService": "Услуга",
+  "bookingStepTime": "Время",
+  "bookingStepConfirm": "Оплата",
+  "bookingStepSemantic": "Шаг {step} из {total}: {label}",
+  "bookingReviewTitle": "Проверьте запись",
+  "bookingReviewServiceLabel": "Услуга",
+  "bookingReviewPersonLabel": "Специалист",
+  "bookingReviewAnyPerson": "Первый свободный",
+  "bookingReviewPlaceLabel": "Бизнес",
+  "bookingReviewConfirmPay": "Подтвердить и оплатить",
+  "bookingReviewConfirmFree": "Подтвердить запись",
+  "bookingReviewChange": "Изменить",
+  "bookingReviewTotal": "Итого"
 }
