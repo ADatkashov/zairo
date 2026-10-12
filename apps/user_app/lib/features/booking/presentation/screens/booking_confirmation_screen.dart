@@ -9,6 +9,7 @@ import '../../../../app/router/app_routes.dart';
 import '../../../../core/formatting/month_day_time.dart';
 import '../../../../core/links/external_links.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../catalog/presentation/category_icon.dart';
 import '../../../discovery/data/models/service_summary.dart';
 import '../../../payments/presentation/widgets/payment_status_chip.dart';
 import '../../data/models/booking.dart';
@@ -150,30 +151,7 @@ class BookingConfirmationScreen extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.all(FactorySpacing.space4),
                 children: [
-                  const SizedBox(height: FactorySpacing.space6),
-                  Center(
-                    child: Container(
-                      width: 88,
-                      height: 88,
-                      decoration: BoxDecoration(
-                        color: colors.success.withValues(alpha: 0.14),
-                        shape: BoxShape.circle,
-                        // Soft success glow around the check.
-                        boxShadow: [
-                          BoxShadow(
-                            color: colors.success.withValues(alpha: 0.22),
-                            blurRadius: 36,
-                            spreadRadius: 4,
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Symbols.check_circle_rounded,
-                        size: 48,
-                        color: colors.success,
-                      ),
-                    ),
-                  ),
+                  const Center(child: _SuccessMark()),
                   const SizedBox(height: FactorySpacing.space4),
                   Text(
                     l10n.bookingConfirmationTitle,
@@ -199,6 +177,10 @@ class BookingConfirmationScreen extends StatelessWidget {
                             'cleaning' => Symbols.cleaning_services_rounded,
                             _ => Symbols.content_cut_rounded,
                           },
+                          // The same category colours as the Home tiles, so the
+                          // booking reads as belonging to its category.
+                          color: colorForCategory(context, providerVertical)?.color,
+                          tint: colorForCategory(context, providerVertical)?.tint,
                           label: providerName,
                           value: service.title,
                         ),
@@ -291,10 +273,16 @@ class _ConfirmationRow extends StatelessWidget {
   final String label;
   final String value;
 
+  /// Icon plate colours; null falls back to the neutral brand tint.
+  final Color? color;
+  final Color? tint;
+
   const _ConfirmationRow({
     required this.icon,
     required this.label,
     required this.value,
+    this.color,
+    this.tint,
   });
 
   @override
@@ -303,7 +291,15 @@ class _ConfirmationRow extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     return Row(
       children: [
-        Icon(icon, size: 20, color: colors.textSecondary),
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: tint ?? colors.primaryTint,
+            borderRadius: FactoryRadius.mdRadius,
+          ),
+          child: Icon(icon, size: 22, color: color ?? colors.primary),
+        ),
         const SizedBox(width: FactorySpacing.space3),
         Expanded(
           child: Column(
@@ -321,6 +317,80 @@ class _ConfirmationRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The success mark: a solid check on a soft halo, with a few small coloured
+/// sparks around it — the category palette plus the brass accent — so a
+/// confirmed booking feels like an event, not a form being submitted. Static
+/// apart from one short scale-in, which is skipped when the system asks to
+/// reduce motion. Decorative only: the title below carries the meaning.
+class _SuccessMark extends StatelessWidget {
+  const _SuccessMark();
+
+  static const double _box = 136;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    // (dx, dy) from the box centre, diameter, colour.
+    final sparks = <(double, double, double, Color)>[
+      (-52, -40, 10, colors.coral),
+      (50, -46, 8, colors.lavender),
+      (-60, 6, 7, colors.accent),
+      (58, 4, 12, colors.mint),
+      (-38, 50, 9, colors.lavender),
+      (40, 52, 7, colors.coral),
+      (0, -62, 6, colors.accent),
+      (-20, 60, 5, colors.mint),
+    ];
+    return ExcludeSemantics(
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.6, end: 1),
+        duration: FactoryMotion.resolve(context, FactoryMotion.slow),
+        curve: FactoryMotion.standard,
+        builder: (context, scale, child) => Opacity(
+          opacity: ((scale - 0.6) / 0.4).clamp(0.0, 1.0),
+          child: Transform.scale(scale: scale, child: child),
+        ),
+        child: SizedBox(
+          width: _box,
+          height: _box,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              for (final (dx, dy, d, c) in sparks)
+                Positioned(
+                  left: _box / 2 + dx - d / 2,
+                  top: _box / 2 + dy - d / 2,
+                  child: Container(
+                    width: d,
+                    height: d,
+                    decoration: BoxDecoration(color: c.withValues(alpha: 0.85), shape: BoxShape.circle),
+                  ),
+                ),
+              Container(
+                width: 96,
+                height: 96,
+                decoration: BoxDecoration(color: colors.success.withValues(alpha: 0.14), shape: BoxShape.circle),
+              ),
+              Container(
+                width: 68,
+                height: 68,
+                decoration: BoxDecoration(
+                  color: colors.success,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(color: colors.success.withValues(alpha: 0.35), blurRadius: 24, offset: const Offset(0, 8)),
+                  ],
+                ),
+                child: Icon(Symbols.check_rounded, size: 42, weight: 700, color: colors.onPrimary),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
