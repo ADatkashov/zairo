@@ -1018,5 +1018,6 @@
   "salonTabServices": "Услуги",
   "salonTabTeam": "Команда",
   "salonTabBookings": "Записи",
-  "salonTabSettings": "Настройки"
+  "salonTabSettings": "Настройки",
+  "navQuickActions": "Быстрые действия"
 }

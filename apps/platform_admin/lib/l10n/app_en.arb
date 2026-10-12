@@ -675,5 +675,7 @@
   "commissionReset": "This category now follows the default",
   "@commissionReset": {"description": "commissionReset"},
   "commissionInvalid": "Enter a number from 0 to 100 (up to 2 decimals)",
-  "@commissionInvalid": {"description": "commissionInvalid"}
+  "@commissionInvalid": {"description": "commissionInvalid"},
+  "navQuickActions": "Quick actions",
+  "@navQuickActions": {"description": "Screen-reader label of the round + button in the middle of the phone bottom bar; opens a fan of shortcuts."}
 }
