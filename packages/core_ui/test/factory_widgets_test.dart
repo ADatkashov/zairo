@@ -160,6 +160,15 @@ void main() {
     expect(find.byIcon(Symbols.check_rounded), findsNothing);
   });
 
+  testWidgets('a selected FactoryChip with its own icon shows the check as well', (tester) async {
+    await tester.pumpWidget(_wrap(const FactoryChip(label: '5', icon: Symbols.star_rounded, selected: true)));
+    expect(find.byIcon(Symbols.check_rounded), findsOneWidget);
+    expect(find.byIcon(Symbols.star_rounded), findsOneWidget);
+
+    await tester.pumpWidget(_wrap(const FactoryChip(label: '5', icon: Symbols.star_rounded)));
+    expect(find.byIcon(Symbols.check_rounded), findsNothing);
+  });
+
   testWidgets('FactoryChip draws its icon outlined by default and solid with iconFilled', (tester) async {
     await tester.pumpWidget(_wrap(const FactoryChip(label: '5', icon: Symbols.star_rounded)));
     expect(tester.widget<Icon>(find.byIcon(Symbols.star_rounded)).fill, 0);
