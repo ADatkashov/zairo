@@ -69,7 +69,7 @@ the Gradle build, using the exact image, ports, and dev credentials
 `infrastructure/docker-compose.yml` already uses locally
 (`app_factory` / `app_factory_secret`, bucket `factory-media`). It's
 `docker run` and not a `services:` container because the official
-`minio/minio` image has no default `CMD` — `services:` has no field for
+`quay.io/minio/minio` image has no default `CMD` — `services:` has no field for
 supplying one, so the workflow starts and health-checks it as an
 explicit step instead.
 
