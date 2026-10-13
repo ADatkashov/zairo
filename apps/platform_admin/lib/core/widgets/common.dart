@@ -154,6 +154,8 @@ class ToneBadge extends StatelessWidget {
     return FactoryBadge(
       label: label,
       icon: icon,
+      // Dot only when there is no icon, so a chip never carries both.
+      showDot: icon == null,
       variant: switch (tone) {
         Tone.good => FactoryBadgeVariant.available,
         Tone.warn => FactoryBadgeVariant.limited,

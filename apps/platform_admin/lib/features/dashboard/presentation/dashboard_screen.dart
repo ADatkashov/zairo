@@ -241,26 +241,7 @@ class _Section extends StatelessWidget {
             maxColumns: 5,
             children: [
               for (final tile in tiles)
-                FactoryCard(
-                  padding: const EdgeInsets.all(FactorySpacing.space3),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(tile.label, style: textTheme.labelMedium?.copyWith(color: colors.textSecondary)),
-                      const SizedBox(height: 4),
-                      Text(
-                        tile.value(locale),
-                        // Figures are data: mono + tabular so a column of
-                        // tiles lines up; warnings use the AA-safe error hue.
-                        style: FactoryTypography.mono(
-                          size: 22,
-                          weight: FontWeight.w600,
-                          color: tile.warn ? colors.error : colors.text,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                FactoryKpiCard(label: tile.label, value: tile.value(locale), warn: tile.warn),
             ],
           ),
         ],

@@ -494,15 +494,7 @@ class _KpiCard extends StatelessWidget {
   const _KpiCard({required this.label, required this.value});
 
   @override
-  Widget build(BuildContext context) {
-    return FactoryCard(
-      padding: const EdgeInsets.all(FactorySpacing.space4),
-      child: SizedBox(
-        width: double.infinity,
-        child: _Kpi(label: label, value: value),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => FactoryKpiCard(label: label, value: value);
 }
 
 /// A percentage as a ring with the label beside it. For rates where lower is
