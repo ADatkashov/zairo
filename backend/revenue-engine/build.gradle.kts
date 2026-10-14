@@ -16,4 +16,9 @@ dependencies {
     // the other way, so a new strategy module never risks a dependency
     // cycle back into whatever it acts on.
     implementation(project(":booking"))
+
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.assertj:assertj-core")
+    testImplementation("org.mockito:mockito-core")
 }

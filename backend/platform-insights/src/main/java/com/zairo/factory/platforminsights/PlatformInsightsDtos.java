@@ -2,6 +2,8 @@ package com.zairo.factory.platforminsights;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
 
 public final class PlatformInsightsDtos {
 
@@ -52,6 +54,37 @@ public final class PlatformInsightsDtos {
                 BigDecimal platformCommission,
                 @Schema(description = "Null if there were no payment allocations this month — nothing to report a currency for.")
                 String platformCommissionCurrency) {
+        }
+    }
+
+    /** Recent history behind the dashboard's trend lines — oldest day first, every day present (zero-filled). */
+    public record PlatformTrends(
+            @Schema(description = "Bookings created per UTC day, oldest first, one entry per day in the window.")
+            List<DailyCount> bookingsCreated) {
+
+        public record DailyCount(LocalDate date, long count) {
+        }
+    }
+
+    /** The reports screen: one window of history, every series zero-filled and oldest day first. */
+    public record PlatformReport(
+            @Schema(description = "First and last UTC day of the window, both inclusive.") LocalDate from,
+            LocalDate to,
+            List<PlatformTrends.DailyCount> bookingsCreated,
+            @Schema(description = "SUM of PaymentAllocation.platformFee per UTC day (ZAIRO's marketplace commission).")
+            List<DailyAmount> commissionByDay,
+            @Schema(description = "Null if the window has no allocations — nothing to report a currency for.")
+            String commissionCurrency,
+            @Schema(description = "SUM of succeeded SubscriptionCharge.amount per UTC day.")
+            List<DailyAmount> subscriptionRevenueByDay,
+            @Schema(description = "Null if the window has no succeeded charges.") String subscriptionCurrency,
+            @Schema(description = "Bookings created in the window, by their current status.")
+            BookingsByStatus bookingsByStatus) {
+
+        public record DailyAmount(LocalDate date, BigDecimal amount) {
+        }
+
+        public record BookingsByStatus(long pending, long confirmed, long completed, long cancelled, long noShow) {
         }
     }
 }

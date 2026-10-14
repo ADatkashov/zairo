@@ -12,3 +12,6 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+# Exception: the committed debug-signing keystore — see app/build.gradle.kts's
+# signingConfigs comment for why this one is deliberately checked in.
+!app/ci-debug.keystore

@@ -42,6 +42,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Catalog'), findsOneWidget);
     expect(find.text('Cities'), findsOneWidget);
+    expect(find.text('Ads'), findsOneWidget);
     expect(find.text('Activity'), findsOneWidget);
     expect(find.text('Staff'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
@@ -101,5 +102,16 @@ void main() {
   testWidgets('an unknown URL quietly goes to the dashboard', (tester) async {
     await pumpConsole(tester, backend: defaultBackend(), location: '/nope/nothing');
     expect(find.text('Hello, Aida'), findsOneWidget);
+  });
+
+  testWidgets('a dashboard number opens the list behind it, filtered the same way', (tester) async {
+    await pumpConsole(tester, backend: defaultBackend(), size: const Size(1400, 1000), location: ConsoleRoutes.dashboard);
+
+    // The "Awaiting approval" tile of the Businesses section (not the attention banner's button).
+    await tester.tap(find.widgetWithText(FactoryKpiCard, 'Awaiting approval'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Glow Salon'), findsOneWidget);
+    expect(find.text('Zen Spa'), findsNothing, reason: 'only the pending business is listed');
   });
 }

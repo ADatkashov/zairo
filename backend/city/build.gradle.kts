@@ -9,4 +9,8 @@ dependencies {
     implementation(project(":users"))
     implementation(project(":auth"))
     implementation(project(":country"))
+
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.assertj:assertj-core")
 }

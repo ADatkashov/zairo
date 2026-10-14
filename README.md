@@ -96,7 +96,9 @@ Project-панели автоматически при открытии `apps/us
 
 
 # CI/CD Migration (2026-10-04)
-- GitHub Actions: Disabled (workflows moved to .yml.disabled)
+- GitHub Actions: проверки `flutter-ci` и `backend-ci` включены (2026-10-12);
+  `android-release`, `build-artifacts`, `seed-demo-businesses` остаются
+  отключёнными (`.yml.disabled`)
 - Backend: Auto-deploying via Render on commit
 - Status: Testing Render auto-deploy trigger
 

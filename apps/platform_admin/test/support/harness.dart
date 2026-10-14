@@ -109,6 +109,33 @@ Map<String, Object?> cityJson(String code, String name, {bool active = true}) =>
   'active': active,
 };
 
+/// Mirrors `ads.AdDtos.AdminBannerResponse`.
+Map<String, Object?> adJson(
+  String id,
+  String title, {
+  String status = 'ACTIVE',
+  String? subtitle,
+  String? videoUrl,
+  String? cityCode,
+  String? providerId,
+  String? rejectionReason,
+}) => {
+  'id': id,
+  'providerId': providerId,
+  'title': title,
+  'subtitle': subtitle,
+  'imageUrl': 'https://cdn.example/$id.jpg',
+  'videoUrl': videoUrl,
+  'cityCode': cityCode,
+  'startsAt': '2026-10-01T00:00:00Z',
+  'endsAt': '2026-10-08T00:00:00Z',
+  'sortOrder': 2,
+  'status': status,
+  'rejectionReason': rejectionReason,
+  'createdAt': '2026-09-30T10:00:00Z',
+  'updatedAt': '2026-09-30T10:00:00Z',
+};
+
 /// Mirrors CommissionSettingsResponse: default 0%, Beauty with its own 8%, Auto following the default.
 Map<String, Object?> commissionJson({num defaultPercent = 0, num? beautyPercent = 8}) => {
   'defaultPercent': defaultPercent,

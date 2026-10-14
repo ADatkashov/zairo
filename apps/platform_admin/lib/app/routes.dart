@@ -5,9 +5,13 @@ abstract final class ConsoleRoutes {
   static const login = '/login';
   static const splash = '/splash';
   static const dashboard = '/dashboard';
+
+  /// A sub-page of the Dashboard area (it keeps Dashboard selected in the shell).
+  static const reports = '/dashboard/reports';
   static const businesses = '/businesses';
   static const catalog = '/catalog';
   static const cities = '/cities';
+  static const ads = '/ads';
   static const finance = '/finance';
   static const activity = '/activity';
   static const staff = '/staff';
@@ -22,16 +26,17 @@ const consoleBranchPaths = [
   ConsoleRoutes.businesses, // 1
   ConsoleRoutes.catalog, // 2
   ConsoleRoutes.cities, // 3
-  ConsoleRoutes.finance, // 4
-  ConsoleRoutes.activity, // 5
-  ConsoleRoutes.staff, // 6
-  ConsoleRoutes.settings, // 7
-  ConsoleRoutes.more, // 8
+  ConsoleRoutes.ads, // 4
+  ConsoleRoutes.finance, // 5
+  ConsoleRoutes.activity, // 6
+  ConsoleRoutes.staff, // 7
+  ConsoleRoutes.settings, // 8
+  ConsoleRoutes.more, // 9
 ];
 
 /// Branch indexes the phone's bottom bar shows (two, the "+", two); the last
 /// tab is "More". Catalog is reached through the "+" and "More".
-const phoneTabBranches = [0, 1, 4, 8];
+const phoneTabBranches = [0, 1, 5, 9];
 
 /// Areas a phone reaches through "More".
-const moreBranches = {2, 3, 5, 6, 7};
+const moreBranches = {2, 3, 4, 6, 7, 8};
