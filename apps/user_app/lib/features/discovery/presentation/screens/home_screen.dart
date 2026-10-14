@@ -115,12 +115,17 @@ class HomeScreen extends ConsumerWidget {
                   // below the search field.
                   const SizedBox(height: FactorySpacing.space5),
                   const _CategoriesSection(),
-                  // Promos come after the primary action, not in front of it.
-                  const SizedBox(height: FactorySpacing.space5),
-                  _PromoStrip(
-                    openCount: openCount,
-                    onViewAvailable: () => context.go(AppRoutes.search()),
-                  ),
+                  // Promos come after the primary action, not in front of it. Only
+                  // the live "open slots today" card is left; anything else the
+                  // platform wants to promote (bonuses, news) is a banner, run
+                  // from the admin console, not a card fixed in the app.
+                  if (openCount > 0) ...[
+                    const SizedBox(height: FactorySpacing.space5),
+                    _PromoStrip(
+                      openCount: openCount,
+                      onViewAvailable: () => context.go(AppRoutes.search()),
+                    ),
+                  ],
                   if (user != null) ...[
                     const SizedBox(height: FactorySpacing.space6),
                     _BookAgainSection(userId: user.id),
@@ -389,6 +394,10 @@ class _HomeHeroBar extends StatelessWidget {
                       AppRoutes.adVideo,
                       extra: AdVideoArgs(url: banner.videoUrl!, title: banner.title),
                     ),
+                    onOpenLink: (target) => switch (target) {
+                      AdLinkTarget.rewards => context.push(AppRoutes.rewards),
+                      AdLinkTarget.search => context.go(AppRoutes.search()),
+                    },
                   ),
                 ),
               ),
@@ -977,10 +986,10 @@ class _RecommendedRow extends StatelessWidget {
   }
 }
 
-/// The short strip of promo cards under the launcher: "open slots today" (only
-/// when something nearby actually is) and the rewards entry. A horizontal list,
-/// so a lone card keeps its width and a third one can be added without
-/// reflowing the screen.
+/// The "open slots today" promo under the launcher: a live count of nearby
+/// businesses with a free slot, which no admin-made banner can show. Shown only
+/// when there is something to show. A horizontal list so a second card can be
+/// added without reflowing the screen.
 class _PromoStrip extends StatelessWidget {
   const _PromoStrip({required this.openCount, required this.onViewAvailable});
 
@@ -1001,23 +1010,12 @@ class _PromoStrip extends StatelessWidget {
         // the page padding — the cue that the strip scrolls.
         clipBehavior: Clip.none,
         children: [
-          if (openCount > 0) ...[
-            FactoryPromoCard(
-              width: _cardWidth,
-              height: _cardHeight,
-              title: l10n.homeAvailabilityHero(openCount),
-              icon: Symbols.event_available_rounded,
-              onTap: onViewAvailable,
-            ),
-            const SizedBox(width: FactorySpacing.space3),
-          ],
           FactoryPromoCard(
             width: _cardWidth,
             height: _cardHeight,
-            title: l10n.homePromoRewardsTitle,
-            subtitle: l10n.homePromoRewardsSubtitle,
-            icon: Symbols.redeem_rounded,
-            onTap: () => context.push(AppRoutes.rewards),
+            title: l10n.homeAvailabilityHero(openCount),
+            icon: Symbols.event_available_rounded,
+            onTap: onViewAvailable,
           ),
         ],
       ),

@@ -313,9 +313,10 @@ void main() {
     for (final label in ['Search', 'Bookings', 'My favorites', 'Messages', 'My Rewards', 'Notifications', 'Payment cards', 'Support']) {
       expect(find.text(label), findsNothing, reason: label);
     }
-    // The promos are still there, after the categories.
-    expect(find.text('Earn rewards for every visit'), findsOneWidget);
-    expect(tester.getTopLeft(find.text('Earn rewards for every visit')).dy, greaterThan(cats[7].dy));
+    // The live "open slots today" promo is still there, after the categories; the rewards card is not (bonuses are a banner now).
+    expect(find.textContaining('open slots today'), findsOneWidget);
+    expect(tester.getTopLeft(find.textContaining('open slots today')).dy, greaterThan(cats[7].dy));
+    expect(find.text('Earn rewards for every visit'), findsNothing);
   });
 
   testWidgets('exactly eight categories fit the 4x2 grid without scrolling', (tester) async {
@@ -418,13 +419,48 @@ void main() {
     expect(find.text('Category 7'), findsOneWidget);
   });
 
-  testWidgets('the rewards promo card opens My Rewards', (tester) async {
+  testWidgets('with nothing open today there is no promo strip at all', (tester) async {
     _useTallWindow(tester);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi(const [])),
           catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const HomeScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FactoryPromoCard), findsNothing);
+    expect(find.text('Earn rewards for every visit'), findsNothing);
+  });
+
+  testWidgets('a banner with a rewards link opens My Rewards when tapped', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi(const [])),
+          catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
+          adsApiProvider.overrideWithValue(
+            _FakeAdsApi(const [
+              AdBanner(
+                id: 'b1',
+                title: 'Earn bonuses for every visit',
+                subtitle: null,
+                imageUrl: 'https://cdn.example/1.jpg',
+                videoUrl: null,
+                linkTarget: 'REWARDS',
+                sponsored: false,
+              ),
+            ]),
+          ),
         ],
         child: MaterialApp.router(
           theme: factoryLightTheme(),
@@ -441,10 +477,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Nothing is open today, so the rewards card is the only promo.
-    expect(find.textContaining('open slots today'), findsNothing);
-    await tester.tap(find.widgetWithText(FactoryPromoCard, 'Earn rewards for every visit'));
+    await tester.tap(find.text('Earn bonuses for every visit'));
     await tester.pumpAndSettle();
+
     expect(find.text('Rewards page'), findsOneWidget);
   });
 

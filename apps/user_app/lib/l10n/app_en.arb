@@ -360,12 +360,6 @@
   "adWatchVideoLabel": "Watch video",
   "@adWatchVideoLabel": {"description": "Spoken hint on a Home banner that opens a video."},
 
-  "homePromoRewardsTitle": "Earn rewards for every visit",
-  "@homePromoRewardsTitle": {"description": "Title of Home's promo card that opens My Rewards."},
-
-  "homePromoRewardsSubtitle": "Points from every business",
-  "@homePromoRewardsSubtitle": {"description": "Subtitle of Home's rewards promo card."},
-
   "discoveryVerticalBeauty": "Beauty",
   "@discoveryVerticalBeauty": {"description": "Vertical filter chip label for the beauty vertical."},
 
