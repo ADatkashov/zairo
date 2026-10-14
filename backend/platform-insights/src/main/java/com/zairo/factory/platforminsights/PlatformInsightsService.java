@@ -7,6 +7,8 @@ import com.zairo.factory.payments.PaymentAllocationRepository;
 import com.zairo.factory.payments.PaymentRepository;
 import com.zairo.factory.payments.PaymentStatus;
 import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformDashboardMetrics;
+import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformTrends;
+import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformTrends.DailyCount;
 import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformDashboardMetrics.BookingsSection;
 import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformDashboardMetrics.BusinessesSection;
 import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformDashboardMetrics.PaymentsSection;
@@ -28,6 +30,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
@@ -112,5 +115,26 @@ public class PlatformInsightsService {
         RevenueSection revenue = new RevenueSection(mrr, currency, platformCommission, platformCommissionCurrency);
 
         return new PlatformDashboardMetrics(users, businesses, subscriptions, bookings, payments, revenue);
+    }
+
+    public static final int MAX_TREND_DAYS = 31;
+
+    /**
+     * Bookings created per UTC day for the last {@code days} days including
+     * today, oldest first. One COUNT per day (at most {@link #MAX_TREND_DAYS})
+     * rather than a bespoke GROUP BY: same live-query stance as above, and the
+     * window is small and capped.
+     */
+    public PlatformTrends trends(int days) {
+        int window = Math.max(1, Math.min(days, MAX_TREND_DAYS));
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        List<DailyCount> bookings = new ArrayList<>(window);
+        for (int offset = window - 1; offset >= 0; offset--) {
+            LocalDate day = today.minusDays(offset);
+            Instant start = day.atStartOfDay(ZoneOffset.UTC).toInstant();
+            Instant end = day.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+            bookings.add(new DailyCount(day, bookingRepository.countByCreatedAtBetween(start, end)));
+        }
+        return new PlatformTrends(bookings);
     }
 }
