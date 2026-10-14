@@ -35,7 +35,14 @@ class DashboardScreen extends ConsumerWidget {
 
     return AreaScaffold(
       title: l10n.navDashboard,
-      actions: [IconButton(tooltip: l10n.refresh, icon: const Icon(Icons.refresh_rounded), onPressed: refresh)],
+      actions: [
+        IconButton(
+          tooltip: l10n.navReports,
+          icon: const Icon(Icons.insert_chart_outlined_rounded),
+          onPressed: () => context.go(ConsoleRoutes.reports),
+        ),
+        IconButton(tooltip: l10n.refresh, icon: const Icon(Icons.refresh_rounded), onPressed: refresh),
+      ],
       body: AsyncView<DashboardMetrics>(
         value: metricsAsync,
         onRetry: () => ref.invalidate(dashboardMetricsProvider),
