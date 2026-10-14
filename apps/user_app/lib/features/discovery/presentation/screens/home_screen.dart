@@ -479,24 +479,20 @@ class _SearchEntry extends StatelessWidget {
   }
 }
 
-/// The Home tab's categories: a heading with an "All ›" link, then a grid of two
-/// rows of four real categories. A launcher, not a filter — one tap on a
-/// category opens Search already narrowed to it (the result the person came
-/// for), instead of quietly re-filtering the rails below. All eight cells are
-/// categories (the catalog's own `sortOrder`, admin-curated, decides which);
-/// the rest are one tap away behind "All ›", which opens [AllCategoriesScreen]
-/// and carries the pick on to Search. It never grows with the catalog — a
-/// wrapping grid of all 20 pushed every other Home section below the fold, and
-/// Home showing every category is what turns a discovery screen into a catalog.
+/// The Home tab's categories: a heading with an "All ›" link, then ONE
+/// horizontally scrolling row of every category, the same gesture as the
+/// "Top rated" rail below it. A launcher, not a filter — one tap on a category
+/// opens Search already narrowed to it. The row keeps Home short however large
+/// the catalog grows (the catalog's own `sortOrder`, admin-curated, sets the
+/// order), and the next tile peeking at the screen edge is the cue to swipe;
+/// "All ›" still opens [AllCategoriesScreen] for the full list in one view.
 class _CategoriesSection extends ConsumerWidget {
   const _CategoriesSection();
 
-  static const _columns = 4;
+  /// Skeleton tiles shown while the catalog loads.
+  static const _skeletons = 5;
 
-  /// Two rows of four.
-  static const _slots = 8;
-
-  static const _gap = FactorySpacing.space2;
+  static const _gap = FactorySpacing.space3;
 
   // FactoryCategoryTile's own content is 72px of chrome (4px padding + 56px
   // icon circle + 8px gap + 4px padding) plus up to two label lines. The label
@@ -517,6 +513,36 @@ class _CategoriesSection extends ConsumerWidget {
     final languageCode = Localizations.localeOf(context).languageCode;
     final tileHeight = _tileHeightFor(context);
 
+    final cells = categoriesAsync.when(
+      data: (categories) => [
+        for (final category in categories)
+          Builder(
+            builder: (context) {
+              final accent = colorForCategory(context, category.code);
+              return FactoryCategoryTile(
+                icon: iconForCategory(category.code),
+                label: category.nameFor(languageCode),
+                accentColor: accent?.color,
+                accentTint: accent?.tint,
+                onTap: () => context.go(AppRoutes.search(category: category.code)),
+              );
+            },
+          ),
+      ],
+      // Best-effort: while loading, hold the row's place with skeletons; on
+      // error draw no row (the "All ›" link above still works and its screen
+      // has its own retry) rather than blocking Home on the catalog.
+      loading: () => [
+        for (var i = 0; i < _skeletons; i++)
+          FactorySkeleton(
+            width: FactoryCategoryTile.labelWidth,
+            height: tileHeight,
+            borderRadius: const BorderRadius.all(Radius.circular(12)),
+          ),
+      ],
+      error: (error, stackTrace) => const <Widget>[],
+    );
+
     return Column(
       // Stretch: the heading needs the full width to push "All ›" to the right edge.
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -526,64 +552,21 @@ class _CategoriesSection extends ConsumerWidget {
           actionLabel: l10n.homeCategoriesAll,
           onActionTap: () => _openAllCategories(context),
         ),
-        const SizedBox(height: FactorySpacing.space3),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final cell = (constraints.maxWidth - _gap * (_columns - 1)) / _columns;
-            // The cell is the label's width: a narrow phone has no room to spare.
-            final dense = cell < 76;
-
-            final cells = categoriesAsync.when(
-              data: (categories) => [
-                for (final category in categories.take(_slots))
-                  Builder(
-                    builder: (context) {
-                      final accent = colorForCategory(context, category.code);
-                      return FactoryCategoryTile(
-                        icon: iconForCategory(category.code),
-                        label: category.nameFor(languageCode),
-                        labelMaxWidth: cell,
-                        dense: dense,
-                        accentColor: accent?.color,
-                        accentTint: accent?.tint,
-                        onTap: () => context.go(AppRoutes.search(category: category.code)),
-                      );
-                    },
-                  ),
-              ],
-              // Best-effort: while loading, hold the grid's place with skeletons;
-              // on error draw no grid (the "All ›" link above still works and its
-              // screen has its own retry) rather than blocking Home on the catalog.
-              loading: () => [
-                for (var i = 0; i < _slots; i++)
-                  FactorySkeleton(
-                    width: cell,
-                    height: tileHeight,
-                    borderRadius: const BorderRadius.all(Radius.circular(12)),
-                  ),
-              ],
-              error: (error, stackTrace) => const <Widget>[],
-            );
-
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (var start = 0; start < cells.length; start += _columns) ...[
-                  if (start > 0) const SizedBox(height: _gap),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      for (var i = start; i < start + _columns; i++) ...[
-                        if (i > start) const SizedBox(width: _gap),
-                        Expanded(child: i < cells.length ? Center(child: cells[i]) : const SizedBox.shrink()),
-                      ],
-                    ],
-                  ),
-                ],
-              ],
-            );
-          },
-        ),
+        if (cells.isNotEmpty) ...[
+          const SizedBox(height: FactorySpacing.space3),
+          SizedBox(
+            height: tileHeight,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              // Let the tiles run to the screen edge instead of being cut at the
+              // page padding — the cue that the row scrolls.
+              clipBehavior: Clip.none,
+              itemCount: cells.length,
+              separatorBuilder: (_, _) => const SizedBox(width: _gap),
+              itemBuilder: (context, index) => cells[index],
+            ),
+          ),
+        ],
       ],
     );
   }
