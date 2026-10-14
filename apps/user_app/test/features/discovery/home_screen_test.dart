@@ -6,6 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:zairo/features/ads/data/ads_api.dart';
+import 'package:zairo/features/ads/data/models/ad_banner.dart';
+import 'package:zairo/features/ads/presentation/providers/ads_providers.dart';
 import 'package:zairo/features/auth/data/models/user_summary.dart';
 import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/booking/data/booking_api.dart';
@@ -55,6 +58,15 @@ class _FakeDiscoveryApi extends DiscoveryApi {
     lastVertical = vertical;
     return _results;
   }
+}
+
+class _FakeAdsApi extends AdsApi {
+  _FakeAdsApi(this._banners) : super(DioClient(Dio()));
+
+  final List<AdBanner> _banners;
+
+  @override
+  Future<List<AdBanner>> listBanners({String? cityCode}) async => _banners;
 }
 
 class _FakeCatalogApi extends CatalogApi {
@@ -262,6 +274,65 @@ void main() {
     await tester.tap(find.widgetWithText(FactoryPromoCard, 'Earn rewards for every visit'));
     await tester.pumpAndSettle();
     expect(find.text('Rewards page'), findsOneWidget);
+  });
+
+  testWidgets('shows the promo banner carousel under the search field when there are live banners', (tester) async {
+    _useTallWindow(tester);
+    final banners = [
+      const AdBanner(
+        id: 'b1',
+        title: 'AI & Digital Bridge',
+        subtitle: 'Watch the highlights',
+        imageUrl: 'https://cdn.example/1.jpg',
+        videoUrl: 'https://video.example/1',
+        sponsored: false,
+      ),
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi([_open])),
+          catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
+          adsApiProvider.overrideWithValue(_FakeAdsApi(banners)),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const HomeScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('AI & Digital Bridge'), findsOneWidget);
+    final bannerTop = tester.getTopLeft(find.byType(FactoryBannerCard)).dy;
+    final searchTop = tester.getTopLeft(find.text('What service are you looking for?')).dy;
+    expect(bannerTop, greaterThan(searchTop));
+  });
+
+  testWidgets('Home shows no banner strip when there are no live banners', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi([_open])),
+          catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
+          adsApiProvider.overrideWithValue(_FakeAdsApi(const [])),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const HomeScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FactoryBannerCard), findsNothing);
+    expect(find.byType(FactoryQuickActionGrid), findsOneWidget);
   });
 
   testWidgets('shows an empty state when there is nothing to discover yet', (tester) async {

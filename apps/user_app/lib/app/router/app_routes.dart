@@ -32,6 +32,11 @@ abstract final class AppRoutes {
       _withName('/compare/$catalogServiceId', serviceName);
 
   static const bookings = '/bookings';
+
+  /// A Home banner's video. Needs an `AdVideoArgs` as `extra`; without one
+  /// (a refresh or a hand-typed link) there is nothing to play, so it falls
+  /// back to Home.
+  static const adVideo = '/ad-video';
   static const editProfile = '/profile/edit';
 
   /// A business on a map. [distanceKm] is shown under the map when given.
