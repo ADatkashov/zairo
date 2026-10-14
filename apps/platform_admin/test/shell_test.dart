@@ -42,6 +42,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Catalog'), findsOneWidget);
     expect(find.text('Cities'), findsOneWidget);
+    expect(find.text('Ads'), findsOneWidget);
     expect(find.text('Activity'), findsOneWidget);
     expect(find.text('Staff'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);

@@ -20,6 +20,8 @@ class FactoryCategoryTile extends StatelessWidget {
     this.onTap,
     this.accentColor,
     this.accentTint,
+    this.labelMaxWidth,
+    this.dense = false,
   });
 
   final IconData icon;
@@ -33,6 +35,16 @@ class FactoryCategoryTile extends StatelessWidget {
 
   /// Width of the label under the icon — [FactoryCategoryTile.labelWidth].
   static const double labelWidth = 72;
+
+  /// Overrides [labelWidth] for a tile that sits in a grid cell of its own
+  /// width (a four-column grid on a narrow phone has cells narrower than 72).
+  final double? labelMaxWidth;
+
+  /// A slightly smaller label (12 instead of 13) for a narrow grid cell, so a
+  /// word like "Education" or "categories" fits on a 320-360px phone instead
+  /// of breaking mid-word or ending in an ellipsis. With [labelMaxWidth] set
+  /// the tile also drops its side padding: the cell is already the margin.
+  final bool dense;
   final bool selected;
   final VoidCallback? onTap;
 
@@ -71,7 +83,9 @@ class FactoryCategoryTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: FactoryRadius.lgRadius,
         child: Padding(
-          padding: const EdgeInsets.all(FactorySpacing.space1),
+          padding: labelMaxWidth != null
+              ? const EdgeInsets.symmetric(vertical: FactorySpacing.space1)
+              : const EdgeInsets.all(FactorySpacing.space1),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -85,7 +99,7 @@ class FactoryCategoryTile extends StatelessWidget {
               ),
               const SizedBox(height: FactorySpacing.space2),
               SizedBox(
-                width: labelWidth,
+                width: labelMaxWidth ?? labelWidth,
                 child: Text(
                   label,
                   textAlign: TextAlign.center,
@@ -98,6 +112,7 @@ class FactoryCategoryTile extends StatelessWidget {
                     // category names read (and fit) better untracked.
                     letterSpacing: 0,
                     height: 1.2,
+                    fontSize: dense ? 12 : null,
                     color: selected ? colors.text : colors.textSecondary,
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                   ),
