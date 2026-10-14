@@ -257,30 +257,29 @@ void main() {
       ),
   ];
 
-  testWidgets('categories are one horizontally scrolling row, with an "All" link in the heading and no shortcut icons', (tester) async {
+  testWidgets('categories are a 4x2 grid that scrolls sideways, with an "All" link in the heading and no shortcut icons', (tester) async {
     _useTallWindow(tester);
     await tester.pumpWidget(searchRouteApp(manyCategories(20)));
     await tester.pumpAndSettle();
 
-    final first = tester.getTopLeft(find.text('Category 1'));
-    final second = tester.getTopLeft(find.text('Category 2'));
-    // One line, left to right.
-    expect(second.dy, first.dy);
-    expect(second.dx, greaterThan(first.dx));
-    // The rest are off-screen to the right, reachable by swiping — not wrapped below.
+    final cats = [for (var i = 1; i <= 8; i++) tester.getTopLeft(find.text('Category $i'))];
+    // Row one: 1-4 share a line; row two: 5-8 share the next.
+    expect({cats[0].dy, cats[1].dy, cats[2].dy, cats[3].dy}, hasLength(1));
+    expect({cats[4].dy, cats[5].dy, cats[6].dy, cats[7].dy}, hasLength(1));
+    expect(cats[4].dy, greaterThan(cats[0].dy));
+    expect(cats[0].dx, lessThan(cats[1].dx));
+    expect(cats[7].dx, greaterThan(cats[6].dx));
+    // The second page is off-screen to the right, reachable by swiping.
     expect(find.text('Category 20'), findsNothing);
-    final row = find.descendant(
-      of: find.ancestor(of: find.byType(FactoryCategoryTile).first, matching: find.byType(ListView)),
-      matching: find.byType(Scrollable),
-    );
-    await tester.dragUntilVisible(find.text('Category 20'), row.first, const Offset(-300, 0));
+    final grid = find.ancestor(of: find.text('Category 1'), matching: find.byType(Scrollable));
+    await tester.dragUntilVisible(find.text('Category 20'), grid.first, const Offset(-300, 0));
     expect(find.text('Category 20'), findsOneWidget);
-    await tester.dragUntilVisible(find.text('Category 1'), row.first, const Offset(300, 0));
+    await tester.dragUntilVisible(find.text('Category 1'), grid.first, const Offset(300, 0));
     expect(find.text('All categories'), findsNothing);
 
-    // The heading with its link sits above the row.
+    // The heading with its link sits above the grid.
     final heading = tester.getTopLeft(find.text('Categories'));
-    expect(heading.dy, lessThan(first.dy));
+    expect(heading.dy, lessThan(cats[0].dy));
     expect(find.text('All'), findsOneWidget);
     expect(tester.getTopLeft(find.text('All')).dy, closeTo(heading.dy, 12));
     // "All" sits at the right edge, like "See all" in the other sections.
@@ -293,7 +292,29 @@ void main() {
     }
     // The promos are still there, after the categories.
     expect(find.text('Earn rewards for every visit'), findsOneWidget);
-    expect(tester.getTopLeft(find.text('Earn rewards for every visit')).dy, greaterThan(first.dy));
+    expect(tester.getTopLeft(find.text('Earn rewards for every visit')).dy, greaterThan(cats[7].dy));
+  });
+
+  testWidgets('exactly eight categories fit the 4x2 grid without scrolling', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(searchRouteApp(manyCategories(8)));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FactoryCategoryTile), findsNWidgets(8));
+    expect(find.ancestor(of: find.text('Category 1'), matching: find.byType(SingleChildScrollView)), findsNothing);
+  });
+
+  testWidgets('a half-filled second page adds only the columns it needs', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(searchRouteApp(manyCategories(10)));
+    await tester.pumpAndSettle();
+
+    final grid = find.ancestor(of: find.text('Category 1'), matching: find.byType(Scrollable));
+    await tester.dragUntilVisible(find.text('Category 10'), grid.first, const Offset(-300, 0));
+    final position = tester.state<ScrollableState>(grid.first).position;
+    // 4 columns + 2 more: the grid ends right after category 10, no empty page.
+    expect(position.maxScrollExtent, lessThan(tester.getSize(find.byType(MaterialApp)).width));
+    expect(find.text('Category 10'), findsOneWidget);
   });
 
   testWidgets('one tap on a category opens Search already narrowed to it', (tester) async {
@@ -307,7 +328,7 @@ void main() {
     expect(find.text('Search page category-3'), findsOneWidget);
   });
 
-  testWidgets('with only a couple of categories only those are shown', (tester) async {
+  testWidgets('with fewer than eight categories only those are shown', (tester) async {
     _useTallWindow(tester);
     await tester.pumpWidget(searchRouteApp(manyCategories(2)));
     await tester.pumpAndSettle();
@@ -317,12 +338,12 @@ void main() {
     expect(find.text('All'), findsOneWidget);
   });
 
-  testWidgets('while the catalog loads the row keeps its place with skeletons, and the link works', (tester) async {
+  testWidgets('while the catalog loads the grid keeps its place with eight skeletons, and the link works', (tester) async {
     _useTallWindow(tester);
     await tester.pumpWidget(searchRouteApp(const [], catalogApi: _NeverCatalogApi()));
     await tester.pump();
 
-    expect(find.byType(FactorySkeleton), findsNWidgets(5));
+    expect(find.byType(FactorySkeleton), findsNWidgets(8));
     expect(find.text('All'), findsOneWidget);
   });
 
