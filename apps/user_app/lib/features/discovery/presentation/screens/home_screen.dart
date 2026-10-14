@@ -9,6 +9,7 @@ import '../../../../core/formatting/initials.dart';
 import '../../../../core/provider_grid.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../maps/data/geo_point.dart';
+import '../../../ads/presentation/widgets/home_banner_carousel.dart';
 import '../../../auth/data/models/user_summary.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../booking/data/models/book_again_suggestion.dart';
@@ -111,6 +112,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       delegate: SliverChildListDelegate([
                   const SizedBox(height: FactorySpacing.space4),
                   _SearchEntry(onTap: () => context.go(AppRoutes.search(category: _vertical))),
+                  const HomeBannerCarousel(),
                   const SizedBox(height: FactorySpacing.space5),
                   const _QuickActions(),
                   // The blocks of real colour sit right under the launcher, so

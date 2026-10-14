@@ -7,6 +7,7 @@ import 'package:zairo/app/app.dart';
 import 'package:zairo/app/router/app_router.dart';
 import 'package:zairo/app/router/app_routes.dart';
 import 'package:zairo/core/constants/environment.dart';
+import 'package:zairo/features/ads/presentation/screens/ad_video_screen.dart';
 import 'package:zairo/features/catalog/presentation/providers/catalog_providers.dart';
 import 'package:zairo/features/discovery/data/discovery_api.dart';
 import 'package:zairo/features/discovery/data/models/provider_search_result.dart';
@@ -72,4 +73,27 @@ void main() {
       expect(tabBarBookings, findsOneWidget);
     },
   );
+
+  testWidgets('the ad video route falls back to Home without a video to play', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          networkConfigProvider.overrideWithValue(appNetworkConfig),
+          discoveryApiProvider.overrideWithValue(_EmptyDiscoveryApi()),
+          categoriesProvider.overrideWith((ref) async => const []),
+        ],
+        child: const ZairoApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final router = ProviderScope.containerOf(
+      tester.element(find.byType(ZairoApp)),
+    ).read(routerProvider);
+
+    router.go(AppRoutes.adVideo);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AdVideoScreen), findsNothing);
+    expect(find.text('Home'), findsWidgets);
+  });
 }

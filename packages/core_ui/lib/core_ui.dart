@@ -19,6 +19,7 @@ export 'src/theme/factory_theme.dart';
 export 'src/theme/factory_typography.dart';
 export 'src/widgets/factory_app_bar.dart';
 export 'src/widgets/factory_avatar.dart';
+export 'src/widgets/factory_banner_card.dart';
 export 'src/widgets/factory_badge.dart';
 export 'src/widgets/factory_donut_chart.dart';
 export 'src/widgets/factory_filter_panel.dart';

@@ -332,6 +332,12 @@
   "homeSeeAll": "See all",
   "@homeSeeAll": {"description": "Home screen section header action that opens Search."},
 
+  "adSponsoredLabel": "Ad",
+  "@adSponsoredLabel": {"description": "Small label on a Home banner that a business paid for."},
+
+  "adWatchVideoLabel": "Watch video",
+  "@adWatchVideoLabel": {"description": "Spoken hint on a Home banner that opens a video."},
+
   "homeQuickActionNew": "NEW",
   "@homeQuickActionNew": {"description": "Short red flag pinned to a Home quick-action tile that points at a feature the user has not seen yet."},
 
