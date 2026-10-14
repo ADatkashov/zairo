@@ -273,6 +273,12 @@
 
   "businessAnalyticsTooltip": "Аналитика бизнеса",
   "businessAnalyticsTitle": "Аналитика бизнеса",
+  "businessReportsTitle": "Отчёты",
+  "reportsFiltersTitle": "Фильтры",
+  "reportsFiltersReset": "Сбросить",
+  "reportsPeriodLabel": "Период",
+  "reportsOtherServices": "Прочее",
+  "reportsBookingsByStatusTitle": "Записи по статусам",
   "analyticsPeriodToday": "Сегодня",
   "analyticsPeriodThisWeek": "Эта неделя",
   "analyticsPeriodThisMonth": "Этот месяц",
