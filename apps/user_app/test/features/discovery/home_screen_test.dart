@@ -22,6 +22,15 @@ import 'package:zairo/features/catalog/presentation/screens/all_categories_scree
 import 'package:zairo/features/discovery/presentation/screens/home_screen.dart';
 import 'package:zairo/l10n/app_localizations.dart';
 
+/// Home now stacks a 4×2 launcher and a promo strip above the category row and
+/// the rails, so the default 800×600 window builds none of them. Tall window
+/// for the tests that look at those sections (not the scroll/collapse ones).
+void _useTallWindow(WidgetTester tester) {
+  tester.view.physicalSize = const Size(800, 3000);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+}
+
 class _FakeDiscoveryApi extends DiscoveryApi {
   _FakeDiscoveryApi(this._results) : super(DioClient(Dio()));
 
@@ -99,6 +108,7 @@ const _closed = ProviderSearchResult(
 
 void main() {
   testWidgets('shows the curated "top rated" row and the location label', (tester) async {
+    _useTallWindow(tester);
     final fakeApi = _FakeDiscoveryApi([_open, _closed]);
 
     await tester.pumpWidget(
@@ -144,7 +154,11 @@ void main() {
 
     expect(collapsedHeight, lessThan(expandedHeight));
     expect(find.text('Almaty'), findsOneWidget);
-    expect(find.byIcon(Symbols.favorite_rounded), findsOneWidget);
+    // The quick-action grid has a heart of its own; this one is the bar's.
+    expect(
+      find.descendant(of: find.byType(SliverAppBar), matching: find.byIcon(Symbols.favorite_rounded)),
+      findsOneWidget,
+    );
   });
 
   testWidgets('shows the availability hero only when something is open today', (tester) async {
@@ -167,6 +181,89 @@ void main() {
     expect(find.textContaining('open slots today'), findsOneWidget);
   });
 
+  testWidgets('shows the 4×2 quick-action grid and the rewards promo, and they navigate', (tester) async {
+    _useTallWindow(tester);
+    final fakeApi = _FakeDiscoveryApi([_open]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          discoveryApiProvider.overrideWithValue(fakeApi),
+          catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
+        ],
+        child: MaterialApp.router(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: GoRouter(
+            routes: [
+              GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+              GoRoute(path: '/rewards', builder: (_, _) => const Scaffold(body: Text('Rewards page'))),
+              GoRoute(path: '/support', builder: (_, _) => const Scaffold(body: Text('Support page'))),
+              GoRoute(path: '/search', builder: (_, _) => const Scaffold(body: Text('Search page'))),
+              GoRoute(path: '/bookings', builder: (_, _) => const Scaffold(body: Text('Bookings page'))),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final grid = find.byType(FactoryQuickActionGrid);
+    expect(grid, findsOneWidget);
+    for (final label in [
+      'Search',
+      'Bookings',
+      'My favorites',
+      'Messages',
+      'My Rewards',
+      'Notifications',
+      'Payment cards',
+      'Support',
+    ]) {
+      expect(find.descendant(of: grid, matching: find.text(label)), findsOneWidget, reason: label);
+    }
+    // Only the rewards tile carries the NEW flag.
+    expect(find.descendant(of: grid, matching: find.text('NEW')), findsOneWidget);
+
+    expect(find.text('Earn rewards for every visit'), findsOneWidget);
+    expect(find.textContaining('open slots today'), findsOneWidget);
+
+    await tester.tap(find.descendant(of: grid, matching: find.text('Support')));
+    await tester.pumpAndSettle();
+    expect(find.text('Support page'), findsOneWidget);
+  });
+
+  testWidgets('the rewards promo card opens My Rewards', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi(const [])),
+          catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
+        ],
+        child: MaterialApp.router(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: GoRouter(
+            routes: [
+              GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+              GoRoute(path: '/rewards', builder: (_, _) => const Scaffold(body: Text('Rewards page'))),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Nothing is open today, so the rewards card is the only promo.
+    expect(find.textContaining('open slots today'), findsNothing);
+    await tester.tap(find.widgetWithText(FactoryPromoCard, 'Earn rewards for every visit'));
+    await tester.pumpAndSettle();
+    expect(find.text('Rewards page'), findsOneWidget);
+  });
+
   testWidgets('shows an empty state when there is nothing to discover yet', (tester) async {
     final fakeApi = _FakeDiscoveryApi(const []);
 
@@ -187,6 +284,7 @@ void main() {
   });
 
   testWidgets('category tiles come from the catalog API, not a hardcoded literal', (tester) async {
+    _useTallWindow(tester);
     final fakeDiscoveryApi = _FakeDiscoveryApi([_open, _closed]);
     final fakeCatalogApi = _FakeCatalogApi(const [
       Category(
@@ -243,6 +341,7 @@ void main() {
   testWidgets(
       'Home shows only the first 6 categories plus an "All categories" tile, not the whole catalog',
       (tester) async {
+    _useTallWindow(tester);
     final fakeDiscoveryApi = _FakeDiscoveryApi([_open, _closed]);
     final fakeCatalogApi = _FakeCatalogApi([
       for (var i = 1; i <= 8; i++)
@@ -319,6 +418,7 @@ void main() {
   });
 
   testWidgets('shows a Book Again card for a logged-in user with a completed booking', (tester) async {
+    _useTallWindow(tester);
     final fakeDiscoveryApi = _FakeDiscoveryApi(const []);
     final fakeBookingApi = _FakeBookingApiWithSuggestions([
       BookAgainSuggestion(
