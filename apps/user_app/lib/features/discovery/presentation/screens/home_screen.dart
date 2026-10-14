@@ -479,20 +479,27 @@ class _SearchEntry extends StatelessWidget {
   }
 }
 
-/// The Home tab's categories: a heading with an "All ›" link, then ONE
-/// horizontally scrolling row of every category, the same gesture as the
-/// "Top rated" rail below it. A launcher, not a filter — one tap on a category
-/// opens Search already narrowed to it. The row keeps Home short however large
-/// the catalog grows (the catalog's own `sortOrder`, admin-curated, sets the
-/// order), and the next tile peeking at the screen edge is the cue to swipe;
-/// "All ›" still opens [AllCategoriesScreen] for the full list in one view.
+/// The Home tab's categories: a heading with an "All ›" link, then a 4×2 grid
+/// of categories that scrolls sideways. A launcher, not a filter — one tap on a
+/// category opens Search already narrowed to it. The first screen is exactly
+/// two rows of four (the catalog's own `sortOrder`, admin-curated, decides the
+/// order); the rest follow as further 4×2 pages to the right, so Home stays two
+/// rows tall however large the catalog grows. With more than eight categories
+/// the next column peeks at the screen edge as the cue to swipe; "All ›" still
+/// opens [AllCategoriesScreen] for the whole list in one view.
 class _CategoriesSection extends ConsumerWidget {
   const _CategoriesSection();
 
-  /// Skeleton tiles shown while the catalog loads.
-  static const _skeletons = 5;
+  static const _columns = 4;
 
-  static const _gap = FactorySpacing.space3;
+  /// One page: two rows of four.
+  static const _pageSize = _columns * 2;
+
+  static const _gap = FactorySpacing.space2;
+
+  /// How many columns are on screen when the grid scrolls: the fourth plus a
+  /// sliver of the fifth.
+  static const _visibleColumnsWhenScrolling = 4.4;
 
   // FactoryCategoryTile's own content is 72px of chrome (4px padding + 56px
   // icon circle + 8px gap + 4px padding) plus up to two label lines. The label
@@ -513,36 +520,6 @@ class _CategoriesSection extends ConsumerWidget {
     final languageCode = Localizations.localeOf(context).languageCode;
     final tileHeight = _tileHeightFor(context);
 
-    final cells = categoriesAsync.when(
-      data: (categories) => [
-        for (final category in categories)
-          Builder(
-            builder: (context) {
-              final accent = colorForCategory(context, category.code);
-              return FactoryCategoryTile(
-                icon: iconForCategory(category.code),
-                label: category.nameFor(languageCode),
-                accentColor: accent?.color,
-                accentTint: accent?.tint,
-                onTap: () => context.go(AppRoutes.search(category: category.code)),
-              );
-            },
-          ),
-      ],
-      // Best-effort: while loading, hold the row's place with skeletons; on
-      // error draw no row (the "All ›" link above still works and its screen
-      // has its own retry) rather than blocking Home on the catalog.
-      loading: () => [
-        for (var i = 0; i < _skeletons; i++)
-          FactorySkeleton(
-            width: FactoryCategoryTile.labelWidth,
-            height: tileHeight,
-            borderRadius: const BorderRadius.all(Radius.circular(12)),
-          ),
-      ],
-      error: (error, stackTrace) => const <Widget>[],
-    );
-
     return Column(
       // Stretch: the heading needs the full width to push "All ›" to the right edge.
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -552,21 +529,97 @@ class _CategoriesSection extends ConsumerWidget {
           actionLabel: l10n.homeCategoriesAll,
           onActionTap: () => _openAllCategories(context),
         ),
-        if (cells.isNotEmpty) ...[
-          const SizedBox(height: FactorySpacing.space3),
-          SizedBox(
-            height: tileHeight,
-            child: ListView.separated(
+        const SizedBox(height: FactorySpacing.space3),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+
+            final cells = categoriesAsync.when(
+              data: (categories) => [
+                for (final category in categories) (category.code, category.nameFor(languageCode)),
+              ],
+              // Best-effort: while loading, hold the grid's place with skeletons;
+              // on error draw no grid (the "All ›" link above still works and its
+              // screen has its own retry) rather than blocking Home on the catalog.
+              loading: () => [for (var i = 0; i < _pageSize; i++) null],
+              error: (error, stackTrace) => const <(String, String)?>[],
+            );
+            if (cells.isEmpty) return const SizedBox.shrink();
+
+            final scrolls = cells.length > _pageSize;
+            final visible = scrolls ? _visibleColumnsWhenScrolling : _columns.toDouble();
+            // The cell is the label's width: a narrow phone has no room to spare.
+            final cell = (width - _gap * (visible.ceil() - 1)) / visible;
+            final dense = cell < 76;
+
+            Widget tile((String, String)? entry) {
+              if (entry == null) {
+                return FactorySkeleton(
+                  width: cell,
+                  height: tileHeight,
+                  borderRadius: const BorderRadius.all(Radius.circular(12)),
+                );
+              }
+              final (code, label) = entry;
+              final accent = colorForCategory(context, code);
+              return FactoryCategoryTile(
+                icon: iconForCategory(code),
+                label: label,
+                labelMaxWidth: cell,
+                dense: dense,
+                accentColor: accent?.color,
+                accentTint: accent?.tint,
+                onTap: () => context.go(AppRoutes.search(category: code)),
+              );
+            }
+
+            // Page k holds items 8k..8k+7 as 4 columns × 2 rows, so the first
+            // screen reads exactly like the plain grid: 1-4 on top, 5-8 below.
+            // A half-filled last page only gets the columns it needs, so the
+            // grid doesn't scroll over empty space (a lone page keeps all four
+            // so its tiles stay on the grid).
+            final fullPages = cells.length ~/ _pageSize;
+            final rest = cells.length % _pageSize;
+            final columnCount = scrolls ? fullPages * _columns + (rest < _columns ? rest : _columns) : _columns;
+            int indexAt(int column, int row) => (column ~/ _columns) * _pageSize + row * _columns + column % _columns;
+            final columns = <Widget>[
+              for (var c = 0; c < columnCount; c++)
+                SizedBox(
+                  width: cell,
+                  child: Column(
+                    children: [
+                      for (var row = 0; row < 2; row++) ...[
+                        if (row > 0) const SizedBox(height: _gap),
+                        if (indexAt(c, row) < cells.length)
+                          Center(child: tile(cells[indexAt(c, row)]))
+                        else
+                          // Keeps the empty slot's height so a lone tile stays in the top row.
+                          SizedBox(height: tileHeight),
+                      ],
+                    ],
+                  ),
+                ),
+            ];
+
+            final grid = Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var i = 0; i < columns.length; i++) ...[
+                  if (i > 0) const SizedBox(width: _gap),
+                  columns[i],
+                ],
+              ],
+            );
+            if (!scrolls) return grid;
+            return SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              // Let the tiles run to the screen edge instead of being cut at the
-              // page padding — the cue that the row scrolls.
+              // Let the next column run to the screen edge instead of being cut
+              // at the page padding — the cue that the grid scrolls.
               clipBehavior: Clip.none,
-              itemCount: cells.length,
-              separatorBuilder: (_, _) => const SizedBox(width: _gap),
-              itemBuilder: (context, index) => cells[index],
-            ),
-          ),
-        ],
+              child: grid,
+            );
+          },
+        ),
       ],
     );
   }
