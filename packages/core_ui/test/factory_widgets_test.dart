@@ -1388,4 +1388,39 @@ void narrowPhoneTests() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  group('FactoryCategoryTile', () {
+    testWidgets('its label is 72 wide unless the grid cell says otherwise', (tester) async {
+      await tester.pumpWidget(
+        _wrap(const FactoryCategoryTile(icon: Icons.star_rounded, label: 'Beauty')),
+      );
+      expect(
+        tester.getSize(find.ancestor(of: find.text('Beauty'), matching: find.byType(SizedBox)).first).width,
+        FactoryCategoryTile.labelWidth,
+      );
+
+      await tester.pumpWidget(
+        _wrap(const FactoryCategoryTile(icon: Icons.star_rounded, label: 'Beauty', labelMaxWidth: 60)),
+      );
+      expect(
+        tester.getSize(find.ancestor(of: find.text('Beauty'), matching: find.byType(SizedBox)).first).width,
+        60,
+      );
+    });
+
+    testWidgets('a dense tile has a smaller label, and a gridded tile no side padding', (tester) async {
+      await tester.pumpWidget(
+        _wrap(const FactoryCategoryTile(icon: Icons.star_rounded, label: 'Beauty')),
+      );
+      final normal = tester.widget<Text>(find.text('Beauty')).style?.fontSize;
+
+      await tester.pumpWidget(
+        _wrap(const FactoryCategoryTile(icon: Icons.star_rounded, label: 'Beauty', labelMaxWidth: 60, dense: true)),
+      );
+      expect(tester.widget<Text>(find.text('Beauty')).style?.fontSize, 12);
+      expect(normal, isNot(12));
+      // 60 wide label, no 4px side padding: the tile is exactly as wide as its cell.
+      expect(tester.getSize(find.byType(FactoryCategoryTile)).width, 60);
+    });
+  });
 }

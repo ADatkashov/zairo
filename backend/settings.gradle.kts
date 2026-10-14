@@ -45,4 +45,5 @@ include(
     "loyalty",
     "invitations",
     "workforce",
+    "ads",
 )

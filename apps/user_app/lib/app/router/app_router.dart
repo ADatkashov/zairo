@@ -12,6 +12,7 @@ import '../../features/booking/presentation/screens/my_bookings_screen.dart';
 import '../../features/booking/presentation/screens/provider_detail_screen.dart';
 import '../../features/catalog/presentation/screens/all_categories_screen.dart';
 import '../../features/city/presentation/screens/city_selection_screen.dart';
+import '../../features/ads/presentation/screens/ad_video_screen.dart';
 import '../../features/city/presentation/widgets/city_onboarding_gate.dart';
 import '../../features/onboarding/presentation/screens/welcome_screen.dart';
 import '../../features/discovery/data/models/provider_search_result.dart';
@@ -76,6 +77,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             (state.uri.queryParameters['booking'] ?? '').isEmpty ? AppRoutes.bookings : null,
         builder: (context, state) =>
             PaymentResultScreen(bookingId: state.uri.queryParameters['booking']!),
+      ),
+      GoRoute(
+        path: AppRoutes.adVideo,
+        parentNavigatorKey: rootNavigatorKey,
+        redirect: (context, state) => state.extra is AdVideoArgs ? null : '/',
+        builder: (context, state) => AdVideoScreen(args: state.extra! as AdVideoArgs),
       ),
       GoRoute(
         path: AppRoutes.bookingPayment,

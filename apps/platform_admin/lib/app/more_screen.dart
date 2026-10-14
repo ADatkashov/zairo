@@ -21,6 +21,7 @@ class MoreScreen extends ConsumerWidget {
     final paths = [
       ConsoleRoutes.catalog,
       ConsoleRoutes.cities,
+      ConsoleRoutes.ads,
       ConsoleRoutes.activity,
       if (permissions.canManageStaff) ConsoleRoutes.staff,
       ConsoleRoutes.settings,

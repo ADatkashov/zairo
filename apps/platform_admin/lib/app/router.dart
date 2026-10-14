@@ -8,6 +8,7 @@ import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/session_controller.dart';
 import '../features/businesses/presentation/businesses_screen.dart';
 import '../features/catalog/presentation/catalog_screen.dart';
+import '../features/ads/presentation/ads_screen.dart';
 import '../features/cities/presentation/cities_screen.dart';
 import '../features/dashboard/presentation/dashboard_screen.dart';
 import '../features/finance/presentation/finance_screen.dart';
@@ -114,6 +115,7 @@ GoRouter buildRouter({
           ),
           _branch(ConsoleRoutes.catalog, (state) => const CatalogScreen()),
           _branch(ConsoleRoutes.cities, (state) => const CitiesScreen()),
+          _branch(ConsoleRoutes.ads, (state) => const AdsScreen()),
           _branch(ConsoleRoutes.finance, (state) => FinanceScreen(initialTab: state.uri.queryParameters['tab'])),
           _branch(ConsoleRoutes.activity, (state) => const ActivityScreen()),
           _branch(ConsoleRoutes.staff, (state) => const StaffScreen()),
