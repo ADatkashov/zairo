@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../data/models/admin_provider.dart';
+import '../../data/models/business_analytics.dart';
 import '../providers/salon_providers.dart';
 import '../widgets/analytics_period.dart';
 

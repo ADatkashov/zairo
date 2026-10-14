@@ -40,6 +40,9 @@ class _FakeSalonAdminApi extends SalonAdminApi {
   final Map<String, DashboardMetrics> _metricsByProviderId;
   Map<String, dynamic>? lastCreateCall;
 
+  /// When set, creating a business fails with it (a network error, say).
+  Object? createError;
+
   /// Null = the schedule endpoint "fails" (the card stays hidden, as on a
   /// real error), so tests that aren't about the agenda are unaffected.
   List<ScheduleEntry>? schedule;
@@ -67,6 +70,7 @@ class _FakeSalonAdminApi extends SalonAdminApi {
     required String vertical,
     required String cityCode,
   }) async {
+    if (createError != null) throw createError!;
     lastCreateCall = {'ownerUserId': ownerUserId, 'name': name, 'vertical': vertical, 'cityCode': cityCode};
     final created = AdminProvider(id: 'p-new', ownerUserId: ownerUserId, name: name, vertical: vertical, status: 'PENDING');
     _providers.add(created);
@@ -451,5 +455,83 @@ void main() {
     expect(find.text('Gel manicure'), findsNothing);
     expect(find.text('No bookings'), findsNWidgets(7));
     expect(find.text('This week'), findsOneWidget);
+  });
+
+  group('the "Add another business" dialog', () {
+    Future<_FakeSalonAdminApi> openDialog(WidgetTester tester) async {
+      final fakeApi = _FakeSalonAdminApi([
+        const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE'),
+      ]);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            salonAdminApiProvider.overrideWithValue(fakeApi),
+            beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+            billingApiProvider.overrideWithValue(_FakeBillingApi()),
+            campaignCenterApiProvider.overrideWithValue(_FakeCampaignCenterApi()),
+            authControllerProvider.overrideWith(_LoggedInOwnerController.new),
+            activeCitiesProvider.overrideWith(
+              (ref) async => [
+                City(code: 'almaty', name: 'Almaty', countryCode: 'KZ', timezone: 'Asia/Almaty', currency: 'KZT', active: true),
+              ],
+            ),
+          ],
+          child: MaterialApp(
+            theme: factoryLightTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const DashboardScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final add = find.widgetWithText(OutlinedButton, 'Add another business');
+      await tester.scrollUntilVisible(add, 200);
+      await tester.tap(add);
+      await tester.pumpAndSettle();
+      return fakeApi;
+    }
+
+    testWidgets('the city list shows up on the first opening (it used to stay a spinner)', (tester) async {
+      await openDialog(tester);
+
+      expect(find.byType(DropdownButtonFormField<String>), findsWidgets);
+      expect(find.text('Almaty'), findsOneWidget);
+    });
+
+    testWidgets('an empty name says what is wrong instead of silently doing nothing', (tester) async {
+      final fakeApi = await openDialog(tester);
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Create'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Enter a business name'), findsOneWidget);
+      expect(fakeApi.lastCreateCall, isNull);
+      expect(find.text('Add a business'), findsOneWidget, reason: 'the dialog stays open');
+
+      // Typing again clears the message.
+      await tester.enterText(find.byType(TextField), 'G');
+      await tester.pump();
+      expect(find.text('Enter a business name'), findsNothing);
+    });
+
+    testWidgets('a failed request is reported in the dialog and can be retried', (tester) async {
+      final fakeApi = await openDialog(tester);
+      fakeApi.createError = StateError('offline');
+
+      await tester.enterText(find.byType(TextField), 'Second Salon');
+      await tester.tap(find.widgetWithText(FilledButton, 'Create'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Failed to create business'), findsOneWidget);
+      expect(find.text('Add a business'), findsOneWidget);
+
+      fakeApi.createError = null;
+      await tester.tap(find.widgetWithText(FilledButton, 'Create'));
+      await tester.pumpAndSettle();
+
+      expect(fakeApi.lastCreateCall?['name'], 'Second Salon');
+      expect(find.text('Add a business'), findsNothing, reason: 'the dialog closes on success');
+    });
   });
 }

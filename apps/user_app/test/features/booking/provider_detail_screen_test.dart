@@ -300,7 +300,13 @@ Future<void> tapVisible(WidgetTester tester, Finder finder) async {
   // The photo-first header pushes lower sections past the lazily-built part
   // of the list, so scroll a not-yet-built target into existence first.
   if (finder.evaluate().isEmpty) {
-    await tester.scrollUntilVisible(finder, 200);
+    // The page itself is the outermost scrollable; the day picker adds horizontal ones.
+    final page = find.byType(Scrollable).first;
+    try {
+      await tester.scrollUntilVisible(finder, 200, scrollable: page);
+    } on StateError {
+      await tester.scrollUntilVisible(finder, -200, scrollable: page);
+    }
   }
   await tester.ensureVisible(finder);
   await tester.pumpAndSettle();
@@ -382,10 +388,11 @@ void main() {
 
     // The progress bar follows the selection: service -> time -> confirm.
     BookingStepper stepper() => tester.widget<BookingStepper>(find.byType(BookingStepper));
-    expect(stepper().step, 0);
-    await tapVisible(tester, find.text('Haircut'));
-    await tester.pumpAndSettle();
+    // A single-service salon has nothing to choose: the service is already picked.
     expect(stepper().step, 1);
+    await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Haircut'));
+    await tester.pumpAndSettle();
+    expect(stepper().step, 1, reason: 'tapping the picked service keeps it picked');
     await tapVisible(tester, find.text('10:00'));
     await tester.pumpAndSettle();
     expect(stepper().step, 2);
@@ -460,13 +467,13 @@ void main() {
     expect(find.text('4.2'), findsOneWidget);
     expect(find.text('(55)'), findsOneWidget);
     // The service row shows the service's own currency, not the platform default.
-    expect(find.text(r'30 $'), findsOneWidget);
+    expect(find.text(r'30 $'), findsWidgets);
     expect(find.text('30 ₸'), findsNothing);
 
     final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');
     expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNull);
 
-    await tapVisible(tester, find.text('Haircut'));
+    await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Haircut'));
     await tester.pumpAndSettle();
     await tapVisible(tester, find.text('10:00'));
     await tester.pumpAndSettle();
@@ -543,7 +550,7 @@ void main() {
     expect(find.text('Jamie Stylist'), findsOneWidget);
 
     final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');
-    await tapVisible(tester, find.text('Haircut'));
+    await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Haircut'));
     await tester.pumpAndSettle();
 
     // No times are shown until a person (or "Any master") is chosen -> still disabled.
@@ -639,7 +646,7 @@ void main() {
     await tapVisible(tester, find.text('Toyota Camry (2019)'));
     await tester.pumpAndSettle();
 
-    await tapVisible(tester, find.text('Oil Change'));
+    await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Oil Change'));
     await tester.pumpAndSettle();
 
     // Mechanic + vehicle + service picked, but no slot yet -> still disabled.
@@ -718,7 +725,7 @@ void main() {
     expect(find.text('Dr. Aliya'), findsOneWidget);
 
     final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');
-    await tapVisible(tester, find.text('Checkup'));
+    await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Checkup'));
     await tester.pumpAndSettle();
 
     // No times are shown until a person is chosen -> still disabled.
@@ -776,6 +783,7 @@ void main() {
       minPrice: 40,
       services: [
         ServiceSummary(id: 'service-1', title: 'Checkup', durationMinutes: 30, price: 40, currency: 'USD'),
+        ServiceSummary(id: 'service-2', title: 'Consultation', durationMinutes: 15, price: 20, currency: 'USD'),
       ],
     );
 
@@ -804,7 +812,7 @@ void main() {
     // The times for "Any master" depend on the service.
     expect(find.text('Choose a service first'), findsOneWidget);
 
-    await tapVisible(tester, find.text('Checkup'));
+    await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Checkup'));
     await tester.pumpAndSettle();
     await tapVisible(tester, find.text('10:00'));
     await tester.pumpAndSettle();
@@ -871,7 +879,7 @@ void main() {
     expect(find.text('Dr. Aliya'), findsNothing);
     expect(find.text('Any master'), findsNothing);
 
-    await tapVisible(tester, find.text('Checkup'));
+    await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Checkup'));
     await tester.pumpAndSettle();
     // Times come straight from the merged list.
     expect(find.text('10:00'), findsOneWidget);
@@ -918,7 +926,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tapVisible(tester, find.text('Haircut'));
+    await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Haircut'));
     await tester.pumpAndSettle();
     expect(find.textContaining('45'), findsNothing);
 
@@ -1059,7 +1067,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tapVisible(tester, find.text('Haircut'));
+    await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Haircut'));
     await tester.pumpAndSettle();
     await tapVisible(tester, find.text('10:00'));
     await tester.pumpAndSettle();
@@ -1136,7 +1144,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tapVisible(tester, find.text('Haircut'));
+    await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Haircut'));
     await tester.pumpAndSettle();
     await tapVisible(tester, find.text('10:00'));
     await tester.pumpAndSettle();
@@ -1146,5 +1154,86 @@ void main() {
     expect(fakePaymentsApi.lastChargedBookingId, isNull);
     expect(find.text('Waiting for payment'), findsNothing);
     expect(find.text('Booking confirmed!'), findsOneWidget);
+  });
+
+  group('the bar above "Book" says what to pick next', () {
+    AvailabilitySlot slot() => AvailabilitySlot(
+          id: 'slot-1',
+          providerId: 'provider-1',
+          startsAt: DateTime(2026, 1, 1, 10, 0),
+          endsAt: DateTime(2026, 1, 1, 10, 30),
+          status: 'OPEN',
+        );
+
+    Future<void> pump(WidgetTester tester, ProviderSearchResult provider, {List<Master> masters = const []}) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            bookingApiProvider.overrideWithValue(_FakeBookingApi([slot()])),
+            paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+            beautyApiProvider.overrideWithValue(_FakeBeautyApi(masters)),
+            authControllerProvider.overrideWith(_LoggedInAuthController.new),
+          ],
+          child: _routerApp(provider),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    String? hint(WidgetTester tester) {
+      final finder = find.byKey(const Key('bookingNextStepHint'));
+      return finder.evaluate().isEmpty ? null : tester.widget<Text>(finder).data;
+    }
+
+    ProviderSearchResult salon(List<ServiceSummary> services) => ProviderSearchResult(
+          id: 'provider-1',
+          name: 'Test Salon',
+          vertical: 'beauty',
+          status: 'ACTIVE',
+          hasOpenAvailability: true,
+          minPrice: 30,
+          services: services,
+        );
+
+    const haircut = ServiceSummary(id: 'service-1', title: 'Haircut', durationMinutes: 30, price: 30, currency: 'USD');
+    const colour = ServiceSummary(id: 'service-2', title: 'Colouring', durationMinutes: 60, price: 80, currency: 'USD');
+
+    testWidgets('several services: service first, then time, then nothing once ready', (tester) async {
+      await pump(tester, salon([haircut, colour]));
+
+      expect(hint(tester), 'Choose a service');
+      await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Haircut'));
+      await tester.pumpAndSettle();
+      expect(hint(tester), 'Choose a time');
+      await tapVisible(tester, find.text('10:00'));
+      await tester.pumpAndSettle();
+      expect(hint(tester), isNull);
+      expect(tester.widget<FactoryButton>(find.widgetWithText(FactoryButton, 'Book')).onPressed, isNotNull);
+    });
+
+    testWidgets('one service is already picked, so the first thing asked is the time', (tester) async {
+      await pump(tester, salon([haircut]));
+
+      expect(hint(tester), 'Choose a time');
+      expect(find.byType(BookingStepper), findsOneWidget);
+    });
+
+    testWidgets('with masters, the person is asked for before the time', (tester) async {
+      await pump(
+        tester,
+        salon([haircut]),
+        masters: const [
+          Master(id: 'master-1', providerId: 'provider-1', displayName: 'Jamie Stylist', active: true),
+        ],
+      );
+
+      expect(hint(tester), 'Choose a specialist');
+      await tapVisible(tester, find.text('Jamie Stylist'));
+      await tester.pumpAndSettle();
+      expect(hint(tester), 'Choose a time');
+    });
   });
 }
