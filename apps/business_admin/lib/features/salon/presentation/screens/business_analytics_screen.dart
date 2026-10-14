@@ -8,10 +8,10 @@ import '../../../campaigns/presentation/widgets/smart_action_center_section.dart
 import '../../data/models/admin_provider.dart';
 import '../../data/models/business_analytics.dart';
 import '../providers/salon_providers.dart';
+import '../widgets/analytics_period.dart';
+import 'business_reports_screen.dart';
 import 'customer_list_screen.dart';
 import 'smart_fill_campaigns_screen.dart';
-
-enum _Period { today, thisWeek, thisMonth, custom }
 
 /// The Revenue Intelligence Dashboard: what this business earned, what
 /// ZAIRO recovered, what's at risk, and what deserves attention next — all
@@ -29,44 +29,16 @@ class BusinessAnalyticsScreen extends ConsumerStatefulWidget {
 }
 
 class _BusinessAnalyticsScreenState extends ConsumerState<BusinessAnalyticsScreen> {
-  _Period _period = _Period.thisMonth;
+  AnalyticsPeriod _period = AnalyticsPeriod.thisMonth;
   DateTimeRange? _customRange;
 
-  AnalyticsRange get _range {
-    final now = DateTime.now();
-    switch (_period) {
-      case _Period.today:
-        final start = DateTime(now.year, now.month, now.day);
-        return (start, start.add(const Duration(days: 1)));
-      case _Period.thisWeek:
-        final todayStart = DateTime(now.year, now.month, now.day);
-        final weekStart = todayStart.subtract(Duration(days: now.weekday - 1));
-        return (weekStart, weekStart.add(const Duration(days: 7)));
-      case _Period.thisMonth:
-        final monthStart = DateTime(now.year, now.month, 1);
-        final nextMonth = now.month == 12 ? DateTime(now.year + 1, 1, 1) : DateTime(now.year, now.month + 1, 1);
-        return (monthStart, nextMonth);
-      case _Period.custom:
-        final range = _customRange;
-        if (range == null) {
-          return (DateTime(now.year, now.month, 1), now);
-        }
-        // showDateRangePicker's end is inclusive of that whole day; the API's [from, to) is exclusive.
-        return (range.start, range.end.add(const Duration(days: 1)));
-    }
-  }
+  AnalyticsRange get _range => analyticsRangeFor(_period, _customRange);
 
   Future<void> _pickCustomRange() async {
-    final now = DateTime.now();
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(now.year - 3),
-      lastDate: now,
-      initialDateRange: _customRange ?? DateTimeRange(start: now.subtract(const Duration(days: 7)), end: now),
-    );
+    final picked = await pickAnalyticsRange(context, _customRange);
     if (picked != null && mounted) {
       setState(() {
-        _period = _Period.custom;
+        _period = AnalyticsPeriod.custom;
         _customRange = picked;
       });
     }
@@ -79,7 +51,18 @@ class _BusinessAnalyticsScreenState extends ConsumerState<BusinessAnalyticsScree
     final range = _range;
 
     return Scaffold(
-      appBar: FactoryAppBar(title: l10n.businessAnalyticsTitle),
+      appBar: FactoryAppBar(
+        title: l10n.businessAnalyticsTitle,
+        actions: [
+          IconButton(
+            tooltip: l10n.businessReportsTitle,
+            icon: const Icon(Icons.insert_chart_outlined_rounded),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => BusinessReportsScreen(provider: widget.provider)),
+            ),
+          ),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(businessAnalyticsOverviewProvider);
@@ -92,7 +75,7 @@ class _BusinessAnalyticsScreenState extends ConsumerState<BusinessAnalyticsScree
         child: ListView(
           padding: const EdgeInsets.all(FactorySpacing.space4),
           children: [
-            _PeriodSelector(
+            AnalyticsPeriodChips(
               period: _period,
               customRange: _customRange,
               onSelect: (p) => setState(() => _period = p),
@@ -115,57 +98,6 @@ class _BusinessAnalyticsScreenState extends ConsumerState<BusinessAnalyticsScree
           ],
         ),
       ),
-    );
-  }
-}
-
-class _PeriodSelector extends StatelessWidget {
-  final _Period period;
-  final DateTimeRange? customRange;
-  final ValueChanged<_Period> onSelect;
-  final VoidCallback onCustom;
-
-  const _PeriodSelector({
-    required this.period,
-    required this.customRange,
-    required this.onSelect,
-    required this.onCustom,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final locale = Localizations.localeOf(context).toString();
-    final customLabel = period == _Period.custom && customRange != null
-        ? '${DateFormat.yMMMd(locale).format(customRange!.start)} – ${DateFormat.yMMMd(locale).format(customRange!.end)}'
-        : l10n.analyticsPeriodCustom;
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        FactoryChip(
-          label: l10n.analyticsPeriodToday,
-          selected: period == _Period.today,
-          onTap: () => onSelect(_Period.today),
-        ),
-        FactoryChip(
-          label: l10n.analyticsPeriodThisWeek,
-          selected: period == _Period.thisWeek,
-          onTap: () => onSelect(_Period.thisWeek),
-        ),
-        FactoryChip(
-          label: l10n.analyticsPeriodThisMonth,
-          selected: period == _Period.thisMonth,
-          onTap: () => onSelect(_Period.thisMonth),
-        ),
-        FactoryChip(
-          label: customLabel,
-          selected: period == _Period.custom,
-          icon: Icons.calendar_month_outlined,
-          onTap: onCustom,
-        ),
-      ],
     );
   }
 }

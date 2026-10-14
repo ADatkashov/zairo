@@ -274,6 +274,18 @@
 
   "businessAnalyticsTitle": "Business Intelligence",
   "@businessAnalyticsTitle": {"description": "Business Intelligence Dashboard screen's AppBar title."},
+  "businessReportsTitle": "Reports",
+  "@businessReportsTitle": {"description": "Reports screen title and the button that opens it from Business Intelligence."},
+  "reportsFiltersTitle": "Filters",
+  "@reportsFiltersTitle": {"description": "Reports filter panel title."},
+  "reportsFiltersReset": "Reset",
+  "@reportsFiltersReset": {"description": "Reports filter panel action that restores the default period."},
+  "reportsPeriodLabel": "Period",
+  "@reportsPeriodLabel": {"description": "Caption above the period chips in the reports filter panel."},
+  "reportsOtherServices": "Other",
+  "@reportsOtherServices": {"description": "Donut legend entry that sums the smaller services."},
+  "reportsBookingsByStatusTitle": "Bookings by status",
+  "@reportsBookingsByStatusTitle": {"description": "Reports card listing completed/upcoming/cancelled/no-show counts."},
 
   "analyticsPeriodToday": "Today",
   "@analyticsPeriodToday": {"description": "Date-range chip: today."},

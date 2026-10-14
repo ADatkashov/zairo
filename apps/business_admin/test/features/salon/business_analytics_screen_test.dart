@@ -3,6 +3,7 @@ import 'package:business_admin/features/salon/data/models/admin_provider.dart';
 import 'package:business_admin/features/salon/data/models/business_analytics.dart';
 import 'package:business_admin/features/salon/presentation/providers/salon_providers.dart';
 import 'package:business_admin/features/salon/presentation/screens/business_analytics_screen.dart';
+import 'package:business_admin/features/salon/presentation/screens/business_reports_screen.dart';
 import 'package:business_admin/l10n/app_localizations.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
@@ -75,6 +76,15 @@ void main() {
     expect(find.text('62%'), findsOneWidget);
     expect(find.text('40%'), findsOneWidget);
     expect(find.text('31'), findsOneWidget);
+  });
+
+  testWidgets('the app bar opens the reports screen', (tester) async {
+    await _pump(tester, _overview(), const Size(390, 1600));
+
+    await tester.tap(find.byTooltip('Reports'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(BusinessReportsScreen), findsOneWidget);
   });
 
   testWidgets('unavailable utilization is a plain figure, not an empty ring', (tester) async {
