@@ -265,6 +265,7 @@ void main() {
   });
 
   testWidgets('shows an empty state when there is nothing to discover yet', (tester) async {
+    _useTallWindow(tester);
     final fakeApi = _FakeDiscoveryApi(const []);
 
     await tester.pumpWidget(
