@@ -110,9 +110,9 @@ class HomeScreen extends ConsumerWidget {
                   _SearchEntry(onTap: () => context.go(AppRoutes.search())),
                   // Categories first, straight under the search: the main way into
                   // the app is "pick what you need", so it is the first thing
-                  // below the search field and needs no heading of its own.
+                  // below the search field.
                   const SizedBox(height: FactorySpacing.space5),
-                  const _CategoryGrid(),
+                  const _CategoriesSection(),
                   // Promos come after the primary action, not in front of it.
                   const SizedBox(height: FactorySpacing.space5),
                   _PromoStrip(
@@ -479,20 +479,21 @@ class _SearchEntry extends StatelessWidget {
   }
 }
 
-/// The Home tab's category grid: two rows of four, the last cell being "All
-/// categories". A launcher, not a filter — one tap on a category opens Search
-/// already narrowed to it (the result the person came for), instead of quietly
-/// re-filtering the rails below. It is a short, curated shortlist, never the
-/// whole master catalog: at most [_slots] − 1 categories (the catalog's own
-/// `sortOrder`, admin-curated, decides which) plus the "All categories" cell,
-/// which opens [AllCategoriesScreen] for the rest and its spheres. Home showing
-/// every category is what turns a discovery screen into a category catalog.
-class _CategoryGrid extends ConsumerWidget {
-  const _CategoryGrid();
+/// The Home tab's categories: a heading with an "All ›" link, then a grid of two
+/// rows of four real categories. A launcher, not a filter — one tap on a
+/// category opens Search already narrowed to it (the result the person came
+/// for), instead of quietly re-filtering the rails below. All eight cells are
+/// categories (the catalog's own `sortOrder`, admin-curated, decides which);
+/// the rest are one tap away behind "All ›", which opens [AllCategoriesScreen]
+/// and carries the pick on to Search. It never grows with the catalog — a
+/// wrapping grid of all 20 pushed every other Home section below the fold, and
+/// Home showing every category is what turns a discovery screen into a catalog.
+class _CategoriesSection extends ConsumerWidget {
+  const _CategoriesSection();
 
   static const _columns = 4;
 
-  /// Two rows of four, "All categories" included.
+  /// Two rows of four.
   static const _slots = 8;
 
   static const _gap = FactorySpacing.space2;
@@ -516,73 +517,74 @@ class _CategoryGrid extends ConsumerWidget {
     final languageCode = Localizations.localeOf(context).languageCode;
     final tileHeight = _tileHeightFor(context);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final cell = (constraints.maxWidth - _gap * (_columns - 1)) / _columns;
-        // The cell is the label's width: a narrow phone has no room to spare.
-        final labelWidth = cell;
-        final dense = cell < 76;
+    return Column(
+      // Stretch: the heading needs the full width to push "All ›" to the right edge.
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FactorySectionHeader(
+          title: l10n.homeCategoriesTitle,
+          actionLabel: l10n.homeCategoriesAll,
+          onActionTap: () => _openAllCategories(context),
+        ),
+        const SizedBox(height: FactorySpacing.space3),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final cell = (constraints.maxWidth - _gap * (_columns - 1)) / _columns;
+            // The cell is the label's width: a narrow phone has no room to spare.
+            final dense = cell < 76;
 
-        final allCategoriesTile = FactoryCategoryTile(
-          icon: Symbols.apps_rounded,
-          label: l10n.allCategoriesTitle,
-          labelMaxWidth: labelWidth,
-          dense: dense,
-          onTap: () => _openAllCategories(context),
-        );
+            final cells = categoriesAsync.when(
+              data: (categories) => [
+                for (final category in categories.take(_slots))
+                  Builder(
+                    builder: (context) {
+                      final accent = colorForCategory(context, category.code);
+                      return FactoryCategoryTile(
+                        icon: iconForCategory(category.code),
+                        label: category.nameFor(languageCode),
+                        labelMaxWidth: cell,
+                        dense: dense,
+                        accentColor: accent?.color,
+                        accentTint: accent?.tint,
+                        onTap: () => context.go(AppRoutes.search(category: category.code)),
+                      );
+                    },
+                  ),
+              ],
+              // Best-effort: while loading, hold the grid's place with skeletons;
+              // on error draw no grid (the "All ›" link above still works and its
+              // screen has its own retry) rather than blocking Home on the catalog.
+              loading: () => [
+                for (var i = 0; i < _slots; i++)
+                  FactorySkeleton(
+                    width: cell,
+                    height: tileHeight,
+                    borderRadius: const BorderRadius.all(Radius.circular(12)),
+                  ),
+              ],
+              error: (error, stackTrace) => const <Widget>[],
+            );
 
-        final cells = categoriesAsync.when(
-          data: (categories) => [
-            for (final category in categories.take(_slots - 1))
-              Builder(
-                builder: (context) {
-                  final accent = colorForCategory(context, category.code);
-                  return FactoryCategoryTile(
-                    icon: iconForCategory(category.code),
-                    label: category.nameFor(languageCode),
-                    labelMaxWidth: labelWidth,
-                    dense: dense,
-                    accentColor: accent?.color,
-                    accentTint: accent?.tint,
-                    onTap: () => context.go(AppRoutes.search(category: category.code)),
-                  );
-                },
-              ),
-            allCategoriesTile,
-          ],
-          // Best-effort: while loading, hold the grid's place with skeletons;
-          // on error still offer the trailing tile (it doesn't depend on this
-          // request) rather than blocking the whole Home screen on the catalog.
-          loading: () => [
-            for (var i = 0; i < _slots - 1; i++)
-              FactorySkeleton(
-                width: labelWidth,
-                height: tileHeight,
-                borderRadius: const BorderRadius.all(Radius.circular(12)),
-              ),
-            allCategoriesTile,
-          ],
-          error: (error, stackTrace) => [allCategoriesTile],
-        );
-
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var start = 0; start < cells.length; start += _columns) ...[
-              if (start > 0) const SizedBox(height: _gap),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (var i = start; i < start + _columns; i++) ...[
-                    if (i > start) const SizedBox(width: _gap),
-                    Expanded(child: i < cells.length ? Center(child: cells[i]) : const SizedBox.shrink()),
-                  ],
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var start = 0; start < cells.length; start += _columns) ...[
+                  if (start > 0) const SizedBox(height: _gap),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (var i = start; i < start + _columns; i++) ...[
+                        if (i > start) const SizedBox(width: _gap),
+                        Expanded(child: i < cells.length ? Center(child: cells[i]) : const SizedBox.shrink()),
+                      ],
+                    ],
+                  ),
                 ],
-              ),
-            ],
-          ],
-        );
-      },
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 }

@@ -226,6 +226,18 @@ void main() {
             path: '/search',
             builder: (_, state) => Scaffold(body: Text('Search page ${state.uri.queryParameters['category']}')),
           ),
+          // Stands in for AllCategoriesScreen: "picks" category-9 or backs out.
+          GoRoute(
+            path: '/categories',
+            builder: (context, _) => Scaffold(
+              body: Column(
+                children: [
+                  TextButton(onPressed: () => context.pop('category-9'), child: const Text('Pick nine')),
+                  TextButton(onPressed: () => context.pop(), child: const Text('Back out')),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     ),
@@ -245,23 +257,30 @@ void main() {
       ),
   ];
 
-  testWidgets('categories are a grid of two rows of four with "All categories" last; no shortcut icons', (tester) async {
+  testWidgets('categories are two rows of four real categories, with an "All" link in the heading and no shortcut icons', (tester) async {
     _useTallWindow(tester);
     await tester.pumpWidget(searchRouteApp(manyCategories(10)));
     await tester.pumpAndSettle();
 
-    final cats = [for (var i = 1; i <= 7; i++) tester.getTopLeft(find.text('Category $i'))];
-    final all = tester.getTopLeft(find.text('All categories'));
-    // Row one: 1-4 share a line; row two: 5-7 and "All categories" share the next.
+    final cats = [for (var i = 1; i <= 8; i++) tester.getTopLeft(find.text('Category $i'))];
+    // Row one: 1-4 share a line; row two: 5-8 share the next. All eight are real categories.
     expect({cats[0].dy, cats[1].dy, cats[2].dy, cats[3].dy}, hasLength(1));
-    expect({cats[4].dy, cats[5].dy, cats[6].dy, all.dy}, hasLength(1));
+    expect({cats[4].dy, cats[5].dy, cats[6].dy, cats[7].dy}, hasLength(1));
     expect(cats[4].dy, greaterThan(cats[0].dy));
-    // Left to right, and "All categories" is the last cell.
     expect(cats[0].dx, lessThan(cats[1].dx));
-    expect(cats[3].dx, greaterThan(cats[2].dx));
-    expect(all.dx, greaterThan(cats[6].dx));
-    // Only seven categories fit; the rest are behind "All categories".
-    expect(find.text('Category 8'), findsNothing);
+    expect(cats[7].dx, greaterThan(cats[6].dx));
+    // Only eight fit; the rest are behind the "All" link, and there is no "All categories" tile.
+    expect(find.text('Category 9'), findsNothing);
+    expect(find.text('All categories'), findsNothing);
+    expect(find.byType(FactoryCategoryTile), findsNWidgets(8));
+
+    // The heading with its link sits above the grid.
+    final heading = tester.getTopLeft(find.text('Categories'));
+    expect(heading.dy, lessThan(cats[0].dy));
+    expect(find.text('All'), findsOneWidget);
+    expect(tester.getTopLeft(find.text('All')).dy, closeTo(heading.dy, 12));
+    // "All" sits at the right edge, like "See all" in the other sections.
+    expect(tester.getTopRight(find.text('All')).dx, closeTo(tester.getTopRight(find.text('See all')).dx, 2));
 
     // The old shortcut icons are gone: those places are reachable from the nav
     // bar, the header and Profile, not from Home.
@@ -270,7 +289,7 @@ void main() {
     }
     // The promos are still there, after the categories.
     expect(find.text('Earn rewards for every visit'), findsOneWidget);
-    expect(tester.getTopLeft(find.text('Earn rewards for every visit')).dy, greaterThan(all.dy));
+    expect(tester.getTopLeft(find.text('Earn rewards for every visit')).dy, greaterThan(cats[7].dy));
   });
 
   testWidgets('one tap on a category opens Search already narrowed to it', (tester) async {
@@ -284,32 +303,60 @@ void main() {
     expect(find.text('Search page category-3'), findsOneWidget);
   });
 
-  testWidgets('with fewer categories the grid still ends with "All categories"', (tester) async {
+  testWidgets('with fewer than eight categories only those are shown', (tester) async {
     _useTallWindow(tester);
     await tester.pumpWidget(searchRouteApp(manyCategories(2)));
     await tester.pumpAndSettle();
 
-    expect(find.text('Category 1'), findsOneWidget);
-    expect(find.text('Category 2'), findsOneWidget);
-    expect(find.text('All categories'), findsOneWidget);
+    expect(find.byType(FactoryCategoryTile), findsNWidgets(2));
+    expect(find.text('Categories'), findsOneWidget);
+    expect(find.text('All'), findsOneWidget);
   });
 
-  testWidgets('while the catalog loads the grid keeps its place with skeletons and still offers "All categories"', (tester) async {
+  testWidgets('while the catalog loads the grid keeps its place with eight skeletons, and the link works', (tester) async {
     _useTallWindow(tester);
     await tester.pumpWidget(searchRouteApp(const [], catalogApi: _NeverCatalogApi()));
     await tester.pump();
 
-    expect(find.byType(FactorySkeleton), findsNWidgets(7));
-    expect(find.text('All categories'), findsOneWidget);
+    expect(find.byType(FactorySkeleton), findsNWidgets(8));
+    expect(find.text('All'), findsOneWidget);
   });
 
-  testWidgets('if the catalog fails, "All categories" is still offered and Home still loads', (tester) async {
+  testWidgets('if the catalog fails there is no grid, Home still loads and the "All" link stays', (tester) async {
     _useTallWindow(tester);
     await tester.pumpWidget(searchRouteApp(const [], catalogApi: _FailingCatalogApi()));
     await tester.pumpAndSettle();
 
-    expect(find.text('All categories'), findsOneWidget);
+    expect(find.byType(FactoryCategoryTile), findsNothing);
+    expect(find.text('All'), findsOneWidget);
     expect(find.text('Top rated near you'), findsOneWidget);
+  });
+
+  testWidgets('"All" opens the full list and a category picked there carries on to Search', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(searchRouteApp(manyCategories(10)));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('All'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pick nine'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Search page category-9'), findsOneWidget);
+  });
+
+  testWidgets('backing out of the full list stays on Home', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(searchRouteApp(manyCategories(10)));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('All'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Back out'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Categories'), findsOneWidget);
+    expect(find.textContaining('Search page'), findsNothing);
   });
 
   testWidgets('a narrow phone fits four columns without overflowing', (tester) async {
@@ -501,7 +548,7 @@ void main() {
     expect(find.byType(FactoryBannerCard), findsNothing);
     // The plain greeting hero.
     expect(find.text('Almaty'), findsOneWidget);
-    expect(find.byType(FactoryCategoryTile), findsOneWidget); // just "All categories" while the catalog is empty
+    expect(find.byType(FactoryCategoryTile), findsNothing); // the catalog fake is empty
   });
 
   testWidgets('shows an empty state when there is nothing to discover yet', (tester) async {
@@ -579,12 +626,12 @@ void main() {
   });
 
   testWidgets(
-      'Home shows only the first 7 categories plus an "All categories" cell, not the whole catalog',
+      'Home shows only the first 8 categories, not the whole catalog; the "All" link opens the full list',
       (tester) async {
     _useTallWindow(tester);
     final fakeDiscoveryApi = _FakeDiscoveryApi([_open, _closed]);
     final fakeCatalogApi = _FakeCatalogApi([
-      for (var i = 1; i <= 8; i++)
+      for (var i = 1; i <= 10; i++)
         Category(
           id: 'cat-$i',
           code: 'category-$i',
@@ -621,13 +668,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    for (var i = 1; i <= 7; i++) {
+    for (var i = 1; i <= 8; i++) {
       expect(find.text('Category $i'), findsOneWidget);
     }
-    expect(find.text('Category 8'), findsNothing);
-    expect(find.text('All categories'), findsOneWidget);
+    expect(find.text('Category 9'), findsNothing);
+    expect(find.text('Category 10'), findsNothing);
 
-    await tester.tap(find.text('All categories'));
+    await tester.tap(find.text('All'));
     await tester.pumpAndSettle();
 
     // AllCategoriesScreen: the whole catalog, including what Home cut off.
@@ -643,17 +690,17 @@ void main() {
         )
         .first;
     await tester.scrollUntilVisible(
-      find.text('Category 7'),
+      find.text('Category 9'),
       100,
       scrollable: categoriesList,
     );
-    expect(find.text('Category 7'), findsOneWidget);
+    expect(find.text('Category 9'), findsOneWidget);
     await tester.scrollUntilVisible(
-      find.text('Category 8'),
+      find.text('Category 10'),
       100,
       scrollable: categoriesList,
     );
-    expect(find.text('Category 8'), findsOneWidget);
+    expect(find.text('Category 10'), findsOneWidget);
   });
 
   testWidgets('shows a Book Again card for a logged-in user with a completed booking', (tester) async {
