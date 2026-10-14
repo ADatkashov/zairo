@@ -179,4 +179,24 @@ class AdBannerTest {
         assertThat(rejected.getStatus()).isEqualTo(AdStatus.DRAFT);
         assertThat(paused.getStatus()).isEqualTo(AdStatus.DRAFT);
     }
+
+    @Test
+    void theLinkTargetIsKeptAndReplacedByUpdate() {
+        AdBanner b = new AdBanner(UUID.randomUUID(), null, "Earn bonuses", null, "https://cdn.example/c.jpg", null,
+                AdLinkTarget.REWARDS, null, START, END, 0, AdStatus.DRAFT, NOW);
+        assertThat(b.getLinkTarget()).isEqualTo(AdLinkTarget.REWARDS);
+
+        b.update("Earn bonuses", null, "https://cdn.example/c.jpg", null, AdLinkTarget.SEARCH, null, START, END, 0,
+                NOW.plusSeconds(5));
+        assertThat(b.getLinkTarget()).isEqualTo(AdLinkTarget.SEARCH);
+
+        // The older update overload carries no link, so it clears it: update replaces everything an editor can change.
+        b.update("Earn bonuses", null, "https://cdn.example/c.jpg", null, null, START, END, 0, NOW.plusSeconds(10));
+        assertThat(b.getLinkTarget()).isNull();
+    }
+
+    @Test
+    void aBannerWithoutALinkTargetOpensNowhere() {
+        assertThat(banner(AdStatus.ACTIVE, null).getLinkTarget()).isNull();
+    }
 }

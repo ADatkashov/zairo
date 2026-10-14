@@ -12,21 +12,22 @@ public final class AdDtos {
 
     /** What the customer app needs to draw a Home banner — nothing about moderation. */
     public record BannerResponse(UUID id, String title, String subtitle, String imageUrl, String videoUrl,
-            boolean sponsored) {
+            AdLinkTarget linkTarget, boolean sponsored) {
 
         static BannerResponse from(AdBanner banner) {
             return new BannerResponse(banner.getId(), banner.getTitle(), banner.getSubtitle(), banner.getImageUrl(),
-                    banner.getVideoUrl(), banner.getProviderId() != null);
+                    banner.getVideoUrl(), banner.getLinkTarget(), banner.getProviderId() != null);
         }
     }
 
     public record AdminBannerResponse(UUID id, UUID providerId, String title, String subtitle, String imageUrl,
-            String videoUrl, String cityCode, Instant startsAt, Instant endsAt, int sortOrder, AdStatus status,
-            String rejectionReason, Instant createdAt, Instant updatedAt) {
+            String videoUrl, AdLinkTarget linkTarget, String cityCode, Instant startsAt, Instant endsAt,
+            int sortOrder, AdStatus status, String rejectionReason, Instant createdAt, Instant updatedAt) {
 
         static AdminBannerResponse from(AdBanner banner) {
             return new AdminBannerResponse(banner.getId(), banner.getProviderId(), banner.getTitle(),
-                    banner.getSubtitle(), banner.getImageUrl(), banner.getVideoUrl(), banner.getCityCode(),
+                    banner.getSubtitle(), banner.getImageUrl(), banner.getVideoUrl(), banner.getLinkTarget(),
+                    banner.getCityCode(),
                     banner.getStartsAt(), banner.getEndsAt(), banner.getSortOrder(), banner.getStatus(),
                     banner.getRejectionReason(), banner.getCreatedAt(), banner.getUpdatedAt());
         }
@@ -34,12 +35,23 @@ public final class AdDtos {
 
     /** {@code status} may only be DRAFT (the default) or ACTIVE for a banner the platform creates itself. */
     public record CreateBannerRequest(@NotBlank String title, String subtitle, @NotBlank String imageUrl,
-            String videoUrl, String cityCode, @NotNull Instant startsAt, @NotNull Instant endsAt, Integer sortOrder,
-            AdStatus status) {
+            String videoUrl, AdLinkTarget linkTarget, String cityCode, @NotNull Instant startsAt,
+            @NotNull Instant endsAt, Integer sortOrder, AdStatus status) {
+
+        public CreateBannerRequest(String title, String subtitle, String imageUrl, String videoUrl, String cityCode,
+                Instant startsAt, Instant endsAt, Integer sortOrder, AdStatus status) {
+            this(title, subtitle, imageUrl, videoUrl, null, cityCode, startsAt, endsAt, sortOrder, status);
+        }
     }
 
     public record UpdateBannerRequest(@NotBlank String title, String subtitle, @NotBlank String imageUrl,
-            String videoUrl, String cityCode, @NotNull Instant startsAt, @NotNull Instant endsAt, Integer sortOrder) {
+            String videoUrl, AdLinkTarget linkTarget, String cityCode, @NotNull Instant startsAt,
+            @NotNull Instant endsAt, Integer sortOrder) {
+
+        public UpdateBannerRequest(String title, String subtitle, String imageUrl, String videoUrl, String cityCode,
+                Instant startsAt, Instant endsAt, Integer sortOrder) {
+            this(title, subtitle, imageUrl, videoUrl, null, cityCode, startsAt, endsAt, sortOrder);
+        }
     }
 
     public record SetStatusRequest(@NotNull AdStatus status, String reason) {
