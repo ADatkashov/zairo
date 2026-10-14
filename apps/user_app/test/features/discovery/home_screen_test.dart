@@ -257,26 +257,30 @@ void main() {
       ),
   ];
 
-  testWidgets('categories are two rows of four real categories, with an "All" link in the heading and no shortcut icons', (tester) async {
+  testWidgets('categories are one horizontally scrolling row, with an "All" link in the heading and no shortcut icons', (tester) async {
     _useTallWindow(tester);
-    await tester.pumpWidget(searchRouteApp(manyCategories(10)));
+    await tester.pumpWidget(searchRouteApp(manyCategories(20)));
     await tester.pumpAndSettle();
 
-    final cats = [for (var i = 1; i <= 8; i++) tester.getTopLeft(find.text('Category $i'))];
-    // Row one: 1-4 share a line; row two: 5-8 share the next. All eight are real categories.
-    expect({cats[0].dy, cats[1].dy, cats[2].dy, cats[3].dy}, hasLength(1));
-    expect({cats[4].dy, cats[5].dy, cats[6].dy, cats[7].dy}, hasLength(1));
-    expect(cats[4].dy, greaterThan(cats[0].dy));
-    expect(cats[0].dx, lessThan(cats[1].dx));
-    expect(cats[7].dx, greaterThan(cats[6].dx));
-    // Only eight fit; the rest are behind the "All" link, and there is no "All categories" tile.
-    expect(find.text('Category 9'), findsNothing);
+    final first = tester.getTopLeft(find.text('Category 1'));
+    final second = tester.getTopLeft(find.text('Category 2'));
+    // One line, left to right.
+    expect(second.dy, first.dy);
+    expect(second.dx, greaterThan(first.dx));
+    // The rest are off-screen to the right, reachable by swiping — not wrapped below.
+    expect(find.text('Category 20'), findsNothing);
+    final row = find.descendant(
+      of: find.ancestor(of: find.byType(FactoryCategoryTile).first, matching: find.byType(ListView)),
+      matching: find.byType(Scrollable),
+    );
+    await tester.dragUntilVisible(find.text('Category 20'), row.first, const Offset(-300, 0));
+    expect(find.text('Category 20'), findsOneWidget);
+    await tester.dragUntilVisible(find.text('Category 1'), row.first, const Offset(300, 0));
     expect(find.text('All categories'), findsNothing);
-    expect(find.byType(FactoryCategoryTile), findsNWidgets(8));
 
-    // The heading with its link sits above the grid.
+    // The heading with its link sits above the row.
     final heading = tester.getTopLeft(find.text('Categories'));
-    expect(heading.dy, lessThan(cats[0].dy));
+    expect(heading.dy, lessThan(first.dy));
     expect(find.text('All'), findsOneWidget);
     expect(tester.getTopLeft(find.text('All')).dy, closeTo(heading.dy, 12));
     // "All" sits at the right edge, like "See all" in the other sections.
@@ -289,7 +293,7 @@ void main() {
     }
     // The promos are still there, after the categories.
     expect(find.text('Earn rewards for every visit'), findsOneWidget);
-    expect(tester.getTopLeft(find.text('Earn rewards for every visit')).dy, greaterThan(cats[7].dy));
+    expect(tester.getTopLeft(find.text('Earn rewards for every visit')).dy, greaterThan(first.dy));
   });
 
   testWidgets('one tap on a category opens Search already narrowed to it', (tester) async {
@@ -303,7 +307,7 @@ void main() {
     expect(find.text('Search page category-3'), findsOneWidget);
   });
 
-  testWidgets('with fewer than eight categories only those are shown', (tester) async {
+  testWidgets('with only a couple of categories only those are shown', (tester) async {
     _useTallWindow(tester);
     await tester.pumpWidget(searchRouteApp(manyCategories(2)));
     await tester.pumpAndSettle();
@@ -313,12 +317,12 @@ void main() {
     expect(find.text('All'), findsOneWidget);
   });
 
-  testWidgets('while the catalog loads the grid keeps its place with eight skeletons, and the link works', (tester) async {
+  testWidgets('while the catalog loads the row keeps its place with skeletons, and the link works', (tester) async {
     _useTallWindow(tester);
     await tester.pumpWidget(searchRouteApp(const [], catalogApi: _NeverCatalogApi()));
     await tester.pump();
 
-    expect(find.byType(FactorySkeleton), findsNWidgets(8));
+    expect(find.byType(FactorySkeleton), findsNWidgets(5));
     expect(find.text('All'), findsOneWidget);
   });
 
