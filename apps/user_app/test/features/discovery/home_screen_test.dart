@@ -26,6 +26,9 @@ import 'package:zairo/features/discovery/data/models/provider_search_result.dart
 import 'package:zairo/features/discovery/presentation/providers/discovery_providers.dart';
 import 'package:zairo/features/catalog/presentation/screens/all_categories_screen.dart';
 import 'package:zairo/features/discovery/presentation/screens/home_screen.dart';
+import 'package:zairo/features/workers/data/models/top_worker.dart';
+import 'package:zairo/features/workers/data/workers_api.dart';
+import 'package:zairo/features/workers/presentation/providers/workers_providers.dart';
 import 'package:zairo/l10n/app_localizations.dart';
 
 /// Home now stacks a 4×2 launcher and a promo strip above the category row and
@@ -97,6 +100,26 @@ class _FakeCatalogApi extends CatalogApi {
   @override
   Future<List<BusinessType>> listBusinessTypes(String categoryId) async => const [];
 }
+
+class _FakeWorkersApi extends WorkersApi {
+  _FakeWorkersApi(this._top) : super(DioClient(Dio()));
+
+  final List<TopWorker> _top;
+
+  @override
+  Future<List<TopWorker>> listTop({int limit = 10}) async => _top;
+}
+
+const _aigerim = TopWorker(
+  id: 'w1',
+  kind: 'MASTER',
+  providerId: 'p1',
+  providerName: 'Aigerim Beauty Studio',
+  displayName: 'Aigerim K.',
+  photoUrl: null,
+  averageRating: 4.8,
+  reviewCount: 17,
+);
 
 class _LoggedInAuthController extends AuthController {
   @override
@@ -799,5 +822,52 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Favorites page'), findsOneWidget);
+  });
+
+  Widget mastersApp(List<TopWorker> workers) => ProviderScope(
+    overrides: [
+      discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi([_open])),
+      catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
+      workersApiProvider.overrideWithValue(_FakeWorkersApi(workers)),
+    ],
+    child: MaterialApp.router(
+      theme: factoryLightTheme(),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      routerConfig: GoRouter(
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+          GoRoute(
+            path: '/worker/:id',
+            builder: (_, state) => Scaffold(body: Text('Worker page ${state.pathParameters['id']}')),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  testWidgets('the best masters rail shows avatars with names and ratings, and a tap opens the master page', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(mastersApp(const [_aigerim]));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Best masters'), findsOneWidget);
+    expect(find.byType(FactoryAvatar), findsWidgets);
+    expect(find.text('Aigerim K.'), findsOneWidget);
+    expect(find.text('4.8'), findsOneWidget);
+    expect(find.text('(17)'), findsOneWidget);
+
+    await tester.tap(find.text('Aigerim K.'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Worker page w1'), findsOneWidget);
+  });
+
+  testWidgets('no best masters rail while nobody has enough reviews yet', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(mastersApp(const []));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Best masters'), findsNothing);
   });
 }

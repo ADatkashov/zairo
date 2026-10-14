@@ -8,6 +8,7 @@ import '../../features/booking/presentation/screens/booking_confirmation_screen.
 import '../../features/booking/presentation/screens/booking_payment_screen.dart';
 import '../../features/booking/presentation/screens/payment_result_screen.dart';
 import '../../features/staff/presentation/screens/staff_cabinet_screen.dart';
+import '../../features/workers/presentation/screens/worker_screen.dart';
 import '../../features/booking/presentation/screens/my_bookings_screen.dart';
 import '../../features/booking/presentation/screens/provider_detail_screen.dart';
 import '../../features/catalog/presentation/screens/all_categories_screen.dart';
@@ -129,6 +130,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             distanceKm: double.tryParse(q['distance'] ?? ''),
           );
         },
+      ),
+      GoRoute(
+        path: '/worker/:workerId',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => WorkerScreen(workerId: state.pathParameters['workerId']!),
       ),
       GoRoute(
         path: '/portfolio/:masterId',
