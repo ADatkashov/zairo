@@ -34,6 +34,23 @@ Tone businessStatusTone(String status) => switch (status) {
   _ => Tone.neutral,
 };
 
+/// Home banner status (backend `AdStatus`).
+String adStatusLabel(AppLocalizations l10n, String status) => switch (status) {
+  'DRAFT' => l10n.adStatusDraft,
+  'PENDING_REVIEW' => l10n.adStatusPendingReview,
+  'ACTIVE' => l10n.adStatusActive,
+  'PAUSED' => l10n.adStatusPaused,
+  'REJECTED' => l10n.adStatusRejected,
+  _ => humanizeCode(status),
+};
+
+Tone adStatusTone(String status) => switch (status) {
+  'ACTIVE' => Tone.good,
+  'PENDING_REVIEW' => Tone.warn,
+  'REJECTED' => Tone.bad,
+  _ => Tone.neutral,
+};
+
 /// Catalog row status.
 String taxonomyStatusLabel(AppLocalizations l10n, String status) => switch (status) {
   'ACTIVE' => l10n.statusActive,
