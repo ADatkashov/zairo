@@ -23,6 +23,7 @@ class AdApi {
     String? subtitle,
     required String imageUrl,
     String? videoUrl,
+    String? linkTarget,
     String? cityCode,
     required DateTime startsAt,
     required DateTime endsAt,
@@ -31,7 +32,7 @@ class AdApi {
   }) async {
     final response = await _dio.post(
       '/platform/ads',
-      data: _body(title, subtitle, imageUrl, videoUrl, cityCode, startsAt, endsAt, sortOrder)
+      data: _body(title, subtitle, imageUrl, videoUrl, linkTarget, cityCode, startsAt, endsAt, sortOrder)
         ..['status'] = publish ? 'ACTIVE' : 'DRAFT',
     );
     return AdBanner.fromJson(response.data as Map<String, dynamic>);
@@ -44,6 +45,7 @@ class AdApi {
     String? subtitle,
     required String imageUrl,
     String? videoUrl,
+    String? linkTarget,
     String? cityCode,
     required DateTime startsAt,
     required DateTime endsAt,
@@ -51,7 +53,7 @@ class AdApi {
   }) async {
     final response = await _dio.put(
       '/platform/ads/$id',
-      data: _body(title, subtitle, imageUrl, videoUrl, cityCode, startsAt, endsAt, sortOrder),
+      data: _body(title, subtitle, imageUrl, videoUrl, linkTarget, cityCode, startsAt, endsAt, sortOrder),
     );
     return AdBanner.fromJson(response.data as Map<String, dynamic>);
   }
@@ -73,6 +75,7 @@ class AdApi {
     String? subtitle,
     String imageUrl,
     String? videoUrl,
+    String? linkTarget,
     String? cityCode,
     DateTime startsAt,
     DateTime endsAt,
@@ -82,6 +85,7 @@ class AdApi {
     'subtitle': subtitle,
     'imageUrl': imageUrl,
     'videoUrl': videoUrl,
+    'linkTarget': linkTarget,
     'cityCode': cityCode,
     'startsAt': startsAt.toUtc().toIso8601String(),
     'endsAt': endsAt.toUtc().toIso8601String(),

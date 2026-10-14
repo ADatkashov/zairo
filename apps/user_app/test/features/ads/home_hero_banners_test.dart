@@ -23,7 +23,12 @@ const _sponsored = AdBanner(
   sponsored: true,
 );
 
-Future<void> _pump(WidgetTester tester, List<AdBanner> banners, {ValueChanged<AdBanner>? onOpenVideo}) async {
+Future<void> _pump(
+  WidgetTester tester,
+  List<AdBanner> banners, {
+  ValueChanged<AdBanner>? onOpenVideo,
+  ValueChanged<AdLinkTarget>? onOpenLink,
+}) async {
   await tester.pumpWidget(
     MaterialApp(
       theme: factoryLightTheme(),
@@ -35,6 +40,7 @@ Future<void> _pump(WidgetTester tester, List<AdBanner> banners, {ValueChanged<Ad
           child: HomeHeroBanners(
             banners: banners,
             onOpenVideo: onOpenVideo ?? (_) {},
+            onOpenLink: onOpenLink ?? (_) {},
             topInset: 96,
             bottomInset: 48,
           ),
@@ -102,5 +108,64 @@ void main() {
     await tester.tap(find.text('Salon promo'));
     await tester.pump();
     expect(opened, [_video]);
+  });
+
+  testWidgets('tapping a banner without a video that has a link reports where it points', (tester) async {
+    const rewards = AdBanner(
+      id: 'b3',
+      title: 'Earn bonuses',
+      subtitle: null,
+      imageUrl: 'https://cdn.example/3.jpg',
+      videoUrl: null,
+      linkTarget: 'REWARDS',
+      sponsored: false,
+    );
+    final opened = <AdLinkTarget>[];
+    await _pump(tester, const [rewards], onOpenLink: opened.add);
+
+    await tester.tap(find.text('Earn bonuses'));
+    await tester.pump();
+
+    expect(opened, [AdLinkTarget.rewards]);
+  });
+
+  testWidgets('a video wins over a link: the video opens, the link does not', (tester) async {
+    const both = AdBanner(
+      id: 'b4',
+      title: 'Watch and earn',
+      subtitle: null,
+      imageUrl: 'https://cdn.example/4.jpg',
+      videoUrl: 'https://video.example/4',
+      linkTarget: 'SEARCH',
+      sponsored: false,
+    );
+    final videos = <AdBanner>[];
+    final links = <AdLinkTarget>[];
+    await _pump(tester, const [both], onOpenVideo: videos.add, onOpenLink: links.add);
+
+    await tester.tap(find.text('Watch and earn'));
+    await tester.pump();
+
+    expect(videos, [both]);
+    expect(links, isEmpty);
+  });
+
+  test('link targets map to screens; an unknown one opens nothing', () {
+    AdBanner of(String? target) => AdBanner(
+      id: 'x',
+      title: 't',
+      subtitle: null,
+      imageUrl: 'https://cdn.example/x.jpg',
+      videoUrl: null,
+      linkTarget: target,
+      sponsored: false,
+    );
+
+    expect(of('REWARDS').link, AdLinkTarget.rewards);
+    expect(of('SEARCH').link, AdLinkTarget.search);
+    expect(of('SOMETHING_NEW').link, isNull);
+    expect(of(null).link, isNull);
+    expect(AdBanner.fromJson({'id': 'x', 'title': 't', 'imageUrl': 'https://c/x.jpg', 'linkTarget': 'SEARCH'}).link,
+        AdLinkTarget.search);
   });
 }
