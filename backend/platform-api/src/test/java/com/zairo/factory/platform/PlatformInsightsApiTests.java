@@ -114,4 +114,67 @@ class PlatformInsightsApiTests {
                 Map.class).getBody();
         assertThat((java.util.List<?>) zero.get("bookingsCreated")).hasSize(1);
     }
+
+    @Test
+    void reportRequiresAuthAndReturnsZeroFilledSeriesForTheWindow() {
+        assertThat(restTemplate.getForEntity("/api/v1/platform/reports", Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        var support = TestPlatformAuth.registerPlatformAdmin(restTemplate, platformAdminAccountRepository,
+                "report-support-" + UUID.randomUUID() + "@factory.internal", PlatformRole.PLATFORM_SUPPORT);
+        HttpEntity<Void> auth = new HttpEntity<>(null, TestPlatformAuth.authHeaders(support.accessToken()));
+
+        Map<?, ?> report = restTemplate.exchange("/api/v1/platform/reports?days=7", HttpMethod.GET, auth, Map.class)
+                .getBody();
+        assertThat((java.util.List<?>) report.get("bookingsCreated")).hasSize(7);
+        assertThat((java.util.List<?>) report.get("commissionByDay")).hasSize(7);
+        assertThat((java.util.List<?>) report.get("subscriptionRevenueByDay")).hasSize(7);
+        assertThat(report.get("to")).isEqualTo(java.time.LocalDate.now(java.time.ZoneOffset.UTC).toString());
+        assertThat(report.get("bookingsByStatus")).isNotNull();
+
+        Map<?, ?> defaulted = restTemplate.exchange("/api/v1/platform/reports", HttpMethod.GET, auth, Map.class)
+                .getBody();
+        assertThat((java.util.List<?>) defaulted.get("bookingsCreated")).hasSize(30);
+        Map<?, ?> capped = restTemplate.exchange("/api/v1/platform/reports?days=1000", HttpMethod.GET, auth, Map.class)
+                .getBody();
+        assertThat((java.util.List<?>) capped.get("bookingsCreated")).hasSize(90);
+    }
+
+    @Test
+    void aFreshBookingShowsUpInTodaysBucketOfTheReport() {
+        var support = TestPlatformAuth.registerPlatformAdmin(restTemplate, platformAdminAccountRepository,
+                "report-bucket-" + UUID.randomUUID() + "@factory.internal", PlatformRole.PLATFORM_SUPPORT);
+        HttpEntity<Void> auth = new HttpEntity<>(null, TestPlatformAuth.authHeaders(support.accessToken()));
+        long before = todaysBookings(auth);
+
+        String runId = UUID.randomUUID().toString();
+        Registered customer = TestAuth.registerCustomer(restTemplate, "report-cust-" + runId + "@example.com");
+        Registered owner = TestAuth.registerOwner(restTemplate, "report-owner-" + runId + "@example.com");
+        var providerRequest = new CreateProviderRequest(owner.userId(), "Report Salon " + runId, "beauty");
+        UUID providerId = UUID.fromString(restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
+                new HttpEntity<>(providerRequest, TestAuth.authHeaders(owner.accessToken())), Map.class).getBody()
+                .get("id").toString());
+        var serviceRequest = new CreateServiceRequest("Report Service", 30, new BigDecimal("15.00"), "USD");
+        UUID serviceId = UUID.fromString(restTemplate.exchange("/api/v1/providers/" + providerId + "/services",
+                HttpMethod.POST, new HttpEntity<>(serviceRequest, TestAuth.authHeaders(owner.accessToken())),
+                Map.class).getBody().get("id").toString());
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        var slotRequest = new CreateAvailabilitySlotRequest(start, start.plus(30, ChronoUnit.MINUTES));
+        UUID slotId = UUID.fromString(restTemplate.exchange("/api/v1/providers/" + providerId
+                + "/availability-slots", HttpMethod.POST,
+                new HttpEntity<>(slotRequest, TestAuth.authHeaders(owner.accessToken())), Map.class).getBody()
+                .get("id").toString());
+        var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("15.00"));
+        restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
+                new HttpEntity<>(bookingRequest, TestAuth.authHeaders(customer.accessToken())), Map.class);
+
+        assertThat(todaysBookings(auth)).isEqualTo(before + 1);
+    }
+
+    private long todaysBookings(HttpEntity<Void> auth) {
+        Map<?, ?> report = restTemplate.exchange("/api/v1/platform/reports?days=3", HttpMethod.GET, auth, Map.class)
+                .getBody();
+        java.util.List<?> days = (java.util.List<?>) report.get("bookingsCreated");
+        return ((Number) ((Map<?, ?>) days.get(days.size() - 1)).get("count")).longValue();
+    }
 }
