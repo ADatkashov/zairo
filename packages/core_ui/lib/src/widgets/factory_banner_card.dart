@@ -19,6 +19,8 @@ class FactoryBannerCard extends StatelessWidget {
     this.showPlay = false,
     this.playLabel,
     this.onTap,
+    this.borderRadius = FactoryRadius.xlRadius,
+    this.padding = const EdgeInsets.all(FactorySpacing.space4),
   });
 
   final String imageUrl;
@@ -34,6 +36,14 @@ class FactoryBannerCard extends StatelessWidget {
   /// Spoken for the play badge ("Watch video"); the badge is decoration otherwise.
   final String? playLabel;
   final VoidCallback? onTap;
+
+  /// Corner radius of the card; [BorderRadius.zero] for a full-bleed banner
+  /// (a hero header) that something else already rounds off.
+  final BorderRadius borderRadius;
+
+  /// Space between the card's edges and its text, tag and play badge. A hero
+  /// that sits under a toolbar passes a larger top so the badges clear it.
+  final EdgeInsets padding;
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +64,7 @@ class FactoryBannerCard extends StatelessWidget {
       label: playLabel != null && showPlay ? '$title, $playLabel' : title,
       excludeSemantics: true,
       child: ClipRRect(
-        borderRadius: FactoryRadius.xlRadius,
+        borderRadius: borderRadius,
         child: Material(
           color: colors.primaryStrong,
           child: InkWell(
@@ -79,7 +89,7 @@ class FactoryBannerCard extends StatelessWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(FactorySpacing.space4),
+                  padding: padding,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,8 +114,8 @@ class FactoryBannerCard extends StatelessWidget {
                 ),
                 if (tag != null)
                   Positioned(
-                    top: FactorySpacing.space3,
-                    left: FactorySpacing.space3,
+                    top: padding.top,
+                    left: padding.left,
                     child: DecoratedBox(
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.45),
@@ -119,8 +129,8 @@ class FactoryBannerCard extends StatelessWidget {
                   ),
                 if (showPlay)
                   Positioned(
-                    top: FactorySpacing.space3,
-                    right: FactorySpacing.space3,
+                    top: padding.top,
+                    right: padding.right,
                     child: DecoratedBox(
                       decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.45), shape: BoxShape.circle),
                       child: const Padding(
