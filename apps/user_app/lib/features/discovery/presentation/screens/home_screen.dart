@@ -9,7 +9,10 @@ import '../../../../core/formatting/initials.dart';
 import '../../../../core/provider_grid.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../maps/data/geo_point.dart';
-import '../../../ads/presentation/widgets/home_banner_carousel.dart';
+import '../../../ads/data/models/ad_banner.dart';
+import '../../../ads/presentation/providers/ads_providers.dart';
+import '../../../ads/presentation/screens/ad_video_screen.dart';
+import '../../../ads/presentation/widgets/home_hero_banners.dart';
 import '../../../auth/data/models/user_summary.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../booking/data/models/book_again_suggestion.dart';
@@ -91,6 +94,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 slivers: [
                   _HomeHeroBar(
                     user: user,
+                    // Best-effort: no banners (loading, failed, none live) is the plain hero.
+                    banners: ref.watch(homeBannersProvider).value ?? const <AdBanner>[],
                     cityLabel: ref
                             .watch(userCurrentCityProvider)
                             .value
@@ -112,7 +117,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       delegate: SliverChildListDelegate([
                   const SizedBox(height: FactorySpacing.space4),
                   _SearchEntry(onTap: () => context.go(AppRoutes.search(category: _vertical))),
-                  const HomeBannerCarousel(),
                   const SizedBox(height: FactorySpacing.space5),
                   const _QuickActions(),
                   // The blocks of real colour sit right under the launcher, so
@@ -208,16 +212,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 class _HomeHeroBar extends StatelessWidget {
   const _HomeHeroBar({
     required this.user,
+    required this.banners,
     required this.cityLabel,
     required this.greeting,
   });
 
   final UserSummary? user;
+
+  /// Live promo banners. When there are any they take the hero over (the cover
+  /// image fills it, the greeting steps aside); when there are none it is the
+  /// plain green greeting hero.
+  final List<AdBanner> banners;
   final String cityLabel;
   final String greeting;
 
   static const _toolbarHeight = 68.0;
   static const _expandedHeight = 232.0;
+
+  /// Taller than the greeting hero: a banner cover needs room to read as one.
+  static const _expandedHeightWithBanners = 320.0;
   static const _sheetRadius = 24.0;
 
   /// Status bar + toolbar + sheet lip: where scrollable content starts once
@@ -236,7 +249,7 @@ class _HomeHeroBar extends StatelessWidget {
       backgroundColor: colors.primaryStrong,
       surfaceTintColor: Colors.transparent,
       toolbarHeight: _toolbarHeight,
-      expandedHeight: _expandedHeight,
+      expandedHeight: banners.isEmpty ? _expandedHeight : _expandedHeightWithBanners,
       titleSpacing: FactorySpacing.space4,
       title: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -277,7 +290,24 @@ class _HomeHeroBar extends StatelessWidget {
           ],
         ],
       ),
-      flexibleSpace: FlexibleSpaceBar(
+      flexibleSpace: banners.isEmpty ? _greetingSpace(context) : _bannerSpace(context),
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(_sheetRadius),
+        child: Container(
+          height: _sheetRadius,
+          decoration: BoxDecoration(
+            color: colors.bg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(_sheetRadius)),
+          ),
+        ),
+      ),
+    );
+  }
+  /// The plain hero: gradient, a soft gold glow and the greeting.
+  Widget _greetingSpace(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    return FlexibleSpaceBar(
         collapseMode: CollapseMode.parallax,
         background: DecoratedBox(
           decoration: BoxDecoration(
@@ -327,17 +357,57 @@ class _HomeHeroBar extends StatelessWidget {
             ],
           ),
         ),
-      ),
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(_sheetRadius),
-        child: Container(
-          height: _sheetRadius,
-          decoration: BoxDecoration(
-            color: colors.bg,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(_sheetRadius)),
-          ),
-        ),
-      ),
+      );
+  }
+
+  /// The banner hero: the covers fill the space under the toolbar and fade out
+  /// as the bar collapses, so the pinned bar stays a plain green strip.
+  Widget _bannerSpace(BuildContext context) {
+    final colors = context.factoryColors;
+    final topPadding = MediaQuery.paddingOf(context).top;
+    final expandedExtent = topPadding + _expandedHeightWithBanners;
+    final collapsedExtent = topPadding + _toolbarHeight + _sheetRadius;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final t = ((constraints.maxHeight - collapsedExtent) / (expandedExtent - collapsedExtent)).clamp(0.0, 1.0);
+        return Stack(
+          clipBehavior: Clip.hardEdge,
+          children: [
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [colors.primaryStrong, colors.primary],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: expandedExtent,
+              child: IgnorePointer(
+                ignoring: t < 0.3,
+                child: Opacity(
+                  opacity: t,
+                  child: HomeHeroBanners(
+                    banners: banners,
+                    topInset: topPadding + _toolbarHeight,
+                    bottomInset: _sheetRadius + FactorySpacing.space6,
+                    onOpenVideo: (banner) => context.push(
+                      AppRoutes.adVideo,
+                      extra: AdVideoArgs(url: banner.videoUrl!, title: banner.title),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

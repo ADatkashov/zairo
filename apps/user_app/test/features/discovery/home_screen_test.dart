@@ -9,6 +9,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:zairo/features/ads/data/ads_api.dart';
 import 'package:zairo/features/ads/data/models/ad_banner.dart';
 import 'package:zairo/features/ads/presentation/providers/ads_providers.dart';
+import 'package:zairo/features/ads/presentation/screens/ad_video_screen.dart';
 import 'package:zairo/features/auth/data/models/user_summary.dart';
 import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/booking/data/booking_api.dart';
@@ -276,7 +277,7 @@ void main() {
     expect(find.text('Rewards page'), findsOneWidget);
   });
 
-  testWidgets('shows the promo banner carousel under the search field when there are live banners', (tester) async {
+  testWidgets('live banners take over the green hero, above the search field, in place of the greeting', (tester) async {
     _useTallWindow(tester);
     final banners = [
       const AdBanner(
@@ -307,9 +308,99 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('AI & Digital Bridge'), findsOneWidget);
-    final bannerTop = tester.getTopLeft(find.byType(FactoryBannerCard)).dy;
+    // Inside the hero app bar, above the search field.
+    expect(find.descendant(of: find.byType(SliverAppBar), matching: find.byType(FactoryBannerCard)), findsOneWidget);
+    final bannerBottom = tester.getBottomLeft(find.byType(FactoryBannerCard)).dy;
     final searchTop = tester.getTopLeft(find.text('What service are you looking for?')).dy;
-    expect(bannerTop, greaterThan(searchTop));
+    expect(bannerBottom, lessThanOrEqualTo(searchTop));
+    // The city row stays on top of the banner; the greeting steps aside.
+    expect(find.text('Almaty'), findsOneWidget);
+    expect(find.textContaining('Hi,'), findsNothing);
+  });
+
+  testWidgets('the banner hero fades out as the bar collapses and the city bar stays', (tester) async {
+    final banners = [
+      const AdBanner(
+        id: 'b1',
+        title: 'AI & Digital Bridge',
+        subtitle: null,
+        imageUrl: 'https://cdn.example/1.jpg',
+        videoUrl: null,
+        sponsored: false,
+      ),
+    ];
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi([_open])),
+          catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
+          adsApiProvider.overrideWithValue(_FakeAdsApi(banners)),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const HomeScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final expanded = tester.getSize(find.byType(AppBar)).height;
+    expect(tester.widget<Opacity>(find.ancestor(of: find.byType(PageView), matching: find.byType(Opacity)).first).opacity, 1.0);
+
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -600));
+    await tester.pumpAndSettle();
+
+    expect(tester.getSize(find.byType(AppBar)).height, lessThan(expanded));
+    expect(tester.widget<Opacity>(find.ancestor(of: find.byType(PageView), matching: find.byType(Opacity)).first).opacity, 0.0);
+    expect(find.text('Almaty'), findsOneWidget);
+  });
+
+  testWidgets('tapping a banner with a video in the hero opens the player route', (tester) async {
+    final banners = [
+      const AdBanner(
+        id: 'b1',
+        title: 'AI & Digital Bridge',
+        subtitle: null,
+        imageUrl: 'https://cdn.example/1.jpg',
+        videoUrl: 'https://video.example/1',
+        sponsored: false,
+      ),
+    ];
+    Object? extra;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi([_open])),
+          catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
+          adsApiProvider.overrideWithValue(_FakeAdsApi(banners)),
+        ],
+        child: MaterialApp.router(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: GoRouter(
+            routes: [
+              GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+              GoRoute(
+                path: '/ad-video',
+                builder: (_, state) {
+                  extra = state.extra;
+                  return const Scaffold(body: Text('Player page'));
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('AI & Digital Bridge'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Player page'), findsOneWidget);
+    expect((extra as AdVideoArgs).url, 'https://video.example/1');
   });
 
   testWidgets('Home shows no banner strip when there are no live banners', (tester) async {
@@ -332,6 +423,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(FactoryBannerCard), findsNothing);
+    // The plain greeting hero.
+    expect(find.text('Almaty'), findsOneWidget);
     expect(find.byType(FactoryQuickActionGrid), findsOneWidget);
   });
 

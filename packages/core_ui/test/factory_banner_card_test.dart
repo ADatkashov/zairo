@@ -73,4 +73,27 @@ void main() {
     expect(taps, 1);
     expect(find.bySemanticsLabel('Tap me'), findsOneWidget);
   });
+
+  testWidgets('a full-bleed banner has square corners and keeps its badges inside the padding', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        const FactoryBannerCard(
+          imageUrl: 'https://cdn.example/c.jpg',
+          title: 'Hero',
+          tag: 'Ad',
+          showPlay: true,
+          borderRadius: BorderRadius.zero,
+          padding: EdgeInsets.fromLTRB(20, 90, 20, 30),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final clip = tester.widget<ClipRRect>(find.descendant(of: find.byType(FactoryBannerCard), matching: find.byType(ClipRRect)));
+    expect(clip.borderRadius, BorderRadius.zero);
+    final card = tester.getTopLeft(find.byType(FactoryBannerCard));
+    expect(tester.getTopLeft(find.text('Ad')).dy - card.dy, greaterThanOrEqualTo(90));
+    expect(tester.getTopLeft(find.text('Ad')).dx - card.dx, greaterThanOrEqualTo(20));
+    expect(tester.getTopRight(find.byIcon(Symbols.play_arrow_rounded)).dx, lessThanOrEqualTo(card.dx + 320 - 20));
+  });
 }
