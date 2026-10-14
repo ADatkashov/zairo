@@ -128,7 +128,7 @@ class ConsoleShell extends ConsumerWidget {
 
   Widget _phone(BuildContext context, AppLocalizations l10n, Map<int, int> badges) {
     final current = navigationShell.currentIndex;
-    // Cities / Activity / Staff / Settings are reached through "More", so
+    // Cities / Ads / Activity / Staff / Settings are reached through "More", so
     // while one of them is open the More tab stays highlighted.
     final selectedTab = phoneTabBranches.contains(current)
         ? phoneTabBranches.indexOf(current)
