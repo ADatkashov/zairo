@@ -287,13 +287,16 @@ class _OverviewSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final overviewAsync = ref.watch(businessAnalyticsOverviewProvider((providerId, range)));
+    // Best-effort: the trend lines come from the bookings breakdown, which has
+    // its own section below — if it is loading or failed, the cards show plain figures.
+    final dailyBookings = ref.watch(businessAnalyticsBookingsProvider((providerId, range))).value?.trend ?? const [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         FactorySectionHeader(title: l10n.analyticsOverviewSectionTitle),
         overviewAsync.when(
-          data: (overview) => _OverviewContent(overview: overview),
+          data: (overview) => _OverviewContent(overview: overview, dailyBookings: dailyBookings),
           loading: () => const FactoryLoadingState(),
           error: (error, _) => FactoryErrorState(
             message: l10n.errorAnalyticsLoadFailed,
@@ -309,8 +312,12 @@ class _OverviewSection extends ConsumerWidget {
 /// grouped underneath instead of a flat wall of twelve identical tiles.
 class _OverviewContent extends StatelessWidget {
   final BusinessAnalyticsOverview overview;
+  final List<DailyBookingCount> dailyBookings;
 
-  const _OverviewContent({required this.overview});
+  const _OverviewContent({required this.overview, this.dailyBookings = const []});
+
+  List<double> _daily(int Function(DailyBookingCount day) pick) =>
+      ([...dailyBookings]..sort((a, b) => a.date.compareTo(b.date))).map((d) => pick(d).toDouble()).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -345,9 +352,17 @@ class _OverviewContent extends StatelessWidget {
         gap,
         _TwoColumn(
           children: [
-            _KpiCard(label: l10n.analyticsCompletedBookingsLabel, value: '${overview.completedBookings}'),
+            _KpiCard(
+              label: l10n.analyticsCompletedBookingsLabel,
+              value: '${overview.completedBookings}',
+              trend: _daily((d) => d.completed),
+            ),
             _KpiCard(label: l10n.analyticsUpcomingBookingsLabel, value: '${overview.upcomingBookings}'),
-            _KpiCard(label: l10n.analyticsCancelledBookingsLabel, value: '${overview.cancelledBookings}'),
+            _KpiCard(
+              label: l10n.analyticsCancelledBookingsLabel,
+              value: '${overview.cancelledBookings}',
+              trend: _daily((d) => d.cancelled),
+            ),
             _KpiCard(label: l10n.analyticsNoShowLabel, value: '${overview.noShowBookings}'),
           ],
         ),
@@ -490,11 +505,12 @@ class _Kpi extends StatelessWidget {
 class _KpiCard extends StatelessWidget {
   final String label;
   final String value;
+  final List<double>? trend;
 
-  const _KpiCard({required this.label, required this.value});
+  const _KpiCard({required this.label, required this.value, this.trend});
 
   @override
-  Widget build(BuildContext context) => FactoryKpiCard(label: label, value: value);
+  Widget build(BuildContext context) => FactoryKpiCard(label: label, value: value, trend: trend);
 }
 
 /// A percentage as a ring with the label beside it. For rates where lower is
