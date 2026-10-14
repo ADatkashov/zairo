@@ -688,5 +688,9 @@
   "bookingReviewConfirmFree": "Подтвердить запись",
   "bookingReviewChange": "Изменить",
   "bookingReviewTotal": "Итого",
-  "bookingStepsDone": "Все шаги пройдены"
+  "bookingStepsDone": "Все шаги пройдены",
+  "bookingHintService": "Выберите услугу",
+  "bookingHintPerson": "Выберите специалиста",
+  "bookingHintVehicle": "Выберите автомобиль",
+  "bookingHintTime": "Выберите время"
 }
