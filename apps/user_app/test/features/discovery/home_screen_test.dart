@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:zairo/features/auth/data/models/user_summary.dart';
 import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/booking/data/booking_api.dart';
@@ -118,6 +119,32 @@ void main() {
     expect(find.text('Top rated near you'), findsOneWidget);
     expect(find.text('Aigerim Beauty Studio'), findsOneWidget);
     expect(find.text('Nail Bar 21'), findsOneWidget);
+  });
+
+  testWidgets('the hero collapses into a pinned bar on scroll and keeps the city + actions visible', (tester) async {
+    final fakeApi = _FakeDiscoveryApi([_open, _closed]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [discoveryApiProvider.overrideWithValue(fakeApi)],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const HomeScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final expandedHeight = tester.getSize(find.byType(FlexibleSpaceBar)).height;
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -400));
+    await tester.pumpAndSettle();
+    final collapsedHeight = tester.getSize(find.byType(FlexibleSpaceBar)).height;
+
+    expect(collapsedHeight, lessThan(expandedHeight));
+    expect(find.text('Almaty'), findsOneWidget);
+    expect(find.byIcon(Symbols.favorite_rounded), findsOneWidget);
   });
 
   testWidgets('shows the availability hero only when something is open today', (tester) async {

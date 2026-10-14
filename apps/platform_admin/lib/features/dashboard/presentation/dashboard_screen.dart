@@ -11,6 +11,7 @@ import '../../auth/presentation/session_controller.dart';
 import '../../finance/data/finance_api.dart';
 import '../data/dashboard_api.dart';
 import '../data/dashboard_metrics.dart';
+import '../data/dashboard_trends.dart';
 
 /// The landing page: first what needs a person today (businesses waiting for
 /// approval, refunds that failed, payouts waiting to be paid), then the
@@ -23,16 +24,25 @@ class DashboardScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final metricsAsync = ref.watch(dashboardMetricsProvider);
     final payable = ref.watch(payoutsProvider('PAYABLE'));
+    final trends = ref.watch(dashboardTrendsProvider).value ?? const DashboardTrends.empty();
     final name = ref.watch(sessionControllerProvider).value?.admin.displayName ?? '';
 
     Future<void> refresh() {
       ref.invalidate(payoutsProvider('PAYABLE'));
+      ref.invalidate(dashboardTrendsProvider);
       return ref.refresh(dashboardMetricsProvider.future).then((_) {});
     }
 
     return AreaScaffold(
       title: l10n.navDashboard,
-      actions: [IconButton(tooltip: l10n.refresh, icon: const Icon(Icons.refresh_rounded), onPressed: refresh)],
+      actions: [
+        IconButton(
+          tooltip: l10n.navReports,
+          icon: const Icon(Icons.insert_chart_outlined_rounded),
+          onPressed: () => context.go(ConsoleRoutes.reports),
+        ),
+        IconButton(tooltip: l10n.refresh, icon: const Icon(Icons.refresh_rounded), onPressed: refresh),
+      ],
       body: AsyncView<DashboardMetrics>(
         value: metricsAsync,
         onRetry: () => ref.invalidate(dashboardMetricsProvider),
@@ -61,6 +71,12 @@ class DashboardScreen extends ConsumerWidget {
                 _Section(
                   title: l10n.dashSectionBookings,
                   tiles: [
+                    if (trends.bookingsCreated.length >= 2)
+                      _Trend(
+                        l10n.dashBookingsLastDays(trends.bookingsCreated.length),
+                        trends.bookingsTotal.round(),
+                        trends.bookingsCreated,
+                      ),
                     _Stat(l10n.dashToday, m.bookingsToday),
                     _Stat(l10n.dashThisWeek, m.bookingsWeek),
                     _Stat(l10n.dashThisMonth, m.bookingsMonth),
@@ -191,6 +207,7 @@ abstract class _Tile {
   final String label;
   String value(String locale);
   bool get warn => false;
+  List<double>? get trend => null;
 }
 
 class _Stat extends _Tile {
@@ -198,6 +215,17 @@ class _Stat extends _Tile {
   final int count;
   @override
   final bool warn;
+  @override
+  String value(String locale) => formatCount(locale, count);
+}
+
+/// A count over a recent window, drawn with its daily trend line.
+class _Trend extends _Tile {
+  const _Trend(super.label, this.count, this.values);
+  final int count;
+  final List<double> values;
+  @override
+  List<double> get trend => values;
   @override
   String value(String locale) => formatCount(locale, count);
 }
@@ -241,26 +269,7 @@ class _Section extends StatelessWidget {
             maxColumns: 5,
             children: [
               for (final tile in tiles)
-                FactoryCard(
-                  padding: const EdgeInsets.all(FactorySpacing.space3),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(tile.label, style: textTheme.labelMedium?.copyWith(color: colors.textSecondary)),
-                      const SizedBox(height: 4),
-                      Text(
-                        tile.value(locale),
-                        // Figures are data: mono + tabular so a column of
-                        // tiles lines up; warnings use the AA-safe error hue.
-                        style: FactoryTypography.mono(
-                          size: 22,
-                          weight: FontWeight.w600,
-                          color: tile.warn ? colors.error : colors.text,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                FactoryKpiCard(label: tile.label, value: tile.value(locale), warn: tile.warn, trend: tile.trend),
             ],
           ),
         ],

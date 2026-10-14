@@ -8,6 +8,7 @@ import '../../data/models/schedule_entry.dart';
 import '../providers/salon_providers.dart';
 import '../../../staff_owner/presentation/widgets/no_show_correction.dart';
 import '../widgets/agenda_row.dart';
+import 'booking_board_screen.dart';
 
 /// Below this width the week is a day strip plus the chosen day's list;
 /// from it up, seven day columns side by side.
@@ -64,7 +65,20 @@ class _WeekCalendarScreenState extends ConsumerState<WeekCalendarScreen> {
 
     return Scaffold(
       backgroundColor: colors.bg,
-      appBar: FactoryAppBar(title: l10n.calendarTitle),
+      appBar: FactoryAppBar(
+        title: l10n.calendarTitle,
+        actions: [
+          IconButton(
+            tooltip: l10n.boardTitle,
+            icon: const Icon(Icons.view_kanban_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => BookingBoardScreen(ownerUserId: widget.ownerUserId, weekStart: _weekStart, today: _today),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Column(
           children: [

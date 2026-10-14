@@ -5,6 +5,9 @@ abstract final class ConsoleRoutes {
   static const login = '/login';
   static const splash = '/splash';
   static const dashboard = '/dashboard';
+
+  /// A sub-page of the Dashboard area (it keeps Dashboard selected in the shell).
+  static const reports = '/dashboard/reports';
   static const businesses = '/businesses';
   static const catalog = '/catalog';
   static const cities = '/cities';
