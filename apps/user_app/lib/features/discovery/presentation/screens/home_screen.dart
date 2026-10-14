@@ -111,16 +111,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       delegate: SliverChildListDelegate([
                   const SizedBox(height: FactorySpacing.space4),
                   _SearchEntry(onTap: () => context.go(AppRoutes.search(category: _vertical))),
-                  // The one block of real colour sits right under the search, so
-                  // the first screen has a focal point (and a reason to tap)
-                  // before the category row. Only when something is open today.
-                  if (openCount > 0) ...[
-                    const SizedBox(height: FactorySpacing.space4),
-                    _AvailabilityHero(
-                      count: openCount,
-                      onViewAll: () => context.go(AppRoutes.search(category: _vertical)),
-                    ),
-                  ],
+                  const SizedBox(height: FactorySpacing.space5),
+                  const _QuickActions(),
+                  // The blocks of real colour sit right under the launcher, so
+                  // the first screen has focal points (and a reason to tap)
+                  // before the category row.
+                  const SizedBox(height: FactorySpacing.space5),
+                  _PromoStrip(
+                    openCount: openCount,
+                    onViewAvailable: () => context.go(AppRoutes.search(category: _vertical)),
+                  ),
                   const SizedBox(height: FactorySpacing.space5),
                   Text(l10n.homeCategoriesTitle, style: textTheme.titleSmall),
                   const SizedBox(height: FactorySpacing.space3),
@@ -776,108 +776,98 @@ class _RecommendedRow extends StatelessWidget {
   }
 }
 
-/// A deliberate gradient case (`primaryStrong` → `mint` diagonal, two soft
-/// translucent circles) — everywhere else in Factory is flat color, this
-/// pattern reserved for one hero moment per app (business_admin's Dashboard
-/// overview hero is the other). Customer App Redesign board, 2026-09-05.
-class _AvailabilityHero extends StatelessWidget {
-  const _AvailabilityHero({required this.count, required this.onViewAll});
-
-  final int count;
-  final VoidCallback onViewAll;
+/// Home's 4×2 launcher (the Astana Hub pattern): the app's own destinations
+/// one tap from the first screen, instead of two levels deep under Profile.
+/// Search and Bookings are tab roots (`go`); the rest open above the shell.
+class _QuickActions extends StatelessWidget {
+  const _QuickActions();
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
-    return Container(
-      width: double.infinity,
-      clipBehavior: Clip.antiAlias,
-      padding: const EdgeInsets.all(FactorySpacing.space5),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [colors.primaryStrong, colors.primary],
+    return FactoryQuickActionGrid(
+      actions: [
+        FactoryQuickAction(
+          icon: Symbols.search_rounded,
+          label: l10n.navSearch,
+          onTap: () => context.go(AppRoutes.search()),
         ),
-        borderRadius: FactoryRadius.xxlRadius,
-        boxShadow: [
-          BoxShadow(
-            color: colors.primaryStrong.withValues(alpha: 0.28),
-            offset: const Offset(0, 16),
-            blurRadius: 32,
-          ),
-        ],
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
+        FactoryQuickAction(
+          icon: Symbols.calendar_month_rounded,
+          label: l10n.navBookings,
+          onTap: () => context.go(AppRoutes.bookings),
+        ),
+        FactoryQuickAction(
+          icon: Symbols.favorite_rounded,
+          label: l10n.myFavoritesTitle,
+          onTap: () => context.push(AppRoutes.favorites),
+        ),
+        FactoryQuickAction(
+          icon: Symbols.chat_bubble_rounded,
+          label: l10n.messagesTitle,
+          onTap: () => context.push(AppRoutes.messages),
+        ),
+        FactoryQuickAction(
+          icon: Symbols.redeem_rounded,
+          label: l10n.myRewardsTitle,
+          badge: l10n.homeQuickActionNew,
+          onTap: () => context.push(AppRoutes.rewards),
+        ),
+        FactoryQuickAction(
+          icon: Symbols.notifications_rounded,
+          label: l10n.notificationsTitle,
+          onTap: () => context.push(AppRoutes.notifications),
+        ),
+        FactoryQuickAction(
+          icon: Symbols.credit_card_rounded,
+          label: l10n.paymentCardsTitle,
+          onTap: () => context.push(AppRoutes.paymentCards),
+        ),
+        FactoryQuickAction(
+          icon: Symbols.support_agent_rounded,
+          label: l10n.supportTitle,
+          onTap: () => context.push(AppRoutes.support),
+        ),
+      ],
+    );
+  }
+}
+
+/// The short strip of promo cards under the launcher: "open slots today" (only
+/// when something nearby actually is) and the rewards entry. A horizontal list,
+/// so a lone card keeps its width and a third one can be added without
+/// reflowing the screen.
+class _PromoStrip extends StatelessWidget {
+  const _PromoStrip({required this.openCount, required this.onViewAvailable});
+
+  final int openCount;
+  final VoidCallback onViewAvailable;
+
+  static const _cardWidth = 240.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return SizedBox(
+      height: 128,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
         children: [
-          Positioned(
-            top: -30,
-            right: -30,
-            child: Container(
-              width: 180,
-              height: 180,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                // Ambient gold glow: a radial fade, not a flat disc.
-                gradient: RadialGradient(
-                  colors: [colors.accent.withValues(alpha: 0.5), colors.accent.withValues(alpha: 0)],
-                ),
-              ),
+          if (openCount > 0) ...[
+            FactoryPromoCard(
+              width: _cardWidth,
+              title: l10n.homeAvailabilityHero(openCount),
+              icon: Symbols.event_available_rounded,
+              onTap: onViewAvailable,
             ),
-          ),
-          Positioned(
-            bottom: 12,
-            right: 22,
-            // Decorative: says "free slots" at a glance without taking any
-            // width from the text.
-            child: ExcludeSemantics(
-              child: Icon(
-                Symbols.event_available_rounded,
-                size: 48,
-                fill: 1,
-                color: colors.onPrimary.withValues(alpha: 0.22),
-              ),
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.homeAvailabilityEyebrow.toUpperCase(),
-                style: Theme.of(context).textTheme.labelSmall
-                    ?.copyWith(color: colors.onPrimary.withValues(alpha: 0.85)),
-              ),
-              const SizedBox(height: FactorySpacing.space2),
-              Text(
-                l10n.homeAvailabilityHero(count),
-                style: Theme.of(context).textTheme.titleLarge
-                    ?.copyWith(color: colors.onPrimary),
-              ),
-              const SizedBox(height: FactorySpacing.space3),
-              Material(
-                // onPrimary: white in light, near-black in dark, so the pill
-                // and its primaryStrong label contrast in both themes.
-                color: colors.onPrimary,
-                shape: FactoryRadius.pill,
-                child: InkWell(
-                  onTap: onViewAll,
-                  customBorder: FactoryRadius.pill,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 9,
-                    ),
-                    child: Text(
-                      l10n.homeSeeAll,
-                      style: Theme.of(context).textTheme.labelLarge
-                          ?.copyWith(color: colors.primaryStrong),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            const SizedBox(width: FactorySpacing.space3),
+          ],
+          FactoryPromoCard(
+            width: _cardWidth,
+            title: l10n.homePromoRewardsTitle,
+            subtitle: l10n.homePromoRewardsSubtitle,
+            icon: Symbols.redeem_rounded,
+            onTap: () => context.push(AppRoutes.rewards),
           ),
         ],
       ),
