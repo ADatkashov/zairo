@@ -331,6 +331,10 @@
 
   "homeSeeAll": "See all",
   "@homeSeeAll": {"description": "Home screen section header action that opens Search."},
+  "homeCategoriesTitle": "Categories",
+  "@homeCategoriesTitle": {"description": "Heading of Home's category grid."},
+  "homeCategoriesAll": "All",
+  "@homeCategoriesAll": {"description": "Short link next to Home's category-grid heading that opens the full category list."},
 
   "adSponsoredLabel": "Ad",
   "@adSponsoredLabel": {"description": "Small label on a Home banner that a business paid for."},
