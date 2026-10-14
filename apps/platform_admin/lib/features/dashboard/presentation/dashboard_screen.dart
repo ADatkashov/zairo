@@ -11,6 +11,7 @@ import '../../auth/presentation/session_controller.dart';
 import '../../finance/data/finance_api.dart';
 import '../data/dashboard_api.dart';
 import '../data/dashboard_metrics.dart';
+import '../data/dashboard_trends.dart';
 
 /// The landing page: first what needs a person today (businesses waiting for
 /// approval, refunds that failed, payouts waiting to be paid), then the
@@ -23,10 +24,12 @@ class DashboardScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final metricsAsync = ref.watch(dashboardMetricsProvider);
     final payable = ref.watch(payoutsProvider('PAYABLE'));
+    final trends = ref.watch(dashboardTrendsProvider).value ?? const DashboardTrends.empty();
     final name = ref.watch(sessionControllerProvider).value?.admin.displayName ?? '';
 
     Future<void> refresh() {
       ref.invalidate(payoutsProvider('PAYABLE'));
+      ref.invalidate(dashboardTrendsProvider);
       return ref.refresh(dashboardMetricsProvider.future).then((_) {});
     }
 
@@ -61,6 +64,12 @@ class DashboardScreen extends ConsumerWidget {
                 _Section(
                   title: l10n.dashSectionBookings,
                   tiles: [
+                    if (trends.bookingsCreated.length >= 2)
+                      _Trend(
+                        l10n.dashBookingsLastDays(trends.bookingsCreated.length),
+                        trends.bookingsTotal.round(),
+                        trends.bookingsCreated,
+                      ),
                     _Stat(l10n.dashToday, m.bookingsToday),
                     _Stat(l10n.dashThisWeek, m.bookingsWeek),
                     _Stat(l10n.dashThisMonth, m.bookingsMonth),
@@ -191,6 +200,7 @@ abstract class _Tile {
   final String label;
   String value(String locale);
   bool get warn => false;
+  List<double>? get trend => null;
 }
 
 class _Stat extends _Tile {
@@ -198,6 +208,17 @@ class _Stat extends _Tile {
   final int count;
   @override
   final bool warn;
+  @override
+  String value(String locale) => formatCount(locale, count);
+}
+
+/// A count over a recent window, drawn with its daily trend line.
+class _Trend extends _Tile {
+  const _Trend(super.label, this.count, this.values);
+  final int count;
+  final List<double> values;
+  @override
+  List<double> get trend => values;
   @override
   String value(String locale) => formatCount(locale, count);
 }
@@ -241,7 +262,7 @@ class _Section extends StatelessWidget {
             maxColumns: 5,
             children: [
               for (final tile in tiles)
-                FactoryKpiCard(label: tile.label, value: tile.value(locale), warn: tile.warn),
+                FactoryKpiCard(label: tile.label, value: tile.value(locale), warn: tile.warn, trend: tile.trend),
             ],
           ),
         ],
