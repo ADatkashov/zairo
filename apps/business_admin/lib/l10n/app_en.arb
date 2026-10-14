@@ -2338,6 +2338,8 @@
   "@bookingStatusPending": {"description": "bookingStatusPending"},
   "calendarTitle": "Calendar",
   "@calendarTitle": {"description": "calendarTitle"},
+  "boardTitle": "Booking board",
+  "@boardTitle": {"description": "View-only board of the week's bookings by status; also the calendar button that opens it."},
   "calendarThisWeek": "This week",
   "@calendarThisWeek": {"description": "calendarThisWeek"},
   "calendarDayEmpty": "No bookings",

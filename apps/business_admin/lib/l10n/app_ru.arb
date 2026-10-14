@@ -901,6 +901,7 @@
   "bookingStatusNoShow": "Не пришёл",
   "bookingStatusPending": "В ожидании",
   "calendarTitle": "Календарь",
+  "boardTitle": "Доска записей",
   "calendarThisWeek": "Эта неделя",
   "calendarDayEmpty": "Записей нет",
   "calendarPrevWeek": "Предыдущая неделя",
