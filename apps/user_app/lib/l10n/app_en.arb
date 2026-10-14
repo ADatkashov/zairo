@@ -338,9 +338,6 @@
   "adWatchVideoLabel": "Watch video",
   "@adWatchVideoLabel": {"description": "Spoken hint on a Home banner that opens a video."},
 
-  "homeQuickActionNew": "NEW",
-  "@homeQuickActionNew": {"description": "Short red flag pinned to a Home quick-action tile that points at a feature the user has not seen yet."},
-
   "homePromoRewardsTitle": "Earn rewards for every visit",
   "@homePromoRewardsTitle": {"description": "Title of Home's promo card that opens My Rewards."},
 
@@ -355,9 +352,6 @@
 
   "discoveryVerticalCleaning": "Cleaning",
   "@discoveryVerticalCleaning": {"description": "Vertical filter chip label for the cleaning vertical."},
-
-  "homeCategoriesTitle": "Popular",
-  "@homeCategoriesTitle": {"description": "Home screen section header above the short popular-categories row (a curated shortlist, not the full catalog — see AllCategoriesScreen for that)."},
 
   "allCategoriesTitle": "All categories",
   "@allCategoriesTitle": {"description": "Label of the trailing tile in Home's popular-categories row that opens AllCategoriesScreen, and that screen's own AppBar title."},

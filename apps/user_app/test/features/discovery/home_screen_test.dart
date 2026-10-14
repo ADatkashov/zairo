@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:core_network/core_network.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:dio/dio.dart';
@@ -68,6 +70,20 @@ class _FakeAdsApi extends AdsApi {
 
   @override
   Future<List<AdBanner>> listBanners({String? cityCode}) async => _banners;
+}
+
+class _NeverCatalogApi extends CatalogApi {
+  _NeverCatalogApi() : super(DioClient(Dio()));
+
+  @override
+  Future<List<Category>> listCategories() => Completer<List<Category>>().future;
+}
+
+class _FailingCatalogApi extends CatalogApi {
+  _FailingCatalogApi() : super(DioClient(Dio()));
+
+  @override
+  Future<List<Category>> listCategories() async => throw Exception('offline');
 }
 
 class _FakeCatalogApi extends CatalogApi {
@@ -194,57 +210,117 @@ void main() {
     expect(find.textContaining('open slots today'), findsOneWidget);
   });
 
-  testWidgets('shows the 4×2 quick-action grid and the rewards promo, and they navigate', (tester) async {
-    _useTallWindow(tester);
-    final fakeApi = _FakeDiscoveryApi([_open]);
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          discoveryApiProvider.overrideWithValue(fakeApi),
-          catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
-        ],
-        child: MaterialApp.router(
-          theme: factoryLightTheme(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          routerConfig: GoRouter(
-            routes: [
-              GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
-              GoRoute(path: '/rewards', builder: (_, _) => const Scaffold(body: Text('Rewards page'))),
-              GoRoute(path: '/support', builder: (_, _) => const Scaffold(body: Text('Support page'))),
-              GoRoute(path: '/search', builder: (_, _) => const Scaffold(body: Text('Search page'))),
-              GoRoute(path: '/bookings', builder: (_, _) => const Scaffold(body: Text('Bookings page'))),
-            ],
+  Widget searchRouteApp(List<Category> categories, {CatalogApi? catalogApi}) => ProviderScope(
+    overrides: [
+      discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi([_open])),
+      catalogApiProvider.overrideWithValue(catalogApi ?? _FakeCatalogApi(categories)),
+    ],
+    child: MaterialApp.router(
+      theme: factoryLightTheme(),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      routerConfig: GoRouter(
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+          GoRoute(
+            path: '/search',
+            builder: (_, state) => Scaffold(body: Text('Search page ${state.uri.queryParameters['category']}')),
           ),
-        ),
+        ],
       ),
-    );
+    ),
+  );
+
+  List<Category> manyCategories(int count) => [
+    for (var i = 1; i <= count; i++)
+      Category(
+        id: 'cat-$i',
+        code: 'category-$i',
+        nameKk: 'Санат $i',
+        nameRu: 'Категория $i',
+        nameEn: 'Category $i',
+        icon: '🔧',
+        sortOrder: i,
+        status: 'ACTIVE',
+      ),
+  ];
+
+  testWidgets('categories are a grid of two rows of four with "All categories" last; no shortcut icons', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(searchRouteApp(manyCategories(10)));
     await tester.pumpAndSettle();
 
-    final grid = find.byType(FactoryQuickActionGrid);
-    expect(grid, findsOneWidget);
-    for (final label in [
-      'Search',
-      'Bookings',
-      'My favorites',
-      'Messages',
-      'My Rewards',
-      'Notifications',
-      'Payment cards',
-      'Support',
-    ]) {
-      expect(find.descendant(of: grid, matching: find.text(label)), findsOneWidget, reason: label);
+    final cats = [for (var i = 1; i <= 7; i++) tester.getTopLeft(find.text('Category $i'))];
+    final all = tester.getTopLeft(find.text('All categories'));
+    // Row one: 1-4 share a line; row two: 5-7 and "All categories" share the next.
+    expect({cats[0].dy, cats[1].dy, cats[2].dy, cats[3].dy}, hasLength(1));
+    expect({cats[4].dy, cats[5].dy, cats[6].dy, all.dy}, hasLength(1));
+    expect(cats[4].dy, greaterThan(cats[0].dy));
+    // Left to right, and "All categories" is the last cell.
+    expect(cats[0].dx, lessThan(cats[1].dx));
+    expect(cats[3].dx, greaterThan(cats[2].dx));
+    expect(all.dx, greaterThan(cats[6].dx));
+    // Only seven categories fit; the rest are behind "All categories".
+    expect(find.text('Category 8'), findsNothing);
+
+    // The old shortcut icons are gone: those places are reachable from the nav
+    // bar, the header and Profile, not from Home.
+    for (final label in ['Search', 'Bookings', 'My favorites', 'Messages', 'My Rewards', 'Notifications', 'Payment cards', 'Support']) {
+      expect(find.text(label), findsNothing, reason: label);
     }
-    // Only the rewards tile carries the NEW flag.
-    expect(find.descendant(of: grid, matching: find.text('NEW')), findsOneWidget);
-
+    // The promos are still there, after the categories.
     expect(find.text('Earn rewards for every visit'), findsOneWidget);
-    expect(find.textContaining('open slots today'), findsOneWidget);
+    expect(tester.getTopLeft(find.text('Earn rewards for every visit')).dy, greaterThan(all.dy));
+  });
 
-    await tester.tap(find.descendant(of: grid, matching: find.text('Support')));
+  testWidgets('one tap on a category opens Search already narrowed to it', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(searchRouteApp(manyCategories(10)));
     await tester.pumpAndSettle();
-    expect(find.text('Support page'), findsOneWidget);
+
+    await tester.tap(find.text('Category 3'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Search page category-3'), findsOneWidget);
+  });
+
+  testWidgets('with fewer categories the grid still ends with "All categories"', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(searchRouteApp(manyCategories(2)));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Category 1'), findsOneWidget);
+    expect(find.text('Category 2'), findsOneWidget);
+    expect(find.text('All categories'), findsOneWidget);
+  });
+
+  testWidgets('while the catalog loads the grid keeps its place with skeletons and still offers "All categories"', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(searchRouteApp(const [], catalogApi: _NeverCatalogApi()));
+    await tester.pump();
+
+    expect(find.byType(FactorySkeleton), findsNWidgets(7));
+    expect(find.text('All categories'), findsOneWidget);
+  });
+
+  testWidgets('if the catalog fails, "All categories" is still offered and Home still loads', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(searchRouteApp(const [], catalogApi: _FailingCatalogApi()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('All categories'), findsOneWidget);
+    expect(find.text('Top rated near you'), findsOneWidget);
+  });
+
+  testWidgets('a narrow phone fits four columns without overflowing', (tester) async {
+    tester.view.physicalSize = const Size(320, 3000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(searchRouteApp(manyCategories(10)));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Category 7'), findsOneWidget);
   });
 
   testWidgets('the rewards promo card opens My Rewards', (tester) async {
@@ -425,7 +501,7 @@ void main() {
     expect(find.byType(FactoryBannerCard), findsNothing);
     // The plain greeting hero.
     expect(find.text('Almaty'), findsOneWidget);
-    expect(find.byType(FactoryQuickActionGrid), findsOneWidget);
+    expect(find.byType(FactoryCategoryTile), findsOneWidget); // just "All categories" while the catalog is empty
   });
 
   testWidgets('shows an empty state when there is nothing to discover yet', (tester) async {
@@ -497,14 +573,13 @@ void main() {
     expect(find.widgetWithText(FactoryCategoryTile, 'Beauty'), findsOneWidget);
     expect(find.widgetWithText(FactoryCategoryTile, 'Auto'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(FactoryCategoryTile, 'Beauty'));
-    await tester.pumpAndSettle();
-
-    expect(fakeDiscoveryApi.lastVertical, 'beauty');
+    // Home's own feed is never filtered by a category any more: a category tap
+    // opens Search instead (see the grid tests above).
+    expect(fakeDiscoveryApi.lastVertical, isNull);
   });
 
   testWidgets(
-      'Home shows only the first 6 categories plus an "All categories" tile, not the whole catalog',
+      'Home shows only the first 7 categories plus an "All categories" cell, not the whole catalog',
       (tester) async {
     _useTallWindow(tester);
     final fakeDiscoveryApi = _FakeDiscoveryApi([_open, _closed]);
@@ -546,10 +621,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    for (var i = 1; i <= 6; i++) {
+    for (var i = 1; i <= 7; i++) {
       expect(find.text('Category $i'), findsOneWidget);
     }
-    expect(find.text('Category 7'), findsNothing);
     expect(find.text('Category 8'), findsNothing);
     expect(find.text('All categories'), findsOneWidget);
 
