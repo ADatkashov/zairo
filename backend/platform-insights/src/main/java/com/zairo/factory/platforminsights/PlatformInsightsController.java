@@ -2,6 +2,7 @@ package com.zairo.factory.platforminsights;
 
 import com.zairo.factory.platformadmin.PlatformCurrentAdmin;
 import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformDashboardMetrics;
+import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformReport;
 import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformTrends;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -47,5 +48,18 @@ public class PlatformInsightsController {
     public PlatformTrends trends(HttpServletRequest httpRequest, @RequestParam(defaultValue = "14") int days) {
         PlatformCurrentAdmin.requireAnyRole(httpRequest);
         return platformInsightsService.trends(days);
+    }
+
+    @Operation(summary = "Platform report", description = """
+            History for the reports screen over the last N days (default 30, capped at 90): bookings created, \
+            marketplace commission and subscription revenue per UTC day (zero-filled, oldest first), and the \
+            window's bookings by status.""")
+    @ApiResponse(responseCode = "200", description = "Report data")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/platform/reports")
+    public PlatformReport report(HttpServletRequest httpRequest, @RequestParam(defaultValue = "30") int days) {
+        PlatformCurrentAdmin.requireAnyRole(httpRequest);
+        return platformInsightsService.report(days);
     }
 }
