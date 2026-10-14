@@ -33,6 +33,7 @@ Future<void> _pump(
   BusinessAnalyticsOverview overview,
   Size size, {
   BusinessAnalyticsRevenue? revenue,
+  BusinessAnalyticsBookings? bookings,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -46,7 +47,9 @@ Future<void> _pump(
         businessAnalyticsRevenueProvider.overrideWith(
           (ref, key) => revenue == null ? unavailable() : Future.value(revenue),
         ),
-        businessAnalyticsBookingsProvider.overrideWith((ref, key) => unavailable()),
+        businessAnalyticsBookingsProvider.overrideWith(
+          (ref, key) => bookings == null ? unavailable() : Future.value(bookings),
+        ),
         businessAnalyticsSmartFillProvider.overrideWith((ref, key) => unavailable()),
         businessAnalyticsCustomersProvider.overrideWith((ref, key) => unavailable()),
         smartActionsProvider.overrideWith((ref, id) => unavailable()),
@@ -117,6 +120,44 @@ void main() {
       const Size(390, 2400),
       revenue: revenueOf([DailyAmount(date: DateTime(2026, 1, 1), amount: 10)]),
     );
+
+    expect(find.byType(FactorySparkline), findsNothing);
+  });
+
+  BusinessAnalyticsBookings bookingsOf(List<DailyBookingCount> days) => BusinessAnalyticsBookings(
+    totalBookings: 40,
+    completedBookings: 31,
+    upcomingBookings: 5,
+    cancelledBookings: 3,
+    noShowBookings: 1,
+    cancellationRate: 0.075,
+    noShowRate: 0.025,
+    repeatBookingRate: 0.3,
+    trend: days,
+  );
+
+  DailyBookingCount day(int d, {int completed = 1, int cancelled = 0}) => DailyBookingCount(
+    date: DateTime(2026, 1, d),
+    total: completed + cancelled,
+    completed: completed,
+    cancelled: cancelled,
+    noShow: 0,
+  );
+
+  testWidgets('completed and cancelled cards draw a daily trend once there are two or more days', (tester) async {
+    await _pump(
+      tester,
+      _overview(),
+      const Size(390, 2400),
+      bookings: bookingsOf([day(3, completed: 5), day(1, completed: 2), day(2, completed: 3, cancelled: 1)]),
+    );
+
+    // One line each on the Completed and Cancelled cards.
+    expect(find.byType(FactorySparkline), findsNWidgets(2));
+  });
+
+  testWidgets('a single day of bookings draws no card trend', (tester) async {
+    await _pump(tester, _overview(), const Size(390, 2400), bookings: bookingsOf([day(1)]));
 
     expect(find.byType(FactorySparkline), findsNothing);
   });
