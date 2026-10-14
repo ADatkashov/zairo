@@ -151,6 +151,70 @@ public class WorkerCatalog {
                 .param("b", bookingId).query(Long.class).single() > 0;
     }
 
+    /** A worker with the rating that earned a place on the "best masters" list, and where they work. */
+    public record Ranked(Worker worker, String providerName, double averageRating, long reviewCount) {
+    }
+
+    /** One service a worker performs, for their public page. */
+    public record OfferedService(UUID id, String title, int durationMinutes, java.math.BigDecimal price,
+            String currency) {
+    }
+
+    /** Every booking of the directory's workers: its link row, or the slot the booking sits on. */
+    private static String bookingsOfWorkers(Spec spec) {
+        return "select " + spec.bookingWorkerCol() + " as worker_id, booking_id from " + spec.bookingTable()
+                + " union select s.employee_id as worker_id, b.id as booking_id from booking b join availability_slot s"
+                + " on s.id = b.availability_slot_id where s.employee_id is not null";
+    }
+
+    /**
+     * Active workers of ACTIVE businesses, best average review rating first, across all four directories. A worker
+     * needs at least {@code minReviews} reviews so that one lucky 5-star does not outrank a long record.
+     */
+    public List<Ranked> topRated(int minReviews, int limit) {
+        List<Ranked> all = new ArrayList<>();
+        for (Spec spec : SPECS) {
+            all.addAll(jdbc.sql("select w.id, w.provider_id, w.user_id, w.display_name, w.photo_url, w.is_active,"
+                    + " p.name as provider_name, avg(r.rating) as average_rating, count(r.id) as review_count"
+                    + " from " + spec.table() + " w join provider p on p.id = w.provider_id join ("
+                    + bookingsOfWorkers(spec) + ") wb on wb.worker_id = w.id join review r on r.booking_id"
+                    + " = wb.booking_id where w.is_active and p.status = 'ACTIVE'"
+                    + " group by w.id, w.provider_id, w.user_id, w.display_name, w.photo_url, w.is_active, p.name"
+                    + " having count(r.id) >= :min").param("min", minReviews)
+                    .query((rs, n) -> new Ranked(map(spec.kind(), rs), rs.getString("provider_name"),
+                            rs.getDouble("average_rating"), rs.getLong("review_count")))
+                    .list());
+        }
+        return all.stream()
+                .sorted(java.util.Comparator.comparingDouble(Ranked::averageRating).reversed()
+                        .thenComparing(java.util.Comparator.comparingLong(Ranked::reviewCount).reversed())
+                        .thenComparing(r -> r.worker().displayName(), String.CASE_INSENSITIVE_ORDER))
+                .limit(limit).toList();
+    }
+
+    /** This worker's rating alone: {@code reviewCount} 0 when nobody has reviewed them yet. */
+    public Ranked ratingOf(Worker worker, String providerName) {
+        Spec spec = spec(worker.kind());
+        return jdbc.sql("select coalesce(avg(r.rating), 0) as average_rating, count(r.id) as review_count from ("
+                + bookingsOfWorkers(spec) + ") wb join review r on r.booking_id = wb.booking_id"
+                + " where wb.worker_id = :id").param("id", worker.id())
+                .query((rs, n) -> new Ranked(worker, providerName, rs.getDouble("average_rating"),
+                        rs.getLong("review_count")))
+                .single();
+    }
+
+    /** The active services this worker performs. */
+    public List<OfferedService> servicesOf(Worker worker) {
+        Spec spec = spec(worker.kind());
+        return jdbc.sql("select sv.id, sv.title, sv.duration_minutes, sv.price, sv.currency from "
+                + spec.serviceTable() + " l join service sv on sv.id = l.service_id where l."
+                + spec.serviceWorkerCol() + " = :id and sv.is_active order by sv.title")
+                .param("id", worker.id())
+                .query((rs, n) -> new OfferedService(rs.getObject("id", UUID.class), rs.getString("title"),
+                        rs.getInt("duration_minutes"), rs.getBigDecimal("price"), rs.getString("currency")))
+                .list();
+    }
+
     private static Worker map(WorkerKind kind, java.sql.ResultSet rs) throws java.sql.SQLException {
         return new Worker(kind, rs.getObject("id", UUID.class), rs.getObject("provider_id", UUID.class),
                 rs.getObject("user_id", UUID.class), rs.getString("display_name"), rs.getString("photo_url"),
