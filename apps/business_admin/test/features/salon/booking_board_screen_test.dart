@@ -42,6 +42,8 @@ Future<List<(String, DateTime)>> _pump(
   final requested = <(String, DateTime)>[];
   await tester.pumpWidget(
     ProviderScope(
+      // A fresh scope per call: pumping twice in one test must not reuse the first call's cached agenda.
+      key: UniqueKey(),
       overrides: [
         ownerWeekAgendaProvider.overrideWith((ref, key) {
           requested.add(key);

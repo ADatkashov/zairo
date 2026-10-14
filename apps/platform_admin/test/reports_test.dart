@@ -70,7 +70,8 @@ void main() {
 
     expect(backend.calls('GET', '/platform/reports').single.queryParameters['days'], 30);
     expect(find.text('Marketplace commission'), findsOneWidget);
-    expect(find.text('₸28,000'), findsOneWidget);
+    // The fake backend answers at most 14 days: 1 000 + 2 000 + ... + 14 000.
+    expect(find.text('₸105,000'), findsOneWidget);
     expect(find.text('Bookings created'), findsWidgets);
     expect(find.byType(FactoryDonutChart), findsOneWidget);
     expect(find.text('Completed'), findsOneWidget);
