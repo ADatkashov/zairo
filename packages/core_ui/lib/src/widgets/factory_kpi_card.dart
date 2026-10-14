@@ -26,6 +26,7 @@ class FactoryKpiCard extends StatelessWidget {
     this.trend,
     this.trendLabel,
     this.warn = false,
+    this.onTap,
   });
 
   final String label;
@@ -48,6 +49,9 @@ class FactoryKpiCard extends StatelessWidget {
 
   final bool warn;
 
+  /// Makes the whole card a link to the list behind the number (null = plain card).
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.factoryColors;
@@ -55,6 +59,7 @@ class FactoryKpiCard extends StatelessWidget {
     final trend = this.trend;
     final delta = this.delta;
     return FactoryCard(
+      onTap: onTap,
       padding: const EdgeInsets.all(FactorySpacing.space3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

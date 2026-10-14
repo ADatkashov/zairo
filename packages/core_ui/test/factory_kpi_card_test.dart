@@ -40,6 +40,16 @@ void main() {
       expect(value.style?.color, FactoryColors.light.error);
     });
 
+    testWidgets('onTap turns the card into a link; without it nothing reacts', (tester) async {
+      var taps = 0;
+      await tester.pumpWidget(_wrap(FactoryKpiCard(label: 'Pending', value: '3', onTap: () => taps++)));
+      await tester.tap(find.text('Pending'));
+      expect(taps, 1);
+
+      await tester.pumpWidget(_wrap(const FactoryKpiCard(label: 'Pending', value: '3')));
+      expect(find.byType(InkWell), findsNothing);
+    });
+
     testWidgets('renders the icon when given', (tester) async {
       await tester.pumpWidget(_wrap(const FactoryKpiCard(label: 'Leads', value: '9', icon: Icons.person_rounded)));
 

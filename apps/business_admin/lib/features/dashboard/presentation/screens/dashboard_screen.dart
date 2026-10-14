@@ -202,18 +202,25 @@ class DashboardScreen extends ConsumerWidget {
     final nameController = TextEditingController();
     String vertical = 'beauty';
     String? selectedCity;
+    // Why "Create" did nothing, shown in the dialog (the action buttons sit outside the StatefulBuilder).
+    final formError = ValueNotifier<String?>(null);
+    final submitting = ValueNotifier<bool>(false);
     final created = await showFactoryDialog<bool>(
       context: context,
       title: l10n.addBusinessDialogTitle,
       content: StatefulBuilder(
         builder: (context, setDialogState) {
-          final citiesAsync = ref.watch(activeCitiesProvider);
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              FactoryTextField(
-                controller: nameController,
-                label: l10n.businessNameLabel,
+              ValueListenableBuilder<String?>(
+                valueListenable: formError,
+                builder: (context, message, _) => FactoryTextField(
+                  controller: nameController,
+                  label: l10n.businessNameLabel,
+                  errorText: message,
+                  onChanged: (_) => formError.value = null,
+                ),
               ),
               const SizedBox(height: FactorySpacing.space3),
               _CategoryPicker(
@@ -221,7 +228,10 @@ class DashboardScreen extends ConsumerWidget {
                 onChanged: (v) => setDialogState(() => vertical = v),
               ),
               const SizedBox(height: FactorySpacing.space3),
-              citiesAsync.when(
+              // A Consumer of its own: the dialog is a separate route, so the dashboard's `ref` never
+              // rebuilt it when the cities arrived — the dropdown stayed a spinner and "Create" did nothing.
+              Consumer(
+                builder: (context, ref, _) => ref.watch(activeCitiesProvider).when(
                 data: (cities) {
                   if (cities.isEmpty) {
                     return Text(l10n.noCitiesAvailable);
@@ -250,6 +260,7 @@ class DashboardScreen extends ConsumerWidget {
                 },
                 loading: () => const CircularProgressIndicator(),
                 error: (error, _) => Text(l10n.errorLoadingCities),
+                ),
               ),
             ],
           );
@@ -262,25 +273,38 @@ class DashboardScreen extends ConsumerWidget {
           onPressed: () => Navigator.of(context).pop(false),
         ),
         Builder(
-          builder: (context) => FactoryButton(
-            label: l10n.createButton,
-            onPressed: () async {
-              if (nameController.text.trim().isEmpty || selectedCity == null) return;
-              try {
-                await ref.read(salonAdminApiProvider).createProvider(
-                      ownerUserId: ownerUserId,
-                      name: nameController.text.trim(),
-                      vertical: vertical,
-                      cityCode: selectedCity!,
-                    );
-                if (context.mounted) Navigator.of(context).pop(true);
-              } on BillingException catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(SnackBar(content: Text(e.localizedMessage(l10n))));
-                }
-              }
-            },
+          builder: (context) => ValueListenableBuilder<bool>(
+            valueListenable: submitting,
+            builder: (context, busy, _) => FactoryButton(
+              label: l10n.createButton,
+              isLoading: busy,
+              onPressed: busy
+                  ? null
+                  : () async {
+                      if (nameController.text.trim().isEmpty) {
+                        formError.value = l10n.validationBusinessNameRequired;
+                        return;
+                      }
+                      if (selectedCity == null) {
+                        formError.value = l10n.noCitiesAvailable;
+                        return;
+                      }
+                      submitting.value = true;
+                      try {
+                        await ref.read(salonAdminApiProvider).createProvider(
+                              ownerUserId: ownerUserId,
+                              name: nameController.text.trim(),
+                              vertical: vertical,
+                              cityCode: selectedCity!,
+                            );
+                        if (context.mounted) Navigator.of(context).pop(true);
+                      } catch (e) {
+                        formError.value = e is BillingException ? e.localizedMessage(l10n) : l10n.errorCreateBusinessFailed;
+                      } finally {
+                        submitting.value = false;
+                      }
+                    },
+            ),
           ),
         ),
       ],
