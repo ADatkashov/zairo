@@ -87,6 +87,7 @@
   "dashToday": "Сегодня",
   "dashThisWeek": "За неделю",
   "dashThisMonth": "За месяц",
+  "dashBookingsLastDays": "Записи за {days} дн.",
   "dashCompleted": "Завершены",
   "dashCancelled": "Отменены",
   "dashSubscriptionRevenue": "Подписки",

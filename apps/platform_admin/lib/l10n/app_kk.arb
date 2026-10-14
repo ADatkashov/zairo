@@ -87,6 +87,7 @@
   "dashToday": "Бүгін",
   "dashThisWeek": "Осы аптада",
   "dashThisMonth": "Осы айда",
+  "dashBookingsLastDays": "Соңғы {days} күндегі жазылулар",
   "dashCompleted": "Аяқталған",
   "dashCancelled": "Бас тартылған",
   "dashSubscriptionRevenue": "Жазылымдар",
