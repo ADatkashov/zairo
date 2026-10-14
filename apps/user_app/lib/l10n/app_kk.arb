@@ -688,5 +688,9 @@
   "bookingReviewConfirmFree": "Жазылуды растау",
   "bookingReviewChange": "Өзгерту",
   "bookingReviewTotal": "Барлығы",
-  "bookingStepsDone": "Барлық қадам аяқталды"
+  "bookingStepsDone": "Барлық қадам аяқталды",
+  "bookingHintService": "Қызметті таңдаңыз",
+  "bookingHintPerson": "Маманды таңдаңыз",
+  "bookingHintVehicle": "Көлікті таңдаңыз",
+  "bookingHintTime": "Уақытты таңдаңыз"
 }

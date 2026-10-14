@@ -62,10 +62,19 @@ class DashboardScreen extends ConsumerWidget {
                   actionLabel: l10n.dashOpen,
                   onAction: () => context.go(ConsoleRoutes.businesses),
                   tiles: [
-                    _Stat(l10n.dashTotal, m.businessesTotal),
-                    _Stat(l10n.statusActive, m.businessesActive),
-                    _Stat(l10n.businessPending, m.businessesPending, warn: m.businessesPending > 0),
-                    _Stat(l10n.businessSuspended, m.businessesBlocked),
+                    _Stat(l10n.dashTotal, m.businessesTotal, path: ConsoleRoutes.businesses),
+                    _Stat(l10n.statusActive, m.businessesActive, path: '${ConsoleRoutes.businesses}?status=ACTIVE'),
+                    _Stat(
+                      l10n.businessPending,
+                      m.businessesPending,
+                      warn: m.businessesPending > 0,
+                      path: '${ConsoleRoutes.businesses}?status=PENDING',
+                    ),
+                    _Stat(
+                      l10n.businessSuspended,
+                      m.businessesBlocked,
+                      path: '${ConsoleRoutes.businesses}?status=SUSPENDED',
+                    ),
                   ],
                 ),
                 _Section(
@@ -101,7 +110,12 @@ class DashboardScreen extends ConsumerWidget {
                     _Stat(l10n.paymentPending, m.paymentsPending),
                     _Stat(l10n.paymentFailed, m.paymentsFailed, warn: m.paymentsFailed > 0),
                     _Stat(l10n.paymentRefunded, m.paymentsRefunded),
-                    _Stat(l10n.paymentRefundFailed, m.paymentsRefundFailed, warn: m.paymentsRefundFailed > 0),
+                    _Stat(
+                      l10n.paymentRefundFailed,
+                      m.paymentsRefundFailed,
+                      warn: m.paymentsRefundFailed > 0,
+                      path: '${ConsoleRoutes.finance}?tab=refunds',
+                    ),
                   ],
                 ),
                 _Section(
@@ -208,13 +222,18 @@ abstract class _Tile {
   String value(String locale);
   bool get warn => false;
   List<double>? get trend => null;
+
+  /// Where tapping the tile goes — the list behind the number — or null.
+  String? get path => null;
 }
 
 class _Stat extends _Tile {
-  const _Stat(super.label, this.count, {this.warn = false});
+  const _Stat(super.label, this.count, {this.warn = false, this.path});
   final int count;
   @override
   final bool warn;
+  @override
+  final String? path;
   @override
   String value(String locale) => formatCount(locale, count);
 }
@@ -269,7 +288,13 @@ class _Section extends StatelessWidget {
             maxColumns: 5,
             children: [
               for (final tile in tiles)
-                FactoryKpiCard(label: tile.label, value: tile.value(locale), warn: tile.warn, trend: tile.trend),
+                FactoryKpiCard(
+                  label: tile.label,
+                  value: tile.value(locale),
+                  warn: tile.warn,
+                  trend: tile.trend,
+                  onTap: tile.path == null ? null : () => context.go(tile.path!),
+                ),
             ],
           ),
         ],
