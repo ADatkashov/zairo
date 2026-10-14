@@ -22,6 +22,8 @@ import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../../city/presentation/providers/city_providers.dart';
 import '../../../maps/presentation/providers/maps_providers.dart';
 import '../../../notifications/presentation/widgets/notification_bell_button.dart';
+import '../../../workers/data/models/top_worker.dart';
+import '../../../workers/presentation/providers/workers_providers.dart';
 import '../../data/models/provider_search_result.dart';
 import '../providers/discovery_providers.dart';
 import '../widgets/provider_card.dart';
@@ -164,6 +166,7 @@ class HomeScreen extends ConsumerWidget {
                         },
                       ),
                     ),
+                  const _TopMastersSection(),
                   const SizedBox(height: FactorySpacing.space6),
                   _RecommendedSection(results: results, excluding: topRated),
                       ]),
@@ -621,6 +624,105 @@ class _CategoriesSection extends ConsumerWidget {
           },
         ),
       ],
+    );
+  }
+}
+
+/// "Best masters": a rail of avatars of the best-rated masters. A tap opens the
+/// master's own page (rating, services, "Book"), not the business — the person
+/// picked a face, so that is where they land. Best-effort like the banners: no
+/// section while loading, on error, or while nobody has enough reviews yet.
+class _TopMastersSection extends ConsumerWidget {
+  const _TopMastersSection();
+
+  static const _cardWidth = 96.0;
+  static const _avatarSize = 72.0;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final workers = ref.watch(topWorkersProvider).value ?? const <TopWorker>[];
+    if (workers.isEmpty) return const SizedBox.shrink();
+
+    // Avatar + two name lines + the rating row; follows the text scale so a
+    // large system font doesn't clip the name.
+    final textScale = MediaQuery.textScalerOf(context);
+    final height = _avatarSize + FactorySpacing.space2 + textScale.scale(14 * 1.3) * 2 + 4 + textScale.scale(13 * 1.3) + 4;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: FactorySpacing.space6),
+        Text(l10n.homeTopMastersTitle, style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: FactorySpacing.space3),
+        SizedBox(
+          height: height,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: workers.length,
+            separatorBuilder: (_, _) => const SizedBox(width: FactorySpacing.space3),
+            itemBuilder: (context, index) {
+              final worker = workers[index];
+              return _TopMasterCard(
+                worker: worker,
+                onTap: () => context.push(AppRoutes.worker(worker.id)),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TopMasterCard extends StatelessWidget {
+  const _TopMasterCard({required this.worker, required this.onTap});
+
+  final TopWorker worker;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final textTheme = Theme.of(context).textTheme;
+    return Semantics(
+      button: true,
+      label: worker.displayName,
+      excludeSemantics: true,
+      onTap: onTap,
+      child: InkWell(
+        borderRadius: FactoryRadius.mdRadius,
+        onTap: onTap,
+        child: SizedBox(
+          width: _TopMastersSection._cardWidth,
+          child: Column(
+            children: [
+              FactoryAvatar(
+                initials: initialsFor(worker.displayName),
+                size: _TopMastersSection._avatarSize,
+                image: worker.photoUrl != null ? NetworkImage(worker.photoUrl!) : null,
+              ),
+              const SizedBox(height: FactorySpacing.space2),
+              Text(
+                worker.displayName,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700, height: 1.3),
+              ),
+              const SizedBox(height: 4),
+              FactoryRatingLabel(
+                rating: worker.averageRating,
+                reviewCount: worker.reviewCount,
+                semanticLabel: l10n.ratingSemanticLabelWithReviews(
+                  worker.averageRating.toStringAsFixed(1),
+                  worker.reviewCount,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
