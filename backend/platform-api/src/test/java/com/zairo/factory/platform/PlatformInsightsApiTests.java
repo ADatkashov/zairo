@@ -88,4 +88,30 @@ class PlatformInsightsApiTests {
         assertThat(bookingsToday).isGreaterThanOrEqualTo(1);
         assertThat(after.get("revenue")).isNotNull();
     }
+
+    @Test
+    void trendsRequireAuthAndReturnAZeroFilledWindowOldestFirst() {
+        assertThat(restTemplate.getForEntity("/api/v1/platform/dashboard/trends", Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        var support = TestPlatformAuth.registerPlatformAdmin(restTemplate, platformAdminAccountRepository,
+                "trends-support-" + UUID.randomUUID() + "@factory.internal", PlatformRole.PLATFORM_SUPPORT);
+        HttpEntity<Void> auth = new HttpEntity<>(null, TestPlatformAuth.authHeaders(support.accessToken()));
+
+        Map<?, ?> week = restTemplate.exchange("/api/v1/platform/dashboard/trends?days=7", HttpMethod.GET, auth,
+                Map.class).getBody();
+        java.util.List<?> days = (java.util.List<?>) week.get("bookingsCreated");
+        assertThat(days).hasSize(7);
+        assertThat(((Map<?, ?>) days.get(6)).get("date")).isEqualTo(java.time.LocalDate.now(java.time.ZoneOffset.UTC).toString());
+        assertThat(((Map<?, ?>) days.get(0)).get("date").toString())
+                .isLessThan(((Map<?, ?>) days.get(6)).get("date").toString());
+
+        // An out-of-range window is clamped, not rejected.
+        Map<?, ?> huge = restTemplate.exchange("/api/v1/platform/dashboard/trends?days=500", HttpMethod.GET, auth,
+                Map.class).getBody();
+        assertThat((java.util.List<?>) huge.get("bookingsCreated")).hasSize(31);
+        Map<?, ?> zero = restTemplate.exchange("/api/v1/platform/dashboard/trends?days=0", HttpMethod.GET, auth,
+                Map.class).getBody();
+        assertThat((java.util.List<?>) zero.get("bookingsCreated")).hasSize(1);
+    }
 }
