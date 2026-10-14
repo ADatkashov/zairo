@@ -30,24 +30,13 @@ import '../widgets/provider_card.dart';
 /// underneath (that's the Search tab). Tapping the search field switches to
 /// Search rather than pushing a new screen, matching how the other bottom
 /// nav destinations behave.
-class HomeScreen extends ConsumerStatefulWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  ConsumerState<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends ConsumerState<HomeScreen> {
-  /// null = every vertical. Set to a Category's `code` (see
-  /// catalog_providers.dart) — the search endpoint's `vertical` filter is
-  /// unchanged, this just sources the value from the master catalog instead
-  /// of a literal string.
-  String? _vertical;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final query = DiscoveryQuery(vertical: _vertical);
+    const query = DiscoveryQuery();
     final resultsAsync = ref.watch(searchResultsProvider(query));
     final locationAsync = ref.watch(currentLocationProvider);
     final user = ref.watch(authControllerProvider).value;
@@ -56,6 +45,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return _buildHomeContent(
       context,
+      ref,
       l10n,
       query,
       resultsAsync,
@@ -68,6 +58,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildHomeContent(
     BuildContext context,
+    WidgetRef ref,
     AppLocalizations l10n,
     DiscoveryQuery query,
     AsyncValue<List<ProviderSearchResult>> resultsAsync,
@@ -116,23 +107,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
                   const SizedBox(height: FactorySpacing.space4),
-                  _SearchEntry(onTap: () => context.go(AppRoutes.search(category: _vertical))),
+                  _SearchEntry(onTap: () => context.go(AppRoutes.search())),
+                  // Categories first, straight under the search: the main way into
+                  // the app is "pick what you need", so it is the first thing
+                  // below the search field and needs no heading of its own.
                   const SizedBox(height: FactorySpacing.space5),
-                  const _QuickActions(),
-                  // The blocks of real colour sit right under the launcher, so
-                  // the first screen has focal points (and a reason to tap)
-                  // before the category row.
+                  const _CategoryGrid(),
+                  // Promos come after the primary action, not in front of it.
                   const SizedBox(height: FactorySpacing.space5),
                   _PromoStrip(
                     openCount: openCount,
-                    onViewAvailable: () => context.go(AppRoutes.search(category: _vertical)),
-                  ),
-                  const SizedBox(height: FactorySpacing.space5),
-                  Text(l10n.homeCategoriesTitle, style: textTheme.titleSmall),
-                  const SizedBox(height: FactorySpacing.space3),
-                  _CategoryGrid(
-                    selectedCode: _vertical,
-                    onSelect: (code) => setState(() => _vertical = code),
+                    onViewAvailable: () => context.go(AppRoutes.search()),
                   ),
                   if (user != null) ...[
                     const SizedBox(height: FactorySpacing.space6),
@@ -142,7 +127,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   FactorySectionHeader(
                     title: l10n.homeTopRatedTitle,
                     actionLabel: l10n.homeSeeAll,
-                    onActionTap: () => context.go(AppRoutes.search(category: _vertical)),
+                    onActionTap: () => context.go(AppRoutes.search()),
                   ),
                   const SizedBox(height: FactorySpacing.space3),
                   if (topRated.isEmpty)
@@ -494,39 +479,34 @@ class _SearchEntry extends StatelessWidget {
   }
 }
 
-/// The Home tab's "Популярное" row — a short, curated shortlist, not the
-/// master catalog: at most [_popularCount] categories (the catalog's own
-/// `sortOrder`, admin-curated, decides which), plus a trailing tile that
-/// opens [AllCategoriesScreen] for the other ~14+. Deliberately never grows
-/// with the catalog — that was the previous version's actual problem (a
-/// wrapping grid of all 20 ran to 4-5 rows and pushed every other Home
-/// section below the fold), and Home showing every category is exactly
-/// what turns a discovery screen into a category catalog.
-///
-/// Tapping a shown category toggles the search-vertical filter (tap again
-/// to clear); tapping the trailing tile pushes [AllCategoriesScreen] and,
-/// if the user picks something there, applies its category `code` here the
-/// same way.
+/// The Home tab's category grid: two rows of four, the last cell being "All
+/// categories". A launcher, not a filter — one tap on a category opens Search
+/// already narrowed to it (the result the person came for), instead of quietly
+/// re-filtering the rails below. It is a short, curated shortlist, never the
+/// whole master catalog: at most [_slots] − 1 categories (the catalog's own
+/// `sortOrder`, admin-curated, decides which) plus the "All categories" cell,
+/// which opens [AllCategoriesScreen] for the rest and its spheres. Home showing
+/// every category is what turns a discovery screen into a category catalog.
 class _CategoryGrid extends ConsumerWidget {
-  const _CategoryGrid({required this.selectedCode, required this.onSelect});
+  const _CategoryGrid();
 
-  final String? selectedCode;
-  final ValueChanged<String?> onSelect;
+  static const _columns = 4;
 
-  static const _popularCount = 6;
+  /// Two rows of four, "All categories" included.
+  static const _slots = 8;
+
+  static const _gap = FactorySpacing.space2;
 
   // FactoryCategoryTile's own content is 72px of chrome (4px padding + 56px
-  // icon circle + 8px gap + 4px padding) plus up to two label lines — a plain
-  // Wrap never exposed this since it sizes each child to its natural height,
-  // but a horizontal ListView hard-constrains the cross axis to whatever this
-  // is, so it has to be at least that. The label height follows the user's
-  // text scale so large system fonts don't clip the second line.
+  // icon circle + 8px gap + 4px padding) plus up to two label lines. The label
+  // height follows the user's text scale so large system fonts don't clip the
+  // second line.
   static double _tileHeightFor(BuildContext context) =>
       72 + 2 * MediaQuery.textScalerOf(context).scale(13 * 1.2) + 4;
 
   Future<void> _openAllCategories(BuildContext context) async {
     final code = await context.push<String>(AppRoutes.categories);
-    if (code != null) onSelect(code);
+    if (code != null && context.mounted) context.go(AppRoutes.search(category: code));
   }
 
   @override
@@ -534,66 +514,75 @@ class _CategoryGrid extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final categoriesAsync = ref.watch(categoriesProvider);
     final languageCode = Localizations.localeOf(context).languageCode;
-
-    final allCategoriesTile = FactoryCategoryTile(
-      icon: Symbols.apps_rounded,
-      label: l10n.allCategoriesTitle,
-      onTap: () => _openAllCategories(context),
-    );
-
     final tileHeight = _tileHeightFor(context);
-    return SizedBox(
-      height: tileHeight,
-      child: categoriesAsync.when(
-        data: (categories) {
-          final popular = categories.take(_popularCount).toList();
-          return ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: popular.length + 1,
-            separatorBuilder: (_, _) =>
-                const SizedBox(width: FactorySpacing.space3),
-            itemBuilder: (context, index) {
-              if (index == popular.length) return allCategoriesTile;
-              final category = popular[index];
-              final selected = selectedCode == category.code;
-              final accent = colorForCategory(context, category.code);
-              return FactoryCategoryTile(
-                icon: iconForCategory(category.code),
-                label: category.nameFor(languageCode),
-                selected: selected,
-                accentColor: accent?.color,
-                accentTint: accent?.tint,
-                onTap: () => onSelect(selected ? null : category.code),
-              );
-            },
-          );
-        },
-        // Best-effort: while loading or on error, still show the trailing
-        // tile (it doesn't depend on this request) rather than blocking the
-        // whole Home screen on the catalog request.
-        loading: () => ListView(
-          scrollDirection: Axis.horizontal,
-          children: [
-            FactorySkeleton(
-              width: 64,
-              height: tileHeight,
-              borderRadius: BorderRadius.all(Radius.circular(12)),
-            ),
-            const SizedBox(width: FactorySpacing.space3),
-            FactorySkeleton(
-              width: 64,
-              height: tileHeight,
-              borderRadius: BorderRadius.all(Radius.circular(12)),
-            ),
-            const SizedBox(width: FactorySpacing.space3),
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cell = (constraints.maxWidth - _gap * (_columns - 1)) / _columns;
+        // The cell is the label's width: a narrow phone has no room to spare.
+        final labelWidth = cell;
+        final dense = cell < 76;
+
+        final allCategoriesTile = FactoryCategoryTile(
+          icon: Symbols.apps_rounded,
+          label: l10n.allCategoriesTitle,
+          labelMaxWidth: labelWidth,
+          dense: dense,
+          onTap: () => _openAllCategories(context),
+        );
+
+        final cells = categoriesAsync.when(
+          data: (categories) => [
+            for (final category in categories.take(_slots - 1))
+              Builder(
+                builder: (context) {
+                  final accent = colorForCategory(context, category.code);
+                  return FactoryCategoryTile(
+                    icon: iconForCategory(category.code),
+                    label: category.nameFor(languageCode),
+                    labelMaxWidth: labelWidth,
+                    dense: dense,
+                    accentColor: accent?.color,
+                    accentTint: accent?.tint,
+                    onTap: () => context.go(AppRoutes.search(category: category.code)),
+                  );
+                },
+              ),
             allCategoriesTile,
           ],
-        ),
-        error: (error, stackTrace) => ListView(
-          scrollDirection: Axis.horizontal,
-          children: [allCategoriesTile],
-        ),
-      ),
+          // Best-effort: while loading, hold the grid's place with skeletons;
+          // on error still offer the trailing tile (it doesn't depend on this
+          // request) rather than blocking the whole Home screen on the catalog.
+          loading: () => [
+            for (var i = 0; i < _slots - 1; i++)
+              FactorySkeleton(
+                width: labelWidth,
+                height: tileHeight,
+                borderRadius: const BorderRadius.all(Radius.circular(12)),
+              ),
+            allCategoriesTile,
+          ],
+          error: (error, stackTrace) => [allCategoriesTile],
+        );
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var start = 0; start < cells.length; start += _columns) ...[
+              if (start > 0) const SizedBox(height: _gap),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (var i = start; i < start + _columns; i++) ...[
+                    if (i > start) const SizedBox(width: _gap),
+                    Expanded(child: i < cells.length ? Center(child: cells[i]) : const SizedBox.shrink()),
+                  ],
+                ],
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 }
@@ -844,63 +833,6 @@ class _RecommendedRow extends StatelessWidget {
             ),
         ],
       ),
-    );
-  }
-}
-
-/// Home's 4×2 launcher (the Astana Hub pattern): the app's own destinations
-/// one tap from the first screen, instead of two levels deep under Profile.
-/// Search and Bookings are tab roots (`go`); the rest open above the shell.
-class _QuickActions extends StatelessWidget {
-  const _QuickActions();
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return FactoryQuickActionGrid(
-      actions: [
-        FactoryQuickAction(
-          icon: Symbols.search_rounded,
-          label: l10n.navSearch,
-          onTap: () => context.go(AppRoutes.search()),
-        ),
-        FactoryQuickAction(
-          icon: Symbols.calendar_month_rounded,
-          label: l10n.navBookings,
-          onTap: () => context.go(AppRoutes.bookings),
-        ),
-        FactoryQuickAction(
-          icon: Symbols.favorite_rounded,
-          label: l10n.myFavoritesTitle,
-          onTap: () => context.push(AppRoutes.favorites),
-        ),
-        FactoryQuickAction(
-          icon: Symbols.chat_bubble_rounded,
-          label: l10n.messagesTitle,
-          onTap: () => context.push(AppRoutes.messages),
-        ),
-        FactoryQuickAction(
-          icon: Symbols.redeem_rounded,
-          label: l10n.myRewardsTitle,
-          badge: l10n.homeQuickActionNew,
-          onTap: () => context.push(AppRoutes.rewards),
-        ),
-        FactoryQuickAction(
-          icon: Symbols.notifications_rounded,
-          label: l10n.notificationsTitle,
-          onTap: () => context.push(AppRoutes.notifications),
-        ),
-        FactoryQuickAction(
-          icon: Symbols.credit_card_rounded,
-          label: l10n.paymentCardsTitle,
-          onTap: () => context.push(AppRoutes.paymentCards),
-        ),
-        FactoryQuickAction(
-          icon: Symbols.support_agent_rounded,
-          label: l10n.supportTitle,
-          onTap: () => context.push(AppRoutes.support),
-        ),
-      ],
     );
   }
 }
