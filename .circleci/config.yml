@@ -196,6 +196,197 @@ jobs:
           path: apps/platform_admin/build/web
           destination: platform-admin-web
 
+  # ---------------------------------------------------------------------------
+  # Automated checks (added 2026-10-12). GitHub Actions is not usable for now,
+  # so these are the repo's test gate. Unlike the APK builds above they are not
+  # limited to the `test` branch -- see the `checks` workflow at the bottom.
+  # ---------------------------------------------------------------------------
+
+  # Fast backend gate: every module's plain unit tests. No database or Docker
+  # needed, so it runs on the cheap Docker executor.
+  backend-unit-tests:
+    docker:
+      - image: cimg/openjdk:21.0
+    resource_class: medium
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - gradle-v1-{{ checksum "backend/build.gradle.kts" }}
+            - gradle-v1-
+      - run:
+          name: Unit tests (every module except platform-api)
+          working_directory: backend
+          command: |
+            chmod +x gradlew
+            ./gradlew test -x :platform-api:test --continue
+      - save_cache:
+          key: gradle-v1-{{ checksum "backend/build.gradle.kts" }}
+          paths:
+            - ~/.gradle/caches
+            - ~/.gradle/wrapper
+      - run:
+          name: Collect JUnit results and HTML reports
+          when: always
+          command: |
+            mkdir -p /tmp/junit /tmp/reports
+            for d in backend/*/build/test-results/test; do
+              [ -d "$d" ] || continue
+              m=$(echo "$d" | cut -d/ -f2)
+              mkdir -p "/tmp/junit/$m" && cp "$d"/*.xml "/tmp/junit/$m/" 2>/dev/null || true
+            done
+            for d in backend/*/build/reports/tests/test; do
+              [ -d "$d" ] || continue
+              m=$(echo "$d" | cut -d/ -f2)
+              cp -r "$d" "/tmp/reports/$m"
+            done
+      - store_test_results:
+          path: /tmp/junit
+          when: always
+      - store_artifacts:
+          path: /tmp/reports
+          destination: backend-test-reports
+          when: on_fail
+
+  # End-to-end API tests of platform-api. They start PostgreSQL through
+  # Testcontainers, so this needs a real Docker daemon (machine executor), and
+  # StorageApiTests talks to a MinIO on localhost:9000.
+  backend-api-tests:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large
+    steps:
+      - checkout
+      - run:
+          name: Install JDK 21
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y openjdk-21-jdk-headless
+            echo 'export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64' >> "$BASH_ENV"
+            echo 'export PATH=$JAVA_HOME/bin:$PATH' >> "$BASH_ENV"
+      # MinIO no longer publishes Docker images (quay.io and Docker Hub pulls are
+      # denied), so build the server from source and cache the binary.
+      - restore_cache:
+          keys:
+            - minio-bin-RELEASE.2025-04-22T22-12-26Z-v1
+      - run:
+          name: Build MinIO
+          command: |
+            if [ -x "$HOME/minio-bin/minio" ]; then
+              echo "MinIO binary restored from cache"; exit 0
+            fi
+            sudo rm -rf /usr/local/go
+            curl -fsSL https://go.dev/dl/go1.24.2.linux-amd64.tar.gz | sudo tar -C /usr/local -xzf -
+            export PATH=/usr/local/go/bin:$PATH
+            git clone --depth 1 --branch RELEASE.2025-04-22T22-12-26Z \
+              https://github.com/minio/minio.git /tmp/minio-src
+            mkdir -p "$HOME/minio-bin"
+            cd /tmp/minio-src
+            CGO_ENABLED=0 go build -trimpath -o "$HOME/minio-bin/minio" .
+      - save_cache:
+          key: minio-bin-RELEASE.2025-04-22T22-12-26Z-v1
+          paths:
+            - ~/minio-bin
+      - run:
+          name: Start MinIO
+          command: |
+            mkdir -p /tmp/minio-data
+            MINIO_ROOT_USER=app_factory MINIO_ROOT_PASSWORD=app_factory_secret \
+              nohup "$HOME/minio-bin/minio" server /tmp/minio-data \
+              --address ":9000" --console-address ":9001" >/tmp/minio.log 2>&1 &
+            for _ in $(seq 1 30); do
+              curl -sf http://localhost:9000/minio/health/live >/dev/null && exit 0
+              sleep 1
+            done
+            echo "MinIO did not become ready"; cat /tmp/minio.log; exit 1
+      - restore_cache:
+          keys:
+            - gradle-api-v1-{{ checksum "backend/build.gradle.kts" }}
+            - gradle-api-v1-
+      - run:
+          name: platform-api tests
+          working_directory: backend
+          command: |
+            chmod +x gradlew
+            ./gradlew :platform-api:test
+      - save_cache:
+          key: gradle-api-v1-{{ checksum "backend/build.gradle.kts" }}
+          paths:
+            - ~/.gradle/caches
+            - ~/.gradle/wrapper
+      - store_test_results:
+          path: backend/platform-api/build/test-results/test
+          when: always
+      - store_artifacts:
+          path: backend/platform-api/build/reports/tests
+          destination: platform-api-test-reports
+          when: on_fail
+
+  # `flutter analyze` + `flutter test` for one app or package (see the matrix
+  # in the `checks` workflow). Packages without a test/ directory only analyze.
+  flutter-check:
+    parameters:
+      package:
+        type: string
+    docker:
+      - image: ubuntu:jammy
+    resource_class: large
+    environment:
+      FLUTTER_HOME: /home/flutter
+      PATH: /home/flutter/bin:/home/flutter/bin/cache/dart-sdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    steps:
+      - run:
+          name: Install dependencies
+          command: |
+            apt-get update
+            apt-get install -y git openssh-client curl wget unzip xz-utils ca-certificates python3
+      - checkout
+      - run:
+          name: Install Flutter
+          command: |
+            mkdir -p /home/flutter
+            git clone --depth 1 -b stable https://github.com/flutter/flutter.git /home/flutter
+            flutter --version
+      - run:
+          name: flutter pub get
+          working_directory: << parameters.package >>
+          command: flutter pub get
+      - run:
+          name: Generate build files (only where the package uses build_runner)
+          working_directory: << parameters.package >>
+          command: |
+            if grep -q build_runner pubspec.yaml; then
+              flutter pub run build_runner build --delete-conflicting-outputs
+            else
+              echo "no code generation here"
+            fi
+      - run:
+          name: flutter analyze
+          working_directory: << parameters.package >>
+          command: flutter analyze
+      - run:
+          name: flutter test (with coverage)
+          working_directory: << parameters.package >>
+          command: |
+            if find test -name '*_test.dart' -type f 2>/dev/null | grep -q .; then
+              flutter test --coverage --reporter expanded
+            else
+              echo "WARNING: << parameters.package >> has no *_test.dart files -- nothing to run"
+            fi
+      - run:
+          # Line coverage of hand-written code must not drop below the package's
+          # entry in config/coverage-thresholds.json (a ratchet: it only goes up).
+          name: Coverage gate
+          command: |
+            if [ -f "<< parameters.package >>/coverage/lcov.info" ]; then
+              python3 scripts/check_coverage.py "<< parameters.package >>"
+            else
+              echo "no coverage data for << parameters.package >> (no tests): gate skipped"
+            fi
+      - store_artifacts:
+          path: << parameters.package >>/coverage/lcov.info
+          destination: coverage/<< parameters.package >>/lcov.info
+
 workflows:
   flutter-ci:
     jobs:
@@ -239,3 +430,38 @@ workflows:
                 - test
           requires:
             - test-platform-admin
+
+  # Test gate. Temporarily runs on the `test` branch only (develop/master are
+  # switched off) to save CircleCI quota; other branches are not built.
+  checks:
+    jobs:
+      - backend-unit-tests:
+          filters:
+            branches:
+              only:
+                - test
+      - flutter-check:
+          filters:
+            branches:
+              only:
+                - test
+          # The Flutter jobs are the expensive ones (~5 min each, x7), while
+          # backend-api-tests fails fast when its environment is broken. Wait for
+          # it so a broken backend gate does not burn the Flutter quota.
+          requires:
+            - backend-api-tests
+          matrix:
+            parameters:
+              package:
+                - apps/user_app
+                - apps/business_admin
+                - apps/platform_admin
+                - packages/core_network
+                - packages/core_region
+                - packages/core_storage
+                - packages/core_ui
+      - backend-api-tests:
+          filters:
+            branches:
+              only:
+                - test

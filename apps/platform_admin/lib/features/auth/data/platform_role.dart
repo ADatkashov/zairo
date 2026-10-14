@@ -15,6 +15,9 @@ class PlatformPermissions {
   /// Approve, suspend or reinstate a business.
   bool get canModerateBusinesses => isAdmin || role == 'PLATFORM_MODERATOR';
 
+  /// Create, edit, publish, pause, reject and delete Home banners.
+  bool get canManageAds => canModerateBusinesses;
+
   /// Create / edit / hide categories, spheres, subspheres and services.
   bool get canEditCatalog => isAdmin;
 

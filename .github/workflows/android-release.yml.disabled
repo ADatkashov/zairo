@@ -14,8 +14,8 @@ on:
         description: "Which app to build"
         required: true
         type: choice
-        options: [both, user_app, business_admin]
-        default: both
+        options: [all, user_app, business_admin, platform_admin]
+        default: all
       api_base_url:
         description: >-
           Backend URL to bake in. Defaults to the live Render backend, so a
@@ -67,8 +67,11 @@ jobs:
             business_admin)
               matrix='{"include":[{"app":"business_admin","secret_suffix":"BUSINESS_ADMIN"}]}'
               ;;
+            platform_admin)
+              matrix='{"include":[{"app":"platform_admin","secret_suffix":"PLATFORM_ADMIN"}]}'
+              ;;
             *)
-              matrix='{"include":[{"app":"user_app","secret_suffix":"USER_APP"},{"app":"business_admin","secret_suffix":"BUSINESS_ADMIN"}]}'
+              matrix='{"include":[{"app":"user_app","secret_suffix":"USER_APP"},{"app":"business_admin","secret_suffix":"BUSINESS_ADMIN"},{"app":"platform_admin","secret_suffix":"PLATFORM_ADMIN"}]}'
               ;;
           esac
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"

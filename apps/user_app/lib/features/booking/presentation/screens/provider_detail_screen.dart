@@ -95,6 +95,10 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
   @override
   void initState() {
     super.initState();
+    // One service to choose from is no choice: start with it picked, one tap fewer.
+    if (widget.provider.services.length == 1) {
+      _selectedServiceId = widget.provider.services.first.id;
+    }
     if (widget.startAtBooking) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final anchor = _bookingStartKey.currentContext;
@@ -483,6 +487,15 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               ),
             ),
             _BookingCta(
+              hint: _nextStepHint(
+                l10n,
+                needsPerson: !anyMode &&
+                    ((masters.isNotEmpty && _selectedMasterId == null) ||
+                        (mechanics.isNotEmpty && _selectedMechanicId == null) ||
+                        (cleaners.isNotEmpty && _selectedCleanerId == null) ||
+                        (staffMembers.isNotEmpty && _selectedStaffId == null)),
+                needsVehicle: requiresVehicleSelection && _selectedVehicleId == null,
+              ),
               step: _selectedServiceId == null ? 0 : (_selectedSlotId == null ? 1 : 2),
               selectedService: _selectedService(),
               price: _effectivePrice,
@@ -516,6 +529,21 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       ),
     );
     return PopScope(canPop: !_isBooking, child: scaffold);
+  }
+
+  /// What is still missing before "Book" works, in the order the page asks for
+  /// it (service, person, vehicle, time) — null once the booking is complete.
+  /// A greyed-out button on its own never says why.
+  String? _nextStepHint(
+    AppLocalizations l10n, {
+    required bool needsPerson,
+    required bool needsVehicle,
+  }) {
+    if (_selectedServiceId == null) return l10n.bookingHintService;
+    if (needsPerson) return l10n.bookingHintPerson;
+    if (needsVehicle) return l10n.bookingHintVehicle;
+    if (_selectedSlotId == null) return l10n.bookingHintTime;
+    return null;
   }
 
   Future<Booking> _withPaymentAmounts(Booking created) async {
@@ -991,6 +1019,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
 /// risky for a real-money flow, and that reasoning still holds.
 class _BookingCta extends StatelessWidget {
   const _BookingCta({
+    required this.hint,
     required this.step,
     required this.selectedService,
     required this.price,
@@ -998,6 +1027,9 @@ class _BookingCta extends StatelessWidget {
     required this.isLoading,
     required this.onPressed,
   });
+
+  /// What the customer still has to pick; null when "Book" is ready.
+  final String? hint;
 
   /// Zero-based step of the booking progress bar (service, time, confirm).
   final int step;
@@ -1081,6 +1113,17 @@ class _BookingCta extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           BookingStepper(step: step),
+          if (hint != null) ...[
+            const SizedBox(height: FactorySpacing.space2),
+            Text(
+              hint!,
+              key: const Key('bookingNextStepHint'),
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colors.textSecondary,
+                  ),
+            ),
+          ],
           const SizedBox(height: FactorySpacing.space3),
           Row(
         children: [

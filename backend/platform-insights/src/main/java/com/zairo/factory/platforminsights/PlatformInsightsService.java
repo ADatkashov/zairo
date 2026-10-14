@@ -7,6 +7,11 @@ import com.zairo.factory.payments.PaymentAllocationRepository;
 import com.zairo.factory.payments.PaymentRepository;
 import com.zairo.factory.payments.PaymentStatus;
 import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformDashboardMetrics;
+import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformReport;
+import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformReport.BookingsByStatus;
+import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformReport.DailyAmount;
+import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformTrends;
+import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformTrends.DailyCount;
 import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformDashboardMetrics.BookingsSection;
 import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformDashboardMetrics.BusinessesSection;
 import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformDashboardMetrics.PaymentsSection;
@@ -28,6 +33,10 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
@@ -112,5 +121,86 @@ public class PlatformInsightsService {
         RevenueSection revenue = new RevenueSection(mrr, currency, platformCommission, platformCommissionCurrency);
 
         return new PlatformDashboardMetrics(users, businesses, subscriptions, bookings, payments, revenue);
+    }
+
+    public static final int MAX_TREND_DAYS = 31;
+
+    /**
+     * Bookings created per UTC day for the last {@code days} days including
+     * today, oldest first. One query for the window's creation instants,
+     * bucketed per day here.
+     */
+    public PlatformTrends trends(int days) {
+        int window = clampWindow(days, MAX_TREND_DAYS);
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        LocalDate first = today.minusDays(window - 1L);
+        return new PlatformTrends(dailyCounts(first, today));
+    }
+
+    public static final int MAX_REPORT_DAYS = 90;
+
+    /** The reports screen's data for the last {@code days} days (default window 30, capped at 90). */
+    public PlatformReport report(int days) {
+        int window = clampWindow(days, MAX_REPORT_DAYS);
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        LocalDate first = today.minusDays(window - 1L);
+        Instant start = startOf(first);
+        Instant end = endOf(today);
+
+        var allocations = paymentAllocationRepository.findByCreatedAtBetween(start, end);
+        var charges = subscriptionChargeRepository.findByStatusAndCreatedAtBetween(SubscriptionChargeStatus.SUCCEEDED,
+                start, end);
+
+        BookingsByStatus byStatus = new BookingsByStatus(
+                bookingRepository.countByStatusAndCreatedAtBetween(BookingStatus.PENDING, start, end)
+                        + bookingRepository.countByStatusAndCreatedAtBetween(BookingStatus.PENDING_PAYMENT, start, end),
+                bookingRepository.countByStatusAndCreatedAtBetween(BookingStatus.CONFIRMED, start, end),
+                bookingRepository.countByStatusAndCreatedAtBetween(BookingStatus.COMPLETED, start, end),
+                bookingRepository.countByStatusAndCreatedAtBetween(BookingStatus.CANCELLED, start, end),
+                bookingRepository.countByStatusAndCreatedAtBetween(BookingStatus.NO_SHOW, start, end));
+
+        return new PlatformReport(first, today, dailyCounts(first, today),
+                dailyAmounts(first, today, allocations, PaymentAllocation::getCreatedAt, PaymentAllocation::getPlatformFee),
+                allocations.isEmpty() ? null : allocations.get(0).getCurrency(),
+                dailyAmounts(first, today, charges, charge -> charge.getCreatedAt(), charge -> charge.getAmount()),
+                charges.isEmpty() ? null : charges.get(0).getCurrency(), byStatus);
+    }
+
+    private static int clampWindow(int days, int max) {
+        return Math.max(1, Math.min(days, max));
+    }
+
+    private static Instant startOf(LocalDate day) {
+        return day.atStartOfDay(ZoneOffset.UTC).toInstant();
+    }
+
+    /** Last millisecond of {@code day}: Spring's {@code Between} is inclusive, so the next midnight would double-count. */
+    private static Instant endOf(LocalDate day) {
+        return startOf(day.plusDays(1)).minusMillis(1);
+    }
+
+    private List<DailyCount> dailyCounts(LocalDate first, LocalDate last) {
+        Map<LocalDate, Long> perDay = new TreeMap<>();
+        for (Instant createdAt : bookingRepository.findCreatedAtBetween(startOf(first), endOf(last))) {
+            perDay.merge(createdAt.atZone(ZoneOffset.UTC).toLocalDate(), 1L, Long::sum);
+        }
+        List<DailyCount> series = new ArrayList<>();
+        for (LocalDate day = first; !day.isAfter(last); day = day.plusDays(1)) {
+            series.add(new DailyCount(day, perDay.getOrDefault(day, 0L)));
+        }
+        return series;
+    }
+
+    private static <T> List<DailyAmount> dailyAmounts(LocalDate first, LocalDate last, List<T> rows,
+            Function<T, Instant> createdAt, Function<T, BigDecimal> amount) {
+        Map<LocalDate, BigDecimal> perDay = new TreeMap<>();
+        for (T row : rows) {
+            perDay.merge(createdAt.apply(row).atZone(ZoneOffset.UTC).toLocalDate(), amount.apply(row), BigDecimal::add);
+        }
+        List<DailyAmount> series = new ArrayList<>();
+        for (LocalDate day = first; !day.isAfter(last); day = day.plusDays(1)) {
+            series.add(new DailyAmount(day, perDay.getOrDefault(day, BigDecimal.ZERO)));
+        }
+        return series;
     }
 }

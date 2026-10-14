@@ -36,6 +36,7 @@ class AreaScaffold extends StatelessWidget {
     this.actions = const [],
     this.floatingActionButton,
     this.bottom,
+    this.leading,
   });
 
   final String title;
@@ -44,10 +45,19 @@ class AreaScaffold extends StatelessWidget {
   final Widget? floatingActionButton;
   final PreferredSizeWidget? bottom;
 
+  /// A back button for a sub-page of an area; top-level areas have none.
+  final Widget? leading;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(title), actions: actions, bottom: bottom, automaticallyImplyLeading: false),
+      appBar: AppBar(
+        title: Text(title),
+        leading: leading,
+        actions: actions,
+        bottom: bottom,
+        automaticallyImplyLeading: false,
+      ),
       body: body,
       floatingActionButton: floatingActionButton,
     );
@@ -154,6 +164,8 @@ class ToneBadge extends StatelessWidget {
     return FactoryBadge(
       label: label,
       icon: icon,
+      // Dot only when there is no icon, so a chip never carries both.
+      showDot: icon == null,
       variant: switch (tone) {
         Tone.good => FactoryBadgeVariant.available,
         Tone.warn => FactoryBadgeVariant.limited,

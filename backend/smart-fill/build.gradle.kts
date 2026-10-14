@@ -77,4 +77,9 @@ dependencies {
     // Fill enabled at all -- one-directional (smart-fill -> automation),
     // same as every other cross-module reference here.
     implementation(project(":automation"))
+
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.assertj:assertj-core")
+    testImplementation("org.mockito:mockito-core")
 }

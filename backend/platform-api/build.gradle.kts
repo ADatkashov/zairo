@@ -53,6 +53,7 @@ dependencies {
     implementation(project(":loyalty"))
     implementation(project(":invitations"))
     implementation(project(":workforce"))
+    implementation(project(":ads"))
 
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1")
     implementation("org.springframework.boot:spring-boot-starter-web")

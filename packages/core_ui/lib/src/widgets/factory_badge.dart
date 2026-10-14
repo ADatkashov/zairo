@@ -18,6 +18,7 @@ class FactoryBadge extends StatelessWidget {
     required this.label,
     this.variant = FactoryBadgeVariant.neutral,
     this.icon,
+    this.showDot = false,
     this.backgroundColor,
     this.foregroundColor,
   });
@@ -25,6 +26,10 @@ class FactoryBadge extends StatelessWidget {
   final String label;
   final FactoryBadgeVariant variant;
   final IconData? icon;
+
+  /// A small leading dot in the label color — the "status chip" look used in
+  /// tables, where the dot carries the state when the label is long.
+  final bool showDot;
 
   /// Overrides [variant]'s color pair — for chrome that isn't a
   /// verified/available/limited/error trust signal at all, but a category
@@ -58,6 +63,14 @@ class FactoryBadge extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (showDot) ...[
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(color: fg, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 5),
+            ],
             if (icon != null) ...[
               Icon(icon, size: 11, color: fg),
               const SizedBox(width: 4),

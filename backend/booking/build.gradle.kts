@@ -35,4 +35,8 @@ dependencies {
     // its own booking -> booking-status dependency). One-directional
     // (booking -> services), no cycle: services never depends on booking.
     implementation(project(":services"))
+
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.assertj:assertj-core")
 }

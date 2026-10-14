@@ -315,9 +315,6 @@
     }
   },
 
-  "homeAvailabilityEyebrow": "Today nearby",
-  "@homeAvailabilityEyebrow": {"description": "Small uppercase label above the availability hero banner's headline."},
-
   "homeGreeting": "Hi, {name}",
   "@homeGreeting": {
     "description": "Home screen greeting for a logged-in user.",
@@ -334,6 +331,22 @@
 
   "homeSeeAll": "See all",
   "@homeSeeAll": {"description": "Home screen section header action that opens Search."},
+  "homeCategoriesTitle": "Categories",
+  "@homeCategoriesTitle": {"description": "Heading of Home's category grid."},
+  "homeCategoriesAll": "All",
+  "@homeCategoriesAll": {"description": "Short link next to Home's category-grid heading that opens the full category list."},
+
+  "adSponsoredLabel": "Ad",
+  "@adSponsoredLabel": {"description": "Small label on a Home banner that a business paid for."},
+
+  "adWatchVideoLabel": "Watch video",
+  "@adWatchVideoLabel": {"description": "Spoken hint on a Home banner that opens a video."},
+
+  "homePromoRewardsTitle": "Earn rewards for every visit",
+  "@homePromoRewardsTitle": {"description": "Title of Home's promo card that opens My Rewards."},
+
+  "homePromoRewardsSubtitle": "Points from every business",
+  "@homePromoRewardsSubtitle": {"description": "Subtitle of Home's rewards promo card."},
 
   "discoveryVerticalBeauty": "Beauty",
   "@discoveryVerticalBeauty": {"description": "Vertical filter chip label for the beauty vertical."},
@@ -343,9 +356,6 @@
 
   "discoveryVerticalCleaning": "Cleaning",
   "@discoveryVerticalCleaning": {"description": "Vertical filter chip label for the cleaning vertical."},
-
-  "homeCategoriesTitle": "Popular",
-  "@homeCategoriesTitle": {"description": "Home screen section header above the short popular-categories row (a curated shortlist, not the full catalog — see AllCategoriesScreen for that)."},
 
   "allCategoriesTitle": "All categories",
   "@allCategoriesTitle": {"description": "Label of the trailing tile in Home's popular-categories row that opens AllCategoriesScreen, and that screen's own AppBar title."},
@@ -1914,5 +1924,13 @@
   "bookingReviewTotal": "Total",
   "@bookingReviewTotal": {"description": "Total price row of the pre-payment summary when the payment policy is unknown."},
   "bookingStepsDone": "All steps done",
-  "@bookingStepsDone": {"description": "Screen-reader text of the booking progress bar once the booking is confirmed."}
+  "@bookingStepsDone": {"description": "Screen-reader text of the booking progress bar once the booking is confirmed."},
+  "bookingHintService": "Choose a service",
+  "@bookingHintService": {"description": "Hint above the Book button: the next thing to pick is the service."},
+  "bookingHintPerson": "Choose a specialist",
+  "@bookingHintPerson": {"description": "Hint above the Book button: the next thing to pick is the person (master, mechanic, cleaner or staff member)."},
+  "bookingHintVehicle": "Choose your car",
+  "@bookingHintVehicle": {"description": "Hint above the Book button: the next thing to pick is the vehicle."},
+  "bookingHintTime": "Choose a time",
+  "@bookingHintTime": {"description": "Hint above the Book button: the next thing to pick is the time slot."}
 }
