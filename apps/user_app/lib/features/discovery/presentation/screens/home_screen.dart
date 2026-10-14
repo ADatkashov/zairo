@@ -843,19 +843,24 @@ class _PromoStrip extends StatelessWidget {
   final int openCount;
   final VoidCallback onViewAvailable;
 
-  static const _cardWidth = 240.0;
+  static const _cardWidth = 272.0;
+  static const _cardHeight = 120.0;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return SizedBox(
-      height: 128,
+      height: _cardHeight,
       child: ListView(
         scrollDirection: Axis.horizontal,
+        // Let the next card run to the screen edge instead of being cut at
+        // the page padding — the cue that the strip scrolls.
+        clipBehavior: Clip.none,
         children: [
           if (openCount > 0) ...[
             FactoryPromoCard(
               width: _cardWidth,
+              height: _cardHeight,
               title: l10n.homeAvailabilityHero(openCount),
               icon: Symbols.event_available_rounded,
               onTap: onViewAvailable,
@@ -864,6 +869,7 @@ class _PromoStrip extends StatelessWidget {
           ],
           FactoryPromoCard(
             width: _cardWidth,
+            height: _cardHeight,
             title: l10n.homePromoRewardsTitle,
             subtitle: l10n.homePromoRewardsSubtitle,
             icon: Symbols.redeem_rounded,

@@ -1,4 +1,5 @@
 import 'package:core_network/core_network.dart';
+import 'package:core_ui/core_ui.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -50,6 +51,12 @@ void main() {
         tester.element(find.byType(ZairoApp)),
       ).read(routerProvider);
 
+      // Home's quick-action grid also says "Bookings"; the tab bar is the one
+      // under test here.
+      final tabBarBookings = find.descendant(
+        of: find.byType(FactoryBottomNavigation),
+        matching: find.text('Bookings'),
+      );
       expect(find.text('Home'), findsWidgets);
 
       // A provider link with no `extra` (deep link / web refresh).
@@ -57,12 +64,12 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Business not found'), findsOneWidget);
       // Full-screen: the tab bar is not drawn over it.
-      expect(find.text('Bookings'), findsNothing);
+      expect(tabBarBookings, findsNothing);
 
       router.pop();
       await tester.pumpAndSettle();
       expect(find.text('Business not found'), findsNothing);
-      expect(find.text('Bookings'), findsOneWidget);
+      expect(tabBarBookings, findsOneWidget);
     },
   );
 }
