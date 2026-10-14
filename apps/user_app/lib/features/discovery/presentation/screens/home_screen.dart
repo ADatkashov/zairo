@@ -74,91 +74,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   ) {
     return Scaffold(
       backgroundColor: colors.bg,
-      body: SafeArea(
-        child: resultsAsync.when(
+      body: resultsAsync.when(
           data: (results) {
             final openCount = results
                 .where((r) => r.hasOpenAvailability)
                 .length;
             final topRated = results.take(8).toList();
             return RefreshIndicator(
+              // The pinned hero bar owns the top inset (see [_HomeHeroBar]), so
+              // the spinner is nudged below it instead of hiding under it.
+              edgeOffset: _HomeHeroBar.collapsedHeight(context),
               onRefresh: () => ref.refresh(searchResultsProvider(query).future),
-              child: ListView(
-                padding: const EdgeInsets.all(FactorySpacing.space4),
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      FactoryAvatar(
-                        initials: user != null
-                            ? initialsFor(user.displayName)
-                            : '?',
-                        image: user?.avatarUrl != null
-                            ? NetworkImage(user!.avatarUrl!)
-                            : null,
-                      ),
-                      const SizedBox(width: FactorySpacing.space3),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            InkWell(
-                              onTap: () => context.push('/city-selection'),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Symbols.location_on_rounded,
-                                    size: 16,
-                                    color: colors.primary,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Flexible(
-                                    child: Text(
-                                      ref
-                                              .watch(userCurrentCityProvider)
-                                              .value
-                                              ?.nameFor(Localizations.localeOf(context).languageCode) ??
-                                          locationAsync.value?.label ??
-                                          l10n.homeLocationUnknown,
-                                      style: textTheme.titleSmall,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  Icon(
-                                    Symbols.keyboard_arrow_down_rounded,
-                                    size: 18,
-                                    color: colors.textSecondary,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: FactorySpacing.space1),
-                            Text(
-                              user != null
-                                  ? l10n.homeGreeting(user.displayName)
-                                  : l10n.homeGreetingGuest,
-                              // The headline face (Unbounded) is very wide: at large
-                              // system text a single name overflows the space beside
-                              // the avatar and action buttons and snaps mid-word.
-                              // Cap this one heading's scale and ellipsize instead.
-                              textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: MediaQuery.sizeOf(context).width < 360 ? 1.0 : 1.1),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: textTheme.headlineSmall?.copyWith(
-                                color: colors.text,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const _FavoritesButton(),
-                      if (user != null) ...[
-                        const SizedBox(width: FactorySpacing.space2),
-                        const NotificationBellButton(),
-                      ],
-                    ],
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  _HomeHeroBar(
+                    user: user,
+                    cityLabel: ref
+                            .watch(userCurrentCityProvider)
+                            .value
+                            ?.nameFor(Localizations.localeOf(context).languageCode) ??
+                        locationAsync.value?.label ??
+                        l10n.homeLocationUnknown,
+                    greeting: user != null
+                        ? l10n.homeGreeting(user.displayName)
+                        : l10n.homeGreetingGuest,
                   ),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      FactorySpacing.space4,
+                      0,
+                      FactorySpacing.space4,
+                      FactorySpacing.space4,
+                    ),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
                   const SizedBox(height: FactorySpacing.space4),
                   _SearchEntry(onTap: () => context.go(AppRoutes.search(category: _vertical))),
                   // The one block of real colour sits right under the search, so
@@ -225,19 +175,164 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   const SizedBox(height: FactorySpacing.space6),
                   _RecommendedSection(results: results, excluding: topRated),
+                      ]),
+                    ),
+                  ),
                 ],
               ),
             );
           },
-          loading: () => const FactoryLoadingState(),
-          error: (error, stackTrace) => Center(
-            child: Padding(
-              padding: const EdgeInsets.all(FactorySpacing.space4),
-              child: FactoryErrorState(
-                message: l10n.errorHomeFeedLoadFailed,
-                onRetry: () => ref.invalidate(searchResultsProvider(query)),
+          loading: () => const SafeArea(child: FactoryLoadingState()),
+          error: (error, stackTrace) => SafeArea(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(FactorySpacing.space4),
+                child: FactoryErrorState(
+                  message: l10n.errorHomeFeedLoadFailed,
+                  onRetry: () => ref.invalidate(searchResultsProvider(query)),
+                ),
               ),
             ),
+          ),
+        ),
+    );
+  }
+}
+
+/// The Home header: a gradient hero (the greeting) that collapses on scroll
+/// into a pinned bar (avatar, city, favorites, bell) while the rounded content
+/// "sheet" slides up over it. The sheet's top edge is the app bar's `bottom`,
+/// so it stays attached to the bar at every scroll offset.
+class _HomeHeroBar extends StatelessWidget {
+  const _HomeHeroBar({
+    required this.user,
+    required this.cityLabel,
+    required this.greeting,
+  });
+
+  final UserSummary? user;
+  final String cityLabel;
+  final String greeting;
+
+  static const _toolbarHeight = 68.0;
+  static const _expandedHeight = 232.0;
+  static const _sheetRadius = 24.0;
+
+  /// Status bar + toolbar + sheet lip: where scrollable content starts once
+  /// the hero is fully collapsed.
+  static double collapsedHeight(BuildContext context) =>
+      MediaQuery.paddingOf(context).top + _toolbarHeight + _sheetRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    final user = this.user;
+    return SliverAppBar(
+      pinned: true,
+      automaticallyImplyLeading: false,
+      backgroundColor: colors.primaryStrong,
+      surfaceTintColor: Colors.transparent,
+      toolbarHeight: _toolbarHeight,
+      expandedHeight: _expandedHeight,
+      titleSpacing: FactorySpacing.space4,
+      title: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          FactoryAvatar(
+            initials: user != null ? initialsFor(user.displayName) : '?',
+            image: user?.avatarUrl != null ? NetworkImage(user!.avatarUrl!) : null,
+          ),
+          const SizedBox(width: FactorySpacing.space3),
+          Expanded(
+            child: InkWell(
+              onTap: () => context.push('/city-selection'),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Symbols.location_on_rounded, size: 16, color: colors.onPrimary),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      cityLabel,
+                      style: textTheme.titleSmall?.copyWith(color: colors.onPrimary),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Icon(
+                    Symbols.keyboard_arrow_down_rounded,
+                    size: 18,
+                    color: colors.onPrimary.withValues(alpha: 0.8),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const _FavoritesButton(),
+          if (user != null) ...[
+            const SizedBox(width: FactorySpacing.space2),
+            const NotificationBellButton(),
+          ],
+        ],
+      ),
+      flexibleSpace: FlexibleSpaceBar(
+        collapseMode: CollapseMode.parallax,
+        background: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [colors.primaryStrong, colors.primary],
+            ),
+          ),
+          child: Stack(
+            clipBehavior: Clip.hardEdge,
+            children: [
+              Positioned(
+                top: -40,
+                right: -40,
+                child: Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        colors.accent.withValues(alpha: 0.45),
+                        colors.accent.withValues(alpha: 0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: FactorySpacing.space4,
+                right: FactorySpacing.space4,
+                bottom: _sheetRadius + FactorySpacing.space3,
+                child: Text(
+                  greeting,
+                  // The headline face (Unbounded) is very wide: at large
+                  // system text a single name overflows and snaps mid-word.
+                  // Cap this one heading's scale and ellipsize instead.
+                  textScaler: MediaQuery.textScalerOf(context).clamp(
+                    maxScaleFactor: MediaQuery.sizeOf(context).width < 360 ? 1.0 : 1.1,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.headlineSmall?.copyWith(color: colors.onPrimary),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(_sheetRadius),
+        child: Container(
+          height: _sheetRadius,
+          decoration: BoxDecoration(
+            color: colors.bg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(_sheetRadius)),
           ),
         ),
       ),
