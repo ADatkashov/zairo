@@ -948,7 +948,13 @@ void main() {
       ],
     );
 
-    Future<void> pump(WidgetTester tester, PreselectedWorker? worker, {bool allowChoice = true}) async {
+    Future<void> pump(
+      WidgetTester tester,
+      PreselectedWorker? worker, {
+      bool allowChoice = true,
+      String? slotId,
+      List<AvailabilitySlot> slots = const [],
+    }) async {
       tester.view.physicalSize = const Size(800, 3000);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -963,14 +969,14 @@ void main() {
                 Staff(id: 'staff-2', providerId: 'provider-5', displayName: 'Dr. Bek', active: true),
               ]),
             ),
-            workforceApiProvider.overrideWithValue(_FakeWorkforceApi(allowChoice: allowChoice)),
+            workforceApiProvider.overrideWithValue(_FakeWorkforceApi(allowChoice: allowChoice, slots: slots)),
             authControllerProvider.overrideWith(_LoggedInAuthController.new),
           ],
           child: MaterialApp(
             theme: factoryLightTheme(),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: ProviderDetailScreen(provider: provider, preselectedWorker: worker),
+            home: ProviderDetailScreen(provider: provider, preselectedWorker: worker, preselectedSlotId: slotId),
           ),
         ),
       );
@@ -994,6 +1000,38 @@ void main() {
       await pump(tester, (kind: 'STAFF', id: 'someone-who-left'));
       expect(selected(tester, 'Dr. Bek'), isFalse);
       expect(selected(tester, 'Dr. Aliya'), isFalse);
+    });
+
+    final tenOClock = AvailabilitySlot(
+      id: 'slot-1',
+      providerId: 'provider-5',
+      startsAt: DateTime(2026, 1, 1, 10, 0),
+      endsAt: DateTime(2026, 1, 1, 10, 30),
+      status: 'OPEN',
+    );
+    FactoryTimeSlotState slotState(WidgetTester tester) =>
+        tester.widget<FactoryTimeSlot>(find.widgetWithText(FactoryTimeSlot, '10:00')).state;
+
+    testWidgets('a time tapped on their page is already picked', (tester) async {
+      await pump(tester, (kind: 'STAFF', id: 'staff-2'), slotId: 'slot-1', slots: [tenOClock]);
+      await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Checkup'));
+      await tester.pumpAndSettle();
+
+      expect(slotState(tester), FactoryTimeSlotState.selected);
+    });
+
+    testWidgets('a time that was booked meanwhile is dropped', (tester) async {
+      await pump(tester, (kind: 'STAFF', id: 'staff-2'), slotId: 'booked-meanwhile', slots: [tenOClock]);
+      await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Checkup'));
+      await tester.pumpAndSettle();
+
+      expect(slotState(tester), FactoryTimeSlotState.available);
+    });
+
+    testWidgets('a time without a person is ignored', (tester) async {
+      await pump(tester, null, slotId: 'slot-1', slots: [tenOClock]);
+
+      expect(find.widgetWithText(FactoryTimeSlot, '10:00'), findsNothing);
     });
 
     testWidgets('a business that only offers "Any master" ignores it', (tester) async {
