@@ -63,7 +63,12 @@ Widget _app(_FakeWorkersApi api) => ProviderScope(
         GoRoute(path: '/', builder: (_, _) => const WorkerScreen(workerId: 'w1')),
         GoRoute(
           path: '/provider/:id',
-          builder: (_, state) => Scaffold(body: Text('Provider ${state.pathParameters['id']} book=${state.uri.queryParameters['book']}')),
+          builder: (_, state) => Scaffold(
+            body: Text(
+              'Provider ${state.pathParameters['id']} book=${state.uri.queryParameters['book']} '
+              'worker=${state.uri.queryParameters['worker']} kind=${state.uri.queryParameters['kind']}',
+            ),
+          ),
         ),
         GoRoute(
           path: '/portfolio/:masterId',
@@ -100,14 +105,14 @@ void main() {
     expect(find.text('Portfolio'), findsNothing);
   });
 
-  testWidgets('Book opens the business at its booking steps', (tester) async {
+  testWidgets('Book opens the business at its booking steps with this master already picked', (tester) async {
     await tester.pumpWidget(_app(_FakeWorkersApi(profile: _profile())));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Book'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Provider p1 book=1'), findsOneWidget);
+    expect(find.text('Provider p1 book=1 worker=w1 kind=MASTER'), findsOneWidget);
   });
 
   testWidgets('tapping the business opens it, Portfolio opens the master\'s photos', (tester) async {
@@ -116,7 +121,7 @@ void main() {
 
     await tester.tap(find.text('Aigerim Beauty Studio'));
     await tester.pumpAndSettle();
-    expect(find.text('Provider p1 book=null'), findsOneWidget);
+    expect(find.text('Provider p1 book=null worker=null kind=null'), findsOneWidget);
 
     await tester.pumpWidget(_app(_FakeWorkersApi(profile: _profile())));
     await tester.pumpAndSettle();

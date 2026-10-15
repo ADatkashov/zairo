@@ -163,7 +163,9 @@ class _WorkerBody extends StatelessWidget {
                 Expanded(
                   child: FactoryButton(
                     label: l10n.workerBookAction,
-                    onPressed: () => context.push(AppRoutes.provider(profile.providerId, book: true)),
+                    onPressed: () => context.push(
+                      AppRoutes.provider(profile.providerId, book: true, workerId: profile.id, workerKind: profile.kind),
+                    ),
                   ),
                 ),
               ],

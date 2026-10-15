@@ -162,11 +162,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) {
           final extra = state.extra;
-          final book = state.uri.queryParameters['book'] == '1';
+          final query = state.uri.queryParameters;
+          final book = query['book'] == '1';
+          final worker = (query['worker'] != null && query['kind'] != null) ? (kind: query['kind']!, id: query['worker']!) : null;
           if (extra is ProviderSearchResult) {
-            return ProviderDetailScreen(provider: extra, startAtBooking: book);
+            return ProviderDetailScreen(provider: extra, startAtBooking: book, preselectedWorker: worker);
           }
-          return ProviderDetailRoute(providerId: state.pathParameters['id']!, startAtBooking: book);
+          return ProviderDetailRoute(
+            providerId: state.pathParameters['id']!,
+            startAtBooking: book,
+            preselectedWorker: worker,
+          );
         },
       ),
       GoRoute(
