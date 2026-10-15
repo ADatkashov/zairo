@@ -312,6 +312,10 @@
   "@workerPageTitle": {"description": "App bar title of a master's page."},
   "workerBusinessLabel": "Works at",
   "@workerBusinessLabel": {"description": "Label before the business a master works at."},
+  "workerAboutTitle": "About",
+  "@workerAboutTitle": {"description": "Header of the about-me block on a master's page."},
+  "workerWorkTitle": "Work",
+  "@workerWorkTitle": {"description": "Header of the photo strip of a master's work on their page."},
   "workerServicesTitle": "Services",
   "@workerServicesTitle": {"description": "Header of the services list on a master's page."},
   "workerServicesEmpty": "No services listed yet.",
@@ -760,6 +764,8 @@
 
   "reviewLeaveButton": "Leave a review",
   "@reviewLeaveButton": {"description": "Button (and dialog title) to open the leave-a-review dialog."},
+  "reviewAboutWorker": "Your visit with {name}",
+  "@reviewAboutWorker": {"description": "Line in the leave-a-review dialog naming the person the visit was with.", "placeholders": {"name": {"type": "String"}}},
 
   "reviewCommentHint": "Comment (optional)",
   "@reviewCommentHint": {"description": "Leave-a-review dialog's comment field hint."},

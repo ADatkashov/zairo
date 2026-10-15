@@ -2,11 +2,13 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../app/router/app_routes.dart';
 import '../../../../core/formatting/initials.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../beauty/presentation/providers/beauty_providers.dart';
 import '../../data/models/worker_profile.dart';
 import '../providers/workers_providers.dart';
 
@@ -43,17 +45,20 @@ class WorkerScreen extends ConsumerWidget {
   }
 }
 
-class _WorkerBody extends StatelessWidget {
+class _WorkerBody extends ConsumerWidget {
   const _WorkerBody({required this.profile});
 
   final WorkerProfile profile;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
     final rating = profile.averageRating;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    // Only a master has a photo portfolio; best-effort, no strip while loading, empty or failed.
+    final work = profile.hasPortfolio ? ref.watch(masterPortfolioProvider(profile.id)).value ?? const [] : const [];
 
     return Column(
       children: [
@@ -107,6 +112,12 @@ class _WorkerBody extends StatelessWidget {
                   ],
                 ),
               ),
+              if (profile.bio != null) ...[
+                const SizedBox(height: FactorySpacing.space5),
+                Text(l10n.workerAboutTitle, style: textTheme.titleSmall),
+                const SizedBox(height: FactorySpacing.space2),
+                Text(profile.bio!, style: textTheme.bodyMedium),
+              ],
               const SizedBox(height: FactorySpacing.space5),
               Text(l10n.workerServicesTitle, style: textTheme.titleSmall),
               const SizedBox(height: FactorySpacing.space3),
@@ -136,6 +147,74 @@ class _WorkerBody extends StatelessWidget {
                       ),
                     ),
                   ),
+              if (work.isNotEmpty) ...[
+                const SizedBox(height: FactorySpacing.space5),
+                Text(l10n.workerWorkTitle, style: textTheme.titleSmall),
+                const SizedBox(height: FactorySpacing.space3),
+                SizedBox(
+                  height: 96,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: work.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: FactorySpacing.space2),
+                    itemBuilder: (context, index) => InkWell(
+                      borderRadius: FactoryRadius.mdRadius,
+                      onTap: () => context.push(AppRoutes.portfolio(profile.id, masterName: profile.displayName)),
+                      child: ClipRRect(
+                        borderRadius: FactoryRadius.mdRadius,
+                        child: Image.network(
+                          work[index].imageUrl,
+                          width: 96,
+                          height: 96,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => Container(width: 96, height: 96, color: colors.surfaceAlt),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              if (profile.reviews.isNotEmpty) ...[
+                const SizedBox(height: FactorySpacing.space5),
+                Text(l10n.reviewsTitle, style: textTheme.titleSmall),
+                const SizedBox(height: FactorySpacing.space3),
+                for (final review in profile.reviews)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
+                    child: FactoryCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              FactoryRatingLabel(
+                                rating: review.rating.toDouble(),
+                                semanticLabel: l10n.ratingSemanticLabel(review.rating.toString()),
+                              ),
+                              const Spacer(),
+                              Text(
+                                DateFormat.yMMMd(locale).format(review.createdAt.toLocal()),
+                                style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+                              ),
+                            ],
+                          ),
+                          if (review.comment != null && review.comment!.isNotEmpty) ...[
+                            const SizedBox(height: FactorySpacing.space2),
+                            Text(review.comment!, style: textTheme.bodyMedium),
+                          ],
+                          if (review.businessReply != null) ...[
+                            const SizedBox(height: FactorySpacing.space2),
+                            Text(
+                              l10n.reviewsBusinessReply,
+                              style: textTheme.bodySmall?.copyWith(color: colors.textSecondary, fontWeight: FontWeight.w700),
+                            ),
+                            Text(review.businessReply!, style: textTheme.bodySmall?.copyWith(color: colors.textSecondary)),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
             ],
           ),
         ),
@@ -163,7 +242,9 @@ class _WorkerBody extends StatelessWidget {
                 Expanded(
                   child: FactoryButton(
                     label: l10n.workerBookAction,
-                    onPressed: () => context.push(AppRoutes.provider(profile.providerId, book: true)),
+                    onPressed: () => context.push(
+                      AppRoutes.provider(profile.providerId, book: true, workerId: profile.id, workerKind: profile.kind),
+                    ),
                   ),
                 ),
               ],

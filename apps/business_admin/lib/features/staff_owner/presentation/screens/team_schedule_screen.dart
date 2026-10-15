@@ -160,6 +160,8 @@ class _WorkerTile extends StatelessWidget {
         children: [
           Text(workerKindLabel(l10n, worker.kind), style: textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
           const SizedBox(height: 4),
+          _RatingLine(worker: worker),
+          const SizedBox(height: 4),
           Wrap(
             spacing: 6,
             runSpacing: 4,
@@ -181,6 +183,38 @@ class _WorkerTile extends StatelessWidget {
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => WorkerScheduleScreen(providerId: providerId, worker: worker)),
       ),
+    );
+  }
+}
+
+/// The person's rating and how far they are from "Best masters" in the customer app (3 reviews needed).
+class _RatingLine extends StatelessWidget {
+  const _RatingLine({required this.worker});
+
+  final WorkerSummary worker;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final style = Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textSecondary);
+    final rating = worker.averageRating;
+    final missing = WorkerSummary.reviewsToQualify - worker.reviewCount;
+
+    if (rating == null) {
+      return Text(l10n.teamRatingNone(WorkerSummary.reviewsToQualify), style: style);
+    }
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 8,
+      children: [
+        FactoryRatingLabel(
+          rating: rating,
+          reviewCount: worker.reviewCount,
+          semanticLabel: l10n.teamRatingSemantic(rating.toStringAsFixed(1), worker.reviewCount),
+        ),
+        Text(missing > 0 ? l10n.teamRatingMissing(missing) : l10n.teamRatingQualified, style: style),
+      ],
     );
   }
 }

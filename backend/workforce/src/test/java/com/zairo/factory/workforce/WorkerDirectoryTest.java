@@ -31,4 +31,11 @@ class WorkerDirectoryTest {
         assertThat(response.displayName()).isEqualTo("Aigerim");
         assertThat(response.photoUrl()).isEqualTo("https://img/1.png");
     }
+
+    @Test
+    void aBlankCityMeansNoCityFilter() {
+        assertThat(WorkerDirectoryService.blankToNull(null)).isNull();
+        assertThat(WorkerDirectoryService.blankToNull("  ")).isNull();
+        assertThat(WorkerDirectoryService.blankToNull(" almaty ")).isEqualTo("almaty");
+    }
 }
