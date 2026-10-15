@@ -90,6 +90,17 @@ class WorkerDirectoryApiTests {
         assertThat(first.get("providerName")).isEqualTo("Top Studio " + runId);
         assertThat(((Number) first.get("averageRating")).doubleValue()).isEqualTo(4.7);
         assertThat(((Number) first.get("reviewCount")).longValue()).isEqualTo(3L);
+
+        // The owner sees the same rating (and how many reviews it takes) on their team list.
+        ResponseEntity<Map[]> team = restTemplate.exchange("/api/v1/providers/" + providerId + "/workers",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map[].class);
+        Map<String, Map> byName = new java.util.HashMap<>();
+        for (Map worker : team.getBody()) {
+            byName.put(worker.get("displayName").toString(), worker);
+        }
+        assertThat(((Number) byName.get("Best Master").get("averageRating")).doubleValue()).isEqualTo(4.7);
+        assertThat(((Number) byName.get("Best Master").get("reviewCount")).longValue()).isEqualTo(3L);
+        assertThat(((Number) byName.get("Newcomer").get("reviewCount")).longValue()).isEqualTo(1L);
     }
 
     @Test

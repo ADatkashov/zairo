@@ -62,8 +62,11 @@ public class WorkerScheduleService {
             Instant offUntil = off.getOrDefault(w.id(), List.of()).stream()
                     .filter(t -> !t.getStartsAt().isAfter(now)).map(WorkerTimeOff::getEndsAt)
                     .max(Comparator.naturalOrder()).orElse(null);
+            WorkerCatalog.Ranked rating = catalog.ratingOf(w, "");
             return new WorkerSummaryResponse(w.id(), w.kind(), w.displayName(), w.photoUrl(), w.active(),
-                    schedules.containsKey(w.id()), offUntil);
+                    schedules.containsKey(w.id()), offUntil,
+                    rating.reviewCount() == 0 ? null : Math.round(rating.averageRating() * 10) / 10.0,
+                    rating.reviewCount());
         }).toList();
     }
 
