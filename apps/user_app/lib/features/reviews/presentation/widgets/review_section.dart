@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../../core/formatting/initials.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../workers/presentation/providers/workers_providers.dart';
 import '../../data/review_exception.dart';
 import '../providers/reviews_providers.dart';
 
@@ -113,6 +115,8 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
+    // Best-effort: with no named person (or no answer) the prompt just doesn't name anyone.
+    final worker = ref.watch(bookingWorkerProvider(widget.bookingId)).value;
     return FactoryDialog(
       title: l10n.reviewLeaveButton,
       content: SingleChildScrollView(
@@ -120,6 +124,26 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (worker != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
+                child: Row(
+                  children: [
+                    FactoryAvatar(
+                      initials: initialsFor(worker.displayName),
+                      size: 36,
+                      image: worker.photoUrl != null ? NetworkImage(worker.photoUrl!) : null,
+                    ),
+                    const SizedBox(width: FactorySpacing.space3),
+                    Expanded(
+                      child: Text(
+                        l10n.reviewAboutWorker(worker.displayName),
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             Wrap(
               children: List.generate(
                 5,

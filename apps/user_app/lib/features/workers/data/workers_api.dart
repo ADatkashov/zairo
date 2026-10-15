@@ -1,5 +1,6 @@
 import 'package:core_network/core_network.dart';
 
+import 'models/booking_worker.dart';
 import 'models/top_worker.dart';
 import 'models/worker_profile.dart';
 
@@ -23,5 +24,11 @@ class WorkersApi {
   Future<WorkerProfile> getProfile(String workerId) async {
     final response = await _dioClient.get('/workers/$workerId');
     return WorkerProfile.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// Who the customer's booking is with; the backend answers 404 when it has no named person.
+  Future<BookingWorker> getBookingWorker(String bookingId) async {
+    final response = await _dioClient.get('/bookings/$bookingId/worker');
+    return BookingWorker.fromJson(response.data as Map<String, dynamic>);
   }
 }

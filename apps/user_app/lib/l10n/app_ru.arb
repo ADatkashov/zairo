@@ -242,6 +242,7 @@
   "errorPortfolioImageLoadFailed": "Не удалось загрузить это фото.",
 
   "reviewLeaveButton": "Оставить отзыв",
+  "reviewAboutWorker": "Ваш визит к мастеру: {name}",
   "reviewCommentHint": "Комментарий (необязательно)",
   "reviewCancel": "Отмена",
   "reviewSubmit": "Отправить",

@@ -242,6 +242,7 @@
   "errorPortfolioImageLoadFailed": "Бұл суретті жүктеу мүмкін болмады.",
 
   "reviewLeaveButton": "Пікір қалдыру",
+  "reviewAboutWorker": "{name} шебермен кездесуіңіз",
   "reviewCommentHint": "Пікір (міндетті емес)",
   "reviewCancel": "Бас тарту",
   "reviewSubmit": "Жіберу",

@@ -203,6 +203,44 @@ class WorkerDirectoryApiTests {
     }
 
     /** A completed, paid booking with the master and a review of {@code rating} by a fresh customer. */
+    @Test
+    void onlyTheCustomerCanSeeWhoTheirBookingIsWith() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "bw-owner-" + runId + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "bw-customer-" + runId + "@example.com");
+        Registered stranger = TestAuth.registerCustomer(restTemplate, "bw-stranger-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Booking Studio " + runId);
+        UUID serviceId = createService(owner, providerId);
+        UUID staffId = createStaff(owner, providerId, "Booking Master");
+        restTemplate.exchange("/api/v1/staff/" + staffId + "/services/" + serviceId, HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        UUID slotId = UUID.fromString(restTemplate.exchange("/api/v1/providers/" + providerId
+                + "/availability-slots", HttpMethod.POST,
+                new HttpEntity<>(new CreateAvailabilitySlotRequest(start, start.plus(60, ChronoUnit.MINUTES)),
+                        TestAuth.authHeaders(owner.accessToken())), Map.class).getBody().get("id").toString());
+        String bookingId = restTemplate.exchange("/api/v1/staff/bookings", HttpMethod.POST,
+                new HttpEntity<>(new CreateStaffBookingRequest(customer.userId(), staffId, serviceId, slotId,
+                        new BigDecimal("30.00")), TestAuth.authHeaders(customer.accessToken())), Map.class)
+                .getBody().get("bookingId").toString();
+        String path = "/api/v1/bookings/" + bookingId + "/worker";
+
+        ResponseEntity<Map> mine = restTemplate.exchange(path, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(mine.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(mine.getBody().get("id")).isEqualTo(staffId.toString());
+        assertThat(mine.getBody().get("displayName")).isEqualTo("Booking Master");
+        assertThat(mine.getBody().get("kind")).isEqualTo("STAFF");
+
+        assertThat(restTemplate.getForEntity(path, Map.class).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(restTemplate.exchange(path, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(stranger.accessToken())), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(restTemplate.exchange("/api/v1/bookings/" + UUID.randomUUID() + "/worker", HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
     private void review(Registered owner, UUID providerId, UUID serviceId, UUID staffId, int rating, int hour,
             String runId) {
         Registered customer = TestAuth.registerCustomer(restTemplate, "top-cust-" + UUID.randomUUID() + "-" + runId

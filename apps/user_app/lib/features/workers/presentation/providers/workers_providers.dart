@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../city/data/models/city.dart';
 import '../../../city/presentation/providers/city_providers.dart';
+import '../../data/models/booking_worker.dart';
 import '../../data/models/top_worker.dart';
 import '../../data/models/worker_profile.dart';
 import '../../data/workers_api.dart';
@@ -26,4 +27,14 @@ final topWorkersProvider = FutureProvider.autoDispose<List<TopWorker>>((ref) asy
 
 final workerProfileProvider = FutureProvider.autoDispose.family<WorkerProfile, String>((ref, workerId) {
   return ref.watch(workersApiProvider).getProfile(workerId);
+});
+
+/// Whom a booking is with, or null when it has no named person (or the lookup
+/// fails): the review prompt then simply doesn't name anyone.
+final bookingWorkerProvider = FutureProvider.autoDispose.family<BookingWorker?, String>((ref, bookingId) async {
+  try {
+    return await ref.watch(workersApiProvider).getBookingWorker(bookingId);
+  } catch (_) {
+    return null;
+  }
 });

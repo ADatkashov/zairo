@@ -764,6 +764,8 @@
 
   "reviewLeaveButton": "Leave a review",
   "@reviewLeaveButton": {"description": "Button (and dialog title) to open the leave-a-review dialog."},
+  "reviewAboutWorker": "Your visit with {name}",
+  "@reviewAboutWorker": {"description": "Line in the leave-a-review dialog naming the person the visit was with.", "placeholders": {"name": {"type": "String"}}},
 
   "reviewCommentHint": "Comment (optional)",
   "@reviewCommentHint": {"description": "Leave-a-review dialog's comment field hint."},

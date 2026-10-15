@@ -29,6 +29,10 @@ public final class WorkerDirectoryDtos {
         }
     }
 
+    /** Who a booking is with, for the customer who made it. */
+    public record BookingWorkerResponse(UUID id, WorkerKind kind, String displayName, String photoUrl) {
+    }
+
     public record WorkerServiceResponse(UUID id, String title, int durationMinutes, BigDecimal price,
             String currency) {
     }

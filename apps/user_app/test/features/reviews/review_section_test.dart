@@ -6,6 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:zairo/features/reviews/data/models/review.dart';
+import 'package:zairo/features/workers/data/models/booking_worker.dart';
+import 'package:zairo/features/workers/data/workers_api.dart';
+import 'package:zairo/features/workers/presentation/providers/workers_providers.dart';
 import 'package:zairo/features/reviews/data/review_exception.dart';
 import 'package:zairo/features/reviews/data/reviews_api.dart';
 import 'package:zairo/features/reviews/presentation/providers/reviews_providers.dart';
@@ -47,7 +50,52 @@ class _FakeReviewsApi extends ReviewsApi {
   }
 }
 
+class _FakeWorkersApi extends WorkersApi {
+  _FakeWorkersApi({this.worker}) : super(DioClient(Dio()));
+
+  final BookingWorker? worker;
+
+  @override
+  Future<BookingWorker> getBookingWorker(String bookingId) async {
+    if (worker == null) throw Exception('404');
+    return worker!;
+  }
+}
+
 void main() {
+  Future<void> openDialog(WidgetTester tester, BookingWorker? worker) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          reviewsApiProvider.overrideWithValue(_FakeReviewsApi()),
+          workersApiProvider.overrideWithValue(_FakeWorkersApi(worker: worker)),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: ReviewSection(bookingId: 'booking-1')),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Leave a review'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('the review dialog names the person the visit was with', (tester) async {
+    await openDialog(tester, const BookingWorker(id: 'w1', kind: 'MASTER', displayName: 'Aigerim'));
+
+    expect(find.text('Your visit with Aigerim'), findsOneWidget);
+  });
+
+  testWidgets('without a named person the dialog just asks for the rating', (tester) async {
+    await openDialog(tester, null);
+
+    expect(find.textContaining('Your visit with'), findsNothing);
+    expect(find.byIcon(Symbols.star_rounded), findsWidgets);
+  });
+
   testWidgets('shows a "leave a review" button when there is no review yet', (
     tester,
   ) async {
