@@ -5,6 +5,7 @@ import com.zairo.factory.providers.ProviderRepository;
 import com.zairo.factory.providers.ProviderStatus;
 import com.zairo.factory.workforce.WorkerDirectoryDtos.TopWorkerResponse;
 import com.zairo.factory.workforce.WorkerDirectoryDtos.WorkerProfileResponse;
+import com.zairo.factory.workforce.WorkerDirectoryDtos.WorkerReviewResponse;
 import com.zairo.factory.workforce.WorkerDirectoryDtos.WorkerServiceResponse;
 import java.util.List;
 import java.util.UUID;
@@ -21,6 +22,9 @@ public class WorkerDirectoryService {
     static final int MIN_REVIEWS_FOR_TOP = 3;
 
     static final int MAX_TOP = 20;
+
+    /** How many of the newest reviews a worker's page shows. */
+    static final int PROFILE_REVIEWS = 3;
 
     private final WorkerCatalog catalog;
     private final ProviderRepository providerRepository;
@@ -56,9 +60,12 @@ public class WorkerDirectoryService {
         List<WorkerServiceResponse> services = catalog.servicesOf(worker).stream()
                 .map(s -> new WorkerServiceResponse(s.id(), s.title(), s.durationMinutes(), s.price(), s.currency()))
                 .toList();
+        List<WorkerReviewResponse> reviews = catalog.latestReviews(worker, PROFILE_REVIEWS).stream()
+                .map(r -> new WorkerReviewResponse(r.rating(), r.comment(), r.createdAt(), r.businessReply()))
+                .toList();
         return new WorkerProfileResponse(worker.id(), worker.kind(), provider.getId(), provider.getName(),
-                worker.displayName(), worker.photoUrl(),
+                worker.displayName(), worker.photoUrl(), catalog.bioOf(worker).orElse(null),
                 rating.reviewCount() == 0 ? null : Math.round(rating.averageRating() * 10) / 10.0,
-                rating.reviewCount(), services);
+                rating.reviewCount(), reviews, services);
     }
 }
