@@ -146,6 +146,12 @@ class WorkerDirectoryApiTests {
         Map<?, ?> page = restTemplate.getForEntity("/api/v1/workers/" + staffId, Map.class).getBody();
         assertThat(((Number) page.get("averageRating")).doubleValue()).isEqualTo(4.5);
         assertThat(((Number) page.get("reviewCount")).longValue()).isEqualTo(2L);
+        // The newest reviews, with no reviewer identity.
+        List<Map> reviews = (List<Map>) page.get("reviews");
+        assertThat(reviews).hasSize(2);
+        assertThat(reviews.get(0)).containsKeys("rating", "comment", "createdAt").doesNotContainKeys("userId",
+                "customerName", "bookingId");
+        assertThat(page.get("bio")).isEqualTo("Bio");
 
         assertThat(restTemplate.getForEntity("/api/v1/workers/" + UUID.randomUUID(), Map.class).getStatusCode())
                 .isEqualTo(HttpStatus.NOT_FOUND);

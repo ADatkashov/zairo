@@ -5,12 +5,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:zairo/features/beauty/data/beauty_api.dart';
+import 'package:zairo/features/beauty/data/models/portfolio_item.dart';
+import 'package:zairo/features/beauty/presentation/providers/beauty_providers.dart';
 import 'package:zairo/features/workers/data/models/top_worker.dart';
 import 'package:zairo/features/workers/data/models/worker_profile.dart';
 import 'package:zairo/features/workers/data/workers_api.dart';
 import 'package:zairo/features/workers/presentation/providers/workers_providers.dart';
 import 'package:zairo/features/workers/presentation/screens/worker_screen.dart';
 import 'package:zairo/l10n/app_localizations.dart';
+
+class _FakeBeautyApi extends BeautyApi {
+  _FakeBeautyApi(this._items) : super(DioClient(Dio()));
+
+  final List<PortfolioItem> _items;
+
+  @override
+  Future<List<PortfolioItem>> listPortfolio(String masterId) async => _items;
+}
 
 class _FakeWorkersApi extends WorkersApi {
   _FakeWorkersApi({this.profile, this.top = const [], this.failProfile = false}) : super(DioClient(Dio()));
@@ -36,13 +48,21 @@ class _FakeWorkersApi extends WorkersApi {
   }
 }
 
-WorkerProfile _profile({String kind = 'MASTER', double? rating = 4.5, List<WorkerService>? services}) => WorkerProfile(
+WorkerProfile _profile({
+  String kind = 'MASTER',
+  double? rating = 4.5,
+  List<WorkerService>? services,
+  String? bio,
+  List<WorkerReview> reviews = const [],
+}) => WorkerProfile(
   id: 'w1',
   kind: kind,
   providerId: 'p1',
   providerName: 'Aigerim Beauty Studio',
   displayName: 'Aigerim K.',
   photoUrl: null,
+  bio: bio,
+  reviews: reviews,
   averageRating: rating,
   reviewCount: rating == null ? 0 : 2,
   services:
@@ -50,8 +70,11 @@ WorkerProfile _profile({String kind = 'MASTER', double? rating = 4.5, List<Worke
       const [WorkerService(id: 's1', title: 'Haircut', durationMinutes: 60, price: 8000, currency: 'KZT')],
 );
 
-Widget _app(_FakeWorkersApi api) => ProviderScope(
-  overrides: [workersApiProvider.overrideWithValue(api)],
+Widget _app(_FakeWorkersApi api, {List<PortfolioItem> work = const []}) => ProviderScope(
+  overrides: [
+    workersApiProvider.overrideWithValue(api),
+    beautyApiProvider.overrideWithValue(_FakeBeautyApi(work)),
+  ],
   child: MaterialApp.router(
     theme: factoryLightTheme(),
     localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -140,5 +163,58 @@ void main() {
 
     expect(find.text('Aigerim K.'), findsOneWidget);
     expect(api.profileCalls, 2);
+  });
+
+  testWidgets('shows the about-me text, the newest reviews with the business reply, and no reviewer names', (tester) async {
+    final profile = _profile(
+      bio: 'Ten years in colouring.',
+      reviews: [
+        WorkerReview(rating: 5, comment: 'Lovely work', createdAt: DateTime(2026, 10, 1), businessReply: 'Thank you!'),
+        WorkerReview(rating: 4, comment: null, createdAt: DateTime(2026, 9, 20)),
+      ],
+    );
+    await tester.pumpWidget(_app(_FakeWorkersApi(profile: profile)));
+    await tester.pumpAndSettle();
+
+    expect(find.text('About'), findsOneWidget);
+    expect(find.text('Ten years in colouring.'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Lovely work'), 200, scrollable: find.byType(Scrollable).first);
+    expect(find.text('Reviews'), findsOneWidget);
+    expect(find.text('Lovely work'), findsOneWidget);
+    expect(find.text('Reply from the business'), findsOneWidget);
+    expect(find.text('Thank you!'), findsOneWidget);
+    expect(find.text('Oct 1, 2026'), findsOneWidget);
+  });
+
+  testWidgets('no about-me or reviews block when there is nothing to show', (tester) async {
+    await tester.pumpWidget(_app(_FakeWorkersApi(profile: _profile())));
+    await tester.pumpAndSettle();
+
+    expect(find.text('About'), findsNothing);
+    expect(find.text('Reviews'), findsNothing);
+  });
+
+  testWidgets('a master shows a strip of their work that opens the portfolio; others do not', (tester) async {
+    await tester.pumpWidget(
+      _app(
+        _FakeWorkersApi(profile: _profile()),
+        work: const [PortfolioItem(id: 'i1', masterId: 'w1', imageUrl: 'https://img.example/1.jpg')],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Work'), findsOneWidget);
+    await tester.tap(find.byType(Image).first);
+    await tester.pumpAndSettle();
+    expect(find.text('Portfolio w1'), findsOneWidget);
+
+    await tester.pumpWidget(
+      _app(
+        _FakeWorkersApi(profile: _profile(kind: 'STAFF')),
+        work: const [PortfolioItem(id: 'i1', masterId: 'w1', imageUrl: 'https://img.example/1.jpg')],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Work'), findsNothing);
   });
 }

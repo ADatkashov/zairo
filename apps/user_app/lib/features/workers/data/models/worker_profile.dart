@@ -10,9 +10,15 @@ class WorkerProfile {
   final String displayName;
   final String? photoUrl;
 
+  /// The worker's own "about me"; null when they wrote none.
+  final String? bio;
+
   /// Null until the worker has a review: absent, not zero.
   final double? averageRating;
   final int reviewCount;
+
+  /// The newest few reviews, without reviewer names.
+  final List<WorkerReview> reviews;
   final List<WorkerService> services;
 
   const WorkerProfile({
@@ -22,8 +28,10 @@ class WorkerProfile {
     required this.providerName,
     required this.displayName,
     required this.photoUrl,
+    this.bio,
     required this.averageRating,
     required this.reviewCount,
+    this.reviews = const [],
     required this.services,
   });
 
@@ -37,8 +45,13 @@ class WorkerProfile {
       providerName: json['providerName'] as String,
       displayName: json['displayName'] as String,
       photoUrl: json['photoUrl'] as String?,
+      bio: json['bio'] as String?,
       averageRating: (json['averageRating'] as num?)?.toDouble(),
       reviewCount: (json['reviewCount'] as num).toInt(),
+      reviews: [
+        for (final r in json['reviews'] as List<dynamic>? ?? const [])
+          WorkerReview.fromJson(r as Map<String, dynamic>),
+      ],
       services: [
         for (final s in json['services'] as List<dynamic>) WorkerService.fromJson(s as Map<String, dynamic>),
       ],
@@ -68,6 +81,24 @@ class WorkerService {
       durationMinutes: (json['durationMinutes'] as num).toInt(),
       price: (json['price'] as num).toDouble(),
       currency: json['currency'] as String,
+    );
+  }
+}
+
+class WorkerReview {
+  final int rating;
+  final String? comment;
+  final DateTime createdAt;
+  final String? businessReply;
+
+  const WorkerReview({required this.rating, this.comment, required this.createdAt, this.businessReply});
+
+  factory WorkerReview.fromJson(Map<String, dynamic> json) {
+    return WorkerReview(
+      rating: (json['rating'] as num).toInt(),
+      comment: json['comment'] as String?,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      businessReply: json['businessReply'] as String?,
     );
   }
 }

@@ -207,6 +207,28 @@ public class WorkerCatalog {
                 .single();
     }
 
+    /** One review left on a booking with this worker; no reviewer identity, it is shown publicly. */
+    public record WorkerReview(int rating, String comment, java.time.Instant createdAt, String businessReply) {
+    }
+
+    /** The worker's own "about me" text, if they wrote one. */
+    public Optional<String> bioOf(Worker worker) {
+        Spec spec = spec(worker.kind());
+        return jdbc.sql("select bio from " + spec.table() + " where id = :id").param("id", worker.id())
+                .query(String.class).optional().filter(b -> !b.isBlank());
+    }
+
+    /** The newest reviews on this worker's bookings. */
+    public List<WorkerReview> latestReviews(Worker worker, int limit) {
+        Spec spec = spec(worker.kind());
+        return jdbc.sql("select r.rating, r.comment, r.created_at, r.business_reply from (" + bookingsOfWorkers(spec)
+                + ") wb join review r on r.booking_id = wb.booking_id where wb.worker_id = :id"
+                + " order by r.created_at desc limit :limit").param("id", worker.id()).param("limit", limit)
+                .query((rs, n) -> new WorkerReview(rs.getInt("rating"), rs.getString("comment"),
+                        rs.getTimestamp("created_at").toInstant(), rs.getString("business_reply")))
+                .list();
+    }
+
     /** The active services this worker performs. */
     public List<OfferedService> servicesOf(Worker worker) {
         Spec spec = spec(worker.kind());

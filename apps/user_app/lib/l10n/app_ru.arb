@@ -112,6 +112,8 @@
   "homeTopMastersTitle": "Лучшие мастера",
   "workerPageTitle": "Мастер",
   "workerBusinessLabel": "Работает в",
+  "workerAboutTitle": "О мастере",
+  "workerWorkTitle": "Работы",
   "workerServicesTitle": "Услуги",
   "workerServicesEmpty": "Услуги пока не указаны.",
   "workerNoReviews": "Пока нет отзывов",

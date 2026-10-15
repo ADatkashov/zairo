@@ -33,6 +33,10 @@ public final class WorkerDirectoryDtos {
             String currency) {
     }
 
+    public record WorkerReviewResponse(int rating, String comment, java.time.Instant createdAt,
+            String businessReply) {
+    }
+
     public record WorkerProfileResponse(
             UUID id,
             WorkerKind kind,
@@ -40,8 +44,10 @@ public final class WorkerDirectoryDtos {
             String providerName,
             String displayName,
             String photoUrl,
+            @Schema(description = "The worker's own 'about me'; null when they wrote none.") String bio,
             @Schema(description = "Null until the worker has a review.") Double averageRating,
             long reviewCount,
+            @Schema(description = "The newest few reviews, no reviewer names.") List<WorkerReviewResponse> reviews,
             List<WorkerServiceResponse> services) {
     }
 }
