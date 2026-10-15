@@ -306,6 +306,24 @@
 
   "homeTopRatedTitle": "Top rated near you",
   "@homeTopRatedTitle": {"description": "Home screen section header for the curated provider rail."},
+  "homeTopMastersTitle": "Best masters",
+  "@homeTopMastersTitle": {"description": "Home section header for the rail of best-rated masters."},
+  "workerPageTitle": "Master",
+  "@workerPageTitle": {"description": "App bar title of a master's page."},
+  "workerBusinessLabel": "Works at",
+  "@workerBusinessLabel": {"description": "Label before the business a master works at."},
+  "workerServicesTitle": "Services",
+  "@workerServicesTitle": {"description": "Header of the services list on a master's page."},
+  "workerServicesEmpty": "No services listed yet.",
+  "@workerServicesEmpty": {"description": "Shown when a master has no services yet."},
+  "workerNoReviews": "No reviews yet",
+  "@workerNoReviews": {"description": "Shown instead of a rating when a master has no reviews."},
+  "workerBookAction": "Book",
+  "@workerBookAction": {"description": "Button on a master's page that opens the business's booking steps."},
+  "workerPortfolioAction": "Portfolio",
+  "@workerPortfolioAction": {"description": "Button on a master's page that opens their photo portfolio."},
+  "errorWorkerLoadFailed": "Couldn't load this master.",
+  "@errorWorkerLoadFailed": {"description": "Error text when a master's page fails to load."},
 
   "homeAvailabilityHero": "{count, plural, one{{count} provider near you have open slots today} other{{count} providers near you have open slots today}}",
   "@homeAvailabilityHero": {
@@ -341,12 +359,6 @@
 
   "adWatchVideoLabel": "Watch video",
   "@adWatchVideoLabel": {"description": "Spoken hint on a Home banner that opens a video."},
-
-  "homePromoRewardsTitle": "Earn rewards for every visit",
-  "@homePromoRewardsTitle": {"description": "Title of Home's promo card that opens My Rewards."},
-
-  "homePromoRewardsSubtitle": "Points from every business",
-  "@homePromoRewardsSubtitle": {"description": "Subtitle of Home's rewards promo card."},
 
   "discoveryVerticalBeauty": "Beauty",
   "@discoveryVerticalBeauty": {"description": "Vertical filter chip label for the beauty vertical."},

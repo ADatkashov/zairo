@@ -22,6 +22,8 @@ import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../../city/presentation/providers/city_providers.dart';
 import '../../../maps/presentation/providers/maps_providers.dart';
 import '../../../notifications/presentation/widgets/notification_bell_button.dart';
+import '../../../workers/data/models/top_worker.dart';
+import '../../../workers/presentation/providers/workers_providers.dart';
 import '../../data/models/provider_search_result.dart';
 import '../providers/discovery_providers.dart';
 import '../widgets/provider_card.dart';
@@ -113,12 +115,17 @@ class HomeScreen extends ConsumerWidget {
                   // below the search field.
                   const SizedBox(height: FactorySpacing.space5),
                   const _CategoriesSection(),
-                  // Promos come after the primary action, not in front of it.
-                  const SizedBox(height: FactorySpacing.space5),
-                  _PromoStrip(
-                    openCount: openCount,
-                    onViewAvailable: () => context.go(AppRoutes.search()),
-                  ),
+                  // Promos come after the primary action, not in front of it. Only
+                  // the live "open slots today" card is left; anything else the
+                  // platform wants to promote (bonuses, news) is a banner, run
+                  // from the admin console, not a card fixed in the app.
+                  if (openCount > 0) ...[
+                    const SizedBox(height: FactorySpacing.space5),
+                    _PromoStrip(
+                      openCount: openCount,
+                      onViewAvailable: () => context.go(AppRoutes.search()),
+                    ),
+                  ],
                   if (user != null) ...[
                     const SizedBox(height: FactorySpacing.space6),
                     _BookAgainSection(userId: user.id),
@@ -164,6 +171,7 @@ class HomeScreen extends ConsumerWidget {
                         },
                       ),
                     ),
+                  const _TopMastersSection(),
                   const SizedBox(height: FactorySpacing.space6),
                   _RecommendedSection(results: results, excluding: topRated),
                       ]),
@@ -386,6 +394,10 @@ class _HomeHeroBar extends StatelessWidget {
                       AppRoutes.adVideo,
                       extra: AdVideoArgs(url: banner.videoUrl!, title: banner.title),
                     ),
+                    onOpenLink: (target) => switch (target) {
+                      AdLinkTarget.rewards => context.push(AppRoutes.rewards),
+                      AdLinkTarget.search => context.go(AppRoutes.search()),
+                    },
                   ),
                 ),
               ),
@@ -479,24 +491,27 @@ class _SearchEntry extends StatelessWidget {
   }
 }
 
-/// The Home tab's categories: a heading with an "All ›" link, then a grid of two
-/// rows of four real categories. A launcher, not a filter — one tap on a
-/// category opens Search already narrowed to it (the result the person came
-/// for), instead of quietly re-filtering the rails below. All eight cells are
-/// categories (the catalog's own `sortOrder`, admin-curated, decides which);
-/// the rest are one tap away behind "All ›", which opens [AllCategoriesScreen]
-/// and carries the pick on to Search. It never grows with the catalog — a
-/// wrapping grid of all 20 pushed every other Home section below the fold, and
-/// Home showing every category is what turns a discovery screen into a catalog.
+/// The Home tab's categories: a heading with an "All ›" link, then a 4×2 grid
+/// of categories that scrolls sideways. A launcher, not a filter — one tap on a
+/// category opens Search already narrowed to it. The first screen is exactly
+/// two rows of four (the catalog's own `sortOrder`, admin-curated, decides the
+/// order); the rest follow as further 4×2 pages to the right, so Home stays two
+/// rows tall however large the catalog grows. With more than eight categories
+/// the next column peeks at the screen edge as the cue to swipe; "All ›" still
+/// opens [AllCategoriesScreen] for the whole list in one view.
 class _CategoriesSection extends ConsumerWidget {
   const _CategoriesSection();
 
   static const _columns = 4;
 
-  /// Two rows of four.
-  static const _slots = 8;
+  /// One page: two rows of four.
+  static const _pageSize = _columns * 2;
 
   static const _gap = FactorySpacing.space2;
+
+  /// How many columns are on screen when the grid scrolls: the fourth plus a
+  /// sliver of the fifth.
+  static const _visibleColumnsWhenScrolling = 4.4;
 
   // FactoryCategoryTile's own content is 72px of chrome (4px padding + 56px
   // icon circle + 8px gap + 4px padding) plus up to two label lines. The label
@@ -529,62 +544,194 @@ class _CategoriesSection extends ConsumerWidget {
         const SizedBox(height: FactorySpacing.space3),
         LayoutBuilder(
           builder: (context, constraints) {
-            final cell = (constraints.maxWidth - _gap * (_columns - 1)) / _columns;
-            // The cell is the label's width: a narrow phone has no room to spare.
-            final dense = cell < 76;
+            final width = constraints.maxWidth;
 
             final cells = categoriesAsync.when(
               data: (categories) => [
-                for (final category in categories.take(_slots))
-                  Builder(
-                    builder: (context) {
-                      final accent = colorForCategory(context, category.code);
-                      return FactoryCategoryTile(
-                        icon: iconForCategory(category.code),
-                        label: category.nameFor(languageCode),
-                        labelMaxWidth: cell,
-                        dense: dense,
-                        accentColor: accent?.color,
-                        accentTint: accent?.tint,
-                        onTap: () => context.go(AppRoutes.search(category: category.code)),
-                      );
-                    },
-                  ),
+                for (final category in categories) (category.code, category.nameFor(languageCode)),
               ],
               // Best-effort: while loading, hold the grid's place with skeletons;
               // on error draw no grid (the "All ›" link above still works and its
               // screen has its own retry) rather than blocking Home on the catalog.
-              loading: () => [
-                for (var i = 0; i < _slots; i++)
-                  FactorySkeleton(
-                    width: cell,
-                    height: tileHeight,
-                    borderRadius: const BorderRadius.all(Radius.circular(12)),
-                  ),
-              ],
-              error: (error, stackTrace) => const <Widget>[],
+              loading: () => [for (var i = 0; i < _pageSize; i++) null],
+              error: (error, stackTrace) => const <(String, String)?>[],
             );
+            if (cells.isEmpty) return const SizedBox.shrink();
 
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (var start = 0; start < cells.length; start += _columns) ...[
-                  if (start > 0) const SizedBox(height: _gap),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            final scrolls = cells.length > _pageSize;
+            final visible = scrolls ? _visibleColumnsWhenScrolling : _columns.toDouble();
+            // The cell is the label's width: a narrow phone has no room to spare.
+            final cell = (width - _gap * (visible.ceil() - 1)) / visible;
+            final dense = cell < 76;
+
+            Widget tile((String, String)? entry) {
+              if (entry == null) {
+                return FactorySkeleton(
+                  width: cell,
+                  height: tileHeight,
+                  borderRadius: const BorderRadius.all(Radius.circular(12)),
+                );
+              }
+              final (code, label) = entry;
+              final accent = colorForCategory(context, code);
+              return FactoryCategoryTile(
+                icon: iconForCategory(code),
+                label: label,
+                labelMaxWidth: cell,
+                dense: dense,
+                accentColor: accent?.color,
+                accentTint: accent?.tint,
+                onTap: () => context.go(AppRoutes.search(category: code)),
+              );
+            }
+
+            // Page k holds items 8k..8k+7 as 4 columns × 2 rows, so the first
+            // screen reads exactly like the plain grid: 1-4 on top, 5-8 below.
+            // A half-filled last page only gets the columns it needs, so the
+            // grid doesn't scroll over empty space (a lone page keeps all four
+            // so its tiles stay on the grid).
+            final fullPages = cells.length ~/ _pageSize;
+            final rest = cells.length % _pageSize;
+            final columnCount = scrolls ? fullPages * _columns + (rest < _columns ? rest : _columns) : _columns;
+            int indexAt(int column, int row) => (column ~/ _columns) * _pageSize + row * _columns + column % _columns;
+            final columns = <Widget>[
+              for (var c = 0; c < columnCount; c++)
+                SizedBox(
+                  width: cell,
+                  child: Column(
                     children: [
-                      for (var i = start; i < start + _columns; i++) ...[
-                        if (i > start) const SizedBox(width: _gap),
-                        Expanded(child: i < cells.length ? Center(child: cells[i]) : const SizedBox.shrink()),
+                      for (var row = 0; row < 2; row++) ...[
+                        if (row > 0) const SizedBox(height: _gap),
+                        if (indexAt(c, row) < cells.length)
+                          Center(child: tile(cells[indexAt(c, row)]))
+                        else
+                          // Keeps the empty slot's height so a lone tile stays in the top row.
+                          SizedBox(height: tileHeight),
                       ],
                     ],
                   ),
+                ),
+            ];
+
+            final grid = Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var i = 0; i < columns.length; i++) ...[
+                  if (i > 0) const SizedBox(width: _gap),
+                  columns[i],
                 ],
               ],
+            );
+            if (!scrolls) return grid;
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              // Let the next column run to the screen edge instead of being cut
+              // at the page padding — the cue that the grid scrolls.
+              clipBehavior: Clip.none,
+              child: grid,
             );
           },
         ),
       ],
+    );
+  }
+}
+
+/// "Best masters": a rail of avatars of the best-rated masters. A tap opens the
+/// master's own page (rating, services, "Book"), not the business — the person
+/// picked a face, so that is where they land. Best-effort like the banners: no
+/// section while loading, on error, or while nobody has enough reviews yet.
+class _TopMastersSection extends ConsumerWidget {
+  const _TopMastersSection();
+
+  static const _cardWidth = 96.0;
+  static const _avatarSize = 72.0;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final workers = ref.watch(topWorkersProvider).value ?? const <TopWorker>[];
+    if (workers.isEmpty) return const SizedBox.shrink();
+
+    // Avatar + two name lines + the rating row; follows the text scale so a
+    // large system font doesn't clip the name.
+    final textScale = MediaQuery.textScalerOf(context);
+    final height = _avatarSize + FactorySpacing.space2 + textScale.scale(14 * 1.3) * 2 + 4 + textScale.scale(13 * 1.3) + 4;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: FactorySpacing.space6),
+        Text(l10n.homeTopMastersTitle, style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: FactorySpacing.space3),
+        SizedBox(
+          height: height,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: workers.length,
+            separatorBuilder: (_, _) => const SizedBox(width: FactorySpacing.space3),
+            itemBuilder: (context, index) {
+              final worker = workers[index];
+              return _TopMasterCard(
+                worker: worker,
+                onTap: () => context.push(AppRoutes.worker(worker.id)),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TopMasterCard extends StatelessWidget {
+  const _TopMasterCard({required this.worker, required this.onTap});
+
+  final TopWorker worker;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final textTheme = Theme.of(context).textTheme;
+    return Semantics(
+      button: true,
+      label: worker.displayName,
+      excludeSemantics: true,
+      onTap: onTap,
+      child: InkWell(
+        borderRadius: FactoryRadius.mdRadius,
+        onTap: onTap,
+        child: SizedBox(
+          width: _TopMastersSection._cardWidth,
+          child: Column(
+            children: [
+              FactoryAvatar(
+                initials: initialsFor(worker.displayName),
+                size: _TopMastersSection._avatarSize,
+                image: worker.photoUrl != null ? NetworkImage(worker.photoUrl!) : null,
+              ),
+              const SizedBox(height: FactorySpacing.space2),
+              Text(
+                worker.displayName,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700, height: 1.3),
+              ),
+              const SizedBox(height: 4),
+              FactoryRatingLabel(
+                rating: worker.averageRating,
+                reviewCount: worker.reviewCount,
+                semanticLabel: l10n.ratingSemanticLabelWithReviews(
+                  worker.averageRating.toStringAsFixed(1),
+                  worker.reviewCount,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -839,10 +986,10 @@ class _RecommendedRow extends StatelessWidget {
   }
 }
 
-/// The short strip of promo cards under the launcher: "open slots today" (only
-/// when something nearby actually is) and the rewards entry. A horizontal list,
-/// so a lone card keeps its width and a third one can be added without
-/// reflowing the screen.
+/// The "open slots today" promo under the launcher: a live count of nearby
+/// businesses with a free slot, which no admin-made banner can show. Shown only
+/// when there is something to show. A horizontal list so a second card can be
+/// added without reflowing the screen.
 class _PromoStrip extends StatelessWidget {
   const _PromoStrip({required this.openCount, required this.onViewAvailable});
 
@@ -863,23 +1010,12 @@ class _PromoStrip extends StatelessWidget {
         // the page padding — the cue that the strip scrolls.
         clipBehavior: Clip.none,
         children: [
-          if (openCount > 0) ...[
-            FactoryPromoCard(
-              width: _cardWidth,
-              height: _cardHeight,
-              title: l10n.homeAvailabilityHero(openCount),
-              icon: Symbols.event_available_rounded,
-              onTap: onViewAvailable,
-            ),
-            const SizedBox(width: FactorySpacing.space3),
-          ],
           FactoryPromoCard(
             width: _cardWidth,
             height: _cardHeight,
-            title: l10n.homePromoRewardsTitle,
-            subtitle: l10n.homePromoRewardsSubtitle,
-            icon: Symbols.redeem_rounded,
-            onTap: () => context.push(AppRoutes.rewards),
+            title: l10n.homeAvailabilityHero(openCount),
+            icon: Symbols.event_available_rounded,
+            onTap: onViewAvailable,
           ),
         ],
       ),

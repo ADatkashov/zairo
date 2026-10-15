@@ -244,4 +244,29 @@ class AdServiceTest {
         assertThat(service.listAll()).extracting(AdminBannerResponse::status)
                 .containsExactly(AdStatus.ACTIVE, AdStatus.REJECTED);
     }
+
+    @Test
+    void theLinkTargetTravelsFromCreateToTheLiveCarousel() {
+        CreateBannerRequest request = new CreateBannerRequest("Earn bonuses", null, "https://cdn.example/c.jpg", null,
+                AdLinkTarget.REWARDS, null, START, END, null, AdStatus.ACTIVE);
+
+        AdminBannerResponse created = service.create(ACTOR, "a@x", request);
+        assertThat(created.linkTarget()).isEqualTo(AdLinkTarget.REWARDS);
+
+        AdBanner stored = new AdBanner(created.id(), null, "Earn bonuses", null, "https://cdn.example/c.jpg", null,
+                AdLinkTarget.REWARDS, null, START, END, 0, AdStatus.ACTIVE, NOW);
+        when(repository.findLiveForEveryCity(NOW)).thenReturn(List.of(stored));
+        assertThat(service.liveBanners(null).get(0).linkTarget()).isEqualTo(AdLinkTarget.REWARDS);
+    }
+
+    @Test
+    void updateReplacesTheLinkTarget() {
+        AdBanner existing = banner(AdStatus.DRAFT);
+        when(repository.findById(existing.getId())).thenReturn(Optional.of(existing));
+
+        AdminBannerResponse updated = service.update(ACTOR, "a@x", existing.getId(), new UpdateBannerRequest("T", null,
+                "https://cdn.example/c.jpg", null, AdLinkTarget.SEARCH, null, START, END, null));
+
+        assertThat(updated.linkTarget()).isEqualTo(AdLinkTarget.SEARCH);
+    }
 }

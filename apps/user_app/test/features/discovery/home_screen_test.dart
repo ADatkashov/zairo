@@ -26,6 +26,9 @@ import 'package:zairo/features/discovery/data/models/provider_search_result.dart
 import 'package:zairo/features/discovery/presentation/providers/discovery_providers.dart';
 import 'package:zairo/features/catalog/presentation/screens/all_categories_screen.dart';
 import 'package:zairo/features/discovery/presentation/screens/home_screen.dart';
+import 'package:zairo/features/workers/data/models/top_worker.dart';
+import 'package:zairo/features/workers/data/workers_api.dart';
+import 'package:zairo/features/workers/presentation/providers/workers_providers.dart';
 import 'package:zairo/l10n/app_localizations.dart';
 
 /// Home now stacks a 4×2 launcher and a promo strip above the category row and
@@ -97,6 +100,26 @@ class _FakeCatalogApi extends CatalogApi {
   @override
   Future<List<BusinessType>> listBusinessTypes(String categoryId) async => const [];
 }
+
+class _FakeWorkersApi extends WorkersApi {
+  _FakeWorkersApi(this._top) : super(DioClient(Dio()));
+
+  final List<TopWorker> _top;
+
+  @override
+  Future<List<TopWorker>> listTop({int limit = 10}) async => _top;
+}
+
+const _aigerim = TopWorker(
+  id: 'w1',
+  kind: 'MASTER',
+  providerId: 'p1',
+  providerName: 'Aigerim Beauty Studio',
+  displayName: 'Aigerim K.',
+  photoUrl: null,
+  averageRating: 4.8,
+  reviewCount: 17,
+);
 
 class _LoggedInAuthController extends AuthController {
   @override
@@ -257,22 +280,25 @@ void main() {
       ),
   ];
 
-  testWidgets('categories are two rows of four real categories, with an "All" link in the heading and no shortcut icons', (tester) async {
+  testWidgets('categories are a 4x2 grid that scrolls sideways, with an "All" link in the heading and no shortcut icons', (tester) async {
     _useTallWindow(tester);
-    await tester.pumpWidget(searchRouteApp(manyCategories(10)));
+    await tester.pumpWidget(searchRouteApp(manyCategories(20)));
     await tester.pumpAndSettle();
 
     final cats = [for (var i = 1; i <= 8; i++) tester.getTopLeft(find.text('Category $i'))];
-    // Row one: 1-4 share a line; row two: 5-8 share the next. All eight are real categories.
+    // Row one: 1-4 share a line; row two: 5-8 share the next.
     expect({cats[0].dy, cats[1].dy, cats[2].dy, cats[3].dy}, hasLength(1));
     expect({cats[4].dy, cats[5].dy, cats[6].dy, cats[7].dy}, hasLength(1));
     expect(cats[4].dy, greaterThan(cats[0].dy));
     expect(cats[0].dx, lessThan(cats[1].dx));
     expect(cats[7].dx, greaterThan(cats[6].dx));
-    // Only eight fit; the rest are behind the "All" link, and there is no "All categories" tile.
-    expect(find.text('Category 9'), findsNothing);
+    // The second page is off-screen to the right, reachable by swiping.
+    expect(find.text('Category 20'), findsNothing);
+    final grid = find.ancestor(of: find.text('Category 1'), matching: find.byType(Scrollable));
+    await tester.dragUntilVisible(find.text('Category 20'), grid.first, const Offset(-300, 0));
+    expect(find.text('Category 20'), findsOneWidget);
+    await tester.dragUntilVisible(find.text('Category 1'), grid.first, const Offset(300, 0));
     expect(find.text('All categories'), findsNothing);
-    expect(find.byType(FactoryCategoryTile), findsNWidgets(8));
 
     // The heading with its link sits above the grid.
     final heading = tester.getTopLeft(find.text('Categories'));
@@ -287,9 +313,32 @@ void main() {
     for (final label in ['Search', 'Bookings', 'My favorites', 'Messages', 'My Rewards', 'Notifications', 'Payment cards', 'Support']) {
       expect(find.text(label), findsNothing, reason: label);
     }
-    // The promos are still there, after the categories.
-    expect(find.text('Earn rewards for every visit'), findsOneWidget);
-    expect(tester.getTopLeft(find.text('Earn rewards for every visit')).dy, greaterThan(cats[7].dy));
+    // The live "open slots today" promo is still there, after the categories; the rewards card is not (bonuses are a banner now).
+    expect(find.textContaining('open slots today'), findsOneWidget);
+    expect(tester.getTopLeft(find.textContaining('open slots today')).dy, greaterThan(cats[7].dy));
+    expect(find.text('Earn rewards for every visit'), findsNothing);
+  });
+
+  testWidgets('exactly eight categories fit the 4x2 grid without scrolling', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(searchRouteApp(manyCategories(8)));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FactoryCategoryTile), findsNWidgets(8));
+    expect(find.ancestor(of: find.text('Category 1'), matching: find.byType(SingleChildScrollView)), findsNothing);
+  });
+
+  testWidgets('a half-filled second page adds only the columns it needs', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(searchRouteApp(manyCategories(10)));
+    await tester.pumpAndSettle();
+
+    final grid = find.ancestor(of: find.text('Category 1'), matching: find.byType(Scrollable));
+    await tester.dragUntilVisible(find.text('Category 10'), grid.first, const Offset(-300, 0));
+    final position = tester.state<ScrollableState>(grid.first).position;
+    // 4 columns + 2 more: the grid ends right after category 10, no empty page.
+    expect(position.maxScrollExtent, lessThan(tester.getSize(find.byType(MaterialApp)).width));
+    expect(find.text('Category 10'), findsOneWidget);
   });
 
   testWidgets('one tap on a category opens Search already narrowed to it', (tester) async {
@@ -370,13 +419,48 @@ void main() {
     expect(find.text('Category 7'), findsOneWidget);
   });
 
-  testWidgets('the rewards promo card opens My Rewards', (tester) async {
+  testWidgets('with nothing open today there is no promo strip at all', (tester) async {
     _useTallWindow(tester);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi(const [])),
           catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const HomeScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FactoryPromoCard), findsNothing);
+    expect(find.text('Earn rewards for every visit'), findsNothing);
+  });
+
+  testWidgets('a banner with a rewards link opens My Rewards when tapped', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi(const [])),
+          catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
+          adsApiProvider.overrideWithValue(
+            _FakeAdsApi(const [
+              AdBanner(
+                id: 'b1',
+                title: 'Earn bonuses for every visit',
+                subtitle: null,
+                imageUrl: 'https://cdn.example/1.jpg',
+                videoUrl: null,
+                linkTarget: 'REWARDS',
+                sponsored: false,
+              ),
+            ]),
+          ),
         ],
         child: MaterialApp.router(
           theme: factoryLightTheme(),
@@ -393,10 +477,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Nothing is open today, so the rewards card is the only promo.
-    expect(find.textContaining('open slots today'), findsNothing);
-    await tester.tap(find.widgetWithText(FactoryPromoCard, 'Earn rewards for every visit'));
+    await tester.tap(find.text('Earn bonuses for every visit'));
     await tester.pumpAndSettle();
+
     expect(find.text('Rewards page'), findsOneWidget);
   });
 
@@ -774,5 +857,52 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Favorites page'), findsOneWidget);
+  });
+
+  Widget mastersApp(List<TopWorker> workers) => ProviderScope(
+    overrides: [
+      discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi([_open])),
+      catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
+      workersApiProvider.overrideWithValue(_FakeWorkersApi(workers)),
+    ],
+    child: MaterialApp.router(
+      theme: factoryLightTheme(),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      routerConfig: GoRouter(
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+          GoRoute(
+            path: '/worker/:id',
+            builder: (_, state) => Scaffold(body: Text('Worker page ${state.pathParameters['id']}')),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  testWidgets('the best masters rail shows avatars with names and ratings, and a tap opens the master page', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(mastersApp(const [_aigerim]));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Best masters'), findsOneWidget);
+    expect(find.byType(FactoryAvatar), findsWidgets);
+    expect(find.text('Aigerim K.'), findsOneWidget);
+    expect(find.text('4.8'), findsOneWidget);
+    expect(find.text('(17)'), findsOneWidget);
+
+    await tester.tap(find.text('Aigerim K.'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Worker page w1'), findsOneWidget);
+  });
+
+  testWidgets('no best masters rail while nobody has enough reviews yet', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(mastersApp(const []));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Best masters'), findsNothing);
   });
 }
