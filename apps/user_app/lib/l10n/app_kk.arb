@@ -343,6 +343,8 @@
   "imagePickerGalleryLabel": "Галерея",
 
   "myRewardsTitle": "Менің бонустарым",
+  "profileRewardsSummary": "{points} балл · {count, plural, one{{count} бизнес} other{{count} бизнес}}",
+  "profileRewardsExpiring": "{points} балл 30 күн ішінде жанып кетеді",
   "loyaltyRedemptionsTitle": "Айырбастау кодтарым",
   "myRewardsLoggedOutPrompt": "Әр провайдердегі бонустарыңызды көру үшін кіріңіз",
   "myRewardsEmptyTitle": "Әзірге бонус жоқ",

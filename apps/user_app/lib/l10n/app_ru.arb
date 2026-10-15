@@ -343,6 +343,8 @@
   "imagePickerGalleryLabel": "Галерея",
 
   "myRewardsTitle": "Мои бонусы",
+  "profileRewardsSummary": "{points} баллов · {count, plural, one{{count} бизнес} few{{count} бизнеса} many{{count} бизнесов} other{{count} бизнеса}}",
+  "profileRewardsExpiring": "{points} баллов сгорят в ближайшие 30 дней",
   "loyaltyRedemptionsTitle": "Мои коды обмена",
   "myRewardsLoggedOutPrompt": "Войдите, чтобы увидеть бонусы у каждого провайдера",
   "myRewardsEmptyTitle": "Пока нет бонусов",
