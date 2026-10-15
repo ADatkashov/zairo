@@ -55,6 +55,9 @@ abstract final class AppRoutes {
     },
   ).toString();
 
+  /// A master's (or any worker's) public page: rating, services, the way to book.
+  static String worker(String workerId) => '/worker/$workerId';
+
   /// A master's portfolio (beauty vertical).
   static String portfolio(String masterId, {required String masterName}) =>
       _withName('/portfolio/$masterId', masterName);
