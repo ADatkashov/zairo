@@ -72,6 +72,13 @@ public class Provider {
     @Column(name = "cover_photo_url")
     private String coverPhotoUrl;
 
+    /**
+     * The city the business works in (a {@code city.code}); null until the owner picks one, and then the business
+     * counts as "everywhere" in city-narrowed lists so nothing disappears while owners are filling their profile in.
+     */
+    @Column(name = "city_code")
+    private String cityCode;
+
     protected Provider() {
     }
 
@@ -150,6 +157,23 @@ public class Provider {
         this.latitude = latitude;
         this.longitude = longitude;
         this.coverPhotoUrl = coverPhotoUrl;
+    }
+
+    /** Same as {@link #update(String, Double, Double, String)}, and sets the city unless {@code cityCode} is null/blank (keep). */
+    void update(String name, Double latitude, Double longitude, String coverPhotoUrl, String cityCode) {
+        update(name, latitude, longitude, coverPhotoUrl);
+        if (cityCode != null && !cityCode.isBlank()) {
+            this.cityCode = cityCode.trim();
+        }
+    }
+
+    /** Sets the city at creation; null/blank leaves it unset. */
+    void assignCity(String cityCode) {
+        this.cityCode = cityCode == null || cityCode.isBlank() ? null : cityCode.trim();
+    }
+
+    public String getCityCode() {
+        return cityCode;
     }
 
     /** Admin-only moderation action — see ProviderController's status endpoint. */
