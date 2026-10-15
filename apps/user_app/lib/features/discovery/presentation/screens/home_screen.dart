@@ -720,12 +720,16 @@ class _TopMasterCard extends StatelessWidget {
                 style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700, height: 1.3),
               ),
               const SizedBox(height: 4),
-              FactoryRatingLabel(
-                rating: worker.averageRating,
-                reviewCount: worker.reviewCount,
-                semanticLabel: l10n.ratingSemanticLabelWithReviews(
-                  worker.averageRating.toStringAsFixed(1),
-                  worker.reviewCount,
+              // Scales down rather than overflowing the narrow card at a large text size.
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: FactoryRatingLabel(
+                  rating: worker.averageRating,
+                  reviewCount: worker.reviewCount,
+                  semanticLabel: l10n.ratingSemanticLabelWithReviews(
+                    worker.averageRating.toStringAsFixed(1),
+                    worker.reviewCount,
+                  ),
                 ),
               ),
             ],

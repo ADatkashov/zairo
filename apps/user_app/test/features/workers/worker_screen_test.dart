@@ -8,7 +8,6 @@ import 'package:go_router/go_router.dart';
 import 'package:zairo/features/beauty/data/beauty_api.dart';
 import 'package:zairo/features/beauty/data/models/portfolio_item.dart';
 import 'package:zairo/features/beauty/presentation/providers/beauty_providers.dart';
-import 'package:zairo/features/workers/data/models/top_worker.dart';
 import 'package:zairo/features/workers/data/models/worker_profile.dart';
 import 'package:zairo/features/workers/data/workers_api.dart';
 import 'package:zairo/features/workers/presentation/providers/workers_providers.dart';
@@ -25,10 +24,9 @@ class _FakeBeautyApi extends BeautyApi {
 }
 
 class _FakeWorkersApi extends WorkersApi {
-  _FakeWorkersApi({this.profile, this.top = const [], this.failProfile = false}) : super(DioClient(Dio()));
+  _FakeWorkersApi({this.profile, this.failProfile = false}) : super(DioClient(Dio()));
 
   final WorkerProfile? profile;
-  final List<TopWorker> top;
   bool failProfile;
   int profileCalls = 0;
 
@@ -40,11 +38,6 @@ class _FakeWorkersApi extends WorkersApi {
       throw Exception('offline');
     }
     return profile!;
-  }
-
-  @override
-  Future<List<TopWorker>> listTop({int limit = 10, String? cityCode}) async {
-    return top;
   }
 }
 
@@ -71,6 +64,8 @@ WorkerProfile _profile({
 );
 
 Widget _app(_FakeWorkersApi api, {List<PortfolioItem> work = const []}) => ProviderScope(
+  // No automatic retry: a failed load must stay failed until the person taps retry.
+  retry: (_, _) => null,
   overrides: [
     workersApiProvider.overrideWithValue(api),
     beautyApiProvider.overrideWithValue(_FakeBeautyApi(work)),
@@ -204,6 +199,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Work'), findsOneWidget);
+    await tester.ensureVisible(find.byType(Image).first);
+    await tester.pumpAndSettle();
     await tester.tap(find.byType(Image).first);
     await tester.pumpAndSettle();
     expect(find.text('Portfolio w1'), findsOneWidget);
