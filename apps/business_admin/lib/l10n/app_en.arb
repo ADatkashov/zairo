@@ -2039,6 +2039,8 @@
 
   "selectCity": "Select City",
   "@selectCity": {"description": "Label for city selection dropdown in business creation dialog."},
+  "cityPromptMessage": "Pick your city so customers there find you",
+  "@cityPromptMessage": {"description": "Hint card on the business page when no city is set; tapping opens the edit dialog."},
 
   "noCitiesAvailable": "No cities available",
   "@noCitiesAvailable": {"description": "Message shown when no cities are available for selection."},

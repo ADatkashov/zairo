@@ -27,6 +27,7 @@ import '../../../staff/presentation/providers/staff_admin_providers.dart';
 import '../../../staff/presentation/widgets/add_staff_dialog.dart';
 import '../../../staff/presentation/widgets/manage_staff_services_dialog.dart';
 import '../../../reviews/presentation/screens/reviews_screen.dart';
+import '../../../city/presentation/providers/city_providers.dart';
 import '../../../storage/presentation/providers/storage_providers.dart';
 import '../../data/models/admin_booking.dart';
 import '../../data/models/admin_payout.dart';
@@ -58,6 +59,17 @@ class SalonDetailScreen extends ConsumerStatefulWidget {
 
 class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
   late AdminProvider _provider = widget.provider;
+
+  Future<void> _editSalon() async {
+    final updated = await showDialog<AdminProvider>(
+      context: context,
+      builder: (_) => _EditSalonDialog(provider: _provider),
+    );
+    if (updated != null) {
+      setState(() => _provider = updated);
+      ref.invalidate(myProvidersProvider(_provider.ownerUserId));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,16 +117,7 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
           IconButton(
             icon: const Icon(Icons.edit_outlined),
             tooltip: l10n.editBusinessTooltip,
-            onPressed: () async {
-              final updated = await showDialog<AdminProvider>(
-                context: context,
-                builder: (_) => _EditSalonDialog(provider: _provider),
-              );
-              if (updated != null) {
-                setState(() => _provider = updated);
-                ref.invalidate(myProvidersProvider(_provider.ownerUserId));
-              }
-            },
+            onPressed: _editSalon,
           ),
         ],
       ),
@@ -128,6 +131,22 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen> {
                 statusLabel: _providerStatusLabel(l10n, _provider.status),
                 statusVariant: _providerStatusVariant(_provider.status),
               ),
+              // Without a city the business is listed everywhere and customers in its own city
+              // can't tell it apart: one tap to fix, right where the owner looks first.
+              if (_provider.cityCode == null) ...[
+                const SizedBox(height: FactorySpacing.space4),
+                FactoryCard(
+                  onTap: _editSalon,
+                  child: Row(
+                    children: [
+                      Icon(Icons.location_city_outlined, color: colors.primary),
+                      const SizedBox(width: FactorySpacing.space3),
+                      Expanded(child: Text(l10n.cityPromptMessage)),
+                      Icon(Icons.chevron_right_rounded, color: colors.textTertiary),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: FactorySpacing.space6),
               NeedsAttentionSection(providerId: _provider.id),
               _DashboardMetricsSection(providerId: _provider.id),
@@ -258,6 +277,9 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
   Uint8List? _pickedPhotoBytes;
   String? _pickedPhotoName;
 
+  /// The picked city code; starts as the business's current one (null = not set yet, left unchanged on save).
+  late String? _cityCode = widget.provider.cityCode;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -295,6 +317,22 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
             label: l10n.longitudeOptionalLabel,
           ),
           const SizedBox(height: FactorySpacing.space3),
+          // Best-effort list: while it loads (or fails) the field is simply absent and the city stays as it is.
+          ...ref.watch(activeCitiesProvider).maybeWhen(
+            data: (cities) => [
+              DropdownButtonFormField<String>(
+                initialValue: cities.any((c) => c.code == _cityCode) ? _cityCode : null,
+                isExpanded: true,
+                decoration: InputDecoration(labelText: l10n.selectCity, border: const OutlineInputBorder()),
+                items: [
+                  for (final city in cities) DropdownMenuItem(value: city.code, child: Text(city.name)),
+                ],
+                onChanged: _isSubmitting ? null : (value) => setState(() => _cityCode = value),
+              ),
+              const SizedBox(height: FactorySpacing.space3),
+            ],
+            orElse: () => const <Widget>[],
+          ),
           Text(l10n.coverPhotoLabel, style: Theme.of(context).textTheme.labelMedium),
           const SizedBox(height: FactorySpacing.space2),
           if (_pickedPhotoBytes != null) ...[
@@ -393,6 +431,7 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
             latitude: lat,
             longitude: lng,
             coverPhotoUrl: coverPhotoUrl,
+            cityCode: _cityCode,
           );
       if (!mounted) return;
       Navigator.of(context).pop(updated);

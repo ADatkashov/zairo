@@ -184,6 +184,53 @@ class ProviderApiTests {
     }
 
     @Test
+    void theOwnerPicksTheBusinessCityAndOmittingItKeepsIt() {
+        Registered owner = TestAuth.registerOwner(restTemplate, "salon-city-owner-" + UUID.randomUUID()
+                + "@example.com");
+        UUID providerId = createProvider(owner, "City Salon");
+        String path = "/api/v1/providers/" + providerId;
+
+        assertThat(restTemplate.getForEntity(path, java.util.Map.class).getBody().get("cityCode")).isNull();
+
+        ResponseEntity<java.util.Map> picked = restTemplate.exchange(path, HttpMethod.PUT, new HttpEntity<>(
+                new UpdateProviderRequest("City Salon", 43.25, 76.90, null, "almaty"),
+                TestAuth.authHeaders(owner.accessToken())), java.util.Map.class);
+        assertThat(picked.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(picked.getBody().get("cityCode")).isEqualTo("almaty");
+
+        // An edit that does not mention the city (an older app) keeps it.
+        ResponseEntity<java.util.Map> renamed = restTemplate.exchange(path, HttpMethod.PUT, new HttpEntity<>(
+                new UpdateProviderRequest("City Salon 2", 43.25, 76.90),
+                TestAuth.authHeaders(owner.accessToken())), java.util.Map.class);
+        assertThat(renamed.getBody().get("cityCode")).isEqualTo("almaty");
+
+        // A city that does not exist is a 400, and the old one stays.
+        ResponseEntity<java.util.Map> unknown = restTemplate.exchange(path, HttpMethod.PUT, new HttpEntity<>(
+                new UpdateProviderRequest("City Salon 2", 43.25, 76.90, null, "no-such-city"),
+                TestAuth.authHeaders(owner.accessToken())), java.util.Map.class);
+        assertThat(unknown.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(restTemplate.getForEntity(path, java.util.Map.class).getBody().get("cityCode"))
+                .isEqualTo("almaty");
+    }
+
+    @Test
+    void aBusinessCreatedWithACityKeepsItAndAnUnknownCityIsRejected() {
+        Registered owner = TestAuth.registerOwner(restTemplate, "salon-create-city-" + UUID.randomUUID()
+                + "@example.com");
+
+        ResponseEntity<java.util.Map> created = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
+                new HttpEntity<>(new CreateProviderRequest(owner.userId(), "Almaty Salon", "beauty", null, null,
+                        "almaty"), TestAuth.authHeaders(owner.accessToken())), java.util.Map.class);
+        assertThat(created.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(created.getBody().get("cityCode")).isEqualTo("almaty");
+
+        ResponseEntity<java.util.Map> unknown = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
+                new HttpEntity<>(new CreateProviderRequest(owner.userId(), "Nowhere Salon", "beauty", null, null,
+                        "no-such-city"), TestAuth.authHeaders(owner.accessToken())), java.util.Map.class);
+        assertThat(unknown.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
     void newProvidersStartPendingAndOnlyAnAdminCanModerateThem() {
         String runId = UUID.randomUUID().toString();
         Registered owner = TestAuth.registerOwner(restTemplate, "moderation-owner-" + runId + "@example.com");

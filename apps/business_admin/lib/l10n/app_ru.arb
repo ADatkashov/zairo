@@ -740,6 +740,7 @@
   "depositPercentageLabel": "Процент депозита (%)",
   "depositPercentageSaved": "Процент депозита обновлен",
   "selectCity": "Выберите город",
+  "cityPromptMessage": "Выберите город, чтобы вас находили клиенты рядом",
   "noCitiesAvailable": "Нет доступных городов",
   "errorLoadingCities": "Ошибка при загрузке городов",
 
