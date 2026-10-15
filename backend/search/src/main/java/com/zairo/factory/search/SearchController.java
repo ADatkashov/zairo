@@ -68,6 +68,9 @@ public class SearchController {
             @RequestParam(required = false) Double minRating,
             @Parameter(description = "Only providers with at least one OPEN availability slot right now.")
             @RequestParam(required = false, defaultValue = "false") boolean availableOnly,
+            @Parameter(description = "A city code (GET /cities). Only businesses of that city, plus those that have "
+                    + "not set a city yet.", example = "almaty")
+            @RequestParam(required = false) String city,
             @Parameter(description = "Ranking order — defaults to RECOMMENDED (a blended score) if omitted.")
             @RequestParam(required = false) SearchSort sort,
             @Parameter(description = "Zero-based page index.") @RequestParam(required = false, defaultValue = "0")
@@ -75,7 +78,7 @@ public class SearchController {
             @Parameter(description = "Page size, capped at 100.") @RequestParam(required = false,
                     defaultValue = "50") int size) {
         SearchResults results = searchService.search(vertical, businessTypeId, catalogServiceId, q, lat, lng,
-                minPrice, maxPrice, maxDistanceKm, minRating, availableOnly, sort, page, size);
+                minPrice, maxPrice, maxDistanceKm, minRating, availableOnly, sort, page, size, city);
         return ResponseEntity.ok().header("X-Total-Count", String.valueOf(results.totalCount()))
                 .body(results.content());
     }

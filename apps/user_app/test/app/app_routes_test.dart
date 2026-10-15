@@ -28,6 +28,7 @@ class _EmptyDiscoveryApi extends DiscoveryApi {
     double? minRating,
     bool availableOnly = false,
     String? sort,
+    String? cityCode,
   }) async => const [];
 }
 
