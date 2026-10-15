@@ -10,8 +10,12 @@ class WorkersApi {
 
   WorkersApi(this._dioClient);
 
-  Future<List<TopWorker>> listTop({int limit = 10}) async {
-    final response = await _dioClient.get('/workers/top', queryParameters: {'limit': limit});
+  /// [cityCode] narrows the list to that city (plus businesses that have not set one); null/empty = everywhere.
+  Future<List<TopWorker>> listTop({int limit = 10, String? cityCode}) async {
+    final response = await _dioClient.get(
+      '/workers/top',
+      queryParameters: {'limit': limit, if (cityCode != null && cityCode.isNotEmpty) 'city': cityCode},
+    );
     final data = response.data as List<dynamic>;
     return data.map((e) => TopWorker.fromJson(e as Map<String, dynamic>)).toList();
   }

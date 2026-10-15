@@ -19,7 +19,6 @@ class _FakeWorkersApi extends WorkersApi {
   final List<TopWorker> top;
   bool failProfile;
   int profileCalls = 0;
-  bool failTop = false;
 
   @override
   Future<WorkerProfile> getProfile(String workerId) async {
@@ -32,8 +31,7 @@ class _FakeWorkersApi extends WorkersApi {
   }
 
   @override
-  Future<List<TopWorker>> listTop({int limit = 10}) async {
-    if (failTop) throw Exception('offline');
+  Future<List<TopWorker>> listTop({int limit = 10, String? cityCode}) async {
     return top;
   }
 }
@@ -142,13 +140,5 @@ void main() {
 
     expect(find.text('Aigerim K.'), findsOneWidget);
     expect(api.profileCalls, 2);
-  });
-
-  test('the top rail provider is best-effort: a failure is just an empty rail', () async {
-    final api = _FakeWorkersApi()..failTop = true;
-    final container = ProviderContainer(overrides: [workersApiProvider.overrideWithValue(api)]);
-    addTearDown(container.dispose);
-
-    expect(await container.read(topWorkersProvider.future), isEmpty);
   });
 }

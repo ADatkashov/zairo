@@ -25,11 +25,13 @@ public class WorkerDirectoryController {
 
     @Operation(summary = "Best-rated workers", description = "Active masters, mechanics, cleaners and staff of "
             + "ACTIVE businesses ranked by the average rating of the reviews on their bookings; at least 3 reviews "
-            + "to qualify. `limit` is clamped to 1-20. No authentication required.")
+            + "to qualify. `limit` is clamped to 1-20. With `city` (a city code) only businesses of that city and "
+            + "those that have not set a city yet are counted. No authentication required.")
     @ApiResponse(responseCode = "200", description = "Best first; empty when nobody qualifies yet")
     @GetMapping("/api/v1/workers/top")
-    public List<TopWorkerResponse> top(@RequestParam(defaultValue = "10") int limit) {
-        return service.top(limit);
+    public List<TopWorkerResponse> top(@RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) String city) {
+        return service.top(limit, city);
     }
 
     @Operation(summary = "A worker's public page", description = "Name, photo, business, rating and the services "
