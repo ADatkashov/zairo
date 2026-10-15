@@ -124,6 +124,33 @@ class _AdDialogState extends ConsumerState<AdDialog> {
                   validator: (v) => (v == null || v.trim().isEmpty || isHttpsUrl(v)) ? null : l10n.adUrlInvalid,
                 ),
                 gap,
+                // What customers will see on Home, live as the fields change.
+                gap,
+                ListenableBuilder(
+                  listenable: Listenable.merge([_title, _subtitle, _imageUrl, _videoUrl]),
+                  builder: (context, _) {
+                    if (!isHttpsUrl(_imageUrl.text)) return const SizedBox.shrink();
+                    final subtitle = _subtitle.text.trim();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(l10n.adPreviewLabel, style: Theme.of(context).textTheme.labelMedium),
+                        const SizedBox(height: FactorySpacing.space2),
+                        AspectRatio(
+                          aspectRatio: 16 / 9,
+                          child: FactoryBannerCard(
+                            imageUrl: _imageUrl.text.trim(),
+                            title: _title.text.trim().isEmpty ? l10n.adFieldTitle : _title.text.trim(),
+                            subtitle: subtitle.isEmpty ? null : subtitle,
+                            tag: widget.banner?.providerId != null ? l10n.adSponsored : null,
+                            showPlay: isHttpsUrl(_videoUrl.text),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                gap,
                 // Tapping a banner with a video plays it; this is where a banner WITHOUT one goes.
                 DropdownButtonFormField<String?>(
                   initialValue: _linkTarget,

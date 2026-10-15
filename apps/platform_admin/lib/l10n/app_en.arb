@@ -32,6 +32,8 @@
   "@adFieldImageUrl": {"description": "adFieldImageUrl"},
   "adFieldVideoUrl": "Video link (https, optional)",
   "@adFieldVideoUrl": {"description": "adFieldVideoUrl"},
+  "adPreviewLabel": "Preview on Home",
+  "@adPreviewLabel": {"description": "adPreviewLabel"},
   "adFieldLinkTarget": "Tap opens (banner without a video)",
   "@adFieldLinkTarget": {"description": "adFieldLinkTarget"},
   "adLinkNone": "Nothing",
