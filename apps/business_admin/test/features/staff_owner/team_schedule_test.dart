@@ -12,7 +12,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-WorkerSummary _worker(String id, String name, {bool configured = false, DateTime? offUntil, String kind = 'MASTER'}) =>
+WorkerSummary _worker(
+  String id,
+  String name, {
+  bool configured = false,
+  DateTime? offUntil,
+  String kind = 'MASTER',
+  double? rating,
+  int reviews = 0,
+}) =>
     WorkerSummary(
       id: id,
       kind: kind,
@@ -21,6 +29,8 @@ WorkerSummary _worker(String id, String name, {bool configured = false, DateTime
       active: true,
       scheduleConfigured: configured,
       offUntil: offUntil,
+      averageRating: rating,
+      reviewCount: reviews,
     );
 
 class _FakeApi extends StaffOwnerApi {
@@ -119,6 +129,47 @@ Widget _wrap(_FakeApi api, Widget home) => ProviderScope(
     );
 
 void main() {
+  testWidgets('each person shows their rating and how far they are from the best masters list', (tester) async {
+    final api = _FakeApi([
+      _worker('w1', 'Aigerim', rating: 4.8, reviews: 5),
+      _worker('w2', 'Dana', rating: 5, reviews: 1),
+      _worker('w3', 'Eldar'),
+    ]);
+    await tester.pumpWidget(_wrap(api, const TeamScheduleScreen(providerId: 'p1')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('4.8'), findsOneWidget);
+    expect(find.text('Eligible for the best masters list'), findsOneWidget);
+    expect(find.text('2 more reviews to be among the best masters'), findsOneWidget);
+    expect(find.text('No reviews yet · 3 reviews put them among the best masters'), findsOneWidget);
+  });
+
+  testWidgets('one review short reads in the singular', (tester) async {
+    final api = _FakeApi([_worker('w1', 'Aigerim', rating: 4, reviews: 2)]);
+    await tester.pumpWidget(_wrap(api, const TeamScheduleScreen(providerId: 'p1')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('1 more review to be among the best masters'), findsOneWidget);
+  });
+
+  test('WorkerSummary reads the rating, and its absence', () {
+    final base = {
+      'id': 'w1',
+      'kind': 'MASTER',
+      'displayName': 'A',
+      'photoUrl': null,
+      'active': true,
+      'scheduleConfigured': false,
+      'offUntil': null,
+    };
+    final rated = WorkerSummary.fromJson({...base, 'averageRating': 4.5, 'reviewCount': 2});
+    expect(rated.averageRating, 4.5);
+    expect(rated.reviewCount, 2);
+    final unrated = WorkerSummary.fromJson(base);
+    expect(unrated.averageRating, isNull);
+    expect(unrated.reviewCount, 0);
+  });
+
   testWidgets('lists the team with who has their own schedule, and the choice switch updates the setting', (
     tester,
   ) async {
