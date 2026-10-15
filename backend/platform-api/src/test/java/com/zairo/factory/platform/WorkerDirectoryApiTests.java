@@ -107,6 +107,8 @@ class WorkerDirectoryApiTests {
     void deactivatedMastersAndNonActiveProvidersAreLeftOut() {
         String runId = UUID.randomUUID().toString();
         Registered owner = TestAuth.registerOwner(restTemplate, "top-hidden-owner-" + runId + "@example.com");
+        // FREE allows one business per owner; this test needs two.
+        TestAuth.upgradeToPro(restTemplate, owner);
         UUID activeProvider = createProvider(owner, "Visible " + runId);
         approve(activeProvider);
         UUID pendingProvider = createProvider(owner, "Pending " + runId);
@@ -177,6 +179,8 @@ class WorkerDirectoryApiTests {
     void theCityFilterKeepsThatCitysBusinessesAndThoseWithoutACity() {
         String runId = UUID.randomUUID().toString();
         Registered owner = TestAuth.registerOwner(restTemplate, "city-owner-" + runId + "@example.com");
+        // FREE allows one business per owner; this test needs three.
+        TestAuth.upgradeToPro(restTemplate, owner);
         UUID[] staff = new UUID[3];
         String[] cities = {"almaty", "aktau", null};
         for (int i = 0; i < 3; i++) {
@@ -285,8 +289,7 @@ class WorkerDirectoryApiTests {
 
     private void review(Registered owner, UUID providerId, UUID serviceId, UUID staffId, int rating,
             Integer workerRating, int hour, String runId) {
-        Registered customer = TestAuth.registerCustomer(restTemplate, "top-cust-" + UUID.randomUUID() + "-" + runId
-                + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "top-cust-" + UUID.randomUUID() + "@example.com");
         Instant start = Instant.now().plus(hour, ChronoUnit.DAYS);
         var slotRequest = new CreateAvailabilitySlotRequest(start, start.plus(60, ChronoUnit.MINUTES));
         UUID slotId = UUID.fromString(restTemplate.exchange("/api/v1/providers/" + providerId
