@@ -17,10 +17,16 @@ import '../../l10n/app_localizations.dart';
 /// (there is no single-provider search endpoint yet), so it is usually served
 /// from cache.
 class ProviderDetailRoute extends ConsumerWidget {
-  const ProviderDetailRoute({super.key, required this.providerId, this.startAtBooking = false});
+  const ProviderDetailRoute({
+    super.key,
+    required this.providerId,
+    this.startAtBooking = false,
+    this.preselectedWorker,
+  });
 
   final String providerId;
   final bool startAtBooking;
+  final PreselectedWorker? preselectedWorker;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -32,7 +38,11 @@ class ProviderDetailRoute extends ConsumerWidget {
       data: (results) {
         for (final result in results) {
           if (result.id == providerId) {
-            return ProviderDetailScreen(provider: result, startAtBooking: startAtBooking);
+            return ProviderDetailScreen(
+              provider: result,
+              startAtBooking: startAtBooking,
+              preselectedWorker: preselectedWorker,
+            );
           }
         }
         return _RouteMessage(
