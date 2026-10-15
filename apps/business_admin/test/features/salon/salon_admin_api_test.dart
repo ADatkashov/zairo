@@ -171,7 +171,13 @@ void main() {
       http.reply('PUT', '/providers/p1', _provider);
       await api.updateProvider(providerId: 'p1', name: 'New name');
       expect(http.bodyOf('PUT', '/providers/p1'),
-          {'name': 'New name', 'latitude': null, 'longitude': null, 'coverPhotoUrl': null});
+          {'name': 'New name', 'latitude': null, 'longitude': null, 'coverPhotoUrl': null, 'cityCode': null});
+    });
+
+    test('updateProvider sends the chosen city', () async {
+      http.reply('PUT', '/providers/p1', _provider);
+      await api.updateProvider(providerId: 'p1', name: 'New name', cityCode: 'almaty');
+      expect(http.bodyOf('PUT', '/providers/p1')['cityCode'], 'almaty');
     });
   });
 
