@@ -43,6 +43,20 @@ void main() {
       expect(http.calls('GET', '/workers/top').single.queryParameters, {'limit': 5});
     });
 
+    test('sends the city only when there is one', () async {
+      final http = FakeHttp()..reply('GET', '/workers/top', <Object>[]);
+      final api = WorkersApi(http.client());
+
+      await api.listTop(cityCode: 'almaty');
+      await api.listTop();
+      await api.listTop(cityCode: '');
+
+      final sent = http.calls('GET', '/workers/top');
+      expect(sent[0].queryParameters, {'limit': 10, 'city': 'almaty'});
+      expect(sent[1].queryParameters, {'limit': 10});
+      expect(sent[2].queryParameters, {'limit': 10});
+    });
+
     test('parses a profile with a rating and its services', () async {
       final http = FakeHttp()
         ..reply('GET', '/workers/w1', {

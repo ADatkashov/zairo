@@ -31,9 +31,13 @@ public class WorkerDirectoryService {
     }
 
     @Transactional(readOnly = true)
-    public List<TopWorkerResponse> top(int limit) {
-        return catalog.topRated(MIN_REVIEWS_FOR_TOP, clampLimit(limit)).stream().map(TopWorkerResponse::from)
-                .toList();
+    public List<TopWorkerResponse> top(int limit, String city) {
+        return catalog.topRated(MIN_REVIEWS_FOR_TOP, clampLimit(limit), blankToNull(city)).stream()
+                .map(TopWorkerResponse::from).toList();
+    }
+
+    static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     static int clampLimit(int limit) {

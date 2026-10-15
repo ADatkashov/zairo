@@ -169,9 +169,11 @@ public class WorkerCatalog {
 
     /**
      * Active workers of ACTIVE businesses, best average review rating first, across all four directories. A worker
-     * needs at least {@code minReviews} reviews so that one lucky 5-star does not outrank a long record.
+     * needs at least {@code minReviews} reviews so that one lucky 5-star does not outrank a long record. With a
+     * {@code city}, only businesses of that city count — plus businesses that have not set a city yet, so that the
+     * list is not empty while owners are still filling their profile in.
      */
-    public List<Ranked> topRated(int minReviews, int limit) {
+    public List<Ranked> topRated(int minReviews, int limit, String city) {
         List<Ranked> all = new ArrayList<>();
         for (Spec spec : SPECS) {
             all.addAll(jdbc.sql("select w.id, w.provider_id, w.user_id, w.display_name, w.photo_url, w.is_active,"
@@ -179,8 +181,10 @@ public class WorkerCatalog {
                     + " from " + spec.table() + " w join provider p on p.id = w.provider_id join ("
                     + bookingsOfWorkers(spec) + ") wb on wb.worker_id = w.id join review r on r.booking_id"
                     + " = wb.booking_id where w.is_active and p.status = 'ACTIVE'"
+                    + " and (cast(:city as varchar) is null or p.city_code is null or p.city_code = :city)"
                     + " group by w.id, w.provider_id, w.user_id, w.display_name, w.photo_url, w.is_active, p.name"
                     + " having count(r.id) >= :min").param("min", minReviews)
+                    .param("city", city)
                     .query((rs, n) -> new Ranked(map(spec.kind(), rs), rs.getString("provider_name"),
                             rs.getDouble("average_rating"), rs.getLong("review_count")))
                     .list());

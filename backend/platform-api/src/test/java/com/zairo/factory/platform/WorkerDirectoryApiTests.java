@@ -29,6 +29,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * Against a real Postgres (Testcontainers): GET /workers/top ranks workers by the average rating of
@@ -48,6 +49,9 @@ class WorkerDirectoryApiTests {
 
     @Autowired
     private CredentialRepository credentialRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @Test
     void ranksByAverageRatingAndNeedsThreeReviews() {
@@ -150,6 +154,34 @@ class WorkerDirectoryApiTests {
                 new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
         assertThat(restTemplate.getForEntity("/api/v1/workers/" + staffId, Map.class).getStatusCode())
                 .isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void theCityFilterKeepsThatCitysBusinessesAndThoseWithoutACity() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "city-owner-" + runId + "@example.com");
+        UUID[] staff = new UUID[3];
+        String[] cities = {"almaty", "aktau", null};
+        for (int i = 0; i < 3; i++) {
+            UUID providerId = createProvider(owner, "City Studio " + i + " " + runId);
+            approve(providerId);
+            jdbcTemplate.update("update provider set city_code = ? where id = ?", cities[i], providerId);
+            UUID serviceId = createService(owner, providerId);
+            staff[i] = createStaff(owner, providerId, "City Master " + i);
+            restTemplate.exchange("/api/v1/staff/" + staff[i] + "/services/" + serviceId, HttpMethod.POST,
+                    new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+            for (int r = 0; r < 3; r++) {
+                review(owner, providerId, serviceId, staff[i], 5, r + 1 + i * 3, runId);
+            }
+        }
+
+        ResponseEntity<Map[]> response = restTemplate.getForEntity("/api/v1/workers/top?limit=20&city=almaty",
+                Map[].class);
+        List<String> ids = List.of(response.getBody()).stream().map(m -> m.get("id").toString()).toList();
+
+        assertThat(ids).contains(staff[0].toString(), staff[2].toString()).doesNotContain(staff[1].toString());
+        assertThat(getTop(20).stream().map(m -> m.get("id").toString()).toList()).contains(staff[0].toString(),
+                staff[1].toString(), staff[2].toString());
     }
 
     @Test
