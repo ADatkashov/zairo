@@ -16,6 +16,7 @@
   "adFieldSubtitle": "Подзаголовок (необязательно)",
   "adFieldImageUrl": "Ссылка на обложку (https)",
   "adFieldVideoUrl": "Ссылка на видео (https, необязательно)",
+  "adPreviewLabel": "Так увидят на главной",
   "adFieldLinkTarget": "Куда ведёт нажатие (баннер без видео)",
   "adLinkNone": "Никуда",
   "adLinkRewards": "Мои бонусы",
