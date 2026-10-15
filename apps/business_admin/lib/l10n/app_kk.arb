@@ -731,6 +731,7 @@
   "chatSendButtonTooltip": "Жіберу",
   "chatBookingChipLabel": "Брондау туралы",
   "selectCity": "Қаланы таңдаңыз",
+  "cityPromptMessage": "Қалаңызды таңдаңыз, сонда сізді жақын тұрған клиенттер табады",
   "noCitiesAvailable": "Қол жетімді қалалар жоқ",
   "errorLoadingCities": "Қалалар жүктелуінде қате",
 
