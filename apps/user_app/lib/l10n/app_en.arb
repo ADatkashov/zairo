@@ -772,6 +772,10 @@
   "@reviewLeaveButton": {"description": "Button (and dialog title) to open the leave-a-review dialog."},
   "reviewAboutWorker": "Your visit with {name}",
   "@reviewAboutWorker": {"description": "Line in the leave-a-review dialog naming the person the visit was with.", "placeholders": {"name": {"type": "String"}}},
+  "reviewRateBusiness": "The business",
+  "@reviewRateBusiness": {"description": "Label above the stars that rate the business in the review dialog (shown when the visit was with a named person)."},
+  "reviewWorkerOptionalHint": "Optional. Without it, your rating above counts for {name} too.",
+  "@reviewWorkerOptionalHint": {"description": "Hint under the optional stars that rate the person the visit was with.", "placeholders": {"name": {"type": "String"}}},
 
   "reviewCommentHint": "Comment (optional)",
   "@reviewCommentHint": {"description": "Leave-a-review dialog's comment field hint."},

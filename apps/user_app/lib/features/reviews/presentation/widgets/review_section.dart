@@ -101,6 +101,9 @@ class _LeaveReviewDialog extends ConsumerStatefulWidget {
 
 class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
   int _rating = 0;
+
+  /// The optional separate rating of the person; 0 = not given (the one rating counts for them too).
+  int _workerRating = 0;
   final _commentController = TextEditingController();
   bool _isSubmitting = false;
   String? _error;
@@ -144,22 +147,21 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
                   ],
                 ),
               ),
-            Wrap(
-              children: List.generate(
-                5,
-                (i) => IconButton(
-                  onPressed: _isSubmitting
-                      ? null
-                      : () => setState(() => _rating = i + 1),
-                  tooltip: l10n.starRatingSemanticLabel(i + 1),
-                  icon: Icon(
-                    Symbols.star_rounded,
-                    fill: i < _rating ? 1 : 0,
-                    color: colors.accent,
-                  ),
+            if (worker != null)
+              Text(l10n.reviewRateBusiness, style: Theme.of(context).textTheme.labelLarge),
+            _stars(_rating, (value) => setState(() => _rating = value), l10n, colors),
+            // A second, optional row: the business and the person can deserve different marks.
+            if (worker != null) ...[
+              Text(worker.displayName, style: Theme.of(context).textTheme.labelLarge),
+              _stars(_workerRating, (value) => setState(() => _workerRating = value), l10n, colors),
+              Padding(
+                padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
+                child: Text(
+                  l10n.reviewWorkerOptionalHint(worker.displayName),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
                 ),
               ),
-            ),
+            ],
             FactoryTextField(
               controller: _commentController,
               enabled: !_isSubmitting,
@@ -194,6 +196,19 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
     );
   }
 
+  Widget _stars(int value, ValueChanged<int> onChanged, AppLocalizations l10n, FactoryColors colors) {
+    return Wrap(
+      children: List.generate(
+        5,
+        (i) => IconButton(
+          onPressed: _isSubmitting ? null : () => onChanged(i + 1),
+          tooltip: l10n.starRatingSemanticLabel(i + 1),
+          icon: Icon(Symbols.star_rounded, fill: i < value ? 1 : 0, color: colors.accent),
+        ),
+      ),
+    );
+  }
+
   Future<void> _submit() async {
     setState(() {
       _isSubmitting = true;
@@ -206,6 +221,7 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
           .createReview(
             bookingId: widget.bookingId,
             rating: _rating,
+            workerRating: _workerRating > 0 ? _workerRating : null,
             comment: comment.isEmpty ? null : comment,
           );
       if (!mounted) return;

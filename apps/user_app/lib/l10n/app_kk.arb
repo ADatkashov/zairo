@@ -246,6 +246,8 @@
 
   "reviewLeaveButton": "Пікір қалдыру",
   "reviewAboutWorker": "{name} шебермен кездесуіңіз",
+  "reviewRateBusiness": "Бизнес",
+  "reviewWorkerOptionalHint": "Міндетті емес. Онсыз жоғарыдағы баға {name} үшін де есептеледі.",
   "reviewCommentHint": "Пікір (міндетті емес)",
   "reviewCancel": "Бас тарту",
   "reviewSubmit": "Жіберу",

@@ -70,7 +70,8 @@ public class ReviewController {
     public ReviewResponse create(@Parameter(description = "The booking's id.") @PathVariable UUID bookingId,
             @Valid @RequestBody CreateReviewRequest request, HttpServletRequest httpRequest) {
         UUID callerId = CurrentUser.requireUserId(httpRequest);
-        Review review = reviewService.createReview(bookingId, callerId, request.rating(), request.comment());
+        Review review = reviewService.createReview(bookingId, callerId, request.rating(), request.workerRating(),
+                request.comment());
         return ReviewResponse.from(review);
     }
 
