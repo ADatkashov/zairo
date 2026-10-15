@@ -1036,6 +1036,10 @@
 
   "myRewardsTitle": "My Rewards",
   "@myRewardsTitle": {"description": "Profile tile label and My Rewards screen's app bar title."},
+  "profileRewardsSummary": "{points} pts · {count, plural, one{{count} business} other{{count} businesses}}",
+  "@profileRewardsSummary": {"description": "Hint under My rewards in Profile: total points across businesses and how many businesses they are in.", "placeholders": {"points": {"type": "int"}, "count": {"type": "int"}}},
+  "profileRewardsExpiring": "{points} pts expire within 30 days",
+  "@profileRewardsExpiring": {"description": "Warning under My rewards in Profile: points that expire within 30 days.", "placeholders": {"points": {"type": "int"}}},
 
   "loyaltyRedemptionsTitle": "My redemption codes",
   "@loyaltyRedemptionsTitle": {"description": "Profile tile label and My Redemptions screen's app bar title."},

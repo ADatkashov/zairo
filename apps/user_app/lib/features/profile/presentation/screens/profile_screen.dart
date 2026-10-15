@@ -17,6 +17,8 @@ import '../../../messaging/presentation/providers/message_seen_provider.dart';
 import '../../../notifications/presentation/widgets/notification_bell_button.dart';
 import '../../../staff/presentation/providers/staff_cabinet_providers.dart';
 import '../../../favorites/presentation/providers/favorites_providers.dart';
+import '../../../loyalty/data/models/loyalty.dart';
+import '../../../loyalty/presentation/providers/loyalty_providers.dart';
 import '../widgets/change_avatar_dialog.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -332,6 +334,8 @@ class _LoggedInView extends ConsumerWidget {
         const SizedBox(height: FactorySpacing.space2),
         FactorySelectableTile(
           title: l10n.myRewardsTitle,
+          // The one number people come back for: how many points they have, and whether any are about to burn.
+          subtitle: _rewardsSummary(ref, l10n, textTheme, colors),
           leading: _MenuIcon(Symbols.redeem_rounded, color: colors.accentInk, tint: colors.accentTint.withValues(alpha: 0.45)),
           trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
           onTap: () => context.push(AppRoutes.rewards),
@@ -414,6 +418,30 @@ Future<void> _confirmLogOut(BuildContext context, WidgetRef ref) async {
 /// text/icon on a coral-tint fill, distinct from every other Factory
 /// button variant (which are all neutral or primary-colored), so this is
 /// its own small widget rather than a new [FactoryButtonVariant].
+/// "320 points · 2 businesses" under My rewards, plus a warning when some expire within 30 days. Nothing while it
+/// loads, on error, or before the first points — it is a hint, not worth a state of its own.
+Widget? _rewardsSummary(WidgetRef ref, AppLocalizations l10n, TextTheme textTheme, FactoryColors colors) {
+  final businesses = ref.watch(myLoyaltyProvider).value ?? const <LoyaltyBusinessSummary>[];
+  final active = businesses.where((b) => b.pointsBalance > 0).toList();
+  if (active.isEmpty) return null;
+  final points = active.fold<int>(0, (sum, b) => sum + b.pointsBalance);
+  final expiring = businesses.fold<int>(0, (sum, b) => sum + b.pointsExpiringSoon30d);
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        l10n.profileRewardsSummary(points, active.length),
+        style: textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+      ),
+      if (expiring > 0)
+        Text(
+          l10n.profileRewardsExpiring(expiring),
+          style: textTheme.bodySmall?.copyWith(color: colors.warning, fontWeight: FontWeight.w700),
+        ),
+    ],
+  );
+}
+
 class _LogOutButton extends StatelessWidget {
   const _LogOutButton({required this.onPressed});
 

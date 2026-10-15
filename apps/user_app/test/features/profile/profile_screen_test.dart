@@ -15,6 +15,9 @@ import 'package:zairo/features/favorites/data/favorites_api.dart';
 import 'package:zairo/features/favorites/data/models/favorite_provider.dart';
 import 'package:zairo/features/favorites/presentation/providers/favorites_providers.dart';
 import 'package:zairo/features/favorites/presentation/screens/favorites_screen.dart';
+import 'package:zairo/features/loyalty/data/api/loyalty_api.dart';
+import 'package:zairo/features/loyalty/data/models/loyalty.dart';
+import 'package:zairo/features/loyalty/presentation/providers/loyalty_providers.dart';
 import 'package:zairo/features/profile/presentation/screens/profile_screen.dart';
 import 'package:zairo/l10n/app_localizations.dart';
 
@@ -46,6 +49,31 @@ class _FakeFavoritesApi extends FavoritesApi {
 
   @override
   Future<List<FavoriteProvider>> listFavorites(String userId) async => _favorites;
+}
+
+class _FakeLoyaltyApi extends LoyaltyApi {
+  _FakeLoyaltyApi(this._rows) : super(DioClient(Dio()));
+
+  final List<LoyaltyBusinessSummary> _rows;
+
+  @override
+  Future<List<LoyaltyBusinessSummary>> myLoyalty() async => _rows;
+}
+
+LoyaltyBusinessSummary _points(String id, int balance, {int expiring = 0}) => LoyaltyBusinessSummary(
+  providerId: id,
+  providerName: id,
+  programEnabled: true,
+  pointsBalance: balance,
+  lifetimeEarned: balance,
+  pointsExpiringSoon30d: expiring,
+);
+
+/// The menu is a long list: a tall window builds the My rewards row without scrolling.
+void _useTallWindow(WidgetTester tester) {
+  tester.view.physicalSize = const Size(800, 3000);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
 }
 
 Widget _wrap(AuthController controller, {List<Override> extraOverrides = const []}) => ProviderScope(
@@ -193,5 +221,47 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Bookings page'), findsOneWidget);
+  });
+
+  testWidgets('My rewards shows the total points and how many businesses they are in', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(
+      _wrap(
+        _LoggedInAuthController(),
+        extraOverrides: [
+          loyaltyApiProvider.overrideWithValue(_FakeLoyaltyApi([_points('a', 120), _points('b', 200), _points('c', 0)])),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('320 pts · 2 businesses'), findsOneWidget);
+    expect(find.textContaining('expire'), findsNothing);
+  });
+
+  testWidgets('My rewards warns when some points expire within 30 days', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(
+      _wrap(
+        _LoggedInAuthController(),
+        extraOverrides: [
+          loyaltyApiProvider.overrideWithValue(_FakeLoyaltyApi([_points('a', 120, expiring: 50)])),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('120 pts · 1 business'), findsOneWidget);
+    expect(find.text('50 pts expire within 30 days'), findsOneWidget);
+  });
+
+  testWidgets('My rewards has no hint before the first points', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(
+      _wrap(_LoggedInAuthController(), extraOverrides: [loyaltyApiProvider.overrideWithValue(_FakeLoyaltyApi([]))]),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining(' pts'), findsNothing);
   });
 }
