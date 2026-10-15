@@ -1,8 +1,11 @@
 package com.zairo.factory.workforce;
 
+import com.zairo.factory.booking.Booking;
+import com.zairo.factory.booking.BookingRepository;
 import com.zairo.factory.providers.Provider;
 import com.zairo.factory.providers.ProviderRepository;
 import com.zairo.factory.providers.ProviderStatus;
+import com.zairo.factory.workforce.WorkerDirectoryDtos.BookingWorkerResponse;
 import com.zairo.factory.workforce.WorkerDirectoryDtos.TopWorkerResponse;
 import com.zairo.factory.workforce.WorkerDirectoryDtos.WorkerProfileResponse;
 import com.zairo.factory.workforce.WorkerDirectoryDtos.WorkerReviewResponse;
@@ -28,10 +31,13 @@ public class WorkerDirectoryService {
 
     private final WorkerCatalog catalog;
     private final ProviderRepository providerRepository;
+    private final BookingRepository bookingRepository;
 
-    public WorkerDirectoryService(WorkerCatalog catalog, ProviderRepository providerRepository) {
+    public WorkerDirectoryService(WorkerCatalog catalog, ProviderRepository providerRepository,
+            BookingRepository bookingRepository) {
         this.catalog = catalog;
         this.providerRepository = providerRepository;
+        this.bookingRepository = bookingRepository;
     }
 
     @Transactional(readOnly = true)
@@ -67,5 +73,22 @@ public class WorkerDirectoryService {
                 worker.displayName(), worker.photoUrl(), catalog.bioOf(worker).orElse(null),
                 rating.reviewCount() == 0 ? null : Math.round(rating.averageRating() * 10) / 10.0,
                 rating.reviewCount(), reviews, services);
+    }
+
+    /**
+     * Who the booking is with — so the review prompt can say whose work is being rated. Only the customer who made
+     * the booking may ask (403 otherwise); 404 when the booking has no named person ("any master" bookings that were
+     * never assigned, or a business that works without a team).
+     */
+    @Transactional(readOnly = true)
+    public BookingWorkerResponse workerOfBooking(UUID bookingId, UUID userId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: " + bookingId));
+        if (!booking.getUserId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your booking");
+        }
+        Worker worker = catalog.workerOfBooking(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No person on this booking"));
+        return new BookingWorkerResponse(worker.id(), worker.kind(), worker.displayName(), worker.photoUrl());
     }
 }

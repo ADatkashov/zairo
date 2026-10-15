@@ -118,5 +118,22 @@ void main() {
       expect(profile.hasPortfolio, isFalse);
       expect(profile.services, isEmpty);
     });
+
+    test('reads who a booking is with', () async {
+      final http = FakeHttp()
+        ..reply('GET', '/bookings/b1/worker', {
+          'id': 'w1',
+          'kind': 'MASTER',
+          'displayName': 'Aigerim',
+          'photoUrl': 'https://cdn.example/a.jpg',
+        });
+
+      final worker = await WorkersApi(http.client()).getBookingWorker('b1');
+
+      expect(worker.id, 'w1');
+      expect(worker.kind, 'MASTER');
+      expect(worker.displayName, 'Aigerim');
+      expect(worker.photoUrl, 'https://cdn.example/a.jpg');
+    });
   });
 }

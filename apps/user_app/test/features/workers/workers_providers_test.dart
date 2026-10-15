@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zairo/features/city/data/models/city.dart';
 import 'package:zairo/features/city/presentation/providers/city_providers.dart';
+import 'package:zairo/features/workers/data/models/booking_worker.dart';
 import 'package:zairo/features/workers/data/models/top_worker.dart';
 import 'package:zairo/features/workers/data/workers_api.dart';
 import 'package:zairo/features/workers/presentation/providers/workers_providers.dart';
@@ -25,6 +26,7 @@ class _FakeWorkersApi extends WorkersApi {
   final bool fail;
   String? lastCity;
   int calls = 0;
+  bool failBookingWorker = false;
 
   @override
   Future<List<TopWorker>> listTop({int limit = 10, String? cityCode}) async {
@@ -32,6 +34,12 @@ class _FakeWorkersApi extends WorkersApi {
     lastCity = cityCode;
     if (fail) throw Exception('offline');
     return [_worker];
+  }
+
+  @override
+  Future<BookingWorker> getBookingWorker(String bookingId) async {
+    if (failBookingWorker) throw Exception('404');
+    return const BookingWorker(id: 'w1', kind: 'MASTER', displayName: 'Aigerim');
   }
 }
 
@@ -90,5 +98,14 @@ void main() {
     final container = _container(_FakeWorkersApi(fail: true), city: _almaty);
 
     expect(await container.read(topWorkersProvider.future), isEmpty);
+  });
+
+  test('whom a booking is with; none when there is nobody (or the lookup fails)', () async {
+    final api = _FakeWorkersApi();
+    final container = _container(api);
+    expect((await container.read(bookingWorkerProvider('b1').future))?.displayName, 'Aigerim');
+
+    api.failBookingWorker = true;
+    expect(await container.read(bookingWorkerProvider('b2').future), isNull);
   });
 }
