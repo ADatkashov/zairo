@@ -202,6 +202,32 @@ class WorkerDirectoryApiTests {
     }
 
     @Test
+    void aSeparateRatingOfTheMasterCountsForThemAndNotTheBusiness() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "wr-owner-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Worker Rating Studio " + runId);
+        approve(providerId);
+        UUID serviceId = createService(owner, providerId);
+        UUID master = createStaff(owner, providerId, "Rated Apart");
+        restTemplate.exchange("/api/v1/staff/" + master + "/services/" + serviceId, HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+        // Great salon (5), but the master himself was 3 each time.
+        for (int i = 0; i < 3; i++) {
+            review(owner, providerId, serviceId, master, 5, 3, i + 1, runId);
+        }
+
+        Map<?, ?> page = restTemplate.getForEntity("/api/v1/workers/" + master, Map.class).getBody();
+        assertThat(((Number) page.get("averageRating")).doubleValue()).isEqualTo(3.0);
+        Map<?, ?> top = getTop(20).stream().filter(m -> m.get("id").equals(master.toString())).findFirst()
+                .orElseThrow();
+        assertThat(((Number) top.get("averageRating")).doubleValue()).isEqualTo(3.0);
+        // The business's own summary still counts the shared rating (5).
+        Map<?, ?> summary = restTemplate.getForEntity("/api/v1/providers/" + providerId + "/reviews/summary",
+                Map.class).getBody();
+        assertThat(((Number) summary.get("average")).doubleValue()).isEqualTo(5.0);
+    }
+
+    @Test
     void limitIsClampedAndNeedsNoToken() {
         assertThat(getTop(0).size()).isLessThanOrEqualTo(1);
         assertThat(getTop(1000).size()).isLessThanOrEqualTo(20);
@@ -254,6 +280,11 @@ class WorkerDirectoryApiTests {
 
     private void review(Registered owner, UUID providerId, UUID serviceId, UUID staffId, int rating, int hour,
             String runId) {
+        review(owner, providerId, serviceId, staffId, rating, null, hour, runId);
+    }
+
+    private void review(Registered owner, UUID providerId, UUID serviceId, UUID staffId, int rating,
+            Integer workerRating, int hour, String runId) {
         Registered customer = TestAuth.registerCustomer(restTemplate, "top-cust-" + UUID.randomUUID() + "-" + runId
                 + "@example.com");
         Instant start = Instant.now().plus(hour, ChronoUnit.DAYS);
@@ -272,7 +303,7 @@ class WorkerDirectoryApiTests {
         restTemplate.exchange("/api/v1/bookings/" + bookingId + "/complete", HttpMethod.POST,
                 new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
         ResponseEntity<Map> reviewed = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/reviews",
-                HttpMethod.POST, new HttpEntity<>(new CreateReviewRequest(rating, "ok"),
+                HttpMethod.POST, new HttpEntity<>(new CreateReviewRequest(rating, "ok", workerRating),
                         TestAuth.authHeaders(customer.accessToken())), Map.class);
         assertThat(reviewed.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }

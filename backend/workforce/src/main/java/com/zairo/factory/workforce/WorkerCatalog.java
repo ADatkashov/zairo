@@ -177,7 +177,7 @@ public class WorkerCatalog {
         List<Ranked> all = new ArrayList<>();
         for (Spec spec : SPECS) {
             all.addAll(jdbc.sql("select w.id, w.provider_id, w.user_id, w.display_name, w.photo_url, w.is_active,"
-                    + " p.name as provider_name, avg(r.rating) as average_rating, count(r.id) as review_count"
+                    + " p.name as provider_name, avg(coalesce(r.worker_rating, r.rating)) as average_rating, count(r.id) as review_count"
                     + " from " + spec.table() + " w join provider p on p.id = w.provider_id join ("
                     + bookingsOfWorkers(spec) + ") wb on wb.worker_id = w.id join review r on r.booking_id"
                     + " = wb.booking_id where w.is_active and p.status = 'ACTIVE'"
@@ -199,7 +199,7 @@ public class WorkerCatalog {
     /** This worker's rating alone: {@code reviewCount} 0 when nobody has reviewed them yet. */
     public Ranked ratingOf(Worker worker, String providerName) {
         Spec spec = spec(worker.kind());
-        return jdbc.sql("select coalesce(avg(r.rating), 0) as average_rating, count(r.id) as review_count from ("
+        return jdbc.sql("select coalesce(avg(coalesce(r.worker_rating, r.rating)), 0) as average_rating, count(r.id) as review_count from ("
                 + bookingsOfWorkers(spec) + ") wb join review r on r.booking_id = wb.booking_id"
                 + " where wb.worker_id = :id").param("id", worker.id())
                 .query((rs, n) -> new Ranked(worker, providerName, rs.getDouble("average_rating"),
@@ -221,7 +221,7 @@ public class WorkerCatalog {
     /** The newest reviews on this worker's bookings. */
     public List<WorkerReview> latestReviews(Worker worker, int limit) {
         Spec spec = spec(worker.kind());
-        return jdbc.sql("select r.rating, r.comment, r.created_at, r.business_reply from (" + bookingsOfWorkers(spec)
+        return jdbc.sql("select coalesce(r.worker_rating, r.rating) as rating, r.comment, r.created_at, r.business_reply from (" + bookingsOfWorkers(spec)
                 + ") wb join review r on r.booking_id = wb.booking_id where wb.worker_id = :id"
                 + " order by r.created_at desc limit :limit").param("id", worker.id()).param("limit", limit)
                 .query((rs, n) -> new WorkerReview(rs.getInt("rating"), rs.getString("comment"),
