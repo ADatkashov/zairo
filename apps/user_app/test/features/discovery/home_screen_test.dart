@@ -107,7 +107,7 @@ class _FakeWorkersApi extends WorkersApi {
   final List<TopWorker> _top;
 
   @override
-  Future<List<TopWorker>> listTop({int limit = 10}) async => _top;
+  Future<List<TopWorker>> listTop({int limit = 10, String? cityCode}) async => _top;
 }
 
 const _aigerim = TopWorker(

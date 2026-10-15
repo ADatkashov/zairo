@@ -112,6 +112,8 @@
   "homeTopMastersTitle": "Үздік шеберлер",
   "workerPageTitle": "Шебер",
   "workerBusinessLabel": "Жұмыс орны",
+  "workerAboutTitle": "Шебер туралы",
+  "workerWorkTitle": "Жұмыстар",
   "workerServicesTitle": "Қызметтер",
   "workerServicesEmpty": "Қызметтер әлі көрсетілмеген.",
   "workerNoReviews": "Әзірге пікір жоқ",
@@ -240,6 +242,7 @@
   "errorPortfolioImageLoadFailed": "Бұл суретті жүктеу мүмкін болмады.",
 
   "reviewLeaveButton": "Пікір қалдыру",
+  "reviewAboutWorker": "{name} шебермен кездесуіңіз",
   "reviewCommentHint": "Пікір (міндетті емес)",
   "reviewCancel": "Бас тарту",
   "reviewSubmit": "Жіберу",

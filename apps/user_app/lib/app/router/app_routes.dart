@@ -94,8 +94,18 @@ abstract final class AppRoutes {
   ///
   /// With [book] the business opens already scrolled to the booking steps
   /// (services, then times) — what a "Book" button on a card wants.
-  static String provider(String providerId, {bool book = false}) =>
-      book ? '/provider/$providerId?book=1' : '/provider/$providerId';
+  ///
+  /// With [workerId] and [workerKind] (MASTER, MECHANIC, CLEANER or STAFF) that
+  /// person is already picked in the booking steps — what "Book" on a master's
+  /// own page wants, so the customer does not choose them a second time.
+  static String provider(String providerId, {bool book = false, String? workerId, String? workerKind}) {
+    final query = <String, String>{
+      if (book) 'book': '1',
+      if (workerId != null && workerKind != null) ...{'worker': workerId, 'kind': workerKind},
+    };
+    final path = '/provider/$providerId';
+    return query.isEmpty ? path : Uri(path: path, queryParameters: query).toString();
+  }
 
   /// All public reviews of a business, with the rating breakdown.
   static String reviews(String providerId, {String? providerName}) =>

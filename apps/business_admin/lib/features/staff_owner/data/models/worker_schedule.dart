@@ -19,6 +19,10 @@ class WorkerSummary {
   /// End of the time off in effect right now, if any.
   final DateTime? offUntil;
 
+  /// Mean of the ratings on this person's bookings; null until their first review (absent, not zero).
+  final double? averageRating;
+  final int reviewCount;
+
   const WorkerSummary({
     required this.id,
     required this.kind,
@@ -27,7 +31,12 @@ class WorkerSummary {
     required this.active,
     required this.scheduleConfigured,
     required this.offUntil,
+    this.averageRating,
+    this.reviewCount = 0,
   });
+
+  /// Reviews a person needs before customers see them under "Best masters" (mirrors the backend rule).
+  static const reviewsToQualify = 3;
 
   factory WorkerSummary.fromJson(Map<String, dynamic> json) {
     final off = json['offUntil'] as String?;
@@ -39,6 +48,8 @@ class WorkerSummary {
       active: json['active'] as bool,
       scheduleConfigured: json['scheduleConfigured'] as bool,
       offUntil: off == null ? null : DateTime.parse(off),
+      averageRating: (json['averageRating'] as num?)?.toDouble(),
+      reviewCount: (json['reviewCount'] as num? ?? 0).toInt(),
     );
   }
 }

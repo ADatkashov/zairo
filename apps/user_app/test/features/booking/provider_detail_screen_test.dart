@@ -935,6 +935,81 @@ void main() {
     expect(find.textContaining('45'), findsWidgets);
   });
 
+  group('a person picked up front (from their own page)', () {
+    const provider = ProviderSearchResult(
+      id: 'provider-5',
+      name: 'Any Clinic',
+      vertical: 'medicine',
+      status: 'ACTIVE',
+      hasOpenAvailability: true,
+      minPrice: 40,
+      services: [
+        ServiceSummary(id: 'service-1', title: 'Checkup', durationMinutes: 30, price: 40, currency: 'USD'),
+      ],
+    );
+
+    Future<void> pump(WidgetTester tester, PreselectedWorker? worker, {bool allowChoice = true}) async {
+      tester.view.physicalSize = const Size(800, 3000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            bookingApiProvider.overrideWithValue(_FakeBookingApi(const [])),
+            paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+            staffApiProvider.overrideWithValue(
+              _FakeStaffApi(const [
+                Staff(id: 'staff-1', providerId: 'provider-5', displayName: 'Dr. Aliya', active: true),
+                Staff(id: 'staff-2', providerId: 'provider-5', displayName: 'Dr. Bek', active: true),
+              ]),
+            ),
+            workforceApiProvider.overrideWithValue(_FakeWorkforceApi(allowChoice: allowChoice)),
+            authControllerProvider.overrideWith(_LoggedInAuthController.new),
+          ],
+          child: MaterialApp(
+            theme: factoryLightTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: ProviderDetailScreen(provider: provider, preselectedWorker: worker),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    bool selected(WidgetTester tester, String name) =>
+        tester.widget<FactorySelectableTile>(find.widgetWithText(FactorySelectableTile, name)).selected;
+
+    testWidgets('is already selected, the others are not', (tester) async {
+      await pump(tester, (kind: 'STAFF', id: 'staff-2'));
+
+      expect(selected(tester, 'Dr. Bek'), isTrue);
+      expect(selected(tester, 'Dr. Aliya'), isFalse);
+    });
+
+    testWidgets('nothing is selected without one, or when they are not among the business\'s people', (tester) async {
+      await pump(tester, null);
+      expect(selected(tester, 'Dr. Bek'), isFalse);
+
+      await pump(tester, (kind: 'STAFF', id: 'someone-who-left'));
+      expect(selected(tester, 'Dr. Bek'), isFalse);
+      expect(selected(tester, 'Dr. Aliya'), isFalse);
+    });
+
+    testWidgets('a business that only offers "Any master" ignores it', (tester) async {
+      await pump(tester, (kind: 'STAFF', id: 'staff-2'), allowChoice: false);
+
+      expect(find.text('Dr. Bek'), findsNothing);
+      expect(find.text('Any master'), findsNothing);
+    });
+
+    testWidgets('a person from another directory is ignored here', (tester) async {
+      await pump(tester, (kind: 'MASTER', id: 'staff-2'));
+
+      expect(selected(tester, 'Dr. Bek'), isFalse);
+    });
+  });
+
   testWidgets('opened from a "Book" button it starts at the booking steps, not at the top', (tester) async {
     // A short phone, so the page is longer than the screen and can scroll.
     tester.view.physicalSize = const Size(390, 600);
