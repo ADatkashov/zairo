@@ -337,6 +337,18 @@ void main() {
       expect((await api.completeBooking('b1')).status, 'COMPLETED');
     });
 
+    test('a cancelled booking carries the reason, an ordinary one has none', () async {
+      http.reply('GET', '/providers/p1/bookings', [
+        {..._booking, 'status': 'CANCELLED', 'cancellationReason': 'Change of plans'},
+        _booking,
+      ]);
+
+      final bookings = await api.listBookings('p1');
+
+      expect(bookings[0].cancellationReason, 'Change of plans');
+      expect(bookings[1].cancellationReason, isNull);
+    });
+
     test('fetchSchedule sends the window in UTC and parses entries', () async {
       http.reply('GET', '/providers/p1/schedule', [
         {
