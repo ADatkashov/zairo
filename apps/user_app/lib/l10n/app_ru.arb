@@ -723,5 +723,6 @@
   "bookingHintTime": "Выберите время",
   "cancelReasonPlans": "Изменились планы",
   "cancelReasonOtherTime": "Нашёл другое время",
-  "cancelReasonMistake": "Записался по ошибке"
+  "cancelReasonMistake": "Записался по ошибке",
+  "reviewQuickStarTooltip": "Оценить визит: {count, plural, one{{count} звезда} few{{count} звезды} many{{count} звёзд} other{{count} звёзд}}"
 }
