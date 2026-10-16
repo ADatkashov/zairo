@@ -51,7 +51,8 @@ public class ReviewModerationService {
                 row.getComment(), row.getCreatedAt(), row.getBusinessReply(), row.getReportReason(),
                 row.getReportedAt(), row.getHiddenAt() != null ? "HIDDEN"
                         : row.getReportResolvedAt() == null ? "OPEN" : "DISMISSED",
-                row.getHiddenAt(), row.getHiddenReason()));
+                row.getHiddenAt(), row.getHiddenReason(),
+                row.getHiddenAt() != null ? row.getHiddenAt() : row.getReportResolvedAt()));
     }
 
     /** Hides the review from every rating and list; closes its report. Hiding twice is a no-op. */

@@ -21,6 +21,9 @@ public final class BookAgainDtos {
             @Schema(example = "USD") String currency,
             @Schema(description = "The starts_at of the most recent COMPLETED booking's slot for this "
                     + "(provider, service) pair.", example = "2026-08-01T13:30:00Z")
-            Instant lastVisitAt) {
+            Instant lastVisitAt,
+            @Schema(description = "Start of the provider's soonest open slot that has not begun yet; null when "
+                    + "there is none.", example = "2026-08-20T09:00:00Z")
+            Instant nextFreeAt) {
     }
 }

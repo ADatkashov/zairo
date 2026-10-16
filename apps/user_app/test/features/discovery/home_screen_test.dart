@@ -26,6 +26,7 @@ import 'package:zairo/features/discovery/data/models/provider_search_result.dart
 import 'package:zairo/features/discovery/presentation/providers/discovery_providers.dart';
 import 'package:zairo/features/catalog/presentation/screens/all_categories_screen.dart';
 import 'package:zairo/features/discovery/presentation/screens/home_screen.dart';
+import 'package:zairo/features/workers/data/models/favorite_worker.dart';
 import 'package:zairo/features/workers/data/models/top_worker.dart';
 import 'package:zairo/features/workers/data/workers_api.dart';
 import 'package:zairo/features/workers/presentation/providers/workers_providers.dart';
@@ -110,9 +111,13 @@ class _FakeCatalogApi extends CatalogApi {
 }
 
 class _FakeWorkersApi extends WorkersApi {
-  _FakeWorkersApi(this._top) : super(DioClient(Dio()));
+  _FakeWorkersApi(this._top, {this.favorites = const []}) : super(DioClient(Dio()));
 
   final List<TopWorker> _top;
+  final List<FavoriteWorker> favorites;
+
+  @override
+  Future<List<FavoriteWorker>> listFavoriteWorkers(String userId) async => favorites;
 
   @override
   Future<List<TopWorker>> listTop({int limit = 10, String? cityCode}) async => _top;
@@ -827,6 +832,7 @@ void main() {
         price: 25.0,
         currency: 'USD',
         lastVisitAt: DateTime.now().subtract(const Duration(days: 14)),
+        nextFreeAt: DateTime.now().add(const Duration(days: 1)),
       ),
     ]);
 
@@ -851,6 +857,7 @@ void main() {
     expect(find.text('Aigerim Beauty Studio'), findsOneWidget);
     expect(find.text('Haircut'), findsOneWidget);
     expect(find.textContaining('Last visit:'), findsOneWidget);
+    expect(find.textContaining('Next free:'), findsOneWidget);
   });
 
   testWidgets('the Book Again card fits a 320 px phone with a large font in the dark theme', (tester) async {
@@ -868,6 +875,7 @@ void main() {
         price: 25.0,
         currency: 'USD',
         lastVisitAt: DateTime.now().subtract(const Duration(days: 14)),
+        nextFreeAt: DateTime.now().add(const Duration(days: 1)),
       ),
     ]);
 
@@ -968,6 +976,68 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Worker page w1'), findsOneWidget);
+  });
+
+  Widget myMastersApp(List<FavoriteWorker> favorites, {bool loggedIn = true}) => ProviderScope(
+    overrides: [
+      discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi([_open])),
+      catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
+      workersApiProvider.overrideWithValue(_FakeWorkersApi(const [], favorites: favorites)),
+      bookingApiProvider.overrideWithValue(_FakeBookingApiWithSuggestions(const [])),
+      if (loggedIn) authControllerProvider.overrideWith(_LoggedInAuthController.new),
+    ],
+    child: MaterialApp.router(
+      theme: factoryLightTheme(),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      routerConfig: GoRouter(
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+          GoRoute(
+            path: '/worker/:id',
+            builder: (_, state) => Scaffold(body: Text('Worker page ${state.pathParameters['id']}')),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  FavoriteWorker favorite({DateTime? nextFreeAt}) => FavoriteWorker(
+    id: 'w9',
+    kind: 'MASTER',
+    providerId: 'p1',
+    providerName: 'Studio',
+    displayName: 'Dana M.',
+    photoUrl: null,
+    averageRating: 4.9,
+    reviewCount: 5,
+    nextFreeAt: nextFreeAt,
+  );
+
+  testWidgets('a logged-in customer sees My masters with when each is free, and a tap opens the master', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(myMastersApp([favorite(nextFreeAt: DateTime.now().add(const Duration(days: 1)))]));
+    await tester.pumpAndSettle();
+
+    expect(find.text('My masters'), findsOneWidget);
+    expect(find.text('Dana M.'), findsOneWidget);
+    await tester.tap(find.text('Dana M.'));
+    await tester.pumpAndSettle();
+    expect(find.text('Worker page w9'), findsOneWidget);
+  });
+
+  testWidgets('My masters is absent without favourites', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(myMastersApp(const []));
+    await tester.pumpAndSettle();
+    expect(find.text('My masters'), findsNothing);
+  });
+
+  testWidgets('My masters is absent for a guest', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(myMastersApp([favorite()], loggedIn: false));
+    await tester.pumpAndSettle();
+    expect(find.text('My masters'), findsNothing);
   });
 
   testWidgets('Home fits a 320 px phone with a large font in the dark theme: categories, masters, providers', (tester) async {

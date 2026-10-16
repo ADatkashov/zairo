@@ -15,6 +15,9 @@ class BookAgainSuggestion {
   final String currency;
   final DateTime lastVisitAt;
 
+  /// The provider's soonest open slot that has not started; null when there is none.
+  final DateTime? nextFreeAt;
+
   const BookAgainSuggestion({
     required this.providerId,
     required this.providerName,
@@ -25,6 +28,7 @@ class BookAgainSuggestion {
     required this.price,
     required this.currency,
     required this.lastVisitAt,
+    this.nextFreeAt,
   });
 
   /// The minimal provider the detail screen needs to start booking this exact
@@ -58,6 +62,7 @@ class BookAgainSuggestion {
       price: (json['price'] as num).toDouble(),
       currency: json['currency'] as String,
       lastVisitAt: DateTime.parse(json['lastVisitAt'] as String),
+      nextFreeAt: json['nextFreeAt'] == null ? null : DateTime.parse(json['nextFreeAt'] as String),
     );
   }
 }

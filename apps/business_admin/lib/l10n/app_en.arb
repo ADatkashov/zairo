@@ -525,6 +525,9 @@
     }
   },
 
+  "customerListNoShows": "No-shows: {count}",
+  "@customerListNoShows": {"description": "Customer row: how many visits they did not turn up for.", "placeholders": {"count": {"type": "int"}}},
+
   "customerListNextExpectedLabel": "Expected back: {date}",
   "@customerListNextExpectedLabel": {
     "description": "Customer list row: their predicted next-visit date.",
@@ -2597,5 +2600,21 @@
   "salonTabSettings": "Settings",
   "@salonTabSettings": {"description": "Tab label on the business detail screen."},
   "navQuickActions": "Quick actions",
-  "@navQuickActions": {"description": "Screen-reader label of the round + button in the middle of the phone bottom bar; opens a fan of shortcuts."}
+  "@navQuickActions": {"description": "Screen-reader label of the round + button in the middle of the phone bottom bar; opens a fan of shortcuts."},
+  "appointmentActionsMove": "Move to another time",
+  "@appointmentActionsMove": {"description": "Appointment actions: move it to another time."},
+  "appointmentActionsNoShow": "Customer did not come",
+  "@appointmentActionsNoShow": {"description": "Appointment actions: mark that the customer did not come."},
+  "appointmentActionsComplete": "Visit done",
+  "@appointmentActionsComplete": {"description": "Appointment actions: mark the visit as done."},
+  "appointmentMoveTitle": "Move to another time",
+  "@appointmentMoveTitle": {"description": "Title of the sheet with free times to move an appointment to."},
+  "appointmentMoveHint": "Free times with the same person. Tap a time and the appointment moves; the customer is told.",
+  "@appointmentMoveHint": {"description": "Hint under that title."},
+  "appointmentMoveEmpty": "No other free times right now.",
+  "@appointmentMoveEmpty": {"description": "No free times to move to."},
+  "appointmentMoved": "Moved. The customer has been told.",
+  "@appointmentMoved": {"description": "Snackbar after the move."},
+  "appointmentActionFailed": "Could not do that. Try again.",
+  "@appointmentActionFailed": {"description": "Snackbar when an appointment action failed."}
 }

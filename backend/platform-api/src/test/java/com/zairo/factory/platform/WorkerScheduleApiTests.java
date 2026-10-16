@@ -210,6 +210,56 @@ class WorkerScheduleApiTests {
                 .isEqualTo(HttpStatus.CONFLICT);
     }
 
+    @Test
+    void theBusinessMovesACustomersBookingToAnotherTimeWithTheSamePerson() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "omv-owner-" + runId + "@example.com");
+        Registered otherOwner = TestAuth.registerOwner(restTemplate, "omv-other-owner-" + runId + "@example.com");
+        Registered worker = TestAuth.registerCustomer(restTemplate, "omv-worker-" + runId + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "omv-customer-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Owner Move Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Cut");
+        UUID staffId = addStaffFromUser(owner, providerId, worker.userId());
+        restTemplate.exchange("/api/v1/staff/" + staffId + "/services/" + serviceId, HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+        put("/api/v1/providers/" + providerId + "/workers/" + staffId + "/schedule", owner,
+                scheduleBody(workingDays("09:00:00", "17:00:00")));
+
+        UUID at10 = tomorrowSlot(providerId, staffId, 10);
+        UUID at11 = tomorrowSlot(providerId, staffId, 11);
+        UUID bookingId = bookWithStaff(customer, staffId, serviceId, at10);
+        Instant shared = Instant.now().plusSeconds(3 * 86400);
+        UUID sharedSlot = UUID.fromString(restTemplate.exchange("/api/v1/providers/" + providerId
+                + "/availability-slots", HttpMethod.POST, new HttpEntity<>(Map.of("startsAt", shared.toString(),
+                "endsAt", shared.plusSeconds(3600).toString()), TestAuth.authHeaders(owner.accessToken())),
+                Map.class).getBody().get("id").toString());
+
+        String options = "/api/v1/bookings/" + bookingId + "/owner-reschedule-options";
+        String move = "/api/v1/bookings/" + bookingId + "/owner-reschedule";
+        List<String> offered = getList(options, owner).stream().map(o -> o.get("slotId").toString()).toList();
+        assertThat(offered).contains(at11.toString()).doesNotContain(at10.toString(), sharedSlot.toString());
+
+        // Only the business that owns the booking's provider: not the customer, not another business.
+        assertThat(restTemplate.exchange(options, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(restTemplate.exchange(move, HttpMethod.POST, new HttpEntity<>(Map.of("slotId", at11.toString()),
+                TestAuth.authHeaders(otherOwner.accessToken())), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
+        // Not a time with the same person.
+        assertThat(restTemplate.exchange(move, HttpMethod.POST, new HttpEntity<>(
+                Map.of("slotId", sharedSlot.toString()), TestAuth.authHeaders(owner.accessToken())), Map.class)
+                .getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+
+        ResponseEntity<Map> moved = restTemplate.exchange(move, HttpMethod.POST, new HttpEntity<>(
+                Map.of("slotId", at11.toString()), TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(moved.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(moved.getBody().get("availabilitySlotId")).isEqualTo(at11.toString());
+        assertThat(moved.getBody().get("id")).isEqualTo(bookingId.toString());
+        List<String> after = getList(options, owner).stream().map(o -> o.get("slotId").toString()).toList();
+        assertThat(after).contains(at10.toString()).doesNotContain(at11.toString());
+    }
+
     private void approve(UUID providerId) {
         Registered admin = TestAuth.registerAdmin(restTemplate, userRepository, credentialRepository,
                 "sched-admin-" + UUID.randomUUID() + "@example.com");
