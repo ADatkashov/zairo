@@ -588,6 +588,21 @@ public class BookingService {
     }
 
     /**
+     * Sends the "your visit is tomorrow" reminder for confirmed bookings starting after {@code from} (two hours from
+     * now: the one-hour reminder covers anything closer) and up to {@code to} (a day from now), once each.
+     */
+    @Transactional
+    public void sendDueDayReminders(Instant now, Instant from, Instant to) {
+        for (Booking booking : bookingRepository.findConfirmedBookingsForDayReminder(from, to)) {
+            AvailabilitySlot slot = loadSlot(booking);
+            booking.markDayReminderSent(now);
+            bookingRepository.save(booking);
+            eventPublisher.publishEvent(new BookingDayReminderDueEvent(booking.getId(), booking.getUserId(),
+                    slot.getStartsAt()));
+        }
+    }
+
+    /**
      * Postgres advisory transaction lock keyed by this provider -- see
      * {@link #createBooking}'s own comment on why. {@code hashtext} maps
      * the provider id to the single {@code int4} key {@code

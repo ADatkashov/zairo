@@ -3,6 +3,7 @@ package com.zairo.factory.notifications;
 import com.zairo.factory.booking.BookingCancelledEvent;
 import com.zairo.factory.booking.BookingConfirmedEvent;
 import com.zairo.factory.booking.BookingMovedEvent;
+import com.zairo.factory.booking.BookingDayReminderDueEvent;
 import com.zairo.factory.booking.BookingReminderDueEvent;
 import com.zairo.factory.booking.BookingRescheduledByCustomerEvent;
 import com.zairo.factory.providers.Provider;
@@ -120,6 +121,13 @@ class BookingNotificationListener {
         userRepository.findById(event.userId())
                 .ifPresent(customer -> notificationService.sendBookingReminderEmail(customer.getId(),
                         customer.getEmail(), event.bookingId()));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    void onBookingDayReminderDue(BookingDayReminderDueEvent event) {
+        userRepository.findById(event.userId())
+                .ifPresent(customer -> notificationService.sendBookingDayReminderEmail(customer.getId(),
+                        customer.getEmail(), event.bookingId(), event.startsAt()));
     }
 
     private Optional<String> ownerEmailFor(UUID providerId) {
