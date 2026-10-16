@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.zairo.factory.auth.CredentialRepository;
 import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequest;
 import com.zairo.factory.platform.TestAuth.Registered;
+import com.zairo.factory.platformadmin.PlatformAdminAccountRepository;
+import com.zairo.factory.platformadmin.PlatformRole;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.providers.ProviderDtos.UpdateProviderStatusRequest;
 import com.zairo.factory.providers.ProviderStatus;
@@ -52,6 +54,9 @@ class WorkerDirectoryApiTests {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private PlatformAdminAccountRepository platformAdminAccountRepository;
 
     @Test
     void ranksByAverageRatingAndNeedsThreeReviews() {
@@ -305,6 +310,43 @@ class WorkerDirectoryApiTests {
                 .getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         assertThat(restTemplate.exchange(base + "/" + staffId, HttpMethod.GET, asCustomer, Void.class)
                 .getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void aHiddenReviewCountsForNobodyNotTheirAveragePageNorTheBestList() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "hid-owner-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Hidden Studio " + runId);
+        approve(providerId);
+        UUID serviceId = createService(owner, providerId);
+        UUID master = createStaff(owner, providerId, "Moderated Master");
+        restTemplate.exchange("/api/v1/staff/" + master + "/services/" + serviceId, HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+        for (int i = 1; i <= 3; i++) {
+            review(owner, providerId, serviceId, master, i == 1 ? 1 : 5, i, runId);
+        }
+        assertThat(getTop(20)).extracting(m -> m.get("displayName")).contains("Moderated Master");
+
+        // The owner finds the 1-star review in the person's rating and the platform hides it.
+        String ratingPath = "/api/v1/providers/" + providerId + "/workers/" + master + "/rating";
+        HttpEntity<Void> asOwner = new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken()));
+        List<Map> rows = (List<Map>) restTemplate.exchange(ratingPath, HttpMethod.GET, asOwner, Map.class)
+                .getBody().get("reviews");
+        Object oneStar = rows.stream().filter(r -> ((Number) r.get("rating")).intValue() == 1).findFirst()
+                .orElseThrow().get("reviewId");
+        var moderator = TestPlatformAuth.registerPlatformAdmin(restTemplate, platformAdminAccountRepository,
+                "hid-mod-" + runId + "@factory.internal", PlatformRole.PLATFORM_MODERATOR);
+        restTemplate.exchange("/api/v1/platform/reviews/" + oneStar + "/hide", HttpMethod.POST,
+                new HttpEntity<>(null, TestPlatformAuth.authHeaders(moderator.accessToken())), Void.class);
+
+        // Two reviews are left: the page shows them, the owner's rating too, and the person is no longer "best".
+        Map<?, ?> page = restTemplate.getForEntity("/api/v1/workers/" + master, Map.class).getBody();
+        assertThat(((Number) page.get("reviewCount")).longValue()).isEqualTo(2L);
+        assertThat(((Number) page.get("averageRating")).doubleValue()).isEqualTo(5.0);
+        assertThat((List<?>) page.get("reviews")).hasSize(2);
+        Map<?, ?> ownerView = restTemplate.exchange(ratingPath, HttpMethod.GET, asOwner, Map.class).getBody();
+        assertThat(((Number) ownerView.get("reviewCount")).longValue()).isEqualTo(2L);
+        assertThat(getTop(20)).extracting(m -> m.get("displayName")).doesNotContain("Moderated Master");
     }
 
     @Test
