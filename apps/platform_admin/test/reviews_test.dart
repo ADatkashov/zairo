@@ -253,4 +253,25 @@ void main() {
 
     expect(find.text('All clear — nothing is waiting for you.'), findsOneWidget);
   });
+
+  testWidgets('the dashboard with every attention item reads on a narrow phone', (tester) async {
+    final backend = defaultBackend();
+    backend.reply('GET', '/platform/dashboard', {
+      'users': {'total': 1200},
+      'businesses': {'total': 12, 'active': 9, 'pendingModeration': 4, 'blocked': 2},
+      'subscriptions': {'free': 7, 'pro': 5, 'active': 5, 'pastDue': 1, 'cancelled': 2},
+      'bookings': {'today': 14, 'thisWeek': 90, 'thisMonth': 350, 'completed': 800, 'cancelled': 40},
+      'payments': {'succeeded': 700, 'failed': 12, 'pending': 5, 'refunded': 20, 'refundFailed': 3},
+      'revenue': {'mrr': 150000, 'currency': 'KZT', 'platformCommission': 42000, 'platformCommissionCurrency': 'KZT'},
+      'reviews': {'reportedOpen': 12},
+    });
+    await pumpConsole(tester, backend: backend, size: const Size(320, 640));
+    expect(tester.takeException(), isNull);
+
+    for (var i = 0; i < 6; i++) {
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -400));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
+  });
 }

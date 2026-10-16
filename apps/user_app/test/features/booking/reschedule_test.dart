@@ -254,6 +254,40 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('My bookings fits a 320 px phone with a large font in the dark theme, every status', (tester) async {
+    final soon = DateTime.now().add(const Duration(days: 2));
+    Booking b(String id, String status, {double? deposit}) => Booking(
+      id: id,
+      userId: 'user-1',
+      serviceId: 's$id',
+      availabilitySlotId: 'slot-$id',
+      status: status,
+      totalPrice: 12000,
+      depositAmount: deposit,
+      remainingAmount: deposit == null ? null : 12000 - deposit,
+      createdAt: DateTime(2026, 1, 1),
+      serviceTitle: 'Long colouring with toning and a deep care treatment',
+      providerId: 'p1',
+      providerName: 'A Salon With A Rather Long Name',
+      startsAt: status == 'COMPLETED' || status == 'CANCELLED' ? DateTime(2026, 1, 5) : soon,
+      endsAt: soon.add(const Duration(hours: 1)),
+    );
+    await _pump(
+      tester,
+      _FakeBookingApi([b('1', 'CONFIRMED', deposit: 3000), b('2', 'PENDING_PAYMENT'), b('3', 'COMPLETED'), b('4', 'CANCELLED')]),
+      size: const Size(320, 640),
+      textScale: 2,
+      dark: true,
+    );
+    expect(tester.takeException(), isNull);
+
+    for (var i = 0; i < 8; i++) {
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -400));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
+  });
+
   group('BookingApi reschedule', () {
     test('reads the options', () async {
       final http = FakeHttp()
