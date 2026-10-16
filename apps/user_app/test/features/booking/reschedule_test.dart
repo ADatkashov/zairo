@@ -108,8 +108,14 @@ Booking _booking({String status = 'CONFIRMED', DateTime? startsAt}) => Booking(
 RescheduleOption _option(String id, DateTime start) =>
     RescheduleOption(slotId: id, startsAt: start, endsAt: start.add(const Duration(hours: 1)));
 
-Future<void> _pump(WidgetTester tester, _FakeBookingApi api) async {
-  tester.view.physicalSize = const Size(800, 1600);
+Future<void> _pump(
+  WidgetTester tester,
+  _FakeBookingApi api, {
+  Size size = const Size(800, 1600),
+  double textScale = 1,
+  bool dark = false,
+}) async {
+  tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
@@ -122,9 +128,13 @@ Future<void> _pump(WidgetTester tester, _FakeBookingApi api) async {
         authControllerProvider.overrideWith(_LoggedIn.new),
       ],
       child: MaterialApp(
-        theme: factoryLightTheme(),
+        theme: dark ? factoryDarkTheme() : factoryLightTheme(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
         home: const MyBookingsScreen(),
       ),
     ),
@@ -223,6 +233,25 @@ void main() {
     await tester.tap(find.byType(FactoryButton).last);
     await tester.pumpAndSettle();
     expect(find.text('10:00'), findsOneWidget);
+  });
+
+  testWidgets('the reschedule sheet fits a 320 px phone with a large font in the dark theme', (tester) async {
+    final api = _FakeBookingApi(
+      [_booking()],
+      options: [
+        for (var i = 0; i < 12; i++) _option('o$i', tenAm.add(Duration(hours: i))),
+        _option('n1', tenAm.add(const Duration(days: 1))),
+      ],
+    );
+    await _pump(tester, api, size: const Size(320, 640), textScale: 2, dark: true);
+
+    await tester.ensureVisible(find.text('Reschedule'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Reschedule'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Move to another time'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   group('BookingApi reschedule', () {

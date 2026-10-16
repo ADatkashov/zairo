@@ -311,4 +311,52 @@ void main() {
     expect(find.textContaining(':00'), findsWidgets);
     expect(find.text('Busy'), findsOneWidget);
   });
+
+  testWidgets('"My masters" fits a 320 px phone with a large font in the dark theme, long names and times included', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final next = DateTime.now().add(const Duration(days: 3));
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: (_, _) => null,
+        overrides: [
+          favoritesApiProvider.overrideWithValue(_FakeFavoritesApi(const [])),
+          workersApiProvider.overrideWithValue(
+            _FakeWorkersApi([
+              FavoriteWorker(
+                id: 'w1',
+                kind: 'MASTER',
+                providerId: 'p1',
+                providerName: 'Studio',
+                displayName: 'Aigerim Nurlanovna Abdulkhalikova',
+                photoUrl: null,
+                averageRating: 4.9,
+                reviewCount: 1234,
+                nextFreeAt: next,
+              ),
+              _master,
+            ]),
+          ),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryDarkTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: const FavoritesScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('My masters'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
