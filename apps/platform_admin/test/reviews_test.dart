@@ -2,6 +2,7 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:platform_admin/app/routes.dart';
+import 'package:platform_admin/app/shell.dart';
 import 'package:platform_admin/features/reviews/data/review_report.dart';
 
 import 'support/fake_backend.dart';
@@ -216,5 +217,40 @@ void main() {
 
     expect(find.text('Reported: Abusive language'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('reported reviews waiting for a decision show on the dashboard and as a badge on Reviews', (tester) async {
+    final backend = defaultBackend();
+    backend.reply('GET', '/platform/dashboard', {
+      'users': {'total': 3},
+      'businesses': {'total': 1, 'active': 1, 'pendingModeration': 0, 'blocked': 0},
+      'subscriptions': {},
+      'bookings': {},
+      'payments': {'refundFailed': 0},
+      'revenue': {'mrr': 0, 'currency': null, 'platformCommission': 0, 'platformCommissionCurrency': null},
+      'reviews': {'reportedOpen': 3},
+    });
+    backend.reply('GET', '/platform/payouts', []);
+    await pumpConsole(tester, backend: backend);
+
+    expect(find.text('3 reported reviews are waiting for a decision'), findsOneWidget);
+    expect(find.descendant(of: find.byType(ConsoleSidebar), matching: find.text('3')), findsOneWidget);
+    expect(find.text('All clear — nothing is waiting for you.'), findsNothing);
+  });
+
+  testWidgets('a dashboard from a backend that does not report reviews yet still reads', (tester) async {
+    final backend = defaultBackend();
+    backend.reply('GET', '/platform/dashboard', {
+      'users': {'total': 3},
+      'businesses': {'total': 1, 'active': 1, 'pendingModeration': 0, 'blocked': 0},
+      'subscriptions': {},
+      'bookings': {},
+      'payments': {'refundFailed': 0},
+      'revenue': {'mrr': 0, 'currency': null, 'platformCommission': 0, 'platformCommissionCurrency': null},
+    });
+    backend.reply('GET', '/platform/payouts', []);
+    await pumpConsole(tester, backend: backend);
+
+    expect(find.text('All clear — nothing is waiting for you.'), findsOneWidget);
   });
 }
