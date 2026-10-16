@@ -344,6 +344,7 @@
   "campaignStatusNotifying": "Хабарлау",
   "customerListEmpty": "Осы сүзгі бойынша клиенттер жоқ.",
   "customerListLastVisitLabel": "Соңғы келуі: {date}",
+  "customerListNoShows": "Келмеген: {count}",
   "customerListNextExpectedLabel": "Күтілуде: {date}",
 
   "changeAvatarDialogTitle": "Аватарды өзгерту",

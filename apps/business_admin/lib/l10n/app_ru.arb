@@ -344,6 +344,7 @@
   "campaignStatusNotifying": "Уведомление",
   "customerListEmpty": "Нет клиентов по этому фильтру.",
   "customerListLastVisitLabel": "Последний визит: {date}",
+  "customerListNoShows": "Неявок: {count}",
   "customerListNextExpectedLabel": "Ожидается: {date}",
 
   "changeAvatarDialogTitle": "Сменить аватар",

@@ -525,6 +525,9 @@
     }
   },
 
+  "customerListNoShows": "No-shows: {count}",
+  "@customerListNoShows": {"description": "Customer row: how many visits they did not turn up for.", "placeholders": {"count": {"type": "int"}}},
+
   "customerListNextExpectedLabel": "Expected back: {date}",
   "@customerListNextExpectedLabel": {
     "description": "Customer list row: their predicted next-visit date.",

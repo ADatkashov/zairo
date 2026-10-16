@@ -426,6 +426,7 @@ class CustomerListItem {
   final double totalSpent;
   final String? currency;
   final String? favouriteServiceTitle;
+  final int noShows;
 
   const CustomerListItem({
     required this.userId,
@@ -437,6 +438,7 @@ class CustomerListItem {
     required this.totalSpent,
     this.currency,
     this.favouriteServiceTitle,
+    this.noShows = 0,
   });
 
   factory CustomerListItem.fromJson(Map<String, dynamic> json) {
@@ -451,6 +453,7 @@ class CustomerListItem {
       totalSpent: (json['totalSpent'] as num).toDouble(),
       currency: json['currency'] as String?,
       favouriteServiceTitle: json['favouriteServiceTitle'] as String?,
+      noShows: (json['noShows'] as num?)?.toInt() ?? 0,
     );
   }
 }
