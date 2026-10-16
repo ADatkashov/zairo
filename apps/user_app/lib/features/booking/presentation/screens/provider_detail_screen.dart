@@ -71,12 +71,16 @@ class ProviderDetailScreen extends ConsumerStatefulWidget {
   /// With [preselectedWorker]: that person's time to have picked as well (dropped if it is no longer open).
   final String? preselectedSlotId;
 
+  /// A service to have picked (from a service row on a master's page); ignored if the business doesn't offer it.
+  final String? preselectedServiceId;
+
   const ProviderDetailScreen({
     super.key,
     required this.provider,
     this.startAtBooking = false,
     this.preselectedWorker,
     this.preselectedSlotId,
+    this.preselectedServiceId,
   });
 
   @override
@@ -123,6 +127,10 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     // One service to choose from is no choice: start with it picked, one tap fewer.
     if (widget.provider.services.length == 1) {
       _selectedServiceId = widget.provider.services.first.id;
+    }
+    final wanted = widget.preselectedServiceId;
+    if (wanted != null && widget.provider.services.any((s) => s.id == wanted)) {
+      _selectedServiceId = wanted;
     }
     if (widget.startAtBooking) {
       WidgetsBinding.instance.addPostFrameCallback((_) {

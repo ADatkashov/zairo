@@ -1028,6 +1028,56 @@ void main() {
       expect(slotState(tester), FactoryTimeSlotState.available);
     });
 
+    testWidgets('a service tapped on their page is already picked; one the business does not offer is ignored', (tester) async {
+      tester.view.physicalSize = const Size(800, 3000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      const twoServices = ProviderSearchResult(
+        id: 'provider-5',
+        name: 'Any Clinic',
+        vertical: 'medicine',
+        status: 'ACTIVE',
+        hasOpenAvailability: true,
+        minPrice: 20,
+        services: [
+          ServiceSummary(id: 'service-1', title: 'Checkup', durationMinutes: 30, price: 40, currency: 'USD'),
+          ServiceSummary(id: 'service-2', title: 'Consultation', durationMinutes: 15, price: 20, currency: 'USD'),
+        ],
+      );
+      Future<void> open(String? serviceId) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            key: UniqueKey(),
+            overrides: [
+              bookingApiProvider.overrideWithValue(_FakeBookingApi(const [])),
+              paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+              staffApiProvider.overrideWithValue(_FakeStaffApi(const [])),
+              workforceApiProvider.overrideWithValue(_FakeWorkforceApi()),
+              authControllerProvider.overrideWith(_LoggedInAuthController.new),
+            ],
+            child: MaterialApp(
+              theme: factoryLightTheme(),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: ProviderDetailScreen(provider: twoServices, preselectedServiceId: serviceId),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      bool selected(String title) =>
+          tester.widget<FactoryServiceCard>(find.widgetWithText(FactoryServiceCard, title)).selected;
+
+      await open('service-2');
+      expect(selected('Consultation'), isTrue);
+      expect(selected('Checkup'), isFalse);
+
+      await open('service-gone');
+      expect(selected('Consultation'), isFalse);
+      expect(selected('Checkup'), isFalse);
+    });
+
     testWidgets('a time without a person is ignored', (tester) async {
       await pump(tester, null, slotId: 'slot-1', slots: [tenOClock]);
 
