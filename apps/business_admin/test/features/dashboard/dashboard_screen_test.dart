@@ -29,6 +29,9 @@ import 'package:business_admin/features/salon/presentation/providers/salon_provi
 import 'package:business_admin/features/salon/presentation/screens/week_calendar_screen.dart';
 import 'package:business_admin/features/salon/presentation/widgets/add_service_dialog.dart';
 import 'package:business_admin/features/salon/presentation/widgets/recurring_schedule_dialog.dart';
+import 'package:business_admin/features/staff_owner/data/models/needs_attention.dart';
+import 'package:business_admin/features/staff_owner/data/staff_owner_api.dart';
+import 'package:business_admin/features/staff_owner/presentation/providers/staff_owner_providers.dart';
 import 'package:business_admin/l10n/app_localizations.dart';
 
 class _FakeSalonAdminApi extends SalonAdminApi {
@@ -143,6 +146,35 @@ class _FakeBillingApi extends BillingApi {
         currentPeriodEnd: DateTime(2026, 2, 1),
         cancelAtPeriodEnd: false,
       );
+}
+
+/// How many appointments per business wait for the owner's decision.
+class _FakeStaffOwnerApi extends StaffOwnerApi {
+  _FakeStaffOwnerApi(this.counts) : super(DioClient(Dio()));
+
+  final Map<String, int> counts;
+
+  @override
+  Future<List<NeedsAttentionItem>> needsAttention(String providerId) async => [
+        for (var i = 0; i < (counts[providerId] ?? 0); i++)
+          NeedsAttentionItem(
+            bookingId: 'b$i',
+            status: 'CONFIRMED',
+            startsAt: DateTime(2026, 10, 20, 10),
+            endsAt: DateTime(2026, 10, 20, 11),
+            serviceTitle: 'Haircut',
+            customerName: 'Aisha',
+            customerPhone: null,
+            totalPrice: 10,
+            currency: 'KZT',
+            workerId: 'w1',
+            workerKind: 'MASTER',
+            workerName: 'Aigerim',
+            reason: 'WORKER_CANNOT_ATTEND',
+            workerNote: null,
+            requestedAt: null,
+          ),
+      ];
 }
 
 class _LoggedInOwnerController extends AuthController {
@@ -533,5 +565,76 @@ void main() {
       expect(fakeApi.lastCreateCall?['name'], 'Second Salon');
       expect(find.text('Add a business'), findsNothing, reason: 'the dialog closes on success');
     });
+  });
+
+  Future<void> pumpDashboardWithDecisions(
+    WidgetTester tester,
+    List<AdminProvider> providers,
+    Map<String, int> decisions,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: (_, _) => null,
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(_FakeSalonAdminApi(providers)),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+          billingApiProvider.overrideWithValue(_FakeBillingApi()),
+          campaignCenterApiProvider.overrideWithValue(_FakeCampaignCenterApi()),
+          staffOwnerApiProvider.overrideWithValue(_FakeStaffOwnerApi(decisions)),
+          authControllerProvider.overrideWith(_LoggedInOwnerController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const DashboardScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('appointments waiting for the owner\'s decision are the first thing on the dashboard', (tester) async {
+    await pumpDashboardWithDecisions(
+      tester,
+      [const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE')],
+      {'p1': 2},
+    );
+
+    expect(find.text('2 appointments need your decision'), findsOneWidget);
+    expect(find.text('All caught up — nothing needs attention today.'), findsNothing);
+
+    // One tap goes to the business, where the decisions are made.
+    await tester.tap(find.text('2 appointments need your decision'));
+    await tester.pumpAndSettle();
+    expect(find.text('Needs your decision'), findsWidgets);
+  });
+
+  testWidgets('with several businesses each one reports its own count by name, and one with none stays quiet', (tester) async {
+    await pumpDashboardWithDecisions(
+      tester,
+      [
+        const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE'),
+        const AdminProvider(id: 'p2', ownerUserId: 'owner-1', name: 'Fast Garage', vertical: 'auto', status: 'ACTIVE'),
+        const AdminProvider(id: 'p3', ownerUserId: 'owner-1', name: 'Quiet Clinic', vertical: 'beauty', status: 'ACTIVE'),
+      ],
+      {'p1': 1, 'p2': 3},
+    );
+
+    expect(find.text('1 appointment needs your decision · Glow Salon'), findsOneWidget);
+    expect(find.text('3 appointments need your decision · Fast Garage'), findsOneWidget);
+    // The business with nothing waiting is never named in a decision line.
+    expect(find.textContaining('need your decision · Quiet Clinic'), findsNothing);
+  });
+
+  testWidgets('no decisions waiting means no decision line', (tester) async {
+    await pumpDashboardWithDecisions(
+      tester,
+      [const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE')],
+      {},
+    );
+
+    expect(find.textContaining('need your decision'), findsNothing);
+    expect(find.text('All caught up — nothing needs attention today.'), findsOneWidget);
   });
 }

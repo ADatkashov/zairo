@@ -135,5 +135,66 @@ void main() {
       expect(worker.displayName, 'Aigerim');
       expect(worker.photoUrl, 'https://cdn.example/a.jpg');
     });
+
+    group('favorite masters', () {
+      test('lists the customer\'s masters, rating may be missing', () async {
+        final http = FakeHttp()
+          ..reply('GET', '/users/u1/favorite-workers', [
+            {
+              'id': 'w1',
+              'kind': 'MASTER',
+              'providerId': 'p1',
+              'providerName': 'Studio',
+              'displayName': 'Aigerim',
+              'photoUrl': 'https://cdn.example/a.jpg',
+              'averageRating': 4.5,
+              'reviewCount': 4,
+            },
+            {
+              'id': 'w2',
+              'kind': 'STAFF',
+              'providerId': 'p2',
+              'providerName': 'Clinic',
+              'displayName': 'New',
+              'averageRating': null,
+              'reviewCount': 0,
+            },
+          ]);
+
+        final list = await WorkersApi(http.client()).listFavoriteWorkers('u1');
+
+        expect(list.map((w) => w.displayName), ['Aigerim', 'New']);
+        expect(list[0].averageRating, 4.5);
+        expect(list[0].photoUrl, 'https://cdn.example/a.jpg');
+        expect(list[1].averageRating, isNull);
+        expect(list[1].photoUrl, isNull);
+        expect(list[1].reviewCount, 0);
+      });
+
+      test('"is a favorite" is true on 200, false on 404 and rethrows other errors', () async {
+        final http = FakeHttp()
+          ..reply('GET', '/users/u1/favorite-workers/yes', null)
+          ..fail('GET', '/users/u1/favorite-workers/no', 404)
+          ..fail('GET', '/users/u1/favorite-workers/boom', 500);
+        final api = WorkersApi(http.client());
+
+        expect(await api.isFavoriteWorker('u1', 'yes'), isTrue);
+        expect(await api.isFavoriteWorker('u1', 'no'), isFalse);
+        await expectLater(api.isFavoriteWorker('u1', 'boom'), throwsA(isA<Object>()));
+      });
+
+      test('adds with POST and removes with DELETE', () async {
+        final http = FakeHttp()
+          ..reply('POST', '/users/u1/favorite-workers/w1', null, status: 204)
+          ..reply('DELETE', '/users/u1/favorite-workers/w1', null, status: 204);
+        final api = WorkersApi(http.client());
+
+        await api.addFavoriteWorker('u1', 'w1');
+        await api.removeFavoriteWorker('u1', 'w1');
+
+        expect(http.calls('POST', '/users/u1/favorite-workers/w1'), hasLength(1));
+        expect(http.calls('DELETE', '/users/u1/favorite-workers/w1'), hasLength(1));
+      });
+    });
   });
 }

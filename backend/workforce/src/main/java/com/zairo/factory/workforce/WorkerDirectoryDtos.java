@@ -29,6 +29,18 @@ public final class WorkerDirectoryDtos {
         }
     }
 
+    /** One person on a customer's "my masters" list; no rating yet = null average, zero reviews. */
+    public record FavoriteWorkerResponse(
+            UUID id,
+            WorkerKind kind,
+            UUID providerId,
+            String providerName,
+            String displayName,
+            String photoUrl,
+            @Schema(description = "Null until somebody has reviewed them.", example = "4.8") Double averageRating,
+            long reviewCount) {
+    }
+
     /** Who a booking is with, for the customer who made it. */
     public record BookingWorkerResponse(UUID id, WorkerKind kind, String displayName, String photoUrl) {
     }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../l10n/app_localizations.dart';
+import '../../../reviews/presentation/widgets/review_reply_dialog.dart';
 import '../../data/models/worker_schedule.dart';
 import '../providers/staff_owner_providers.dart';
 
@@ -52,7 +53,17 @@ class WorkerRatingScreen extends ConsumerWidget {
                 Text(l10n.workerRatingLatestTitle, style: Theme.of(context).textTheme.titleSmall),
                 const SizedBox(height: FactorySpacing.space3),
                 for (final review in data.reviews) ...[
-                  _ReviewCard(review: review),
+                  _ReviewCard(
+                    review: review,
+                    onReply: () async {
+                      final saved = await showReviewReplyDialog(
+                        context,
+                        reviewId: review.reviewId,
+                        existingReply: review.businessReply,
+                      );
+                      if (saved != null) ref.invalidate(workerRatingProvider(key));
+                    },
+                  ),
                   const SizedBox(height: FactorySpacing.space2),
                 ],
               ],
@@ -140,9 +151,12 @@ class _Summary extends StatelessWidget {
 }
 
 class _ReviewCard extends StatelessWidget {
-  const _ReviewCard({required this.review});
+  const _ReviewCard({required this.review, required this.onReply});
 
   final WorkerReviewItem review;
+
+  /// Opens the reply dialog: the owner answers (or edits the answer) where they are reading the review.
+  final VoidCallback onReply;
 
   @override
   Widget build(BuildContext context) {
@@ -187,6 +201,17 @@ class _ReviewCard extends StatelessWidget {
             ),
             Text(review.businessReply!, style: textTheme.bodySmall?.copyWith(color: colors.textSecondary)),
           ],
+          const SizedBox(height: FactorySpacing.space2),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: review.businessReply == null
+                ? OutlinedButton.icon(
+                    onPressed: onReply,
+                    icon: const Icon(Icons.reply_rounded, size: 18),
+                    label: Text(l10n.reviewReplyButton),
+                  )
+                : TextButton(onPressed: onReply, child: Text(l10n.reviewEditReplyButton)),
+          ),
         ],
       ),
     );
