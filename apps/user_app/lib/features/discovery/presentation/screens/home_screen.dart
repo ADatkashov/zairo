@@ -7,6 +7,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../app/router/app_routes.dart';
 import '../../../../core/formatting/initials.dart';
+import '../../../../core/formatting/slot_label.dart';
 import '../../../../core/provider_grid.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../maps/data/geo_point.dart';
@@ -131,6 +132,7 @@ class HomeScreen extends ConsumerWidget {
                   if (user != null) ...[
                     const SizedBox(height: FactorySpacing.space6),
                     _BookAgainSection(userId: user.id),
+                    _MyMastersSection(userId: user.id),
                   ],
                   const SizedBox(height: FactorySpacing.space6),
                   FactorySectionHeader(
@@ -690,6 +692,54 @@ class _TopMastersSection extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The customer's favourite masters with the time each is next free: the shortest road back to "my" person.
+/// Best-effort like [_BookAgainSection] — nothing at all while loading, on error, or with no favourites yet.
+class _MyMastersSection extends ConsumerWidget {
+  const _MyMastersSection({required this.userId});
+
+  final String userId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final masters = ref.watch(myFavoriteWorkersProvider(userId)).value ?? const [];
+    if (masters.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: FactorySpacing.space6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.favoritesMyMastersTitle, style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: FactorySpacing.space3),
+          SizedBox(
+            height: MasterAvatarCard.heightFor(context, withCaption: masters.any((m) => m.nextFreeAt != null)),
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: masters.length,
+              separatorBuilder: (_, _) => const SizedBox(width: FactorySpacing.space3),
+              itemBuilder: (context, index) {
+                final master = masters[index];
+                return MasterAvatarCard(
+                  displayName: master.displayName,
+                  photoUrl: master.photoUrl,
+                  averageRating: master.averageRating,
+                  reviewCount: master.reviewCount,
+                  caption: master.nextFreeAt == null
+                      ? null
+                      : slotLabel(l10n, locale, DateTime.now(), master.nextFreeAt!.toLocal()),
+                  onTap: () => context.push(AppRoutes.worker(master.id)),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
