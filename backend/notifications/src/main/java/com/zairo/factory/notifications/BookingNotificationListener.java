@@ -4,6 +4,7 @@ import com.zairo.factory.booking.BookingCancelledEvent;
 import com.zairo.factory.booking.BookingConfirmedEvent;
 import com.zairo.factory.booking.BookingMovedEvent;
 import com.zairo.factory.booking.BookingReminderDueEvent;
+import com.zairo.factory.booking.BookingRescheduledByCustomerEvent;
 import com.zairo.factory.providers.Provider;
 import com.zairo.factory.providers.ProviderRepository;
 import com.zairo.factory.workforce.WorkerCannotAttendEvent;
@@ -98,6 +99,13 @@ class BookingNotificationListener {
         userRepository.findById(event.userId())
                 .ifPresent(customer -> notificationService.sendBookingMovedEmail(customer.getId(),
                         customer.getEmail(), event.bookingId(), event.newStartsAt()));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    void onBookingRescheduledByCustomer(BookingRescheduledByCustomerEvent event) {
+        ownerEmailFor(event.providerId())
+                .ifPresent(ownerEmail -> notificationService.sendProviderBookingRescheduledEmail(ownerEmail,
+                        event.bookingId(), event.newStartsAt()));
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
