@@ -1,5 +1,8 @@
 package com.zairo.factory.workforce;
 
+import com.zairo.factory.booking.AvailabilitySlot;
+import com.zairo.factory.booking.AvailabilitySlotRepository;
+import com.zairo.factory.booking.AvailabilityStatus;
 import com.zairo.factory.providers.Provider;
 import com.zairo.factory.providers.ProviderRepository;
 import com.zairo.factory.providers.ProviderStatus;
@@ -19,12 +22,14 @@ public class FavoriteWorkerService {
     private final FavoriteWorkerRepository repository;
     private final WorkerCatalog catalog;
     private final ProviderRepository providerRepository;
+    private final AvailabilitySlotRepository slotRepository;
 
     public FavoriteWorkerService(FavoriteWorkerRepository repository, WorkerCatalog catalog,
-            ProviderRepository providerRepository) {
+            ProviderRepository providerRepository, AvailabilitySlotRepository slotRepository) {
         this.repository = repository;
         this.catalog = catalog;
         this.providerRepository = providerRepository;
+        this.slotRepository = slotRepository;
     }
 
     /** Idempotent. 404 for a person who is not publicly listed (unknown, deactivated, business not ACTIVE). */
@@ -67,7 +72,14 @@ public class FavoriteWorkerService {
         return new FavoriteWorkerResponse(worker.id(), worker.kind(), provider.getId(), provider.getName(),
                 worker.displayName(), worker.photoUrl(),
                 rating.reviewCount() == 0 ? null : Math.round(rating.averageRating() * 10) / 10.0,
-                rating.reviewCount());
+                rating.reviewCount(), nextFreeAt(worker));
+    }
+
+    /** The start of this person's soonest open time, or null when they have none. */
+    private Instant nextFreeAt(Worker worker) {
+        return slotRepository.findByProviderIdAndEmployeeIdAndStatusAndStartsAtAfter(worker.providerId(),
+                worker.id(), AvailabilityStatus.OPEN, Instant.now()).stream().map(AvailabilitySlot::getStartsAt)
+                .min(java.util.Comparator.naturalOrder()).orElse(null);
     }
 
     /** The worker when they are publicly listed, else null. */

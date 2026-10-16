@@ -13,6 +13,9 @@ class FavoriteWorker {
   final double? averageRating;
   final int reviewCount;
 
+  /// When their next open time starts; null when they have none (or work without a schedule of their own).
+  final DateTime? nextFreeAt;
+
   const FavoriteWorker({
     required this.id,
     required this.kind,
@@ -22,6 +25,7 @@ class FavoriteWorker {
     required this.photoUrl,
     required this.averageRating,
     required this.reviewCount,
+    this.nextFreeAt,
   });
 
   factory FavoriteWorker.fromJson(Map<String, dynamic> json) {
@@ -34,6 +38,7 @@ class FavoriteWorker {
       photoUrl: json['photoUrl'] as String?,
       averageRating: (json['averageRating'] as num?)?.toDouble(),
       reviewCount: (json['reviewCount'] as num).toInt(),
+      nextFreeAt: json['nextFreeAt'] == null ? null : DateTime.parse(json['nextFreeAt'] as String),
     );
   }
 }

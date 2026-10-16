@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../app/router/app_routes.dart';
+import '../../../../core/formatting/slot_label.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/widgets/logged_out_gate.dart';
@@ -221,6 +222,7 @@ class _MyMastersRail extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).toLanguageTag();
     final masters = ref.watch(myFavoriteWorkersProvider(userId)).value ?? const [];
     if (masters.isEmpty) return const SizedBox.shrink();
 
@@ -232,7 +234,7 @@ class _MyMastersRail extends ConsumerWidget {
           Text(l10n.favoritesMyMastersTitle, style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: FactorySpacing.space3),
           SizedBox(
-            height: MasterAvatarCard.heightFor(context),
+            height: MasterAvatarCard.heightFor(context, withCaption: masters.any((m) => m.nextFreeAt != null)),
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: masters.length,
@@ -244,6 +246,9 @@ class _MyMastersRail extends ConsumerWidget {
                   photoUrl: master.photoUrl,
                   averageRating: master.averageRating,
                   reviewCount: master.reviewCount,
+                  caption: master.nextFreeAt == null
+                      ? null
+                      : slotLabel(l10n, locale, DateTime.now(), master.nextFreeAt!.toLocal()),
                   onTap: () => context.push(AppRoutes.worker(master.id)),
                 );
               },
