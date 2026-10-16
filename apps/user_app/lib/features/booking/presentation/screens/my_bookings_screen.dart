@@ -20,6 +20,7 @@ import '../../data/models/book_again_suggestion.dart';
 import '../../../payments/presentation/widgets/payment_status_chip.dart';
 import '../../../reviews/presentation/widgets/review_section.dart';
 import '../../../workforce/presentation/widgets/change_requests_banner.dart';
+import '../../../workers/presentation/providers/workers_providers.dart';
 import '../../data/booking_exception.dart';
 import '../../data/models/booking.dart';
 import '../providers/booking_providers.dart';
@@ -302,8 +303,8 @@ class _BookingsTabButton extends StatelessWidget {
 }
 
 /// "Book again" on a completed booking: opens the business straight in the
-/// booking flow with the same service already picked — one tap from the visit
-/// to choosing a time. The business comes from the booking itself; an older
+/// booking flow with the same service — and the same person, when the visit was
+/// with a named one — already picked: one tap from the visit to choosing a time. The business comes from the booking itself; an older
 /// backend that does not send it falls back to the Book-Again suggestions Home
 /// already shows (matched by service), and without either the button is not
 /// offered.
@@ -333,10 +334,22 @@ class _BookAgainButton extends ConsumerWidget {
     return FactoryButton(
       label: AppLocalizations.of(context)!.bookingBookAgainButton,
       variant: FactoryButtonVariant.text,
-      onPressed: () => context.push(
-        AppRoutes.provider(targetProviderId, book: true, serviceId: booking.serviceId),
-        extra: match?.toProviderSearchResult(),
-      ),
+      onPressed: () async {
+        // The same person again, when the visit was with a named one (and still works there); a lookup that
+        // fails or finds nobody just books the service without a preferred person.
+        final worker = await ref.read(bookingWorkerProvider(booking.id).future);
+        if (!context.mounted) return;
+        context.push(
+          AppRoutes.provider(
+            targetProviderId,
+            book: true,
+            serviceId: booking.serviceId,
+            workerId: worker?.id,
+            workerKind: worker?.kind,
+          ),
+          extra: match?.toProviderSearchResult(),
+        );
+      },
     );
   }
 }

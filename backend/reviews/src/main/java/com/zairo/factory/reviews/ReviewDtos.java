@@ -28,6 +28,25 @@ public final class ReviewDtos {
         }
     }
 
+    public record ReportReviewRequest(
+            @NotBlank @Size(max = 1000) @Schema(description = "Why the review should be looked at.",
+                    example = "Abusive language") String reason) {
+    }
+
+    public record ModerationDecisionRequest(
+            @Size(max = 1000) @Schema(description = "Optional note, kept in the audit log (and shown as the hidden "
+                    + "reason).", example = "Contains personal data") String reason) {
+    }
+
+    /** One row of the platform's moderation queue. */
+    public record ModerationReviewResponse(
+            UUID id, UUID bookingId, UUID providerId, String providerName, int rating, String comment,
+            Instant createdAt, String businessReply, String reportReason, Instant reportedAt,
+            @Schema(description = "OPEN (waiting for a decision), HIDDEN (kept out of every rating) or DISMISSED "
+                    + "(looked at, stays).") String status,
+            Instant hiddenAt, String hiddenReason) {
+    }
+
     public record ReplyToReviewRequest(
             @NotBlank @Size(max = 2000) @Schema(example = "Thank you for the kind words!") String reply) {
     }
@@ -56,7 +75,10 @@ public final class ReviewDtos {
             UUID id, UUID bookingId,
             @Schema(description = "The reviewing customer's display name.", example = "Aisha K.") String customerName,
             int rating, String comment, Instant createdAt,
-            String businessReply, Instant businessReplyAt) {
+            String businessReply, Instant businessReplyAt,
+            @Schema(description = "Moderation state: null = never reported; OPEN = reported, waiting for the "
+                    + "platform; HIDDEN = kept out of every rating; DISMISSED = reported, the platform kept it.")
+            String moderationStatus) {
     }
 
     /**

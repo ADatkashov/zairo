@@ -12,6 +12,7 @@ abstract final class ConsoleRoutes {
   static const catalog = '/catalog';
   static const cities = '/cities';
   static const ads = '/ads';
+  static const reviews = '/reviews';
   static const finance = '/finance';
   static const activity = '/activity';
   static const staff = '/staff';
@@ -27,16 +28,17 @@ const consoleBranchPaths = [
   ConsoleRoutes.catalog, // 2
   ConsoleRoutes.cities, // 3
   ConsoleRoutes.ads, // 4
-  ConsoleRoutes.finance, // 5
-  ConsoleRoutes.activity, // 6
-  ConsoleRoutes.staff, // 7
-  ConsoleRoutes.settings, // 8
-  ConsoleRoutes.more, // 9
+  ConsoleRoutes.reviews, // 5
+  ConsoleRoutes.finance, // 6
+  ConsoleRoutes.activity, // 7
+  ConsoleRoutes.staff, // 8
+  ConsoleRoutes.settings, // 9
+  ConsoleRoutes.more, // 10
 ];
 
 /// Branch indexes the phone's bottom bar shows (two, the "+", two); the last
 /// tab is "More". Catalog is reached through the "+" and "More".
-const phoneTabBranches = [0, 1, 5, 9];
+const phoneTabBranches = [0, 1, 6, 10];
 
 /// Areas a phone reaches through "More".
-const moreBranches = {2, 3, 4, 6, 7, 8};
+const moreBranches = {2, 3, 4, 5, 7, 8, 9};

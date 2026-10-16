@@ -180,7 +180,7 @@ public class WorkerCatalog {
                     + " p.name as provider_name, avg(coalesce(r.worker_rating, r.rating)) as average_rating, count(r.id) as review_count"
                     + " from " + spec.table() + " w join provider p on p.id = w.provider_id join ("
                     + bookingsOfWorkers(spec) + ") wb on wb.worker_id = w.id join review r on r.booking_id"
-                    + " = wb.booking_id where w.is_active and p.status = 'ACTIVE'"
+                    + " = wb.booking_id and r.hidden_at is null where w.is_active and p.status = 'ACTIVE'"
                     + " and (cast(:city as varchar) is null or p.city_code is null or p.city_code = :city)"
                     + " group by w.id, w.provider_id, w.user_id, w.display_name, w.photo_url, w.is_active, p.name"
                     + " having count(r.id) >= :min").param("min", minReviews)
@@ -201,7 +201,7 @@ public class WorkerCatalog {
         Spec spec = spec(worker.kind());
         return jdbc.sql("select coalesce(avg(coalesce(r.worker_rating, r.rating)), 0) as average_rating, count(r.id) as review_count from ("
                 + bookingsOfWorkers(spec) + ") wb join review r on r.booking_id = wb.booking_id"
-                + " where wb.worker_id = :id").param("id", worker.id())
+                + " and r.hidden_at is null where wb.worker_id = :id").param("id", worker.id())
                 .query((rs, n) -> new Ranked(worker, providerName, rs.getDouble("average_rating"),
                         rs.getLong("review_count")))
                 .single();
@@ -223,7 +223,7 @@ public class WorkerCatalog {
         Spec spec = spec(worker.kind());
         return jdbc.sql("select coalesce(r.worker_rating, r.rating) as rating, r.comment, r.created_at, r.business_reply from (" + bookingsOfWorkers(spec)
                 + ") wb join review r on r.booking_id = wb.booking_id where wb.worker_id = :id"
-                + " order by r.created_at desc limit :limit").param("id", worker.id()).param("limit", limit)
+                + " and r.hidden_at is null order by r.created_at desc limit :limit").param("id", worker.id()).param("limit", limit)
                 .query((rs, n) -> new WorkerReview(rs.getInt("rating"), rs.getString("comment"),
                         rs.getTimestamp("created_at").toInstant(), rs.getString("business_reply")))
                 .list();

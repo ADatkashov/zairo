@@ -44,6 +44,11 @@ class ReviewsApi {
         );
       });
 
+  /// Reports a review to the platform. One report per review for good: a second one is a 409.
+  Future<void> reportReview(String reviewId, String reason) => _run(() async {
+        await _dioClient.post('/reviews/$reviewId/report', data: {'reason': reason});
+      });
+
   /// Every call funnels through here so a 403/404 always surfaces as a
   /// [ReviewsException] carrying the backend's own `message` instead of a
   /// raw DioException -- callers show [ReviewsException.localizedMessage]

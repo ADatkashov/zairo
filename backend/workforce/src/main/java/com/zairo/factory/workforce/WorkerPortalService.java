@@ -285,7 +285,8 @@ public class WorkerPortalService {
         if (entries.isEmpty()) {
             return List.of();
         }
-        return reviewRepository.findByBookingIdIn(entries.stream().map(e -> e.booking.getId()).toList());
+        return reviewRepository.findByBookingIdIn(entries.stream().map(e -> e.booking.getId()).toList()).stream()
+                .filter(r -> !r.isHidden()).toList();
     }
 
     private WorkerBookingState stateOf(UUID bookingId, Worker worker) {

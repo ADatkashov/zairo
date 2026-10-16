@@ -109,4 +109,27 @@ void main() {
     expect([replied.id, replied.bookingId, replied.customerName, replied.rating, replied.comment, replied.createdAt],
         [original.id, original.bookingId, original.customerName, original.rating, original.comment, original.createdAt]);
   });
+
+  test('reportReview posts the reason; a second report is a 409 ReviewsException', () async {
+    http.reply('POST', '/reviews/r1/report', null, status: 204);
+
+    await api.reportReview('r1', 'Abusive language');
+
+    expect(http.bodyOf('POST', '/reviews/r1/report'), {'reason': 'Abusive language'});
+
+    http.fail('POST', '/reviews/r2/report', 409, message: 'already');
+    final again = await _failure(() => api.reportReview('r2', 'x'));
+    expect(again.statusCode, 409);
+  });
+
+  test('a review row carries where its report stands, and keeps it through a reply', () {
+    final reported = ProviderReview.fromJson({..._review, 'moderationStatus': 'OPEN'});
+    expect(reported.moderationStatus, 'OPEN');
+    expect(
+      reported.copyWithReply(businessReply: 'Thanks', businessReplyAt: DateTime(2026, 10, 12)).moderationStatus,
+      'OPEN',
+    );
+    expect(ProviderReview.fromJson(_review).moderationStatus, isNull);
+    expect(ProviderReview.fromJson(_review).copyWithModeration('OPEN').moderationStatus, 'OPEN');
+  });
 }

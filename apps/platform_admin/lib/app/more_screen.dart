@@ -22,6 +22,7 @@ class MoreScreen extends ConsumerWidget {
       ConsoleRoutes.catalog,
       ConsoleRoutes.cities,
       ConsoleRoutes.ads,
+      ConsoleRoutes.reviews,
       ConsoleRoutes.activity,
       if (permissions.canManageStaff) ConsoleRoutes.staff,
       ConsoleRoutes.settings,
