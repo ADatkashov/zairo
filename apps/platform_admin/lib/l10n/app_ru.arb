@@ -137,6 +137,7 @@
   "attentionAllClear": "Всё спокойно — ничего не ждёт вашего решения.",
   "attentionReview": "Открыть",
   "attentionPendingBusinesses": "{count, plural, one{{count} бизнес ждёт одобрения} few{{count} бизнеса ждут одобрения} many{{count} бизнесов ждут одобрения} other{{count} бизнеса ждут одобрения}}",
+  "attentionReportedReviews": "{count, plural, one{{count} отзыв с жалобой ждёт решения} few{{count} отзыва с жалобой ждут решения} many{{count} отзывов с жалобой ждут решения} other{{count} отзыва с жалобой ждут решения}}",
   "attentionFailedRefunds": "{count, plural, one{{count} возврат не прошёл — клиенту всё ещё должны деньги} few{{count} возврата не прошли — клиентам всё ещё должны деньги} many{{count} возвратов не прошли — клиентам всё ещё должны деньги} other{{count} возврата не прошли — клиентам всё ещё должны деньги}}",
   "attentionPayablePayouts": "{count, plural, one{{count} выплата бизнесу ждёт оплаты} few{{count} выплаты бизнесам ждут оплаты} many{{count} выплат бизнесам ждут оплаты} other{{count} выплаты бизнесам ждут оплаты}}",
   "dashOpen": "Открыть",

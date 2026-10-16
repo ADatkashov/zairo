@@ -88,6 +88,8 @@ Widget _app(
   _FakeWorkersApi api, {
   List<PortfolioItem> work = const [],
   List<AvailabilitySlot> slots = const [],
+  double textScale = 1,
+  bool dark = false,
 }) => ProviderScope(
   // No automatic retry: a failed load must stay failed until the person taps retry.
   retry: (_, _) => null,
@@ -97,9 +99,13 @@ Widget _app(
     workforceApiProvider.overrideWithValue(_FakeWorkforceApi(slots)),
   ],
   child: MaterialApp.router(
-    theme: factoryLightTheme(),
+    theme: dark ? factoryDarkTheme() : factoryLightTheme(),
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
+    builder: (context, child) => MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
+      child: child!,
+    ),
     routerConfig: GoRouter(
       routes: [
         GoRoute(path: '/', builder: (_, _) => const WorkerScreen(workerId: 'w1')),
@@ -303,5 +309,51 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Provider p1 book=1 worker=w1 kind=MASTER slot=null service=s1'), findsOneWidget);
+  });
+
+  testWidgets('a full master page fits a 320 px phone with a large font in the dark theme', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final now = DateTime.now();
+    final profile = _profile(
+      bio: 'I have been doing hair for twelve years and love long, complicated colour work for every season.',
+      reviews: [
+        WorkerReview(
+          rating: 5,
+          comment: 'Absolutely wonderful, would recommend to everyone I know without any doubt at all',
+          createdAt: DateTime(2026, 10, 1),
+          businessReply: 'Thank you so much, see you soon!',
+        ),
+      ],
+      services: const [
+        WorkerService(
+          id: 's1',
+          title: 'Long colouring with toning and a deep care treatment',
+          durationMinutes: 180,
+          price: 45000,
+          currency: 'KZT',
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      _app(
+        _FakeWorkersApi(profile: profile),
+        work: [PortfolioItem(id: 'w1', masterId: 'w1', imageUrl: 'https://cdn.example/1.jpg')],
+        slots: [
+          for (var i = 1; i <= 4; i++) _slot('s$i', DateTime(now.year, now.month, now.day).add(Duration(days: i, hours: 10))),
+        ],
+        textScale: 2,
+        dark: true,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    for (var i = 0; i < 8; i++) {
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -400));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
   });
 }

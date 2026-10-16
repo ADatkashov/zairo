@@ -16,12 +16,18 @@ public final class PlatformInsightsDtos {
             SubscriptionsSection subscriptions,
             BookingsSection bookings,
             PaymentsSection payments,
-            RevenueSection revenue) {
+            RevenueSection revenue,
+            ReviewsSection reviews) {
 
         public record UsersSection(@Schema(description = "Every registered account, any role.") long total) {
         }
 
         public record BusinessesSection(long total, long active, long pendingModeration, long blocked) {
+        }
+
+        public record ReviewsSection(
+                @Schema(description = "Reviews a business reported that wait for a platform decision.")
+                long reportedOpen) {
         }
 
         public record SubscriptionsSection(long free, long pro, long active, long pastDue, long cancelled) {

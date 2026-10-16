@@ -43,6 +43,7 @@ class ConsoleShell extends ConsumerWidget {
     if (metrics == null) return const {};
     return {
       consoleBranchPaths.indexOf(ConsoleRoutes.businesses): metrics.businessesPending,
+      consoleBranchPaths.indexOf(ConsoleRoutes.reviews): metrics.reviewsReported,
       consoleBranchPaths.indexOf(ConsoleRoutes.finance): metrics.paymentsRefundFailed,
     };
   }

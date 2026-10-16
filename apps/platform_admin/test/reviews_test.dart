@@ -2,6 +2,7 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:platform_admin/app/routes.dart';
+import 'package:platform_admin/app/shell.dart';
 import 'package:platform_admin/features/reviews/data/review_report.dart';
 
 import 'support/fake_backend.dart';
@@ -216,5 +217,61 @@ void main() {
 
     expect(find.text('Reported: Abusive language'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('reported reviews waiting for a decision show on the dashboard and as a badge on Reviews', (tester) async {
+    final backend = defaultBackend();
+    backend.reply('GET', '/platform/dashboard', {
+      'users': {'total': 3},
+      'businesses': {'total': 1, 'active': 1, 'pendingModeration': 0, 'blocked': 0},
+      'subscriptions': {},
+      'bookings': {},
+      'payments': {'refundFailed': 0},
+      'revenue': {'mrr': 0, 'currency': null, 'platformCommission': 0, 'platformCommissionCurrency': null},
+      'reviews': {'reportedOpen': 3},
+    });
+    backend.reply('GET', '/platform/payouts', []);
+    await pumpConsole(tester, backend: backend);
+
+    expect(find.text('3 reported reviews are waiting for a decision'), findsOneWidget);
+    expect(find.descendant(of: find.byType(ConsoleSidebar), matching: find.text('3')), findsOneWidget);
+    expect(find.text('All clear — nothing is waiting for you.'), findsNothing);
+  });
+
+  testWidgets('a dashboard from a backend that does not report reviews yet still reads', (tester) async {
+    final backend = defaultBackend();
+    backend.reply('GET', '/platform/dashboard', {
+      'users': {'total': 3},
+      'businesses': {'total': 1, 'active': 1, 'pendingModeration': 0, 'blocked': 0},
+      'subscriptions': {},
+      'bookings': {},
+      'payments': {'refundFailed': 0},
+      'revenue': {'mrr': 0, 'currency': null, 'platformCommission': 0, 'platformCommissionCurrency': null},
+    });
+    backend.reply('GET', '/platform/payouts', []);
+    await pumpConsole(tester, backend: backend);
+
+    expect(find.text('All clear — nothing is waiting for you.'), findsOneWidget);
+  });
+
+  testWidgets('the dashboard with every attention item reads on a narrow phone', (tester) async {
+    final backend = defaultBackend();
+    backend.reply('GET', '/platform/dashboard', {
+      'users': {'total': 1200},
+      'businesses': {'total': 12, 'active': 9, 'pendingModeration': 4, 'blocked': 2},
+      'subscriptions': {'free': 7, 'pro': 5, 'active': 5, 'pastDue': 1, 'cancelled': 2},
+      'bookings': {'today': 14, 'thisWeek': 90, 'thisMonth': 350, 'completed': 800, 'cancelled': 40},
+      'payments': {'succeeded': 700, 'failed': 12, 'pending': 5, 'refunded': 20, 'refundFailed': 3},
+      'revenue': {'mrr': 150000, 'currency': 'KZT', 'platformCommission': 42000, 'platformCommissionCurrency': 'KZT'},
+      'reviews': {'reportedOpen': 12},
+    });
+    await pumpConsole(tester, backend: backend, size: const Size(320, 640));
+    expect(tester.takeException(), isNull);
+
+    for (var i = 0; i < 6; i++) {
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -400));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
   });
 }

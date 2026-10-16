@@ -274,6 +274,8 @@
   "@attentionReview": {"description": "attentionReview"},
   "attentionPendingBusinesses": "{count, plural, one{{count} business is waiting for approval} other{{count} businesses are waiting for approval}}",
   "@attentionPendingBusinesses": {"description": "attentionPendingBusinesses", "placeholders": {"count": {"type": "int"}}},
+  "attentionReportedReviews": "{count, plural, one{{count} reported review is waiting for a decision} other{{count} reported reviews are waiting for a decision}}",
+  "@attentionReportedReviews": {"description": "attentionReportedReviews", "placeholders": {"count": {"type": "int"}}},
   "attentionFailedRefunds": "{count, plural, one{{count} refund failed — a customer is still owed money} other{{count} refunds failed — customers are still owed money}}",
   "@attentionFailedRefunds": {"description": "attentionFailedRefunds", "placeholders": {"count": {"type": "int"}}},
   "attentionPayablePayouts": "{count, plural, one{{count} payout is waiting to be paid to a business} other{{count} payouts are waiting to be paid to businesses}}",

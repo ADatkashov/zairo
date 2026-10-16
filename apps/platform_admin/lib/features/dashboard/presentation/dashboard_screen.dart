@@ -155,6 +155,13 @@ class _Attention extends StatelessWidget {
           action: l10n.attentionReview,
           path: '${ConsoleRoutes.businesses}?status=PENDING',
         ),
+      if (metrics.reviewsReported > 0)
+        _AttentionItem(
+          icon: Icons.rate_review_outlined,
+          text: l10n.attentionReportedReviews(metrics.reviewsReported),
+          action: l10n.attentionReview,
+          path: ConsoleRoutes.reviews,
+        ),
       if (metrics.paymentsRefundFailed > 0)
         _AttentionItem(
           icon: Icons.error_outline_rounded,
