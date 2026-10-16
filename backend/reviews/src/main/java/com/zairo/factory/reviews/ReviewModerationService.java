@@ -1,9 +1,12 @@
 package com.zairo.factory.reviews;
 
+import com.zairo.factory.booking.AvailabilitySlotRepository;
+import com.zairo.factory.booking.BookingRepository;
 import com.zairo.factory.platformadmin.PlatformAuditLogService;
 import com.zairo.factory.reviews.ReviewDtos.ModerationReviewResponse;
 import java.time.Instant;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -22,10 +25,18 @@ public class ReviewModerationService {
 
     private final ReviewRepository reviewRepository;
     private final PlatformAuditLogService auditLogService;
+    private final BookingRepository bookingRepository;
+    private final AvailabilitySlotRepository availabilitySlotRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public ReviewModerationService(ReviewRepository reviewRepository, PlatformAuditLogService auditLogService) {
+    public ReviewModerationService(ReviewRepository reviewRepository, PlatformAuditLogService auditLogService,
+            BookingRepository bookingRepository, AvailabilitySlotRepository availabilitySlotRepository,
+            ApplicationEventPublisher eventPublisher) {
         this.reviewRepository = reviewRepository;
         this.auditLogService = auditLogService;
+        this.bookingRepository = bookingRepository;
+        this.availabilitySlotRepository = availabilitySlotRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     /** {@code status}: OPEN (waiting), HIDDEN or DISMISSED; anything else is a 400. */
@@ -54,6 +65,7 @@ public class ReviewModerationService {
         reviewRepository.save(review);
         auditLogService.record(actorId, actorEmail, "REVIEW_HIDDEN", TARGET, reviewId, "VISIBLE", "HIDDEN",
                 blankToNull(reason));
+        announce(review, ReviewModerationDecidedEvent.Decision.HIDDEN);
     }
 
     /** Puts a hidden review back. Restoring a visible review is a no-op. */
@@ -67,6 +79,7 @@ public class ReviewModerationService {
         reviewRepository.save(review);
         auditLogService.record(actorId, actorEmail, "REVIEW_RESTORED", TARGET, reviewId, "HIDDEN", "VISIBLE",
                 blankToNull(reason));
+        announce(review, ReviewModerationDecidedEvent.Decision.RESTORED);
     }
 
     /** The review stays: the open report is closed (and cannot be filed again). 409 when there is nothing open. */
@@ -80,6 +93,15 @@ public class ReviewModerationService {
         reviewRepository.save(review);
         auditLogService.record(actorId, actorEmail, "REVIEW_REPORT_DISMISSED", TARGET, reviewId, "OPEN", "DISMISSED",
                 blankToNull(reason));
+        announce(review, ReviewModerationDecidedEvent.Decision.KEPT);
+    }
+
+    /** Tells the reviewed business what the platform decided (notifications turns it into an email). */
+    private void announce(Review review, ReviewModerationDecidedEvent.Decision decision) {
+        bookingRepository.findById(review.getBookingId())
+                .flatMap(booking -> availabilitySlotRepository.findById(booking.getAvailabilitySlotId()))
+                .ifPresent(slot -> eventPublisher.publishEvent(
+                        new ReviewModerationDecidedEvent(review.getId(), slot.getProviderId(), decision)));
     }
 
     private Review find(UUID reviewId) {

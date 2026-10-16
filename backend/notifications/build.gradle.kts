@@ -49,4 +49,6 @@ dependencies {
 
     // BirthdayBonusAwardedEvent -> in-app/email greeting; one-directional like the engines above.
     implementation(project(":loyalty"))
+    // Tells a business what the platform decided about a review it reported.
+    implementation(project(":reviews"))
 }
