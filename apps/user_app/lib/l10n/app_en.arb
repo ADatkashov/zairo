@@ -412,6 +412,8 @@
 
   "homeBookAgainTitle": "Book again",
   "@homeBookAgainTitle": {"description": "Home screen section header above the repeat-your-last-appointment row."},
+  "homeBookAgainLastVisit": "Last visit: {date}",
+  "@homeBookAgainLastVisit": {"description": "Line on a Book-again card with the date of the previous visit.", "placeholders": {"date": {"type": "String"}}},
 
   "homeRecommendedTitle": "Recommended for you",
   "@homeRecommendedTitle": {"description": "Home screen section header above the top-rated-providers row."},

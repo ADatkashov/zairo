@@ -145,6 +145,7 @@
   "allCategoriesSearchEmptyMessage": "«{query}» бойынша ештеңе табылмады. Басқа сөзді байқап көріңіз.",
   "errorCategoriesLoadFailed": "Санаттарды жүктеу мүмкін болмады.",
   "homeBookAgainTitle": "Қайта брондау",
+  "homeBookAgainLastVisit": "Соңғы визит: {date}",
   "homeRecommendedTitle": "Сізге ұсынамыз",
 
   "searchHint": "Қызметтерді немесе провайдерлерді іздеу",

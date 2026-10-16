@@ -2,6 +2,7 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../app/router/app_routes.dart';
@@ -721,7 +722,7 @@ class _BookAgainSection extends ConsumerWidget {
         ),
         const SizedBox(height: FactorySpacing.space3),
         SizedBox(
-          height: 96 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0),
+          height: 118 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0),
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: suggestions.length,
@@ -753,6 +754,7 @@ class _BookAgainCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.factoryColors;
+    final l10n = AppLocalizations.of(context)!;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -780,6 +782,17 @@ class _BookAgainCard extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 suggestion.serviceTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: colors.textSecondary),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                l10n.homeBookAgainLastVisit(
+                  DateFormat.MMMd(Localizations.localeOf(context).toString())
+                      .format(suggestion.lastVisitAt.toLocal()),
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall
