@@ -8,6 +8,7 @@ import com.zairo.factory.booking.BookingReminderDueEvent;
 import com.zairo.factory.booking.BookingRescheduledByCustomerEvent;
 import com.zairo.factory.providers.Provider;
 import com.zairo.factory.providers.ProviderRepository;
+import com.zairo.factory.reviews.ReviewModerationDecidedEvent;
 import com.zairo.factory.workforce.WorkerCannotAttendEvent;
 import com.zairo.factory.workforce.WorkerNotAcceptedEvent;
 import com.zairo.factory.workforce.WorkerChangeRequestedEvent;
@@ -128,6 +129,13 @@ class BookingNotificationListener {
         userRepository.findById(event.userId())
                 .ifPresent(customer -> notificationService.sendBookingDayReminderEmail(customer.getId(),
                         customer.getEmail(), event.bookingId(), event.startsAt()));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    void onReviewModerationDecided(ReviewModerationDecidedEvent event) {
+        ownerEmailFor(event.providerId())
+                .ifPresent(ownerEmail -> notificationService.sendReviewDecisionEmail(ownerEmail, event.reviewId(),
+                        event.decision()));
     }
 
     private Optional<String> ownerEmailFor(UUID providerId) {

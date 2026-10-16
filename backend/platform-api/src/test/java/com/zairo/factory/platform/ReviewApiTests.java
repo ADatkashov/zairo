@@ -39,7 +39,7 @@ import org.springframework.http.ResponseEntity;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
-@Import(TestcontainersConfiguration.class)
+@Import({TestcontainersConfiguration.class, TestNotifications.class})
 class ReviewApiTests {
 
     @Autowired
@@ -47,6 +47,9 @@ class ReviewApiTests {
 
     @Autowired
     private PlatformAdminAccountRepository platformAdminAccountRepository;
+
+    @Autowired
+    private TestNotifications.CapturedEmails capturedEmails;
 
     @Test
     void reviewRequiresACompletedBookingAndAllowsOnlyOnePerBooking() {
@@ -232,6 +235,12 @@ class ReviewApiTests {
                 new HttpEntity<>(reason, TestAuth.authHeaders(ctx.owner().accessToken())), Map.class)
                 .getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
 
+        // The business is told what was decided.
+        assertThat(capturedEmails.sent).anySatisfy(email -> {
+            assertThat(email.subject()).isEqualTo("About a review you reported");
+            assertThat(email.body()).contains(reviewId.toString()).contains("hid the review");
+        });
+
         // Restoring puts it back in every rating; its report stays closed.
         assertThat(restTemplate.exchange("/api/v1/platform/reviews/" + reviewId + "/restore", HttpMethod.POST,
                 asModerator, Void.class).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
@@ -255,6 +264,9 @@ class ReviewApiTests {
         assertThat(restTemplate.exchange(dismissPath, HttpMethod.POST, asModerator, Void.class).getStatusCode())
                 .isEqualTo(HttpStatus.NO_CONTENT);
         assertThat(queueIds("DISMISSED", asSupport)).contains(keptId.toString());
+        assertThat(capturedEmails.sent).anySatisfy(email -> {
+            assertThat(email.body()).contains(keptId.toString()).contains("kept it");
+        });
         assertThat(restTemplate.exchange(dismissPath, HttpMethod.POST, asModerator, Map.class).getStatusCode())
                 .isEqualTo(HttpStatus.CONFLICT);
         assertThat(restTemplate.exchange("/api/v1/reviews/" + keptId + "/report", HttpMethod.POST,
