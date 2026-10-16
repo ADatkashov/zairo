@@ -2010,5 +2010,15 @@
   "@waitlistLeaveButton": {"description": "Button that takes the customer off a business's waitlist."},
 
   "waitlistFailed": "Couldn't update the waitlist. Try again.",
-  "@waitlistFailed": {"description": "Snackbar when joining or leaving a waitlist fails."}
+  "@waitlistFailed": {"description": "Snackbar when joining or leaving a waitlist fails."},
+  "waitlistWhichDay": "Which day?",
+  "@waitlistWhichDay": {"description": "Heading above the day chips on a business's waitlist form."},
+  "waitlistAnyDay": "Any day",
+  "@waitlistAnyDay": {"description": "Waitlist day chip: no particular day."},
+  "waitlistToday": "Today",
+  "@waitlistToday": {"description": "Waitlist day chip for today."},
+  "waitlistTomorrow": "Tomorrow",
+  "@waitlistTomorrow": {"description": "Waitlist day chip for tomorrow."},
+  "waitlistJoinedDayMessage": "We'll notify you as soon as a time opens up on {day}. It goes to whoever books first.",
+  "@waitlistJoinedDayMessage": {"description": "Shown once on a business's waitlist for one day; {day} is e.g. Mon, Oct 5.", "placeholders": {"day": {"type": "String"}}}
 }
