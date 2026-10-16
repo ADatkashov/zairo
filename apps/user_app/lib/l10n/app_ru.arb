@@ -247,7 +247,7 @@
   "reviewLeaveButton": "Оставить отзыв",
   "reviewAboutWorker": "Ваш визит к мастеру: {name}",
   "reviewRateBusiness": "Бизнес",
-  "reviewWorkerOptionalHint": "Необязательно. Без неё оценка выше засчитывается и для: {name}.",
+  "reviewWorkerOptionalHint": "Необязательно. Без неё оценка выше засчитается и мастеру.",
   "reviewCommentHint": "Комментарий (необязательно)",
   "reviewCancel": "Отмена",
   "reviewSubmit": "Отправить",
