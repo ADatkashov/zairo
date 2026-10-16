@@ -2,7 +2,11 @@ package com.zairo.factory.platform;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.zairo.factory.auth.CredentialRepository;
 import com.zairo.factory.platform.TestAuth.Registered;
+import com.zairo.factory.providers.ProviderDtos.UpdateProviderStatusRequest;
+import com.zairo.factory.providers.ProviderStatus;
+import com.zairo.factory.users.UserRepository;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
 import com.zairo.factory.staff.StaffBookingDtos.CreateStaffBookingRequest;
@@ -35,6 +39,12 @@ class WorkerScheduleApiTests {
 
     @Autowired
     private TestRestTemplate restTemplate;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private CredentialRepository credentialRepository;
 
     private static List<Map<String, Object>> workingDays(String... intervals) {
         List<Map<String, Object>> hours = new ArrayList<>();
@@ -183,12 +193,30 @@ class WorkerScheduleApiTests {
         List<String> after = getList(options, customer).stream().map(o -> o.get("slotId").toString()).toList();
         assertThat(after).contains(at10.toString()).doesNotContain(at11.toString());
 
+        // The customer's "my masters" shows when this person is next free (the 10:00 time came back, so soonest).
+        String fav = "/api/v1/users/" + customer.userId() + "/favorite-workers";
+        approve(providerId);
+        restTemplate.exchange(fav + "/" + staffId, HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Void.class);
+        List<Map> mine = getList(fav, customer);
+        assertThat(mine).hasSize(1);
+        assertThat(mine.get(0).get("nextFreeAt")).isNotNull();
+
         // A cancelled booking can no longer be moved.
         restTemplate.exchange("/api/v1/bookings/" + bookingId + "/cancel", HttpMethod.POST,
                 new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
         assertThat(restTemplate.exchange(options, HttpMethod.GET,
                 new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class).getStatusCode())
                 .isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    private void approve(UUID providerId) {
+        Registered admin = TestAuth.registerAdmin(restTemplate, userRepository, credentialRepository,
+                "sched-admin-" + UUID.randomUUID() + "@example.com");
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers/" + providerId + "/status",
+                HttpMethod.PATCH, new HttpEntity<>(new UpdateProviderStatusRequest(ProviderStatus.ACTIVE),
+                        TestAuth.authHeaders(admin.accessToken())), Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     private UUID tomorrowSlot(UUID providerId, UUID staffId, int hour) {
