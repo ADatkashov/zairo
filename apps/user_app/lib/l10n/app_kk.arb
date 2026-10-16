@@ -730,5 +730,10 @@
   "waitlistJoinedTitle": "Сіз күту тізіміндесіз",
   "waitlistJoinedMessage": "Мұнда уақыт босаған бойда хабарлаймыз. Ол бірінші жазылғанға тиеді.",
   "waitlistLeaveButton": "Енді күтпеу",
-  "waitlistFailed": "Күту тізімін жаңарту мүмкін болмады. Қайталап көріңіз."
+  "waitlistFailed": "Күту тізімін жаңарту мүмкін болмады. Қайталап көріңіз.",
+  "waitlistWhichDay": "Қай күні?",
+  "waitlistAnyDay": "Кез келген күн",
+  "waitlistToday": "Бүгін",
+  "waitlistTomorrow": "Ертең",
+  "waitlistJoinedDayMessage": "{day} күні уақыт босаған бойда хабарлаймыз. Ол бірінші жазылғанға тиеді."
 }
