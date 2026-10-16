@@ -54,6 +54,7 @@ class _FakeDiscoveryApi extends DiscoveryApi {
     double? minRating,
     bool availableOnly = false,
     String? sort,
+    String? cityCode,
   }) async {
     return _results;
   }
@@ -82,6 +83,7 @@ class _RecordingDiscoveryApi extends DiscoveryApi {
     double? minRating,
     bool availableOnly = false,
     String? sort,
+    String? cityCode,
   }) async {
     lastVertical = vertical;
     lastQuery = query;

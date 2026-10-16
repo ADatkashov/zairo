@@ -97,11 +97,20 @@ abstract final class AppRoutes {
   ///
   /// With [workerId] and [workerKind] (MASTER, MECHANIC, CLEANER or STAFF) that
   /// person is already picked in the booking steps — what "Book" on a master's
-  /// own page wants, so the customer does not choose them a second time.
-  static String provider(String providerId, {bool book = false, String? workerId, String? workerKind}) {
+  /// own page wants, so the customer does not choose them a second time. With [slotId] that person's time is
+  /// picked too (one of the times shown on their page).
+  static String provider(
+    String providerId, {
+    bool book = false,
+    String? workerId,
+    String? workerKind,
+    String? slotId,
+  }) {
     final query = <String, String>{
       if (book) 'book': '1',
       if (workerId != null && workerKind != null) ...{'worker': workerId, 'kind': workerKind},
+      // A time to have picked as well; only meaningful together with a worker.
+      if (workerId != null && workerKind != null && slotId != null) 'slot': slotId,
     };
     final path = '/provider/$providerId';
     return query.isEmpty ? path : Uri(path: path, queryParameters: query).toString();

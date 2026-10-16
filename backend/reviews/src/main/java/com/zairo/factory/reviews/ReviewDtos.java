@@ -19,7 +19,13 @@ public final class ReviewDtos {
     // can show the bound in the schema and reject it a step earlier.
     public record CreateReviewRequest(
             @Min(1) @Max(5) @Schema(example = "5") int rating,
-            @Schema(description = "Optional.", example = "Loved the service!") String comment) {
+            @Schema(description = "Optional.", example = "Loved the service!") String comment,
+            @Min(1) @Max(5) @Schema(description = "Optional second rating for the person the visit was with "
+                    + "(master, mechanic, ...), apart from the business. Omit to rate both with `rating`.",
+                    example = "5") Integer workerRating) {
+        public CreateReviewRequest(int rating, String comment) {
+            this(rating, comment, null);
+        }
     }
 
     public record ReplyToReviewRequest(
@@ -35,11 +41,13 @@ public final class ReviewDtos {
             @Schema(description = "The reviewed business's own reply — null until they post one.",
                     example = "Thank you for the kind words!")
             String businessReply,
-            @Schema(description = "Only set once businessReply is set.") Instant businessReplyAt) {
+            @Schema(description = "Only set once businessReply is set.") Instant businessReplyAt,
+            @Schema(description = "The separate rating of the person the visit was with; null = `rating` counts "
+                    + "for them too.", example = "5") Integer workerRating) {
         static ReviewResponse from(Review review) {
             return new ReviewResponse(review.getId(), review.getBookingId(), review.getRating(),
                     review.getComment(), review.getCreatedAt(), review.getBusinessReply(),
-                    review.getBusinessReplyAt());
+                    review.getBusinessReplyAt(), review.getWorkerRating());
         }
     }
 

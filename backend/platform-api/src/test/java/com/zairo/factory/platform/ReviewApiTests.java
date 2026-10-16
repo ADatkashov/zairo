@@ -132,6 +132,25 @@ class ReviewApiTests {
     }
 
     @Test
+    void aSeparateRatingOfThePersonIsStoredAndMustBeBetweenOneAndFive() {
+        BookingContext ctx = createConfirmedBooking("worker-rating");
+        restTemplate.exchange("/api/v1/bookings/" + ctx.bookingId() + "/complete", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(ctx.owner().accessToken())), Map.class);
+        String path = "/api/v1/bookings/" + ctx.bookingId() + "/reviews";
+
+        ResponseEntity<Map> invalid = restTemplate.exchange(path, HttpMethod.POST, new HttpEntity<>(
+                new CreateReviewRequest(5, "x", 6), TestAuth.authHeaders(ctx.customer().accessToken())), Map.class);
+        assertThat(invalid.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+
+        ResponseEntity<Map> created = restTemplate.exchange(path, HttpMethod.POST, new HttpEntity<>(
+                new CreateReviewRequest(5, "Great salon", 3), TestAuth.authHeaders(ctx.customer().accessToken())),
+                Map.class);
+        assertThat(created.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(created.getBody().get("rating")).isEqualTo(5);
+        assertThat(created.getBody().get("workerRating")).isEqualTo(3);
+    }
+
+    @Test
     void completingABookingWithoutATokenIs401() {
         BookingContext ctx = createConfirmedBooking("complete-no-token");
 

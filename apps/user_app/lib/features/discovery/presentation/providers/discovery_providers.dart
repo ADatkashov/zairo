@@ -1,6 +1,8 @@
 import 'package:core_network/core_network.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../city/data/models/city.dart';
+import '../../../city/presentation/providers/city_providers.dart';
 import '../../../maps/data/geo_point.dart';
 import '../../../maps/presentation/providers/maps_providers.dart';
 import '../../data/discovery_api.dart';
@@ -130,7 +132,10 @@ final searchResultsProvider = FutureProvider.autoDispose
   } catch (_) {
     location = null;
   }
+  // Likewise best-effort: a city that can't be worked out is not a reason to hide the businesses meant for everyone.
+  final city = await ref.watch(userCurrentCityProvider.future).then<City?>((c) => c, onError: (_) => null);
   return api.searchProviders(
+    cityCode: city?.code,
     vertical: params.vertical,
     query: params.query,
     lat: location?.latitude,

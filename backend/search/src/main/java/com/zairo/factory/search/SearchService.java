@@ -87,6 +87,17 @@ public class SearchService {
     public SearchResults search(String vertical, UUID businessTypeId, UUID catalogServiceId, String query,
             Double originLat, Double originLng, BigDecimal minPrice, BigDecimal maxPrice, Double maxDistanceKm,
             Double minRating, boolean availableOnly, SearchSort sort, int page, int size) {
+        return search(vertical, businessTypeId, catalogServiceId, query, originLat, originLng, minPrice, maxPrice,
+                maxDistanceKm, minRating, availableOnly, sort, page, size, null);
+    }
+
+    /**
+     * Same as above, narrowed to one city when {@code cityCode} is given: businesses of that city plus those that
+     * have not set a city yet (so nothing disappears while owners are still filling their profile in).
+     */
+    public SearchResults search(String vertical, UUID businessTypeId, UUID catalogServiceId, String query,
+            Double originLat, Double originLng, BigDecimal minPrice, BigDecimal maxPrice, Double maxDistanceKm,
+            Double minRating, boolean availableOnly, SearchSort sort, int page, int size, String cityCode) {
         // Only ACTIVE providers are ever discoverable through search — a
         // PENDING (not yet moderated) or SUSPENDED provider still exists and
         // can be fetched directly by id, it's just invisible to browsing.
@@ -108,6 +119,12 @@ public class SearchService {
             providers = providerRepository.findByVerticalAndStatus(vertical, ProviderStatus.ACTIVE);
         } else {
             providers = providerRepository.findByStatus(ProviderStatus.ACTIVE);
+        }
+
+        if (cityCode != null && !cityCode.isBlank()) {
+            String city = cityCode.trim();
+            providers = providers.stream()
+                    .filter(p -> p.getCityCode() == null || city.equals(p.getCityCode())).toList();
         }
 
         // "Which businesses actually offer this exact catalog service" —

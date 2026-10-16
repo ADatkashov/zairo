@@ -22,6 +22,13 @@ public class Review {
 
     private String comment;
 
+    /**
+     * How the visit was with the person themselves (master, mechanic, ...), when the customer rated them apart
+     * from the business; null = one rating only, which then counts for the person as well.
+     */
+    @Column(name = "worker_rating")
+    private Integer workerRating;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -36,7 +43,12 @@ public class Review {
     }
 
     public Review(UUID id, UUID bookingId, int rating, String comment, Instant createdAt) {
+        this(id, bookingId, rating, null, comment, createdAt);
+    }
+
+    public Review(UUID id, UUID bookingId, int rating, Integer workerRating, String comment, Instant createdAt) {
         this.id = id;
+        this.workerRating = workerRating;
         this.bookingId = bookingId;
         this.rating = rating;
         this.comment = comment;
@@ -53,6 +65,15 @@ public class Review {
 
     public int getRating() {
         return rating;
+    }
+
+    /** The rating that counts for the person the visit was with: their own if given, else the shared one. */
+    public int getRatingForWorker() {
+        return workerRating != null ? workerRating : rating;
+    }
+
+    public Integer getWorkerRating() {
+        return workerRating;
     }
 
     public String getComment() {

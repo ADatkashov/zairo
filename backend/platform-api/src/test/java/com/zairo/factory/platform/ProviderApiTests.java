@@ -217,6 +217,8 @@ class ProviderApiTests {
     void aBusinessCreatedWithACityKeepsItAndAnUnknownCityIsRejected() {
         Registered owner = TestAuth.registerOwner(restTemplate, "salon-create-city-" + UUID.randomUUID()
                 + "@example.com");
+        // FREE allows one business per owner; this test creates a second (rejected) one too.
+        TestAuth.upgradeToPro(restTemplate, owner);
 
         ResponseEntity<java.util.Map> created = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
                 new HttpEntity<>(new CreateProviderRequest(owner.userId(), "Almaty Salon", "beauty", null, null,

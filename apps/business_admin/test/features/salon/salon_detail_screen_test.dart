@@ -689,15 +689,19 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('a business without a city is asked to pick one; with a city there is no hint', (tester) async {
+    testWidgets('a business without a city is asked to pick one', (tester) async {
       await pumpDetail(tester, _FakeSalonAdminApi(), _provider);
-      expect(find.text('Pick your city so customers there find you'), findsOneWidget);
 
+      expect(find.text('Pick your city so customers there find you'), findsOneWidget);
+    });
+
+    testWidgets('a business with a city gets no hint', (tester) async {
       await pumpDetail(
         tester,
         _FakeSalonAdminApi(),
         const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE', cityCode: 'almaty'),
       );
+
       expect(find.text('Pick your city so customers there find you'), findsNothing);
     });
 

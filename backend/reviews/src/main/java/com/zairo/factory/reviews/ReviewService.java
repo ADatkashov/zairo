@@ -37,8 +37,17 @@ public class ReviewService {
 
     @Transactional
     public Review createReview(UUID bookingId, UUID callerId, int rating, String comment) {
+        return createReview(bookingId, callerId, rating, null, comment);
+    }
+
+    @Transactional
+    public Review createReview(UUID bookingId, UUID callerId, int rating, Integer workerRating, String comment) {
         if (rating < 1 || rating > 5) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "rating must be between 1 and 5: " + rating);
+        }
+        if (workerRating != null && (workerRating < 1 || workerRating > 5)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "workerRating must be between 1 and 5: " + workerRating);
         }
 
         Booking booking = bookingRepository.findById(bookingId)
@@ -58,7 +67,7 @@ public class ReviewService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Booking already has a review: " + bookingId);
         }
 
-        Review review = new Review(UUID.randomUUID(), bookingId, rating, comment, Instant.now());
+        Review review = new Review(UUID.randomUUID(), bookingId, rating, workerRating, comment, Instant.now());
         review = reviewRepository.save(review);
 
         AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())

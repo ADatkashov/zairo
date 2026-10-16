@@ -119,6 +119,9 @@ void main() {
     await tester.enterText(find.widgetWithText(TextFormField, 'Title'), 'New promo');
     await tester.enterText(find.widgetWithText(TextFormField, 'Cover image link (https)'), 'https://cdn.example/n.jpg');
     await tester.enterText(find.widgetWithText(TextFormField, 'Video link (https, optional)'), 'https://v.example/n');
+    // The preview made the form longer; the dialog scrolls, so scroll to the switch like a person would.
+    await tester.ensureVisible(find.byType(Switch).last);
+    await tester.pumpAndSettle();
     await tester.tap(find.byType(Switch).last);
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Create'));
@@ -171,6 +174,33 @@ void main() {
     await tester.pumpAndSettle();
 
     expect((backend.calls('PUT', '/platform/ads/a1').single.data as Map)['linkTarget'], 'SEARCH');
+  });
+
+  testWidgets('the form previews the banner as Home will show it, once the cover link is valid', (tester) async {
+    await pumpConsole(tester, backend: _backend(), location: ConsoleRoutes.ads);
+
+    await tester.tap(find.text('Add banner'));
+    await tester.pumpAndSettle();
+    expect(find.byType(FactoryBannerCard), findsNothing);
+
+    await tester.enterText(find.widgetWithText(TextFormField, 'Cover image link (https)'), 'http://not-https.example/a.jpg');
+    await tester.pumpAndSettle();
+    expect(find.byType(FactoryBannerCard), findsNothing);
+
+    await tester.enterText(find.widgetWithText(TextFormField, 'Cover image link (https)'), 'https://cdn.example/a.jpg');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Title'), 'Earn bonuses');
+    await tester.pumpAndSettle();
+    expect(find.text('Preview on Home'), findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(FactoryBannerCard), matching: find.text('Earn bonuses')),
+      findsOneWidget,
+    );
+    expect(tester.widget<FactoryBannerCard>(find.byType(FactoryBannerCard)).showPlay, isFalse);
+
+    // A video link makes the preview carry the play badge, as Home will.
+    await tester.enterText(find.widgetWithText(TextFormField, 'Video link (https, optional)'), 'https://v.example/1');
+    await tester.pumpAndSettle();
+    expect(tester.widget<FactoryBannerCard>(find.byType(FactoryBannerCard)).showPlay, isTrue);
   });
 
   testWidgets('add banner starts as a draft unless "publish right away" is on', (tester) async {
