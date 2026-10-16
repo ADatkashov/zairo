@@ -28,6 +28,7 @@ class _EmptyDiscoveryApi extends DiscoveryApi {
     double? minRating,
     bool availableOnly = false,
     String? sort,
+    String? cityCode,
   }) async => const [];
 }
 
@@ -41,6 +42,12 @@ void main() {
       AppRoutes.provider('p-1', book: true, workerId: 'w-1', workerKind: 'MASTER'),
       '/provider/p-1?book=1&worker=w-1&kind=MASTER',
     );
+    expect(
+      AppRoutes.provider('p-1', book: true, workerId: 'w-1', workerKind: 'MASTER', slotId: 's-1'),
+      '/provider/p-1?book=1&worker=w-1&kind=MASTER&slot=s-1',
+    );
+    // A time without a person means nothing.
+    expect(AppRoutes.provider('p-1', slotId: 's-1'), '/provider/p-1');
     // A worker needs its kind to be found in the right directory; one alone is dropped.
     expect(AppRoutes.provider('p-1', workerId: 'w-1'), '/provider/p-1');
     expect(AppRoutes.reviews('p-1'), '/provider/p-1/reviews');

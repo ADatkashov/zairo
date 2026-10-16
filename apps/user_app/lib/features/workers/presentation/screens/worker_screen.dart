@@ -9,6 +9,7 @@ import '../../../../app/router/app_routes.dart';
 import '../../../../core/formatting/initials.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../beauty/presentation/providers/beauty_providers.dart';
+import '../../../workforce/presentation/providers/workforce_providers.dart';
 import '../../data/models/worker_profile.dart';
 import '../providers/workers_providers.dart';
 
@@ -45,6 +46,20 @@ class WorkerScreen extends ConsumerWidget {
   }
 }
 
+/// How many of a worker's next free times the page shows.
+const _maxSoonestTimes = 6;
+
+/// "Today 14:00", "Tomorrow 10:00", or "Oct 21, 14:00" further out.
+String _slotLabel(AppLocalizations l10n, String locale, DateTime now, DateTime start) {
+  final time = DateFormat.Hm(locale).format(start);
+  final today = DateTime(now.year, now.month, now.day);
+  final day = DateTime(start.year, start.month, start.day);
+  final days = day.difference(today).inDays;
+  if (days == 0) return l10n.workerSlotToday(time);
+  if (days == 1) return l10n.workerSlotTomorrow(time);
+  return DateFormat.MMMd(locale).add_Hm().format(start);
+}
+
 class _WorkerBody extends ConsumerWidget {
   const _WorkerBody({required this.profile});
 
@@ -57,6 +72,12 @@ class _WorkerBody extends ConsumerWidget {
     final textTheme = Theme.of(context).textTheme;
     final rating = profile.averageRating;
     final locale = Localizations.localeOf(context).toLanguageTag();
+    // Their next free times, so booking is one tap from here. Best-effort: no chips while loading, empty or failed.
+    final now = DateTime.now();
+    final soonest = (ref.watch(workerSlotsProvider((profile.providerId, profile.id))).value ?? const [])
+        .where((slot) => slot.isOpen && slot.startsAt.isAfter(now))
+        .take(_maxSoonestTimes)
+        .toList();
     // Only a master has a photo portfolio; best-effort, no strip while loading, empty or failed.
     final work = profile.hasPortfolio ? ref.watch(masterPortfolioProvider(profile.id)).value ?? const [] : const [];
 
@@ -112,6 +133,30 @@ class _WorkerBody extends ConsumerWidget {
                   ],
                 ),
               ),
+              if (soonest.isNotEmpty) ...[
+                const SizedBox(height: FactorySpacing.space5),
+                Text(l10n.workerSoonestTitle, style: textTheme.titleSmall),
+                const SizedBox(height: FactorySpacing.space3),
+                Wrap(
+                  spacing: FactorySpacing.space2,
+                  runSpacing: FactorySpacing.space2,
+                  children: [
+                    for (final slot in soonest)
+                      FactoryTimeSlot(
+                        label: _slotLabel(l10n, locale, now, slot.startsAt.toLocal()),
+                        onTap: () => context.push(
+                          AppRoutes.provider(
+                            profile.providerId,
+                            book: true,
+                            workerId: profile.id,
+                            workerKind: profile.kind,
+                            slotId: slot.id,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
               if (profile.bio != null) ...[
                 const SizedBox(height: FactorySpacing.space5),
                 Text(l10n.workerAboutTitle, style: textTheme.titleSmall),

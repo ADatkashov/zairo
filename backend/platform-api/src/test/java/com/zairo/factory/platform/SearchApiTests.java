@@ -32,6 +32,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * Against a real Postgres (Testcontainers): verifies vertical filtering,
@@ -63,6 +64,9 @@ class SearchApiTests {
 
     @Autowired
     private PlatformAdminAccountRepository platformAdminAccountRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @Test
     void pendingProvidersAreInvisibleToSearchUntilAnAdminApprovesThem() {
@@ -117,6 +121,32 @@ class SearchApiTests {
         List<Map> allResults = search(null, null);
         assertThat(allResults).extracting(r -> r.get("id")).containsSubsequence(providerA.toString(),
                 providerC.toString(), providerB.toString());
+    }
+
+    @Test
+    void theCityFilterKeepsThatCitysBusinessesAndThoseWithoutACity() {
+        String runId = UUID.randomUUID().toString();
+        String vertical = "beauty-city-" + runId;
+        Registered owner = TestAuth.registerOwner(restTemplate, "search-city-owner-" + runId + "@example.com");
+        TestAuth.upgradeToPro(restTemplate, owner);
+        UUID inAlmaty = createProvider(owner, "Almaty Salon " + runId, vertical);
+        UUID inAktau = createProvider(owner, "Aktau Salon " + runId, vertical);
+        UUID nowhere = createProvider(owner, "No City Salon " + runId, vertical);
+        for (UUID id : List.of(inAlmaty, inAktau, nowhere)) {
+            createService(owner, id, "Cut", new BigDecimal("10.00"));
+            approve(id);
+        }
+        jdbcTemplate.update("update provider set city_code = 'almaty' where id = ?", inAlmaty);
+        jdbcTemplate.update("update provider set city_code = 'aktau' where id = ?", inAktau);
+
+        ResponseEntity<Map[]> inCity = restTemplate.getForEntity("/api/v1/search/providers?vertical=" + vertical
+                + "&city=almaty", Map[].class);
+        assertThat(List.of(inCity.getBody())).extracting(r -> r.get("id"))
+                .containsExactlyInAnyOrder(inAlmaty.toString(), nowhere.toString());
+
+        // No city asked for: everything, as before.
+        assertThat(search(vertical, null)).extracting(r -> r.get("id"))
+                .containsExactlyInAnyOrder(inAlmaty.toString(), inAktau.toString(), nowhere.toString());
     }
 
     @Test

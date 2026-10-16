@@ -68,11 +68,15 @@ class ProviderDetailScreen extends ConsumerStatefulWidget {
   /// not among the business's people, or the business only offers "any master".
   final PreselectedWorker? preselectedWorker;
 
+  /// With [preselectedWorker]: that person's time to have picked as well (dropped if it is no longer open).
+  final String? preselectedSlotId;
+
   const ProviderDetailScreen({
     super.key,
     required this.provider,
     this.startAtBooking = false,
     this.preselectedWorker,
+    this.preselectedSlotId,
   });
 
   @override
@@ -91,6 +95,9 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
 
   /// The [ProviderDetailScreen.preselectedWorker] until the lists have loaded and it has been applied (or dropped).
   PreselectedWorker? _pendingWorker;
+
+  /// The [ProviderDetailScreen.preselectedSlotId] until that person's times have loaded and it has been applied or dropped.
+  String? _pendingSlotId;
 
   /// "Any master": the customer picks a time, the system assigns a free person.
   bool _anyMaster = false;
@@ -112,6 +119,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
   void initState() {
     super.initState();
     _pendingWorker = widget.preselectedWorker;
+    _pendingSlotId = widget.preselectedWorker == null ? null : widget.preselectedSlotId;
     // One service to choose from is no choice: start with it picked, one tap fewer.
     if (widget.provider.services.length == 1) {
       _selectedServiceId = widget.provider.services.first.id;
@@ -188,6 +196,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
         _selectedMechanicId ??
         _selectedCleanerId ??
         _selectedStaffId;
+    _applyPreselectedSlot(selectedWorkerId, anyMode);
     // A person may charge their own price (the owner's choice); it is shown here, before the customer confirms,
     // exactly as the server will charge it. "Any master" is always the base price.
     final serviceForPrice = _selectedService();
@@ -634,6 +643,32 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
         if (allowChoice && staff.any((s) => s.id == id)) _selectedStaffId = id;
     }
     _pendingWorker = null;
+  }
+
+  /// Picks the time the customer tapped on the person's page, once that person's times have loaded. Dropped when
+  /// the time is gone (booked meanwhile) or no person ended up selected.
+  void _applyPreselectedSlot(String? workerId, bool anyMode) {
+    final pending = _pendingSlotId;
+    if (pending == null) return;
+    if (_pendingWorker != null) return; // the person has not been applied yet
+    if (workerId == null || anyMode) {
+      _pendingSlotId = null;
+      return;
+    }
+    final slots = ref.watch(workerSlotsProvider((widget.provider.id, workerId)));
+    slots.whenOrNull(
+      data: (list) {
+        _pendingSlotId = null;
+        for (final slot in list) {
+          if (slot.id == pending) {
+            _selectedSlotId = slot.id;
+            _selectedSlotStartsAt = slot.startsAt;
+            break;
+          }
+        }
+      },
+      error: (_, _) => _pendingSlotId = null,
+    );
   }
 
   /// Picking a person (rather than "any master") shows that person's own times, so the previous pick is dropped.

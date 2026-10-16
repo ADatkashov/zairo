@@ -114,6 +114,9 @@
   "workerBusinessLabel": "Работает в",
   "workerAboutTitle": "О мастере",
   "workerWorkTitle": "Работы",
+  "workerSoonestTitle": "Ближайшее время",
+  "workerSlotToday": "Сегодня {time}",
+  "workerSlotTomorrow": "Завтра {time}",
   "workerServicesTitle": "Услуги",
   "workerServicesEmpty": "Услуги пока не указаны.",
   "workerNoReviews": "Пока нет отзывов",
@@ -243,6 +246,8 @@
 
   "reviewLeaveButton": "Оставить отзыв",
   "reviewAboutWorker": "Ваш визит к мастеру: {name}",
+  "reviewRateBusiness": "Бизнес",
+  "reviewWorkerOptionalHint": "Необязательно. Без неё оценка выше засчитается и мастеру.",
   "reviewCommentHint": "Комментарий (необязательно)",
   "reviewCancel": "Отмена",
   "reviewSubmit": "Отправить",
@@ -338,6 +343,8 @@
   "imagePickerGalleryLabel": "Галерея",
 
   "myRewardsTitle": "Мои бонусы",
+  "profileRewardsSummary": "{points} баллов · {count, plural, one{{count} бизнес} few{{count} бизнеса} many{{count} бизнесов} other{{count} бизнеса}}",
+  "profileRewardsExpiring": "{points} баллов сгорят в ближайшие 30 дней",
   "loyaltyRedemptionsTitle": "Мои коды обмена",
   "myRewardsLoggedOutPrompt": "Войдите, чтобы увидеть бонусы у каждого провайдера",
   "myRewardsEmptyTitle": "Пока нет бонусов",

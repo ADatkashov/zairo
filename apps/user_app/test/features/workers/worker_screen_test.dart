@@ -8,7 +8,9 @@ import 'package:go_router/go_router.dart';
 import 'package:zairo/features/beauty/data/beauty_api.dart';
 import 'package:zairo/features/beauty/data/models/portfolio_item.dart';
 import 'package:zairo/features/beauty/presentation/providers/beauty_providers.dart';
-import 'package:zairo/features/workers/data/models/top_worker.dart';
+import 'package:zairo/features/booking/data/models/availability_slot.dart';
+import 'package:zairo/features/workforce/data/workforce_api.dart';
+import 'package:zairo/features/workforce/presentation/providers/workforce_providers.dart';
 import 'package:zairo/features/workers/data/models/worker_profile.dart';
 import 'package:zairo/features/workers/data/workers_api.dart';
 import 'package:zairo/features/workers/presentation/providers/workers_providers.dart';
@@ -24,11 +26,27 @@ class _FakeBeautyApi extends BeautyApi {
   Future<List<PortfolioItem>> listPortfolio(String masterId) async => _items;
 }
 
+class _FakeWorkforceApi extends WorkforceApi {
+  _FakeWorkforceApi(this._slots) : super(DioClient(Dio()));
+
+  final List<AvailabilitySlot> _slots;
+
+  @override
+  Future<List<AvailabilitySlot>> workerSlots(String providerId, String workerId) async => _slots;
+}
+
+AvailabilitySlot _slot(String id, DateTime start, {String status = 'OPEN'}) => AvailabilitySlot(
+  id: id,
+  providerId: 'p1',
+  startsAt: start,
+  endsAt: start.add(const Duration(minutes: 30)),
+  status: status,
+);
+
 class _FakeWorkersApi extends WorkersApi {
-  _FakeWorkersApi({this.profile, this.top = const [], this.failProfile = false}) : super(DioClient(Dio()));
+  _FakeWorkersApi({this.profile, this.failProfile = false}) : super(DioClient(Dio()));
 
   final WorkerProfile? profile;
-  final List<TopWorker> top;
   bool failProfile;
   int profileCalls = 0;
 
@@ -40,11 +58,6 @@ class _FakeWorkersApi extends WorkersApi {
       throw Exception('offline');
     }
     return profile!;
-  }
-
-  @override
-  Future<List<TopWorker>> listTop({int limit = 10, String? cityCode}) async {
-    return top;
   }
 }
 
@@ -70,10 +83,17 @@ WorkerProfile _profile({
       const [WorkerService(id: 's1', title: 'Haircut', durationMinutes: 60, price: 8000, currency: 'KZT')],
 );
 
-Widget _app(_FakeWorkersApi api, {List<PortfolioItem> work = const []}) => ProviderScope(
+Widget _app(
+  _FakeWorkersApi api, {
+  List<PortfolioItem> work = const [],
+  List<AvailabilitySlot> slots = const [],
+}) => ProviderScope(
+  // No automatic retry: a failed load must stay failed until the person taps retry.
+  retry: (_, _) => null,
   overrides: [
     workersApiProvider.overrideWithValue(api),
     beautyApiProvider.overrideWithValue(_FakeBeautyApi(work)),
+    workforceApiProvider.overrideWithValue(_FakeWorkforceApi(slots)),
   ],
   child: MaterialApp.router(
     theme: factoryLightTheme(),
@@ -87,7 +107,8 @@ Widget _app(_FakeWorkersApi api, {List<PortfolioItem> work = const []}) => Provi
           builder: (_, state) => Scaffold(
             body: Text(
               'Provider ${state.pathParameters['id']} book=${state.uri.queryParameters['book']} '
-              'worker=${state.uri.queryParameters['worker']} kind=${state.uri.queryParameters['kind']}',
+              'worker=${state.uri.queryParameters['worker']} kind=${state.uri.queryParameters['kind']} '
+              'slot=${state.uri.queryParameters['slot']}',
             ),
           ),
         ),
@@ -133,7 +154,7 @@ void main() {
     await tester.tap(find.text('Book'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Provider p1 book=1 worker=w1 kind=MASTER'), findsOneWidget);
+    expect(find.text('Provider p1 book=1 worker=w1 kind=MASTER slot=null'), findsOneWidget);
   });
 
   testWidgets('tapping the business opens it, Portfolio opens the master\'s photos', (tester) async {
@@ -142,7 +163,7 @@ void main() {
 
     await tester.tap(find.text('Aigerim Beauty Studio'));
     await tester.pumpAndSettle();
-    expect(find.text('Provider p1 book=null worker=null kind=null'), findsOneWidget);
+    expect(find.text('Provider p1 book=null worker=null kind=null slot=null'), findsOneWidget);
 
     await tester.pumpWidget(_app(_FakeWorkersApi(profile: _profile())));
     await tester.pumpAndSettle();
@@ -204,6 +225,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Work'), findsOneWidget);
+    await tester.ensureVisible(find.byType(Image).first);
+    await tester.pumpAndSettle();
     await tester.tap(find.byType(Image).first);
     await tester.pumpAndSettle();
     expect(find.text('Portfolio w1'), findsOneWidget);
@@ -216,5 +239,51 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Work'), findsNothing);
+  });
+
+  testWidgets('shows their next free times as chips; tapping one books that time with them', (tester) async {
+    final now = DateTime.now();
+    final tomorrow = DateTime(now.year, now.month, now.day + 1, 10, 0);
+    final later = DateTime(now.year, now.month, now.day + 5, 14, 30);
+    await tester.pumpWidget(
+      _app(
+        _FakeWorkersApi(profile: _profile()),
+        slots: [
+          _slot('past', now.subtract(const Duration(hours: 2))),
+          _slot('taken', tomorrow, status: 'BOOKED'),
+          _slot('s-tomorrow', tomorrow),
+          _slot('s-later', later),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Next available'), findsOneWidget);
+    expect(find.text('Tomorrow 10:00'), findsOneWidget);
+    expect(find.byType(FactoryTimeSlot), findsNWidgets(2));
+
+    await tester.tap(find.text('Tomorrow 10:00'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Provider p1 book=1 worker=w1 kind=MASTER slot=s-tomorrow'), findsOneWidget);
+  });
+
+  testWidgets('a time later today reads "Today", and a far one shows the date', (tester) async {
+    final now = DateTime.now();
+    final soon = now.add(const Duration(minutes: 1));
+    await tester.pumpWidget(_app(_FakeWorkersApi(profile: _profile()), slots: [_slot('soon', soon)]));
+    await tester.pumpAndSettle();
+
+    final sameDay = soon.day == now.day;
+    final hh = soon.hour.toString().padLeft(2, '0');
+    final mm = soon.minute.toString().padLeft(2, '0');
+    expect(find.text('${sameDay ? 'Today' : 'Tomorrow'} $hh:$mm'), findsOneWidget);
+  });
+
+  testWidgets('no chips when they have no free times', (tester) async {
+    await tester.pumpWidget(_app(_FakeWorkersApi(profile: _profile())));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Next available'), findsNothing);
   });
 }

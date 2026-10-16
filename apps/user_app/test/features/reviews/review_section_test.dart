@@ -32,12 +32,14 @@ class _FakeReviewsApi extends ReviewsApi {
     required String bookingId,
     required int rating,
     String? comment,
+    int? workerRating,
   }) async {
     if (errorOnCreate != null) throw errorOnCreate!;
     lastCreateCall = {
       'bookingId': bookingId,
       'rating': rating,
       'comment': comment,
+      'workerRating': workerRating,
     };
     _review = Review(
       id: 'review-1',
@@ -63,11 +65,14 @@ class _FakeWorkersApi extends WorkersApi {
 }
 
 void main() {
+  late _FakeReviewsApi reviewsApi;
+
   Future<void> openDialog(WidgetTester tester, BookingWorker? worker) async {
+    reviewsApi = _FakeReviewsApi();
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          reviewsApiProvider.overrideWithValue(_FakeReviewsApi()),
+          reviewsApiProvider.overrideWithValue(reviewsApi),
           workersApiProvider.overrideWithValue(_FakeWorkersApi(worker: worker)),
         ],
         child: MaterialApp(
@@ -89,11 +94,50 @@ void main() {
     expect(find.text('Your visit with Aigerim'), findsOneWidget);
   });
 
+  const aigerim = BookingWorker(id: 'w1', kind: 'MASTER', displayName: 'Aigerim');
+
+  testWidgets('with a named person there is a second, optional row of stars for them', (tester) async {
+    await openDialog(tester, aigerim);
+
+    expect(find.text('The business'), findsOneWidget);
+    expect(find.text('Aigerim'), findsOneWidget);
+    expect(find.text('Optional. Without it, your rating above counts for Aigerim too.'), findsOneWidget);
+    // Two rows of five stars.
+    expect(find.byTooltip('Rate 3 stars'), findsNWidgets(2));
+  });
+
+  testWidgets('rating the business alone sends one rating; the person is not rated apart', (tester) async {
+    await openDialog(tester, aigerim);
+
+    await tester.tap(find.byTooltip('Rate 5 stars').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Submit'));
+    await tester.pumpAndSettle();
+
+    expect(reviewsApi.lastCreateCall?['rating'], 5);
+    expect(reviewsApi.lastCreateCall?['workerRating'], isNull);
+  });
+
+  testWidgets('rating the person apart sends both marks', (tester) async {
+    await openDialog(tester, aigerim);
+
+    await tester.tap(find.byTooltip('Rate 5 stars').first);
+    await tester.tap(find.byTooltip('Rate 3 stars').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Submit'));
+    await tester.pumpAndSettle();
+
+    expect(reviewsApi.lastCreateCall?['rating'], 5);
+    expect(reviewsApi.lastCreateCall?['workerRating'], 3);
+  });
+
   testWidgets('without a named person the dialog just asks for the rating', (tester) async {
     await openDialog(tester, null);
 
     expect(find.textContaining('Your visit with'), findsNothing);
     expect(find.byIcon(Symbols.star_rounded), findsWidgets);
+    expect(find.byTooltip('Rate 3 stars'), findsOneWidget);
+    expect(find.text('The business'), findsNothing);
   });
 
   testWidgets('shows a "leave a review" button when there is no review yet', (
@@ -194,6 +238,7 @@ void main() {
         'bookingId': 'booking-1',
         'rating': 4,
         'comment': 'Loved it',
+        'workerRating': null,
       });
       // Dialog closes and the section now shows the submitted review.
       expect(find.text('Loved it'), findsOneWidget);

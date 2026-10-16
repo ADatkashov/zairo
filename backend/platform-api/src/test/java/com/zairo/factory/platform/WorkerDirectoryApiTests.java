@@ -107,6 +107,8 @@ class WorkerDirectoryApiTests {
     void deactivatedMastersAndNonActiveProvidersAreLeftOut() {
         String runId = UUID.randomUUID().toString();
         Registered owner = TestAuth.registerOwner(restTemplate, "top-hidden-owner-" + runId + "@example.com");
+        // FREE allows one business per owner; this test needs two.
+        TestAuth.upgradeToPro(restTemplate, owner);
         UUID activeProvider = createProvider(owner, "Visible " + runId);
         approve(activeProvider);
         UUID pendingProvider = createProvider(owner, "Pending " + runId);
@@ -177,6 +179,8 @@ class WorkerDirectoryApiTests {
     void theCityFilterKeepsThatCitysBusinessesAndThoseWithoutACity() {
         String runId = UUID.randomUUID().toString();
         Registered owner = TestAuth.registerOwner(restTemplate, "city-owner-" + runId + "@example.com");
+        // FREE allows one business per owner; this test needs three.
+        TestAuth.upgradeToPro(restTemplate, owner);
         UUID[] staff = new UUID[3];
         String[] cities = {"almaty", "aktau", null};
         for (int i = 0; i < 3; i++) {
@@ -199,6 +203,32 @@ class WorkerDirectoryApiTests {
         assertThat(ids).contains(staff[0].toString(), staff[2].toString()).doesNotContain(staff[1].toString());
         assertThat(getTop(20).stream().map(m -> m.get("id").toString()).toList()).contains(staff[0].toString(),
                 staff[1].toString(), staff[2].toString());
+    }
+
+    @Test
+    void aSeparateRatingOfTheMasterCountsForThemAndNotTheBusiness() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "wr-owner-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Worker Rating Studio " + runId);
+        approve(providerId);
+        UUID serviceId = createService(owner, providerId);
+        UUID master = createStaff(owner, providerId, "Rated Apart");
+        restTemplate.exchange("/api/v1/staff/" + master + "/services/" + serviceId, HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+        // Great salon (5), but the master himself was 3 each time.
+        for (int i = 0; i < 3; i++) {
+            review(owner, providerId, serviceId, master, 5, 3, i + 1, runId);
+        }
+
+        Map<?, ?> page = restTemplate.getForEntity("/api/v1/workers/" + master, Map.class).getBody();
+        assertThat(((Number) page.get("averageRating")).doubleValue()).isEqualTo(3.0);
+        Map<?, ?> top = getTop(20).stream().filter(m -> m.get("id").equals(master.toString())).findFirst()
+                .orElseThrow();
+        assertThat(((Number) top.get("averageRating")).doubleValue()).isEqualTo(3.0);
+        // The business's own summary still counts the shared rating (5).
+        Map<?, ?> summary = restTemplate.getForEntity("/api/v1/providers/" + providerId + "/reviews/summary",
+                Map.class).getBody();
+        assertThat(((Number) summary.get("average")).doubleValue()).isEqualTo(5.0);
     }
 
     @Test
@@ -254,8 +284,12 @@ class WorkerDirectoryApiTests {
 
     private void review(Registered owner, UUID providerId, UUID serviceId, UUID staffId, int rating, int hour,
             String runId) {
-        Registered customer = TestAuth.registerCustomer(restTemplate, "top-cust-" + UUID.randomUUID() + "-" + runId
-                + "@example.com");
+        review(owner, providerId, serviceId, staffId, rating, null, hour, runId);
+    }
+
+    private void review(Registered owner, UUID providerId, UUID serviceId, UUID staffId, int rating,
+            Integer workerRating, int hour, String runId) {
+        Registered customer = TestAuth.registerCustomer(restTemplate, "top-cust-" + UUID.randomUUID() + "@example.com");
         Instant start = Instant.now().plus(hour, ChronoUnit.DAYS);
         var slotRequest = new CreateAvailabilitySlotRequest(start, start.plus(60, ChronoUnit.MINUTES));
         UUID slotId = UUID.fromString(restTemplate.exchange("/api/v1/providers/" + providerId
@@ -272,7 +306,7 @@ class WorkerDirectoryApiTests {
         restTemplate.exchange("/api/v1/bookings/" + bookingId + "/complete", HttpMethod.POST,
                 new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
         ResponseEntity<Map> reviewed = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/reviews",
-                HttpMethod.POST, new HttpEntity<>(new CreateReviewRequest(rating, "ok"),
+                HttpMethod.POST, new HttpEntity<>(new CreateReviewRequest(rating, "ok", workerRating),
                         TestAuth.authHeaders(customer.accessToken())), Map.class);
         assertThat(reviewed.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }

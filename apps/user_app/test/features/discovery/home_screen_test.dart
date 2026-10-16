@@ -40,6 +40,13 @@ void _useTallWindow(WidgetTester tester) {
   addTearDown(tester.view.reset);
 }
 
+/// Whether [finder]'s widget lies fully inside the (test) screen. A horizontally scrolling grid builds its
+/// off-screen pages too (and lets the next column peek in at the edge), so "not there" is a position, not an absence.
+bool _isOnScreen(WidgetTester tester, Finder finder) {
+  final box = tester.getRect(finder);
+  return box.left >= 0 && box.right <= tester.view.physicalSize.width / tester.view.devicePixelRatio;
+}
+
 class _FakeDiscoveryApi extends DiscoveryApi {
   _FakeDiscoveryApi(this._results) : super(DioClient(Dio()));
 
@@ -60,6 +67,7 @@ class _FakeDiscoveryApi extends DiscoveryApi {
     double? minRating,
     bool availableOnly = false,
     String? sort,
+    String? cityCode,
   }) async {
     lastVertical = vertical;
     return _results;
@@ -292,12 +300,13 @@ void main() {
     expect(cats[4].dy, greaterThan(cats[0].dy));
     expect(cats[0].dx, lessThan(cats[1].dx));
     expect(cats[7].dx, greaterThan(cats[6].dx));
-    // The second page is off-screen to the right, reachable by swiping.
-    expect(find.text('Category 20'), findsNothing);
+    // The later pages are off-screen to the right, reachable by swiping.
+    expect(_isOnScreen(tester, find.text('Category 20')), isFalse);
     final grid = find.ancestor(of: find.text('Category 1'), matching: find.byType(Scrollable));
     await tester.dragUntilVisible(find.text('Category 20'), grid.first, const Offset(-300, 0));
-    expect(find.text('Category 20'), findsOneWidget);
+    expect(_isOnScreen(tester, find.text('Category 20')), isTrue);
     await tester.dragUntilVisible(find.text('Category 1'), grid.first, const Offset(300, 0));
+    expect(_isOnScreen(tester, find.text('Category 1')), isTrue);
     expect(find.text('All categories'), findsNothing);
 
     // The heading with its link sits above the grid.
@@ -754,8 +763,9 @@ void main() {
     for (var i = 1; i <= 8; i++) {
       expect(find.text('Category $i'), findsOneWidget);
     }
-    expect(find.text('Category 9'), findsNothing);
-    expect(find.text('Category 10'), findsNothing);
+    // The rest is the second page: built, but beyond the right edge of the screen.
+    expect(_isOnScreen(tester, find.text('Category 9')), isFalse);
+    expect(_isOnScreen(tester, find.text('Category 10')), isFalse);
 
     await tester.tap(find.text('All'));
     await tester.pumpAndSettle();
