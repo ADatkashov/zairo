@@ -827,6 +827,7 @@ void main() {
         price: 25.0,
         currency: 'USD',
         lastVisitAt: DateTime.now().subtract(const Duration(days: 14)),
+        nextFreeAt: DateTime.now().add(const Duration(days: 1)),
       ),
     ]);
 
@@ -851,6 +852,7 @@ void main() {
     expect(find.text('Aigerim Beauty Studio'), findsOneWidget);
     expect(find.text('Haircut'), findsOneWidget);
     expect(find.textContaining('Last visit:'), findsOneWidget);
+    expect(find.textContaining('Next free:'), findsOneWidget);
   });
 
   testWidgets('the Book Again card fits a 320 px phone with a large font in the dark theme', (tester) async {
@@ -868,6 +870,7 @@ void main() {
         price: 25.0,
         currency: 'USD',
         lastVisitAt: DateTime.now().subtract(const Duration(days: 14)),
+        nextFreeAt: DateTime.now().add(const Duration(days: 1)),
       ),
     ]);
 

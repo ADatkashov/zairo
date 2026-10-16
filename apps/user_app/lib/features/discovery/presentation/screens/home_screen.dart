@@ -722,7 +722,7 @@ class _BookAgainSection extends ConsumerWidget {
         ),
         const SizedBox(height: FactorySpacing.space3),
         SizedBox(
-          height: 118 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0),
+          height: 134 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0),
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: suggestions.length,
@@ -798,6 +798,20 @@ class _BookAgainCard extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodySmall
                     ?.copyWith(color: colors.textSecondary),
               ),
+              if (suggestion.nextFreeAt != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  l10n.homeBookAgainNextFree(
+                    DateFormat.MMMd(Localizations.localeOf(context).toString())
+                        .add_Hm()
+                        .format(suggestion.nextFreeAt!.toLocal()),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: colors.primary),
+                ),
+              ],
               const Spacer(),
               FactoryPriceText(
                 amount: suggestion.price,
