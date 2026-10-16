@@ -23,6 +23,7 @@ Map<String, Object?> _row(String id, String status, {String business = 'Glow Sal
   'status': status,
   'hiddenAt': status == 'HIDDEN' ? '2026-10-14T10:00:00Z' : null,
   'hiddenReason': hiddenReason,
+  'decidedAt': status == 'OPEN' ? null : '2026-10-14T10:00:00Z',
 };
 
 FakeBackend _backend({
@@ -45,10 +46,12 @@ void main() {
     expect(open.reportReason, 'Abusive language');
     expect(open.reportedAt, isNotNull);
     expect(open.businessReply, isNull);
+    expect(open.decidedAt, isNull);
 
     final hidden = ReviewReport.fromJson(_row('r2', 'HIDDEN', hiddenReason: 'Contains abuse'));
     expect(hidden.isHidden, isTrue);
     expect(hidden.hiddenReason, 'Contains abuse');
+    expect(hidden.decidedAt, DateTime.utc(2026, 10, 14, 10));
 
     final kept = ReviewReport.fromJson({..._row('r3', 'DISMISSED'), 'reportedAt': null, 'comment': null});
     expect(kept.isDismissed, isTrue);
@@ -132,6 +135,7 @@ void main() {
     await tester.tap(find.text('Hidden'));
     await tester.pumpAndSettle();
     expect(find.text('Hidden: Contains abuse'), findsOneWidget);
+    expect(find.textContaining('Decided on'), findsOneWidget);
     expect(find.text('Keep'), findsNothing);
 
     await tester.tap(find.text('Restore'));

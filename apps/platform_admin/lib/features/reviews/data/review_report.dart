@@ -17,6 +17,9 @@ class ReviewReport {
   final String status;
   final String? hiddenReason;
 
+  /// When the platform decided (hid it, or looked and kept it); null while it is still open.
+  final DateTime? decidedAt;
+
   const ReviewReport({
     required this.id,
     required this.providerId,
@@ -29,10 +32,12 @@ class ReviewReport {
     required this.reportedAt,
     required this.status,
     required this.hiddenReason,
+    this.decidedAt,
   });
 
   factory ReviewReport.fromJson(Map<String, dynamic> json) {
     final reported = json['reportedAt'] as String?;
+    final decided = json['decidedAt'] as String?;
     return ReviewReport(
       id: json['id'] as String,
       providerId: json['providerId'] as String,
@@ -45,6 +50,7 @@ class ReviewReport {
       reportedAt: reported == null ? null : DateTime.parse(reported),
       status: json['status'] as String,
       hiddenReason: json['hiddenReason'] as String?,
+      decidedAt: decided == null ? null : DateTime.parse(decided),
     );
   }
 

@@ -237,6 +237,7 @@ class ReviewApiTests {
         assertThat(ownerStatus(ctx, providerReviews, reviewId)).isEqualTo("HIDDEN");
         assertThat(queueIds("OPEN", asSupport)).doesNotContain(reviewId.toString());
         assertThat(queueRow("HIDDEN", reviewId, asSupport).get("hiddenReason")).isEqualTo("Contains abuse");
+        assertThat(queueRow("HIDDEN", reviewId, asSupport).get("decidedAt")).isNotNull();
         assertThat(restTemplate.exchange(reportPath, HttpMethod.POST,
                 new HttpEntity<>(reason, TestAuth.authHeaders(ctx.owner().accessToken())), Map.class)
                 .getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
@@ -270,6 +271,7 @@ class ReviewApiTests {
         assertThat(restTemplate.exchange(dismissPath, HttpMethod.POST, asModerator, Void.class).getStatusCode())
                 .isEqualTo(HttpStatus.NO_CONTENT);
         assertThat(queueIds("DISMISSED", asSupport)).contains(keptId.toString());
+        assertThat(queueRow("DISMISSED", keptId, asSupport).get("decidedAt")).isNotNull();
         assertThat(capturedEmails.sent).anySatisfy(email -> {
             assertThat(email.body()).contains(keptId.toString()).contains("kept it");
         });
