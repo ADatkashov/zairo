@@ -14,6 +14,7 @@ import 'package:zairo/features/workforce/presentation/providers/workforce_provid
 import 'package:zairo/features/workers/data/models/worker_profile.dart';
 import 'package:zairo/features/workers/data/workers_api.dart';
 import 'package:zairo/features/workers/presentation/providers/workers_providers.dart';
+import 'package:zairo/features/workers/presentation/widgets/favorite_worker_button.dart';
 import 'package:zairo/features/workers/presentation/screens/worker_screen.dart';
 import 'package:zairo/l10n/app_localizations.dart';
 
@@ -122,6 +123,13 @@ Widget _app(
 );
 
 void main() {
+  testWidgets('the page has a heart for adding the master to My masters', (tester) async {
+    await tester.pumpWidget(_app(_FakeWorkersApi(profile: _profile())));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FavoriteWorkerButton), findsOneWidget);
+  });
+
   testWidgets('shows the master, their rating, business and services', (tester) async {
     await tester.pumpWidget(_app(_FakeWorkersApi(profile: _profile())));
     await tester.pumpAndSettle();

@@ -11,6 +11,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../beauty/presentation/providers/beauty_providers.dart';
 import '../../../workforce/presentation/providers/workforce_providers.dart';
 import '../../data/models/worker_profile.dart';
+import '../widgets/favorite_worker_button.dart';
 import '../providers/workers_providers.dart';
 
 /// A master's public page, opened from Home's "Best masters" rail: who they
@@ -28,7 +29,10 @@ class WorkerScreen extends ConsumerWidget {
     final profileAsync = ref.watch(workerProfileProvider(workerId));
 
     return Scaffold(
-      appBar: FactoryAppBar(title: l10n.workerPageTitle),
+      appBar: FactoryAppBar(
+        title: l10n.workerPageTitle,
+        actions: [FavoriteWorkerButton(workerId: workerId)],
+      ),
       body: profileAsync.when(
         data: (profile) => _WorkerBody(profile: profile),
         loading: () => const FactoryLoadingState(),
