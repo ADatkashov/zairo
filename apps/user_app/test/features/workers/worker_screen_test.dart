@@ -108,7 +108,7 @@ Widget _app(
             body: Text(
               'Provider ${state.pathParameters['id']} book=${state.uri.queryParameters['book']} '
               'worker=${state.uri.queryParameters['worker']} kind=${state.uri.queryParameters['kind']} '
-              'slot=${state.uri.queryParameters['slot']}',
+              'slot=${state.uri.queryParameters['slot']} service=${state.uri.queryParameters['service']}',
             ),
           ),
         ),
@@ -154,7 +154,7 @@ void main() {
     await tester.tap(find.text('Book'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Provider p1 book=1 worker=w1 kind=MASTER slot=null'), findsOneWidget);
+    expect(find.text('Provider p1 book=1 worker=w1 kind=MASTER slot=null service=null'), findsOneWidget);
   });
 
   testWidgets('tapping the business opens it, Portfolio opens the master\'s photos', (tester) async {
@@ -163,7 +163,7 @@ void main() {
 
     await tester.tap(find.text('Aigerim Beauty Studio'));
     await tester.pumpAndSettle();
-    expect(find.text('Provider p1 book=null worker=null kind=null slot=null'), findsOneWidget);
+    expect(find.text('Provider p1 book=null worker=null kind=null slot=null service=null'), findsOneWidget);
 
     await tester.pumpWidget(_app(_FakeWorkersApi(profile: _profile())));
     await tester.pumpAndSettle();
@@ -265,7 +265,7 @@ void main() {
     await tester.tap(find.text('Tomorrow 10:00'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Provider p1 book=1 worker=w1 kind=MASTER slot=s-tomorrow'), findsOneWidget);
+    expect(find.text('Provider p1 book=1 worker=w1 kind=MASTER slot=s-tomorrow service=null'), findsOneWidget);
   });
 
   testWidgets('a time later today reads "Today", and a far one shows the date', (tester) async {
@@ -285,5 +285,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Next available'), findsNothing);
+  });
+
+  testWidgets('tapping a service books that service with this master', (tester) async {
+    await tester.pumpWidget(_app(_FakeWorkersApi(profile: _profile())));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Haircut'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Provider p1 book=1 worker=w1 kind=MASTER slot=null service=s1'), findsOneWidget);
   });
 }
