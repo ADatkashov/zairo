@@ -119,16 +119,20 @@ class _DayChip extends StatelessWidget {
             borderRadius: FactoryRadius.smRadius,
             border: Border.all(color: selected ? colors.primary : colors.border, width: 1.5),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(formatWeekdayShort(l10n, day), style: textTheme.labelSmall?.copyWith(color: muted)),
-              Text(
-                '${day.day}',
-                style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: fg),
-              ),
-              Text(formatMonthShort(l10n, day), style: textTheme.labelSmall?.copyWith(color: muted)),
-            ],
+          // The chip keeps its size; a very large system font shrinks the three lines to fit rather than overflow.
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(formatWeekdayShort(l10n, day), style: textTheme.labelSmall?.copyWith(color: muted)),
+                Text(
+                  '${day.day}',
+                  style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: fg),
+                ),
+                Text(formatMonthShort(l10n, day), style: textTheme.labelSmall?.copyWith(color: muted)),
+              ],
+            ),
           ),
         ),
       ),

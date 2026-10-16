@@ -4,6 +4,8 @@ import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.booking.BookingDtos.BookingResponse;
 import com.zairo.factory.booking.BookingDtos.CancelBookingRequest;
 import com.zairo.factory.booking.BookingDtos.CreateBookingRequest;
+import com.zairo.factory.booking.BookingDtos.RescheduleOption;
+import com.zairo.factory.booking.BookingDtos.RescheduleRequest;
 import com.zairo.factory.booking.BookingDtos.ScheduleEntryResponse;
 import com.zairo.factory.providers.ProviderOwnership;
 import io.swagger.v3.oas.annotations.Operation;
@@ -155,6 +157,69 @@ public class BookingController {
         UUID callerId = CurrentUser.requireUserId(httpRequest);
         String reason = request == null ? null : request.reason();
         return detailsAssembler.one(bookingService.cancelBooking(id, callerId, reason));
+    }
+
+    @Operation(summary = "Times a booking can be moved to", description = "Customer-only. Open, future times with "
+            + "the same person (or the business's shared times when it has no team), soonest first, at most 30. "
+            + "409 when the booking can no longer be moved (not active, or already started).")
+    @ApiResponse(responseCode = "200", description = "The options (may be empty)")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @ApiResponse(responseCode = "409", description = "Not movable any more.")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/bookings/{id}/reschedule-options")
+    public java.util.List<RescheduleOption> rescheduleOptions(@PathVariable UUID id, HttpServletRequest httpRequest) {
+        return bookingService.rescheduleOptions(id, CurrentUser.requireUserId(httpRequest)).stream()
+                .map(s -> new RescheduleOption(s.getId(), s.getStartsAt(), s.getEndsAt())).toList();
+    }
+
+    @Operation(summary = "Move a booking to another time", description = "Customer-only. The new time must be one "
+            + "of the reschedule options (same business, same person, open, in the future). The price and any "
+            + "payment stay as they are; the business is told.")
+    @ApiResponse(responseCode = "200", description = "The moved booking")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @ApiResponse(responseCode = "409", description = "Booking not movable, or that time is not available.")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/api/v1/bookings/{id}/reschedule")
+    public BookingResponse reschedule(@PathVariable UUID id, @RequestBody RescheduleRequest request,
+            HttpServletRequest httpRequest) {
+        UUID callerId = CurrentUser.requireUserId(httpRequest);
+        return detailsAssembler.one(bookingService.rescheduleByCustomer(id, callerId, request.slotId()));
+    }
+
+    @Operation(summary = "Times the business can move a booking to", description = "Provider-owner-only. Open, "
+            + "future times with the same person, soonest first, at most 30. 409 when the booking can no longer "
+            + "be moved (not active, or already started).")
+    @ApiResponse(responseCode = "200", description = "The options (may be empty)")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @ApiResponse(responseCode = "409", description = "Not movable any more.")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/bookings/{id}/owner-reschedule-options")
+    public java.util.List<RescheduleOption> ownerRescheduleOptions(@PathVariable UUID id,
+            HttpServletRequest httpRequest) {
+        return bookingService.rescheduleOptionsForOwner(id, CurrentUser.requireUserId(httpRequest)).stream()
+                .map(s -> new RescheduleOption(s.getId(), s.getStartsAt(), s.getEndsAt())).toList();
+    }
+
+    @Operation(summary = "Business moves a booking to another time", description = "Provider-owner-only. The new "
+            + "time must be one of the owner reschedule options. The price and any payment stay as they are; the "
+            + "customer is told.")
+    @ApiResponse(responseCode = "200", description = "The moved booking")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @ApiResponse(responseCode = "409", description = "Booking not movable, or that time is not available.")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/api/v1/bookings/{id}/owner-reschedule")
+    public BookingResponse ownerReschedule(@PathVariable UUID id, @RequestBody RescheduleRequest request,
+            HttpServletRequest httpRequest) {
+        UUID callerId = CurrentUser.requireUserId(httpRequest);
+        return detailsAssembler.one(bookingService.rescheduleByOwner(id, callerId, request.slotId()));
     }
 
     @Operation(summary = "Mark a booking as a no-show", description = "Provider-owner-only — the caller must "

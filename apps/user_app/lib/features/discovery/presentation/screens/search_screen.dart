@@ -164,7 +164,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 ),
               ),
               if (isPristine)
-                _RecentAndPopularSearches(onQuerySelected: _runSearch),
+                // Never more than a third of the screen, scrolling inside: with a large font on a small phone the
+                // shortcuts would otherwise squeeze the results to nothing.
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height / 3),
+                  child: SingleChildScrollView(child: _RecentAndPopularSearches(onQuerySelected: _runSearch)),
+                ),
               Expanded(
                 child: resultsAsync.when(
                   data: (results) {

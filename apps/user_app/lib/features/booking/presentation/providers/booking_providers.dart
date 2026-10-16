@@ -6,6 +6,7 @@ import '../../data/models/availability_slot.dart';
 import '../../data/models/book_again_suggestion.dart';
 import '../../data/models/booking.dart';
 import '../../data/models/payment_plan.dart';
+import '../../data/models/reschedule_option.dart';
 
 final bookingApiProvider = Provider<BookingApi>((ref) {
   return BookingApi(ref.watch(dioClientProvider));
@@ -27,4 +28,9 @@ final bookAgainSuggestionsProvider =
 
 final depositPolicyProvider = FutureProvider.autoDispose.family<DepositPolicy?, String>((ref, providerId) {
   return ref.watch(bookingApiProvider).getDepositPolicy(providerId);
+});
+
+/// The times a booking can be moved to; read when the customer opens the reschedule sheet.
+final rescheduleOptionsProvider = FutureProvider.autoDispose.family<List<RescheduleOption>, String>((ref, bookingId) {
+  return ref.watch(bookingApiProvider).rescheduleOptions(bookingId);
 });

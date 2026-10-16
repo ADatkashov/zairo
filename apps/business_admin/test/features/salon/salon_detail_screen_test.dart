@@ -10,6 +10,8 @@ import 'package:business_admin/features/auto/presentation/providers/auto_admin_p
 import 'package:business_admin/features/beauty/data/beauty_admin_api.dart';
 import 'package:business_admin/features/beauty/data/models/admin_master.dart';
 import 'package:business_admin/features/beauty/presentation/providers/beauty_admin_providers.dart';
+import 'package:business_admin/features/city/data/models/city.dart';
+import 'package:business_admin/features/city/presentation/providers/city_providers.dart';
 import 'package:business_admin/features/salon/data/models/admin_booking.dart';
 import 'package:business_admin/features/salon/data/models/admin_provider.dart';
 import 'package:business_admin/features/salon/data/models/admin_service.dart';
@@ -86,6 +88,7 @@ class _FakeSalonAdminApi extends SalonAdminApi {
     double? latitude,
     double? longitude,
     String? coverPhotoUrl,
+    String? cityCode,
   }) async {
     lastUpdateProviderCall = {
       'providerId': providerId,
@@ -93,6 +96,7 @@ class _FakeSalonAdminApi extends SalonAdminApi {
       'latitude': latitude,
       'longitude': longitude,
       'coverPhotoUrl': coverPhotoUrl,
+      'cityCode': cityCode,
     };
     return AdminProvider(
       id: providerId,
@@ -103,6 +107,7 @@ class _FakeSalonAdminApi extends SalonAdminApi {
       latitude: latitude,
       longitude: longitude,
       coverPhotoUrl: coverPhotoUrl,
+      cityCode: cityCode,
     );
   }
 
@@ -619,6 +624,44 @@ void main() {
     expect(find.text('Completed'), findsOneWidget);
   });
 
+  testWidgets('a cancelled booking shows the reason the customer gave, and only then', (tester) async {
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    AdminBooking cancelled(String id, {String? reason}) => AdminBooking(
+      id: id,
+      userId: 'u1',
+      serviceId: 's1',
+      availabilitySlotId: 'slot-$id',
+      status: 'CANCELLED',
+      totalPrice: 25,
+      createdAt: DateTime(2026, 1, 1, 10, 0),
+      cancellationReason: reason,
+    );
+    final fakeApi = _FakeSalonAdminApi(bookings: [cancelled('b1', reason: 'Found another time'), cancelled('b2')]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(fakeApi),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SalonDetailScreen(provider: _provider),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await _openTab(tester, 'Bookings');
+    await tester.ensureVisible(find.text('Reason: Found another time'));
+
+    expect(find.text('Reason: Found another time'), findsOneWidget);
+    expect(find.textContaining('Reason:'), findsOneWidget);
+  });
+
   testWidgets('editing the salon calls updateProvider and updates the AppBar title', (tester) async {
     final fakeApi = _FakeSalonAdminApi();
 
@@ -654,8 +697,85 @@ void main() {
       'latitude': 43.25,
       'longitude': 76.90,
       'coverPhotoUrl': null,
+      'cityCode': null,
     });
     expect(find.text('Renamed Salon'), findsOneWidget);
+  });
+
+  group('city', () {
+    final cities = [
+      City(code: 'almaty', name: 'Almaty', countryCode: 'KZ', timezone: 'Asia/Almaty', currency: 'KZT', active: true),
+      City(code: 'astana', name: 'Astana', countryCode: 'KZ', timezone: 'Asia/Almaty', currency: 'KZT', active: true),
+    ];
+
+    Future<void> pumpDetail(WidgetTester tester, _FakeSalonAdminApi api, AdminProvider provider) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            salonAdminApiProvider.overrideWithValue(api),
+            beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+            activeCitiesProvider.overrideWith((ref) async => cities),
+          ],
+          child: MaterialApp(
+            theme: factoryLightTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: SalonDetailScreen(provider: provider),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a business without a city is asked to pick one', (tester) async {
+      await pumpDetail(tester, _FakeSalonAdminApi(), _provider);
+
+      expect(find.text('Pick your city so customers there find you'), findsOneWidget);
+    });
+
+    testWidgets('a business with a city gets no hint', (tester) async {
+      await pumpDetail(
+        tester,
+        _FakeSalonAdminApi(),
+        const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE', cityCode: 'almaty'),
+      );
+
+      expect(find.text('Pick your city so customers there find you'), findsNothing);
+    });
+
+    testWidgets('tapping the hint opens the edit dialog; picking a city saves it and the hint goes away', (tester) async {
+      final api = _FakeSalonAdminApi();
+      await pumpDetail(tester, api, _provider);
+
+      await tester.tap(find.text('Pick your city so customers there find you'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(DropdownButtonFormField<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Astana').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(of: find.byType(Dialog), matching: find.widgetWithText(FilledButton, 'Save')));
+      await tester.pumpAndSettle();
+
+      expect(api.lastUpdateProviderCall?['cityCode'], 'astana');
+      expect(find.text('Pick your city so customers there find you'), findsNothing);
+    });
+
+    testWidgets('the edit dialog starts on the current city and resends it', (tester) async {
+      final api = _FakeSalonAdminApi();
+      await pumpDetail(
+        tester,
+        api,
+        const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE', cityCode: 'almaty'),
+      );
+
+      await tester.tap(find.byTooltip('Edit business'));
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: find.byType(Dialog), matching: find.text('Almaty')), findsOneWidget);
+      await tester.tap(find.descendant(of: find.byType(Dialog), matching: find.widgetWithText(FilledButton, 'Save')));
+      await tester.pumpAndSettle();
+
+      expect(api.lastUpdateProviderCall?['cityCode'], 'almaty');
+    });
   });
 
   testWidgets('a deactivated service is hidden by default and reactivating it brings it back', (tester) async {

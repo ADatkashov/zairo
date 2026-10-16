@@ -64,8 +64,8 @@ public class AdService {
         }
         requireKnownCity(request.cityCode());
         AdBanner banner = guard(() -> new AdBanner(UUID.randomUUID(), null, request.title(), request.subtitle(),
-                request.imageUrl(), request.videoUrl(), request.cityCode(), request.startsAt(), request.endsAt(),
-                request.sortOrder() == null ? 0 : request.sortOrder(), status, clock.instant()));
+                request.imageUrl(), request.videoUrl(), request.linkTarget(), request.cityCode(), request.startsAt(),
+                request.endsAt(), request.sortOrder() == null ? 0 : request.sortOrder(), status, clock.instant()));
         repository.save(banner);
         auditLogService.record(actorId, actorEmail, "AD_BANNER_CREATED", "AD_BANNER", banner.getId(), null,
                 status.name(), null);
@@ -79,7 +79,7 @@ public class AdService {
         String previous = banner.getTitle();
         guard(() -> {
             banner.update(request.title(), request.subtitle(), request.imageUrl(), request.videoUrl(),
-                    request.cityCode(), request.startsAt(), request.endsAt(),
+                    request.linkTarget(), request.cityCode(), request.startsAt(), request.endsAt(),
                     request.sortOrder() == null ? 0 : request.sortOrder(), clock.instant());
             return banner;
         });

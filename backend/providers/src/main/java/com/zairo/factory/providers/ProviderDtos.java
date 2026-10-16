@@ -24,12 +24,20 @@ public final class ProviderDtos {
                     example = "beauty")
             String vertical,
             @Schema(example = "43.238293") Double latitude,
-            @Schema(example = "76.945465") Double longitude) {
-        // Convenience constructor for callers that don't set a location —
-        // keeps every pre-existing 3-arg call site (mostly tests) compiling
+            @Schema(example = "76.945465") Double longitude,
+            @Size(max = 255) @Schema(description = "A city code from GET /cities — where the business works. "
+                    + "Optional; a business without one is listed in every city.", example = "almaty")
+            String cityCode) {
+        // Convenience constructors for callers that don't set a location /
+        // city — keep every pre-existing call site (mostly tests) compiling
         // without a mechanical find-and-replace across the codebase.
         public CreateProviderRequest(UUID ownerUserId, String name, String vertical) {
-            this(ownerUserId, name, vertical, null, null);
+            this(ownerUserId, name, vertical, null, null, null);
+        }
+
+        public CreateProviderRequest(UUID ownerUserId, String name, String vertical, Double latitude,
+                Double longitude) {
+            this(ownerUserId, name, vertical, latitude, longitude, null);
         }
     }
 
@@ -39,12 +47,19 @@ public final class ProviderDtos {
             @Schema(example = "76.945465") Double longitude,
             @Size(max = 2048) @Schema(description = "URL returned by POST /uploads. Null clears it.",
                     example = "http://localhost:8080/api/v1/uploads/a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d.jpg")
-            String coverPhotoUrl) {
-        // Convenience constructor for existing callers (tests) that predate
-        // coverPhotoUrl — same back-compat pattern as CreateProviderRequest
-        // above.
+            String coverPhotoUrl,
+            @Size(max = 255) @Schema(description = "A city code from GET /cities. Omit (or leave blank) to keep the "
+                    + "current one; a business without a city is listed in every city.", example = "almaty")
+            String cityCode) {
+        // Convenience constructors for existing callers (tests) that predate
+        // coverPhotoUrl / cityCode — same back-compat pattern as
+        // CreateProviderRequest above.
         public UpdateProviderRequest(String name, Double latitude, Double longitude) {
-            this(name, latitude, longitude, null);
+            this(name, latitude, longitude, null, null);
+        }
+
+        public UpdateProviderRequest(String name, Double latitude, Double longitude, String coverPhotoUrl) {
+            this(name, latitude, longitude, coverPhotoUrl, null);
         }
     }
 
@@ -79,11 +94,14 @@ public final class ProviderDtos {
             UUID businessTypeId,
             @Schema(description = "Null until the owner sets one via PUT /providers/{id}.",
                     example = "http://localhost:8080/api/v1/uploads/a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d.jpg")
-            String coverPhotoUrl) {
+            String coverPhotoUrl,
+            @Schema(description = "The city code the owner picked; null until they do.", example = "almaty")
+            String cityCode) {
         static ProviderResponse from(Provider provider) {
             return new ProviderResponse(provider.getId(), provider.getOwnerUserId(), provider.getName(),
                     provider.getVertical(), provider.getStatus(), provider.getCreatedAt(), provider.getLatitude(),
-                    provider.getLongitude(), provider.getBusinessTypeId(), provider.getCoverPhotoUrl());
+                    provider.getLongitude(), provider.getBusinessTypeId(), provider.getCoverPhotoUrl(),
+                    provider.getCityCode());
         }
     }
 }

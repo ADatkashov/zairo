@@ -9,6 +9,9 @@ class AdminBooking {
   final double totalPrice;
   final DateTime createdAt;
 
+  /// Why it was cancelled, when the customer said (only on a cancelled booking).
+  final String? cancellationReason;
+
   const AdminBooking({
     required this.id,
     required this.userId,
@@ -17,6 +20,7 @@ class AdminBooking {
     required this.status,
     required this.totalPrice,
     required this.createdAt,
+    this.cancellationReason,
   });
 
   factory AdminBooking.fromJson(Map<String, dynamic> json) {
@@ -28,6 +32,7 @@ class AdminBooking {
       status: json['status'] as String,
       totalPrice: (json['totalPrice'] as num).toDouble(),
       createdAt: DateTime.parse(json['createdAt'] as String),
+      cancellationReason: json['cancellationReason'] as String?,
     );
   }
 }

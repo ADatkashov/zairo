@@ -45,6 +45,8 @@ class BookAgainApiTests {
 
         Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
         UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+        Instant later = start.plus(3, ChronoUnit.DAYS).truncatedTo(ChronoUnit.MILLIS);
+        createSlot(owner, providerId, later, later.plus(30, ChronoUnit.MINUTES));
 
         var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("25.00"));
         Map<?, ?> booking = restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
@@ -73,6 +75,8 @@ class BookAgainApiTests {
         assertThat(suggestion.get("serviceTitle")).isEqualTo("Haircut " + runId);
         assertThat(((Number) suggestion.get("price")).doubleValue()).isEqualTo(25.00);
         assertThat(suggestion.get("lastVisitAt")).isNotNull();
+        // The booked slot is no longer open, so the next free time is the later one.
+        assertThat(Instant.parse(suggestion.get("nextFreeAt").toString())).isEqualTo(later);
 
         ResponseEntity<List> emptyForOther = restTemplate.exchange(
                 "/api/v1/users/" + otherCustomer.userId() + "/book-again", HttpMethod.GET,

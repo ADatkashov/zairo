@@ -22,7 +22,8 @@ class LoggedOutGate extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     return Center(
-      child: Padding(
+      // Scrolls when a large font on a small phone makes it taller than the screen.
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(FactorySpacing.space6),
         child: Column(
           mainAxisSize: MainAxisSize.min,

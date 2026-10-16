@@ -34,6 +34,7 @@ import '../../../reviews/presentation/widgets/reviews_preview.dart';
 import '../../../staff/data/models/staff.dart';
 import '../../../staff/data/staff_exception.dart';
 import '../../../staff/presentation/providers/staff_providers.dart';
+import '../../../waitlist/presentation/widgets/no_times_waitlist.dart';
 import '../../../workforce/data/models/any_slot.dart';
 import '../../../workforce/presentation/providers/workforce_providers.dart';
 import '../../data/booking_exception.dart';
@@ -53,6 +54,10 @@ import 'booking_payment_screen.dart';
 /// with a specific staff member immediately, with no app release.
 const _verticalsWithDedicatedStaffModule = {'beauty', 'auto', 'cleaning'};
 
+/// A person to have already picked in the booking steps: [kind] is the worker
+/// directory (MASTER, MECHANIC, CLEANER or STAFF), [id] the worker.
+typedef PreselectedWorker = ({String kind, String id});
+
 class ProviderDetailScreen extends ConsumerStatefulWidget {
   final ProviderSearchResult provider;
 
@@ -60,7 +65,24 @@ class ProviderDetailScreen extends ConsumerStatefulWidget {
   /// of the top — set by the "Book" button on a provider card.
   final bool startAtBooking;
 
-  const ProviderDetailScreen({super.key, required this.provider, this.startAtBooking = false});
+  /// Pick this person up front (from a master's own page). Ignored if they are
+  /// not among the business's people, or the business only offers "any master".
+  final PreselectedWorker? preselectedWorker;
+
+  /// With [preselectedWorker]: that person's time to have picked as well (dropped if it is no longer open).
+  final String? preselectedSlotId;
+
+  /// A service to have picked (from a service row on a master's page); ignored if the business doesn't offer it.
+  final String? preselectedServiceId;
+
+  const ProviderDetailScreen({
+    super.key,
+    required this.provider,
+    this.startAtBooking = false,
+    this.preselectedWorker,
+    this.preselectedSlotId,
+    this.preselectedServiceId,
+  });
 
   @override
   ConsumerState<ProviderDetailScreen> createState() =>
@@ -75,6 +97,12 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
   String? _selectedVehicleId;
   String? _selectedCleanerId;
   String? _selectedStaffId;
+
+  /// The [ProviderDetailScreen.preselectedWorker] until the lists have loaded and it has been applied (or dropped).
+  PreselectedWorker? _pendingWorker;
+
+  /// The [ProviderDetailScreen.preselectedSlotId] until that person's times have loaded and it has been applied or dropped.
+  String? _pendingSlotId;
 
   /// "Any master": the customer picks a time, the system assigns a free person.
   bool _anyMaster = false;
@@ -95,9 +123,15 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _pendingWorker = widget.preselectedWorker;
+    _pendingSlotId = widget.preselectedWorker == null ? null : widget.preselectedSlotId;
     // One service to choose from is no choice: start with it picked, one tap fewer.
     if (widget.provider.services.length == 1) {
       _selectedServiceId = widget.provider.services.first.id;
+    }
+    final wanted = widget.preselectedServiceId;
+    if (wanted != null && widget.provider.services.any((s) => s.id == wanted)) {
+      _selectedServiceId = wanted;
     }
     if (widget.startAtBooking) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -158,12 +192,20 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
         mechanics.isNotEmpty ||
         cleaners.isNotEmpty ||
         staffMembers.isNotEmpty;
+    _applyPreselectedWorker(
+      allowChoice: allowChoice,
+      masters: mastersAsync.hasValue ? masters : null,
+      mechanics: mechanicsAsync.hasValue ? mechanics : null,
+      cleaners: cleanersAsync.hasValue ? cleaners : null,
+      staff: staffAsync.hasValue ? staffMembers : null,
+    );
     final anyMode = hasWorkers && (_anyMaster || !allowChoice);
     _anyModeNow = anyMode;
     final selectedWorkerId = _selectedMasterId ??
         _selectedMechanicId ??
         _selectedCleanerId ??
         _selectedStaffId;
+    _applyPreselectedSlot(selectedWorkerId, anyMode);
     // A person may charge their own price (the owner's choice); it is shown here, before the customer confirms,
     // exactly as the server will charge it. "Any master" is always the base price.
     final serviceForPrice = _selectedService();
@@ -583,6 +625,61 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     );
   }
 
+  /// Picks the person the customer came for, once the lists are loaded (a list that is still null has not
+  /// loaded). Unknown people (left the business, other directory) and "any master"-only businesses are ignored.
+  void _applyPreselectedWorker({
+    required bool allowChoice,
+    required List<Master>? masters,
+    required List<Mechanic>? mechanics,
+    required List<Cleaner>? cleaners,
+    required List<Staff>? staff,
+  }) {
+    final pending = _pendingWorker;
+    if (pending == null) return;
+    final id = pending.id;
+    switch (pending.kind) {
+      case 'MASTER':
+        if (masters == null) return;
+        if (allowChoice && masters.any((m) => m.id == id)) _selectedMasterId = id;
+      case 'MECHANIC':
+        if (mechanics == null) return;
+        if (allowChoice && mechanics.any((m) => m.id == id)) _selectedMechanicId = id;
+      case 'CLEANER':
+        if (cleaners == null) return;
+        if (allowChoice && cleaners.any((c) => c.id == id)) _selectedCleanerId = id;
+      default:
+        if (staff == null) return;
+        if (allowChoice && staff.any((s) => s.id == id)) _selectedStaffId = id;
+    }
+    _pendingWorker = null;
+  }
+
+  /// Picks the time the customer tapped on the person's page, once that person's times have loaded. Dropped when
+  /// the time is gone (booked meanwhile) or no person ended up selected.
+  void _applyPreselectedSlot(String? workerId, bool anyMode) {
+    final pending = _pendingSlotId;
+    if (pending == null) return;
+    if (_pendingWorker != null) return; // the person has not been applied yet
+    if (workerId == null || anyMode) {
+      _pendingSlotId = null;
+      return;
+    }
+    final slots = ref.watch(workerSlotsProvider((widget.provider.id, workerId)));
+    slots.whenOrNull(
+      data: (list) {
+        _pendingSlotId = null;
+        for (final slot in list) {
+          if (slot.id == pending) {
+            _selectedSlotId = slot.id;
+            _selectedSlotStartsAt = slot.startsAt;
+            break;
+          }
+        }
+      },
+      error: (_, _) => _pendingSlotId = null,
+    );
+  }
+
   /// Picking a person (rather than "any master") shows that person's own times, so the previous pick is dropped.
   void _pickWorker(VoidCallback select) {
     setState(() {
@@ -629,12 +726,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     Widget picker(List<AvailabilitySlot> slots) {
       final openSlots = slots.where((s) => s.isOpen).toList();
       if (openSlots.isEmpty) {
-        return FactoryEmptyState(
-          compact: true,
-          icon: Symbols.event_busy_rounded,
-          title: l10n.noOpenTimesTitle,
-          message: l10n.noOpenTimesMessage,
-        );
+        return NoTimesWaitlist(providerId: widget.provider.id);
       }
       return DaySlotPicker(
         slots: openSlots,

@@ -34,6 +34,11 @@ public class AdBanner {
     @Column(name = "video_url")
     private String videoUrl;
 
+    /** Where a tap opens inside the app when there is no video; null = nowhere. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "link_target", length = 20)
+    private AdLinkTarget linkTarget;
+
     /** Null = shown in every city. */
     @Column(name = "city_code")
     private String cityCode;
@@ -65,6 +70,13 @@ public class AdBanner {
 
     public AdBanner(UUID id, UUID providerId, String title, String subtitle, String imageUrl, String videoUrl,
             String cityCode, Instant startsAt, Instant endsAt, int sortOrder, AdStatus status, Instant now) {
+        this(id, providerId, title, subtitle, imageUrl, videoUrl, null, cityCode, startsAt, endsAt, sortOrder, status,
+                now);
+    }
+
+    public AdBanner(UUID id, UUID providerId, String title, String subtitle, String imageUrl, String videoUrl,
+            AdLinkTarget linkTarget, String cityCode, Instant startsAt, Instant endsAt, int sortOrder,
+            AdStatus status, Instant now) {
         requireWindow(startsAt, endsAt);
         this.id = id;
         this.providerId = providerId;
@@ -72,6 +84,7 @@ public class AdBanner {
         this.subtitle = blankToNull(subtitle);
         this.imageUrl = requireHttps(imageUrl, "imageUrl");
         this.videoUrl = videoUrl == null || videoUrl.isBlank() ? null : requireHttps(videoUrl, "videoUrl");
+        this.linkTarget = linkTarget;
         this.cityCode = blankToNull(cityCode);
         this.startsAt = startsAt;
         this.endsAt = endsAt;
@@ -84,7 +97,13 @@ public class AdBanner {
     /** Replaces everything an editor can change; status moves only through {@link #moveTo}. */
     public void update(String title, String subtitle, String imageUrl, String videoUrl, String cityCode,
             Instant startsAt, Instant endsAt, int sortOrder, Instant now) {
+        update(title, subtitle, imageUrl, videoUrl, null, cityCode, startsAt, endsAt, sortOrder, now);
+    }
+
+    public void update(String title, String subtitle, String imageUrl, String videoUrl, AdLinkTarget linkTarget,
+            String cityCode, Instant startsAt, Instant endsAt, int sortOrder, Instant now) {
         requireWindow(startsAt, endsAt);
+        this.linkTarget = linkTarget;
         this.title = requireText(title, "title");
         this.subtitle = blankToNull(subtitle);
         this.imageUrl = requireHttps(imageUrl, "imageUrl");
@@ -196,6 +215,10 @@ public class AdBanner {
 
     public String getVideoUrl() {
         return videoUrl;
+    }
+
+    public AdLinkTarget getLinkTarget() {
+        return linkTarget;
     }
 
     public String getCityCode() {

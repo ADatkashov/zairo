@@ -24,6 +24,7 @@ class DiscoveryApi {
     double? minRating,
     bool availableOnly = false,
     String? sort,
+    String? cityCode,
   }) async {
     final response = await _dioClient.get(
       '/search/providers',
@@ -40,6 +41,7 @@ class DiscoveryApi {
         'minRating': ?minRating,
         if (availableOnly) 'availableOnly': true,
         'sort': ?sort,
+        if (cityCode != null && cityCode.isNotEmpty) 'city': cityCode,
       },
     );
 

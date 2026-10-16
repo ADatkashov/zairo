@@ -36,12 +36,14 @@ public class WorkerScheduleController {
     private final WorkerScheduleService scheduleService;
     private final WorkerTimeOffService timeOffService;
     private final WorkforceSettingsService settingsService;
+    private final WorkerPortalService portalService;
 
     public WorkerScheduleController(WorkerScheduleService scheduleService, WorkerTimeOffService timeOffService,
-            WorkforceSettingsService settingsService) {
+            WorkforceSettingsService settingsService, WorkerPortalService portalService) {
         this.scheduleService = scheduleService;
         this.timeOffService = timeOffService;
         this.settingsService = settingsService;
+        this.portalService = portalService;
     }
 
     @Operation(summary = "The business's workers", description = "Owner-only. Every master / mechanic / cleaner / "
@@ -53,6 +55,20 @@ public class WorkerScheduleController {
     @GetMapping("/api/v1/providers/{providerId}/workers")
     public List<WorkerSummaryResponse> workers(@PathVariable UUID providerId, HttpServletRequest request) {
         return scheduleService.workers(providerId, CurrentUser.requireUserId(request));
+    }
+
+    @Operation(summary = "A worker's rating and reviews", description = "Owner-only. Average rating (the person's own "
+            + "rating where the customer gave one, else the shared one), the star distribution and the newest "
+            + "reviews with the reviewer's name, for one master / mechanic / cleaner / staff member of the business.")
+    @ApiResponse(responseCode = "200", description = "The rating")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/providers/{providerId}/workers/{workerId}/rating")
+    public WorkerPortalDtos.WorkerRatingResponse rating(@PathVariable UUID providerId, @PathVariable UUID workerId,
+            HttpServletRequest request) {
+        return portalService.ratingOf(
+                scheduleService.requireOwnerOfWorker(providerId, workerId, CurrentUser.requireUserId(request)));
     }
 
     @Operation(summary = "A worker's weekly schedule", description = "Owner-only. configured=false means the worker "

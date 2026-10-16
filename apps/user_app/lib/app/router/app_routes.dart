@@ -55,6 +55,9 @@ abstract final class AppRoutes {
     },
   ).toString();
 
+  /// A master's (or any worker's) public page: rating, services, the way to book.
+  static String worker(String workerId) => '/worker/$workerId';
+
   /// A master's portfolio (beauty vertical).
   static String portfolio(String masterId, {required String masterName}) =>
       _withName('/portfolio/$masterId', masterName);
@@ -91,8 +94,30 @@ abstract final class AppRoutes {
   ///
   /// With [book] the business opens already scrolled to the booking steps
   /// (services, then times) — what a "Book" button on a card wants.
-  static String provider(String providerId, {bool book = false}) =>
-      book ? '/provider/$providerId?book=1' : '/provider/$providerId';
+  ///
+  /// With [workerId] and [workerKind] (MASTER, MECHANIC, CLEANER or STAFF) that
+  /// person is already picked in the booking steps — what "Book" on a master's
+  /// own page wants, so the customer does not choose them a second time. With [slotId] that person's time is
+  /// picked too (one of the times shown on their page).
+  static String provider(
+    String providerId, {
+    bool book = false,
+    String? workerId,
+    String? workerKind,
+    String? slotId,
+    String? serviceId,
+  }) {
+    final query = <String, String>{
+      if (book) 'book': '1',
+      if (workerId != null && workerKind != null) ...{'worker': workerId, 'kind': workerKind},
+      // A time to have picked as well; only meaningful together with a worker.
+      if (workerId != null && workerKind != null && slotId != null) 'slot': slotId,
+      // A service to have picked: what a service row on a master's page wants.
+      'service': ?serviceId,
+    };
+    final path = '/provider/$providerId';
+    return query.isEmpty ? path : Uri(path: path, queryParameters: query).toString();
+  }
 
   /// All public reviews of a business, with the rating breakdown.
   static String reviews(String providerId, {String? providerName}) =>

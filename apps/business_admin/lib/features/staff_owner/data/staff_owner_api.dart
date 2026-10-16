@@ -1,6 +1,7 @@
 import 'package:core_network/core_network.dart';
 
 import 'models/needs_attention.dart';
+import 'models/reschedule_option.dart';
 import 'models/worker_schedule.dart';
 
 /// The owner's side of worker-related appointments (backend `WorkerOwnerController`). Not final:
@@ -40,6 +41,28 @@ class StaffOwnerApi {
     return _dioClient.post('/providers/$providerId/appointments/$bookingId/mark-attended');
   }
 
+  /// The visit did not happen: the customer did not come (only for a confirmed appointment that has started).
+  Future<void> markNoShow(String bookingId) {
+    return _dioClient.post('/bookings/$bookingId/no-show');
+  }
+
+  /// The visit happened (only for a confirmed appointment).
+  Future<void> markCompleted(String bookingId) {
+    return _dioClient.post('/bookings/$bookingId/complete');
+  }
+
+  /// Free times with the same person the appointment can move to, soonest first.
+  Future<List<RescheduleOption>> rescheduleOptions(String bookingId) async {
+    final response = await _dioClient.get('/bookings/$bookingId/owner-reschedule-options');
+    final data = response.data as List<dynamic>;
+    return data.map((e) => RescheduleOption.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Moves the appointment to [slotId]; the customer is told. 409 when that time was just taken.
+  Future<void> reschedule(String bookingId, String slotId) {
+    return _dioClient.post('/bookings/$bookingId/owner-reschedule', data: {'slotId': slotId});
+  }
+
   // --- per-worker prices ---
 
   /// serviceId -> this worker's own price, for services where it differs from the base price.
@@ -60,6 +83,11 @@ class StaffOwnerApi {
     final response = await _dioClient.get('/providers/$providerId/workers');
     final data = response.data as List<dynamic>;
     return data.map((e) => WorkerSummary.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<WorkerRating> workerRating(String providerId, String workerId) async {
+    final response = await _dioClient.get('/providers/$providerId/workers/$workerId/rating');
+    return WorkerRating.fromJson(response.data as Map<String, dynamic>);
   }
 
   Future<WorkerScheduleData> schedule(String providerId, String workerId) async {

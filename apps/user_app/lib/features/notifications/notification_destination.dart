@@ -12,7 +12,10 @@ String? notificationDestination(String type) => switch (type) {
   'BOOKING_CANCELLED' ||
   'BOOKING_REMINDER' ||
   'PAYMENT_REFUNDED' => AppRoutes.bookings,
-  'SMART_FILL_OFFER' || 'REBOOK_OFFER' || 'REACTIVATION_OFFER' => AppRoutes.search(),
+  'SMART_FILL_OFFER' ||
+  'REBOOK_OFFER' ||
+  'REACTIVATION_OFFER' ||
+  'WAITLIST_SLOT_OPENED' => AppRoutes.search(),
   'BIRTHDAY_BONUS' || 'GREETING' => AppRoutes.rewards,
   _ => null,
 };

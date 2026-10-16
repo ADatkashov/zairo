@@ -37,6 +37,7 @@ class _AdDialogState extends ConsumerState<AdDialog> {
   late final _imageUrl = TextEditingController(text: widget.banner?.imageUrl);
   late final _videoUrl = TextEditingController(text: widget.banner?.videoUrl);
   late final _sortOrder = TextEditingController(text: '${widget.banner?.sortOrder ?? 0}');
+  late String? _linkTarget = widget.banner?.linkTarget;
   late String? _cityCode = widget.banner?.cityCode;
   late DateTime _startDay = _dayOf(widget.banner?.startsAt.toLocal() ?? DateTime.now());
   // The last day it is live (the stored end is the next midnight).
@@ -121,6 +122,46 @@ class _AdDialogState extends ConsumerState<AdDialog> {
                   keyboardType: TextInputType.url,
                   textInputAction: TextInputAction.next,
                   validator: (v) => (v == null || v.trim().isEmpty || isHttpsUrl(v)) ? null : l10n.adUrlInvalid,
+                ),
+                gap,
+                // What customers will see on Home, live as the fields change.
+                gap,
+                ListenableBuilder(
+                  listenable: Listenable.merge([_title, _subtitle, _imageUrl, _videoUrl]),
+                  builder: (context, _) {
+                    if (!isHttpsUrl(_imageUrl.text)) return const SizedBox.shrink();
+                    final subtitle = _subtitle.text.trim();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(l10n.adPreviewLabel, style: Theme.of(context).textTheme.labelMedium),
+                        const SizedBox(height: FactorySpacing.space2),
+                        AspectRatio(
+                          aspectRatio: 16 / 9,
+                          child: FactoryBannerCard(
+                            imageUrl: _imageUrl.text.trim(),
+                            title: _title.text.trim().isEmpty ? l10n.adFieldTitle : _title.text.trim(),
+                            subtitle: subtitle.isEmpty ? null : subtitle,
+                            tag: widget.banner?.providerId != null ? l10n.adSponsored : null,
+                            showPlay: isHttpsUrl(_videoUrl.text),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                gap,
+                // Tapping a banner with a video plays it; this is where a banner WITHOUT one goes.
+                DropdownButtonFormField<String?>(
+                  initialValue: _linkTarget,
+                  isExpanded: true,
+                  decoration: InputDecoration(labelText: l10n.adFieldLinkTarget),
+                  items: [
+                    DropdownMenuItem<String?>(value: null, child: Text(l10n.adLinkNone)),
+                    DropdownMenuItem<String?>(value: 'REWARDS', child: Text(l10n.adLinkRewards)),
+                    DropdownMenuItem<String?>(value: 'SEARCH', child: Text(l10n.adLinkSearch)),
+                  ],
+                  onChanged: _isSubmitting ? null : (value) => setState(() => _linkTarget = value),
                 ),
                 gap,
                 DropdownButtonFormField<String?>(
@@ -223,6 +264,7 @@ class _AdDialogState extends ConsumerState<AdDialog> {
           subtitle: subtitle.isEmpty ? null : subtitle,
           imageUrl: _imageUrl.text.trim(),
           videoUrl: video.isEmpty ? null : video,
+          linkTarget: _linkTarget,
           cityCode: _cityCode,
           startsAt: startsAt,
           endsAt: endsAt,
@@ -234,6 +276,7 @@ class _AdDialogState extends ConsumerState<AdDialog> {
           subtitle: subtitle.isEmpty ? null : subtitle,
           imageUrl: _imageUrl.text.trim(),
           videoUrl: video.isEmpty ? null : video,
+          linkTarget: _linkTarget,
           cityCode: _cityCode,
           startsAt: startsAt,
           endsAt: endsAt,

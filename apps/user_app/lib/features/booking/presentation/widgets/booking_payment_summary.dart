@@ -46,7 +46,14 @@ class BookingPaymentSummary extends StatelessWidget {
                   style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
-              FactoryPriceText(amount: plan.dueNow, fontSize: compact ? 15 : 18, weight: FontWeight.w800),
+              // Shrinks rather than overflows at a large font on a narrow phone.
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: FactoryPriceText(amount: plan.dueNow, fontSize: compact ? 15 : 18, weight: FontWeight.w800),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: FactorySpacing.space2),
@@ -97,7 +104,14 @@ class BookingAmounts extends StatelessWidget {
           ),
         ),
         const SizedBox(width: FactorySpacing.space2),
-        FactoryPriceText(amount: booking.totalPrice, fontSize: 16, weight: FontWeight.w700),
+        // Shrinks rather than overflows at a large font on a narrow phone.
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: FactoryPriceText(amount: booking.totalPrice, fontSize: 16, weight: FontWeight.w700),
+          ),
+        ),
       ],
     );
   }
@@ -124,11 +138,17 @@ class _Line extends StatelessWidget {
           children: [
             Flexible(child: Text(label, style: textTheme.bodySmall?.copyWith(color: color))),
             const SizedBox(width: FactorySpacing.space2),
-            FactoryPriceText(
-              amount: amount,
-              fontSize: 13,
-              color: color,
-              weight: muted ? FontWeight.w500 : FontWeight.w600,
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: FactoryPriceText(
+                  amount: amount,
+                  fontSize: 13,
+                  color: color,
+                  weight: muted ? FontWeight.w500 : FontWeight.w600,
+                ),
+              ),
             ),
           ],
         ),

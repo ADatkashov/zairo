@@ -205,6 +205,7 @@ class OpenApiConfig {
                                 + "cycle against the payment provider."),
                 new Tag().name("Reviews").description("A rating and comment left on a completed booking."),
                 new Tag().name("Favorites").description("A user's saved/bookmarked providers."),
+                new Tag().name("Waitlist").description("Ask to be told when a time frees up at a fully booked business."),
                 new Tag().name("Search").description("Customer-facing provider discovery — filters to ACTIVE "
                         + "providers only, unlike the raw Providers listing."),
                 new Tag().name("Storage").description("File upload/download backing photos (portfolio images, "

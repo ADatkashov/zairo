@@ -10,7 +10,8 @@ import 'package:zairo/features/staff/presentation/providers/staff_cabinet_provid
 import 'package:zairo/features/staff/presentation/screens/staff_cabinet_screen.dart';
 import 'package:zairo/l10n/app_localizations.dart';
 
-StaffMembership _membership(String id, String business, {int pending = 0}) => StaffMembership(
+StaffMembership _membership(String id, String business, {int pending = 0}) =>
+    StaffMembership(
       staffId: id,
       providerId: 'p-$id',
       providerName: business,
@@ -22,7 +23,8 @@ StaffMembership _membership(String id, String business, {int pending = 0}) => St
       reviewCount: 2,
     );
 
-StaffAppointment _appointment(String id, {bool canAccept = true}) => StaffAppointment(
+StaffAppointment _appointment(String id, {bool canAccept = true}) =>
+    StaffAppointment(
       bookingId: id,
       status: 'CONFIRMED',
       startsAt: DateTime.now().add(const Duration(days: 1)),
@@ -43,7 +45,8 @@ StaffAppointment _appointment(String id, {bool canAccept = true}) => StaffAppoin
     );
 
 class _FakeCabinetApi extends StaffCabinetApi {
-  _FakeCabinetApi(this._memberships, this._appointmentsByStaff) : super(DioClient(Dio()));
+  _FakeCabinetApi(this._memberships, this._appointmentsByStaff)
+    : super(DioClient(Dio()));
 
   final List<StaffMembership> _memberships;
   final Map<String, List<StaffAppointment>> _appointmentsByStaff;
@@ -54,35 +57,50 @@ class _FakeCabinetApi extends StaffCabinetApi {
   Future<List<StaffMembership>> memberships() async => _memberships;
 
   @override
-  Future<List<StaffAppointment>> appointments(String staffId, {String scope = 'ALL'}) async =>
-      _appointmentsByStaff[staffId] ?? const [];
+  Future<List<StaffAppointment>> appointments(
+    String staffId, {
+    String scope = 'ALL',
+  }) async => _appointmentsByStaff[staffId] ?? const [];
 
   @override
-  Future<void> accept(String staffId, String bookingId) async => accepted.add('$staffId/$bookingId');
+  Future<void> accept(String staffId, String bookingId) async =>
+      accepted.add('$staffId/$bookingId');
 
   @override
-  Future<void> cannotAttend(String staffId, String bookingId, {String? reason}) async =>
-      declined.add('$staffId/$bookingId');
+  Future<void> cannotAttend(
+    String staffId,
+    String bookingId, {
+    String? reason,
+  }) async => declined.add('$staffId/$bookingId');
 
   @override
-  Future<StaffRating> rating(String staffId) async =>
-      const StaffRating(averageRating: null, reviewCount: 0, distribution: [0, 0, 0, 0, 0], reviews: []);
+  Future<StaffRating> rating(String staffId) async => const StaffRating(
+    averageRating: null,
+    reviewCount: 0,
+    distribution: [0, 0, 0, 0, 0],
+    reviews: [],
+  );
 }
 
 Widget _wrap(_FakeCabinetApi api) => ProviderScope(
-      overrides: [staffCabinetApiProvider.overrideWithValue(api)],
-      child: MaterialApp(
-        theme: factoryLightTheme(),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: const StaffCabinetScreen(),
-      ),
-    );
+  overrides: [staffCabinetApiProvider.overrideWithValue(api)],
+  child: MaterialApp(
+    theme: factoryLightTheme(),
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: const StaffCabinetScreen(),
+  ),
+);
 
 void main() {
-  testWidgets('switching business shows only that business\'s appointments', (tester) async {
+  testWidgets('switching business shows only that business\'s appointments', (
+    tester,
+  ) async {
     final api = _FakeCabinetApi(
-      [_membership('s1', 'Salon One', pending: 1), _membership('s2', 'Salon Two')],
+      [
+        _membership('s1', 'Salon One', pending: 1),
+        _membership('s2', 'Salon Two'),
+      ],
       {
         's1': [_appointment('b1')],
         's2': const [],
@@ -100,7 +118,9 @@ void main() {
     expect(find.text('No upcoming appointments'), findsOneWidget);
   });
 
-  testWidgets('accepting an appointment calls the API for that staff profile', (tester) async {
+  testWidgets('accepting an appointment calls the API for that staff profile', (
+    tester,
+  ) async {
     final api = _FakeCabinetApi(
       [_membership('s1', 'Salon One', pending: 1)],
       {
@@ -116,7 +136,9 @@ void main() {
     expect(api.accepted, ['s1/b1']);
   });
 
-  testWidgets('"Can\'t attend" asks the owner instead of cancelling', (tester) async {
+  testWidgets('"Can\'t attend" asks the owner instead of cancelling', (
+    tester,
+  ) async {
     final api = _FakeCabinetApi(
       [_membership('s1', 'Salon One', pending: 1)],
       {

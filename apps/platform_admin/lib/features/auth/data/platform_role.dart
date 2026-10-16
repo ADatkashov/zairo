@@ -18,6 +18,9 @@ class PlatformPermissions {
   /// Create, edit, publish, pause, reject and delete Home banners.
   bool get canManageAds => canModerateBusinesses;
 
+  /// Hide, restore or keep a reported review.
+  bool get canModerateReviews => canModerateBusinesses;
+
   /// Create / edit / hide categories, spheres, subspheres and services.
   bool get canEditCatalog => isAdmin;
 

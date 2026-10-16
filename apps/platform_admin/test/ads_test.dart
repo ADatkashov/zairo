@@ -42,6 +42,11 @@ void main() {
       expect(isHttpsUrl(null), isFalse);
     });
 
+    test('parses the link target, null when absent', () {
+      expect(AdBanner.fromJson(adJson('x', 'T', linkTarget: 'REWARDS')).linkTarget, 'REWARDS');
+      expect(AdBanner.fromJson(adJson('x', 'T')).linkTarget, isNull);
+    });
+
     test('the console offers the moves the backend lifecycle allows', () {
       AdBanner of(String status) => AdBanner.fromJson(adJson('x', 'T', status: status));
 
@@ -114,6 +119,9 @@ void main() {
     await tester.enterText(find.widgetWithText(TextFormField, 'Title'), 'New promo');
     await tester.enterText(find.widgetWithText(TextFormField, 'Cover image link (https)'), 'https://cdn.example/n.jpg');
     await tester.enterText(find.widgetWithText(TextFormField, 'Video link (https, optional)'), 'https://v.example/n');
+    // The preview made the form longer; the dialog scrolls, so scroll to the switch like a person would.
+    await tester.ensureVisible(find.byType(Switch).last);
+    await tester.pumpAndSettle();
     await tester.tap(find.byType(Switch).last);
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Create'));
@@ -124,6 +132,7 @@ void main() {
     expect(body['subtitle'], isNull);
     expect(body['imageUrl'], 'https://cdn.example/n.jpg');
     expect(body['videoUrl'], 'https://v.example/n');
+    expect(body['linkTarget'], isNull);
     expect(body['cityCode'], isNull);
     expect(body['status'], 'ACTIVE');
     expect(body['sortOrder'], 0);
@@ -131,6 +140,67 @@ void main() {
     final ends = DateTime.parse(body['endsAt'] as String);
     expect(ends.isAfter(starts), isTrue);
     expect(find.text('“New promo” created'), findsOneWidget);
+  });
+
+  testWidgets('add banner: the chosen link target is sent, so a bonuses banner can open the bonuses', (tester) async {
+    final backend = _backend();
+    backend.on('POST', '/platform/ads', (_) => FakeReply(adJson('a9', 'Earn bonuses')));
+    await pumpConsole(tester, backend: backend, location: ConsoleRoutes.ads);
+
+    await tester.tap(find.text('Add banner'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextFormField, 'Title'), 'Earn bonuses');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Cover image link (https)'), 'https://cdn.example/n.jpg');
+    await tester.tap(find.text('Nothing'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('My bonuses').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Create'));
+    await tester.pumpAndSettle();
+
+    final body = backend.calls('POST', '/platform/ads').single.data as Map;
+    expect(body['linkTarget'], 'REWARDS');
+  });
+
+  testWidgets('edit: an existing link target is prefilled and sent back', (tester) async {
+    final backend = _backend(banners: [adJson('a1', 'Bonuses', linkTarget: 'SEARCH')]);
+    backend.on('PUT', '/platform/ads/a1', (_) => FakeReply(adJson('a1', 'Bonuses')));
+    await pumpConsole(tester, backend: backend, location: ConsoleRoutes.ads);
+
+    await tester.tap(find.text('Bonuses'));
+    await tester.pumpAndSettle();
+    expect(find.text('Search'), findsWidgets);
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+
+    expect((backend.calls('PUT', '/platform/ads/a1').single.data as Map)['linkTarget'], 'SEARCH');
+  });
+
+  testWidgets('the form previews the banner as Home will show it, once the cover link is valid', (tester) async {
+    await pumpConsole(tester, backend: _backend(), location: ConsoleRoutes.ads);
+
+    await tester.tap(find.text('Add banner'));
+    await tester.pumpAndSettle();
+    expect(find.byType(FactoryBannerCard), findsNothing);
+
+    await tester.enterText(find.widgetWithText(TextFormField, 'Cover image link (https)'), 'http://not-https.example/a.jpg');
+    await tester.pumpAndSettle();
+    expect(find.byType(FactoryBannerCard), findsNothing);
+
+    await tester.enterText(find.widgetWithText(TextFormField, 'Cover image link (https)'), 'https://cdn.example/a.jpg');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Title'), 'Earn bonuses');
+    await tester.pumpAndSettle();
+    expect(find.text('Preview on Home'), findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(FactoryBannerCard), matching: find.text('Earn bonuses')),
+      findsOneWidget,
+    );
+    expect(tester.widget<FactoryBannerCard>(find.byType(FactoryBannerCard)).showPlay, isFalse);
+
+    // A video link makes the preview carry the play badge, as Home will.
+    await tester.enterText(find.widgetWithText(TextFormField, 'Video link (https, optional)'), 'https://v.example/1');
+    await tester.pumpAndSettle();
+    expect(tester.widget<FactoryBannerCard>(find.byType(FactoryBannerCard)).showPlay, isTrue);
   });
 
   testWidgets('add banner starts as a draft unless "publish right away" is on', (tester) async {

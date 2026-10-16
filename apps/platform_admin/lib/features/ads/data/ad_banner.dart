@@ -9,6 +9,9 @@ class AdBanner {
   final String imageUrl;
   final String? videoUrl;
 
+  /// Where a tap opens inside the customer app when there is no video: REWARDS or SEARCH; null = nowhere.
+  final String? linkTarget;
+
   /// Null = shown in every city.
   final String? cityCode;
   final DateTime startsAt;
@@ -26,6 +29,7 @@ class AdBanner {
     this.subtitle,
     required this.imageUrl,
     this.videoUrl,
+    this.linkTarget,
     this.cityCode,
     required this.startsAt,
     required this.endsAt,
@@ -42,6 +46,7 @@ class AdBanner {
       subtitle: json['subtitle'] as String?,
       imageUrl: json['imageUrl'] as String,
       videoUrl: json['videoUrl'] as String?,
+      linkTarget: json['linkTarget'] as String?,
       cityCode: json['cityCode'] as String?,
       startsAt: DateTime.parse(json['startsAt'] as String),
       endsAt: DateTime.parse(json['endsAt'] as String),

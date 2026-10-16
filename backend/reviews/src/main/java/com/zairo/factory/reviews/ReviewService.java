@@ -37,8 +37,17 @@ public class ReviewService {
 
     @Transactional
     public Review createReview(UUID bookingId, UUID callerId, int rating, String comment) {
+        return createReview(bookingId, callerId, rating, null, comment);
+    }
+
+    @Transactional
+    public Review createReview(UUID bookingId, UUID callerId, int rating, Integer workerRating, String comment) {
         if (rating < 1 || rating > 5) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "rating must be between 1 and 5: " + rating);
+        }
+        if (workerRating != null && (workerRating < 1 || workerRating > 5)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "workerRating must be between 1 and 5: " + workerRating);
         }
 
         Booking booking = bookingRepository.findById(bookingId)
@@ -58,7 +67,7 @@ public class ReviewService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Booking already has a review: " + bookingId);
         }
 
-        Review review = new Review(UUID.randomUUID(), bookingId, rating, comment, Instant.now());
+        Review review = new Review(UUID.randomUUID(), bookingId, rating, workerRating, comment, Instant.now());
         review = reviewRepository.save(review);
 
         AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
@@ -94,6 +103,30 @@ public class ReviewService {
     }
 
     /**
+     * The reviewed business reports a review to the platform. Same ownership rule as replying. One report per review
+     * for good (409 after that, whatever the platform decided), so a dismissed report cannot be filed again; a review
+     * the platform already hid cannot be reported either.
+     */
+    @Transactional
+    public Review reportReview(UUID reviewId, UUID callerId, String reason) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Review not found: "
+                        + reviewId));
+        Booking booking = bookingRepository.findById(review.getBookingId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
+                        + review.getBookingId()));
+        AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
+                        + booking.getAvailabilitySlotId()));
+        providerOwnership.requireOwner(slot.getProviderId(), callerId);
+        if (review.wasReported() || review.isHidden()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This review was already reported: " + reviewId);
+        }
+        review.report(reason.trim(), Instant.now());
+        return reviewRepository.save(review);
+    }
+
+    /**
      * Owner-only, newest first. Returns the repository's row projection rather
      * than the final response DTO -- resolving reviewer names is the
      * controller's job, same split {@code LoyaltyAdminController.getCustomers}
@@ -101,7 +134,7 @@ public class ReviewService {
      * here, so this service stays free of a {@code users} dependency).
      */
     @Transactional(readOnly = true)
-    public Page<ReviewRepository.ProviderReviewRow> listByProvider(UUID providerId, UUID callerId,
+    public Page<ReviewRepository.OwnerReviewRow> listByProvider(UUID providerId, UUID callerId,
             Pageable pageable) {
         providerOwnership.requireOwner(providerId, callerId);
         return reviewRepository.findByProviderId(providerId, pageable);
