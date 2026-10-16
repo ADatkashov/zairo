@@ -22,6 +22,14 @@ GitHub Actions itself still does **not** deploy anything or touch any of
 CI targets yet. §12 covers a real (manually set up, not CI-triggered)
 cloud deployment of the backend that now exists alongside this.
 
+### When GitHub Actions is not running
+
+If the workflow runs fail within seconds with no steps (billing/spending limit, a disabled workflow) nothing is
+checking pull requests. `scripts/verify-local.sh` runs the same checks on your machine — Flutter analyze + test for
+every package, and the backend tests (the integration tests need Docker for Testcontainers; without it only the unit
+tests run, and the script says so). Fix the cause in GitHub: *Settings → Billing and plans* (Actions minutes /
+spending limit) and *Settings → Actions → General* (Actions enabled for this repository, workflows not disabled).
+
 ## 2–4. Workflows: what exists, when they run, what they check
 
 ### `flutter-ci.yml`

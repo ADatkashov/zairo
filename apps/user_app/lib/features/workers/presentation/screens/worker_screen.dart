@@ -173,6 +173,16 @@ class _WorkerBody extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
                     child: FactoryCard(
+                      // One tap from the service you want to booking it with this person.
+                      onTap: () => context.push(
+                        AppRoutes.provider(
+                          profile.providerId,
+                          book: true,
+                          workerId: profile.id,
+                          workerKind: profile.kind,
+                          serviceId: service.id,
+                        ),
+                      ),
                       child: Row(
                         children: [
                           Expanded(

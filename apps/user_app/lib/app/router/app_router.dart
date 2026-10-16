@@ -166,13 +166,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           final book = query['book'] == '1';
           final worker = (query['worker'] != null && query['kind'] != null) ? (kind: query['kind']!, id: query['worker']!) : null;
           if (extra is ProviderSearchResult) {
-            return ProviderDetailScreen(provider: extra, startAtBooking: book, preselectedWorker: worker, preselectedSlotId: query['slot']);
+            return ProviderDetailScreen(provider: extra, startAtBooking: book, preselectedWorker: worker, preselectedSlotId: query['slot'], preselectedServiceId: query['service']);
           }
           return ProviderDetailRoute(
             providerId: state.pathParameters['id']!,
             startAtBooking: book,
             preselectedWorker: worker,
             preselectedSlotId: query['slot'],
+            preselectedServiceId: query['service'],
           );
         },
       ),

@@ -203,7 +203,12 @@ public class WorkerPortalService {
 
     @Transactional(readOnly = true)
     public WorkerRatingResponse rating(UUID userId, UUID workerId) {
-        Worker worker = requireOwnWorker(workerId, userId);
+        return ratingOf(requireOwnWorker(workerId, userId));
+    }
+
+    /** The rating of one worker: average, star distribution and the newest reviews with the reviewer's name. */
+    @Transactional(readOnly = true)
+    public WorkerRatingResponse ratingOf(Worker worker) {
         List<Entry> entries = entries(worker);
         List<Review> reviews = reviewsOf(entries);
         long[] counts = new long[5];

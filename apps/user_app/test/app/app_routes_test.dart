@@ -46,6 +46,12 @@ void main() {
       AppRoutes.provider('p-1', book: true, workerId: 'w-1', workerKind: 'MASTER', slotId: 's-1'),
       '/provider/p-1?book=1&worker=w-1&kind=MASTER&slot=s-1',
     );
+    // A service row on their page: that service too.
+    expect(
+      AppRoutes.provider('p-1', book: true, workerId: 'w-1', workerKind: 'MASTER', serviceId: 's-9'),
+      '/provider/p-1?book=1&worker=w-1&kind=MASTER&service=s-9',
+    );
+    expect(AppRoutes.provider('p-1', serviceId: 's-9'), '/provider/p-1?service=s-9');
     // A time without a person means nothing.
     expect(AppRoutes.provider('p-1', slotId: 's-1'), '/provider/p-1');
     // A worker needs its kind to be found in the right directory; one alone is dropped.
