@@ -181,6 +181,8 @@ class ReviewApiTests {
         String reportPath = "/api/v1/reviews/" + reviewId + "/report";
         assertThat(restTemplate.getForEntity(summaryPath, Map.class).getBody().get("total")).isEqualTo(1);
 
+        long openBefore = openReports(asSupport);
+
         // Only the business that was reviewed can report, with a reason.
         Registered stranger = TestAuth.registerOwner(restTemplate, "mod-stranger-" + runId + "@example.com");
         Map<String, String> reason = Map.of("reason", "Abusive language");
@@ -199,6 +201,9 @@ class ReviewApiTests {
         assertThat(restTemplate.exchange(reportPath, HttpMethod.POST,
                 new HttpEntity<>(reason, TestAuth.authHeaders(ctx.owner().accessToken())), Map.class)
                 .getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+
+        // The dashboard counts it as waiting for a decision.
+        assertThat(openReports(asSupport)).isEqualTo(openBefore + 1);
 
         // The owner sees it as waiting; the platform sees it in the queue; a report changes nothing public yet.
         assertThat(ownerStatus(ctx, providerReviews, reviewId)).isEqualTo("OPEN");
@@ -223,6 +228,7 @@ class ReviewApiTests {
                 Void.class).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         assertThat(restTemplate.exchange(hidePath, HttpMethod.POST, asModerator, Void.class).getStatusCode())
                 .isEqualTo(HttpStatus.NO_CONTENT); // hiding twice is a no-op
+        assertThat(openReports(asSupport)).isEqualTo(openBefore); // decided: no longer waiting
         Map<?, ?> summary = restTemplate.getForEntity(summaryPath, Map.class).getBody();
         assertThat(summary.get("total")).isEqualTo(0);
         assertThat(summary.get("average")).isNull();
@@ -274,6 +280,12 @@ class ReviewApiTests {
                 .getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(restTemplate.exchange("/api/v1/platform/reviews/" + UUID.randomUUID() + "/hide",
                 HttpMethod.POST, asModerator, Map.class).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    private long openReports(HttpEntity<Void> auth) {
+        Map<?, ?> dashboard = restTemplate.exchange("/api/v1/platform/dashboard", HttpMethod.GET, auth, Map.class)
+                .getBody();
+        return ((Number) ((Map<?, ?>) dashboard.get("reviews")).get("reportedOpen")).longValue();
     }
 
     private String ownerStatus(BookingContext ctx, String providerReviews, UUID reviewId) {

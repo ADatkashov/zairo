@@ -20,4 +20,5 @@ dependencies {
     implementation(project(":subscriptions"))
     implementation(project(":booking"))
     implementation(project(":payments"))
+    implementation(project(":reviews"))
 }
