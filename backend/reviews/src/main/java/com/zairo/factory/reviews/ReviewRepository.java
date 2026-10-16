@@ -39,11 +39,11 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
             select s.provider_id as providerId,
                    avg(r.rating) as averageRating,
                    count(*) as reviewCount,
-                   (select avg(r2.rating) from review r2) as globalAverageRating
+                   (select avg(r2.rating) from review r2 where r2.hidden_at is null) as globalAverageRating
             from review r
             join booking b on b.id = r.booking_id
             join availability_slot s on s.id = b.availability_slot_id
-            where s.provider_id in (:providerIds)
+            where s.provider_id in (:providerIds) and r.hidden_at is null
             group by s.provider_id
             """, nativeQuery = true)
     List<ProviderRatingRow> aggregateRatingsByProviderIds(@Param("providerIds") Collection<UUID> providerIds);
@@ -69,7 +69,8 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
     @Query(value = """
             select r.id as id, r.booking_id as bookingId, b.user_id as userId, r.rating as rating,
                    r.comment as comment, r.created_at as createdAt, r.business_reply as businessReply,
-                   r.business_reply_at as businessReplyAt
+                   r.business_reply_at as businessReplyAt, r.reported_at as reportedAt,
+                   r.report_resolved_at as reportResolvedAt, r.hidden_at as hiddenAt
             from review r
             join booking b on b.id = r.booking_id
             join availability_slot s on s.id = b.availability_slot_id
@@ -84,7 +85,7 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
             where s.provider_id = :providerId
             """,
             nativeQuery = true)
-    Page<ProviderReviewRow> findByProviderId(@Param("providerId") UUID providerId, Pageable pageable);
+    Page<OwnerReviewRow> findByProviderId(@Param("providerId") UUID providerId, Pageable pageable);
 
     interface ProviderReviewRow {
         UUID getId();
@@ -104,6 +105,70 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
         Instant getBusinessReplyAt();
     }
 
+    /** The owner's row: the same plus where the review stands in moderation. */
+    interface OwnerReviewRow extends ProviderReviewRow {
+        Instant getReportedAt();
+
+        Instant getReportResolvedAt();
+
+        Instant getHiddenAt();
+    }
+
+    /** The platform's moderation queue: reported (or hidden) reviews with the business they are about. */
+    @Query(value = """
+            select r.id as id, r.booking_id as bookingId, r.rating as rating, r.comment as comment,
+                   r.created_at as createdAt, r.business_reply as businessReply, r.report_reason as reportReason,
+                   r.reported_at as reportedAt, r.report_resolved_at as reportResolvedAt, r.hidden_at as hiddenAt,
+                   r.hidden_reason as hiddenReason, s.provider_id as providerId, p.name as providerName
+            from review r
+            join booking b on b.id = r.booking_id
+            join availability_slot s on s.id = b.availability_slot_id
+            join provider p on p.id = s.provider_id
+            where (:status = 'OPEN' and r.reported_at is not null and r.report_resolved_at is null)
+               or (:status = 'HIDDEN' and r.hidden_at is not null)
+               or (:status = 'DISMISSED' and r.reported_at is not null and r.report_resolved_at is not null
+                   and r.hidden_at is null)
+            order by coalesce(r.reported_at, r.hidden_at) desc
+            """,
+            countQuery = """
+            select count(*)
+            from review r
+            where (:status = 'OPEN' and r.reported_at is not null and r.report_resolved_at is null)
+               or (:status = 'HIDDEN' and r.hidden_at is not null)
+               or (:status = 'DISMISSED' and r.reported_at is not null and r.report_resolved_at is not null
+                   and r.hidden_at is null)
+            """,
+            nativeQuery = true)
+    Page<ModerationRow> findForModeration(@Param("status") String status, Pageable pageable);
+
+    interface ModerationRow {
+        UUID getId();
+
+        UUID getBookingId();
+
+        int getRating();
+
+        String getComment();
+
+        Instant getCreatedAt();
+
+        String getBusinessReply();
+
+        String getReportReason();
+
+        Instant getReportedAt();
+
+        Instant getReportResolvedAt();
+
+        Instant getHiddenAt();
+
+        String getHiddenReason();
+
+        UUID getProviderId();
+
+        String getProviderName();
+    }
+
     /**
      * Review count per star for one provider — same indexed join as the
      * queries above, grouped by rating. Stars nobody gave simply don't
@@ -114,7 +179,7 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
             from review r
             join booking b on b.id = r.booking_id
             join availability_slot s on s.id = b.availability_slot_id
-            where s.provider_id = :providerId
+            where s.provider_id = :providerId and r.hidden_at is null
             group by r.rating
             """, nativeQuery = true)
     List<RatingCountRow> countByRatingForProvider(@Param("providerId") UUID providerId);
@@ -139,7 +204,7 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
             from review r
             join booking b on b.id = r.booking_id
             join availability_slot s on s.id = b.availability_slot_id
-            where s.provider_id = :providerId
+            where s.provider_id = :providerId and r.hidden_at is null
               and (cast(:rating as integer) is null or r.rating = cast(:rating as integer))
               and (:withCommentOnly = false or (r.comment is not null and btrim(r.comment) <> ''))
             order by case when :sort = 'highest' then r.rating end desc nulls last,
@@ -151,7 +216,7 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
             from review r
             join booking b on b.id = r.booking_id
             join availability_slot s on s.id = b.availability_slot_id
-            where s.provider_id = :providerId
+            where s.provider_id = :providerId and r.hidden_at is null
               and (cast(:rating as integer) is null or r.rating = cast(:rating as integer))
               and (:withCommentOnly = false or (r.comment is not null and btrim(r.comment) <> ''))
             """,
