@@ -1992,5 +1992,7 @@
   "cancelReasonOtherTime": "Found another time",
   "@cancelReasonOtherTime": {"description": "A one-tap reason in the cancel-booking dialog."},
   "cancelReasonMistake": "Booked by mistake",
-  "@cancelReasonMistake": {"description": "A one-tap reason in the cancel-booking dialog."}
+  "@cancelReasonMistake": {"description": "A one-tap reason in the cancel-booking dialog."},
+  "reviewQuickStarTooltip": "{count, plural, one{Rate your visit {count} star} other{Rate your visit {count} stars}}",
+  "@reviewQuickStarTooltip": {"description": "Tooltip of a star on a completed booking card: opens the review form with that mark chosen.", "placeholders": {"count": {"type": "int"}}}
 }

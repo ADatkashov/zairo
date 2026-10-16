@@ -21,7 +21,10 @@ void main() {
       expect(conversation.providerId, 'provider-1');
       expect(conversation.providerName, 'Aigerim Beauty Salon');
       expect(conversation.createdAt, DateTime.parse('2026-08-01T10:00:00Z'));
-      expect(conversation.lastMessageAt, DateTime.parse('2026-08-02T12:30:00Z'));
+      expect(
+        conversation.lastMessageAt,
+        DateTime.parse('2026-08-02T12:30:00Z'),
+      );
     });
 
     test('fromJson tolerates a null customerDisplayName -- there is no client-usable name lookup', () {

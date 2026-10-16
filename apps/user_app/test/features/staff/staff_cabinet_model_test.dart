@@ -2,36 +2,39 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:zairo/features/staff/data/models/staff_cabinet.dart';
 
 void main() {
-  test('a membership reads its business, state and rating, which may be absent', () {
-    final full = StaffMembership.fromJson({
-      'staffId': 's1',
-      'providerId': 'p1',
-      'providerName': 'Glow Salon',
-      'displayName': 'Aigerim',
-      'photoUrl': 'https://cdn.example/a.jpg',
-      'active': true,
-      'pendingCount': 2,
-      'averageRating': 4.5,
-      'reviewCount': 8,
-    });
-    expect(full.providerName, 'Glow Salon');
-    expect(full.photoUrl, 'https://cdn.example/a.jpg');
-    expect(full.pendingCount, 2);
-    expect(full.averageRating, 4.5);
+  test(
+    'a membership reads its business, state and rating, which may be absent',
+    () {
+      final full = StaffMembership.fromJson({
+        'staffId': 's1',
+        'providerId': 'p1',
+        'providerName': 'Glow Salon',
+        'displayName': 'Aigerim',
+        'photoUrl': 'https://cdn.example/a.jpg',
+        'active': true,
+        'pendingCount': 2,
+        'averageRating': 4.5,
+        'reviewCount': 8,
+      });
+      expect(full.providerName, 'Glow Salon');
+      expect(full.photoUrl, 'https://cdn.example/a.jpg');
+      expect(full.pendingCount, 2);
+      expect(full.averageRating, 4.5);
 
-    final fresh = StaffMembership.fromJson({
-      'staffId': 's2',
-      'providerId': 'p2',
-      'providerName': 'Clinic',
-      'displayName': 'Dana',
-      'active': false,
-      'pendingCount': 0,
-      'reviewCount': 0,
-    });
-    expect(fresh.photoUrl, isNull);
-    expect(fresh.averageRating, isNull);
-    expect(fresh.active, isFalse);
-  });
+      final fresh = StaffMembership.fromJson({
+        'staffId': 's2',
+        'providerId': 'p2',
+        'providerName': 'Clinic',
+        'displayName': 'Dana',
+        'active': false,
+        'pendingCount': 0,
+        'reviewCount': 0,
+      });
+      expect(fresh.photoUrl, isNull);
+      expect(fresh.averageRating, isNull);
+      expect(fresh.active, isFalse);
+    },
+  );
 
   test('an appointment reads its amounts, times and what the person may do with it', () {
     final accepted = StaffAppointment.fromJson({
@@ -56,12 +59,15 @@ void main() {
     expect(accepted.paidAmount, 3000.5);
     expect(accepted.staffConfirmedAt, DateTime.utc(2026, 10, 19, 9));
     expect(accepted.staffDeclinedAt, isNull);
-    expect([accepted.canAccept, accepted.canDecline, accepted.canComplete, accepted.canMarkNoShow], [
-      false,
-      true,
-      true,
-      false,
-    ]);
+    expect(
+      [
+        accepted.canAccept,
+        accepted.canDecline,
+        accepted.canComplete,
+        accepted.canMarkNoShow,
+      ],
+      [false, true, true, false],
+    );
 
     final declined = StaffAppointment.fromJson({
       'bookingId': 'b2',
@@ -100,7 +106,12 @@ void main() {
           'createdAt': '2026-10-12T10:00:00Z',
           'businessReply': 'Thanks',
         },
-        {'reviewId': 'r2', 'bookingId': 'b2', 'rating': 4, 'createdAt': '2026-10-11T10:00:00Z'},
+        {
+          'reviewId': 'r2',
+          'bookingId': 'b2',
+          'rating': 4,
+          'createdAt': '2026-10-11T10:00:00Z',
+        },
       ],
     });
 
@@ -112,7 +123,11 @@ void main() {
     expect(rating.reviews[1].comment, isNull);
     expect(rating.reviews[1].businessReply, isNull);
 
-    final none = StaffRating.fromJson({'reviewCount': 0, 'distribution': [0, 0, 0, 0, 0], 'reviews': <Object>[]});
+    final none = StaffRating.fromJson({
+      'reviewCount': 0,
+      'distribution': [0, 0, 0, 0, 0],
+      'reviews': <Object>[],
+    });
     expect(none.averageRating, isNull);
     expect(none.reviews, isEmpty);
   });

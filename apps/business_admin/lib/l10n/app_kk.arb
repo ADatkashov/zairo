@@ -1063,5 +1063,12 @@
   "appointmentActionFailed": "Орындалмады. Қайталап көріңіз.",
   "chatQuickAvailable": "Иә, бұл уақыт бос. Күтеміз!",
   "chatQuickThanks": "Рақмет! Жақында хабарласамыз.",
-  "chatQuickTaken": "Кешіріңіз, бұл уақыт бос емес. Басқа уақыт ыңғайлы ма?"
+  "chatQuickTaken": "Кешіріңіз, бұл уақыт бос емес. Басқа уақыт ыңғайлы ма?",
+  "bookingCancelledBecause": "Себебі: {reason}",
+  "chatQuickEditTooltip": "Дайын сөйлемдерді өзгерту",
+  "chatQuickEditTitle": "Сіздің дайын сөйлемдеріңіз",
+  "chatQuickEditHint": "Бұл үш сөйлем хабарлама өрісінің үстінде көрсетіледі. Бос өріс — сөйлем алынып тасталады.",
+  "chatQuickEditField": "Сөйлем",
+  "chatQuickEditSave": "Сақтау",
+  "chatQuickEditReset": "Стандартты қайтару"
 }

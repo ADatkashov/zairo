@@ -1063,5 +1063,12 @@
   "appointmentActionFailed": "Не получилось. Попробуйте ещё раз.",
   "chatQuickAvailable": "Да, это время свободно. Ждём вас!",
   "chatQuickThanks": "Спасибо! Скоро с вами свяжемся.",
-  "chatQuickTaken": "К сожалению, это время занято. Подойдёт другое?"
+  "chatQuickTaken": "К сожалению, это время занято. Подойдёт другое?",
+  "bookingCancelledBecause": "Причина: {reason}",
+  "chatQuickEditTooltip": "Изменить готовые фразы",
+  "chatQuickEditTitle": "Ваши готовые фразы",
+  "chatQuickEditHint": "Эти три фразы показываются над полем сообщения. Пустое поле — фраза убирается.",
+  "chatQuickEditField": "Фраза",
+  "chatQuickEditSave": "Сохранить",
+  "chatQuickEditReset": "Вернуть стандартные"
 }

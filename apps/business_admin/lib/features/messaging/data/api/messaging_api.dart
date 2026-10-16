@@ -15,7 +15,9 @@ class MessagingApi {
 
   /// That provider's own inbox -- owner-only, most recently active first.
   Future<List<Conversation>> inboxForProvider(String providerId) async {
-    final response = await _dioClient.get('/providers/$providerId/conversations');
+    final response = await _dioClient.get(
+      '/providers/$providerId/conversations',
+    );
     return (response.data as List<dynamic>)
         .map((e) => Conversation.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -23,7 +25,9 @@ class MessagingApi {
 
   /// The full thread for one conversation, oldest first.
   Future<List<ChatMessage>> threadForConversation(String conversationId) async {
-    final response = await _dioClient.get('/conversations/$conversationId/messages');
+    final response = await _dioClient.get(
+      '/conversations/$conversationId/messages',
+    );
     return (response.data as List<dynamic>)
         .map((e) => ChatMessage.fromJson(e as Map<String, dynamic>))
         .toList();

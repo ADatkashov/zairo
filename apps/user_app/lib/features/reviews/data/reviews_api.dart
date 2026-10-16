@@ -65,7 +65,11 @@ class ReviewsApi {
     try {
       final response = await _dioClient.post(
         '/bookings/$bookingId/reviews',
-        data: {'rating': rating, 'comment': comment, 'workerRating': ?workerRating},
+        data: {
+          'rating': rating,
+          'comment': comment,
+          'workerRating': ?workerRating,
+        },
       );
       return Review.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
