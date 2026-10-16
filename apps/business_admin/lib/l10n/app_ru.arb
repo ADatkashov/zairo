@@ -910,6 +910,8 @@
   "cancelInvitationTooltip": "Отменить приглашение",
   "dashboardAgendaTitle": "Сегодня",
   "dashboardAgendaEmpty": "Сегодня записей нет.",
+  "dashboardTodayFree": "{count, plural, one{{count} свободное время сегодня} few{{count} свободных времени сегодня} many{{count} свободных времён сегодня} other{{count} свободного времени сегодня}}",
+  "dashboardTodayOff": "{count, plural, one{{count} человек не работает} few{{count} человека не работают} many{{count} человек не работают} other{{count} человека не работают}}",
   "bookingStatusPendingPayment": "Ждёт оплаты",
   "bookingStatusNoShow": "Не пришёл",
   "bookingStatusPending": "В ожидании",

@@ -16,6 +16,8 @@ import org.springframework.stereotype.Component;
 class BookingReminderJob {
 
     private static final Duration REMINDER_LEAD_TIME = Duration.ofHours(1);
+    private static final Duration DAY_REMINDER_LEAD_TIME = Duration.ofHours(24);
+    private static final Duration DAY_REMINDER_EARLIEST = Duration.ofHours(2);
 
     private final BookingService bookingService;
     private final Clock clock;
@@ -29,5 +31,6 @@ class BookingReminderJob {
     void sendDueReminders() {
         Instant now = clock.instant();
         bookingService.sendDueReminders(now, now.plus(REMINDER_LEAD_TIME));
+        bookingService.sendDueDayReminders(now, now.plus(DAY_REMINDER_EARLIEST), now.plus(DAY_REMINDER_LEAD_TIME));
     }
 }

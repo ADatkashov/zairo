@@ -97,7 +97,14 @@ class BookingAmounts extends StatelessWidget {
           ),
         ),
         const SizedBox(width: FactorySpacing.space2),
-        FactoryPriceText(amount: booking.totalPrice, fontSize: 16, weight: FontWeight.w700),
+        // Shrinks rather than overflows at a large font on a narrow phone.
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: FactoryPriceText(amount: booking.totalPrice, fontSize: 16, weight: FontWeight.w700),
+          ),
+        ),
       ],
     );
   }

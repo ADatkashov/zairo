@@ -3,9 +3,12 @@ package com.zairo.factory.notifications;
 import com.zairo.factory.booking.BookingCancelledEvent;
 import com.zairo.factory.booking.BookingConfirmedEvent;
 import com.zairo.factory.booking.BookingMovedEvent;
+import com.zairo.factory.booking.BookingDayReminderDueEvent;
 import com.zairo.factory.booking.BookingReminderDueEvent;
+import com.zairo.factory.booking.BookingRescheduledByCustomerEvent;
 import com.zairo.factory.providers.Provider;
 import com.zairo.factory.providers.ProviderRepository;
+import com.zairo.factory.reviews.ReviewModerationDecidedEvent;
 import com.zairo.factory.workforce.WorkerCannotAttendEvent;
 import com.zairo.factory.workforce.WorkerNotAcceptedEvent;
 import com.zairo.factory.workforce.WorkerChangeRequestedEvent;
@@ -101,6 +104,13 @@ class BookingNotificationListener {
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    void onBookingRescheduledByCustomer(BookingRescheduledByCustomerEvent event) {
+        ownerEmailFor(event.providerId())
+                .ifPresent(ownerEmail -> notificationService.sendProviderBookingRescheduledEmail(ownerEmail,
+                        event.bookingId(), event.newStartsAt()));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     void onWorkerUnavailable(WorkerUnavailableEvent event) {
         ownerEmailFor(event.providerId())
                 .ifPresent(ownerEmail -> notificationService.sendWorkerUnavailableEmail(ownerEmail,
@@ -112,6 +122,20 @@ class BookingNotificationListener {
         userRepository.findById(event.userId())
                 .ifPresent(customer -> notificationService.sendBookingReminderEmail(customer.getId(),
                         customer.getEmail(), event.bookingId()));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    void onBookingDayReminderDue(BookingDayReminderDueEvent event) {
+        userRepository.findById(event.userId())
+                .ifPresent(customer -> notificationService.sendBookingDayReminderEmail(customer.getId(),
+                        customer.getEmail(), event.bookingId(), event.startsAt()));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    void onReviewModerationDecided(ReviewModerationDecidedEvent event) {
+        ownerEmailFor(event.providerId())
+                .ifPresent(ownerEmail -> notificationService.sendReviewDecisionEmail(ownerEmail, event.reviewId(),
+                        event.decision()));
     }
 
     private Optional<String> ownerEmailFor(UUID providerId) {

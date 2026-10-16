@@ -25,6 +25,7 @@ import '../../data/booking_exception.dart';
 import '../../data/models/booking.dart';
 import '../providers/booking_providers.dart';
 import 'booking_payment_screen.dart';
+import '../widgets/reschedule_sheet.dart';
 import '../widgets/booking_payment_summary.dart';
 
 /// Reached directly from the bottom nav (a peer tab to Home/Search/
@@ -478,6 +479,12 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
                     label: l10n.bookingPayNowButton,
                     onPressed: _payNow,
                   ),
+                if (_canReschedule(booking))
+                  FactoryButton(
+                    label: l10n.bookingRescheduleButton,
+                    variant: FactoryButtonVariant.text,
+                    onPressed: _reschedule,
+                  ),
                 if (booking.status == 'CONFIRMED' ||
                     booking.status == 'PENDING_PAYMENT')
                   FactoryButton(
@@ -547,6 +554,24 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
     );
     if (!mounted) return;
     ref.invalidate(myBookingsProvider(widget.userId));
+  }
+
+  /// An active booking whose appointment has not started (a booking without a known time is offered the move too:
+  /// the server decides).
+  bool _canReschedule(Booking booking) =>
+      (booking.status == 'CONFIRMED' || booking.status == 'PENDING_PAYMENT') &&
+      (booking.startsAt == null || booking.startsAt!.isAfter(DateTime.now()));
+
+  Future<void> _reschedule() async {
+    final l10n = AppLocalizations.of(context)!;
+    final moved = await showRescheduleSheet(context, booking: widget.booking);
+    if (moved == null || !mounted) return;
+    ref.invalidate(myBookingsProvider(widget.userId));
+    final when = moved.startsAt;
+    if (when == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.bookingRescheduleDone(formatMonthDayTime(l10n, when.toLocal())))),
+    );
   }
 
   Future<void> _confirmAndCancel() async {
