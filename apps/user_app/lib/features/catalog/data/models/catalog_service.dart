@@ -9,6 +9,9 @@ class CatalogService {
   final String nameEn;
   final int sortOrder;
 
+  /// The subsphere this service is grouped under, if its sphere has any.
+  final String? subsphereId;
+
   const CatalogService({
     required this.id,
     required this.businessTypeId,
@@ -16,6 +19,7 @@ class CatalogService {
     required this.nameRu,
     required this.nameEn,
     required this.sortOrder,
+    this.subsphereId,
   });
 
   factory CatalogService.fromJson(Map<String, dynamic> json) {
@@ -26,6 +30,7 @@ class CatalogService {
       nameRu: json['nameRu'] as String,
       nameEn: json['nameEn'] as String,
       sortOrder: json['sortOrder'] as int,
+      subsphereId: json['subsphereId'] as String?,
     );
   }
 

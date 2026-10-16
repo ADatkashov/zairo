@@ -66,9 +66,9 @@ public class CatalogController {
                 .stream().map(SubsphereResponse::from).toList();
     }
 
-    @Operation(summary = "List a business type's active catalog services", description = "Only services "
-            + "attached directly under the business type — see GET /subspheres/{id}/services for services "
-            + "scoped to a more specific subsphere.")
+    @Operation(summary = "List a business type's active catalog services", description = "Every active "
+            + "service of the business type, including those grouped under one of its subspheres (see each "
+            + "service's subsphereId) — GET /subspheres/{id}/services narrows to a single subsphere.")
     @ApiResponse(responseCode = "200", description = "Active catalog services under this business type")
     @GetMapping("/api/v1/business-types/{id}/services")
     public List<CatalogServiceResponse> listCatalogServices(

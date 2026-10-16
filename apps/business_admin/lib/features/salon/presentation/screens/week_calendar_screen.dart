@@ -6,8 +6,10 @@ import 'package:intl/intl.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../data/models/schedule_entry.dart';
 import '../providers/salon_providers.dart';
+import '../../../staff_owner/presentation/widgets/appointment_actions.dart';
 import '../../../staff_owner/presentation/widgets/no_show_correction.dart';
 import '../widgets/agenda_row.dart';
+import 'booking_board_screen.dart';
 
 /// Below this width the week is a day strip plus the chosen day's list;
 /// from it up, seven day columns side by side.
@@ -64,7 +66,20 @@ class _WeekCalendarScreenState extends ConsumerState<WeekCalendarScreen> {
 
     return Scaffold(
       backgroundColor: colors.bg,
-      appBar: FactoryAppBar(title: l10n.calendarTitle),
+      appBar: FactoryAppBar(
+        title: l10n.calendarTitle,
+        actions: [
+          IconButton(
+            tooltip: l10n.boardTitle,
+            icon: const Icon(Icons.view_kanban_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => BookingBoardScreen(ownerUserId: widget.ownerUserId, weekStart: _weekStart, today: _today),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -222,8 +237,14 @@ class _DayStripAndList extends StatelessWidget {
                   separatorBuilder: (_, _) => Divider(height: FactorySpacing.space4, color: colors.border),
                   itemBuilder: (context, i) {
                     final row = AgendaRow(item: items[i], showProvider: multiple);
-                    if (items[i].entry.status != 'NO_SHOW') return row;
-                    return NoShowCorrection(item: items[i], onCorrected: onRefresh, child: row);
+                    final status = items[i].entry.status;
+                    if (status == 'NO_SHOW') {
+                      return NoShowCorrection(item: items[i], onCorrected: onRefresh, child: row);
+                    }
+                    if (status == 'CONFIRMED' || status == 'PENDING_PAYMENT') {
+                      return AppointmentActions(item: items[i], onChanged: onRefresh, child: row);
+                    }
+                    return row;
                   },
                 ),
         ),

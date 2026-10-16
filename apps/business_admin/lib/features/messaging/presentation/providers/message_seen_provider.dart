@@ -35,18 +35,24 @@ class MessageSeen {
   factory MessageSeen.fromJson(Map<String, dynamic> json) => MessageSeen(
     baseline: DateTime.parse(json['baseline'] as String),
     seen: {
-      for (final e in (json['seen'] as Map<String, dynamic>).entries) e.key: DateTime.parse(e.value as String),
+      for (final e in (json['seen'] as Map<String, dynamic>).entries)
+        e.key: DateTime.parse(e.value as String),
     },
   );
 }
 
-final messageSeenProvider = AsyncNotifierProvider<MessageSeenController, MessageSeen>(MessageSeenController.new);
+final messageSeenProvider =
+    AsyncNotifierProvider<MessageSeenController, MessageSeen>(
+      MessageSeenController.new,
+    );
 
 class MessageSeenController extends AsyncNotifier<MessageSeen> {
   @override
   Future<MessageSeen> build() async {
     try {
-      final stored = await ref.read(secureStorageServiceProvider).read(_storageKey);
+      final stored = await ref
+          .read(secureStorageServiceProvider)
+          .read(_storageKey);
       if (stored != null && stored.isNotEmpty) {
         return MessageSeen.fromJson(jsonDecode(stored) as Map<String, dynamic>);
       }
@@ -63,14 +69,19 @@ class MessageSeenController extends AsyncNotifier<MessageSeen> {
     final current = await future;
     final previous = current.seen[conversationId];
     if (previous != null && !at.isAfter(previous)) return;
-    final next = MessageSeen(baseline: current.baseline, seen: {...current.seen, conversationId: at.toUtc()});
+    final next = MessageSeen(
+      baseline: current.baseline,
+      seen: {...current.seen, conversationId: at.toUtc()},
+    );
     state = AsyncData(next);
     await _persist(next);
   }
 
   Future<void> _persist(MessageSeen value) async {
     try {
-      await ref.read(secureStorageServiceProvider).write(_storageKey, jsonEncode(value.toJson()));
+      await ref
+          .read(secureStorageServiceProvider)
+          .write(_storageKey, jsonEncode(value.toJson()));
     } catch (_) {
       // Best-effort: worst case the count is recomputed from the baseline.
     }
@@ -80,7 +91,10 @@ class MessageSeenController extends AsyncNotifier<MessageSeen> {
 /// New conversations across every business this owner runs. Re-checks the
 /// inboxes every couple of minutes while something is watching it (the
 /// Messages tab / sidebar item is).
-final newMessagesCountProvider = Provider.autoDispose.family<int, String>((ref, ownerUserId) {
+final newMessagesCountProvider = Provider.autoDispose.family<int, String>((
+  ref,
+  ownerUserId,
+) {
   final providers = ref.watch(myProvidersProvider(ownerUserId)).value;
   final seen = ref.watch(messageSeenProvider).value;
   if (providers == null || seen == null) return 0;
@@ -94,8 +108,11 @@ final newMessagesCountProvider = Provider.autoDispose.family<int, String>((ref, 
 
   var count = 0;
   for (final provider in providers) {
-    final conversations = ref.watch(providerInboxProvider(provider.id)).value ?? const [];
-    count += conversations.where((c) => seen.isNew(c.id, c.lastMessageAt)).length;
+    final conversations =
+        ref.watch(providerInboxProvider(provider.id)).value ?? const [];
+    count += conversations
+        .where((c) => seen.isNew(c.id, c.lastMessageAt))
+        .length;
   }
   return count;
 });

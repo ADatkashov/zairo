@@ -29,6 +29,10 @@ import 'package:business_admin/features/salon/presentation/providers/salon_provi
 import 'package:business_admin/features/salon/presentation/screens/week_calendar_screen.dart';
 import 'package:business_admin/features/salon/presentation/widgets/add_service_dialog.dart';
 import 'package:business_admin/features/salon/presentation/widgets/recurring_schedule_dialog.dart';
+import 'package:business_admin/features/staff_owner/data/models/needs_attention.dart';
+import 'package:business_admin/features/staff_owner/data/models/worker_schedule.dart';
+import 'package:business_admin/features/staff_owner/data/staff_owner_api.dart';
+import 'package:business_admin/features/staff_owner/presentation/providers/staff_owner_providers.dart';
 import 'package:business_admin/l10n/app_localizations.dart';
 
 class _FakeSalonAdminApi extends SalonAdminApi {
@@ -39,6 +43,12 @@ class _FakeSalonAdminApi extends SalonAdminApi {
   final List<AdminProvider> _providers;
   final Map<String, DashboardMetrics> _metricsByProviderId;
   Map<String, dynamic>? lastCreateCall;
+
+  /// When set, creating a business fails with it (a network error, say).
+  Object? createError;
+
+  /// What the business offers; the dashboard counts today's open ones.
+  List<AdminSlot> slots = const [];
 
   /// Null = the schedule endpoint "fails" (the card stays hidden, as on a
   /// real error), so tests that aren't about the agenda are unaffected.
@@ -67,6 +77,7 @@ class _FakeSalonAdminApi extends SalonAdminApi {
     required String vertical,
     required String cityCode,
   }) async {
+    if (createError != null) throw createError!;
     lastCreateCall = {'ownerUserId': ownerUserId, 'name': name, 'vertical': vertical, 'cityCode': cityCode};
     final created = AdminProvider(id: 'p-new', ownerUserId: ownerUserId, name: name, vertical: vertical, status: 'PENDING');
     _providers.add(created);
@@ -91,7 +102,7 @@ class _FakeSalonAdminApi extends SalonAdminApi {
       ];
 
   @override
-  Future<List<AdminSlot>> listSlots(String providerId) async => const [];
+  Future<List<AdminSlot>> listSlots(String providerId) async => slots;
 
   @override
   Future<List<AdminBooking>> listBookings(String providerId) async => const [];
@@ -139,6 +150,41 @@ class _FakeBillingApi extends BillingApi {
         currentPeriodEnd: DateTime(2026, 2, 1),
         cancelAtPeriodEnd: false,
       );
+}
+
+/// How many appointments per business wait for the owner's decision.
+class _FakeStaffOwnerApi extends StaffOwnerApi {
+  _FakeStaffOwnerApi(this.counts) : super(DioClient(Dio()));
+
+  final Map<String, int> counts;
+
+  /// The people of every business, as the team list returns them.
+  List<WorkerSummary> team = const [];
+
+  @override
+  Future<List<WorkerSummary>> workers(String providerId) async => team;
+
+  @override
+  Future<List<NeedsAttentionItem>> needsAttention(String providerId) async => [
+        for (var i = 0; i < (counts[providerId] ?? 0); i++)
+          NeedsAttentionItem(
+            bookingId: 'b$i',
+            status: 'CONFIRMED',
+            startsAt: DateTime(2026, 10, 20, 10),
+            endsAt: DateTime(2026, 10, 20, 11),
+            serviceTitle: 'Haircut',
+            customerName: 'Aisha',
+            customerPhone: null,
+            totalPrice: 10,
+            currency: 'KZT',
+            workerId: 'w1',
+            workerKind: 'MASTER',
+            workerName: 'Aigerim',
+            reason: 'WORKER_CANNOT_ATTEND',
+            workerNote: null,
+            requestedAt: null,
+          ),
+      ];
 }
 
 class _LoggedInOwnerController extends AuthController {
@@ -451,5 +497,301 @@ void main() {
     expect(find.text('Gel manicure'), findsNothing);
     expect(find.text('No bookings'), findsNWidgets(7));
     expect(find.text('This week'), findsOneWidget);
+  });
+
+  group('the "Add another business" dialog', () {
+    Future<_FakeSalonAdminApi> openDialog(WidgetTester tester) async {
+      final fakeApi = _FakeSalonAdminApi([
+        const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE'),
+      ]);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            salonAdminApiProvider.overrideWithValue(fakeApi),
+            beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+            billingApiProvider.overrideWithValue(_FakeBillingApi()),
+            campaignCenterApiProvider.overrideWithValue(_FakeCampaignCenterApi()),
+            authControllerProvider.overrideWith(_LoggedInOwnerController.new),
+            activeCitiesProvider.overrideWith(
+              (ref) async => [
+                City(code: 'almaty', name: 'Almaty', countryCode: 'KZ', timezone: 'Asia/Almaty', currency: 'KZT', active: true),
+              ],
+            ),
+          ],
+          child: MaterialApp(
+            theme: factoryLightTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const DashboardScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final add = find.widgetWithText(OutlinedButton, 'Add another business');
+      await tester.scrollUntilVisible(add, 200);
+      await tester.tap(add);
+      await tester.pumpAndSettle();
+      return fakeApi;
+    }
+
+    testWidgets('the city list shows up on the first opening (it used to stay a spinner)', (tester) async {
+      await openDialog(tester);
+
+      expect(find.byType(DropdownButtonFormField<String>), findsWidgets);
+      expect(find.text('Almaty'), findsOneWidget);
+    });
+
+    testWidgets('an empty name says what is wrong instead of silently doing nothing', (tester) async {
+      final fakeApi = await openDialog(tester);
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Create'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Enter a business name'), findsOneWidget);
+      expect(fakeApi.lastCreateCall, isNull);
+      expect(find.text('Add a business'), findsOneWidget, reason: 'the dialog stays open');
+
+      // Typing again clears the message.
+      await tester.enterText(find.byType(TextField), 'G');
+      await tester.pump();
+      expect(find.text('Enter a business name'), findsNothing);
+    });
+
+    testWidgets('a failed request is reported in the dialog and can be retried', (tester) async {
+      final fakeApi = await openDialog(tester);
+      fakeApi.createError = StateError('offline');
+
+      await tester.enterText(find.byType(TextField), 'Second Salon');
+      await tester.tap(find.widgetWithText(FilledButton, 'Create'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Failed to create business'), findsOneWidget);
+      expect(find.text('Add a business'), findsOneWidget);
+
+      fakeApi.createError = null;
+      await tester.tap(find.widgetWithText(FilledButton, 'Create'));
+      await tester.pumpAndSettle();
+
+      expect(fakeApi.lastCreateCall?['name'], 'Second Salon');
+      expect(find.text('Add a business'), findsNothing, reason: 'the dialog closes on success');
+    });
+  });
+
+  Future<void> pumpDashboardWithDecisions(
+    WidgetTester tester,
+    List<AdminProvider> providers,
+    Map<String, int> decisions,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: (_, _) => null,
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(_FakeSalonAdminApi(providers)),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+          billingApiProvider.overrideWithValue(_FakeBillingApi()),
+          campaignCenterApiProvider.overrideWithValue(_FakeCampaignCenterApi()),
+          staffOwnerApiProvider.overrideWithValue(_FakeStaffOwnerApi(decisions)),
+          authControllerProvider.overrideWith(_LoggedInOwnerController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const DashboardScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('appointments waiting for the owner\'s decision are the first thing on the dashboard', (tester) async {
+    await pumpDashboardWithDecisions(
+      tester,
+      [const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE')],
+      {'p1': 2},
+    );
+
+    expect(find.text('2 appointments need your decision'), findsOneWidget);
+    expect(find.text('All caught up — nothing needs attention today.'), findsNothing);
+
+    // One tap goes to the business, where the decisions are made.
+    await tester.tap(find.text('2 appointments need your decision'));
+    await tester.pumpAndSettle();
+    expect(find.text('Needs your decision'), findsWidgets);
+  });
+
+  testWidgets('with several businesses each one reports its own count by name, and one with none stays quiet', (tester) async {
+    await pumpDashboardWithDecisions(
+      tester,
+      [
+        const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE'),
+        const AdminProvider(id: 'p2', ownerUserId: 'owner-1', name: 'Fast Garage', vertical: 'auto', status: 'ACTIVE'),
+        const AdminProvider(id: 'p3', ownerUserId: 'owner-1', name: 'Quiet Clinic', vertical: 'beauty', status: 'ACTIVE'),
+      ],
+      {'p1': 1, 'p2': 3},
+    );
+
+    expect(find.text('1 appointment needs your decision · Glow Salon'), findsOneWidget);
+    expect(find.text('3 appointments need your decision · Fast Garage'), findsOneWidget);
+    // The business with nothing waiting is never named in a decision line.
+    expect(find.textContaining('need your decision · Quiet Clinic'), findsNothing);
+  });
+
+  testWidgets('no decisions waiting means no decision line', (tester) async {
+    await pumpDashboardWithDecisions(
+      tester,
+      [const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE')],
+      {},
+    );
+
+    expect(find.textContaining('need your decision'), findsNothing);
+    expect(find.text('All caught up — nothing needs attention today.'), findsOneWidget);
+  });
+
+  testWidgets('"Today" says how many free times are left and how many people are off now', (tester) async {
+    final now = DateTime.now();
+    AdminSlot slot(String id, DateTime at, {String status = 'OPEN'}) => AdminSlot(
+          id: id,
+          providerId: 'p1',
+          startsAt: at.toUtc(),
+          endsAt: at.add(const Duration(hours: 1)).toUtc(),
+          status: status,
+        );
+    final inTwoMinutes = now.add(const Duration(minutes: 2));
+    final api = _FakeSalonAdminApi([
+      const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE'),
+    ])
+      ..schedule = const []
+      ..slots = [
+        // Two open times later today (if today still has room), one booked, one open but tomorrow, one already past.
+        slot('a', inTwoMinutes),
+        slot('b', inTwoMinutes.add(const Duration(minutes: 1))),
+        slot('c', inTwoMinutes, status: 'BOOKED'),
+        slot('d', DateTime(now.year, now.month, now.day + 1, 10)),
+        slot('e', now.subtract(const Duration(hours: 2))),
+      ];
+    final staff = _FakeStaffOwnerApi(const {})
+      ..team = [
+        WorkerSummary(
+          id: 'w1',
+          kind: 'MASTER',
+          displayName: 'Off',
+          photoUrl: null,
+          active: true,
+          scheduleConfigured: true,
+          offUntil: now.add(const Duration(hours: 3)),
+          averageRating: null,
+          reviewCount: 0,
+        ),
+        WorkerSummary(
+          id: 'w2',
+          kind: 'MASTER',
+          displayName: 'Working',
+          photoUrl: null,
+          active: true,
+          scheduleConfigured: true,
+          offUntil: null,
+          averageRating: null,
+          reviewCount: 0,
+        ),
+      ];
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: (_, _) => null,
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(api),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+          billingApiProvider.overrideWithValue(_FakeBillingApi()),
+          campaignCenterApiProvider.overrideWithValue(_FakeCampaignCenterApi()),
+          staffOwnerApiProvider.overrideWithValue(staff),
+          authControllerProvider.overrideWith(_LoggedInOwnerController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const DashboardScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Near midnight the two "later today" times roll into tomorrow: then there is nothing to count.
+    final lateToday = inTwoMinutes.day == now.day && inTwoMinutes.add(const Duration(minutes: 1)).day == now.day;
+    expect(
+      find.text(lateToday ? '2 free times left today · 1 person off now' : '1 person off now'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('"Today" has no capacity line when nothing is free and nobody is off', (tester) async {
+    final api = _FakeSalonAdminApi([
+      const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE'),
+    ])..schedule = const [];
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: (_, _) => null,
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(api),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+          billingApiProvider.overrideWithValue(_FakeBillingApi()),
+          campaignCenterApiProvider.overrideWithValue(_FakeCampaignCenterApi()),
+          staffOwnerApiProvider.overrideWithValue(_FakeStaffOwnerApi(const {})),
+          authControllerProvider.overrideWith(_LoggedInOwnerController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const DashboardScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Today'), findsOneWidget);
+    expect(find.textContaining('free time'), findsNothing);
+    expect(find.textContaining('off now'), findsNothing);
+  });
+
+  testWidgets('the owner dashboard fits a 320 px phone with a large font in the dark theme', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final api = _FakeSalonAdminApi([
+      const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon With A Rather Long Name', vertical: 'beauty', status: 'ACTIVE'),
+      const AdminProvider(id: 'p2', ownerUserId: 'owner-1', name: 'Fast Garage And Tyre Centre', vertical: 'auto', status: 'ACTIVE'),
+    ])..schedule = const [];
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: (_, _) => null,
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(api),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+          billingApiProvider.overrideWithValue(_FakeBillingApi()),
+          campaignCenterApiProvider.overrideWithValue(_FakeCampaignCenterApi()),
+          staffOwnerApiProvider.overrideWithValue(_FakeStaffOwnerApi(const {'p1': 2, 'p2': 11})),
+          authControllerProvider.overrideWith(_LoggedInOwnerController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryDarkTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: const DashboardScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    for (var i = 0; i < 10; i++) {
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -400));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
   });
 }

@@ -30,6 +30,7 @@ class _FakeDiscoveryApi extends DiscoveryApi {
     double? minRating,
     bool availableOnly = false,
     String? sort,
+    String? cityCode,
   }) async {
     lastCatalogServiceId = catalogServiceId;
     return _results;

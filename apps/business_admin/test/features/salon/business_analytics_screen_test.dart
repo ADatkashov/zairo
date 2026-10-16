@@ -3,6 +3,7 @@ import 'package:business_admin/features/salon/data/models/admin_provider.dart';
 import 'package:business_admin/features/salon/data/models/business_analytics.dart';
 import 'package:business_admin/features/salon/presentation/providers/salon_providers.dart';
 import 'package:business_admin/features/salon/presentation/screens/business_analytics_screen.dart';
+import 'package:business_admin/features/salon/presentation/screens/business_reports_screen.dart';
 import 'package:business_admin/l10n/app_localizations.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
@@ -33,6 +34,7 @@ Future<void> _pump(
   BusinessAnalyticsOverview overview,
   Size size, {
   BusinessAnalyticsRevenue? revenue,
+  BusinessAnalyticsBookings? bookings,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -46,7 +48,9 @@ Future<void> _pump(
         businessAnalyticsRevenueProvider.overrideWith(
           (ref, key) => revenue == null ? unavailable() : Future.value(revenue),
         ),
-        businessAnalyticsBookingsProvider.overrideWith((ref, key) => unavailable()),
+        businessAnalyticsBookingsProvider.overrideWith(
+          (ref, key) => bookings == null ? unavailable() : Future.value(bookings),
+        ),
         businessAnalyticsSmartFillProvider.overrideWith((ref, key) => unavailable()),
         businessAnalyticsCustomersProvider.overrideWith((ref, key) => unavailable()),
         smartActionsProvider.overrideWith((ref, id) => unavailable()),
@@ -72,6 +76,15 @@ void main() {
     expect(find.text('62%'), findsOneWidget);
     expect(find.text('40%'), findsOneWidget);
     expect(find.text('31'), findsOneWidget);
+  });
+
+  testWidgets('the app bar opens the reports screen', (tester) async {
+    await _pump(tester, _overview(), const Size(390, 1600));
+
+    await tester.tap(find.byTooltip('Reports'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(BusinessReportsScreen), findsOneWidget);
   });
 
   testWidgets('unavailable utilization is a plain figure, not an empty ring', (tester) async {
@@ -117,6 +130,44 @@ void main() {
       const Size(390, 2400),
       revenue: revenueOf([DailyAmount(date: DateTime(2026, 1, 1), amount: 10)]),
     );
+
+    expect(find.byType(FactorySparkline), findsNothing);
+  });
+
+  BusinessAnalyticsBookings bookingsOf(List<DailyBookingCount> days) => BusinessAnalyticsBookings(
+    totalBookings: 40,
+    completedBookings: 31,
+    upcomingBookings: 5,
+    cancelledBookings: 3,
+    noShowBookings: 1,
+    cancellationRate: 0.075,
+    noShowRate: 0.025,
+    repeatBookingRate: 0.3,
+    trend: days,
+  );
+
+  DailyBookingCount day(int d, {int completed = 1, int cancelled = 0}) => DailyBookingCount(
+    date: DateTime(2026, 1, d),
+    total: completed + cancelled,
+    completed: completed,
+    cancelled: cancelled,
+    noShow: 0,
+  );
+
+  testWidgets('completed and cancelled cards draw a daily trend once there are two or more days', (tester) async {
+    await _pump(
+      tester,
+      _overview(),
+      const Size(390, 2400),
+      bookings: bookingsOf([day(3, completed: 5), day(1, completed: 2), day(2, completed: 3, cancelled: 1)]),
+    );
+
+    // One line each on the Completed and Cancelled cards.
+    expect(find.byType(FactorySparkline), findsNWidgets(2));
+  });
+
+  testWidgets('a single day of bookings draws no card trend', (tester) async {
+    await _pump(tester, _overview(), const Size(390, 2400), bookings: bookingsOf([day(1)]));
 
     expect(find.byType(FactorySparkline), findsNothing);
   });

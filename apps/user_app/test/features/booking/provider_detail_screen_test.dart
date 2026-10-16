@@ -35,6 +35,8 @@ import 'package:zairo/features/staff/presentation/providers/staff_providers.dart
 import 'package:zairo/features/workforce/data/models/any_slot.dart';
 import 'package:zairo/features/workforce/data/workforce_api.dart';
 import 'package:zairo/features/workforce/presentation/providers/workforce_providers.dart';
+import 'package:zairo/features/waitlist/data/waitlist_api.dart';
+import 'package:zairo/features/waitlist/presentation/providers/waitlist_providers.dart';
 import 'package:zairo/l10n/app_localizations.dart';
 
 class _FakeBookingApi extends BookingApi {
@@ -76,6 +78,13 @@ class _FakeBookingApi extends BookingApi {
       createdAt: DateTime.now(),
     );
   }
+}
+
+class _FakeWaitlistApi extends WaitlistApi {
+  _FakeWaitlistApi() : super(DioClient(Dio()));
+
+  @override
+  Future<Set<String>> waitingProviderIds(String userId) async => <String>{};
 }
 
 class _FakePaymentsApi extends PaymentsApi {
@@ -300,7 +309,13 @@ Future<void> tapVisible(WidgetTester tester, Finder finder) async {
   // The photo-first header pushes lower sections past the lazily-built part
   // of the list, so scroll a not-yet-built target into existence first.
   if (finder.evaluate().isEmpty) {
-    await tester.scrollUntilVisible(finder, 200);
+    // The page itself is the outermost scrollable; the day picker adds horizontal ones.
+    final page = find.byType(Scrollable).first;
+    try {
+      await tester.scrollUntilVisible(finder, 200, scrollable: page);
+    } on StateError {
+      await tester.scrollUntilVisible(finder, -200, scrollable: page);
+    }
   }
   await tester.ensureVisible(finder);
   await tester.pumpAndSettle();
@@ -309,10 +324,14 @@ Future<void> tapVisible(WidgetTester tester, Finder finder) async {
 
 /// The detail screen at `/`, plus the confirmation route it replaces itself
 /// with after a booking (the real router declares both as root routes).
-Widget _routerApp(ProviderSearchResult provider) => MaterialApp.router(
-      theme: factoryLightTheme(),
+Widget _routerApp(ProviderSearchResult provider, {double textScale = 1, bool dark = false}) => MaterialApp.router(
+      theme: dark ? factoryDarkTheme() : factoryLightTheme(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
+        child: child!,
+      ),
       routerConfig: GoRouter(
         routes: [
           GoRoute(path: '/', builder: (_, _) => ProviderDetailScreen(provider: provider)),
@@ -382,10 +401,11 @@ void main() {
 
     // The progress bar follows the selection: service -> time -> confirm.
     BookingStepper stepper() => tester.widget<BookingStepper>(find.byType(BookingStepper));
-    expect(stepper().step, 0);
-    await tapVisible(tester, find.text('Haircut'));
-    await tester.pumpAndSettle();
+    // A single-service salon has nothing to choose: the service is already picked.
     expect(stepper().step, 1);
+    await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Haircut'));
+    await tester.pumpAndSettle();
+    expect(stepper().step, 1, reason: 'tapping the picked service keeps it picked');
     await tapVisible(tester, find.text('10:00'));
     await tester.pumpAndSettle();
     expect(stepper().step, 2);
@@ -414,6 +434,56 @@ void main() {
     await tester.tap(confirm);
     await tester.pumpAndSettle();
     expect(fakeApi.lastBookingCall, isNotNull);
+  });
+
+  testWidgets('the business page fits a 320 px phone with a large font in the dark theme', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    final day = DateTime.now().add(const Duration(days: 1));
+    final fakeApi = _FakeBookingApi([
+      for (var i = 0; i < 6; i++)
+        AvailabilitySlot(
+          id: 'slot-$i',
+          providerId: 'provider-1',
+          startsAt: DateTime(day.year, day.month, day.day, 9 + i),
+          endsAt: DateTime(day.year, day.month, day.day, 10 + i),
+          status: 'OPEN',
+        ),
+    ]);
+    const provider = ProviderSearchResult(
+      id: 'provider-1',
+      name: 'A Salon With A Rather Long Name That Wraps',
+      vertical: 'beauty',
+      status: 'ACTIVE',
+      hasOpenAvailability: true,
+      minPrice: 30,
+      services: [
+        ServiceSummary(id: 'service-1', title: 'Haircut with a long description', durationMinutes: 30, price: 30, currency: 'USD'),
+        ServiceSummary(id: 'service-2', title: 'Colouring', durationMinutes: 120, price: 90, currency: 'USD'),
+      ],
+      averageRating: 4.2,
+      reviewCount: 55,
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(fakeApi),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          beautyApiProvider.overrideWithValue(_FakeBeautyApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: _routerApp(provider, textScale: 2, dark: true),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    for (var i = 0; i < 10; i++) {
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -400));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
   });
 
   testWidgets('selecting a service and slot enables booking and submits the right data', (tester) async {
@@ -460,13 +530,13 @@ void main() {
     expect(find.text('4.2'), findsOneWidget);
     expect(find.text('(55)'), findsOneWidget);
     // The service row shows the service's own currency, not the platform default.
-    expect(find.text(r'30 $'), findsOneWidget);
+    expect(find.text(r'30 $'), findsWidgets);
     expect(find.text('30 ₸'), findsNothing);
 
     final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');
     expect(tester.widget<FactoryButton>(bookButtonFinder).onPressed, isNull);
 
-    await tapVisible(tester, find.text('Haircut'));
+    await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Haircut'));
     await tester.pumpAndSettle();
     await tapVisible(tester, find.text('10:00'));
     await tester.pumpAndSettle();
@@ -543,7 +613,7 @@ void main() {
     expect(find.text('Jamie Stylist'), findsOneWidget);
 
     final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');
-    await tapVisible(tester, find.text('Haircut'));
+    await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Haircut'));
     await tester.pumpAndSettle();
 
     // No times are shown until a person (or "Any master") is chosen -> still disabled.
@@ -639,7 +709,7 @@ void main() {
     await tapVisible(tester, find.text('Toyota Camry (2019)'));
     await tester.pumpAndSettle();
 
-    await tapVisible(tester, find.text('Oil Change'));
+    await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Oil Change'));
     await tester.pumpAndSettle();
 
     // Mechanic + vehicle + service picked, but no slot yet -> still disabled.
@@ -718,7 +788,7 @@ void main() {
     expect(find.text('Dr. Aliya'), findsOneWidget);
 
     final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');
-    await tapVisible(tester, find.text('Checkup'));
+    await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Checkup'));
     await tester.pumpAndSettle();
 
     // No times are shown until a person is chosen -> still disabled.
@@ -776,6 +846,7 @@ void main() {
       minPrice: 40,
       services: [
         ServiceSummary(id: 'service-1', title: 'Checkup', durationMinutes: 30, price: 40, currency: 'USD'),
+        ServiceSummary(id: 'service-2', title: 'Consultation', durationMinutes: 15, price: 20, currency: 'USD'),
       ],
     );
 
@@ -804,7 +875,7 @@ void main() {
     // The times for "Any master" depend on the service.
     expect(find.text('Choose a service first'), findsOneWidget);
 
-    await tapVisible(tester, find.text('Checkup'));
+    await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Checkup'));
     await tester.pumpAndSettle();
     await tapVisible(tester, find.text('10:00'));
     await tester.pumpAndSettle();
@@ -871,7 +942,7 @@ void main() {
     expect(find.text('Dr. Aliya'), findsNothing);
     expect(find.text('Any master'), findsNothing);
 
-    await tapVisible(tester, find.text('Checkup'));
+    await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Checkup'));
     await tester.pumpAndSettle();
     // Times come straight from the merged list.
     expect(find.text('10:00'), findsOneWidget);
@@ -918,13 +989,176 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tapVisible(tester, find.text('Haircut'));
+    await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Haircut'));
     await tester.pumpAndSettle();
     expect(find.textContaining('45'), findsNothing);
 
     await tapVisible(tester, find.text('Jamie Stylist'));
     await tester.pumpAndSettle();
     expect(find.textContaining('45'), findsWidgets);
+  });
+
+  group('a person picked up front (from their own page)', () {
+    const provider = ProviderSearchResult(
+      id: 'provider-5',
+      name: 'Any Clinic',
+      vertical: 'medicine',
+      status: 'ACTIVE',
+      hasOpenAvailability: true,
+      minPrice: 40,
+      services: [
+        ServiceSummary(id: 'service-1', title: 'Checkup', durationMinutes: 30, price: 40, currency: 'USD'),
+      ],
+    );
+
+    Future<void> pump(
+      WidgetTester tester,
+      PreselectedWorker? worker, {
+      bool allowChoice = true,
+      String? slotId,
+      List<AvailabilitySlot> slots = const [],
+    }) async {
+      tester.view.physicalSize = const Size(800, 3000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            bookingApiProvider.overrideWithValue(_FakeBookingApi(const [])),
+            paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+            staffApiProvider.overrideWithValue(
+              _FakeStaffApi(const [
+                Staff(id: 'staff-1', providerId: 'provider-5', displayName: 'Dr. Aliya', active: true),
+                Staff(id: 'staff-2', providerId: 'provider-5', displayName: 'Dr. Bek', active: true),
+              ]),
+            ),
+            workforceApiProvider.overrideWithValue(_FakeWorkforceApi(allowChoice: allowChoice, slots: slots)),
+            authControllerProvider.overrideWith(_LoggedInAuthController.new),
+          ],
+          child: MaterialApp(
+            theme: factoryLightTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: ProviderDetailScreen(provider: provider, preselectedWorker: worker, preselectedSlotId: slotId),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    bool selected(WidgetTester tester, String name) =>
+        tester.widget<FactorySelectableTile>(find.widgetWithText(FactorySelectableTile, name)).selected;
+
+    testWidgets('is already selected, the others are not', (tester) async {
+      await pump(tester, (kind: 'STAFF', id: 'staff-2'));
+
+      expect(selected(tester, 'Dr. Bek'), isTrue);
+      expect(selected(tester, 'Dr. Aliya'), isFalse);
+    });
+
+    testWidgets('nothing is selected without one, or when they are not among the business\'s people', (tester) async {
+      await pump(tester, null);
+      expect(selected(tester, 'Dr. Bek'), isFalse);
+
+      await pump(tester, (kind: 'STAFF', id: 'someone-who-left'));
+      expect(selected(tester, 'Dr. Bek'), isFalse);
+      expect(selected(tester, 'Dr. Aliya'), isFalse);
+    });
+
+    final tenOClock = AvailabilitySlot(
+      id: 'slot-1',
+      providerId: 'provider-5',
+      startsAt: DateTime(2026, 1, 1, 10, 0),
+      endsAt: DateTime(2026, 1, 1, 10, 30),
+      status: 'OPEN',
+    );
+    FactoryTimeSlotState slotState(WidgetTester tester) =>
+        tester.widget<FactoryTimeSlot>(find.widgetWithText(FactoryTimeSlot, '10:00')).state;
+
+    testWidgets('a time tapped on their page is already picked', (tester) async {
+      await pump(tester, (kind: 'STAFF', id: 'staff-2'), slotId: 'slot-1', slots: [tenOClock]);
+      await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Checkup'));
+      await tester.pumpAndSettle();
+
+      expect(slotState(tester), FactoryTimeSlotState.selected);
+    });
+
+    testWidgets('a time that was booked meanwhile is dropped', (tester) async {
+      await pump(tester, (kind: 'STAFF', id: 'staff-2'), slotId: 'booked-meanwhile', slots: [tenOClock]);
+      await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Checkup'));
+      await tester.pumpAndSettle();
+
+      expect(slotState(tester), FactoryTimeSlotState.available);
+    });
+
+    testWidgets('a service tapped on their page is already picked; one the business does not offer is ignored', (tester) async {
+      tester.view.physicalSize = const Size(800, 3000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      const twoServices = ProviderSearchResult(
+        id: 'provider-5',
+        name: 'Any Clinic',
+        vertical: 'medicine',
+        status: 'ACTIVE',
+        hasOpenAvailability: true,
+        minPrice: 20,
+        services: [
+          ServiceSummary(id: 'service-1', title: 'Checkup', durationMinutes: 30, price: 40, currency: 'USD'),
+          ServiceSummary(id: 'service-2', title: 'Consultation', durationMinutes: 15, price: 20, currency: 'USD'),
+        ],
+      );
+      Future<void> open(String? serviceId) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            key: UniqueKey(),
+            overrides: [
+              bookingApiProvider.overrideWithValue(_FakeBookingApi(const [])),
+              paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+              staffApiProvider.overrideWithValue(_FakeStaffApi(const [])),
+              workforceApiProvider.overrideWithValue(_FakeWorkforceApi()),
+              authControllerProvider.overrideWith(_LoggedInAuthController.new),
+            ],
+            child: MaterialApp(
+              theme: factoryLightTheme(),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: ProviderDetailScreen(provider: twoServices, preselectedServiceId: serviceId),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      bool selected(String title) =>
+          tester.widget<FactoryServiceCard>(find.widgetWithText(FactoryServiceCard, title)).selected;
+
+      await open('service-2');
+      expect(selected('Consultation'), isTrue);
+      expect(selected('Checkup'), isFalse);
+
+      await open('service-gone');
+      expect(selected('Consultation'), isFalse);
+      expect(selected('Checkup'), isFalse);
+    });
+
+    testWidgets('a time without a person is ignored', (tester) async {
+      await pump(tester, null, slotId: 'slot-1', slots: [tenOClock]);
+
+      expect(find.widgetWithText(FactoryTimeSlot, '10:00'), findsNothing);
+    });
+
+    testWidgets('a business that only offers "Any master" ignores it', (tester) async {
+      await pump(tester, (kind: 'STAFF', id: 'staff-2'), allowChoice: false);
+
+      expect(find.text('Dr. Bek'), findsNothing);
+      expect(find.text('Any master'), findsNothing);
+    });
+
+    testWidgets('a person from another directory is ignored here', (tester) async {
+      await pump(tester, (kind: 'MASTER', id: 'staff-2'));
+
+      expect(selected(tester, 'Dr. Bek'), isFalse);
+    });
   });
 
   testWidgets('opened from a "Book" button it starts at the booking steps, not at the top', (tester) async {
@@ -993,6 +1227,7 @@ void main() {
         overrides: [
           bookingApiProvider.overrideWithValue(fakeApi),
           beautyApiProvider.overrideWithValue(_FakeBeautyApi()),
+          waitlistApiProvider.overrideWithValue(_FakeWaitlistApi()),
           authControllerProvider.overrideWith(_LoggedInAuthController.new),
         ],
         child: MaterialApp(
@@ -1006,6 +1241,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('No open times'), findsOneWidget);
+    // The one thing to do about it is on the spot: ask to be told when a time opens.
+    expect(find.text('Notify me'), findsOneWidget);
   });
 
   testWidgets('a payment that is still pending sends the customer to pay instead of showing "confirmed"', (tester) async {
@@ -1059,7 +1296,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tapVisible(tester, find.text('Haircut'));
+    await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Haircut'));
     await tester.pumpAndSettle();
     await tapVisible(tester, find.text('10:00'));
     await tester.pumpAndSettle();
@@ -1136,7 +1373,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tapVisible(tester, find.text('Haircut'));
+    await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Haircut'));
     await tester.pumpAndSettle();
     await tapVisible(tester, find.text('10:00'));
     await tester.pumpAndSettle();
@@ -1146,5 +1383,86 @@ void main() {
     expect(fakePaymentsApi.lastChargedBookingId, isNull);
     expect(find.text('Waiting for payment'), findsNothing);
     expect(find.text('Booking confirmed!'), findsOneWidget);
+  });
+
+  group('the bar above "Book" says what to pick next', () {
+    AvailabilitySlot slot() => AvailabilitySlot(
+          id: 'slot-1',
+          providerId: 'provider-1',
+          startsAt: DateTime(2026, 1, 1, 10, 0),
+          endsAt: DateTime(2026, 1, 1, 10, 30),
+          status: 'OPEN',
+        );
+
+    Future<void> pump(WidgetTester tester, ProviderSearchResult provider, {List<Master> masters = const []}) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            bookingApiProvider.overrideWithValue(_FakeBookingApi([slot()])),
+            paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+            beautyApiProvider.overrideWithValue(_FakeBeautyApi(masters)),
+            authControllerProvider.overrideWith(_LoggedInAuthController.new),
+          ],
+          child: _routerApp(provider),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    String? hint(WidgetTester tester) {
+      final finder = find.byKey(const Key('bookingNextStepHint'));
+      return finder.evaluate().isEmpty ? null : tester.widget<Text>(finder).data;
+    }
+
+    ProviderSearchResult salon(List<ServiceSummary> services) => ProviderSearchResult(
+          id: 'provider-1',
+          name: 'Test Salon',
+          vertical: 'beauty',
+          status: 'ACTIVE',
+          hasOpenAvailability: true,
+          minPrice: 30,
+          services: services,
+        );
+
+    const haircut = ServiceSummary(id: 'service-1', title: 'Haircut', durationMinutes: 30, price: 30, currency: 'USD');
+    const colour = ServiceSummary(id: 'service-2', title: 'Colouring', durationMinutes: 60, price: 80, currency: 'USD');
+
+    testWidgets('several services: service first, then time, then nothing once ready', (tester) async {
+      await pump(tester, salon([haircut, colour]));
+
+      expect(hint(tester), 'Choose a service');
+      await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Haircut'));
+      await tester.pumpAndSettle();
+      expect(hint(tester), 'Choose a time');
+      await tapVisible(tester, find.text('10:00'));
+      await tester.pumpAndSettle();
+      expect(hint(tester), isNull);
+      expect(tester.widget<FactoryButton>(find.widgetWithText(FactoryButton, 'Book')).onPressed, isNotNull);
+    });
+
+    testWidgets('one service is already picked, so the first thing asked is the time', (tester) async {
+      await pump(tester, salon([haircut]));
+
+      expect(hint(tester), 'Choose a time');
+      expect(find.byType(BookingStepper), findsOneWidget);
+    });
+
+    testWidgets('with masters, the person is asked for before the time', (tester) async {
+      await pump(
+        tester,
+        salon([haircut]),
+        masters: const [
+          Master(id: 'master-1', providerId: 'provider-1', displayName: 'Jamie Stylist', active: true),
+        ],
+      );
+
+      expect(hint(tester), 'Choose a specialist');
+      await tapVisible(tester, find.text('Jamie Stylist'));
+      await tester.pumpAndSettle();
+      expect(hint(tester), 'Choose a time');
+    });
   });
 }

@@ -5,6 +5,7 @@ import com.zairo.factory.catalog.BusinessType;
 import com.zairo.factory.catalog.BusinessTypeRepository;
 import com.zairo.factory.catalog.CategoryRepository;
 import com.zairo.factory.catalog.TaxonomyStatus;
+import com.zairo.factory.city.CityRepository;
 import com.zairo.factory.platformadmin.PlatformCurrentAdmin;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.providers.ProviderDtos.ProviderResponse;
@@ -45,15 +46,18 @@ public class ProviderController {
     private final CategoryRepository categoryRepository;
     private final BusinessTypeRepository businessTypeRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final CityRepository cityRepository;
 
     public ProviderController(ProviderRepository providerRepository,
             SubscriptionLimitService subscriptionLimitService, CategoryRepository categoryRepository,
-            BusinessTypeRepository businessTypeRepository, ApplicationEventPublisher eventPublisher) {
+            BusinessTypeRepository businessTypeRepository, ApplicationEventPublisher eventPublisher,
+            CityRepository cityRepository) {
         this.providerRepository = providerRepository;
         this.subscriptionLimitService = subscriptionLimitService;
         this.categoryRepository = categoryRepository;
         this.businessTypeRepository = businessTypeRepository;
         this.eventPublisher = eventPublisher;
+        this.cityRepository = cityRepository;
     }
 
     @Operation(summary = "Create a provider (salon)", description = "Owner-only: the caller must be "
@@ -98,7 +102,20 @@ public class ProviderController {
         Provider provider = new Provider(UUID.randomUUID(), request.ownerUserId(), request.name(),
                 request.vertical(), ProviderStatus.PENDING, Instant.now(), request.latitude(),
                 request.longitude(), businessTypeId);
+        provider.assignCity(requireKnownCity(request.cityCode()));
         return ProviderResponse.from(providerRepository.save(provider));
+    }
+
+    /** The trimmed city code, or null when none was given; 400 for a code that is not a known city. */
+    private String requireKnownCity(String cityCode) {
+        if (cityCode == null || cityCode.isBlank()) {
+            return null;
+        }
+        String code = cityCode.trim();
+        if (cityRepository.findByCode(code).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown city: " + code);
+        }
+        return code;
     }
 
     @Operation(summary = "List providers", description = """
@@ -160,7 +177,8 @@ public class ProviderController {
         if (!provider.getOwnerUserId().equals(currentUserId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not own this provider: " + id);
         }
-        provider.update(request.name(), request.latitude(), request.longitude(), request.coverPhotoUrl());
+        provider.update(request.name(), request.latitude(), request.longitude(), request.coverPhotoUrl(),
+                requireKnownCity(request.cityCode()));
         return ProviderResponse.from(providerRepository.save(provider));
     }
 

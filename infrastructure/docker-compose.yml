@@ -17,8 +17,9 @@ services:
 
   # S3-compatible object storage for local dev (media, portfolio photos, ...)
   minio:
-    image: minio/minio:latest
-    command: server /data --console-address ":9001"
+    # MinIO no longer publishes images; Bitnami's frozen copy of the same server,
+    # pinned to a tag. Its entrypoint starts the server, so there is no command.
+    image: bitnamilegacy/minio:2025.7.23-debian-12-r5
     environment:
       MINIO_ROOT_USER: app_factory
       MINIO_ROOT_PASSWORD: app_factory_secret
@@ -26,7 +27,7 @@ services:
       - "9000:9000"
       - "9001:9001"
     volumes:
-      - minio_data:/data
+      - minio_data:/bitnami/minio/data
 
 volumes:
   postgres_data:

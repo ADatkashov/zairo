@@ -96,7 +96,7 @@ public class WorkerPortalService {
             int pending = (int) entries.stream().filter(e -> e.needsAcceptance(now)).count();
             List<Review> reviews = reviewsOf(entries);
             Double average = reviews.isEmpty() ? null
-                    : reviews.stream().mapToInt(Review::getRating).average().orElse(0);
+                    : reviews.stream().mapToInt(Review::getRatingForWorker).average().orElse(0);
             result.add(new WorkerMembershipResponse(worker.id(), worker.kind(), provider.getId(), provider.getName(),
                     worker.displayName(), worker.photoUrl(), worker.active(), pending, average, reviews.size()));
         }
@@ -203,16 +203,21 @@ public class WorkerPortalService {
 
     @Transactional(readOnly = true)
     public WorkerRatingResponse rating(UUID userId, UUID workerId) {
-        Worker worker = requireOwnWorker(workerId, userId);
+        return ratingOf(requireOwnWorker(workerId, userId));
+    }
+
+    /** The rating of one worker: average, star distribution and the newest reviews with the reviewer's name. */
+    @Transactional(readOnly = true)
+    public WorkerRatingResponse ratingOf(Worker worker) {
         List<Entry> entries = entries(worker);
         List<Review> reviews = reviewsOf(entries);
         long[] counts = new long[5];
         for (Review review : reviews) {
-            if (review.getRating() >= 1 && review.getRating() <= 5) {
-                counts[review.getRating() - 1]++;
+            if (review.getRatingForWorker() >= 1 && review.getRatingForWorker() <= 5) {
+                counts[review.getRatingForWorker() - 1]++;
             }
         }
-        Double average = reviews.isEmpty() ? null : reviews.stream().mapToInt(Review::getRating).average().orElse(0);
+        Double average = reviews.isEmpty() ? null : reviews.stream().mapToInt(Review::getRatingForWorker).average().orElse(0);
 
         Map<UUID, Booking> bookingsById = entries.stream()
                 .collect(Collectors.toMap(e -> e.booking.getId(), e -> e.booking));
@@ -225,7 +230,7 @@ public class WorkerPortalService {
         List<WorkerReviewResponse> rows = latest.stream().map(r -> {
             User customer = customers.get(bookingsById.get(r.getBookingId()).getUserId());
             return new WorkerReviewResponse(r.getId(), r.getBookingId(),
-                    customer == null ? null : customer.getDisplayName(), r.getRating(), r.getComment(),
+                    customer == null ? null : customer.getDisplayName(), r.getRatingForWorker(), r.getComment(),
                     r.getCreatedAt(), r.getBusinessReply(), r.getBusinessReplyAt());
         }).toList();
         return new WorkerRatingResponse(average, reviews.size(), Arrays.stream(counts).boxed().toList(), rows);
@@ -280,7 +285,8 @@ public class WorkerPortalService {
         if (entries.isEmpty()) {
             return List.of();
         }
-        return reviewRepository.findByBookingIdIn(entries.stream().map(e -> e.booking.getId()).toList());
+        return reviewRepository.findByBookingIdIn(entries.stream().map(e -> e.booking.getId()).toList()).stream()
+                .filter(r -> !r.isHidden()).toList();
     }
 
     private WorkerBookingState stateOf(UUID bookingId, Worker worker) {

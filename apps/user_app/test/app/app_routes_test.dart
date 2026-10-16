@@ -28,6 +28,7 @@ class _EmptyDiscoveryApi extends DiscoveryApi {
     double? minRating,
     bool availableOnly = false,
     String? sort,
+    String? cityCode,
   }) async => const [];
 }
 
@@ -36,6 +37,25 @@ void main() {
     expect(AppRoutes.provider('p-1'), '/provider/p-1');
     // The "Book" button on a card asks for the booking steps right away.
     expect(AppRoutes.provider('p-1', book: true), '/provider/p-1?book=1');
+    // From a master's own page: book with that person already picked.
+    expect(
+      AppRoutes.provider('p-1', book: true, workerId: 'w-1', workerKind: 'MASTER'),
+      '/provider/p-1?book=1&worker=w-1&kind=MASTER',
+    );
+    expect(
+      AppRoutes.provider('p-1', book: true, workerId: 'w-1', workerKind: 'MASTER', slotId: 's-1'),
+      '/provider/p-1?book=1&worker=w-1&kind=MASTER&slot=s-1',
+    );
+    // A service row on their page: that service too.
+    expect(
+      AppRoutes.provider('p-1', book: true, workerId: 'w-1', workerKind: 'MASTER', serviceId: 's-9'),
+      '/provider/p-1?book=1&worker=w-1&kind=MASTER&service=s-9',
+    );
+    expect(AppRoutes.provider('p-1', serviceId: 's-9'), '/provider/p-1?service=s-9');
+    // A time without a person means nothing.
+    expect(AppRoutes.provider('p-1', slotId: 's-1'), '/provider/p-1');
+    // A worker needs its kind to be found in the right directory; one alone is dropped.
+    expect(AppRoutes.provider('p-1', workerId: 'w-1'), '/provider/p-1');
     expect(AppRoutes.reviews('p-1'), '/provider/p-1/reviews');
     expect(AppRoutes.reviews('p-1', providerName: 'A B'), '/provider/p-1/reviews?name=A+B');
     expect(AppRoutes.chat('p-1'), '/messages/p-1');

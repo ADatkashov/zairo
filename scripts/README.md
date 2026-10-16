@@ -18,6 +18,11 @@ chmod +x scripts/*.sh
 ./scripts/run-app.sh shymkent
 ```
 
+## Проверка перед пушем
+
+`./scripts/verify-local.sh` — те же проверки, что в CI (Flutter analyze + test по всем пакетам и тесты бэкенда), локально.
+Нужен, когда GitHub Actions не запускается. Подробности: `docs/ci-cd.md`.
+
 ## Доступные скрипты
 
 ### 1. `start.sh` — Главный скрипт

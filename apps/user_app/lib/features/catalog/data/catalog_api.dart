@@ -3,6 +3,7 @@ import 'package:core_network/core_network.dart';
 import 'models/business_type.dart';
 import 'models/catalog_service.dart';
 import 'models/category.dart';
+import 'models/subsphere.dart';
 
 /// Not final on purpose: tests substitute a subclass overriding
 /// [listCategories] instead of hitting the network — same pattern as
@@ -28,8 +29,16 @@ class CatalogApi {
     return data.map((e) => BusinessType.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  /// The catalog services directly under one sphere — what a customer can
-  /// pick to see "who offers this" (see ServiceCompareScreen).
+  /// The optional subspheres under one sphere (empty for most spheres).
+  Future<List<Subsphere>> listSubspheres(String businessTypeId) async {
+    final response = await _dioClient.get('/business-types/$businessTypeId/subspheres');
+    final data = response.data as List<dynamic>;
+    return data.map((e) => Subsphere.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// All catalog services of one sphere, including those grouped under a
+  /// subsphere (see [CatalogService.subsphereId]) — what a customer can pick
+  /// to see "who offers this" (see ServiceCompareScreen).
   Future<List<CatalogService>> listCatalogServices(String businessTypeId) async {
     final response = await _dioClient.get('/business-types/$businessTypeId/services');
     final data = response.data as List<dynamic>;

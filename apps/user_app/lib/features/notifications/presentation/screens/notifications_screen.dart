@@ -209,6 +209,7 @@ class _NotificationTile extends ConsumerWidget {
     'BOOKING_CANCELLED' => Symbols.event_busy_rounded,
     'BOOKING_REMINDER' => Symbols.notifications_active_rounded,
     'PAYMENT_REFUNDED' => Symbols.currency_exchange_rounded,
+    'WAITLIST_SLOT_OPENED' => Symbols.event_available_rounded,
     _ => Symbols.notifications_rounded,
   };
 

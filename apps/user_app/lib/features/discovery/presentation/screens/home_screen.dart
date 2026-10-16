@@ -2,13 +2,19 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../app/router/app_routes.dart';
 import '../../../../core/formatting/initials.dart';
+import '../../../../core/formatting/slot_label.dart';
 import '../../../../core/provider_grid.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../maps/data/geo_point.dart';
+import '../../../ads/data/models/ad_banner.dart';
+import '../../../ads/presentation/providers/ads_providers.dart';
+import '../../../ads/presentation/screens/ad_video_screen.dart';
+import '../../../ads/presentation/widgets/home_hero_banners.dart';
 import '../../../auth/data/models/user_summary.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../booking/data/models/book_again_suggestion.dart';
@@ -18,6 +24,9 @@ import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../../city/presentation/providers/city_providers.dart';
 import '../../../maps/presentation/providers/maps_providers.dart';
 import '../../../notifications/presentation/widgets/notification_bell_button.dart';
+import '../../../workers/data/models/top_worker.dart';
+import '../../../workers/presentation/providers/workers_providers.dart';
+import '../../../workers/presentation/widgets/master_avatar_card.dart';
 import '../../data/models/provider_search_result.dart';
 import '../providers/discovery_providers.dart';
 import '../widgets/provider_card.dart';
@@ -26,24 +35,13 @@ import '../widgets/provider_card.dart';
 /// underneath (that's the Search tab). Tapping the search field switches to
 /// Search rather than pushing a new screen, matching how the other bottom
 /// nav destinations behave.
-class HomeScreen extends ConsumerStatefulWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  ConsumerState<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends ConsumerState<HomeScreen> {
-  /// null = every vertical. Set to a Category's `code` (see
-  /// catalog_providers.dart) — the search endpoint's `vertical` filter is
-  /// unchanged, this just sources the value from the master catalog instead
-  /// of a literal string.
-  String? _vertical;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final query = DiscoveryQuery(vertical: _vertical);
+    const query = DiscoveryQuery();
     final resultsAsync = ref.watch(searchResultsProvider(query));
     final locationAsync = ref.watch(currentLocationProvider);
     final user = ref.watch(authControllerProvider).value;
@@ -52,6 +50,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return _buildHomeContent(
       context,
+      ref,
       l10n,
       query,
       resultsAsync,
@@ -64,6 +63,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildHomeContent(
     BuildContext context,
+    WidgetRef ref,
     AppLocalizations l10n,
     DiscoveryQuery query,
     AsyncValue<List<ProviderSearchResult>> resultsAsync,
@@ -74,119 +74,71 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   ) {
     return Scaffold(
       backgroundColor: colors.bg,
-      body: SafeArea(
-        child: resultsAsync.when(
+      body: resultsAsync.when(
           data: (results) {
             final openCount = results
                 .where((r) => r.hasOpenAvailability)
                 .length;
             final topRated = results.take(8).toList();
             return RefreshIndicator(
+              // The pinned hero bar owns the top inset (see [_HomeHeroBar]), so
+              // the spinner is nudged below it instead of hiding under it.
+              edgeOffset: _HomeHeroBar.collapsedHeight(context),
               onRefresh: () => ref.refresh(searchResultsProvider(query).future),
-              child: ListView(
-                padding: const EdgeInsets.all(FactorySpacing.space4),
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      FactoryAvatar(
-                        initials: user != null
-                            ? initialsFor(user.displayName)
-                            : '?',
-                        image: user?.avatarUrl != null
-                            ? NetworkImage(user!.avatarUrl!)
-                            : null,
-                      ),
-                      const SizedBox(width: FactorySpacing.space3),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            InkWell(
-                              onTap: () => context.push('/city-selection'),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Symbols.location_on_rounded,
-                                    size: 16,
-                                    color: colors.primary,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Flexible(
-                                    child: Text(
-                                      ref
-                                              .watch(userCurrentCityProvider)
-                                              .value
-                                              ?.nameFor(Localizations.localeOf(context).languageCode) ??
-                                          locationAsync.value?.label ??
-                                          l10n.homeLocationUnknown,
-                                      style: textTheme.titleSmall,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  Icon(
-                                    Symbols.keyboard_arrow_down_rounded,
-                                    size: 18,
-                                    color: colors.textSecondary,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: FactorySpacing.space1),
-                            Text(
-                              user != null
-                                  ? l10n.homeGreeting(user.displayName)
-                                  : l10n.homeGreetingGuest,
-                              // The headline face (Unbounded) is very wide: at large
-                              // system text a single name overflows the space beside
-                              // the avatar and action buttons and snaps mid-word.
-                              // Cap this one heading's scale and ellipsize instead.
-                              textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: MediaQuery.sizeOf(context).width < 360 ? 1.0 : 1.1),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: textTheme.headlineSmall?.copyWith(
-                                color: colors.text,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const _FavoritesButton(),
-                      if (user != null) ...[
-                        const SizedBox(width: FactorySpacing.space2),
-                        const NotificationBellButton(),
-                      ],
-                    ],
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  _HomeHeroBar(
+                    user: user,
+                    // Best-effort: no banners (loading, failed, none live) is the plain hero.
+                    banners: ref.watch(homeBannersProvider).value ?? const <AdBanner>[],
+                    cityLabel: ref
+                            .watch(userCurrentCityProvider)
+                            .value
+                            ?.nameFor(Localizations.localeOf(context).languageCode) ??
+                        locationAsync.value?.label ??
+                        l10n.homeLocationUnknown,
+                    greeting: user != null
+                        ? l10n.homeGreeting(user.displayName)
+                        : l10n.homeGreetingGuest,
                   ),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      FactorySpacing.space4,
+                      0,
+                      FactorySpacing.space4,
+                      FactorySpacing.space4,
+                    ),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
                   const SizedBox(height: FactorySpacing.space4),
-                  _SearchEntry(onTap: () => context.go(AppRoutes.search(category: _vertical))),
-                  // The one block of real colour sits right under the search, so
-                  // the first screen has a focal point (and a reason to tap)
-                  // before the category row. Only when something is open today.
+                  _SearchEntry(onTap: () => context.go(AppRoutes.search())),
+                  // Categories first, straight under the search: the main way into
+                  // the app is "pick what you need", so it is the first thing
+                  // below the search field.
+                  const SizedBox(height: FactorySpacing.space5),
+                  const _CategoriesSection(),
+                  // Promos come after the primary action, not in front of it. Only
+                  // the live "open slots today" card is left; anything else the
+                  // platform wants to promote (bonuses, news) is a banner, run
+                  // from the admin console, not a card fixed in the app.
                   if (openCount > 0) ...[
-                    const SizedBox(height: FactorySpacing.space4),
-                    _AvailabilityHero(
-                      count: openCount,
-                      onViewAll: () => context.go(AppRoutes.search(category: _vertical)),
+                    const SizedBox(height: FactorySpacing.space5),
+                    _PromoStrip(
+                      openCount: openCount,
+                      onViewAvailable: () => context.go(AppRoutes.search()),
                     ),
                   ],
-                  const SizedBox(height: FactorySpacing.space5),
-                  Text(l10n.homeCategoriesTitle, style: textTheme.titleSmall),
-                  const SizedBox(height: FactorySpacing.space3),
-                  _CategoryGrid(
-                    selectedCode: _vertical,
-                    onSelect: (code) => setState(() => _vertical = code),
-                  ),
                   if (user != null) ...[
                     const SizedBox(height: FactorySpacing.space6),
                     _BookAgainSection(userId: user.id),
+                    _MyMastersSection(userId: user.id),
                   ],
                   const SizedBox(height: FactorySpacing.space6),
                   FactorySectionHeader(
                     title: l10n.homeTopRatedTitle,
                     actionLabel: l10n.homeSeeAll,
-                    onActionTap: () => context.go(AppRoutes.search(category: _vertical)),
+                    onActionTap: () => context.go(AppRoutes.search()),
                   ),
                   const SizedBox(height: FactorySpacing.space3),
                   if (topRated.isEmpty)
@@ -198,8 +150,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     )
                   else
                     SizedBox(
-                      // The card's own height plus the "Book" button under it.
-                      height: 252 + providerCardActionHeight,
+                      // The card's own height plus the "Book" button under it, and room for larger system text
+                      // (the photo keeps its size, the text under it grows).
+                      height: 252 +
+                          providerCardActionHeight +
+                          110 * (MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0) - 1),
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: topRated.length,
@@ -223,24 +178,240 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         },
                       ),
                     ),
+                  const _TopMastersSection(),
                   const SizedBox(height: FactorySpacing.space6),
                   _RecommendedSection(results: results, excluding: topRated),
+                      ]),
+                    ),
+                  ),
                 ],
               ),
             );
           },
-          loading: () => const FactoryLoadingState(),
-          error: (error, stackTrace) => Center(
-            child: Padding(
-              padding: const EdgeInsets.all(FactorySpacing.space4),
-              child: FactoryErrorState(
-                message: l10n.errorHomeFeedLoadFailed,
-                onRetry: () => ref.invalidate(searchResultsProvider(query)),
+          loading: () => const SafeArea(child: FactoryLoadingState()),
+          error: (error, stackTrace) => SafeArea(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(FactorySpacing.space4),
+                child: FactoryErrorState(
+                  message: l10n.errorHomeFeedLoadFailed,
+                  onRetry: () => ref.invalidate(searchResultsProvider(query)),
+                ),
               ),
             ),
           ),
         ),
+    );
+  }
+}
+
+/// The Home header: a gradient hero (the greeting) that collapses on scroll
+/// into a pinned bar (avatar, city, favorites, bell) while the rounded content
+/// "sheet" slides up over it. The sheet's top edge is the app bar's `bottom`,
+/// so it stays attached to the bar at every scroll offset.
+class _HomeHeroBar extends StatelessWidget {
+  const _HomeHeroBar({
+    required this.user,
+    required this.banners,
+    required this.cityLabel,
+    required this.greeting,
+  });
+
+  final UserSummary? user;
+
+  /// Live promo banners. When there are any they take the hero over (the cover
+  /// image fills it, the greeting steps aside); when there are none it is the
+  /// plain green greeting hero.
+  final List<AdBanner> banners;
+  final String cityLabel;
+  final String greeting;
+
+  static const _toolbarHeight = 68.0;
+  static const _expandedHeight = 232.0;
+
+  /// Taller than the greeting hero: a banner cover needs room to read as one.
+  static const _expandedHeightWithBanners = 320.0;
+  static const _sheetRadius = 24.0;
+
+  /// Status bar + toolbar + sheet lip: where scrollable content starts once
+  /// the hero is fully collapsed.
+  static double collapsedHeight(BuildContext context) =>
+      MediaQuery.paddingOf(context).top + _toolbarHeight + _sheetRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    final user = this.user;
+    return SliverAppBar(
+      pinned: true,
+      automaticallyImplyLeading: false,
+      backgroundColor: colors.primaryStrong,
+      surfaceTintColor: Colors.transparent,
+      toolbarHeight: _toolbarHeight,
+      expandedHeight: banners.isEmpty ? _expandedHeight : _expandedHeightWithBanners,
+      titleSpacing: FactorySpacing.space4,
+      title: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          FactoryAvatar(
+            initials: user != null ? initialsFor(user.displayName) : '?',
+            image: user?.avatarUrl != null ? NetworkImage(user!.avatarUrl!) : null,
+          ),
+          const SizedBox(width: FactorySpacing.space3),
+          Expanded(
+            child: InkWell(
+              onTap: () => context.push('/city-selection'),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Symbols.location_on_rounded, size: 16, color: colors.onPrimary),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      cityLabel,
+                      style: textTheme.titleSmall?.copyWith(color: colors.onPrimary),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Icon(
+                    Symbols.keyboard_arrow_down_rounded,
+                    size: 18,
+                    color: colors.onPrimary.withValues(alpha: 0.8),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const _FavoritesButton(),
+          if (user != null) ...[
+            const SizedBox(width: FactorySpacing.space2),
+            const NotificationBellButton(),
+          ],
+        ],
       ),
+      flexibleSpace: banners.isEmpty ? _greetingSpace(context) : _bannerSpace(context),
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(_sheetRadius),
+        child: Container(
+          height: _sheetRadius,
+          decoration: BoxDecoration(
+            color: colors.bg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(_sheetRadius)),
+          ),
+        ),
+      ),
+    );
+  }
+  /// The plain hero: gradient, a soft gold glow and the greeting.
+  Widget _greetingSpace(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    return FlexibleSpaceBar(
+        collapseMode: CollapseMode.parallax,
+        background: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [colors.primaryStrong, colors.primary],
+            ),
+          ),
+          child: Stack(
+            clipBehavior: Clip.hardEdge,
+            children: [
+              Positioned(
+                top: -40,
+                right: -40,
+                child: Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        colors.accent.withValues(alpha: 0.45),
+                        colors.accent.withValues(alpha: 0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: FactorySpacing.space4,
+                right: FactorySpacing.space4,
+                bottom: _sheetRadius + FactorySpacing.space3,
+                child: Text(
+                  greeting,
+                  // The headline face (Unbounded) is very wide: at large
+                  // system text a single name overflows and snaps mid-word.
+                  // Cap this one heading's scale and ellipsize instead.
+                  textScaler: MediaQuery.textScalerOf(context).clamp(
+                    maxScaleFactor: MediaQuery.sizeOf(context).width < 360 ? 1.0 : 1.1,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.headlineSmall?.copyWith(color: colors.onPrimary),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+  }
+
+  /// The banner hero: the covers fill the space under the toolbar and fade out
+  /// as the bar collapses, so the pinned bar stays a plain green strip.
+  Widget _bannerSpace(BuildContext context) {
+    final colors = context.factoryColors;
+    final topPadding = MediaQuery.paddingOf(context).top;
+    final expandedExtent = topPadding + _expandedHeightWithBanners;
+    final collapsedExtent = topPadding + _toolbarHeight + _sheetRadius;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final t = ((constraints.maxHeight - collapsedExtent) / (expandedExtent - collapsedExtent)).clamp(0.0, 1.0);
+        return Stack(
+          clipBehavior: Clip.hardEdge,
+          children: [
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [colors.primaryStrong, colors.primary],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: expandedExtent,
+              child: IgnorePointer(
+                ignoring: t < 0.3,
+                child: Opacity(
+                  opacity: t,
+                  child: HomeHeroBanners(
+                    banners: banners,
+                    topInset: topPadding + _toolbarHeight,
+                    bottomInset: _sheetRadius + FactorySpacing.space6,
+                    onOpenVideo: (banner) => context.push(
+                      AppRoutes.adVideo,
+                      extra: AdVideoArgs(url: banner.videoUrl!, title: banner.title),
+                    ),
+                    onOpenLink: (target) => switch (target) {
+                      AdLinkTarget.rewards => context.push(AppRoutes.rewards),
+                      AdLinkTarget.search => context.go(AppRoutes.search()),
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -327,39 +498,38 @@ class _SearchEntry extends StatelessWidget {
   }
 }
 
-/// The Home tab's "Популярное" row — a short, curated shortlist, not the
-/// master catalog: at most [_popularCount] categories (the catalog's own
-/// `sortOrder`, admin-curated, decides which), plus a trailing tile that
-/// opens [AllCategoriesScreen] for the other ~14+. Deliberately never grows
-/// with the catalog — that was the previous version's actual problem (a
-/// wrapping grid of all 20 ran to 4-5 rows and pushed every other Home
-/// section below the fold), and Home showing every category is exactly
-/// what turns a discovery screen into a category catalog.
-///
-/// Tapping a shown category toggles the search-vertical filter (tap again
-/// to clear); tapping the trailing tile pushes [AllCategoriesScreen] and,
-/// if the user picks something there, applies its category `code` here the
-/// same way.
-class _CategoryGrid extends ConsumerWidget {
-  const _CategoryGrid({required this.selectedCode, required this.onSelect});
+/// The Home tab's categories: a heading with an "All ›" link, then a 4×2 grid
+/// of categories that scrolls sideways. A launcher, not a filter — one tap on a
+/// category opens Search already narrowed to it. The first screen is exactly
+/// two rows of four (the catalog's own `sortOrder`, admin-curated, decides the
+/// order); the rest follow as further 4×2 pages to the right, so Home stays two
+/// rows tall however large the catalog grows. With more than eight categories
+/// the next column peeks at the screen edge as the cue to swipe; "All ›" still
+/// opens [AllCategoriesScreen] for the whole list in one view.
+class _CategoriesSection extends ConsumerWidget {
+  const _CategoriesSection();
 
-  final String? selectedCode;
-  final ValueChanged<String?> onSelect;
+  static const _columns = 4;
 
-  static const _popularCount = 6;
+  /// One page: two rows of four.
+  static const _pageSize = _columns * 2;
+
+  static const _gap = FactorySpacing.space2;
+
+  /// How many columns are on screen when the grid scrolls: the fourth plus a
+  /// sliver of the fifth.
+  static const _visibleColumnsWhenScrolling = 4.4;
 
   // FactoryCategoryTile's own content is 72px of chrome (4px padding + 56px
-  // icon circle + 8px gap + 4px padding) plus up to two label lines — a plain
-  // Wrap never exposed this since it sizes each child to its natural height,
-  // but a horizontal ListView hard-constrains the cross axis to whatever this
-  // is, so it has to be at least that. The label height follows the user's
-  // text scale so large system fonts don't clip the second line.
+  // icon circle + 8px gap + 4px padding) plus up to two label lines. The label
+  // height follows the user's text scale so large system fonts don't clip the
+  // second line.
   static double _tileHeightFor(BuildContext context) =>
       72 + 2 * MediaQuery.textScalerOf(context).scale(13 * 1.2) + 4;
 
   Future<void> _openAllCategories(BuildContext context) async {
     final code = await context.push<String>(AppRoutes.categories);
-    if (code != null) onSelect(code);
+    if (code != null && context.mounted) context.go(AppRoutes.search(category: code));
   }
 
   @override
@@ -367,65 +537,208 @@ class _CategoryGrid extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final categoriesAsync = ref.watch(categoriesProvider);
     final languageCode = Localizations.localeOf(context).languageCode;
-
-    final allCategoriesTile = FactoryCategoryTile(
-      icon: Symbols.apps_rounded,
-      label: l10n.allCategoriesTitle,
-      onTap: () => _openAllCategories(context),
-    );
-
     final tileHeight = _tileHeightFor(context);
-    return SizedBox(
-      height: tileHeight,
-      child: categoriesAsync.when(
-        data: (categories) {
-          final popular = categories.take(_popularCount).toList();
-          return ListView.separated(
+
+    return Column(
+      // Stretch: the heading needs the full width to push "All ›" to the right edge.
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FactorySectionHeader(
+          title: l10n.homeCategoriesTitle,
+          actionLabel: l10n.homeCategoriesAll,
+          onActionTap: () => _openAllCategories(context),
+        ),
+        const SizedBox(height: FactorySpacing.space3),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+
+            final cells = categoriesAsync.when(
+              data: (categories) => [
+                for (final category in categories) (category.code, category.nameFor(languageCode)),
+              ],
+              // Best-effort: while loading, hold the grid's place with skeletons;
+              // on error draw no grid (the "All ›" link above still works and its
+              // screen has its own retry) rather than blocking Home on the catalog.
+              loading: () => [for (var i = 0; i < _pageSize; i++) null],
+              error: (error, stackTrace) => const <(String, String)?>[],
+            );
+            if (cells.isEmpty) return const SizedBox.shrink();
+
+            final scrolls = cells.length > _pageSize;
+            final visible = scrolls ? _visibleColumnsWhenScrolling : _columns.toDouble();
+            // The cell is the label's width: a narrow phone has no room to spare.
+            final cell = (width - _gap * (visible.ceil() - 1)) / visible;
+            final dense = cell < 76;
+
+            Widget tile((String, String)? entry) {
+              if (entry == null) {
+                return FactorySkeleton(
+                  width: cell,
+                  height: tileHeight,
+                  borderRadius: const BorderRadius.all(Radius.circular(12)),
+                );
+              }
+              final (code, label) = entry;
+              final accent = colorForCategory(context, code);
+              // The label may use the gap beside its cell too: a long single word ("Образование") would otherwise
+              // break in the middle at 320-390 px. The tile is at most as wide as the cell plus that gap.
+              return SizedBox(
+                height: tileHeight,
+                child: OverflowBox(
+                  alignment: Alignment.topCenter,
+                  maxWidth: cell + _gap,
+                  maxHeight: tileHeight,
+                  child: FactoryCategoryTile(
+                    icon: iconForCategory(code),
+                    label: label,
+                    labelMaxWidth: cell + _gap,
+                    dense: dense,
+                    accentColor: accent?.color,
+                    accentTint: accent?.tint,
+                    onTap: () => context.go(AppRoutes.search(category: code)),
+                  ),
+                ),
+              );
+            }
+
+            // Page k holds items 8k..8k+7 as 4 columns × 2 rows, so the first
+            // screen reads exactly like the plain grid: 1-4 on top, 5-8 below.
+            // A half-filled last page only gets the columns it needs, so the
+            // grid doesn't scroll over empty space (a lone page keeps all four
+            // so its tiles stay on the grid).
+            final fullPages = cells.length ~/ _pageSize;
+            final rest = cells.length % _pageSize;
+            final columnCount = scrolls ? fullPages * _columns + (rest < _columns ? rest : _columns) : _columns;
+            int indexAt(int column, int row) => (column ~/ _columns) * _pageSize + row * _columns + column % _columns;
+            final columns = <Widget>[
+              for (var c = 0; c < columnCount; c++)
+                SizedBox(
+                  width: cell,
+                  child: Column(
+                    children: [
+                      for (var row = 0; row < 2; row++) ...[
+                        if (row > 0) const SizedBox(height: _gap),
+                        if (indexAt(c, row) < cells.length)
+                          Center(child: tile(cells[indexAt(c, row)]))
+                        else
+                          // Keeps the empty slot's height so a lone tile stays in the top row.
+                          SizedBox(height: tileHeight),
+                      ],
+                    ],
+                  ),
+                ),
+            ];
+
+            final grid = Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var i = 0; i < columns.length; i++) ...[
+                  if (i > 0) const SizedBox(width: _gap),
+                  columns[i],
+                ],
+              ],
+            );
+            if (!scrolls) return grid;
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              // Let the next column run to the screen edge instead of being cut
+              // at the page padding — the cue that the grid scrolls.
+              clipBehavior: Clip.none,
+              child: grid,
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+/// "Best masters": a rail of avatars of the best-rated masters. A tap opens the
+/// master's own page (rating, services, "Book"), not the business — the person
+/// picked a face, so that is where they land. Best-effort like the banners: no
+/// section while loading, on error, or while nobody has enough reviews yet.
+class _TopMastersSection extends ConsumerWidget {
+  const _TopMastersSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final workers = ref.watch(topWorkersProvider).value ?? const <TopWorker>[];
+    if (workers.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: FactorySpacing.space6),
+        Text(l10n.homeTopMastersTitle, style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: FactorySpacing.space3),
+        SizedBox(
+          height: MasterAvatarCard.heightFor(context),
+          child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            itemCount: popular.length + 1,
-            separatorBuilder: (_, _) =>
-                const SizedBox(width: FactorySpacing.space3),
+            itemCount: workers.length,
+            separatorBuilder: (_, _) => const SizedBox(width: FactorySpacing.space3),
             itemBuilder: (context, index) {
-              if (index == popular.length) return allCategoriesTile;
-              final category = popular[index];
-              final selected = selectedCode == category.code;
-              final accent = colorForCategory(context, category.code);
-              return FactoryCategoryTile(
-                icon: iconForCategory(category.code),
-                label: category.nameFor(languageCode),
-                selected: selected,
-                accentColor: accent?.color,
-                accentTint: accent?.tint,
-                onTap: () => onSelect(selected ? null : category.code),
+              final worker = workers[index];
+              return MasterAvatarCard(
+                displayName: worker.displayName,
+                photoUrl: worker.photoUrl,
+                averageRating: worker.averageRating,
+                reviewCount: worker.reviewCount,
+                onTap: () => context.push(AppRoutes.worker(worker.id)),
               );
             },
-          );
-        },
-        // Best-effort: while loading or on error, still show the trailing
-        // tile (it doesn't depend on this request) rather than blocking the
-        // whole Home screen on the catalog request.
-        loading: () => ListView(
-          scrollDirection: Axis.horizontal,
-          children: [
-            FactorySkeleton(
-              width: 64,
-              height: tileHeight,
-              borderRadius: BorderRadius.all(Radius.circular(12)),
-            ),
-            const SizedBox(width: FactorySpacing.space3),
-            FactorySkeleton(
-              width: 64,
-              height: tileHeight,
-              borderRadius: BorderRadius.all(Radius.circular(12)),
-            ),
-            const SizedBox(width: FactorySpacing.space3),
-            allCategoriesTile,
-          ],
+          ),
         ),
-        error: (error, stackTrace) => ListView(
-          scrollDirection: Axis.horizontal,
-          children: [allCategoriesTile],
-        ),
+      ],
+    );
+  }
+}
+
+/// The customer's favourite masters with the time each is next free: the shortest road back to "my" person.
+/// Best-effort like [_BookAgainSection] — nothing at all while loading, on error, or with no favourites yet.
+class _MyMastersSection extends ConsumerWidget {
+  const _MyMastersSection({required this.userId});
+
+  final String userId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final masters = ref.watch(myFavoriteWorkersProvider(userId)).value ?? const [];
+    if (masters.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: FactorySpacing.space6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.favoritesMyMastersTitle, style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: FactorySpacing.space3),
+          SizedBox(
+            height: MasterAvatarCard.heightFor(context, withCaption: masters.any((m) => m.nextFreeAt != null)),
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: masters.length,
+              separatorBuilder: (_, _) => const SizedBox(width: FactorySpacing.space3),
+              itemBuilder: (context, index) {
+                final master = masters[index];
+                return MasterAvatarCard(
+                  displayName: master.displayName,
+                  photoUrl: master.photoUrl,
+                  averageRating: master.averageRating,
+                  reviewCount: master.reviewCount,
+                  caption: master.nextFreeAt == null
+                      ? null
+                      : slotLabel(l10n, locale, DateTime.now(), master.nextFreeAt!.toLocal()),
+                  onTap: () => context.push(AppRoutes.worker(master.id)),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -459,7 +772,7 @@ class _BookAgainSection extends ConsumerWidget {
         ),
         const SizedBox(height: FactorySpacing.space3),
         SizedBox(
-          height: 96 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0),
+          height: 134 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0),
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: suggestions.length,
@@ -469,8 +782,10 @@ class _BookAgainSection extends ConsumerWidget {
               final suggestion = suggestions[index];
               return _BookAgainCard(
                 suggestion: suggestion,
+                // Straight to the booking steps with the same service picked: the customer
+                // only has to choose a time.
                 onTap: () => context.push(
-                  AppRoutes.provider(suggestion.providerId),
+                  AppRoutes.provider(suggestion.providerId, book: true, serviceId: suggestion.serviceId),
                   extra: suggestion.toProviderSearchResult(),
                 ),
               );
@@ -491,6 +806,7 @@ class _BookAgainCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.factoryColors;
+    final l10n = AppLocalizations.of(context)!;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -523,6 +839,31 @@ class _BookAgainCard extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodySmall
                     ?.copyWith(color: colors.textSecondary),
               ),
+              const SizedBox(height: 2),
+              Text(
+                l10n.homeBookAgainLastVisit(
+                  DateFormat.MMMd(Localizations.localeOf(context).toString())
+                      .format(suggestion.lastVisitAt.toLocal()),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: colors.textSecondary),
+              ),
+              if (suggestion.nextFreeAt != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  l10n.homeBookAgainNextFree(
+                    DateFormat.MMMd(Localizations.localeOf(context).toString())
+                        .add_Hm()
+                        .format(suggestion.nextFreeAt!.toLocal()),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: colors.primary),
+                ),
+              ],
               const Spacer(),
               FactoryPriceText(
                 amount: suggestion.price,
@@ -681,108 +1022,36 @@ class _RecommendedRow extends StatelessWidget {
   }
 }
 
-/// A deliberate gradient case (`primaryStrong` → `mint` diagonal, two soft
-/// translucent circles) — everywhere else in Factory is flat color, this
-/// pattern reserved for one hero moment per app (business_admin's Dashboard
-/// overview hero is the other). Customer App Redesign board, 2026-09-05.
-class _AvailabilityHero extends StatelessWidget {
-  const _AvailabilityHero({required this.count, required this.onViewAll});
+/// The "open slots today" promo under the launcher: a live count of nearby
+/// businesses with a free slot, which no admin-made banner can show. Shown only
+/// when there is something to show. A horizontal list so a second card can be
+/// added without reflowing the screen.
+class _PromoStrip extends StatelessWidget {
+  const _PromoStrip({required this.openCount, required this.onViewAvailable});
 
-  final int count;
-  final VoidCallback onViewAll;
+  final int openCount;
+  final VoidCallback onViewAvailable;
+
+  static const _cardWidth = 272.0;
+  static const _cardHeight = 120.0;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
-    return Container(
-      width: double.infinity,
-      clipBehavior: Clip.antiAlias,
-      padding: const EdgeInsets.all(FactorySpacing.space5),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [colors.primaryStrong, colors.primary],
-        ),
-        borderRadius: FactoryRadius.xxlRadius,
-        boxShadow: [
-          BoxShadow(
-            color: colors.primaryStrong.withValues(alpha: 0.28),
-            offset: const Offset(0, 16),
-            blurRadius: 32,
-          ),
-        ],
-      ),
-      child: Stack(
+    return SizedBox(
+      height: _cardHeight,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        // Let the next card run to the screen edge instead of being cut at
+        // the page padding — the cue that the strip scrolls.
         clipBehavior: Clip.none,
         children: [
-          Positioned(
-            top: -30,
-            right: -30,
-            child: Container(
-              width: 180,
-              height: 180,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                // Ambient gold glow: a radial fade, not a flat disc.
-                gradient: RadialGradient(
-                  colors: [colors.accent.withValues(alpha: 0.5), colors.accent.withValues(alpha: 0)],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 12,
-            right: 22,
-            // Decorative: says "free slots" at a glance without taking any
-            // width from the text.
-            child: ExcludeSemantics(
-              child: Icon(
-                Symbols.event_available_rounded,
-                size: 48,
-                fill: 1,
-                color: colors.onPrimary.withValues(alpha: 0.22),
-              ),
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.homeAvailabilityEyebrow.toUpperCase(),
-                style: Theme.of(context).textTheme.labelSmall
-                    ?.copyWith(color: colors.onPrimary.withValues(alpha: 0.85)),
-              ),
-              const SizedBox(height: FactorySpacing.space2),
-              Text(
-                l10n.homeAvailabilityHero(count),
-                style: Theme.of(context).textTheme.titleLarge
-                    ?.copyWith(color: colors.onPrimary),
-              ),
-              const SizedBox(height: FactorySpacing.space3),
-              Material(
-                // onPrimary: white in light, near-black in dark, so the pill
-                // and its primaryStrong label contrast in both themes.
-                color: colors.onPrimary,
-                shape: FactoryRadius.pill,
-                child: InkWell(
-                  onTap: onViewAll,
-                  customBorder: FactoryRadius.pill,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 9,
-                    ),
-                    child: Text(
-                      l10n.homeSeeAll,
-                      style: Theme.of(context).textTheme.labelLarge
-                          ?.copyWith(color: colors.primaryStrong),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          FactoryPromoCard(
+            width: _cardWidth,
+            height: _cardHeight,
+            title: l10n.homeAvailabilityHero(openCount),
+            icon: Symbols.event_available_rounded,
+            onTap: onViewAvailable,
           ),
         ],
       ),

@@ -3,9 +3,13 @@ package com.zairo.factory.notifications;
 import com.zairo.factory.booking.BookingCancelledEvent;
 import com.zairo.factory.booking.BookingConfirmedEvent;
 import com.zairo.factory.booking.BookingMovedEvent;
+import com.zairo.factory.booking.BookingDayReminderDueEvent;
 import com.zairo.factory.booking.BookingReminderDueEvent;
+import com.zairo.factory.booking.BookingRescheduledByCustomerEvent;
 import com.zairo.factory.providers.Provider;
 import com.zairo.factory.providers.ProviderRepository;
+import com.zairo.factory.reviews.ReviewModerationDecidedEvent;
+import com.zairo.factory.waitlist.WaitlistSlotOpenedEvent;
 import com.zairo.factory.workforce.WorkerCannotAttendEvent;
 import com.zairo.factory.workforce.WorkerNotAcceptedEvent;
 import com.zairo.factory.workforce.WorkerChangeRequestedEvent;
@@ -61,7 +65,7 @@ class BookingNotificationListener {
                         customer.getEmail(), event.bookingId()));
         ownerEmailFor(event.providerId())
                 .ifPresent(ownerEmail -> notificationService.sendProviderBookingCancelledEmail(ownerEmail,
-                        event.bookingId()));
+                        event.bookingId(), event.reason()));
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -101,6 +105,13 @@ class BookingNotificationListener {
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    void onBookingRescheduledByCustomer(BookingRescheduledByCustomerEvent event) {
+        ownerEmailFor(event.providerId())
+                .ifPresent(ownerEmail -> notificationService.sendProviderBookingRescheduledEmail(ownerEmail,
+                        event.bookingId(), event.newStartsAt()));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     void onWorkerUnavailable(WorkerUnavailableEvent event) {
         ownerEmailFor(event.providerId())
                 .ifPresent(ownerEmail -> notificationService.sendWorkerUnavailableEmail(ownerEmail,
@@ -112,6 +123,34 @@ class BookingNotificationListener {
         userRepository.findById(event.userId())
                 .ifPresent(customer -> notificationService.sendBookingReminderEmail(customer.getId(),
                         customer.getEmail(), event.bookingId()));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    void onBookingDayReminderDue(BookingDayReminderDueEvent event) {
+        userRepository.findById(event.userId())
+                .ifPresent(customer -> notificationService.sendBookingDayReminderEmail(customer.getId(),
+                        customer.getEmail(), event.bookingId(), event.startsAt()));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    void onWaitlistSlotOpened(WaitlistSlotOpenedEvent event) {
+        providerRepository.findById(event.providerId()).ifPresent(provider -> userRepository
+                .findById(event.userId())
+                .ifPresent(customer -> notificationService.sendWaitlistSlotOpenedEmail(customer.getId(),
+                        customer.getEmail(), provider.getName(), event.startsAt())));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    void onReviewModerationDecided(ReviewModerationDecidedEvent event) {
+        ownerEmailFor(event.providerId())
+                .ifPresent(ownerEmail -> notificationService.sendReviewDecisionEmail(ownerEmail, event.reviewId(),
+                        event.decision()));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    void onWeeklyReport(com.zairo.factory.providerinsights.WeeklyBusinessReportEvent event) {
+        ownerEmailFor(event.providerId()).ifPresent(ownerEmail -> notificationService.sendWeeklyReportEmail(ownerEmail,
+                event));
     }
 
     private Optional<String> ownerEmailFor(UUID providerId) {

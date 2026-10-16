@@ -20,10 +20,12 @@ import '../../data/models/book_again_suggestion.dart';
 import '../../../payments/presentation/widgets/payment_status_chip.dart';
 import '../../../reviews/presentation/widgets/review_section.dart';
 import '../../../workforce/presentation/widgets/change_requests_banner.dart';
+import '../../../workers/presentation/providers/workers_providers.dart';
 import '../../data/booking_exception.dart';
 import '../../data/models/booking.dart';
 import '../providers/booking_providers.dart';
 import 'booking_payment_screen.dart';
+import '../widgets/reschedule_sheet.dart';
 import '../widgets/booking_payment_summary.dart';
 
 /// Reached directly from the bottom nav (a peer tab to Home/Search/
@@ -301,10 +303,12 @@ class _BookingsTabButton extends StatelessWidget {
   }
 }
 
-/// "Book again" on a completed booking. A Booking only knows its service id,
-/// not which business it belongs to, so the business is taken from the
-/// Book-Again suggestions Home already shows (matched by service) — the button
-/// simply isn't offered when the backend has no suggestion for that service.
+/// "Book again" on a completed booking: opens the business straight in the
+/// booking flow with the same service — and the same person, when the visit was
+/// with a named one — already picked: one tap from the visit to choosing a time. The business comes from the booking itself; an older
+/// backend that does not send it falls back to the Book-Again suggestions Home
+/// already shows (matched by service), and without either the button is not
+/// offered.
 class _BookAgainButton extends ConsumerWidget {
   const _BookAgainButton({required this.booking, required this.userId});
 
@@ -313,24 +317,40 @@ class _BookAgainButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final suggestions = ref.watch(bookAgainSuggestionsProvider(userId)).value;
     BookAgainSuggestion? match;
-    for (final suggestion in suggestions ?? const <BookAgainSuggestion>[]) {
-      if (suggestion.serviceId == booking.serviceId) {
-        match = suggestion;
-        break;
+    var providerId = booking.providerId;
+    if (providerId == null) {
+      final suggestions = ref.watch(bookAgainSuggestionsProvider(userId)).value;
+      for (final suggestion in suggestions ?? const <BookAgainSuggestion>[]) {
+        if (suggestion.serviceId == booking.serviceId) {
+          match = suggestion;
+          providerId = suggestion.providerId;
+          break;
+        }
       }
     }
-    if (match == null) return const SizedBox.shrink();
-    final suggestion = match;
+    final targetProviderId = providerId;
+    if (targetProviderId == null) return const SizedBox.shrink();
 
     return FactoryButton(
       label: AppLocalizations.of(context)!.bookingBookAgainButton,
       variant: FactoryButtonVariant.text,
-      onPressed: () => context.push(
-        AppRoutes.provider(suggestion.providerId),
-        extra: suggestion.toProviderSearchResult(),
-      ),
+      onPressed: () async {
+        // The same person again, when the visit was with a named one (and still works there); a lookup that
+        // fails or finds nobody just books the service without a preferred person.
+        final worker = await ref.read(bookingWorkerProvider(booking.id).future);
+        if (!context.mounted) return;
+        context.push(
+          AppRoutes.provider(
+            targetProviderId,
+            book: true,
+            serviceId: booking.serviceId,
+            workerId: worker?.id,
+            workerKind: worker?.kind,
+          ),
+          extra: match?.toProviderSearchResult(),
+        );
+      },
     );
   }
 }
@@ -459,6 +479,12 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
                     label: l10n.bookingPayNowButton,
                     onPressed: _payNow,
                   ),
+                if (_canReschedule(booking))
+                  FactoryButton(
+                    label: l10n.bookingRescheduleButton,
+                    variant: FactoryButtonVariant.text,
+                    onPressed: _reschedule,
+                  ),
                 if (booking.status == 'CONFIRMED' ||
                     booking.status == 'PENDING_PAYMENT')
                   FactoryButton(
@@ -530,12 +556,47 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
     ref.invalidate(myBookingsProvider(widget.userId));
   }
 
+  /// An active booking whose appointment has not started (a booking without a known time is offered the move too:
+  /// the server decides).
+  bool _canReschedule(Booking booking) =>
+      (booking.status == 'CONFIRMED' || booking.status == 'PENDING_PAYMENT') &&
+      (booking.startsAt == null || booking.startsAt!.isAfter(DateTime.now()));
+
+  Future<void> _reschedule() async {
+    final l10n = AppLocalizations.of(context)!;
+    final moved = await showRescheduleSheet(context, booking: widget.booking);
+    if (moved == null || !mounted) return;
+    ref.invalidate(myBookingsProvider(widget.userId));
+    final when = moved.startsAt;
+    if (when == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.bookingRescheduleDone(formatMonthDayTime(l10n, when.toLocal())))),
+    );
+  }
+
   Future<void> _confirmAndCancel() async {
     final l10n = AppLocalizations.of(context)!;
+    // An optional, one-tap reason: the business learns why, the customer is never forced to say.
+    final reasons = [l10n.cancelReasonPlans, l10n.cancelReasonOtherTime, l10n.cancelReasonMistake];
+    String? reason;
     final confirmed = await showFactoryDialog<bool>(
       context: context,
       title: l10n.cancelBookingConfirmTitle,
       message: l10n.cancelBookingConfirmMessage,
+      content: StatefulBuilder(
+        builder: (context, setDialogState) => Wrap(
+          spacing: FactorySpacing.space2,
+          runSpacing: FactorySpacing.space2,
+          children: [
+            for (final option in reasons)
+              ChoiceChip(
+                label: Text(option),
+                selected: reason == option,
+                onSelected: (picked) => setDialogState(() => reason = picked ? option : null),
+              ),
+          ],
+        ),
+      ),
       actions: [
         Builder(
           builder: (dialogContext) => FactoryButton(
@@ -557,7 +618,7 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
 
     setState(() => _isCancelling = true);
     try {
-      await ref.read(bookingApiProvider).cancelBooking(widget.booking.id);
+      await ref.read(bookingApiProvider).cancelBooking(widget.booking.id, reason: reason);
       ref.invalidate(myBookingsProvider(widget.userId));
       ref.invalidate(paymentForBookingProvider(widget.booking.id));
       if (!mounted) return;

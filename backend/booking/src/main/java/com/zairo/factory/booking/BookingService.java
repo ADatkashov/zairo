@@ -244,8 +244,7 @@ public class BookingService {
         AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
                         + booking.getAvailabilitySlotId()));
-        slot.markOpen();
-        availabilitySlotRepository.save(slot);
+        releaseSlot(slot, booking.getUserId());
 
         booking.markCancelled(reason);
         return bookingRepository.save(booking);
@@ -336,13 +335,13 @@ public class BookingService {
         AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
                         + booking.getAvailabilitySlotId()));
-        slot.markOpen();
-        availabilitySlotRepository.save(slot);
+        releaseSlot(slot, booking.getUserId());
 
         booking.markCancelled(reason);
         Booking cancelled = bookingRepository.save(booking);
 
-        eventPublisher.publishEvent(new BookingCancelledEvent(cancelled.getId(), callerId, slot.getProviderId()));
+        eventPublisher.publishEvent(new BookingCancelledEvent(cancelled.getId(), callerId, slot.getProviderId(),
+                reason));
         return cancelled;
     }
 
@@ -360,13 +359,12 @@ public class BookingService {
                     + " (status=" + booking.getStatus() + ")");
         }
         AvailabilitySlot slot = loadSlot(booking);
-        slot.markOpen();
-        availabilitySlotRepository.save(slot);
+        releaseSlot(slot, booking.getUserId());
 
         booking.markCancelled(reason);
         Booking cancelled = bookingRepository.save(booking);
         eventPublisher.publishEvent(new BookingCancelledEvent(cancelled.getId(), cancelled.getUserId(),
-                slot.getProviderId()));
+                slot.getProviderId(), reason));
         return cancelled;
     }
 
@@ -403,8 +401,7 @@ public class BookingService {
             // Someone else claimed it between our read and the write.
             throw new SlotNotAvailableException("That time was just taken: " + newSlotId);
         }
-        oldSlot.markOpen();
-        availabilitySlotRepository.save(oldSlot);
+        releaseSlot(oldSlot, booking.getUserId());
 
         booking.moveToSlot(newSlotId);
         Booking moved = bookingRepository.save(booking);
@@ -415,6 +412,111 @@ public class BookingService {
                     newSlot.getProviderId(), newSlot.getStartsAt()));
         }
         return moved;
+    }
+
+    /** How many alternative times a customer is offered when moving a booking. */
+    static final int MAX_RESCHEDULE_OPTIONS = 30;
+
+    /**
+     * The times the customer can move their booking to: open, still in the future, with the same person (or, for a
+     * business that works without a team, the shared times), soonest first, never the booking's current time.
+     * Customer-only (403 otherwise); 409 for a booking that cannot be moved any more.
+     */
+    @Transactional(readOnly = true)
+    public java.util.List<AvailabilitySlot> rescheduleOptions(UUID bookingId, UUID callerId) {
+        Booking booking = loadBooking(bookingId);
+        AvailabilitySlot current = requireMovableByCustomer(booking, callerId);
+        return openSlotsLike(current).stream().limit(MAX_RESCHEDULE_OPTIONS).toList();
+    }
+
+    /**
+     * The customer moves their own booking to another open time with the same person. The move itself (atomic claim of
+     * the new time, release of the old one, "moved" notice to the customer) is {@link #moveToSlotAuthorized}; this adds
+     * the customer-side rules: it is their booking, it has not started, and the new time is one of
+     * {@link #rescheduleOptions} — same business, same person. The business is told.
+     */
+    @Transactional
+    public Booking rescheduleByCustomer(UUID bookingId, UUID callerId, UUID newSlotId) {
+        Booking booking = loadBooking(bookingId);
+        AvailabilitySlot current = requireMovableByCustomer(booking, callerId);
+        AvailabilitySlot target = availabilitySlotRepository.findById(newSlotId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Availability slot not found: " + newSlotId));
+        boolean samePerson = java.util.Objects.equals(current.getEmployeeId(), target.getEmployeeId());
+        if (!target.getProviderId().equals(current.getProviderId()) || !samePerson
+                || !target.getStartsAt().isAfter(Instant.now())) {
+            throw new SlotNotAvailableException("Pick one of the offered times with the same person: " + newSlotId);
+        }
+        Booking moved = moveToSlotAuthorized(bookingId, newSlotId);
+        eventPublisher.publishEvent(new BookingRescheduledByCustomerEvent(moved.getId(), target.getProviderId(),
+                target.getStartsAt()));
+        return moved;
+    }
+
+    /**
+     * The times the business can move one of its customers' bookings to: the same list the customer is offered. Owner
+     * only (403 otherwise); 409 when the booking cannot be moved any more.
+     */
+    @Transactional(readOnly = true)
+    public java.util.List<AvailabilitySlot> rescheduleOptionsForOwner(UUID bookingId, UUID callerId) {
+        Booking booking = loadBooking(bookingId);
+        AvailabilitySlot current = requireMovableByOwner(booking, callerId);
+        return openSlotsLike(current).stream().limit(MAX_RESCHEDULE_OPTIONS).toList();
+    }
+
+    /**
+     * The business moves a customer's booking to another open time with the same person — a salon that has to shift
+     * an appointment can do it itself instead of cancelling. The customer is told by the ordinary
+     * {@link BookingMovedEvent}; the price and any payment stay as they are.
+     */
+    @Transactional
+    public Booking rescheduleByOwner(UUID bookingId, UUID callerId, UUID newSlotId) {
+        Booking booking = loadBooking(bookingId);
+        AvailabilitySlot current = requireMovableByOwner(booking, callerId);
+        AvailabilitySlot target = availabilitySlotRepository.findById(newSlotId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Availability slot not found: " + newSlotId));
+        boolean samePerson = java.util.Objects.equals(current.getEmployeeId(), target.getEmployeeId());
+        if (!target.getProviderId().equals(current.getProviderId()) || !samePerson
+                || !target.getStartsAt().isAfter(Instant.now())) {
+            throw new SlotNotAvailableException("Pick one of the offered times with the same person: " + newSlotId);
+        }
+        return moveToSlotAuthorized(bookingId, newSlotId);
+    }
+
+    private AvailabilitySlot requireMovableByOwner(Booking booking, UUID callerId) {
+        AvailabilitySlot slot = loadSlot(booking);
+        providerOwnership.requireOwner(slot.getProviderId(), callerId);
+        return requireMovable(booking, slot);
+    }
+
+    private AvailabilitySlot requireMovableByCustomer(Booking booking, UUID callerId) {
+        if (!booking.getUserId().equals(callerId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not own this booking: " + booking.getId());
+        }
+        return requireMovable(booking, loadSlot(booking));
+    }
+
+    private AvailabilitySlot requireMovable(Booking booking, AvailabilitySlot slot) {
+        if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            throw new InvalidBookingStateException("Booking is not in a movable state: " + booking.getId()
+                    + " (status=" + booking.getStatus() + ")");
+        }
+        if (!slot.getStartsAt().isAfter(Instant.now())) {
+            throw new InvalidBookingStateException("The appointment has already started: " + booking.getId());
+        }
+        return slot;
+    }
+
+    private java.util.List<AvailabilitySlot> openSlotsLike(AvailabilitySlot current) {
+        Instant now = Instant.now();
+        java.util.List<AvailabilitySlot> slots = current.getEmployeeId() == null
+                ? availabilitySlotRepository.findByProviderIdAndEmployeeIdIsNullAndStatusAndStartsAtAfter(
+                        current.getProviderId(), AvailabilityStatus.OPEN, now)
+                : availabilitySlotRepository.findByProviderIdAndEmployeeIdAndStatusAndStartsAtAfter(
+                        current.getProviderId(), current.getEmployeeId(), AvailabilityStatus.OPEN, now);
+        return slots.stream().filter(s -> !s.getId().equals(current.getId()))
+                .sorted(java.util.Comparator.comparing(AvailabilitySlot::getStartsAt)).toList();
     }
 
     /** {@link #markNoShow} without the provider-owner check — see {@link #completeBookingAuthorized}. */
@@ -503,6 +605,19 @@ public class BookingService {
     }
 
     /**
+     * Puts a slot back to OPEN and tells waitlist, unless it is already in the past (nobody can book that). The
+     * releasing customer is named so they are not told about a time they just gave up.
+     */
+    private void releaseSlot(AvailabilitySlot slot, UUID releasedByUserId) {
+        slot.markOpen();
+        availabilitySlotRepository.save(slot);
+        if (slot.getStartsAt().isAfter(Instant.now())) {
+            eventPublisher.publishEvent(new AvailabilitySlotOpenedEvent(slot.getId(), slot.getProviderId(),
+                    slot.getStartsAt(), slot.getEndsAt(), releasedByUserId));
+        }
+    }
+
+    /**
      * {@link BookingReminderJob}'s one call — marks each qualifying booking
      * reminded and publishes {@link BookingReminderDueEvent} for
      * notifications to actually email, in the same transaction as the
@@ -519,6 +634,21 @@ public class BookingService {
             booking.markReminderSent(now);
             bookingRepository.save(booking);
             eventPublisher.publishEvent(new BookingReminderDueEvent(booking.getId(), booking.getUserId()));
+        }
+    }
+
+    /**
+     * Sends the "your visit is tomorrow" reminder for confirmed bookings starting after {@code from} (two hours from
+     * now: the two-hour reminder covers anything closer) and up to {@code to} (a day from now), once each.
+     */
+    @Transactional
+    public void sendDueDayReminders(Instant now, Instant from, Instant to) {
+        for (Booking booking : bookingRepository.findConfirmedBookingsForDayReminder(from, to)) {
+            AvailabilitySlot slot = loadSlot(booking);
+            booking.markDayReminderSent(now);
+            bookingRepository.save(booking);
+            eventPublisher.publishEvent(new BookingDayReminderDueEvent(booking.getId(), booking.getUserId(),
+                    slot.getStartsAt()));
         }
     }
 

@@ -19,6 +19,7 @@ include(
     "notifications",
     "search",
     "favorites",
+    "waitlist",
     "vertical-beauty",
     "vertical-auto",
     "vertical-cleaning",
@@ -45,4 +46,5 @@ include(
     "loyalty",
     "invitations",
     "workforce",
+    "ads",
 )

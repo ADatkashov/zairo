@@ -47,7 +47,10 @@ public final class WorkerScheduleDtos {
     public record WorkerSummaryResponse(
             UUID id, WorkerKind kind, String displayName, String photoUrl, boolean active,
             @Schema(description = "True when the worker has their own weekly schedule.") boolean scheduleConfigured,
-            @Schema(description = "End of the time off that is in effect right now, if any.") Instant offUntil) {
+            @Schema(description = "End of the time off that is in effect right now, if any.") Instant offUntil,
+            @Schema(description = "Mean of the ratings on this worker's bookings; null until the first review.")
+            Double averageRating,
+            @Schema(description = "How many reviews that mean is made of.") long reviewCount) {
     }
 
     public record TimeOffRequest(

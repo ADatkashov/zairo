@@ -8,6 +8,9 @@ class Review {
   final DateTime createdAt;
   final String? businessReply;
 
+  /// The separate rating of the person the visit was with; null = [rating] counted for them too.
+  final int? workerRating;
+
   const Review({
     required this.id,
     required this.bookingId,
@@ -15,6 +18,7 @@ class Review {
     required this.comment,
     required this.createdAt,
     this.businessReply,
+    this.workerRating,
   });
 
   factory Review.fromJson(Map<String, dynamic> json) {
@@ -25,6 +29,7 @@ class Review {
       comment: json['comment'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       businessReply: json['businessReply'] as String?,
+      workerRating: json['workerRating'] as int?,
     );
   }
 }

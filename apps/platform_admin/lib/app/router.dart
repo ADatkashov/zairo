@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/reviews/presentation/reviews_screen.dart';
 import '../features/activity/presentation/activity_screen.dart';
 import '../features/auth/data/platform_session.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/session_controller.dart';
 import '../features/businesses/presentation/businesses_screen.dart';
 import '../features/catalog/presentation/catalog_screen.dart';
+import '../features/ads/presentation/ads_screen.dart';
 import '../features/cities/presentation/cities_screen.dart';
 import '../features/dashboard/presentation/dashboard_screen.dart';
 import '../features/finance/presentation/finance_screen.dart';
+import '../features/reports/presentation/reports_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/staff/presentation/staff_screen.dart';
 import 'more_screen.dart';
@@ -98,13 +101,23 @@ GoRouter buildRouter({
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => ConsoleShell(navigationShell: navigationShell),
         branches: [
-          _branch(ConsoleRoutes.dashboard, (state) => const DashboardScreen()),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: ConsoleRoutes.dashboard,
+                builder: (context, state) => const DashboardScreen(),
+                routes: [GoRoute(path: 'reports', builder: (context, state) => const ReportsScreen())],
+              ),
+            ],
+          ),
           _branch(
             ConsoleRoutes.businesses,
             (state) => BusinessesScreen(initialStatus: state.uri.queryParameters['status']),
           ),
           _branch(ConsoleRoutes.catalog, (state) => const CatalogScreen()),
           _branch(ConsoleRoutes.cities, (state) => const CitiesScreen()),
+          _branch(ConsoleRoutes.ads, (state) => const AdsScreen()),
+          _branch(ConsoleRoutes.reviews, (state) => const ReviewsScreen()),
           _branch(ConsoleRoutes.finance, (state) => FinanceScreen(initialTab: state.uri.queryParameters['tab'])),
           _branch(ConsoleRoutes.activity, (state) => const ActivityScreen()),
           _branch(ConsoleRoutes.staff, (state) => const StaffScreen()),

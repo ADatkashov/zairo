@@ -174,6 +174,26 @@ void main() {
     expect(find.text('Zen Spa'), findsNothing); // opened pre-filtered to pending
   });
 
+  testWidgets('dashboard: bookings get a trend card when the backend has history, and none when it does not', (tester) async {
+    final backend = defaultBackend();
+    backend.reply('GET', '/platform/dashboard/trends', {
+      'bookingsCreated': [
+        for (var i = 0; i < 14; i++) {'date': '2026-10-${(i + 1).toString().padLeft(2, '0')}', 'count': i + 1},
+      ],
+    });
+    await pumpConsole(tester, backend: backend);
+    expect(find.text('Bookings, last 14 days'), findsOneWidget);
+    expect(find.text('105'), findsOneWidget); // 1 + 2 + ... + 14
+    expect(find.byType(FactorySparkline), findsOneWidget);
+  });
+
+  testWidgets('dashboard: an older backend without trends still shows every number', (tester) async {
+    await pumpConsole(tester, backend: defaultBackend()); // no trends route -> 404
+    expect(find.textContaining('last 14 days'), findsNothing);
+    expect(find.byType(FactorySparkline), findsNothing);
+    expect(find.text('₸150,000'), findsOneWidget);
+  });
+
   testWidgets('dashboard: when nothing is waiting it says so', (tester) async {
     final backend = defaultBackend();
     backend.reply('GET', '/platform/dashboard', {

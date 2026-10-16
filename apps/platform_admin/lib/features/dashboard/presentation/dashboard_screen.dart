@@ -11,6 +11,7 @@ import '../../auth/presentation/session_controller.dart';
 import '../../finance/data/finance_api.dart';
 import '../data/dashboard_api.dart';
 import '../data/dashboard_metrics.dart';
+import '../data/dashboard_trends.dart';
 
 /// The landing page: first what needs a person today (businesses waiting for
 /// approval, refunds that failed, payouts waiting to be paid), then the
@@ -23,16 +24,25 @@ class DashboardScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final metricsAsync = ref.watch(dashboardMetricsProvider);
     final payable = ref.watch(payoutsProvider('PAYABLE'));
+    final trends = ref.watch(dashboardTrendsProvider).value ?? const DashboardTrends.empty();
     final name = ref.watch(sessionControllerProvider).value?.admin.displayName ?? '';
 
     Future<void> refresh() {
       ref.invalidate(payoutsProvider('PAYABLE'));
+      ref.invalidate(dashboardTrendsProvider);
       return ref.refresh(dashboardMetricsProvider.future).then((_) {});
     }
 
     return AreaScaffold(
       title: l10n.navDashboard,
-      actions: [IconButton(tooltip: l10n.refresh, icon: const Icon(Icons.refresh_rounded), onPressed: refresh)],
+      actions: [
+        IconButton(
+          tooltip: l10n.navReports,
+          icon: const Icon(Icons.insert_chart_outlined_rounded),
+          onPressed: () => context.go(ConsoleRoutes.reports),
+        ),
+        IconButton(tooltip: l10n.refresh, icon: const Icon(Icons.refresh_rounded), onPressed: refresh),
+      ],
       body: AsyncView<DashboardMetrics>(
         value: metricsAsync,
         onRetry: () => ref.invalidate(dashboardMetricsProvider),
@@ -52,15 +62,30 @@ class DashboardScreen extends ConsumerWidget {
                   actionLabel: l10n.dashOpen,
                   onAction: () => context.go(ConsoleRoutes.businesses),
                   tiles: [
-                    _Stat(l10n.dashTotal, m.businessesTotal),
-                    _Stat(l10n.statusActive, m.businessesActive),
-                    _Stat(l10n.businessPending, m.businessesPending, warn: m.businessesPending > 0),
-                    _Stat(l10n.businessSuspended, m.businessesBlocked),
+                    _Stat(l10n.dashTotal, m.businessesTotal, path: ConsoleRoutes.businesses),
+                    _Stat(l10n.statusActive, m.businessesActive, path: '${ConsoleRoutes.businesses}?status=ACTIVE'),
+                    _Stat(
+                      l10n.businessPending,
+                      m.businessesPending,
+                      warn: m.businessesPending > 0,
+                      path: '${ConsoleRoutes.businesses}?status=PENDING',
+                    ),
+                    _Stat(
+                      l10n.businessSuspended,
+                      m.businessesBlocked,
+                      path: '${ConsoleRoutes.businesses}?status=SUSPENDED',
+                    ),
                   ],
                 ),
                 _Section(
                   title: l10n.dashSectionBookings,
                   tiles: [
+                    if (trends.bookingsCreated.length >= 2)
+                      _Trend(
+                        l10n.dashBookingsLastDays(trends.bookingsCreated.length),
+                        trends.bookingsTotal.round(),
+                        trends.bookingsCreated,
+                      ),
                     _Stat(l10n.dashToday, m.bookingsToday),
                     _Stat(l10n.dashThisWeek, m.bookingsWeek),
                     _Stat(l10n.dashThisMonth, m.bookingsMonth),
@@ -85,7 +110,12 @@ class DashboardScreen extends ConsumerWidget {
                     _Stat(l10n.paymentPending, m.paymentsPending),
                     _Stat(l10n.paymentFailed, m.paymentsFailed, warn: m.paymentsFailed > 0),
                     _Stat(l10n.paymentRefunded, m.paymentsRefunded),
-                    _Stat(l10n.paymentRefundFailed, m.paymentsRefundFailed, warn: m.paymentsRefundFailed > 0),
+                    _Stat(
+                      l10n.paymentRefundFailed,
+                      m.paymentsRefundFailed,
+                      warn: m.paymentsRefundFailed > 0,
+                      path: '${ConsoleRoutes.finance}?tab=refunds',
+                    ),
                   ],
                 ),
                 _Section(
@@ -124,6 +154,13 @@ class _Attention extends StatelessWidget {
           text: l10n.attentionPendingBusinesses(metrics.businessesPending),
           action: l10n.attentionReview,
           path: '${ConsoleRoutes.businesses}?status=PENDING',
+        ),
+      if (metrics.reviewsReported > 0)
+        _AttentionItem(
+          icon: Icons.rate_review_outlined,
+          text: l10n.attentionReportedReviews(metrics.reviewsReported),
+          action: l10n.attentionReview,
+          path: ConsoleRoutes.reviews,
         ),
       if (metrics.paymentsRefundFailed > 0)
         _AttentionItem(
@@ -191,13 +228,30 @@ abstract class _Tile {
   final String label;
   String value(String locale);
   bool get warn => false;
+  List<double>? get trend => null;
+
+  /// Where tapping the tile goes — the list behind the number — or null.
+  String? get path => null;
 }
 
 class _Stat extends _Tile {
-  const _Stat(super.label, this.count, {this.warn = false});
+  const _Stat(super.label, this.count, {this.warn = false, this.path});
   final int count;
   @override
   final bool warn;
+  @override
+  final String? path;
+  @override
+  String value(String locale) => formatCount(locale, count);
+}
+
+/// A count over a recent window, drawn with its daily trend line.
+class _Trend extends _Tile {
+  const _Trend(super.label, this.count, this.values);
+  final int count;
+  final List<double> values;
+  @override
+  List<double> get trend => values;
   @override
   String value(String locale) => formatCount(locale, count);
 }
@@ -241,25 +295,12 @@ class _Section extends StatelessWidget {
             maxColumns: 5,
             children: [
               for (final tile in tiles)
-                FactoryCard(
-                  padding: const EdgeInsets.all(FactorySpacing.space3),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(tile.label, style: textTheme.labelMedium?.copyWith(color: colors.textSecondary)),
-                      const SizedBox(height: 4),
-                      Text(
-                        tile.value(locale),
-                        // Figures are data: mono + tabular so a column of
-                        // tiles lines up; warnings use the AA-safe error hue.
-                        style: FactoryTypography.mono(
-                          size: 22,
-                          weight: FontWeight.w600,
-                          color: tile.warn ? colors.error : colors.text,
-                        ),
-                      ),
-                    ],
-                  ),
+                FactoryKpiCard(
+                  label: tile.label,
+                  value: tile.value(locale),
+                  warn: tile.warn,
+                  trend: tile.trend,
+                  onTap: tile.path == null ? null : () => context.go(tile.path!),
                 ),
             ],
           ),

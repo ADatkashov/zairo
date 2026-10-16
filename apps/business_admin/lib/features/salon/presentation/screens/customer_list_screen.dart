@@ -178,6 +178,12 @@ class _CustomerCard extends StatelessWidget {
                 ),
                 style: Theme.of(context).textTheme.bodySmall,
               ),
+            // Only when there is something to warn about: a clean customer gets no extra badge.
+            if (customer.noShows > 0)
+              Text(
+                l10n.customerListNoShows(customer.noShows),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.error),
+              ),
           ],
         ),
       ],

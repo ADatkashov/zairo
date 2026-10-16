@@ -41,6 +41,18 @@ NavItem navItemFor(AppLocalizations l10n, String path) {
       selectedIcon: Icons.location_city_rounded,
       label: l10n.navCities,
     ),
+    ConsoleRoutes.ads => NavItem(
+      branch: branch,
+      icon: Icons.campaign_outlined,
+      selectedIcon: Icons.campaign_rounded,
+      label: l10n.navAds,
+    ),
+    ConsoleRoutes.reviews => NavItem(
+      branch: branch,
+      icon: Icons.rate_review_outlined,
+      selectedIcon: Icons.rate_review_rounded,
+      label: l10n.navReviews,
+    ),
     ConsoleRoutes.finance => NavItem(
       branch: branch,
       icon: Icons.account_balance_wallet_outlined,

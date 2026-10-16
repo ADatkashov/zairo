@@ -5,6 +5,7 @@ import com.zairo.factory.reviews.ReviewDtos.CreateReviewRequest;
 import com.zairo.factory.reviews.ReviewDtos.ProviderReviewResponse;
 import com.zairo.factory.reviews.ReviewDtos.PublicReviewResponse;
 import com.zairo.factory.reviews.ReviewDtos.ReplyToReviewRequest;
+import com.zairo.factory.reviews.ReviewDtos.ReportReviewRequest;
 import com.zairo.factory.reviews.ReviewDtos.ReviewResponse;
 import com.zairo.factory.reviews.ReviewDtos.ReviewSummaryResponse;
 import com.zairo.factory.users.User;
@@ -70,7 +71,8 @@ public class ReviewController {
     public ReviewResponse create(@Parameter(description = "The booking's id.") @PathVariable UUID bookingId,
             @Valid @RequestBody CreateReviewRequest request, HttpServletRequest httpRequest) {
         UUID callerId = CurrentUser.requireUserId(httpRequest);
-        Review review = reviewService.createReview(bookingId, callerId, request.rating(), request.comment());
+        Review review = reviewService.createReview(bookingId, callerId, request.rating(), request.workerRating(),
+                request.comment());
         return ReviewResponse.from(review);
     }
 
@@ -101,6 +103,23 @@ public class ReviewController {
         return ReviewResponse.from(review);
     }
 
+    @Operation(summary = "Report a review to the platform", description = """
+            Only the reviewed booking's provider owner. One report per review: a second one (or one on a review the \
+            platform already hid) is 409. The platform then hides the review or keeps it.""")
+    @ApiResponse(responseCode = "204", description = "Reported")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "The caller doesn't own this review's provider.",
+            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @ApiResponse(responseCode = "409", description = "Already reported.")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/api/v1/reviews/{reviewId}/report")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void report(@Parameter(description = "The review's id.") @PathVariable UUID reviewId,
+            @Valid @RequestBody ReportReviewRequest request, HttpServletRequest httpRequest) {
+        reviewService.reportReview(reviewId, CurrentUser.requireUserId(httpRequest), request.reason());
+    }
+
     @Operation(summary = "List a provider's reviews", description = """
             Owner-only, newest first. Powers the Business Admin reviews screen — each row carries the \
             reviewer's display name so the owner never sees a bare customer id.""")
@@ -114,7 +133,7 @@ public class ReviewController {
             @Parameter(description = "The provider's id.") @PathVariable UUID providerId, Pageable pageable,
             HttpServletRequest httpRequest) {
         UUID callerId = CurrentUser.requireUserId(httpRequest);
-        Page<ReviewRepository.ProviderReviewRow> rows = reviewService.listByProvider(providerId, callerId, pageable);
+        Page<ReviewRepository.OwnerReviewRow> rows = reviewService.listByProvider(providerId, callerId, pageable);
 
         Map<UUID, String> namesByUserId = userRepository
                 .findAllById(rows.map(ReviewRepository.ProviderReviewRow::getUserId).toList()).stream()
@@ -122,7 +141,17 @@ public class ReviewController {
 
         return rows.map(row -> new ProviderReviewResponse(row.getId(), row.getBookingId(),
                 namesByUserId.getOrDefault(row.getUserId(), "Customer"), row.getRating(), row.getComment(),
-                row.getCreatedAt(), row.getBusinessReply(), row.getBusinessReplyAt()));
+                row.getCreatedAt(), row.getBusinessReply(), row.getBusinessReplyAt(), moderationStatus(row)));
+    }
+
+    private static String moderationStatus(ReviewRepository.OwnerReviewRow row) {
+        if (row.getHiddenAt() != null) {
+            return "HIDDEN";
+        }
+        if (row.getReportedAt() == null) {
+            return null;
+        }
+        return row.getReportResolvedAt() == null ? "OPEN" : "DISMISSED";
     }
 
     @Operation(summary = "List a provider's public reviews", description = """

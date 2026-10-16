@@ -2,6 +2,7 @@ package com.zairo.factory.search;
 
 import com.zairo.factory.booking.AvailabilitySlot;
 import com.zairo.factory.booking.AvailabilitySlotRepository;
+import com.zairo.factory.booking.AvailabilityStatus;
 import com.zairo.factory.booking.Booking;
 import com.zairo.factory.booking.BookingRepository;
 import com.zairo.factory.booking.BookingStatus;
@@ -100,6 +101,9 @@ public class BookAgainService {
         }
         return new BookAgainSuggestion(provider.getId(), provider.getName(), provider.getVertical(), service.getId(),
                 service.getTitle(), service.getDurationMinutes(), service.getPrice(), service.getCurrency(),
-                visitedAt(booking, slotStartsAtBySlotId));
+                visitedAt(booking, slotStartsAtBySlotId),
+                availabilitySlotRepository.findFirstByProviderIdAndStatusAndStartsAtAfterOrderByStartsAtAsc(
+                        provider.getId(), AvailabilityStatus.OPEN, Instant.now()).map(AvailabilitySlot::getStartsAt)
+                        .orElse(null));
     }
 }

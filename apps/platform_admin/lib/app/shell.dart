@@ -43,6 +43,7 @@ class ConsoleShell extends ConsumerWidget {
     if (metrics == null) return const {};
     return {
       consoleBranchPaths.indexOf(ConsoleRoutes.businesses): metrics.businessesPending,
+      consoleBranchPaths.indexOf(ConsoleRoutes.reviews): metrics.reviewsReported,
       consoleBranchPaths.indexOf(ConsoleRoutes.finance): metrics.paymentsRefundFailed,
     };
   }
@@ -128,7 +129,7 @@ class ConsoleShell extends ConsumerWidget {
 
   Widget _phone(BuildContext context, AppLocalizations l10n, Map<int, int> badges) {
     final current = navigationShell.currentIndex;
-    // Cities / Activity / Staff / Settings are reached through "More", so
+    // Cities / Ads / Activity / Staff / Settings are reached through "More", so
     // while one of them is open the More tab stays highlighted.
     final selectedTab = phoneTabBranches.contains(current)
         ? phoneTabBranches.indexOf(current)

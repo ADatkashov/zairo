@@ -54,6 +54,7 @@ class _FakeDiscoveryApi extends DiscoveryApi {
     double? minRating,
     bool availableOnly = false,
     String? sort,
+    String? cityCode,
   }) async {
     return _results;
   }
@@ -82,6 +83,7 @@ class _RecordingDiscoveryApi extends DiscoveryApi {
     double? minRating,
     bool availableOnly = false,
     String? sort,
+    String? cityCode,
   }) async {
     lastVertical = vertical;
     lastQuery = query;
@@ -595,5 +597,49 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(api.lastQuery, 'massage');
+  });
+
+  testWidgets('Search results fit a 320 px phone with a large font in the dark theme', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final fakeApi = _FakeDiscoveryApi([
+      for (var i = 0; i < 4; i++)
+        ProviderSearchResult(
+          id: 'p$i',
+          name: 'Hair Studio With A Long Name Number $i',
+          vertical: 'beauty',
+          status: 'ACTIVE',
+          hasOpenAvailability: i.isEven,
+          minPrice: 30,
+          services: const [ServiceSummary(id: 's1', title: 'Haircut', durationMinutes: 30, price: 30, currency: 'USD')],
+          distanceKm: 3.7,
+          averageRating: 4.7,
+          reviewCount: 128,
+        ),
+    ]);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [discoveryApiProvider.overrideWithValue(fakeApi)],
+        child: MaterialApp(
+          theme: factoryDarkTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: const SearchScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    for (var i = 0; i < 8; i++) {
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -400));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
   });
 }

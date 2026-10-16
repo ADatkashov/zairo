@@ -8,10 +8,10 @@ import '../../../campaigns/presentation/widgets/smart_action_center_section.dart
 import '../../data/models/admin_provider.dart';
 import '../../data/models/business_analytics.dart';
 import '../providers/salon_providers.dart';
+import '../widgets/analytics_period.dart';
+import 'business_reports_screen.dart';
 import 'customer_list_screen.dart';
 import 'smart_fill_campaigns_screen.dart';
-
-enum _Period { today, thisWeek, thisMonth, custom }
 
 /// The Revenue Intelligence Dashboard: what this business earned, what
 /// ZAIRO recovered, what's at risk, and what deserves attention next — all
@@ -29,44 +29,16 @@ class BusinessAnalyticsScreen extends ConsumerStatefulWidget {
 }
 
 class _BusinessAnalyticsScreenState extends ConsumerState<BusinessAnalyticsScreen> {
-  _Period _period = _Period.thisMonth;
+  AnalyticsPeriod _period = AnalyticsPeriod.thisMonth;
   DateTimeRange? _customRange;
 
-  AnalyticsRange get _range {
-    final now = DateTime.now();
-    switch (_period) {
-      case _Period.today:
-        final start = DateTime(now.year, now.month, now.day);
-        return (start, start.add(const Duration(days: 1)));
-      case _Period.thisWeek:
-        final todayStart = DateTime(now.year, now.month, now.day);
-        final weekStart = todayStart.subtract(Duration(days: now.weekday - 1));
-        return (weekStart, weekStart.add(const Duration(days: 7)));
-      case _Period.thisMonth:
-        final monthStart = DateTime(now.year, now.month, 1);
-        final nextMonth = now.month == 12 ? DateTime(now.year + 1, 1, 1) : DateTime(now.year, now.month + 1, 1);
-        return (monthStart, nextMonth);
-      case _Period.custom:
-        final range = _customRange;
-        if (range == null) {
-          return (DateTime(now.year, now.month, 1), now);
-        }
-        // showDateRangePicker's end is inclusive of that whole day; the API's [from, to) is exclusive.
-        return (range.start, range.end.add(const Duration(days: 1)));
-    }
-  }
+  AnalyticsRange get _range => analyticsRangeFor(_period, _customRange);
 
   Future<void> _pickCustomRange() async {
-    final now = DateTime.now();
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(now.year - 3),
-      lastDate: now,
-      initialDateRange: _customRange ?? DateTimeRange(start: now.subtract(const Duration(days: 7)), end: now),
-    );
+    final picked = await pickAnalyticsRange(context, _customRange);
     if (picked != null && mounted) {
       setState(() {
-        _period = _Period.custom;
+        _period = AnalyticsPeriod.custom;
         _customRange = picked;
       });
     }
@@ -79,7 +51,18 @@ class _BusinessAnalyticsScreenState extends ConsumerState<BusinessAnalyticsScree
     final range = _range;
 
     return Scaffold(
-      appBar: FactoryAppBar(title: l10n.businessAnalyticsTitle),
+      appBar: FactoryAppBar(
+        title: l10n.businessAnalyticsTitle,
+        actions: [
+          IconButton(
+            tooltip: l10n.businessReportsTitle,
+            icon: const Icon(Icons.insert_chart_outlined_rounded),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => BusinessReportsScreen(provider: widget.provider)),
+            ),
+          ),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(businessAnalyticsOverviewProvider);
@@ -92,7 +75,7 @@ class _BusinessAnalyticsScreenState extends ConsumerState<BusinessAnalyticsScree
         child: ListView(
           padding: const EdgeInsets.all(FactorySpacing.space4),
           children: [
-            _PeriodSelector(
+            AnalyticsPeriodChips(
               period: _period,
               customRange: _customRange,
               onSelect: (p) => setState(() => _period = p),
@@ -115,57 +98,6 @@ class _BusinessAnalyticsScreenState extends ConsumerState<BusinessAnalyticsScree
           ],
         ),
       ),
-    );
-  }
-}
-
-class _PeriodSelector extends StatelessWidget {
-  final _Period period;
-  final DateTimeRange? customRange;
-  final ValueChanged<_Period> onSelect;
-  final VoidCallback onCustom;
-
-  const _PeriodSelector({
-    required this.period,
-    required this.customRange,
-    required this.onSelect,
-    required this.onCustom,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final locale = Localizations.localeOf(context).toString();
-    final customLabel = period == _Period.custom && customRange != null
-        ? '${DateFormat.yMMMd(locale).format(customRange!.start)} – ${DateFormat.yMMMd(locale).format(customRange!.end)}'
-        : l10n.analyticsPeriodCustom;
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        FactoryChip(
-          label: l10n.analyticsPeriodToday,
-          selected: period == _Period.today,
-          onTap: () => onSelect(_Period.today),
-        ),
-        FactoryChip(
-          label: l10n.analyticsPeriodThisWeek,
-          selected: period == _Period.thisWeek,
-          onTap: () => onSelect(_Period.thisWeek),
-        ),
-        FactoryChip(
-          label: l10n.analyticsPeriodThisMonth,
-          selected: period == _Period.thisMonth,
-          onTap: () => onSelect(_Period.thisMonth),
-        ),
-        FactoryChip(
-          label: customLabel,
-          selected: period == _Period.custom,
-          icon: Icons.calendar_month_outlined,
-          onTap: onCustom,
-        ),
-      ],
     );
   }
 }
@@ -287,13 +219,16 @@ class _OverviewSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final overviewAsync = ref.watch(businessAnalyticsOverviewProvider((providerId, range)));
+    // Best-effort: the trend lines come from the bookings breakdown, which has
+    // its own section below — if it is loading or failed, the cards show plain figures.
+    final dailyBookings = ref.watch(businessAnalyticsBookingsProvider((providerId, range))).value?.trend ?? const [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         FactorySectionHeader(title: l10n.analyticsOverviewSectionTitle),
         overviewAsync.when(
-          data: (overview) => _OverviewContent(overview: overview),
+          data: (overview) => _OverviewContent(overview: overview, dailyBookings: dailyBookings),
           loading: () => const FactoryLoadingState(),
           error: (error, _) => FactoryErrorState(
             message: l10n.errorAnalyticsLoadFailed,
@@ -309,8 +244,12 @@ class _OverviewSection extends ConsumerWidget {
 /// grouped underneath instead of a flat wall of twelve identical tiles.
 class _OverviewContent extends StatelessWidget {
   final BusinessAnalyticsOverview overview;
+  final List<DailyBookingCount> dailyBookings;
 
-  const _OverviewContent({required this.overview});
+  const _OverviewContent({required this.overview, this.dailyBookings = const []});
+
+  List<double> _daily(int Function(DailyBookingCount day) pick) =>
+      ([...dailyBookings]..sort((a, b) => a.date.compareTo(b.date))).map((d) => pick(d).toDouble()).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -345,9 +284,17 @@ class _OverviewContent extends StatelessWidget {
         gap,
         _TwoColumn(
           children: [
-            _KpiCard(label: l10n.analyticsCompletedBookingsLabel, value: '${overview.completedBookings}'),
+            _KpiCard(
+              label: l10n.analyticsCompletedBookingsLabel,
+              value: '${overview.completedBookings}',
+              trend: _daily((d) => d.completed),
+            ),
             _KpiCard(label: l10n.analyticsUpcomingBookingsLabel, value: '${overview.upcomingBookings}'),
-            _KpiCard(label: l10n.analyticsCancelledBookingsLabel, value: '${overview.cancelledBookings}'),
+            _KpiCard(
+              label: l10n.analyticsCancelledBookingsLabel,
+              value: '${overview.cancelledBookings}',
+              trend: _daily((d) => d.cancelled),
+            ),
             _KpiCard(label: l10n.analyticsNoShowLabel, value: '${overview.noShowBookings}'),
           ],
         ),
@@ -490,19 +437,12 @@ class _Kpi extends StatelessWidget {
 class _KpiCard extends StatelessWidget {
   final String label;
   final String value;
+  final List<double>? trend;
 
-  const _KpiCard({required this.label, required this.value});
+  const _KpiCard({required this.label, required this.value, this.trend});
 
   @override
-  Widget build(BuildContext context) {
-    return FactoryCard(
-      padding: const EdgeInsets.all(FactorySpacing.space4),
-      child: SizedBox(
-        width: double.infinity,
-        child: _Kpi(label: label, value: value),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => FactoryKpiCard(label: label, value: value, trend: trend);
 }
 
 /// A percentage as a ring with the label beside it. For rates where lower is

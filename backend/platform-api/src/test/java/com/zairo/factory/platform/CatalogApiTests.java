@@ -10,9 +10,12 @@ import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.providers.ProviderDtos.UpdateProviderStatusRequest;
 import com.zairo.factory.providers.ProviderStatus;
 import com.zairo.factory.users.UserRepository;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.TestRestTemplate;
@@ -23,6 +26,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * Against a real Postgres (Testcontainers) — public reads against the
@@ -49,6 +53,31 @@ class CatalogApiTests {
 
     @Autowired
     private CredentialRepository credentialRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    private List<UUID> seededServiceIds = List.of();
+
+    /**
+     * The test schema switches the V94 starter services off (see
+     * V9000__test_deactivate_seeded_catalog_services.sql) so free-text services in
+     * other tests aren't rejected by ServiceCatalogPolicy. The tests that check
+     * the seed itself turn them back on for their own duration only.
+     */
+    private void activateSeededServices() {
+        seededServiceIds = jdbcTemplate.queryForList(
+                "select id from catalog_service where status = 'INACTIVE'", UUID.class);
+        jdbcTemplate.update("update catalog_service set status = 'ACTIVE' where status = 'INACTIVE'");
+    }
+
+    @AfterEach
+    void restoreSeededServices() {
+        for (UUID id : seededServiceIds) {
+            jdbcTemplate.update("update catalog_service set status = 'INACTIVE' where id = ?", id);
+        }
+        seededServiceIds = List.of();
+    }
 
     @Test
     void publicReadsReturnTheSeededCatalog() {
@@ -223,5 +252,73 @@ class CatalogApiTests {
         ResponseEntity<Map> providerAfterLaunch = restTemplate
                 .getForEntity("/api/v1/providers/" + providerId, Map.class);
         assertThat(providerAfterLaunch.getBody().get("status")).isEqualTo("ACTIVE");
+    }
+
+    @Test
+    void everySeededCategoryHasStarterCatalogServices() {
+        activateSeededServices();
+        // Other tests in this suite create their own categories and business
+        // types (no services) in the same database, so only the categories
+        // seeded by V25/V39/V41 are checked here.
+        Set<String> seededCategoryCodes = Set.of("beauty", "medicine", "auto", "home_repair", "sport_fitness",
+                "education", "kids", "animals", "photo_video", "weddings", "legal", "it_digital", "food", "fashion",
+                "real_estate", "tourism", "household_services", "entertainment", "business_services", "events",
+                "cleaning");
+
+        ResponseEntity<List> categories = restTemplate.getForEntity("/api/v1/categories", List.class);
+        assertThat(categories.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        Set<String> categoriesWithServices = new HashSet<>();
+        for (Object categoryEntry : categories.getBody()) {
+            Map<?, ?> category = (Map<?, ?>) categoryEntry;
+            String categoryCode = (String) category.get("code");
+            if (!seededCategoryCodes.contains(categoryCode)) {
+                continue;
+            }
+            ResponseEntity<List> businessTypes = restTemplate.getForEntity(
+                    "/api/v1/categories/" + category.get("id") + "/business-types", List.class);
+            for (Object businessTypeEntry : businessTypes.getBody()) {
+                Map<?, ?> businessType = (Map<?, ?>) businessTypeEntry;
+                ResponseEntity<List> services = restTemplate.getForEntity(
+                        "/api/v1/business-types/" + businessType.get("id") + "/services", List.class);
+                assertThat(services.getStatusCode()).isEqualTo(HttpStatus.OK);
+                assertThat(services.getBody())
+                        .as("starter services for business type %s", businessType.get("code"))
+                        .isNotEmpty()
+                        .allSatisfy(entry -> {
+                            Map<?, ?> service = (Map<?, ?>) entry;
+                            assertThat(service.get("nameKk")).asString().isNotBlank();
+                            assertThat(service.get("nameRu")).asString().isNotBlank();
+                            assertThat(service.get("nameEn")).asString().isNotBlank();
+                        });
+                categoriesWithServices.add(categoryCode);
+            }
+        }
+        assertThat(categoriesWithServices).containsExactlyInAnyOrderElementsOf(seededCategoryCodes);
+
+        ResponseEntity<List> beautySalonServices = restTemplate.getForEntity(
+                "/api/v1/business-types/" + SEEDED_BEAUTY_SALON_BUSINESS_TYPE_ID + "/services", List.class);
+        assertThat(beautySalonServices.getBody()).anySatisfy(entry -> {
+            Map<?, ?> service = (Map<?, ?>) entry;
+            assertThat(service.get("nameEn")).isEqualTo("Manicure");
+        });
+    }
+
+    @Test
+    void largeBusinessTypesGroupTheirServicesIntoSubspheres() {
+        activateSeededServices();
+        ResponseEntity<List> subspheres = restTemplate.getForEntity(
+                "/api/v1/business-types/" + SEEDED_BEAUTY_SALON_BUSINESS_TYPE_ID + "/subspheres", List.class);
+        assertThat(subspheres.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(subspheres.getBody()).extracting(entry -> ((Map<?, ?>) entry).get("code"))
+                .contains("beauty_salon_hair", "beauty_salon_nails", "beauty_salon_face");
+
+        Map<?, ?> hair = (Map<?, ?>) subspheres.getBody().stream()
+                .filter(entry -> "beauty_salon_hair".equals(((Map<?, ?>) entry).get("code")))
+                .findFirst().orElseThrow();
+        ResponseEntity<List> hairServices = restTemplate.getForEntity(
+                "/api/v1/subspheres/" + hair.get("id") + "/services", List.class);
+        assertThat(hairServices.getBody()).extracting(entry -> ((Map<?, ?>) entry).get("nameEn"))
+                .contains("Women's haircut", "Hair coloring");
     }
 }

@@ -306,6 +306,42 @@
 
   "homeTopRatedTitle": "Top rated near you",
   "@homeTopRatedTitle": {"description": "Home screen section header for the curated provider rail."},
+  "homeTopMastersTitle": "Best masters",
+  "@homeTopMastersTitle": {"description": "Home section header for the rail of best-rated masters."},
+  "workerPageTitle": "Master",
+  "@workerPageTitle": {"description": "App bar title of a master's page."},
+  "favoriteMasterAddTooltip": "Add to my masters",
+  "@favoriteMasterAddTooltip": {"description": "Tooltip of the heart on a master's page when they are not yet on the customer's list."},
+  "favoriteMasterRemoveTooltip": "Remove from my masters",
+  "@favoriteMasterRemoveTooltip": {"description": "Tooltip of the heart on a master's page when they are on the customer's list."},
+  "favoritesMyMastersTitle": "My masters",
+  "@favoritesMyMastersTitle": {"description": "Header of the masters rail on the Favorites screen."},
+  "favoriteMasterFailed": "Couldn't update your masters. Please try again.",
+  "@favoriteMasterFailed": {"description": "Snackbar when adding/removing a master from My masters fails."},
+  "workerBusinessLabel": "Works at",
+  "@workerBusinessLabel": {"description": "Label before the business a master works at."},
+  "workerAboutTitle": "About",
+  "@workerAboutTitle": {"description": "Header of the about-me block on a master's page."},
+  "workerWorkTitle": "Work",
+  "@workerWorkTitle": {"description": "Header of the photo strip of a master's work on their page."},
+  "workerSoonestTitle": "Next available",
+  "@workerSoonestTitle": {"description": "Header of the chips with a master's next free times."},
+  "workerSlotToday": "Today {time}",
+  "@workerSlotToday": {"description": "A free time today, e.g. Today 14:00.", "placeholders": {"time": {"type": "String"}}},
+  "workerSlotTomorrow": "Tomorrow {time}",
+  "@workerSlotTomorrow": {"description": "A free time tomorrow, e.g. Tomorrow 10:00.", "placeholders": {"time": {"type": "String"}}},
+  "workerServicesTitle": "Services",
+  "@workerServicesTitle": {"description": "Header of the services list on a master's page."},
+  "workerServicesEmpty": "No services listed yet.",
+  "@workerServicesEmpty": {"description": "Shown when a master has no services yet."},
+  "workerNoReviews": "No reviews yet",
+  "@workerNoReviews": {"description": "Shown instead of a rating when a master has no reviews."},
+  "workerBookAction": "Book",
+  "@workerBookAction": {"description": "Button on a master's page that opens the business's booking steps."},
+  "workerPortfolioAction": "Portfolio",
+  "@workerPortfolioAction": {"description": "Button on a master's page that opens their photo portfolio."},
+  "errorWorkerLoadFailed": "Couldn't load this master.",
+  "@errorWorkerLoadFailed": {"description": "Error text when a master's page fails to load."},
 
   "homeAvailabilityHero": "{count, plural, one{{count} provider near you have open slots today} other{{count} providers near you have open slots today}}",
   "@homeAvailabilityHero": {
@@ -314,9 +350,6 @@
       "count": {"type": "int"}
     }
   },
-
-  "homeAvailabilityEyebrow": "Today nearby",
-  "@homeAvailabilityEyebrow": {"description": "Small uppercase label above the availability hero banner's headline."},
 
   "homeGreeting": "Hi, {name}",
   "@homeGreeting": {
@@ -334,6 +367,16 @@
 
   "homeSeeAll": "See all",
   "@homeSeeAll": {"description": "Home screen section header action that opens Search."},
+  "homeCategoriesTitle": "Categories",
+  "@homeCategoriesTitle": {"description": "Heading of Home's category grid."},
+  "homeCategoriesAll": "All",
+  "@homeCategoriesAll": {"description": "Short link next to Home's category-grid heading that opens the full category list."},
+
+  "adSponsoredLabel": "Ad",
+  "@adSponsoredLabel": {"description": "Small label on a Home banner that a business paid for."},
+
+  "adWatchVideoLabel": "Watch video",
+  "@adWatchVideoLabel": {"description": "Spoken hint on a Home banner that opens a video."},
 
   "discoveryVerticalBeauty": "Beauty",
   "@discoveryVerticalBeauty": {"description": "Vertical filter chip label for the beauty vertical."},
@@ -343,9 +386,6 @@
 
   "discoveryVerticalCleaning": "Cleaning",
   "@discoveryVerticalCleaning": {"description": "Vertical filter chip label for the cleaning vertical."},
-
-  "homeCategoriesTitle": "Popular",
-  "@homeCategoriesTitle": {"description": "Home screen section header above the short popular-categories row (a curated shortlist, not the full catalog — see AllCategoriesScreen for that)."},
 
   "allCategoriesTitle": "All categories",
   "@allCategoriesTitle": {"description": "Label of the trailing tile in Home's popular-categories row that opens AllCategoriesScreen, and that screen's own AppBar title."},
@@ -372,6 +412,10 @@
 
   "homeBookAgainTitle": "Book again",
   "@homeBookAgainTitle": {"description": "Home screen section header above the repeat-your-last-appointment row."},
+  "homeBookAgainLastVisit": "Last visit: {date}",
+  "@homeBookAgainLastVisit": {"description": "Line on a Book-again card with the date of the previous visit.", "placeholders": {"date": {"type": "String"}}},
+  "homeBookAgainNextFree": "Next free: {when}",
+  "@homeBookAgainNextFree": {"description": "Line on a Book-again card with the provider's soonest open time.", "placeholders": {"when": {"type": "String"}}},
 
   "homeRecommendedTitle": "Recommended for you",
   "@homeRecommendedTitle": {"description": "Home screen section header above the top-rated-providers row."},
@@ -738,6 +782,12 @@
 
   "reviewLeaveButton": "Leave a review",
   "@reviewLeaveButton": {"description": "Button (and dialog title) to open the leave-a-review dialog."},
+  "reviewAboutWorker": "Your visit with {name}",
+  "@reviewAboutWorker": {"description": "Line in the leave-a-review dialog naming the person the visit was with.", "placeholders": {"name": {"type": "String"}}},
+  "reviewRateBusiness": "The business",
+  "@reviewRateBusiness": {"description": "Label above the stars that rate the business in the review dialog (shown when the visit was with a named person)."},
+  "reviewWorkerOptionalHint": "Optional. Without it, your rating above counts for {name} too.",
+  "@reviewWorkerOptionalHint": {"description": "Hint under the optional stars that rate the person the visit was with.", "placeholders": {"name": {"type": "String"}}},
 
   "reviewCommentHint": "Comment (optional)",
   "@reviewCommentHint": {"description": "Leave-a-review dialog's comment field hint."},
@@ -767,8 +817,6 @@
   "noOpenTimesTitle": "No open times",
   "@noOpenTimesTitle": {"description": "Provider detail screen empty state title when there are no open slots."},
 
-  "noOpenTimesMessage": "No free times right now. Message the business to ask, or try another one.",
-  "@noOpenTimesMessage": {"description": "Provider detail screen empty state message when there are no open slots."},
 
   "errorAvailabilityLoadFailed": "Couldn't load availability.",
   "@errorAvailabilityLoadFailed": {"description": "Provider detail screen error state when slots fail to load."},
@@ -936,6 +984,16 @@
 
   "cancelBookingButton": "Cancel booking",
   "@cancelBookingButton": {"description": "Button on a CONFIRMED booking card."},
+  "bookingRescheduleButton": "Reschedule",
+  "@bookingRescheduleButton": {"description": "Button on an upcoming booking card: pick another time."},
+  "bookingRescheduleTitle": "Move to another time",
+  "@bookingRescheduleTitle": {"description": "bookingRescheduleTitle"},
+  "bookingRescheduleHint": "Free times with the same specialist. Tap one to move your booking.",
+  "@bookingRescheduleHint": {"description": "bookingRescheduleHint"},
+  "bookingRescheduleEmpty": "No other free times right now. Check back later.",
+  "@bookingRescheduleEmpty": {"description": "bookingRescheduleEmpty"},
+  "bookingRescheduleDone": "Moved to {time}",
+  "@bookingRescheduleDone": {"description": "Snackbar after moving a booking.", "placeholders": {"time": {"type": "String"}}},
 
   "cancelBookingConfirmTitle": "Cancel this booking?",
   "@cancelBookingConfirmTitle": {"description": "Cancel-booking confirmation dialog title."},
@@ -998,6 +1056,10 @@
 
   "myRewardsTitle": "My Rewards",
   "@myRewardsTitle": {"description": "Profile tile label and My Rewards screen's app bar title."},
+  "profileRewardsSummary": "{points} pts · {count, plural, one{{count} business} other{{count} businesses}}",
+  "@profileRewardsSummary": {"description": "Hint under My rewards in Profile: total points across businesses and how many businesses they are in.", "placeholders": {"points": {"type": "int"}, "count": {"type": "int"}}},
+  "profileRewardsExpiring": "{points} pts expire within 30 days",
+  "@profileRewardsExpiring": {"description": "Warning under My rewards in Profile: points that expire within 30 days.", "placeholders": {"points": {"type": "int"}}},
 
   "loyaltyRedemptionsTitle": "My redemption codes",
   "@loyaltyRedemptionsTitle": {"description": "Profile tile label and My Redemptions screen's app bar title."},
@@ -1914,5 +1976,39 @@
   "bookingReviewTotal": "Total",
   "@bookingReviewTotal": {"description": "Total price row of the pre-payment summary when the payment policy is unknown."},
   "bookingStepsDone": "All steps done",
-  "@bookingStepsDone": {"description": "Screen-reader text of the booking progress bar once the booking is confirmed."}
+  "@bookingStepsDone": {"description": "Screen-reader text of the booking progress bar once the booking is confirmed."},
+  "bookingHintService": "Choose a service",
+  "@bookingHintService": {"description": "Hint above the Book button: the next thing to pick is the service."},
+  "bookingHintPerson": "Choose a specialist",
+  "@bookingHintPerson": {"description": "Hint above the Book button: the next thing to pick is the person (master, mechanic, cleaner or staff member)."},
+  "bookingHintVehicle": "Choose your car",
+  "@bookingHintVehicle": {"description": "Hint above the Book button: the next thing to pick is the vehicle."},
+  "bookingHintTime": "Choose a time",
+  "@bookingHintTime": {"description": "Hint above the Book button: the next thing to pick is the time slot."},
+  "cancelReasonPlans": "Change of plans",
+  "@cancelReasonPlans": {"description": "A one-tap reason in the cancel-booking dialog."},
+  "cancelReasonOtherTime": "Found another time",
+  "@cancelReasonOtherTime": {"description": "A one-tap reason in the cancel-booking dialog."},
+  "cancelReasonMistake": "Booked by mistake",
+  "@cancelReasonMistake": {"description": "A one-tap reason in the cancel-booking dialog."},
+  "reviewQuickStarTooltip": "{count, plural, one{Rate your visit {count} star} other{Rate your visit {count} stars}}",
+  "@reviewQuickStarTooltip": {"description": "Tooltip of a star on a completed booking card: opens the review form with that mark chosen.", "placeholders": {"count": {"type": "int"}}},
+
+  "noOpenTimesWaitlistMessage": "No free times right now. We'll tell you the moment one opens up.",
+  "@noOpenTimesWaitlistMessage": {"description": "Provider detail empty state message when there are no open slots; the button below it joins the business's waitlist."},
+
+  "waitlistJoinButton": "Notify me",
+  "@waitlistJoinButton": {"description": "Button that puts the customer on a business's waitlist (told when a time frees up)."},
+
+  "waitlistJoinedTitle": "You're on the waitlist",
+  "@waitlistJoinedTitle": {"description": "Title shown once the customer is on a business's waitlist."},
+
+  "waitlistJoinedMessage": "We'll notify you as soon as a time opens up here. It goes to whoever books first.",
+  "@waitlistJoinedMessage": {"description": "Explains what happens after joining a business's waitlist."},
+
+  "waitlistLeaveButton": "Stop waiting",
+  "@waitlistLeaveButton": {"description": "Button that takes the customer off a business's waitlist."},
+
+  "waitlistFailed": "Couldn't update the waitlist. Try again.",
+  "@waitlistFailed": {"description": "Snackbar when joining or leaving a waitlist fails."}
 }

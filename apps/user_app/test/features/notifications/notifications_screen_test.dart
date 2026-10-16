@@ -261,6 +261,57 @@ void main() {
   );
 
   testWidgets(
+    'tapping a "time opened up" waitlist notification marks it read and opens Search',
+    (tester) async {
+      final fakeApi = _FakeNotificationsApi([
+        AppNotification(
+          id: 'n1',
+          type: 'WAITLIST_SLOT_OPENED',
+          title: 'A time just opened up',
+          body: 'A time opened up at Salon.',
+          read: false,
+          createdAt: DateTime(2026, 1, 1, 10),
+        ),
+      ]);
+      final router = GoRouter(
+        initialLocation: '/notifications',
+        routes: [
+          GoRoute(
+            path: '/notifications',
+            builder: (_, _) => const NotificationsScreen(),
+          ),
+          GoRoute(
+            path: '/search',
+            builder: (_, _) => const Scaffold(body: Text('Search page')),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            notificationsApiProvider.overrideWithValue(fakeApi),
+            authControllerProvider.overrideWith(_LoggedInAuthController.new),
+          ],
+          child: MaterialApp.router(
+            theme: factoryLightTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('A time just opened up'));
+      await tester.pumpAndSettle();
+
+      expect(fakeApi.markedReadIds, ['n1']);
+      expect(find.text('Search page'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'a read notification with no destination does nothing when tapped',
     (tester) async {
       final fakeApi = _FakeNotificationsApi([
