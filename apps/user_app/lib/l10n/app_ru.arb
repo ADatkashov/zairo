@@ -730,5 +730,10 @@
   "waitlistJoinedTitle": "Вы в листе ожидания",
   "waitlistJoinedMessage": "Сообщим, как только здесь освободится время. Оно достанется тому, кто запишется первым.",
   "waitlistLeaveButton": "Больше не ждать",
-  "waitlistFailed": "Не удалось обновить лист ожидания. Попробуйте ещё раз."
+  "waitlistFailed": "Не удалось обновить лист ожидания. Попробуйте ещё раз.",
+  "waitlistWhichDay": "На какой день?",
+  "waitlistAnyDay": "Любой день",
+  "waitlistToday": "Сегодня",
+  "waitlistTomorrow": "Завтра",
+  "waitlistJoinedDayMessage": "Сообщим, как только освободится время на {day}. Оно достанется тому, кто запишется первым."
 }

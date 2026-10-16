@@ -1,5 +1,7 @@
 import 'package:core_network/core_network.dart';
 
+import 'models/waitlist_entry.dart';
+
 /// Backend's waitlist (backend/waitlist/.../WaitlistController.java): "tell me when a time frees up at this
 /// business". Not final: tests substitute a subclass overriding these methods instead of mocking Dio.
 class WaitlistApi {
@@ -7,16 +9,26 @@ class WaitlistApi {
 
   WaitlistApi(this._dioClient);
 
-  /// The ids of the businesses the user is waiting for (active entries only).
-  Future<Set<String>> waitingProviderIds(String userId) async {
+  /// The user's active entries, by business id.
+  Future<Map<String, WaitlistEntry>> listEntries(String userId) async {
     final response = await _dioClient.get('/users/$userId/waitlist');
     final data = response.data as List<dynamic>;
-    return {for (final entry in data) (entry as Map<String, dynamic>)['providerId'] as String};
+    final entries = data.map((e) => WaitlistEntry.fromJson(e as Map<String, dynamic>));
+    return {for (final entry in entries) entry.providerId: entry};
   }
 
-  /// Any time will do — no body. Idempotent on the backend.
-  Future<void> join(String userId, String providerId) async {
-    await _dioClient.put('/users/$userId/waitlist/$providerId');
+  /// Joins for one local calendar [day], or for any time when null. Idempotent on the backend — joining again only
+  /// changes the wanted day.
+  Future<void> join(String userId, String providerId, {DateTime? day}) async {
+    await _dioClient.put(
+      '/users/$userId/waitlist/$providerId',
+      data: day == null
+          ? null
+          : {
+              'from': DateTime(day.year, day.month, day.day).toUtc().toIso8601String(),
+              'to': DateTime(day.year, day.month, day.day + 1).toUtc().toIso8601String(),
+            },
+    );
   }
 
   /// Idempotent on the backend — safe when the user is not on the list.
