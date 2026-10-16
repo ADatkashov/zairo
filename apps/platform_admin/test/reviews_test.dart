@@ -205,4 +205,16 @@ void main() {
 
     expect(backend.calls('GET', '/platform/reviews').length, before + 1);
   });
+
+  testWidgets('the queue reads well on a narrow phone', (tester) async {
+    await pumpConsole(
+      tester,
+      backend: _backend(queues: {'OPEN': [_row('r1', 'OPEN', business: 'A Very Long Business Name That Keeps Going')]}),
+      location: ConsoleRoutes.reviews,
+      size: const Size(320, 640),
+    );
+
+    expect(find.text('Reported: Abusive language'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
