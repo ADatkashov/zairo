@@ -41,7 +41,7 @@ class _NoTimesWaitlistState extends ConsumerState<NoTimesWaitlist> {
         title: l10n.waitlistJoinedTitle,
         message: l10n.waitlistJoinedMessage,
         actionLabel: l10n.waitlistLeaveButton,
-        onAction: _busy ? null : () => _change(currentUser!.id, join: false),
+        onAction: _busy ? null : () => _change(currentUser.id, join: false),
       );
     }
     return FactoryEmptyState(
