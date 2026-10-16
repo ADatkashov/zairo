@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequest;
 import com.zairo.factory.booking.BookingDtos.CreateBookingRequest;
 import com.zairo.factory.platform.TestAuth.Registered;
+import com.zairo.factory.platformadmin.PlatformAdminAccountRepository;
+import com.zairo.factory.platformadmin.PlatformRole;
 import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
 import com.zairo.factory.reviews.ReviewDtos.CreateReviewRequest;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
@@ -37,11 +39,17 @@ import org.springframework.http.ResponseEntity;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
-@Import(TestcontainersConfiguration.class)
+@Import({TestcontainersConfiguration.class, TestNotifications.class})
 class ReviewApiTests {
 
     @Autowired
     private TestRestTemplate restTemplate;
+
+    @Autowired
+    private PlatformAdminAccountRepository platformAdminAccountRepository;
+
+    @Autowired
+    private TestNotifications.CapturedEmails capturedEmails;
 
     @Test
     void reviewRequiresACompletedBookingAndAllowsOnlyOnePerBooking() {
@@ -129,6 +137,183 @@ class ReviewApiTests {
                         TestAuth.authHeaders(stranger.accessToken())), Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void aSeparateRatingOfThePersonIsStoredAndMustBeBetweenOneAndFive() {
+        BookingContext ctx = createConfirmedBooking("worker-rating");
+        restTemplate.exchange("/api/v1/bookings/" + ctx.bookingId() + "/complete", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(ctx.owner().accessToken())), Map.class);
+        String path = "/api/v1/bookings/" + ctx.bookingId() + "/reviews";
+
+        ResponseEntity<Map> invalid = restTemplate.exchange(path, HttpMethod.POST, new HttpEntity<>(
+                new CreateReviewRequest(5, "x", 6), TestAuth.authHeaders(ctx.customer().accessToken())), Map.class);
+        assertThat(invalid.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+
+        ResponseEntity<Map> created = restTemplate.exchange(path, HttpMethod.POST, new HttpEntity<>(
+                new CreateReviewRequest(5, "Great salon", 3), TestAuth.authHeaders(ctx.customer().accessToken())),
+                Map.class);
+        assertThat(created.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(created.getBody().get("rating")).isEqualTo(5);
+        assertThat(created.getBody().get("workerRating")).isEqualTo(3);
+    }
+
+    @Test
+    void aReportedReviewCanBeHiddenFromEveryRatingRestoredOrKeptByThePlatform() {
+        String runId = UUID.randomUUID().toString();
+        var moderator = TestPlatformAuth.registerPlatformAdmin(restTemplate, platformAdminAccountRepository,
+                "mod-" + runId + "@factory.internal", PlatformRole.PLATFORM_MODERATOR);
+        var support = TestPlatformAuth.registerPlatformAdmin(restTemplate, platformAdminAccountRepository,
+                "mod-support-" + runId + "@factory.internal", PlatformRole.PLATFORM_SUPPORT);
+        HttpEntity<Void> asModerator = new HttpEntity<>(null, TestPlatformAuth.authHeaders(moderator.accessToken()));
+        HttpEntity<Void> asSupport = new HttpEntity<>(null, TestPlatformAuth.authHeaders(support.accessToken()));
+
+        BookingContext ctx = createConfirmedBooking("moderation-" + runId);
+        restTemplate.exchange("/api/v1/bookings/" + ctx.bookingId() + "/complete", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(ctx.owner().accessToken())), Map.class);
+        UUID reviewId = UUID.fromString(restTemplate.exchange("/api/v1/bookings/" + ctx.bookingId() + "/reviews",
+                HttpMethod.POST, new HttpEntity<>(new CreateReviewRequest(1, "Awful"),
+                        TestAuth.authHeaders(ctx.customer().accessToken())), Map.class).getBody().get("id")
+                .toString());
+        String providerReviews = "/api/v1/providers/" + ctx.providerId() + "/reviews";
+        String summaryPath = providerReviews + "/summary";
+        String publicPath = providerReviews + "/public";
+        String reportPath = "/api/v1/reviews/" + reviewId + "/report";
+        assertThat(restTemplate.getForEntity(summaryPath, Map.class).getBody().get("total")).isEqualTo(1);
+
+        long openBefore = openReports(asSupport);
+
+        // Only the business that was reviewed can report, with a reason.
+        Registered stranger = TestAuth.registerOwner(restTemplate, "mod-stranger-" + runId + "@example.com");
+        Map<String, String> reason = Map.of("reason", "Abusive language");
+        assertThat(restTemplate.postForEntity(reportPath, reason, Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(restTemplate.exchange(reportPath, HttpMethod.POST,
+                new HttpEntity<>(reason, TestAuth.authHeaders(stranger.accessToken())), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(restTemplate.exchange(reportPath, HttpMethod.POST, new HttpEntity<>(Map.of("reason", " "),
+                TestAuth.authHeaders(ctx.owner().accessToken())), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(restTemplate.exchange(reportPath, HttpMethod.POST,
+                new HttpEntity<>(reason, TestAuth.authHeaders(ctx.owner().accessToken())), Void.class)
+                .getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        // One report per review, for good.
+        assertThat(restTemplate.exchange(reportPath, HttpMethod.POST,
+                new HttpEntity<>(reason, TestAuth.authHeaders(ctx.owner().accessToken())), Map.class)
+                .getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+
+        // The dashboard counts it as waiting for a decision.
+        assertThat(openReports(asSupport)).isEqualTo(openBefore + 1);
+
+        // The owner sees it as waiting; the platform sees it in the queue; a report changes nothing public yet.
+        assertThat(ownerStatus(ctx, providerReviews, reviewId)).isEqualTo("OPEN");
+        assertThat(queueIds("OPEN", asSupport)).contains(reviewId.toString());
+        Map<?, ?> queued = queueRow("OPEN", reviewId, asSupport);
+        assertThat(queued.get("reportReason")).isEqualTo("Abusive language");
+        assertThat(queued.get("providerName")).isEqualTo("Salon moderation-" + runId);
+        assertThat(restTemplate.getForEntity(summaryPath, Map.class).getBody().get("total")).isEqualTo(1);
+
+        // Read-only staff cannot decide, and bad statuses are rejected.
+        String hidePath = "/api/v1/platform/reviews/" + reviewId + "/hide";
+        assertThat(restTemplate.exchange(hidePath, HttpMethod.POST, asSupport, Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(restTemplate.exchange("/api/v1/platform/reviews?status=nope", HttpMethod.GET, asSupport,
+                Map.class).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(restTemplate.getForEntity("/api/v1/platform/reviews", Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        // Hiding takes it out of the summary and the public list, and moves it from OPEN to HIDDEN.
+        assertThat(restTemplate.exchange(hidePath, HttpMethod.POST, new HttpEntity<>(
+                Map.of("reason", "Contains abuse"), TestPlatformAuth.authHeaders(moderator.accessToken())),
+                Void.class).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(restTemplate.exchange(hidePath, HttpMethod.POST, asModerator, Void.class).getStatusCode())
+                .isEqualTo(HttpStatus.NO_CONTENT); // hiding twice is a no-op
+        assertThat(openReports(asSupport)).isEqualTo(openBefore); // decided: no longer waiting
+        Map<?, ?> summary = restTemplate.getForEntity(summaryPath, Map.class).getBody();
+        assertThat(summary.get("total")).isEqualTo(0);
+        assertThat(summary.get("average")).isNull();
+        assertThat((java.util.List<?>) restTemplate.getForEntity(publicPath, Map.class).getBody().get("content"))
+                .isEmpty();
+        assertThat(ownerStatus(ctx, providerReviews, reviewId)).isEqualTo("HIDDEN");
+        assertThat(queueIds("OPEN", asSupport)).doesNotContain(reviewId.toString());
+        assertThat(queueRow("HIDDEN", reviewId, asSupport).get("hiddenReason")).isEqualTo("Contains abuse");
+        assertThat(queueRow("HIDDEN", reviewId, asSupport).get("decidedAt")).isNotNull();
+        assertThat(restTemplate.exchange(reportPath, HttpMethod.POST,
+                new HttpEntity<>(reason, TestAuth.authHeaders(ctx.owner().accessToken())), Map.class)
+                .getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+
+        // The business is told what was decided.
+        assertThat(capturedEmails.sent).anySatisfy(email -> {
+            assertThat(email.subject()).isEqualTo("About a review you reported");
+            assertThat(email.body()).contains(reviewId.toString()).contains("hid the review");
+        });
+
+        // Restoring puts it back in every rating; its report stays closed.
+        assertThat(restTemplate.exchange("/api/v1/platform/reviews/" + reviewId + "/restore", HttpMethod.POST,
+                asModerator, Void.class).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(restTemplate.getForEntity(summaryPath, Map.class).getBody().get("total")).isEqualTo(1);
+        assertThat(ownerStatus(ctx, providerReviews, reviewId)).isEqualTo("DISMISSED");
+        assertThat(queueIds("HIDDEN", asSupport)).doesNotContain(reviewId.toString());
+
+        // A second review: dismissing the report keeps it, and it cannot be reported again or dismissed twice.
+        BookingContext other = createConfirmedBooking("moderation-keep-" + runId);
+        restTemplate.exchange("/api/v1/bookings/" + other.bookingId() + "/complete", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(other.owner().accessToken())), Map.class);
+        UUID keptId = UUID.fromString(restTemplate.exchange("/api/v1/bookings/" + other.bookingId() + "/reviews",
+                HttpMethod.POST, new HttpEntity<>(new CreateReviewRequest(2, "Meh"),
+                        TestAuth.authHeaders(other.customer().accessToken())), Map.class).getBody().get("id")
+                .toString());
+        String dismissPath = "/api/v1/platform/reviews/" + keptId + "/dismiss";
+        assertThat(restTemplate.exchange(dismissPath, HttpMethod.POST, asModerator, Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.CONFLICT); // nothing reported yet
+        restTemplate.exchange("/api/v1/reviews/" + keptId + "/report", HttpMethod.POST,
+                new HttpEntity<>(reason, TestAuth.authHeaders(other.owner().accessToken())), Void.class);
+        assertThat(restTemplate.exchange(dismissPath, HttpMethod.POST, asModerator, Void.class).getStatusCode())
+                .isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(queueIds("DISMISSED", asSupport)).contains(keptId.toString());
+        assertThat(queueRow("DISMISSED", keptId, asSupport).get("decidedAt")).isNotNull();
+        assertThat(capturedEmails.sent).anySatisfy(email -> {
+            assertThat(email.body()).contains(keptId.toString()).contains("kept it");
+        });
+        assertThat(restTemplate.exchange(dismissPath, HttpMethod.POST, asModerator, Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.CONFLICT);
+        assertThat(restTemplate.exchange("/api/v1/reviews/" + keptId + "/report", HttpMethod.POST,
+                new HttpEntity<>(reason, TestAuth.authHeaders(other.owner().accessToken())), Map.class)
+                .getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(restTemplate.exchange("/api/v1/platform/reviews/" + UUID.randomUUID() + "/hide",
+                HttpMethod.POST, asModerator, Map.class).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    private long openReports(HttpEntity<Void> auth) {
+        Map<?, ?> dashboard = restTemplate.exchange("/api/v1/platform/dashboard", HttpMethod.GET, auth, Map.class)
+                .getBody();
+        return ((Number) ((Map<?, ?>) dashboard.get("reviews")).get("reportedOpen")).longValue();
+    }
+
+    private String ownerStatus(BookingContext ctx, String providerReviews, UUID reviewId) {
+        Map<?, ?> page = restTemplate.exchange(providerReviews, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(ctx.owner().accessToken())), Map.class).getBody();
+        for (Object row : (java.util.List<?>) page.get("content")) {
+            Map<?, ?> r = (Map<?, ?>) row;
+            if (reviewId.toString().equals(r.get("id"))) {
+                return (String) r.get("moderationStatus");
+            }
+        }
+        throw new AssertionError("review not in the owner's list: " + reviewId);
+    }
+
+    private java.util.List<String> queueIds(String status, HttpEntity<Void> auth) {
+        Map<?, ?> page = restTemplate.exchange("/api/v1/platform/reviews?status=" + status + "&size=200",
+                HttpMethod.GET, auth, Map.class).getBody();
+        return ((java.util.List<?>) page.get("content")).stream().map(r -> ((Map<?, ?>) r).get("id").toString())
+                .toList();
+    }
+
+    private Map<?, ?> queueRow(String status, UUID reviewId, HttpEntity<Void> auth) {
+        Map<?, ?> page = restTemplate.exchange("/api/v1/platform/reviews?status=" + status + "&size=200",
+                HttpMethod.GET, auth, Map.class).getBody();
+        return ((java.util.List<?>) page.get("content")).stream().map(r -> (Map<?, ?>) r)
+                .filter(r -> reviewId.toString().equals(r.get("id"))).findFirst().orElseThrow();
     }
 
     @Test

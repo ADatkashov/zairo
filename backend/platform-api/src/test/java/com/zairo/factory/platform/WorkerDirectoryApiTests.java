@@ -1,0 +1,468 @@
+package com.zairo.factory.platform;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.zairo.factory.auth.CredentialRepository;
+import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequest;
+import com.zairo.factory.platform.TestAuth.Registered;
+import com.zairo.factory.platformadmin.PlatformAdminAccountRepository;
+import com.zairo.factory.platformadmin.PlatformRole;
+import com.zairo.factory.providers.ProviderDtos.CreateProviderRequest;
+import com.zairo.factory.providers.ProviderDtos.UpdateProviderStatusRequest;
+import com.zairo.factory.providers.ProviderStatus;
+import com.zairo.factory.reviews.ReviewDtos.CreateReviewRequest;
+import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
+import com.zairo.factory.staff.StaffBookingDtos.CreateStaffBookingRequest;
+import com.zairo.factory.staff.StaffDtos.CreateStaffRequest;
+import com.zairo.factory.users.UserRepository;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.resttestclient.TestRestTemplate;
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+/**
+ * Against a real Postgres (Testcontainers): GET /workers/top ranks workers by the average rating of
+ * the reviews left on their bookings, only counts masters with enough reviews, and only shows
+ * active masters of ACTIVE providers.
+ */
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureTestRestTemplate
+@Import(TestcontainersConfiguration.class)
+class WorkerDirectoryApiTests {
+
+    @Autowired
+    private TestRestTemplate restTemplate;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private CredentialRepository credentialRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private PlatformAdminAccountRepository platformAdminAccountRepository;
+
+    @Test
+    void ranksByAverageRatingAndNeedsThreeReviews() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "top-owner-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Top Studio " + runId);
+        approve(providerId);
+        UUID serviceId = createService(owner, providerId);
+
+        UUID best = createStaff(owner, providerId, "Best Master");
+        UUID good = createStaff(owner, providerId, "Good Master");
+        UUID newcomer = createStaff(owner, providerId, "Newcomer");
+        for (UUID staffId : List.of(best, good, newcomer)) {
+            restTemplate.exchange("/api/v1/staff/" + staffId + "/services/" + serviceId, HttpMethod.POST,
+                    new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+        }
+
+        int hour = 1;
+        for (int rating : new int[] {5, 5, 4}) {
+            review(owner, providerId, serviceId, best, rating, hour++, runId);
+        }
+        for (int rating : new int[] {4, 4, 4}) {
+            review(owner, providerId, serviceId, good, rating, hour++, runId);
+        }
+        // A single perfect review is not enough to be called one of the best.
+        review(owner, providerId, serviceId, newcomer, 5, hour++, runId);
+
+        List<Map> top = getTop(20);
+        List<String> ids = top.stream().map(m -> m.get("id").toString()).toList();
+
+        assertThat(ids).contains(best.toString(), good.toString()).doesNotContain(newcomer.toString());
+        assertThat(ids.indexOf(best.toString())).isLessThan(ids.indexOf(good.toString()));
+        Map<?, ?> first = top.get(ids.indexOf(best.toString()));
+        assertThat(first.get("displayName")).isEqualTo("Best Master");
+        assertThat(first.get("providerId")).isEqualTo(providerId.toString());
+        assertThat(first.get("providerName")).isEqualTo("Top Studio " + runId);
+        assertThat(((Number) first.get("averageRating")).doubleValue()).isEqualTo(4.7);
+        assertThat(((Number) first.get("reviewCount")).longValue()).isEqualTo(3L);
+
+        // The owner sees the same rating (and how many reviews it takes) on their team list.
+        ResponseEntity<Map[]> team = restTemplate.exchange("/api/v1/providers/" + providerId + "/workers",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map[].class);
+        Map<String, Map> byName = new java.util.HashMap<>();
+        for (Map worker : team.getBody()) {
+            byName.put(worker.get("displayName").toString(), worker);
+        }
+        assertThat(((Number) byName.get("Best Master").get("averageRating")).doubleValue()).isEqualTo(4.7);
+        assertThat(((Number) byName.get("Best Master").get("reviewCount")).longValue()).isEqualTo(3L);
+        assertThat(((Number) byName.get("Newcomer").get("reviewCount")).longValue()).isEqualTo(1L);
+
+        // ...and can open one person's rating: average, distribution and the newest reviews with names.
+        String ratingPath = "/api/v1/providers/" + providerId + "/workers/" + best + "/rating";
+        Map<?, ?> rating = restTemplate.exchange(ratingPath, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class).getBody();
+        assertThat(((Number) rating.get("averageRating")).doubleValue()).isBetween(4.6, 4.7);
+        assertThat(((Number) rating.get("reviewCount")).longValue()).isEqualTo(3L);
+        assertThat((List<?>) rating.get("distribution")).hasSize(5);
+        List<Map> rows = (List<Map>) rating.get("reviews");
+        assertThat(rows).hasSize(3);
+        assertThat(rows.get(0).get("customerName")).isEqualTo("Registered Customer");
+
+        // Only that business's owner.
+        Registered stranger = TestAuth.registerOwner(restTemplate, "rating-stranger-" + runId + "@example.com");
+        assertThat(restTemplate.exchange(ratingPath, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(stranger.accessToken())), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(restTemplate.getForEntity(ratingPath, Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void deactivatedMastersAndNonActiveProvidersAreLeftOut() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "top-hidden-owner-" + runId + "@example.com");
+        // FREE allows one business per owner; this test needs two.
+        TestAuth.upgradeToPro(restTemplate, owner);
+        UUID activeProvider = createProvider(owner, "Visible " + runId);
+        approve(activeProvider);
+        UUID pendingProvider = createProvider(owner, "Pending " + runId);
+        UUID activeService = createService(owner, activeProvider);
+        UUID pendingService = createService(owner, pendingProvider);
+
+        UUID retired = createStaff(owner, activeProvider, "Retired Master");
+        UUID unapproved = createStaff(owner, pendingProvider, "Unapproved Master");
+        restTemplate.exchange("/api/v1/staff/" + retired + "/services/" + activeService, HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+        restTemplate.exchange("/api/v1/staff/" + unapproved + "/services/" + pendingService, HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+
+        int hour = 1;
+        for (int i = 0; i < 3; i++) {
+            review(owner, activeProvider, activeService, retired, 5, hour++, runId);
+            review(owner, pendingProvider, pendingService, unapproved, 5, hour++, runId);
+        }
+        restTemplate.exchange("/api/v1/staff/" + retired, HttpMethod.DELETE,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+
+        List<String> ids = getTop(20).stream().map(m -> m.get("id").toString()).toList();
+
+        assertThat(ids).doesNotContain(retired.toString(), unapproved.toString());
+    }
+
+    @Test
+    void aWorkersPublicPageShowsRatingAndServicesAndHidesUnknownAndInactiveOnes() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "page-owner-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Page Studio " + runId);
+        approve(providerId);
+        UUID serviceId = createService(owner, providerId);
+        UUID staffId = createStaff(owner, providerId, "Page Master");
+        restTemplate.exchange("/api/v1/staff/" + staffId + "/services/" + serviceId, HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+
+        // No reviews yet: the page exists, with no rating.
+        ResponseEntity<Map> fresh = restTemplate.getForEntity("/api/v1/workers/" + staffId, Map.class);
+        assertThat(fresh.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(fresh.getBody().get("averageRating")).isNull();
+        assertThat(((Number) fresh.getBody().get("reviewCount")).longValue()).isZero();
+        assertThat(fresh.getBody().get("providerName")).isEqualTo("Page Studio " + runId);
+        assertThat((List<?>) fresh.getBody().get("services")).hasSize(1);
+
+        review(owner, providerId, serviceId, staffId, 4, 1, runId);
+        review(owner, providerId, serviceId, staffId, 5, 2, runId);
+        Map<?, ?> page = restTemplate.getForEntity("/api/v1/workers/" + staffId, Map.class).getBody();
+        assertThat(((Number) page.get("averageRating")).doubleValue()).isEqualTo(4.5);
+        assertThat(((Number) page.get("reviewCount")).longValue()).isEqualTo(2L);
+        // The newest reviews, with no reviewer identity.
+        List<Map> reviews = (List<Map>) page.get("reviews");
+        assertThat(reviews).hasSize(2);
+        assertThat(reviews.get(0)).containsKeys("rating", "comment", "createdAt").doesNotContainKeys("userId",
+                "customerName", "bookingId");
+        assertThat(page.get("bio")).isEqualTo("Bio");
+
+        assertThat(restTemplate.getForEntity("/api/v1/workers/" + UUID.randomUUID(), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
+
+        restTemplate.exchange("/api/v1/staff/" + staffId, HttpMethod.DELETE,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+        assertThat(restTemplate.getForEntity("/api/v1/workers/" + staffId, Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void theCityFilterKeepsThatCitysBusinessesAndThoseWithoutACity() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "city-owner-" + runId + "@example.com");
+        // FREE allows one business per owner; this test needs three.
+        TestAuth.upgradeToPro(restTemplate, owner);
+        UUID[] staff = new UUID[3];
+        String[] cities = {"almaty", "aktau", null};
+        for (int i = 0; i < 3; i++) {
+            UUID providerId = createProvider(owner, "City Studio " + i + " " + runId);
+            approve(providerId);
+            jdbcTemplate.update("update provider set city_code = ? where id = ?", cities[i], providerId);
+            UUID serviceId = createService(owner, providerId);
+            staff[i] = createStaff(owner, providerId, "City Master " + i);
+            restTemplate.exchange("/api/v1/staff/" + staff[i] + "/services/" + serviceId, HttpMethod.POST,
+                    new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+            for (int r = 0; r < 3; r++) {
+                review(owner, providerId, serviceId, staff[i], 5, r + 1 + i * 3, runId);
+            }
+        }
+
+        ResponseEntity<Map[]> response = restTemplate.getForEntity("/api/v1/workers/top?limit=20&city=almaty",
+                Map[].class);
+        List<String> ids = List.of(response.getBody()).stream().map(m -> m.get("id").toString()).toList();
+
+        assertThat(ids).contains(staff[0].toString(), staff[2].toString()).doesNotContain(staff[1].toString());
+        assertThat(getTop(20).stream().map(m -> m.get("id").toString()).toList()).contains(staff[0].toString(),
+                staff[1].toString(), staff[2].toString());
+    }
+
+    @Test
+    void aSeparateRatingOfTheMasterCountsForThemAndNotTheBusiness() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "wr-owner-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Worker Rating Studio " + runId);
+        approve(providerId);
+        UUID serviceId = createService(owner, providerId);
+        UUID master = createStaff(owner, providerId, "Rated Apart");
+        restTemplate.exchange("/api/v1/staff/" + master + "/services/" + serviceId, HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+        // Great salon (5), but the master himself was 3 each time.
+        for (int i = 0; i < 3; i++) {
+            review(owner, providerId, serviceId, master, 5, 3, i + 1, runId);
+        }
+
+        Map<?, ?> page = restTemplate.getForEntity("/api/v1/workers/" + master, Map.class).getBody();
+        assertThat(((Number) page.get("averageRating")).doubleValue()).isEqualTo(3.0);
+        Map<?, ?> top = getTop(20).stream().filter(m -> m.get("id").equals(master.toString())).findFirst()
+                .orElseThrow();
+        assertThat(((Number) top.get("averageRating")).doubleValue()).isEqualTo(3.0);
+        // The business's own summary still counts the shared rating (5).
+        Map<?, ?> summary = restTemplate.getForEntity("/api/v1/providers/" + providerId + "/reviews/summary",
+                Map.class).getBody();
+        assertThat(((Number) summary.get("average")).doubleValue()).isEqualTo(5.0);
+    }
+
+    @Test
+    void aCustomerKeepsAShortlistOfMastersOnlyTheyCanSee() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "fav-owner-" + runId + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "fav-customer-" + runId + "@example.com");
+        Registered stranger = TestAuth.registerCustomer(restTemplate, "fav-stranger-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Fav Studio " + runId);
+        approve(providerId);
+        UUID serviceId = createService(owner, providerId);
+        UUID staffId = createStaff(owner, providerId, "Fav Master");
+        restTemplate.exchange("/api/v1/staff/" + staffId + "/services/" + serviceId, HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+        String base = "/api/v1/users/" + customer.userId() + "/favorite-workers";
+        HttpEntity<Void> asCustomer = new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken()));
+
+        // Empty to begin with; not on the list.
+        assertThat(restTemplate.exchange(base, HttpMethod.GET, asCustomer, Map[].class).getBody()).isEmpty();
+        assertThat(restTemplate.exchange(base + "/" + staffId, HttpMethod.GET, asCustomer, Void.class)
+                .getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        // Adding is idempotent and shows the person with their rating.
+        assertThat(restTemplate.exchange(base + "/" + staffId, HttpMethod.POST, asCustomer, Void.class)
+                .getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(restTemplate.exchange(base + "/" + staffId, HttpMethod.POST, asCustomer, Void.class)
+                .getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(restTemplate.exchange(base + "/" + staffId, HttpMethod.GET, asCustomer, Void.class)
+                .getStatusCode()).isEqualTo(HttpStatus.OK);
+        review(owner, providerId, serviceId, staffId, 5, 1, runId);
+        Map[] mine = restTemplate.exchange(base, HttpMethod.GET, asCustomer, Map[].class).getBody();
+        assertThat(mine).hasSize(1);
+        assertThat(mine[0].get("id")).isEqualTo(staffId.toString());
+        assertThat(mine[0].get("displayName")).isEqualTo("Fav Master");
+        assertThat(mine[0].get("providerName")).isEqualTo("Fav Studio " + runId);
+        assertThat(((Number) mine[0].get("averageRating")).doubleValue()).isEqualTo(5.0);
+        // No schedule of their own, so no "next free time" to show.
+        assertThat(mine[0].get("nextFreeAt")).isNull();
+
+        // Someone else can neither read nor change it; anonymous is turned away.
+        HttpEntity<Void> asStranger = new HttpEntity<>(null, TestAuth.authHeaders(stranger.accessToken()));
+        assertThat(restTemplate.exchange(base, HttpMethod.GET, asStranger, Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(restTemplate.exchange(base + "/" + staffId, HttpMethod.DELETE, asStranger, Void.class)
+                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(restTemplate.getForEntity(base, Map.class).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        // Unknown people cannot be added.
+        assertThat(restTemplate.exchange(base + "/" + UUID.randomUUID(), HttpMethod.POST, asCustomer, Void.class)
+                .getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        // A person who leaves the business drops off the list; removing is idempotent.
+        restTemplate.exchange("/api/v1/staff/" + staffId, HttpMethod.DELETE,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+        assertThat(restTemplate.exchange(base, HttpMethod.GET, asCustomer, Map[].class).getBody()).isEmpty();
+        assertThat(restTemplate.exchange(base + "/" + staffId, HttpMethod.DELETE, asCustomer, Void.class)
+                .getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(restTemplate.exchange(base + "/" + staffId, HttpMethod.GET, asCustomer, Void.class)
+                .getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void aHiddenReviewCountsForNobodyNotTheirAveragePageNorTheBestList() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "hid-owner-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Hidden Studio " + runId);
+        approve(providerId);
+        UUID serviceId = createService(owner, providerId);
+        UUID master = createStaff(owner, providerId, "Moderated Master");
+        restTemplate.exchange("/api/v1/staff/" + master + "/services/" + serviceId, HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+        for (int i = 1; i <= 3; i++) {
+            review(owner, providerId, serviceId, master, i == 1 ? 1 : 5, i, runId);
+        }
+        assertThat(getTop(20)).extracting(m -> m.get("displayName")).contains("Moderated Master");
+
+        // The owner finds the 1-star review in the person's rating and the platform hides it.
+        String ratingPath = "/api/v1/providers/" + providerId + "/workers/" + master + "/rating";
+        HttpEntity<Void> asOwner = new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken()));
+        List<Map> rows = (List<Map>) restTemplate.exchange(ratingPath, HttpMethod.GET, asOwner, Map.class)
+                .getBody().get("reviews");
+        Object oneStar = rows.stream().filter(r -> ((Number) r.get("rating")).intValue() == 1).findFirst()
+                .orElseThrow().get("reviewId");
+        var moderator = TestPlatformAuth.registerPlatformAdmin(restTemplate, platformAdminAccountRepository,
+                "hid-mod-" + runId + "@factory.internal", PlatformRole.PLATFORM_MODERATOR);
+        restTemplate.exchange("/api/v1/platform/reviews/" + oneStar + "/hide", HttpMethod.POST,
+                new HttpEntity<>(null, TestPlatformAuth.authHeaders(moderator.accessToken())), Void.class);
+
+        // Two reviews are left: the page shows them, the owner's rating too, and the person is no longer "best".
+        Map<?, ?> page = restTemplate.getForEntity("/api/v1/workers/" + master, Map.class).getBody();
+        assertThat(((Number) page.get("reviewCount")).longValue()).isEqualTo(2L);
+        assertThat(((Number) page.get("averageRating")).doubleValue()).isEqualTo(5.0);
+        assertThat((List<?>) page.get("reviews")).hasSize(2);
+        Map<?, ?> ownerView = restTemplate.exchange(ratingPath, HttpMethod.GET, asOwner, Map.class).getBody();
+        assertThat(((Number) ownerView.get("reviewCount")).longValue()).isEqualTo(2L);
+        assertThat(getTop(20)).extracting(m -> m.get("displayName")).doesNotContain("Moderated Master");
+    }
+
+    @Test
+    void limitIsClampedAndNeedsNoToken() {
+        assertThat(getTop(0).size()).isLessThanOrEqualTo(1);
+        assertThat(getTop(1000).size()).isLessThanOrEqualTo(20);
+    }
+
+    private List<Map> getTop(int limit) {
+        ResponseEntity<Map[]> response = restTemplate.getForEntity("/api/v1/workers/top?limit=" + limit, Map[].class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        return List.of(response.getBody());
+    }
+
+    /** A completed, paid booking with the master and a review of {@code rating} by a fresh customer. */
+    @Test
+    void onlyTheCustomerCanSeeWhoTheirBookingIsWith() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "bw-owner-" + runId + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "bw-customer-" + runId + "@example.com");
+        Registered stranger = TestAuth.registerCustomer(restTemplate, "bw-stranger-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Booking Studio " + runId);
+        UUID serviceId = createService(owner, providerId);
+        UUID staffId = createStaff(owner, providerId, "Booking Master");
+        restTemplate.exchange("/api/v1/staff/" + staffId + "/services/" + serviceId, HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        UUID slotId = UUID.fromString(restTemplate.exchange("/api/v1/providers/" + providerId
+                + "/availability-slots", HttpMethod.POST,
+                new HttpEntity<>(new CreateAvailabilitySlotRequest(start, start.plus(60, ChronoUnit.MINUTES)),
+                        TestAuth.authHeaders(owner.accessToken())), Map.class).getBody().get("id").toString());
+        String bookingId = restTemplate.exchange("/api/v1/staff/bookings", HttpMethod.POST,
+                new HttpEntity<>(new CreateStaffBookingRequest(customer.userId(), staffId, serviceId, slotId,
+                        new BigDecimal("30.00")), TestAuth.authHeaders(customer.accessToken())), Map.class)
+                .getBody().get("bookingId").toString();
+        String path = "/api/v1/bookings/" + bookingId + "/worker";
+
+        ResponseEntity<Map> mine = restTemplate.exchange(path, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(mine.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(mine.getBody().get("id")).isEqualTo(staffId.toString());
+        assertThat(mine.getBody().get("displayName")).isEqualTo("Booking Master");
+        assertThat(mine.getBody().get("kind")).isEqualTo("STAFF");
+
+        assertThat(restTemplate.getForEntity(path, Map.class).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(restTemplate.exchange(path, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(stranger.accessToken())), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(restTemplate.exchange("/api/v1/bookings/" + UUID.randomUUID() + "/worker", HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    private void review(Registered owner, UUID providerId, UUID serviceId, UUID staffId, int rating, int hour,
+            String runId) {
+        review(owner, providerId, serviceId, staffId, rating, null, hour, runId);
+    }
+
+    private void review(Registered owner, UUID providerId, UUID serviceId, UUID staffId, int rating,
+            Integer workerRating, int hour, String runId) {
+        Registered customer = TestAuth.registerCustomer(restTemplate, "top-cust-" + UUID.randomUUID() + "@example.com");
+        Instant start = Instant.now().plus(hour, ChronoUnit.DAYS);
+        var slotRequest = new CreateAvailabilitySlotRequest(start, start.plus(60, ChronoUnit.MINUTES));
+        UUID slotId = UUID.fromString(restTemplate.exchange("/api/v1/providers/" + providerId
+                + "/availability-slots", HttpMethod.POST,
+                new HttpEntity<>(slotRequest, TestAuth.authHeaders(owner.accessToken())), Map.class).getBody()
+                .get("id").toString());
+        ResponseEntity<Map> booked = restTemplate.exchange("/api/v1/staff/bookings", HttpMethod.POST,
+                new HttpEntity<>(new CreateStaffBookingRequest(customer.userId(), staffId, serviceId, slotId,
+                        new BigDecimal("30.00")), TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(booked.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        String bookingId = booked.getBody().get("bookingId").toString();
+        restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        restTemplate.exchange("/api/v1/bookings/" + bookingId + "/complete", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        ResponseEntity<Map> reviewed = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/reviews",
+                HttpMethod.POST, new HttpEntity<>(new CreateReviewRequest(rating, "ok", workerRating),
+                        TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(reviewed.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+    }
+
+    private void approve(UUID providerId) {
+        Registered admin = TestAuth.registerAdmin(restTemplate, userRepository, credentialRepository,
+                "top-admin-" + UUID.randomUUID() + "@example.com");
+        var request = new UpdateProviderStatusRequest(ProviderStatus.ACTIVE);
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers/" + providerId + "/status",
+                HttpMethod.PATCH, new HttpEntity<>(request, TestAuth.authHeaders(admin.accessToken())), Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    private UUID createProvider(Registered owner, String name) {
+        var request = new CreateProviderRequest(owner.userId(), name, "beauty");
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
+                new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        UUID providerId = UUID.fromString(response.getBody().get("id").toString());
+        TestAuth.requireFullPayment(restTemplate, owner, providerId);
+        return providerId;
+    }
+
+    private UUID createService(Registered owner, UUID providerId) {
+        var request = new CreateServiceRequest("Haircut", 60, new BigDecimal("30.00"), "USD");
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers/" + providerId + "/services",
+                HttpMethod.POST, new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        return UUID.fromString(response.getBody().get("id").toString());
+    }
+
+    private UUID createStaff(Registered owner, UUID providerId, String displayName) {
+        var request = new CreateStaffRequest(displayName, "Bio", null);
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers/" + providerId + "/staff",
+                HttpMethod.POST, new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        return UUID.fromString(response.getBody().get("id").toString());
+    }
+}

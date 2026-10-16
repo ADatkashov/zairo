@@ -129,7 +129,9 @@ public final class BusinessAnalyticsDtos {
             @Schema(description = "Lifetime spend with this provider, from SUCCEEDED payments only.")
             BigDecimal totalSpent,
             String currency,
-            String favouriteServiceTitle) {
+            String favouriteServiceTitle,
+            @Schema(description = "How many of their bookings with this provider were marked NO_SHOW.")
+            int noShows) {
     }
 
     public record ActionCenterResponse(UUID providerId, List<ActionItem> actions) {

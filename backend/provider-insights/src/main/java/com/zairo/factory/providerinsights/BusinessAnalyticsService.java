@@ -318,7 +318,8 @@ public class BusinessAnalyticsService {
                             profile.getLastVisitAt(), profile.getNextExpectedVisitAt(), profile.getTotalSpent(),
                             profile.getCurrency(),
                             profile.getFavouriteServiceId() == null ? null
-                                    : serviceTitleById.get(profile.getFavouriteServiceId()));
+                                    : serviceTitleById.get(profile.getFavouriteServiceId()),
+                            profile.getNoShows());
                 })
                 .toList();
     }

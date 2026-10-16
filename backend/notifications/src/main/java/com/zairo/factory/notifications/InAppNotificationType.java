@@ -28,4 +28,6 @@ public enum InAppNotificationType {
     CHANGE_REQUESTED,
     /** An appointment moved to another time -- see booking.BookingMovedEvent. */
     BOOKING_MOVED,
+    /** A time freed up at a business the customer was waiting for -- see waitlist.WaitlistSlotOpenedEvent. */
+    WAITLIST_SLOT_OPENED,
 }

@@ -171,7 +171,13 @@ void main() {
       http.reply('PUT', '/providers/p1', _provider);
       await api.updateProvider(providerId: 'p1', name: 'New name');
       expect(http.bodyOf('PUT', '/providers/p1'),
-          {'name': 'New name', 'latitude': null, 'longitude': null, 'coverPhotoUrl': null});
+          {'name': 'New name', 'latitude': null, 'longitude': null, 'coverPhotoUrl': null, 'cityCode': null});
+    });
+
+    test('updateProvider sends the chosen city', () async {
+      http.reply('PUT', '/providers/p1', _provider);
+      await api.updateProvider(providerId: 'p1', name: 'New name', cityCode: 'almaty');
+      expect(http.bodyOf('PUT', '/providers/p1')['cityCode'], 'almaty');
     });
   });
 
@@ -329,6 +335,18 @@ void main() {
 
       expect((await api.listBookings('p1')).single.totalPrice, 5000);
       expect((await api.completeBooking('b1')).status, 'COMPLETED');
+    });
+
+    test('a cancelled booking carries the reason, an ordinary one has none', () async {
+      http.reply('GET', '/providers/p1/bookings', [
+        {..._booking, 'status': 'CANCELLED', 'cancellationReason': 'Change of plans'},
+        _booking,
+      ]);
+
+      final bookings = await api.listBookings('p1');
+
+      expect(bookings[0].cancellationReason, 'Change of plans');
+      expect(bookings[1].cancellationReason, isNull);
     });
 
     test('fetchSchedule sends the window in UTC and parses entries', () async {
@@ -594,6 +612,7 @@ void main() {
           'totalSpent': 25000,
           'currency': 'KZT',
           'favouriteServiceTitle': 'Haircut',
+          'noShows': 2,
         },
         {'userId': 'u2', 'retentionStatus': 'NEW', 'totalSpent': 0},
       ]);
@@ -603,6 +622,8 @@ void main() {
       expect(all[0].retentionStatus, CustomerRetentionStatus.dueForRebooking);
       expect(all[0].lastVisitAt, isNotNull);
       expect(all[1].lastVisitAt, isNull);
+      expect(all[0].noShows, 2);
+      expect(all[1].noShows, 0);
       expect(all[1].displayName, isNull);
 
       await api.fetchCustomerList('p1', retentionStatus: CustomerRetentionStatus.atRisk);

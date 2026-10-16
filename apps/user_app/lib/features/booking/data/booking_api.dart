@@ -6,6 +6,7 @@ import 'models/availability_slot.dart';
 import 'models/book_again_suggestion.dart';
 import 'models/booking.dart';
 import 'models/payment_plan.dart';
+import 'models/reschedule_option.dart';
 
 /// Not final: tests substitute a subclass overriding these methods instead
 /// of mocking Dio — same pattern as DiscoveryApi/AuthApi.
@@ -82,9 +83,37 @@ class BookingApi {
   /// this isn't the caller's own booking) and status (409 if it's already
   /// CANCELLED/COMPLETED). A refund, if the booking had a successful
   /// payment, happens server-side as part of the same call.
-  Future<Booking> cancelBooking(String bookingId) async {
+  /// The free times this booking can move to: the same business and person, soonest first.
+  Future<List<RescheduleOption>> rescheduleOptions(String bookingId) async {
+    final response = await _dioClient.get('/bookings/$bookingId/reschedule-options');
+    final data = response.data as List<dynamic>;
+    return data.map((e) => RescheduleOption.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Moves the booking to [slotId] (one of [rescheduleOptions]). A 409 means that time was just taken or the booking
+  /// can no longer be moved.
+  Future<Booking> reschedule(String bookingId, String slotId) async {
     try {
-      final response = await _dioClient.post('/bookings/$bookingId/cancel');
+      final response = await _dioClient.post('/bookings/$bookingId/reschedule', data: {'slotId': slotId});
+      return Booking.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 409) {
+        throw const BookingException(BookingErrorKey.slotTaken);
+      }
+      if (e.response?.statusCode == 403) {
+        throw const BookingException(BookingErrorKey.notYourBooking);
+      }
+      rethrow;
+    }
+  }
+
+  /// [reason] is optional: why the customer is cancelling (the business sees it).
+  Future<Booking> cancelBooking(String bookingId, {String? reason}) async {
+    try {
+      final response = await _dioClient.post(
+        '/bookings/$bookingId/cancel',
+        data: reason == null ? null : {'reason': reason},
+      );
       return Booking.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       if (e.response?.statusCode == 409) {

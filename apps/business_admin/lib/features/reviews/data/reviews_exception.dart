@@ -18,6 +18,8 @@ class ReviewsException implements Exception {
         return l10n.errorReviewsForbidden;
       case 404:
         return l10n.errorReviewsNotFound;
+      case 409:
+        return l10n.errorReviewAlreadyReported;
       default:
         return serverMessage ?? l10n.errorReviewsActionFailed;
     }

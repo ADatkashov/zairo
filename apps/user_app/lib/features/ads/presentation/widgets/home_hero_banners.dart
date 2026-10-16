@@ -14,14 +14,18 @@ class HomeHeroBanners extends StatefulWidget {
     super.key,
     required this.banners,
     required this.onOpenVideo,
+    required this.onOpenLink,
     required this.topInset,
     required this.bottomInset,
   });
 
   final List<AdBanner> banners;
 
-  /// Called for a banner that has a video; a banner without one does nothing on tap.
+  /// Called for a banner that has a video (the video wins over a link).
   final ValueChanged<AdBanner> onOpenVideo;
+
+  /// Called for a banner without a video that points at a screen of the app; a banner with neither does nothing on tap.
+  final ValueChanged<AdLinkTarget> onOpenLink;
   final double topInset;
   final double bottomInset;
 
@@ -59,7 +63,11 @@ class _HomeHeroBannersState extends State<HomeHeroBanners> {
               tag: banner.sponsored ? l10n.adSponsoredLabel : null,
               showPlay: banner.hasVideo,
               playLabel: l10n.adWatchVideoLabel,
-              onTap: banner.hasVideo ? () => widget.onOpenVideo(banner) : null,
+              onTap: banner.hasVideo
+                  ? () => widget.onOpenVideo(banner)
+                  : banner.link != null
+                  ? () => widget.onOpenLink(banner.link!)
+                  : null,
               borderRadius: BorderRadius.zero,
               padding: EdgeInsets.fromLTRB(
                 FactorySpacing.space4,

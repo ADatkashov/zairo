@@ -6,11 +6,14 @@ import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../app/router/app_routes.dart';
+import '../../../../core/formatting/slot_label.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/widgets/logged_out_gate.dart';
 import '../../../discovery/data/models/provider_search_result.dart';
 import '../../../discovery/presentation/widgets/provider_card.dart';
+import '../../../workers/presentation/providers/workers_providers.dart';
+import '../../../workers/presentation/widgets/master_avatar_card.dart';
 import '../../data/models/favorite_provider.dart';
 import '../providers/favorites_providers.dart';
 
@@ -113,6 +116,7 @@ class _FavoritesList extends ConsumerWidget {
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               children: [
+                _MyMastersRail(userId: userId),
                 SizedBox(
                   height: MediaQuery.of(context).size.height * 0.6,
                   child: Center(
@@ -131,6 +135,7 @@ class _FavoritesList extends ConsumerWidget {
         }
         return Column(
           children: [
+            _MyMastersRail(userId: userId),
             Align(
               alignment: Alignment.centerRight,
               child: Padding(
@@ -202,6 +207,54 @@ class _FavoritesList extends ConsumerWidget {
             onRetry: () => ref.invalidate(myFavoritesProvider(userId)),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// "My masters": the people the customer put a heart on, as avatars that open the master's page. Best-effort and
+/// silent like Home's rails — nothing at all while loading, on error, or when the list is empty.
+class _MyMastersRail extends ConsumerWidget {
+  const _MyMastersRail({required this.userId});
+
+  final String userId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final masters = ref.watch(myFavoriteWorkersProvider(userId)).value ?? const [];
+    if (masters.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(FactorySpacing.space4, FactorySpacing.space4, FactorySpacing.space4, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.favoritesMyMastersTitle, style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: FactorySpacing.space3),
+          SizedBox(
+            height: MasterAvatarCard.heightFor(context, withCaption: masters.any((m) => m.nextFreeAt != null)),
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: masters.length,
+              separatorBuilder: (_, _) => const SizedBox(width: FactorySpacing.space3),
+              itemBuilder: (context, index) {
+                final master = masters[index];
+                return MasterAvatarCard(
+                  displayName: master.displayName,
+                  photoUrl: master.photoUrl,
+                  averageRating: master.averageRating,
+                  reviewCount: master.reviewCount,
+                  caption: master.nextFreeAt == null
+                      ? null
+                      : slotLabel(l10n, locale, DateTime.now(), master.nextFreeAt!.toLocal()),
+                  onTap: () => context.push(AppRoutes.worker(master.id)),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

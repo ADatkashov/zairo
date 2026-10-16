@@ -1,7 +1,9 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/formatting/csv.dart';
 import '../../../core/formatting/formatters.dart';
 import '../../../core/labels.dart';
 import '../../../core/network/error_text.dart';
@@ -106,6 +108,23 @@ class _BusinessesScreenState extends ConsumerState<BusinessesScreen> {
   BusinessSortColumn? _sortColumn;
   bool _sortAscending = true;
 
+  /// The rows currently on screen (after search and status filter), for "Copy as CSV".
+  List<Business> _visible = const [];
+
+  /// Puts what is on screen on the clipboard as CSV: paste it straight into a spreadsheet.
+  Future<void> _copyCsv() async {
+    final l10n = AppLocalizations.of(context)!;
+    final csv = toCsv(
+      const ['id', 'name', 'vertical', 'status', 'registered'],
+      [
+        for (final b in _visible)
+          [b.id, b.name, b.vertical, b.status, b.createdAt?.toUtc().toIso8601String() ?? ''],
+      ],
+    );
+    await Clipboard.setData(ClipboardData(text: csv));
+    if (mounted) showSnack(context, l10n.businessesCsvCopied(_visible.length));
+  }
+
   /// Explicit column sort when chosen; otherwise pending businesses first
   /// (they need a decision), then by name.
   int _comparator(Business a, Business b) {
@@ -143,7 +162,15 @@ class _BusinessesScreenState extends ConsumerState<BusinessesScreen> {
 
     return AreaScaffold(
       title: l10n.navBusinesses,
-      actions: [IconButton(tooltip: l10n.refresh, icon: const Icon(Icons.refresh_rounded), onPressed: refresh)],
+      actions: [
+        if (async.hasValue)
+          IconButton(
+            tooltip: l10n.businessesCopyCsv,
+            icon: const Icon(Icons.content_copy_rounded),
+            onPressed: _copyCsv,
+          ),
+        IconButton(tooltip: l10n.refresh, icon: const Icon(Icons.refresh_rounded), onPressed: refresh),
+      ],
       body: AsyncView<List<Business>>(
         value: async,
         onRetry: () => ref.invalidate(businessesProvider),
@@ -162,6 +189,8 @@ class _BusinessesScreenState extends ConsumerState<BusinessesScreen> {
             if (_status != null && b.status != _status) return false;
             return needle.isEmpty || b.name.toLowerCase().contains(needle);
           }).toList()..sort(_comparator);
+
+          _visible = visible;
 
           // Only rows still on screen stay selected (a filter or a refresh
           // can hide them), so a bulk action never touches unseen rows.

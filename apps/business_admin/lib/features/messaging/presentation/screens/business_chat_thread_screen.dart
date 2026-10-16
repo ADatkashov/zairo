@@ -10,6 +10,7 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/models/chat_message.dart';
 import '../providers/message_seen_provider.dart';
 import '../providers/messaging_providers.dart';
+import '../providers/quick_replies_provider.dart';
 
 /// One conversation's full thread, from the business owner's side --
 /// plain REST polling only, no WebSocket/read-receipts (see backend/
@@ -32,10 +33,12 @@ class BusinessChatThreadScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<BusinessChatThreadScreen> createState() => _BusinessChatThreadScreenState();
+  ConsumerState<BusinessChatThreadScreen> createState() =>
+      _BusinessChatThreadScreenState();
 }
 
-class _BusinessChatThreadScreenState extends ConsumerState<BusinessChatThreadScreen> {
+class _BusinessChatThreadScreenState
+    extends ConsumerState<BusinessChatThreadScreen> {
   static const _refreshInterval = Duration(seconds: 9);
 
   final _composeController = TextEditingController();
@@ -86,14 +89,17 @@ class _BusinessChatThreadScreenState extends ConsumerState<BusinessChatThreadScr
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSending = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.errorMessageSendFailed)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.errorMessageSendFailed)));
     }
   }
 
   void _markSeen(DateTime at) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ref.read(messageSeenProvider.notifier).markSeen(widget.conversationId, at);
+      ref
+          .read(messageSeenProvider.notifier)
+          .markSeen(widget.conversationId, at);
     });
   }
 
@@ -102,14 +108,19 @@ class _BusinessChatThreadScreenState extends ConsumerState<BusinessChatThreadScr
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final currentUserId = ref.watch(authControllerProvider).value?.id;
-    final threadAsync = ref.watch(conversationThreadProvider(widget.conversationId));
+    final threadAsync = ref.watch(
+      conversationThreadProvider(widget.conversationId),
+    );
 
     // Fires on every load (initial fetch, the periodic refresh timer, a
     // pull-to-refresh, or right after this screen's own reply) --
     // auto-scrolling to the bottom whenever the message count actually
     // changed covers "on load" and "on send" from the spec in one place,
     // without a separate flag for "I just sent something".
-    ref.listen(conversationThreadProvider(widget.conversationId), (previous, next) {
+    ref.listen(conversationThreadProvider(widget.conversationId), (
+      previous,
+      next,
+    ) {
       next.whenData((messages) {
         if (messages.length != _lastMessageCount) {
           _lastMessageCount = messages.length;
@@ -125,7 +136,9 @@ class _BusinessChatThreadScreenState extends ConsumerState<BusinessChatThreadScr
         children: [
           Expanded(
             child: RefreshIndicator(
-              onRefresh: () async => ref.invalidate(conversationThreadProvider(widget.conversationId)),
+              onRefresh: () async => ref.invalidate(
+                conversationThreadProvider(widget.conversationId),
+              ),
               child: threadAsync.when(
                 data: (messages) {
                   // What is on screen counts as read.
@@ -135,12 +148,15 @@ class _BusinessChatThreadScreenState extends ConsumerState<BusinessChatThreadScr
                       padding: const EdgeInsets.all(FactorySpacing.space4),
                       children: [
                         Padding(
-                          padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space6),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: FactorySpacing.space6,
+                          ),
                           child: Center(
                             child: Text(
                               l10n.chatEmptyThread,
                               textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: colors.textTertiary),
                             ),
                           ),
                         ),
@@ -153,9 +169,13 @@ class _BusinessChatThreadScreenState extends ConsumerState<BusinessChatThreadScr
                     itemCount: messages.length,
                     itemBuilder: (context, index) {
                       final message = messages[index];
-                      final isOwn = currentUserId != null && message.senderUserId == currentUserId;
+                      final isOwn =
+                          currentUserId != null &&
+                          message.senderUserId == currentUserId;
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
+                        padding: const EdgeInsets.only(
+                          bottom: FactorySpacing.space3,
+                        ),
                         child: _MessageBubble(message: message, isOwn: isOwn),
                       );
                     },
@@ -167,7 +187,9 @@ class _BusinessChatThreadScreenState extends ConsumerState<BusinessChatThreadScr
                     padding: const EdgeInsets.all(FactorySpacing.space4),
                     child: FactoryErrorState(
                       message: l10n.errorMessagesLoadFailed,
-                      onRetry: () => ref.invalidate(conversationThreadProvider(widget.conversationId)),
+                      onRetry: () => ref.invalidate(
+                        conversationThreadProvider(widget.conversationId),
+                      ),
                     ),
                   ),
                 ),
@@ -185,17 +207,24 @@ class _BusinessChatThreadScreenState extends ConsumerState<BusinessChatThreadScr
   }
 }
 
-class _ComposeBar extends StatelessWidget {
+class _ComposeBar extends ConsumerWidget {
   final TextEditingController controller;
   final bool isSending;
   final VoidCallback onSend;
 
-  const _ComposeBar({required this.controller, required this.isSending, required this.onSend});
+  const _ComposeBar({
+    required this.controller,
+    required this.isSending,
+    required this.onSend,
+  });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
+    final replies =
+        ref.watch(quickRepliesProvider).value ??
+        [l10n.chatQuickAvailable, l10n.chatQuickThanks, l10n.chatQuickTaken];
 
     return SafeArea(
       top: false,
@@ -206,36 +235,180 @@ class _ComposeBar extends StatelessWidget {
           FactorySpacing.space4,
           FactorySpacing.space3,
         ),
-        decoration: BoxDecoration(color: colors.surface, border: Border(top: BorderSide(color: colors.border))),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
+        decoration: BoxDecoration(
+          color: colors.surface,
+          border: Border(top: BorderSide(color: colors.border)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: FactoryTextField(
-                label: l10n.chatComposeHint,
-                controller: controller,
-                enabled: !isSending,
-                minLines: 1,
-              maxLines: 4,
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => onSend(),
-              ),
+            // Ready sentences for the answers a salon gives all day: one tap fills the field, the owner can still
+            // edit before sending. The chips scroll sideways (never a second line of screen); the edit button stays put.
+            Row(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (final template in replies)
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              right: FactorySpacing.space2,
+                            ),
+                            child: ActionChip(
+                              label: Text(template),
+                              onPressed: isSending
+                                  ? null
+                                  : () => controller.value = TextEditingValue(
+                                      text: template,
+                                      selection: TextSelection.collapsed(
+                                        offset: template.length,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: l10n.chatQuickEditTooltip,
+                  icon: const Icon(Icons.edit_outlined, size: 20),
+                  onPressed: isSending
+                      ? null
+                      : () => _editReplies(context, ref, replies),
+                ),
+              ],
             ),
-            const SizedBox(width: FactorySpacing.space2),
-            IconButton.filled(
-              onPressed: isSending ? null : onSend,
-              tooltip: l10n.chatSendButtonTooltip,
-              icon: isSending
-                  ? SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: colors.onPrimary),
-                    )
-                  : const Icon(Icons.send),
+            const SizedBox(height: FactorySpacing.space2),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: FactoryTextField(
+                    label: l10n.chatComposeHint,
+                    controller: controller,
+                    enabled: !isSending,
+                    minLines: 1,
+                    maxLines: 4,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => onSend(),
+                  ),
+                ),
+                const SizedBox(width: FactorySpacing.space2),
+                IconButton.filled(
+                  onPressed: isSending ? null : onSend,
+                  tooltip: l10n.chatSendButtonTooltip,
+                  icon: isSending
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colors.onPrimary,
+                          ),
+                        )
+                      : const Icon(Icons.send),
+                ),
+              ],
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+Future<void> _editReplies(
+  BuildContext context,
+  WidgetRef ref,
+  List<String> current,
+) async {
+  final result = await showDialog<_RepliesEdit>(
+    context: context,
+    builder: (_) => _EditRepliesDialog(current: current),
+  );
+  if (result == null) return;
+  if (result.reset) {
+    await ref.read(quickRepliesProvider.notifier).reset();
+  } else {
+    await ref.read(quickRepliesProvider.notifier).save(result.texts);
+  }
+}
+
+class _RepliesEdit {
+  const _RepliesEdit({required this.reset, this.texts = const []});
+
+  final bool reset;
+  final List<String> texts;
+}
+
+class _EditRepliesDialog extends StatefulWidget {
+  const _EditRepliesDialog({required this.current});
+
+  final List<String> current;
+
+  @override
+  State<_EditRepliesDialog> createState() => _EditRepliesDialogState();
+}
+
+class _EditRepliesDialogState extends State<_EditRepliesDialog> {
+  late final List<TextEditingController> _controllers = [
+    for (var i = 0; i < quickReplyCount; i++)
+      TextEditingController(
+        text: i < widget.current.length ? widget.current[i] : '',
+      ),
+  ];
+
+  @override
+  void dispose() {
+    for (final controller in _controllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return FactoryDialog(
+      title: l10n.chatQuickEditTitle,
+      message: l10n.chatQuickEditHint,
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final controller in _controllers)
+              Padding(
+                padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
+                child: FactoryTextField(
+                  controller: controller,
+                  label: l10n.chatQuickEditField,
+                  minLines: 1,
+                  maxLines: 3,
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        FactoryButton(
+          label: l10n.chatQuickEditReset,
+          variant: FactoryButtonVariant.text,
+          onPressed: () =>
+              Navigator.of(context).pop(const _RepliesEdit(reset: true)),
+        ),
+        FactoryButton(
+          label: l10n.chatQuickEditSave,
+          onPressed: () => Navigator.of(context).pop(
+            _RepliesEdit(
+              reset: false,
+              texts: [for (final c in _controllers) c.text],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -256,12 +429,19 @@ class _MessageBubble extends StatelessWidget {
     final fg = isOwn ? colors.onPrimary : colors.text;
 
     return Row(
-      mainAxisAlignment: isOwn ? MainAxisAlignment.end : MainAxisAlignment.start,
+      mainAxisAlignment: isOwn
+          ? MainAxisAlignment.end
+          : MainAxisAlignment.start,
       children: [
         Flexible(
           child: Container(
-            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-            padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space3, vertical: FactorySpacing.space2),
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.75,
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: FactorySpacing.space3,
+              vertical: FactorySpacing.space2,
+            ),
             decoration: BoxDecoration(
               color: bg,
               borderRadius: BorderRadius.only(
@@ -282,16 +462,22 @@ class _MessageBubble extends StatelessWidget {
                   FactoryBadge(
                     label: l10n.chatBookingChipLabel,
                     icon: Icons.event_outlined,
-                    backgroundColor: (isOwn ? colors.onPrimary : colors.primary).withValues(alpha: 0.14),
+                    backgroundColor: (isOwn ? colors.onPrimary : colors.primary)
+                        .withValues(alpha: 0.14),
                     foregroundColor: isOwn ? colors.onPrimary : colors.primary,
                   ),
                   const SizedBox(height: FactorySpacing.space1),
                 ],
-                Text(message.body, style: textTheme.bodyMedium?.copyWith(color: fg)),
+                Text(
+                  message.body,
+                  style: textTheme.bodyMedium?.copyWith(color: fg),
+                ),
                 const SizedBox(height: 2),
                 Text(
                   DateFormat.Hm(locale).format(message.createdAt.toLocal()),
-                  style: textTheme.labelSmall?.copyWith(color: fg.withValues(alpha: 0.7)),
+                  style: textTheme.labelSmall?.copyWith(
+                    color: fg.withValues(alpha: 0.7),
+                  ),
                 ),
               ],
             ),

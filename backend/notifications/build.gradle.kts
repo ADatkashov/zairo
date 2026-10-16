@@ -14,6 +14,7 @@ dependencies {
     implementation(project(":users"))
     implementation(project(":providers"))
     implementation(project(":booking"))
+    implementation(project(":waitlist"))
 
     // Tells the owner when a staff member can't attend an appointment (WorkerCannotAttendEvent). One-directional.
     implementation(project(":workforce"))
@@ -49,4 +50,7 @@ dependencies {
 
     // BirthdayBonusAwardedEvent -> in-app/email greeting; one-directional like the engines above.
     implementation(project(":loyalty"))
+    // Tells a business what the platform decided about a review it reported.
+    implementation(project(":reviews"))
+    implementation(project(":provider-insights"))
 }

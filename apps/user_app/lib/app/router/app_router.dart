@@ -8,6 +8,7 @@ import '../../features/booking/presentation/screens/booking_confirmation_screen.
 import '../../features/booking/presentation/screens/booking_payment_screen.dart';
 import '../../features/booking/presentation/screens/payment_result_screen.dart';
 import '../../features/staff/presentation/screens/staff_cabinet_screen.dart';
+import '../../features/workers/presentation/screens/worker_screen.dart';
 import '../../features/booking/presentation/screens/my_bookings_screen.dart';
 import '../../features/booking/presentation/screens/provider_detail_screen.dart';
 import '../../features/catalog/presentation/screens/all_categories_screen.dart';
@@ -131,6 +132,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: '/worker/:workerId',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => WorkerScreen(workerId: state.pathParameters['workerId']!),
+      ),
+      GoRoute(
         path: '/portfolio/:masterId',
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => MasterPortfolioScreen(
@@ -156,11 +162,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) {
           final extra = state.extra;
-          final book = state.uri.queryParameters['book'] == '1';
+          final query = state.uri.queryParameters;
+          final book = query['book'] == '1';
+          final worker = (query['worker'] != null && query['kind'] != null) ? (kind: query['kind']!, id: query['worker']!) : null;
           if (extra is ProviderSearchResult) {
-            return ProviderDetailScreen(provider: extra, startAtBooking: book);
+            return ProviderDetailScreen(provider: extra, startAtBooking: book, preselectedWorker: worker, preselectedSlotId: query['slot'], preselectedServiceId: query['service']);
           }
-          return ProviderDetailRoute(providerId: state.pathParameters['id']!, startAtBooking: book);
+          return ProviderDetailRoute(
+            providerId: state.pathParameters['id']!,
+            startAtBooking: book,
+            preselectedWorker: worker,
+            preselectedSlotId: query['slot'],
+            preselectedServiceId: query['service'],
+          );
         },
       ),
       GoRoute(

@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:zairo/features/auth/data/models/user_summary.dart';
 import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/discovery/data/models/service_summary.dart';
@@ -11,6 +12,9 @@ import 'package:zairo/features/favorites/data/favorites_api.dart';
 import 'package:zairo/features/favorites/data/models/favorite_provider.dart';
 import 'package:zairo/features/favorites/presentation/providers/favorites_providers.dart';
 import 'package:zairo/features/favorites/presentation/screens/favorites_screen.dart';
+import 'package:zairo/features/workers/data/models/favorite_worker.dart';
+import 'package:zairo/features/workers/data/workers_api.dart';
+import 'package:zairo/features/workers/presentation/providers/workers_providers.dart';
 import 'package:zairo/l10n/app_localizations.dart';
 
 class _FakeFavoritesApi extends FavoritesApi {
@@ -28,6 +32,30 @@ class _FakeFavoritesApi extends FavoritesApi {
     _favorites.removeWhere((f) => f.id == providerId);
   }
 }
+
+class _FakeWorkersApi extends WorkersApi {
+  _FakeWorkersApi(this._masters, {this.fail = false}) : super(DioClient(Dio()));
+
+  final List<FavoriteWorker> _masters;
+  final bool fail;
+
+  @override
+  Future<List<FavoriteWorker>> listFavoriteWorkers(String userId) async {
+    if (fail) throw Exception('offline');
+    return _masters;
+  }
+}
+
+const _master = FavoriteWorker(
+  id: 'w1',
+  kind: 'MASTER',
+  providerId: 'p1',
+  providerName: 'Studio',
+  displayName: 'Aigerim K.',
+  photoUrl: null,
+  averageRating: 4.8,
+  reviewCount: 9,
+);
 
 class _LoggedInAuthController extends AuthController {
   @override
@@ -180,5 +208,155 @@ void main() {
 
     expect(fakeApi.removedProviderIds, unorderedEquals(['provider-1', 'provider-2']));
     expect(find.text('No favorites yet'), findsOneWidget);
+  });
+
+  Widget mastersApp(List<FavoriteProvider> providers, _FakeWorkersApi workers) => ProviderScope(
+    retry: (_, _) => null,
+    overrides: [
+      favoritesApiProvider.overrideWithValue(_FakeFavoritesApi(providers)),
+      workersApiProvider.overrideWithValue(workers),
+      authControllerProvider.overrideWith(_LoggedInAuthController.new),
+    ],
+    child: MaterialApp.router(
+      theme: factoryLightTheme(),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      routerConfig: GoRouter(
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const FavoritesScreen()),
+          GoRoute(
+            path: '/worker/:id',
+            builder: (_, state) => Scaffold(body: Text('worker ${state.pathParameters['id']}')),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  testWidgets('"My masters" shows the hearted masters above the businesses; a tap opens the master', (tester) async {
+    final favorite = FavoriteProvider(
+      id: 'provider-1',
+      name: 'Favorite Salon',
+      vertical: 'beauty',
+      status: 'ACTIVE',
+      hasOpenAvailability: true,
+      minPrice: 30,
+      services: const [],
+      favoritedAt: DateTime(2026, 1, 1),
+    );
+    await tester.pumpWidget(mastersApp([favorite], _FakeWorkersApi([_master])));
+    await tester.pumpAndSettle();
+
+    expect(find.text('My masters'), findsOneWidget);
+    expect(find.text('Aigerim K.'), findsOneWidget);
+    expect(find.text('Favorite Salon'), findsOneWidget);
+
+    await tester.tap(find.text('Aigerim K.'));
+    await tester.pumpAndSettle();
+    expect(find.text('worker w1'), findsOneWidget);
+  });
+
+  testWidgets('masters are shown even when no business is favorited yet', (tester) async {
+    await tester.pumpWidget(mastersApp(const [], _FakeWorkersApi([_master])));
+    await tester.pumpAndSettle();
+
+    expect(find.text('My masters'), findsOneWidget);
+    expect(find.text('Aigerim K.'), findsOneWidget);
+    expect(find.text('No favorites yet'), findsOneWidget);
+  });
+
+  testWidgets('no masters rail when there are none or the list cannot be loaded', (tester) async {
+    await tester.pumpWidget(mastersApp(const [], _FakeWorkersApi(const [])));
+    await tester.pumpAndSettle();
+    expect(find.text('My masters'), findsNothing);
+    expect(find.text('No favorites yet'), findsOneWidget);
+
+    await tester.pumpWidget(mastersApp(const [], _FakeWorkersApi(const [], fail: true)));
+    await tester.pumpAndSettle();
+    expect(find.text('My masters'), findsNothing);
+    expect(find.text('No favorites yet'), findsOneWidget);
+  });
+
+  testWidgets('a master with a free time shows when, in words that fit the day; one without shows nothing extra', (
+    tester,
+  ) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day, 23, 30);
+    FavoriteWorker master(String id, String name, DateTime? next) => FavoriteWorker(
+      id: id,
+      kind: 'MASTER',
+      providerId: 'p1',
+      providerName: 'Studio',
+      displayName: name,
+      photoUrl: null,
+      averageRating: 4.5,
+      reviewCount: 3,
+      nextFreeAt: next,
+    );
+    await tester.pumpWidget(
+      mastersApp(
+        const [],
+        _FakeWorkersApi([
+          master('w1', 'Todays', today.isAfter(now) ? today : today.add(const Duration(days: 1))),
+          master('w2', 'Tomorrows', DateTime(now.year, now.month, now.day + 1, 9)),
+          master('w3', 'Later', DateTime(now.year, now.month, now.day + 5, 9)),
+          master('w4', 'Busy', null),
+        ]),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Tomorrow 09:00'), findsOneWidget);
+    expect(find.textContaining('23:30'), findsOneWidget);
+    expect(find.textContaining(':00'), findsWidgets);
+    expect(find.text('Busy'), findsOneWidget);
+  });
+
+  testWidgets('"My masters" fits a 320 px phone with a large font in the dark theme, long names and times included', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final next = DateTime.now().add(const Duration(days: 3));
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: (_, _) => null,
+        overrides: [
+          favoritesApiProvider.overrideWithValue(_FakeFavoritesApi(const [])),
+          workersApiProvider.overrideWithValue(
+            _FakeWorkersApi([
+              FavoriteWorker(
+                id: 'w1',
+                kind: 'MASTER',
+                providerId: 'p1',
+                providerName: 'Studio',
+                displayName: 'Aigerim Nurlanovna Abdulkhalikova',
+                photoUrl: null,
+                averageRating: 4.9,
+                reviewCount: 1234,
+                nextFreeAt: next,
+              ),
+              _master,
+            ]),
+          ),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryDarkTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: const FavoritesScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('My masters'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

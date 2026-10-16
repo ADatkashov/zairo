@@ -358,6 +358,14 @@ class BusinessAnalyticsApiTests {
         Instant today = Instant.now().truncatedTo(ChronoUnit.DAYS);
         completeVisit(owner, overdueCustomer, providerId, serviceId, today.minus(44, ChronoUnit.DAYS));
         completeVisit(owner, overdueCustomer, providerId, serviceId, today.minus(30, ChronoUnit.DAYS));
+        // A third booking they did not turn up for: it shows as a no-show on their row.
+        Instant missed = today.minus(10, ChronoUnit.DAYS);
+        UUID missedSlot = createSlot(owner, providerId, missed, missed.plus(30, ChronoUnit.MINUTES));
+        UUID missedBooking = bookWithPrice(overdueCustomer, serviceId, missedSlot, new BigDecimal("35.00"));
+        payBooking(overdueCustomer, missedBooking);
+        ResponseEntity<Map> noShow = restTemplate.exchange("/api/v1/bookings/" + missedBooking + "/no-show",
+                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(noShow.getStatusCode()).isEqualTo(HttpStatus.OK);
 
         ResponseEntity<Map> forbidden = restTemplate.exchange(
                 "/api/v1/providers/" + providerId + "/analytics/customers/list", HttpMethod.GET,
@@ -372,6 +380,7 @@ class BusinessAnalyticsApiTests {
         Map<?, ?> customer = (Map<?, ?>) unfiltered.getBody().get(0);
         assertThat(customer.get("userId")).isEqualTo(overdueCustomer.userId().toString());
         assertThat(customer.get("favouriteServiceTitle")).isEqualTo("Overdue List Service " + runId);
+        assertThat(customer.get("noShows")).isEqualTo(1);
         String actualStatus = (String) customer.get("retentionStatus");
         assertThat(actualStatus).isIn("DUE_FOR_REBOOKING", "AT_RISK");
 

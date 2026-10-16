@@ -27,6 +27,54 @@ void main() {
     api = StaffOwnerApi(http.client());
   });
 
+  group('a worker\'s rating', () {
+    test('workerRating parses the average, the distribution and the reviews with names', () async {
+      http.reply('GET', '$_base/workers/w1/rating', {
+        'averageRating': 4.5,
+        'reviewCount': 2,
+        'distribution': [0, 0, 0, 1, 1],
+        'reviews': [
+          {
+            'reviewId': 'r1',
+            'bookingId': 'b1',
+            'customerName': 'Aisha K.',
+            'rating': 5,
+            'comment': 'Lovely',
+            'createdAt': '2026-10-12T10:00:00Z',
+            'businessReply': 'Thanks',
+          },
+          {'reviewId': 'r2', 'customerName': null, 'rating': 4, 'comment': null, 'createdAt': '2026-10-01T10:00:00Z'},
+        ],
+      });
+
+      final rating = await api.workerRating('p1', 'w1');
+
+      expect(rating.averageRating, 4.5);
+      expect(rating.reviewCount, 2);
+      expect(rating.distribution, [0, 0, 0, 1, 1]);
+      expect(rating.reviews[0].reviewId, 'r1');
+      expect(rating.reviews[0].customerName, 'Aisha K.');
+      expect(rating.reviews[0].comment, 'Lovely');
+      expect(rating.reviews[0].businessReply, 'Thanks');
+      expect(rating.reviews[1].customerName, isNull);
+      expect(rating.reviews[1].businessReply, isNull);
+    });
+
+    test('a worker with no reviews has no average', () async {
+      http.reply('GET', '$_base/workers/w2/rating', {
+        'averageRating': null,
+        'reviewCount': 0,
+        'distribution': [0, 0, 0, 0, 0],
+        'reviews': <Object>[],
+      });
+
+      final rating = await api.workerRating('p1', 'w2');
+
+      expect(rating.averageRating, isNull);
+      expect(rating.reviews, isEmpty);
+    });
+  });
+
   group('appointments needing attention', () {
     test('needsAttention parses a full item, its replacements and the defaults', () async {
       http.reply('GET', '$_base/appointments/needs-attention', [
@@ -117,6 +165,28 @@ void main() {
       expect(http.bodyOf('POST', '$_base/appointments/b1/reassign'), {'workerId': 'w2'});
       expect(http.calls('POST', '$_base/appointments/b1/ask-customer'), hasLength(1));
       expect(http.calls('POST', '$_base/appointments/b1/mark-attended'), hasLength(1));
+    });
+  });
+
+  group('appointment actions', () {
+    test('no-show, completion and the move go to the booking endpoints', () async {
+      http.reply('GET', '/bookings/b1/owner-reschedule-options', [
+        {'slotId': 's2', 'startsAt': '2026-10-20T09:00:00Z', 'endsAt': '2026-10-20T10:00:00Z'},
+      ]);
+      http.reply('POST', '/bookings/b1/no-show', {});
+      http.reply('POST', '/bookings/b1/complete', {});
+      http.reply('POST', '/bookings/b1/owner-reschedule', {});
+
+      final options = await api.rescheduleOptions('b1');
+      await api.markNoShow('b1');
+      await api.markCompleted('b1');
+      await api.reschedule('b1', 's2');
+
+      expect(options.single.slotId, 's2');
+      expect(options.single.startsAt, DateTime.utc(2026, 10, 20, 9));
+      expect(http.calls('POST', '/bookings/b1/no-show'), hasLength(1));
+      expect(http.calls('POST', '/bookings/b1/complete'), hasLength(1));
+      expect(http.bodyOf('POST', '/bookings/b1/owner-reschedule'), {'slotId': 's2'});
     });
   });
 

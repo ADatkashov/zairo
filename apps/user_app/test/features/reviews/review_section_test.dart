@@ -6,6 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:zairo/features/reviews/data/models/review.dart';
+import 'package:zairo/features/workers/data/models/booking_worker.dart';
+import 'package:zairo/features/workers/data/workers_api.dart';
+import 'package:zairo/features/workers/presentation/providers/workers_providers.dart';
 import 'package:zairo/features/reviews/data/review_exception.dart';
 import 'package:zairo/features/reviews/data/reviews_api.dart';
 import 'package:zairo/features/reviews/presentation/providers/reviews_providers.dart';
@@ -29,12 +32,14 @@ class _FakeReviewsApi extends ReviewsApi {
     required String bookingId,
     required int rating,
     String? comment,
+    int? workerRating,
   }) async {
     if (errorOnCreate != null) throw errorOnCreate!;
     lastCreateCall = {
       'bookingId': bookingId,
       'rating': rating,
       'comment': comment,
+      'workerRating': workerRating,
     };
     _review = Review(
       id: 'review-1',
@@ -47,7 +52,116 @@ class _FakeReviewsApi extends ReviewsApi {
   }
 }
 
+class _FakeWorkersApi extends WorkersApi {
+  _FakeWorkersApi({this.worker}) : super(DioClient(Dio()));
+
+  final BookingWorker? worker;
+
+  @override
+  Future<BookingWorker> getBookingWorker(String bookingId) async {
+    if (worker == null) throw Exception('404');
+    return worker!;
+  }
+}
+
 void main() {
+  late _FakeReviewsApi reviewsApi;
+
+  Future<void> openDialog(WidgetTester tester, BookingWorker? worker) async {
+    reviewsApi = _FakeReviewsApi();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          reviewsApiProvider.overrideWithValue(reviewsApi),
+          workersApiProvider.overrideWithValue(_FakeWorkersApi(worker: worker)),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: ReviewSection(bookingId: 'booking-1')),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Leave a review'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('the review dialog names the person the visit was with', (
+    tester,
+  ) async {
+    await openDialog(
+      tester,
+      const BookingWorker(id: 'w1', kind: 'MASTER', displayName: 'Aigerim'),
+    );
+
+    expect(find.text('Your visit with Aigerim'), findsOneWidget);
+  });
+
+  const aigerim = BookingWorker(
+    id: 'w1',
+    kind: 'MASTER',
+    displayName: 'Aigerim',
+  );
+
+  testWidgets(
+    'with a named person there is a second, optional row of stars for them',
+    (tester) async {
+      await openDialog(tester, aigerim);
+
+      expect(find.text('The business'), findsOneWidget);
+      expect(find.text('Aigerim'), findsOneWidget);
+      expect(
+        find.text(
+          'Optional. Without it, your rating above counts for Aigerim too.',
+        ),
+        findsOneWidget,
+      );
+      // Two rows of five stars.
+      expect(find.byTooltip('Rate 3 stars'), findsNWidgets(2));
+    },
+  );
+
+  testWidgets(
+    'rating the business alone sends one rating; the person is not rated apart',
+    (tester) async {
+      await openDialog(tester, aigerim);
+
+      await tester.tap(find.byTooltip('Rate 5 stars').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Submit'));
+      await tester.pumpAndSettle();
+
+      expect(reviewsApi.lastCreateCall?['rating'], 5);
+      expect(reviewsApi.lastCreateCall?['workerRating'], isNull);
+    },
+  );
+
+  testWidgets('rating the person apart sends both marks', (tester) async {
+    await openDialog(tester, aigerim);
+
+    await tester.tap(find.byTooltip('Rate 5 stars').first);
+    await tester.tap(find.byTooltip('Rate 3 stars').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Submit'));
+    await tester.pumpAndSettle();
+
+    expect(reviewsApi.lastCreateCall?['rating'], 5);
+    expect(reviewsApi.lastCreateCall?['workerRating'], 3);
+  });
+
+  testWidgets('without a named person the dialog just asks for the rating', (
+    tester,
+  ) async {
+    await openDialog(tester, null);
+
+    expect(find.textContaining('Your visit with'), findsNothing);
+    expect(find.byIcon(Symbols.star_rounded), findsWidgets);
+    expect(find.byTooltip('Rate 3 stars'), findsOneWidget);
+    expect(find.text('The business'), findsNothing);
+  });
+
   testWidgets('shows a "leave a review" button when there is no review yet', (
     tester,
   ) async {
@@ -146,6 +260,7 @@ void main() {
         'bookingId': 'booking-1',
         'rating': 4,
         'comment': 'Loved it',
+        'workerRating': null,
       });
       // Dialog closes and the section now shows the submitted review.
       expect(find.text('Loved it'), findsOneWidget);
@@ -190,4 +305,66 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'a star on the booking card opens the form with that mark chosen; sending needs no further taps on stars',
+    (tester) async {
+      reviewsApi = _FakeReviewsApi();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            reviewsApiProvider.overrideWithValue(reviewsApi),
+            workersApiProvider.overrideWithValue(_FakeWorkersApi()),
+          ],
+          child: MaterialApp(
+            theme: factoryLightTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const Scaffold(body: ReviewSection(bookingId: 'booking-1')),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Rate your visit 4 stars'));
+      await tester.pumpAndSettle();
+      // The mark is already there: Submit is enabled without touching the dialog's stars.
+      await tester.tap(find.text('Submit'));
+      await tester.pumpAndSettle();
+
+      expect(reviewsApi.lastCreateCall!['rating'], 4);
+      expect(reviewsApi.lastCreateCall!['comment'], isNull);
+    },
+  );
+
+  testWidgets(
+    'the card stars and the label fit a 320 px phone with a large font',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            reviewsApiProvider.overrideWithValue(_FakeReviewsApi()),
+            workersApiProvider.overrideWithValue(_FakeWorkersApi()),
+          ],
+          child: MaterialApp(
+            theme: factoryDarkTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: const TextScaler.linear(2)),
+              child: child!,
+            ),
+            home: const Scaffold(body: ReviewSection(bookingId: 'booking-1')),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Rate your visit 5 stars'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

@@ -19,7 +19,34 @@ public final class ReviewDtos {
     // can show the bound in the schema and reject it a step earlier.
     public record CreateReviewRequest(
             @Min(1) @Max(5) @Schema(example = "5") int rating,
-            @Schema(description = "Optional.", example = "Loved the service!") String comment) {
+            @Schema(description = "Optional.", example = "Loved the service!") String comment,
+            @Min(1) @Max(5) @Schema(description = "Optional second rating for the person the visit was with "
+                    + "(master, mechanic, ...), apart from the business. Omit to rate both with `rating`.",
+                    example = "5") Integer workerRating) {
+        public CreateReviewRequest(int rating, String comment) {
+            this(rating, comment, null);
+        }
+    }
+
+    public record ReportReviewRequest(
+            @NotBlank @Size(max = 1000) @Schema(description = "Why the review should be looked at.",
+                    example = "Abusive language") String reason) {
+    }
+
+    public record ModerationDecisionRequest(
+            @Size(max = 1000) @Schema(description = "Optional note, kept in the audit log (and shown as the hidden "
+                    + "reason).", example = "Contains personal data") String reason) {
+    }
+
+    /** One row of the platform's moderation queue. */
+    public record ModerationReviewResponse(
+            UUID id, UUID bookingId, UUID providerId, String providerName, int rating, String comment,
+            Instant createdAt, String businessReply, String reportReason, Instant reportedAt,
+            @Schema(description = "OPEN (waiting for a decision), HIDDEN (kept out of every rating) or DISMISSED "
+                    + "(looked at, stays).") String status,
+            Instant hiddenAt, String hiddenReason,
+            @Schema(description = "When the platform decided (hid it, or looked and kept it); null while OPEN.")
+            Instant decidedAt) {
     }
 
     public record ReplyToReviewRequest(
@@ -35,11 +62,13 @@ public final class ReviewDtos {
             @Schema(description = "The reviewed business's own reply — null until they post one.",
                     example = "Thank you for the kind words!")
             String businessReply,
-            @Schema(description = "Only set once businessReply is set.") Instant businessReplyAt) {
+            @Schema(description = "Only set once businessReply is set.") Instant businessReplyAt,
+            @Schema(description = "The separate rating of the person the visit was with; null = `rating` counts "
+                    + "for them too.", example = "5") Integer workerRating) {
         static ReviewResponse from(Review review) {
             return new ReviewResponse(review.getId(), review.getBookingId(), review.getRating(),
                     review.getComment(), review.getCreatedAt(), review.getBusinessReply(),
-                    review.getBusinessReplyAt());
+                    review.getBusinessReplyAt(), review.getWorkerRating());
         }
     }
 
@@ -48,7 +77,10 @@ public final class ReviewDtos {
             UUID id, UUID bookingId,
             @Schema(description = "The reviewing customer's display name.", example = "Aisha K.") String customerName,
             int rating, String comment, Instant createdAt,
-            String businessReply, Instant businessReplyAt) {
+            String businessReply, Instant businessReplyAt,
+            @Schema(description = "Moderation state: null = never reported; OPEN = reported, waiting for the "
+                    + "platform; HIDDEN = kept out of every rating; DISMISSED = reported, the platform kept it.")
+            String moderationStatus) {
     }
 
     /**

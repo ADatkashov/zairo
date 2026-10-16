@@ -8,6 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:zairo/features/auth/data/models/user_summary.dart';
 import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
+import 'package:zairo/features/workers/data/models/booking_worker.dart';
+import 'package:zairo/features/workers/presentation/providers/workers_providers.dart';
 import 'package:zairo/features/booking/data/booking_api.dart';
 import 'package:zairo/features/booking/data/booking_exception.dart';
 import 'package:zairo/features/booking/data/models/availability_slot.dart';
@@ -36,6 +38,7 @@ class _FakeBookingApi extends BookingApi {
 
   final List<Booking> _bookings;
   String? lastCancelledBookingId;
+  String? lastCancelReason;
   Object? errorOnCancel;
 
   @override
@@ -45,9 +48,10 @@ class _FakeBookingApi extends BookingApi {
   Future<List<AvailabilitySlot>> listAvailabilitySlots(String providerId) async => const [];
 
   @override
-  Future<Booking> cancelBooking(String bookingId) async {
+  Future<Booking> cancelBooking(String bookingId, {String? reason}) async {
     if (errorOnCancel != null) throw errorOnCancel!;
     lastCancelledBookingId = bookingId;
+    lastCancelReason = reason;
     final index = _bookings.indexWhere((b) => b.id == bookingId);
     final cancelled = Booking(
       id: _bookings[index].id,
@@ -460,6 +464,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(fakeApi.lastCancelledBookingId, 'booking-1');
+    // The reason is optional: nobody is forced to give one.
+    expect(fakeApi.lastCancelReason, isNull);
     expect(find.text('Booking cancelled.'), findsOneWidget);
 
     // The booking left the Upcoming tab now that it's CANCELLED — it only
@@ -467,6 +473,51 @@ void main() {
     await tester.tap(find.text('Cancelled').first);
     await tester.pumpAndSettle();
     expect(find.text('Cancelled'), findsWidgets);
+  });
+
+  testWidgets('a one-tap reason chosen in the cancel dialog is sent with the cancellation, and tapping it again clears it', (tester) async {
+    final booking = Booking(
+      id: 'booking-1',
+      userId: 'user-1',
+      serviceId: 'service-1',
+      availabilitySlotId: 'slot-1',
+      status: 'CONFIRMED',
+      totalPrice: 20,
+      createdAt: DateTime(2026, 1, 1),
+    );
+    final fakeApi = _FakeBookingApi([booking]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(fakeApi),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const MyBookingsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Cancel booking'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Found another time'));
+    await tester.pump();
+    await tester.tap(find.text('Found another time'));
+    await tester.pump();
+    await tester.tap(find.text('Change of plans'));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Cancel booking'));
+    await tester.pumpAndSettle();
+
+    expect(fakeApi.lastCancelledBookingId, 'booking-1');
+    expect(fakeApi.lastCancelReason, 'Change of plans');
   });
 
   testWidgets('shows a readable error when cancellation fails', (tester) async {
@@ -684,6 +735,164 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('provider provider-9'), findsOneWidget);
+  });
+
+  testWidgets('"Book again" opens the booking flow with the same service, using the booking\'s own business', (
+    tester,
+  ) async {
+    final booking = Booking(
+      id: 'booking-1',
+      userId: 'user-1',
+      serviceId: 'service-1',
+      availabilitySlotId: 'slot-1',
+      status: 'COMPLETED',
+      totalPrice: 25,
+      createdAt: DateTime(2026, 1, 1),
+      providerId: 'provider-7',
+      providerName: 'Glow Salon',
+    );
+    Uri? opened;
+    final router = GoRouter(
+      routes: [
+        GoRoute(path: '/', builder: (_, _) => const MyBookingsScreen()),
+        GoRoute(
+          path: '/provider/:id',
+          builder: (_, state) {
+            opened = state.uri;
+            return const Scaffold(body: Text('provider page'));
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(_FakeBookingApi([booking])),
+          reviewsApiProvider.overrideWithValue(_FakeReviewsApi()),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+          // No suggestions at all: the booking alone is enough.
+          bookAgainSuggestionsProvider('user-1').overrideWith((ref) async => const <BookAgainSuggestion>[]),
+        ],
+        child: MaterialApp.router(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Completed'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Book again'));
+    await tester.pumpAndSettle();
+
+    expect(opened?.path, '/provider/provider-7');
+    expect(opened?.queryParameters, {'book': '1', 'service': 'service-1'});
+  });
+
+  for (final lookup in <String, BookingWorker?>{
+    'with the same person when the visit was with a named one': const BookingWorker(
+      id: 'w9',
+      kind: 'MASTER',
+      displayName: 'Aigerim',
+    ),
+    'without a person when the visit had none': null,
+  }.entries) {
+    testWidgets('"Book again" opens ${lookup.key}', (tester) async {
+      final booking = Booking(
+        id: 'booking-1',
+        userId: 'user-1',
+        serviceId: 'service-1',
+        availabilitySlotId: 'slot-1',
+        status: 'COMPLETED',
+        totalPrice: 25,
+        createdAt: DateTime(2026, 1, 1),
+        providerId: 'provider-7',
+        providerName: 'Glow Salon',
+      );
+      Uri? opened;
+      final router = GoRouter(
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const MyBookingsScreen()),
+          GoRoute(
+            path: '/provider/:id',
+            builder: (_, state) {
+              opened = state.uri;
+              return const Scaffold(body: Text('provider page'));
+            },
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            bookingApiProvider.overrideWithValue(_FakeBookingApi([booking])),
+            reviewsApiProvider.overrideWithValue(_FakeReviewsApi()),
+            paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+            authControllerProvider.overrideWith(_LoggedInAuthController.new),
+            bookAgainSuggestionsProvider('user-1').overrideWith((ref) async => const <BookAgainSuggestion>[]),
+            bookingWorkerProvider('booking-1').overrideWith((ref) async => lookup.value),
+          ],
+          child: MaterialApp.router(
+            theme: factoryLightTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Completed'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Book again'));
+      await tester.pumpAndSettle();
+
+      expect(
+        opened?.queryParameters,
+        lookup.value == null
+            ? {'book': '1', 'service': 'service-1'}
+            : {'book': '1', 'service': 'service-1', 'worker': 'w9', 'kind': 'MASTER'},
+      );
+    });
+  }
+
+  testWidgets('a completed booking with no known business and no suggestion offers no "Book again"', (
+    tester,
+  ) async {
+    final booking = Booking(
+      id: 'booking-1',
+      userId: 'user-1',
+      serviceId: 'service-1',
+      availabilitySlotId: 'slot-1',
+      status: 'COMPLETED',
+      totalPrice: 25,
+      createdAt: DateTime(2026, 1, 1),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(_FakeBookingApi([booking])),
+          reviewsApiProvider.overrideWithValue(_FakeReviewsApi()),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+          bookAgainSuggestionsProvider('user-1').overrideWith((ref) async => const <BookAgainSuggestion>[]),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const MyBookingsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Completed'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Book again'), findsNothing);
   });
 
   Future<void> pumpBookings(WidgetTester tester, List<Booking> bookings) async {

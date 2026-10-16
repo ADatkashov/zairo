@@ -78,9 +78,63 @@ public class NotificationService {
                 "You have a new booking (" + bookingId + ").");
     }
 
-    public void sendProviderBookingCancelledEmail(String toEmail, UUID bookingId) {
+    public void sendProviderBookingCancelledEmail(String toEmail, UUID bookingId, String reason) {
         emailProvider.send(toEmail, "Booking cancelled",
-                "A customer cancelled booking (" + bookingId + ").");
+                "A customer cancelled booking (" + bookingId + ")."
+                        + (reason == null || reason.isBlank() ? "" : " Reason: " + reason));
+    }
+
+    public void sendProviderBookingRescheduledEmail(String toEmail, UUID bookingId, Instant newStartsAt) {
+        emailProvider.send(toEmail, "A customer moved a booking",
+                "A customer moved booking (" + bookingId + ") to " + newStartsAt + ".");
+    }
+
+    public void sendWeeklyReportEmail(String toEmail,
+            com.zairo.factory.providerinsights.WeeklyBusinessReportEvent report) {
+        String currency = report.currency() == null ? "" : " " + report.currency();
+        String body = report.providerName() + " — last 7 days\n"
+                + "Bookings: " + report.totalBookings() + delta(report.totalBookings(), report.previousTotalBookings())
+                + "\n"
+                + "Completed: " + report.completedBookings() + "\n"
+                + "Cancelled: " + report.cancelledBookings() + cancelReasons(report.cancelReasons()) + "\n"
+                + "No-shows: " + report.noShowBookings() + "\n"
+                + "Revenue: " + report.totalRevenue() + currency
+                + (report.previousRevenue() == null ? "" : delta(report.totalRevenue(), report.previousRevenue()))
+                + "\n"
+                + (report.averageRating() == null ? "No new reviews"
+                        : "Rating: " + String.format(java.util.Locale.ROOT, "%.1f", report.averageRating())
+                                + " (" + report.newReviews() + " new)");
+        emailProvider.send(toEmail, "Your week: " + report.providerName(), body);
+    }
+
+    private static String cancelReasons(java.util.Map<String, Long> reasons) {
+        if (reasons == null || reasons.isEmpty()) {
+            return "";
+        }
+        return " (" + reasons.entrySet().stream().map(e -> e.getValue() + " " + e.getKey())
+                .collect(java.util.stream.Collectors.joining(", ")) + ")";
+    }
+
+    private static String delta(long now, long before) {
+        return delta(java.math.BigDecimal.valueOf(now), java.math.BigDecimal.valueOf(before));
+    }
+
+    private static String delta(java.math.BigDecimal now, java.math.BigDecimal before) {
+        java.math.BigDecimal diff = now.subtract(before);
+        return diff.signum() == 0 ? " (same as the week before)"
+                : " (" + (diff.signum() > 0 ? "+" : "") + diff.stripTrailingZeros().toPlainString()
+                        + " vs the week before)";
+    }
+
+    public void sendReviewDecisionEmail(String toEmail, UUID reviewId,
+            com.zairo.factory.reviews.ReviewModerationDecidedEvent.Decision decision) {
+        String body = switch (decision) {
+            case HIDDEN -> "The platform hid the review (" + reviewId + ") you reported. It no longer counts in your "
+                    + "rating.";
+            case KEPT -> "The platform looked at your report on the review (" + reviewId + ") and kept it.";
+            case RESTORED -> "The review (" + reviewId + ") that had been hidden counts in your rating again.";
+        };
+        emailProvider.send(toEmail, "About a review you reported", body);
     }
 
     public void sendStaffCannotAttendEmail(String toEmail, UUID bookingId) {
@@ -148,9 +202,29 @@ public class NotificationService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void sendBookingReminderEmail(UUID recipientUserId, String toEmail, UUID bookingId) {
         String title = "Upcoming booking reminder";
-        String body = "Your booking (" + bookingId + ") is coming up in about an hour. See you soon!";
+        String body = "Your booking (" + bookingId + ") is coming up in about 2 hours. See you soon!";
         emailProvider.send(toEmail, title, body);
         recordInApp(recipientUserId, InAppNotificationType.BOOKING_REMINDER, title, body);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void sendBookingDayReminderEmail(UUID recipientUserId, String toEmail, UUID bookingId, Instant startsAt) {
+        String title = "Your visit is coming up";
+        String body = "Your booking (" + bookingId + ") is at " + startsAt + ". Need another time? Open the app and "
+                + "tap Reschedule.";
+        emailProvider.send(toEmail, title, body);
+        recordInApp(recipientUserId, InAppNotificationType.BOOKING_REMINDER, title, body);
+    }
+
+    /** A time freed up at a business the customer put themselves on the waitlist of. */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void sendWaitlistSlotOpenedEmail(UUID recipientUserId, String toEmail, String providerName,
+            Instant startsAt) {
+        String title = "A time just opened up";
+        String body = "A time opened up at " + providerName + ": " + SMART_FILL_SLOT_TIME.format(startsAt)
+                + ". It goes to whoever books first — open the app to take it.";
+        emailProvider.send(toEmail, title, body);
+        recordInApp(recipientUserId, InAppNotificationType.WAITLIST_SLOT_OPENED, title, body);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

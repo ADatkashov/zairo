@@ -14,6 +14,8 @@ import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformTrends;
 import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformTrends.DailyCount;
 import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformDashboardMetrics.BookingsSection;
 import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformDashboardMetrics.BusinessesSection;
+import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformDashboardMetrics.ReviewsSection;
+import com.zairo.factory.reviews.ReviewRepository;
 import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformDashboardMetrics.PaymentsSection;
 import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformDashboardMetrics.RevenueSection;
 import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformDashboardMetrics.SubscriptionsSection;
@@ -55,11 +57,12 @@ public class PlatformInsightsService {
     private final BookingRepository bookingRepository;
     private final PaymentRepository paymentRepository;
     private final PaymentAllocationRepository paymentAllocationRepository;
+    private final ReviewRepository reviewRepository;
 
     public PlatformInsightsService(UserRepository userRepository, ProviderRepository providerRepository,
             SubscriptionRepository subscriptionRepository, SubscriptionChargeRepository subscriptionChargeRepository,
             BookingRepository bookingRepository, PaymentRepository paymentRepository,
-            PaymentAllocationRepository paymentAllocationRepository) {
+            PaymentAllocationRepository paymentAllocationRepository, ReviewRepository reviewRepository) {
         this.userRepository = userRepository;
         this.providerRepository = providerRepository;
         this.subscriptionRepository = subscriptionRepository;
@@ -67,6 +70,7 @@ public class PlatformInsightsService {
         this.bookingRepository = bookingRepository;
         this.paymentRepository = paymentRepository;
         this.paymentAllocationRepository = paymentAllocationRepository;
+        this.reviewRepository = reviewRepository;
     }
 
     public PlatformDashboardMetrics dashboardMetrics() {
@@ -120,7 +124,9 @@ public class PlatformInsightsService {
 
         RevenueSection revenue = new RevenueSection(mrr, currency, platformCommission, platformCommissionCurrency);
 
-        return new PlatformDashboardMetrics(users, businesses, subscriptions, bookings, payments, revenue);
+        ReviewsSection reviews = new ReviewsSection(reviewRepository.countOpenReports());
+
+        return new PlatformDashboardMetrics(users, businesses, subscriptions, bookings, payments, revenue, reviews);
     }
 
     public static final int MAX_TREND_DAYS = 31;

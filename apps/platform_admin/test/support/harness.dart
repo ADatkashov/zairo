@@ -116,6 +116,7 @@ Map<String, Object?> adJson(
   String status = 'ACTIVE',
   String? subtitle,
   String? videoUrl,
+  String? linkTarget,
   String? cityCode,
   String? providerId,
   String? rejectionReason,
@@ -126,6 +127,7 @@ Map<String, Object?> adJson(
   'subtitle': subtitle,
   'imageUrl': 'https://cdn.example/$id.jpg',
   'videoUrl': videoUrl,
+  'linkTarget': linkTarget,
   'cityCode': cityCode,
   'startsAt': '2026-10-01T00:00:00Z',
   'endsAt': '2026-10-08T00:00:00Z',
@@ -174,6 +176,7 @@ FakeBackend defaultBackend({String role = 'PLATFORM_ADMIN'}) {
     'bookings': {'today': 14, 'thisWeek': 90, 'thisMonth': 350, 'completed': 800, 'cancelled': 40},
     'payments': {'succeeded': 700, 'failed': 12, 'pending': 5, 'refunded': 20, 'refundFailed': 1},
     'revenue': {'mrr': 150000, 'currency': 'KZT', 'platformCommission': 42000, 'platformCommissionCurrency': 'KZT'},
+    'reviews': {'reportedOpen': 0},
   });
   final businesses = [businessJson('p1', 'Glow Salon', 'PENDING'), businessJson('p2', 'Zen Spa', 'ACTIVE')];
   backend.on('GET', '/platform/businesses', (_) => FakeReply(businesses));
