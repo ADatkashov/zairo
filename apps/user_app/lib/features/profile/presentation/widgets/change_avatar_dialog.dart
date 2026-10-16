@@ -85,7 +85,10 @@ class _ChangeAvatarDialogState extends ConsumerState<_ChangeAvatarDialog> {
 
   Future<void> _pickPhoto() async {
     try {
-      final picked = await pickAndCropImage(context, cropTitle: AppLocalizations.of(context)!.changeAvatarDialogTitle);
+      final picked = await ref.read(pickPhotoProvider)(
+        context,
+        cropTitle: AppLocalizations.of(context)!.changeAvatarDialogTitle,
+      );
       if (picked == null) return;
       setState(() {
         _pickedBytes = picked.bytes;
