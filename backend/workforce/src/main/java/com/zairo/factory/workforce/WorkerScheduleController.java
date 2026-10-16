@@ -55,6 +55,19 @@ public class WorkerScheduleController {
         return scheduleService.workers(providerId, CurrentUser.requireUserId(request));
     }
 
+    @Operation(summary = "A worker's rating and reviews", description = "Owner-only. Average rating (the person's own "
+            + "rating where the customer gave one, else the shared one), the star distribution and the newest "
+            + "reviews with the reviewer's name, for one master / mechanic / cleaner / staff member of the business.")
+    @ApiResponse(responseCode = "200", description = "The rating")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/providers/{providerId}/workers/{workerId}/rating")
+    public WorkerPortalDtos.WorkerRatingResponse rating(@PathVariable UUID providerId, @PathVariable UUID workerId,
+            HttpServletRequest request) {
+        return scheduleService.rating(providerId, workerId, CurrentUser.requireUserId(request));
+    }
+
     @Operation(summary = "A worker's weekly schedule", description = "Owner-only. configured=false means the worker "
             + "still uses the business's shared slots.")
     @ApiResponse(responseCode = "200", description = "The schedule")

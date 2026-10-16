@@ -174,3 +174,58 @@ class WorkforceSettings {
         workerPricingEnabled: json['workerPricingEnabled'] as bool,
       );
 }
+
+/// One person's rating for the business owner — mirrors the backend's `WorkerPortalDtos.WorkerRatingResponse`.
+class WorkerRating {
+  /// Null until the first review (absent, not zero).
+  final double? averageRating;
+  final int reviewCount;
+
+  /// Review counts for 1..5 stars, index 0 = one star.
+  final List<int> distribution;
+  final List<WorkerReviewItem> reviews;
+
+  const WorkerRating({
+    required this.averageRating,
+    required this.reviewCount,
+    required this.distribution,
+    required this.reviews,
+  });
+
+  factory WorkerRating.fromJson(Map<String, dynamic> json) {
+    return WorkerRating(
+      averageRating: (json['averageRating'] as num?)?.toDouble(),
+      reviewCount: (json['reviewCount'] as num).toInt(),
+      distribution: [for (final n in json['distribution'] as List<dynamic>) (n as num).toInt()],
+      reviews: [
+        for (final r in json['reviews'] as List<dynamic>) WorkerReviewItem.fromJson(r as Map<String, dynamic>),
+      ],
+    );
+  }
+}
+
+class WorkerReviewItem {
+  final String? customerName;
+  final int rating;
+  final String? comment;
+  final DateTime createdAt;
+  final String? businessReply;
+
+  const WorkerReviewItem({
+    required this.customerName,
+    required this.rating,
+    required this.comment,
+    required this.createdAt,
+    required this.businessReply,
+  });
+
+  factory WorkerReviewItem.fromJson(Map<String, dynamic> json) {
+    return WorkerReviewItem(
+      customerName: json['customerName'] as String?,
+      rating: (json['rating'] as num).toInt(),
+      comment: json['comment'] as String?,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      businessReply: json['businessReply'] as String?,
+    );
+  }
+}
