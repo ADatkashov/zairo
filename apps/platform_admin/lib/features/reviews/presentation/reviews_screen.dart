@@ -1,8 +1,10 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/formatting/csv.dart';
 import '../../../core/network/error_text.dart';
 import '../../../core/widgets/common.dart';
 import '../../../l10n/app_localizations.dart';
@@ -22,6 +24,32 @@ class ReviewsScreen extends ConsumerStatefulWidget {
 class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
   String _status = 'OPEN';
 
+  /// The reports of the open tab, for "Copy as CSV".
+  List<ReviewReport> _shown = const [];
+
+  /// Puts the reviews of the open tab on the clipboard as CSV: paste it straight into a spreadsheet.
+  Future<void> _copyCsv() async {
+    final l10n = AppLocalizations.of(context)!;
+    final csv = toCsv(
+      const ['id', 'business', 'rating', 'comment', 'status', 'reported', 'report_reason', 'decided'],
+      [
+        for (final r in _shown)
+          [
+            r.id,
+            r.providerName,
+            '${r.rating}',
+            r.comment ?? '',
+            r.status,
+            r.reportedAt?.toUtc().toIso8601String() ?? '',
+            r.reportReason ?? '',
+            r.decidedAt?.toUtc().toIso8601String() ?? '',
+          ],
+      ],
+    );
+    await Clipboard.setData(ClipboardData(text: csv));
+    if (mounted) showSnack(context, l10n.reviewsCsvCopied(_shown.length));
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -31,7 +59,15 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
 
     return AreaScaffold(
       title: l10n.navReviews,
-      actions: [IconButton(tooltip: l10n.refresh, icon: const Icon(Icons.refresh_rounded), onPressed: refresh)],
+      actions: [
+        if (queue.hasValue)
+          IconButton(
+            tooltip: l10n.reviewsCopyCsv,
+            icon: const Icon(Icons.content_copy_rounded),
+            onPressed: _copyCsv,
+          ),
+        IconButton(tooltip: l10n.refresh, icon: const Icon(Icons.refresh_rounded), onPressed: refresh),
+      ],
       body: ContentFrame(
         child: Column(
           children: [
@@ -58,6 +94,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                 value: queue,
                 onRetry: () => ref.invalidate(reviewQueueProvider(_status)),
                 builder: (items) {
+                  _shown = items;
                   if (items.isEmpty) {
                     return EmptyView(
                       icon: Icons.rate_review_outlined,
