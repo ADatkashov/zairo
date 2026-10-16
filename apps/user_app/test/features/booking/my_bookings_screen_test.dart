@@ -8,6 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:zairo/features/auth/data/models/user_summary.dart';
 import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
+import 'package:zairo/features/workers/data/models/booking_worker.dart';
+import 'package:zairo/features/workers/presentation/providers/workers_providers.dart';
 import 'package:zairo/features/booking/data/booking_api.dart';
 import 'package:zairo/features/booking/data/booking_exception.dart';
 import 'package:zairo/features/booking/data/models/availability_slot.dart';
@@ -741,6 +743,72 @@ void main() {
     expect(opened?.path, '/provider/provider-7');
     expect(opened?.queryParameters, {'book': '1', 'service': 'service-1'});
   });
+
+  for (final lookup in <String, BookingWorker?>{
+    'with the same person when the visit was with a named one': const BookingWorker(
+      id: 'w9',
+      kind: 'MASTER',
+      displayName: 'Aigerim',
+    ),
+    'without a person when the visit had none': null,
+  }.entries) {
+    testWidgets('"Book again" opens ${lookup.key}', (tester) async {
+      final booking = Booking(
+        id: 'booking-1',
+        userId: 'user-1',
+        serviceId: 'service-1',
+        availabilitySlotId: 'slot-1',
+        status: 'COMPLETED',
+        totalPrice: 25,
+        createdAt: DateTime(2026, 1, 1),
+        providerId: 'provider-7',
+        providerName: 'Glow Salon',
+      );
+      Uri? opened;
+      final router = GoRouter(
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const MyBookingsScreen()),
+          GoRoute(
+            path: '/provider/:id',
+            builder: (_, state) {
+              opened = state.uri;
+              return const Scaffold(body: Text('provider page'));
+            },
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            bookingApiProvider.overrideWithValue(_FakeBookingApi([booking])),
+            reviewsApiProvider.overrideWithValue(_FakeReviewsApi()),
+            paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+            authControllerProvider.overrideWith(_LoggedInAuthController.new),
+            bookAgainSuggestionsProvider('user-1').overrideWith((ref) async => const <BookAgainSuggestion>[]),
+            bookingWorkerProvider('booking-1').overrideWith((ref) async => lookup.value),
+          ],
+          child: MaterialApp.router(
+            theme: factoryLightTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Completed'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Book again'));
+      await tester.pumpAndSettle();
+
+      expect(
+        opened?.queryParameters,
+        lookup.value == null
+            ? {'book': '1', 'service': 'service-1'}
+            : {'book': '1', 'service': 'service-1', 'worker': 'w9', 'kind': 'MASTER'},
+      );
+    });
+  }
 
   testWidgets('a completed booking with no known business and no suggestion offers no "Book again"', (
     tester,

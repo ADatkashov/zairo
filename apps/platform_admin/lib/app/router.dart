@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/reviews/presentation/reviews_screen.dart';
 import '../features/activity/presentation/activity_screen.dart';
 import '../features/auth/data/platform_session.dart';
 import '../features/auth/presentation/login_screen.dart';
@@ -116,6 +117,7 @@ GoRouter buildRouter({
           _branch(ConsoleRoutes.catalog, (state) => const CatalogScreen()),
           _branch(ConsoleRoutes.cities, (state) => const CitiesScreen()),
           _branch(ConsoleRoutes.ads, (state) => const AdsScreen()),
+          _branch(ConsoleRoutes.reviews, (state) => const ReviewsScreen()),
           _branch(ConsoleRoutes.finance, (state) => FinanceScreen(initialTab: state.uri.queryParameters['tab'])),
           _branch(ConsoleRoutes.activity, (state) => const ActivityScreen()),
           _branch(ConsoleRoutes.staff, (state) => const StaffScreen()),

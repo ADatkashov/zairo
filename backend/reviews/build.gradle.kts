@@ -26,6 +26,9 @@ dependencies {
     // one-directional (reviews -> users), no cycle.
     implementation(project(":users"))
 
+    // Moderation decisions use platform-admin's caller and audit-log machinery, like ads' admin endpoints.
+    implementation(project(":platform-admin"))
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }

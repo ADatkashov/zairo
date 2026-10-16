@@ -103,6 +103,30 @@ public class ReviewService {
     }
 
     /**
+     * The reviewed business reports a review to the platform. Same ownership rule as replying. One report per review
+     * for good (409 after that, whatever the platform decided), so a dismissed report cannot be filed again; a review
+     * the platform already hid cannot be reported either.
+     */
+    @Transactional
+    public Review reportReview(UUID reviewId, UUID callerId, String reason) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Review not found: "
+                        + reviewId));
+        Booking booking = bookingRepository.findById(review.getBookingId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: "
+                        + review.getBookingId()));
+        AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
+                        + booking.getAvailabilitySlotId()));
+        providerOwnership.requireOwner(slot.getProviderId(), callerId);
+        if (review.wasReported() || review.isHidden()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This review was already reported: " + reviewId);
+        }
+        review.report(reason.trim(), Instant.now());
+        return reviewRepository.save(review);
+    }
+
+    /**
      * Owner-only, newest first. Returns the repository's row projection rather
      * than the final response DTO -- resolving reviewer names is the
      * controller's job, same split {@code LoyaltyAdminController.getCustomers}
@@ -110,7 +134,7 @@ public class ReviewService {
      * here, so this service stays free of a {@code users} dependency).
      */
     @Transactional(readOnly = true)
-    public Page<ReviewRepository.ProviderReviewRow> listByProvider(UUID providerId, UUID callerId,
+    public Page<ReviewRepository.OwnerReviewRow> listByProvider(UUID providerId, UUID callerId,
             Pageable pageable) {
         providerOwnership.requireOwner(providerId, callerId);
         return reviewRepository.findByProviderId(providerId, pageable);

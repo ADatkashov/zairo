@@ -7,6 +7,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../data/models/provider_review.dart';
 import '../providers/reviews_providers.dart';
 import '../widgets/review_reply_dialog.dart';
+import '../widgets/review_report_dialog.dart';
 
 /// The owner-facing reviews list -- paginated exactly like
 /// [LoyaltyCustomersScreen] (accumulate pages locally, "load more" when
@@ -56,6 +57,15 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
           businessReplyAt: result.repliedAt,
         );
       }
+    });
+  }
+
+  Future<void> _report(ProviderReview review) async {
+    final reported = await showReviewReportDialog(context, reviewId: review.id);
+    if (reported != true) return;
+    setState(() {
+      final index = _items.indexWhere((r) => r.id == review.id);
+      if (index != -1) _items[index] = review.copyWithModeration('OPEN');
     });
   }
 
@@ -133,7 +143,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
               )
             else ...[
               for (final review in _items) ...[
-                _ReviewCard(review: review, onReply: () => _reply(review)),
+                _ReviewCard(review: review, onReply: () => _reply(review), onReport: () => _report(review)),
                 const SizedBox(height: FactorySpacing.space3),
               ],
               if (_page + 1 < _totalPages)
@@ -440,8 +450,9 @@ class _StepDot extends StatelessWidget {
 class _ReviewCard extends StatelessWidget {
   final ProviderReview review;
   final VoidCallback onReply;
+  final VoidCallback onReport;
 
-  const _ReviewCard({required this.review, required this.onReply});
+  const _ReviewCard({required this.review, required this.onReply, required this.onReport});
 
   @override
   Widget build(BuildContext context) {
@@ -518,6 +529,34 @@ class _ReviewCard extends StatelessWidget {
               onPressed: onReply,
               icon: const Icon(Icons.reply_rounded, size: 18),
               label: Text(l10n.reviewReplyButton),
+            ),
+          const SizedBox(height: FactorySpacing.space2),
+          // A review the business thinks is unfair can be reported once; afterwards only where it stands is shown.
+          if (review.moderationStatus == null)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: onReport,
+                icon: const Icon(Icons.flag_outlined, size: 18),
+                label: Text(l10n.reviewReportButton),
+              ),
+            )
+          else
+            Row(
+              children: [
+                Icon(Icons.flag_rounded, size: 16, color: colors.textTertiary),
+                const SizedBox(width: FactorySpacing.space1),
+                Expanded(
+                  child: Text(
+                    switch (review.moderationStatus) {
+                      'HIDDEN' => l10n.reviewModerationHidden,
+                      'DISMISSED' => l10n.reviewModerationKept,
+                      _ => l10n.reviewModerationOpen,
+                    },
+                    style: textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                  ),
+                ),
+              ],
             ),
         ],
       ),
