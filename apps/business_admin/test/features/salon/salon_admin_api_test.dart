@@ -600,6 +600,7 @@ void main() {
           'totalSpent': 25000,
           'currency': 'KZT',
           'favouriteServiceTitle': 'Haircut',
+          'noShows': 2,
         },
         {'userId': 'u2', 'retentionStatus': 'NEW', 'totalSpent': 0},
       ]);
@@ -609,6 +610,8 @@ void main() {
       expect(all[0].retentionStatus, CustomerRetentionStatus.dueForRebooking);
       expect(all[0].lastVisitAt, isNotNull);
       expect(all[1].lastVisitAt, isNull);
+      expect(all[0].noShows, 2);
+      expect(all[1].noShows, 0);
       expect(all[1].displayName, isNull);
 
       await api.fetchCustomerList('p1', retentionStatus: CustomerRetentionStatus.atRisk);

@@ -146,6 +146,7 @@
   "errorCategoriesLoadFailed": "Санаттарды жүктеу мүмкін болмады.",
   "homeBookAgainTitle": "Қайта брондау",
   "homeBookAgainLastVisit": "Соңғы визит: {date}",
+  "homeBookAgainNextFree": "Жақын бос уақыт: {when}",
   "homeRecommendedTitle": "Сізге ұсынамыз",
 
   "searchHint": "Қызметтерді немесе провайдерлерді іздеу",

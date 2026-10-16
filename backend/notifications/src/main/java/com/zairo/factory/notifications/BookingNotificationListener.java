@@ -138,6 +138,12 @@ class BookingNotificationListener {
                         event.decision()));
     }
 
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    void onWeeklyReport(com.zairo.factory.providerinsights.WeeklyBusinessReportEvent event) {
+        ownerEmailFor(event.providerId()).ifPresent(ownerEmail -> notificationService.sendWeeklyReportEmail(ownerEmail,
+                event));
+    }
+
     private Optional<String> ownerEmailFor(UUID providerId) {
         return providerRepository.findById(providerId)
                 .map(Provider::getOwnerUserId)

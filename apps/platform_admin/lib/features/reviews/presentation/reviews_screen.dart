@@ -163,6 +163,10 @@ class _ReviewCard extends ConsumerWidget {
             const SizedBox(height: FactorySpacing.space2),
             Text(l10n.reviewsReportedBecause(report.reportReason!), style: textTheme.bodySmall?.copyWith(color: colors.error)),
           ],
+          if (report.decidedAt != null) ...[
+            const SizedBox(height: FactorySpacing.space1),
+            Text(l10n.reviewsDecidedOn(DateFormat.yMMMd(locale).format(report.decidedAt!.toLocal())), style: small),
+          ],
           if (report.isHidden && report.hiddenReason != null) ...[
             const SizedBox(height: FactorySpacing.space1),
             Text(l10n.reviewsHiddenBecause(report.hiddenReason!), style: small),

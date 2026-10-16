@@ -44,7 +44,9 @@ public final class ReviewDtos {
             Instant createdAt, String businessReply, String reportReason, Instant reportedAt,
             @Schema(description = "OPEN (waiting for a decision), HIDDEN (kept out of every rating) or DISMISSED "
                     + "(looked at, stays).") String status,
-            Instant hiddenAt, String hiddenReason) {
+            Instant hiddenAt, String hiddenReason,
+            @Schema(description = "When the platform decided (hid it, or looked and kept it); null while OPEN.")
+            Instant decidedAt) {
     }
 
     public record ReplyToReviewRequest(

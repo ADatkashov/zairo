@@ -51,4 +51,5 @@ dependencies {
     implementation(project(":loyalty"))
     // Tells a business what the platform decided about a review it reported.
     implementation(project(":reviews"))
+    implementation(project(":provider-insights"))
 }

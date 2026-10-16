@@ -344,6 +344,7 @@
   "campaignStatusNotifying": "Уведомление",
   "customerListEmpty": "Нет клиентов по этому фильтру.",
   "customerListLastVisitLabel": "Последний визит: {date}",
+  "customerListNoShows": "Неявок: {count}",
   "customerListNextExpectedLabel": "Ожидается: {date}",
 
   "changeAvatarDialogTitle": "Сменить аватар",
@@ -1051,5 +1052,13 @@
   "salonTabTeam": "Команда",
   "salonTabBookings": "Записи",
   "salonTabSettings": "Настройки",
-  "navQuickActions": "Быстрые действия"
+  "navQuickActions": "Быстрые действия",
+  "appointmentActionsMove": "Перенести на другое время",
+  "appointmentActionsNoShow": "Клиент не пришёл",
+  "appointmentActionsComplete": "Визит состоялся",
+  "appointmentMoveTitle": "Перенести на другое время",
+  "appointmentMoveHint": "Свободное время у того же специалиста. Нажмите на время, и запись переедет; клиент получит уведомление.",
+  "appointmentMoveEmpty": "Других свободных времён сейчас нет.",
+  "appointmentMoved": "Перенесено. Клиент уведомлён.",
+  "appointmentActionFailed": "Не получилось. Попробуйте ещё раз."
 }

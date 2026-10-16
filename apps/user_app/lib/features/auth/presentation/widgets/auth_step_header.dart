@@ -53,9 +53,13 @@ class AuthStepHeader extends StatelessWidget {
           ),
           if (phone != null && onChangePhone != null) ...[
             const SizedBox(height: FactorySpacing.space2),
-            Row(
+            // A Wrap, not a Row: with a large font on a narrow phone the button moves under the number
+            // instead of running off the screen.
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Expanded(child: Text(phone!, style: textTheme.titleSmall)),
+                Text(phone!, style: textTheme.titleSmall),
                 TextButton(onPressed: onChangePhone, child: Text(l10n.authChangeNumber)),
               ],
             ),

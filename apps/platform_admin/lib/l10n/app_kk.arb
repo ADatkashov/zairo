@@ -419,5 +419,8 @@
   "commissionSaved": "Комиссия жаңартылды",
   "commissionReset": "Санат қайтадан әдепкі мөлшерлемені қолданады",
   "commissionInvalid": "0-ден 100-ге дейінгі санды енгізіңіз (үтірден кейін 2 таңбаға дейін)",
-  "navQuickActions": "Жылдам әрекеттер"
+  "navQuickActions": "Жылдам әрекеттер",
+  "reviewsDecidedOn": "Шешім қабылданды: {date}",
+  "businessesCopyCsv": "Тізімді CSV ретінде көшіру",
+  "businessesCsvCopied": "{count, plural, other{{count} бизнес CSV ретінде көшірілді}}"
 }
