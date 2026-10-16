@@ -301,10 +301,12 @@ class _BookingsTabButton extends StatelessWidget {
   }
 }
 
-/// "Book again" on a completed booking. A Booking only knows its service id,
-/// not which business it belongs to, so the business is taken from the
-/// Book-Again suggestions Home already shows (matched by service) — the button
-/// simply isn't offered when the backend has no suggestion for that service.
+/// "Book again" on a completed booking: opens the business straight in the
+/// booking flow with the same service already picked — one tap from the visit
+/// to choosing a time. The business comes from the booking itself; an older
+/// backend that does not send it falls back to the Book-Again suggestions Home
+/// already shows (matched by service), and without either the button is not
+/// offered.
 class _BookAgainButton extends ConsumerWidget {
   const _BookAgainButton({required this.booking, required this.userId});
 
@@ -313,23 +315,27 @@ class _BookAgainButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final suggestions = ref.watch(bookAgainSuggestionsProvider(userId)).value;
     BookAgainSuggestion? match;
-    for (final suggestion in suggestions ?? const <BookAgainSuggestion>[]) {
-      if (suggestion.serviceId == booking.serviceId) {
-        match = suggestion;
-        break;
+    var providerId = booking.providerId;
+    if (providerId == null) {
+      final suggestions = ref.watch(bookAgainSuggestionsProvider(userId)).value;
+      for (final suggestion in suggestions ?? const <BookAgainSuggestion>[]) {
+        if (suggestion.serviceId == booking.serviceId) {
+          match = suggestion;
+          providerId = suggestion.providerId;
+          break;
+        }
       }
     }
-    if (match == null) return const SizedBox.shrink();
-    final suggestion = match;
+    final targetProviderId = providerId;
+    if (targetProviderId == null) return const SizedBox.shrink();
 
     return FactoryButton(
       label: AppLocalizations.of(context)!.bookingBookAgainButton,
       variant: FactoryButtonVariant.text,
       onPressed: () => context.push(
-        AppRoutes.provider(suggestion.providerId),
-        extra: suggestion.toProviderSearchResult(),
+        AppRoutes.provider(targetProviderId, book: true, serviceId: booking.serviceId),
+        extra: match?.toProviderSearchResult(),
       ),
     );
   }

@@ -686,6 +686,98 @@ void main() {
     expect(find.text('provider provider-9'), findsOneWidget);
   });
 
+  testWidgets('"Book again" opens the booking flow with the same service, using the booking\'s own business', (
+    tester,
+  ) async {
+    final booking = Booking(
+      id: 'booking-1',
+      userId: 'user-1',
+      serviceId: 'service-1',
+      availabilitySlotId: 'slot-1',
+      status: 'COMPLETED',
+      totalPrice: 25,
+      createdAt: DateTime(2026, 1, 1),
+      providerId: 'provider-7',
+      providerName: 'Glow Salon',
+    );
+    Uri? opened;
+    final router = GoRouter(
+      routes: [
+        GoRoute(path: '/', builder: (_, _) => const MyBookingsScreen()),
+        GoRoute(
+          path: '/provider/:id',
+          builder: (_, state) {
+            opened = state.uri;
+            return const Scaffold(body: Text('provider page'));
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(_FakeBookingApi([booking])),
+          reviewsApiProvider.overrideWithValue(_FakeReviewsApi()),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+          // No suggestions at all: the booking alone is enough.
+          bookAgainSuggestionsProvider('user-1').overrideWith((ref) async => const <BookAgainSuggestion>[]),
+        ],
+        child: MaterialApp.router(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Completed'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Book again'));
+    await tester.pumpAndSettle();
+
+    expect(opened?.path, '/provider/provider-7');
+    expect(opened?.queryParameters, {'book': '1', 'service': 'service-1'});
+  });
+
+  testWidgets('a completed booking with no known business and no suggestion offers no "Book again"', (
+    tester,
+  ) async {
+    final booking = Booking(
+      id: 'booking-1',
+      userId: 'user-1',
+      serviceId: 'service-1',
+      availabilitySlotId: 'slot-1',
+      status: 'COMPLETED',
+      totalPrice: 25,
+      createdAt: DateTime(2026, 1, 1),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(_FakeBookingApi([booking])),
+          reviewsApiProvider.overrideWithValue(_FakeReviewsApi()),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+          bookAgainSuggestionsProvider('user-1').overrideWith((ref) async => const <BookAgainSuggestion>[]),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const MyBookingsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Completed'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Book again'), findsNothing);
+  });
+
   Future<void> pumpBookings(WidgetTester tester, List<Booking> bookings) async {
     await tester.pumpWidget(
       ProviderScope(
