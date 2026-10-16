@@ -251,6 +251,63 @@ class WorkerDirectoryApiTests {
     }
 
     @Test
+    void aCustomerKeepsAShortlistOfMastersOnlyTheyCanSee() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "fav-owner-" + runId + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "fav-customer-" + runId + "@example.com");
+        Registered stranger = TestAuth.registerCustomer(restTemplate, "fav-stranger-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Fav Studio " + runId);
+        approve(providerId);
+        UUID serviceId = createService(owner, providerId);
+        UUID staffId = createStaff(owner, providerId, "Fav Master");
+        restTemplate.exchange("/api/v1/staff/" + staffId + "/services/" + serviceId, HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+        String base = "/api/v1/users/" + customer.userId() + "/favorite-workers";
+        HttpEntity<Void> asCustomer = new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken()));
+
+        // Empty to begin with; not on the list.
+        assertThat(restTemplate.exchange(base, HttpMethod.GET, asCustomer, Map[].class).getBody()).isEmpty();
+        assertThat(restTemplate.exchange(base + "/" + staffId, HttpMethod.GET, asCustomer, Void.class)
+                .getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        // Adding is idempotent and shows the person with their rating.
+        assertThat(restTemplate.exchange(base + "/" + staffId, HttpMethod.POST, asCustomer, Void.class)
+                .getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(restTemplate.exchange(base + "/" + staffId, HttpMethod.POST, asCustomer, Void.class)
+                .getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(restTemplate.exchange(base + "/" + staffId, HttpMethod.GET, asCustomer, Void.class)
+                .getStatusCode()).isEqualTo(HttpStatus.OK);
+        review(owner, providerId, serviceId, staffId, 5, 1, runId);
+        Map[] mine = restTemplate.exchange(base, HttpMethod.GET, asCustomer, Map[].class).getBody();
+        assertThat(mine).hasSize(1);
+        assertThat(mine[0].get("id")).isEqualTo(staffId.toString());
+        assertThat(mine[0].get("displayName")).isEqualTo("Fav Master");
+        assertThat(mine[0].get("providerName")).isEqualTo("Fav Studio " + runId);
+        assertThat(((Number) mine[0].get("averageRating")).doubleValue()).isEqualTo(5.0);
+
+        // Someone else can neither read nor change it; anonymous is turned away.
+        HttpEntity<Void> asStranger = new HttpEntity<>(null, TestAuth.authHeaders(stranger.accessToken()));
+        assertThat(restTemplate.exchange(base, HttpMethod.GET, asStranger, Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(restTemplate.exchange(base + "/" + staffId, HttpMethod.DELETE, asStranger, Void.class)
+                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(restTemplate.getForEntity(base, Map.class).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        // Unknown people cannot be added.
+        assertThat(restTemplate.exchange(base + "/" + UUID.randomUUID(), HttpMethod.POST, asCustomer, Void.class)
+                .getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        // A person who leaves the business drops off the list; removing is idempotent.
+        restTemplate.exchange("/api/v1/staff/" + staffId, HttpMethod.DELETE,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+        assertThat(restTemplate.exchange(base, HttpMethod.GET, asCustomer, Map[].class).getBody()).isEmpty();
+        assertThat(restTemplate.exchange(base + "/" + staffId, HttpMethod.DELETE, asCustomer, Void.class)
+                .getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(restTemplate.exchange(base + "/" + staffId, HttpMethod.GET, asCustomer, Void.class)
+                .getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
     void limitIsClampedAndNeedsNoToken() {
         assertThat(getTop(0).size()).isLessThanOrEqualTo(1);
         assertThat(getTop(1000).size()).isLessThanOrEqualTo(20);
