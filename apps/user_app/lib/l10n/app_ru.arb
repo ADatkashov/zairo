@@ -146,6 +146,7 @@
   "errorCategoriesLoadFailed": "Не удалось загрузить категории.",
   "homeBookAgainTitle": "Повторить запись",
   "homeBookAgainLastVisit": "Прошлый визит: {date}",
+  "homeBookAgainNextFree": "Ближайшее окно: {when}",
   "homeRecommendedTitle": "Рекомендуем для вас",
 
   "searchHint": "Поиск услуг или провайдеров",

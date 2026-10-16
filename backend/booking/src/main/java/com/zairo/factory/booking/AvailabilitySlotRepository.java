@@ -26,6 +26,10 @@ public interface AvailabilitySlotRepository extends JpaRepository<AvailabilitySl
     Optional<AvailabilitySlot> findFirstByProviderIdAndStatusOrderByStartsAtAsc(UUID providerId,
             AvailabilityStatus status);
 
+    /** The soonest OPEN slot that has not started yet. */
+    Optional<AvailabilitySlot> findFirstByProviderIdAndStatusAndStartsAtAfterOrderByStartsAtAsc(UUID providerId,
+            AvailabilityStatus status, Instant after);
+
     /**
      * {@code providerinsights.BusinessAnalyticsService}'s utilization
      * input -- every slot (any status) this provider offered starting
