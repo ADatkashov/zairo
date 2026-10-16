@@ -12,6 +12,10 @@ class ProviderReview {
   final String? businessReply;
   final DateTime? businessReplyAt;
 
+  /// Where a report on this review stands: null = never reported, OPEN = waiting for the platform, HIDDEN = the
+  /// platform took it out of every rating, DISMISSED = looked at, it stays.
+  final String? moderationStatus;
+
   const ProviderReview({
     required this.id,
     required this.bookingId,
@@ -21,6 +25,7 @@ class ProviderReview {
     required this.createdAt,
     this.businessReply,
     this.businessReplyAt,
+    this.moderationStatus,
   });
 
   bool get hasReply => businessReply != null;
@@ -34,6 +39,19 @@ class ProviderReview {
         createdAt: createdAt,
         businessReply: businessReply,
         businessReplyAt: businessReplyAt,
+        moderationStatus: moderationStatus,
+      );
+
+  ProviderReview copyWithModeration(String status) => ProviderReview(
+        id: id,
+        bookingId: bookingId,
+        customerName: customerName,
+        rating: rating,
+        comment: comment,
+        createdAt: createdAt,
+        businessReply: businessReply,
+        businessReplyAt: businessReplyAt,
+        moderationStatus: status,
       );
 
   factory ProviderReview.fromJson(Map<String, dynamic> json) {
@@ -46,6 +64,7 @@ class ProviderReview {
       createdAt: DateTime.parse(json['createdAt'] as String),
       businessReply: json['businessReply'] as String?,
       businessReplyAt: json['businessReplyAt'] == null ? null : DateTime.parse(json['businessReplyAt'] as String),
+      moderationStatus: json['moderationStatus'] as String?,
     );
   }
 }

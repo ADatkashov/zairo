@@ -183,4 +183,26 @@ void main() {
 
     expect(find.byType(FactoryErrorState), findsOneWidget);
   });
+
+  testWidgets('the refresh button asks the backend again', (tester) async {
+    final backend = _backend(queues: {'OPEN': [_row('r1', 'OPEN')]});
+    await pumpConsole(tester, backend: backend, location: ConsoleRoutes.reviews);
+    final before = backend.calls('GET', '/platform/reviews').length;
+
+    await tester.tap(find.byIcon(Icons.refresh_rounded));
+    await tester.pumpAndSettle();
+
+    expect(backend.calls('GET', '/platform/reviews').length, before + 1);
+  });
+
+  testWidgets('pulling down reloads the queue', (tester) async {
+    final backend = _backend(queues: {'OPEN': [_row('r1', 'OPEN')]});
+    await pumpConsole(tester, backend: backend, location: ConsoleRoutes.reviews);
+    final before = backend.calls('GET', '/platform/reviews').length;
+
+    await tester.fling(find.text('Awful experience'), const Offset(0, 400), 1000);
+    await tester.pumpAndSettle();
+
+    expect(backend.calls('GET', '/platform/reviews').length, before + 1);
+  });
 }
