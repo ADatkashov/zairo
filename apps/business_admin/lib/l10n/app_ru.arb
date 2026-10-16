@@ -262,6 +262,8 @@
   "dashboardBusinessesCountLabel": "Бизнесов",
   "dashboardNeedsAttentionTitle": "Требует внимания сегодня",
   "dashboardAttentionAllClear": "Всё в порядке — сегодня ничего не требует внимания.",
+  "dashboardAttentionNeedsDecision": "{count, plural, one{{count} запись ждёт вашего решения} few{{count} записи ждут вашего решения} many{{count} записей ждут вашего решения} other{{count} записи ждут вашего решения}}",
+  "dashboardAttentionNeedsDecisionAt": "{count, plural, one{{count} запись ждёт вашего решения · {business}} few{{count} записи ждут вашего решения · {business}} many{{count} записей ждут вашего решения · {business}} other{{count} записи ждут вашего решения · {business}}}",
   "dashboardAttentionBillingPastDue": "Платёж не прошёл — исправьте оплату, чтобы сохранить PRO",
   "dashboardAttentionCampaignExpiringSoon": "{count, plural, one{{count} кампания скоро истекает} few{{count} кампании скоро истекают} many{{count} кампаний скоро истекают} other{{count} кампании скоро истекают}}",
   "dashboardAttentionFailedCampaign": "{count, plural, one{{count} неудачная кампания для повтора} few{{count} неудачные кампании для повтора} many{{count} неудачных кампаний для повтора} other{{count} неудачные кампании для повтора}}",
