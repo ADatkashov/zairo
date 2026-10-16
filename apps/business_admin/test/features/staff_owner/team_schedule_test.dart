@@ -48,6 +48,15 @@ class _FakeApi extends StaffOwnerApi {
   @override
   Future<List<WorkerSummary>> workers(String providerId) async => workerList;
 
+  WorkerRating rating = const WorkerRating(averageRating: null, reviewCount: 0, distribution: [0, 0, 0, 0, 0], reviews: []);
+  bool ratingFails = false;
+
+  @override
+  Future<WorkerRating> workerRating(String providerId, String workerId) async {
+    if (ratingFails) throw Exception('offline');
+    return rating;
+  }
+
   @override
   Future<WorkforceSettings> settings(String providerId) async =>
       WorkforceSettings(allowWorkerChoice: allowChoice, workerPricingEnabled: false);
@@ -129,6 +138,66 @@ Widget _wrap(_FakeApi api, Widget home) => ProviderScope(
     );
 
 void main() {
+  testWidgets('the star on a person opens their rating: average, distribution and reviews with names', (tester) async {
+    final api = _FakeApi([_worker('w1', 'Aigerim', rating: 4.5, reviews: 2)])
+      ..rating = WorkerRating(
+        averageRating: 4.5,
+        reviewCount: 2,
+        distribution: const [0, 0, 0, 1, 1],
+        reviews: [
+          WorkerReviewItem(
+            customerName: 'Aisha K.',
+            rating: 5,
+            comment: 'Lovely work',
+            createdAt: DateTime(2026, 10, 12),
+            businessReply: 'Thanks!',
+          ),
+        ],
+      );
+    await tester.pumpWidget(_wrap(api, const TeamScheduleScreen(providerId: 'p1')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Rating and reviews'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('4.5'), findsWidgets);
+    expect(find.text('(2)'), findsWidgets);
+    expect(find.text('1 more review to be among the best masters'), findsWidgets);
+    expect(find.text('Latest reviews'), findsOneWidget);
+    expect(find.text('Aisha K.'), findsOneWidget);
+    expect(find.text('Lovely work'), findsOneWidget);
+    expect(find.text('Reply from the business'), findsOneWidget);
+    expect(find.text('Thanks!'), findsOneWidget);
+    expect(find.text('Oct 12, 2026'), findsOneWidget);
+  });
+
+  testWidgets('a person with no reviews shows the empty state and what it takes', (tester) async {
+    final api = _FakeApi([_worker('w1', 'Aigerim')]);
+    await tester.pumpWidget(_wrap(api, const TeamScheduleScreen(providerId: 'p1')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Rating and reviews'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No reviews yet'), findsOneWidget);
+    expect(find.text('No reviews yet · 3 reviews put them among the best masters'), findsWidgets);
+  });
+
+  testWidgets('a failed load offers a retry', (tester) async {
+    final api = _FakeApi([_worker('w1', 'Aigerim')])..ratingFails = true;
+    await tester.pumpWidget(_wrap(api, const TeamScheduleScreen(providerId: 'p1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Rating and reviews'));
+    await tester.pumpAndSettle();
+    expect(find.byType(FactoryErrorState), findsOneWidget);
+
+    api.ratingFails = false;
+    await tester.tap(find.byType(FactoryButton));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FactoryErrorState), findsNothing);
+  });
+
   testWidgets('each person shows their rating and how far they are from the best masters list', (tester) async {
     final api = _FakeApi([
       _worker('w1', 'Aigerim', rating: 4.8, reviews: 5),

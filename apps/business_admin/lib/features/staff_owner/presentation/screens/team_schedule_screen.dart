@@ -6,6 +6,7 @@ import '../../../../core/formatting/month_day_time.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../data/models/worker_schedule.dart';
 import '../providers/staff_owner_providers.dart';
+import 'worker_rating_screen.dart';
 import 'worker_schedule_screen.dart';
 
 /// The owner's team schedule: everyone who works at the business, whether they have their own weekly schedule, who is
@@ -179,7 +180,20 @@ class _WorkerTile extends StatelessWidget {
           ),
         ],
       ),
-      trailing: Icon(Icons.chevron_right_rounded, color: colors.textTertiary),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // The rating line says how far they are from the best masters; this is where the reviews behind it are.
+          IconButton(
+            icon: const Icon(Icons.star_outline_rounded),
+            tooltip: l10n.workerRatingTooltip,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => WorkerRatingScreen(providerId: providerId, worker: worker)),
+            ),
+          ),
+          Icon(Icons.chevron_right_rounded, color: colors.textTertiary),
+        ],
+      ),
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => WorkerScheduleScreen(providerId: providerId, worker: worker)),
       ),

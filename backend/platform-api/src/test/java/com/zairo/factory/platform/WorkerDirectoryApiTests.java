@@ -101,6 +101,25 @@ class WorkerDirectoryApiTests {
         assertThat(((Number) byName.get("Best Master").get("averageRating")).doubleValue()).isEqualTo(4.7);
         assertThat(((Number) byName.get("Best Master").get("reviewCount")).longValue()).isEqualTo(3L);
         assertThat(((Number) byName.get("Newcomer").get("reviewCount")).longValue()).isEqualTo(1L);
+
+        // ...and can open one person's rating: average, distribution and the newest reviews with names.
+        String ratingPath = "/api/v1/providers/" + providerId + "/workers/" + best + "/rating";
+        Map<?, ?> rating = restTemplate.exchange(ratingPath, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class).getBody();
+        assertThat(((Number) rating.get("averageRating")).doubleValue()).isBetween(4.6, 4.7);
+        assertThat(((Number) rating.get("reviewCount")).longValue()).isEqualTo(3L);
+        assertThat((List<?>) rating.get("distribution")).hasSize(5);
+        List<Map> rows = (List<Map>) rating.get("reviews");
+        assertThat(rows).hasSize(3);
+        assertThat(rows.get(0).get("customerName")).isEqualTo("Registered Customer");
+
+        // Only that business's owner.
+        Registered stranger = TestAuth.registerOwner(restTemplate, "rating-stranger-" + runId + "@example.com");
+        assertThat(restTemplate.exchange(ratingPath, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(stranger.accessToken())), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(restTemplate.getForEntity(ratingPath, Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @Test
