@@ -982,6 +982,16 @@
 
   "cancelBookingButton": "Cancel booking",
   "@cancelBookingButton": {"description": "Button on a CONFIRMED booking card."},
+  "bookingRescheduleButton": "Reschedule",
+  "@bookingRescheduleButton": {"description": "Button on an upcoming booking card: pick another time."},
+  "bookingRescheduleTitle": "Move to another time",
+  "@bookingRescheduleTitle": {"description": "bookingRescheduleTitle"},
+  "bookingRescheduleHint": "Free times with the same specialist. Tap one to move your booking.",
+  "@bookingRescheduleHint": {"description": "bookingRescheduleHint"},
+  "bookingRescheduleEmpty": "No other free times right now. Check back later.",
+  "@bookingRescheduleEmpty": {"description": "bookingRescheduleEmpty"},
+  "bookingRescheduleDone": "Moved to {time}",
+  "@bookingRescheduleDone": {"description": "Snackbar after moving a booking.", "placeholders": {"time": {"type": "String"}}},
 
   "cancelBookingConfirmTitle": "Cancel this booking?",
   "@cancelBookingConfirmTitle": {"description": "Cancel-booking confirmation dialog title."},
