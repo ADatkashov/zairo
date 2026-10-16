@@ -35,6 +35,7 @@ import 'package:zairo/features/staff/presentation/providers/staff_providers.dart
 import 'package:zairo/features/workforce/data/models/any_slot.dart';
 import 'package:zairo/features/workforce/data/workforce_api.dart';
 import 'package:zairo/features/workforce/presentation/providers/workforce_providers.dart';
+import 'package:zairo/features/waitlist/data/models/waitlist_entry.dart';
 import 'package:zairo/features/waitlist/data/waitlist_api.dart';
 import 'package:zairo/features/waitlist/presentation/providers/waitlist_providers.dart';
 import 'package:zairo/l10n/app_localizations.dart';
@@ -84,7 +85,7 @@ class _FakeWaitlistApi extends WaitlistApi {
   _FakeWaitlistApi() : super(DioClient(Dio()));
 
   @override
-  Future<Set<String>> waitingProviderIds(String userId) async => <String>{};
+  Future<Map<String, WaitlistEntry>> listEntries(String userId) async => {};
 }
 
 class _FakePaymentsApi extends PaymentsApi {
