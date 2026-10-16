@@ -31,6 +31,7 @@ class _FakeSalonAdminApi extends SalonAdminApi {
       email: 'dana@mail.kz',
       retentionStatus: CustomerRetentionStatus.atRisk,
       totalSpent: 40,
+      noShows: 3,
     ),
   ];
 }
@@ -69,5 +70,11 @@ void main() {
     await tester.pump();
     expect(find.text('Aigerim Nur'), findsOneWidget);
     expect(find.text('Dana K.'), findsOneWidget);
+  });
+
+  testWidgets('only a customer who missed visits gets a no-show note', (tester) async {
+    await _pump(tester);
+    expect(find.text('No-shows: 3'), findsOneWidget);
+    expect(find.textContaining('No-shows'), findsOneWidget);
   });
 }
