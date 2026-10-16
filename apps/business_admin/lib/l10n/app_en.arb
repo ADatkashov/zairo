@@ -2616,5 +2616,11 @@
   "appointmentMoved": "Moved. The customer has been told.",
   "@appointmentMoved": {"description": "Snackbar after the move."},
   "appointmentActionFailed": "Could not do that. Try again.",
-  "@appointmentActionFailed": {"description": "Snackbar when an appointment action failed."}
+  "@appointmentActionFailed": {"description": "Snackbar when an appointment action failed."},
+  "chatQuickAvailable": "Yes, that time works. See you then!",
+  "@chatQuickAvailable": {"description": "A ready sentence above the chat compose field."},
+  "chatQuickThanks": "Thank you! We'll be in touch shortly.",
+  "@chatQuickThanks": {"description": "A ready sentence above the chat compose field."},
+  "chatQuickTaken": "Sorry, that time is taken. Would another time work?",
+  "@chatQuickTaken": {"description": "A ready sentence above the chat compose field."}
 }
