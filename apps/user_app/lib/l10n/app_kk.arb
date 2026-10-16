@@ -720,5 +720,8 @@
   "bookingHintService": "Қызметті таңдаңыз",
   "bookingHintPerson": "Маманды таңдаңыз",
   "bookingHintVehicle": "Көлікті таңдаңыз",
-  "bookingHintTime": "Уақытты таңдаңыз"
+  "bookingHintTime": "Уақытты таңдаңыз",
+  "cancelReasonPlans": "Жоспар өзгерді",
+  "cancelReasonOtherTime": "Басқа уақыт таптым",
+  "cancelReasonMistake": "Қателесіп жазылдым"
 }

@@ -306,7 +306,8 @@ class BookingApiTests {
         UUID bookingId = UUID.fromString(bookingResponse.getBody().get("id").toString());
 
         ResponseEntity<Map> cancelResponse = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/cancel",
-                HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+                HttpMethod.POST, new HttpEntity<>(Map.of("reason", "Change of plans"),
+                        TestAuth.authHeaders(customer.accessToken())), Map.class);
         assertThat(cancelResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
 
         assertThat(capturedEmails.sent).anySatisfy(email -> {
@@ -317,7 +318,8 @@ class BookingApiTests {
         assertThat(capturedEmails.sent).anySatisfy(email -> {
             assertThat(email.toEmail()).isEqualTo(ownerEmail);
             assertThat(email.subject()).isEqualTo("Booking cancelled");
-            assertThat(email.body()).contains("cancelled booking (" + bookingId);
+            // The owner is told why, when the customer said.
+            assertThat(email.body()).contains("cancelled booking (" + bookingId).contains("Reason: Change of plans");
         });
     }
 

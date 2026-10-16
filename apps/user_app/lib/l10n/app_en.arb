@@ -1986,5 +1986,11 @@
   "bookingHintVehicle": "Choose your car",
   "@bookingHintVehicle": {"description": "Hint above the Book button: the next thing to pick is the vehicle."},
   "bookingHintTime": "Choose a time",
-  "@bookingHintTime": {"description": "Hint above the Book button: the next thing to pick is the time slot."}
+  "@bookingHintTime": {"description": "Hint above the Book button: the next thing to pick is the time slot."},
+  "cancelReasonPlans": "Change of plans",
+  "@cancelReasonPlans": {"description": "A one-tap reason in the cancel-booking dialog."},
+  "cancelReasonOtherTime": "Found another time",
+  "@cancelReasonOtherTime": {"description": "A one-tap reason in the cancel-booking dialog."},
+  "cancelReasonMistake": "Booked by mistake",
+  "@cancelReasonMistake": {"description": "A one-tap reason in the cancel-booking dialog."}
 }

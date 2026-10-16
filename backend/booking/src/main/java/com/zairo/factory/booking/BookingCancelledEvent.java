@@ -8,7 +8,7 @@ import java.util.UUID;
  * BookingConfirmedEvent}. Consumers so far: payments (issues a refund if
  * the booking had a successful payment) and notifications (tells the
  * customer/provider the booking was cancelled) — neither needs booking to
- * depend on them.
+ * depend on them. {@code reason} is what the canceller said, null when nothing.
  */
-public record BookingCancelledEvent(UUID bookingId, UUID userId, UUID providerId) {
+public record BookingCancelledEvent(UUID bookingId, UUID userId, UUID providerId, String reason) {
 }

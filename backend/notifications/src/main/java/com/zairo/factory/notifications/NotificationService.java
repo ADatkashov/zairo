@@ -78,9 +78,10 @@ public class NotificationService {
                 "You have a new booking (" + bookingId + ").");
     }
 
-    public void sendProviderBookingCancelledEmail(String toEmail, UUID bookingId) {
+    public void sendProviderBookingCancelledEmail(String toEmail, UUID bookingId, String reason) {
         emailProvider.send(toEmail, "Booking cancelled",
-                "A customer cancelled booking (" + bookingId + ").");
+                "A customer cancelled booking (" + bookingId + ")."
+                        + (reason == null || reason.isBlank() ? "" : " Reason: " + reason));
     }
 
     public void sendProviderBookingRescheduledEmail(String toEmail, UUID bookingId, Instant newStartsAt) {
