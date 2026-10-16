@@ -137,6 +137,7 @@
   "attentionAllClear": "Бәрі жақсы — сізді ештеңе күтіп тұрған жоқ.",
   "attentionReview": "Ашу",
   "attentionPendingBusinesses": "{count, plural, one{{count} бизнес бекітуді күтуде} other{{count} бизнес бекітуді күтуде}}",
+  "attentionReportedReviews": "{count, plural, other{{count} шағымданған пікір шешімді күтуде}}",
   "attentionFailedRefunds": "{count, plural, one{{count} қайтару өтпеді — клиентке әлі ақша қайтарылмаған} other{{count} қайтару өтпеді — клиенттерге әлі ақша қайтарылмаған}}",
   "attentionPayablePayouts": "{count, plural, one{{count} бизнеске төлем төленуді күтуде} other{{count} бизнеске төлем төленуді күтуде}}",
   "dashOpen": "Ашу",

@@ -50,6 +50,24 @@ class _ReviewReplyDialogState extends ConsumerState<_ReviewReplyDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Most answers are the same few sentences: one tap puts one in the field, ready to edit.
+          if (widget.existingReply == null) ...[
+            Wrap(
+              spacing: FactorySpacing.space2,
+              runSpacing: FactorySpacing.space1,
+              children: [
+                for (final template in [l10n.reviewReplyQuickThanks, l10n.reviewReplyQuickWelcome, l10n.reviewReplyQuickSorry])
+                  ActionChip(
+                    label: Text(template, maxLines: 2, overflow: TextOverflow.ellipsis),
+                    onPressed: () => setState(() {
+                      _replyController.text = template;
+                      _replyController.selection = TextSelection.collapsed(offset: template.length);
+                    }),
+                  ),
+              ],
+            ),
+            const SizedBox(height: FactorySpacing.space3),
+          ],
           FactoryTextField(
             controller: _replyController,
             label: l10n.reviewReplyFieldLabel,
