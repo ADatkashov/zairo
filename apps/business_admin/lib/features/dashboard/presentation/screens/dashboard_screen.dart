@@ -21,6 +21,8 @@ import '../../../city/presentation/providers/city_providers.dart';
 import '../../../loyalty/presentation/screens/loyalty_screen.dart';
 import '../../../messaging/presentation/screens/business_inbox_screen.dart';
 import '../../../staff_owner/presentation/providers/staff_owner_providers.dart';
+import '../../../staff_owner/data/models/worker_schedule.dart';
+import '../../../salon/data/models/admin_slot.dart';
 import '../../../salon/data/models/admin_provider.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
 import '../../../salon/presentation/screens/week_calendar_screen.dart';
@@ -156,7 +158,7 @@ class DashboardScreen extends ConsumerWidget {
                 );
               }
               if (index == 2) {
-                return _TodayAgenda(ownerUserId: user.id);
+                return _TodayAgenda(ownerUserId: user.id, providers: providers);
               }
               if (index == 3) {
                 return _QuickActions(providers: providers);
@@ -973,9 +975,10 @@ String _initialsFor(String name) {
 /// or on error it stays out of the way (the rest of the dashboard still
 /// works without it).
 class _TodayAgenda extends ConsumerWidget {
-  const _TodayAgenda({required this.ownerUserId});
+  const _TodayAgenda({required this.ownerUserId, required this.providers});
 
   final String ownerUserId;
+  final List<AdminProvider> providers;
 
   static const int _maxRows = 5;
 
@@ -1004,6 +1007,7 @@ class _TodayAgenda extends ConsumerWidget {
               ),
             ],
           ),
+          _TodayCapacity(providers: providers),
           const SizedBox(height: FactorySpacing.space3),
           if (agenda.isEmpty)
             Text(l10n.dashboardAgendaEmpty, style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary))
@@ -1019,6 +1023,46 @@ class _TodayAgenda extends ConsumerWidget {
               style: FactoryTypography.mono(size: 12, color: colors.textTertiary),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// One line under "Today": how many free times are left today across the businesses and how many people are off now —
+/// what an owner wants to know before deciding to push a promotion or call someone in. Best-effort: a part that cannot
+/// be read (or is zero) is left out, and with nothing to say the line is not drawn.
+class _TodayCapacity extends ConsumerWidget {
+  const _TodayCapacity({required this.providers});
+
+  final List<AdminProvider> providers;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final now = DateTime.now();
+    final endOfToday = DateTime(now.year, now.month, now.day + 1);
+
+    var free = 0;
+    var off = 0;
+    for (final provider in providers) {
+      final slots = ref.watch(providerSlotsProvider(provider.id)).value ?? const <AdminSlot>[];
+      free += slots
+          .where((s) => s.status == 'OPEN' && s.startsAt.isAfter(now) && s.startsAt.toLocal().isBefore(endOfToday))
+          .length;
+      final workers = ref.watch(workersProvider(provider.id)).value ?? const <WorkerSummary>[];
+      off += workers.where((w) => w.active && w.offUntil != null && w.offUntil!.isAfter(now)).length;
+    }
+
+    final parts = [
+      if (free > 0) l10n.dashboardTodayFree(free),
+      if (off > 0) l10n.dashboardTodayOff(off),
+    ];
+    if (parts.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: FactorySpacing.space1),
+      child: Text(
+        parts.join(' · '),
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.factoryColors.textSecondary),
       ),
     );
   }

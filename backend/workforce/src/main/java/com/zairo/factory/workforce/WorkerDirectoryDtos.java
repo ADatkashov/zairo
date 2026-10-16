@@ -38,7 +38,9 @@ public final class WorkerDirectoryDtos {
             String displayName,
             String photoUrl,
             @Schema(description = "Null until somebody has reviewed them.", example = "4.8") Double averageRating,
-            long reviewCount) {
+            long reviewCount,
+            @Schema(description = "When their next open time starts; null when they have none (or work without "
+                    + "a schedule of their own).") java.time.Instant nextFreeAt) {
     }
 
     /** Who a booking is with, for the customer who made it. */

@@ -30,6 +30,7 @@ import 'package:business_admin/features/salon/presentation/screens/week_calendar
 import 'package:business_admin/features/salon/presentation/widgets/add_service_dialog.dart';
 import 'package:business_admin/features/salon/presentation/widgets/recurring_schedule_dialog.dart';
 import 'package:business_admin/features/staff_owner/data/models/needs_attention.dart';
+import 'package:business_admin/features/staff_owner/data/models/worker_schedule.dart';
 import 'package:business_admin/features/staff_owner/data/staff_owner_api.dart';
 import 'package:business_admin/features/staff_owner/presentation/providers/staff_owner_providers.dart';
 import 'package:business_admin/l10n/app_localizations.dart';
@@ -45,6 +46,9 @@ class _FakeSalonAdminApi extends SalonAdminApi {
 
   /// When set, creating a business fails with it (a network error, say).
   Object? createError;
+
+  /// What the business offers; the dashboard counts today's open ones.
+  List<AdminSlot> slots = const [];
 
   /// Null = the schedule endpoint "fails" (the card stays hidden, as on a
   /// real error), so tests that aren't about the agenda are unaffected.
@@ -98,7 +102,7 @@ class _FakeSalonAdminApi extends SalonAdminApi {
       ];
 
   @override
-  Future<List<AdminSlot>> listSlots(String providerId) async => const [];
+  Future<List<AdminSlot>> listSlots(String providerId) async => slots;
 
   @override
   Future<List<AdminBooking>> listBookings(String providerId) async => const [];
@@ -153,6 +157,12 @@ class _FakeStaffOwnerApi extends StaffOwnerApi {
   _FakeStaffOwnerApi(this.counts) : super(DioClient(Dio()));
 
   final Map<String, int> counts;
+
+  /// The people of every business, as the team list returns them.
+  List<WorkerSummary> team = const [];
+
+  @override
+  Future<List<WorkerSummary>> workers(String providerId) async => team;
 
   @override
   Future<List<NeedsAttentionItem>> needsAttention(String providerId) async => [
@@ -636,5 +646,111 @@ void main() {
 
     expect(find.textContaining('need your decision'), findsNothing);
     expect(find.text('All caught up — nothing needs attention today.'), findsOneWidget);
+  });
+
+  testWidgets('"Today" says how many free times are left and how many people are off now', (tester) async {
+    final now = DateTime.now();
+    AdminSlot slot(String id, DateTime at, {String status = 'OPEN'}) => AdminSlot(
+          id: id,
+          providerId: 'p1',
+          startsAt: at.toUtc(),
+          endsAt: at.add(const Duration(hours: 1)).toUtc(),
+          status: status,
+        );
+    final inTwoMinutes = now.add(const Duration(minutes: 2));
+    final api = _FakeSalonAdminApi([
+      const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE'),
+    ])
+      ..schedule = const []
+      ..slots = [
+        // Two open times later today (if today still has room), one booked, one open but tomorrow, one already past.
+        slot('a', inTwoMinutes),
+        slot('b', inTwoMinutes.add(const Duration(minutes: 1))),
+        slot('c', inTwoMinutes, status: 'BOOKED'),
+        slot('d', DateTime(now.year, now.month, now.day + 1, 10)),
+        slot('e', now.subtract(const Duration(hours: 2))),
+      ];
+    final staff = _FakeStaffOwnerApi(const {})
+      ..team = [
+        WorkerSummary(
+          id: 'w1',
+          kind: 'MASTER',
+          displayName: 'Off',
+          photoUrl: null,
+          active: true,
+          scheduleConfigured: true,
+          offUntil: now.add(const Duration(hours: 3)),
+          averageRating: null,
+          reviewCount: 0,
+        ),
+        WorkerSummary(
+          id: 'w2',
+          kind: 'MASTER',
+          displayName: 'Working',
+          photoUrl: null,
+          active: true,
+          scheduleConfigured: true,
+          offUntil: null,
+          averageRating: null,
+          reviewCount: 0,
+        ),
+      ];
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: (_, _) => null,
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(api),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+          billingApiProvider.overrideWithValue(_FakeBillingApi()),
+          campaignCenterApiProvider.overrideWithValue(_FakeCampaignCenterApi()),
+          staffOwnerApiProvider.overrideWithValue(staff),
+          authControllerProvider.overrideWith(_LoggedInOwnerController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const DashboardScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Near midnight the two "later today" times roll into tomorrow: then there is nothing to count.
+    final lateToday = inTwoMinutes.day == now.day && inTwoMinutes.add(const Duration(minutes: 1)).day == now.day;
+    expect(
+      find.text(lateToday ? '2 free times left today · 1 person off now' : '1 person off now'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('"Today" has no capacity line when nothing is free and nobody is off', (tester) async {
+    final api = _FakeSalonAdminApi([
+      const AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE'),
+    ])..schedule = const [];
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: (_, _) => null,
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(api),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+          billingApiProvider.overrideWithValue(_FakeBillingApi()),
+          campaignCenterApiProvider.overrideWithValue(_FakeCampaignCenterApi()),
+          staffOwnerApiProvider.overrideWithValue(_FakeStaffOwnerApi(const {})),
+          authControllerProvider.overrideWith(_LoggedInOwnerController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const DashboardScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Today'), findsOneWidget);
+    expect(find.textContaining('free time'), findsNothing);
+    expect(find.textContaining('off now'), findsNothing);
   });
 }

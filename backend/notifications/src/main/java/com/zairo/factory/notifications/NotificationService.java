@@ -83,6 +83,22 @@ public class NotificationService {
                 "A customer cancelled booking (" + bookingId + ").");
     }
 
+    public void sendProviderBookingRescheduledEmail(String toEmail, UUID bookingId, Instant newStartsAt) {
+        emailProvider.send(toEmail, "A customer moved a booking",
+                "A customer moved booking (" + bookingId + ") to " + newStartsAt + ".");
+    }
+
+    public void sendReviewDecisionEmail(String toEmail, UUID reviewId,
+            com.zairo.factory.reviews.ReviewModerationDecidedEvent.Decision decision) {
+        String body = switch (decision) {
+            case HIDDEN -> "The platform hid the review (" + reviewId + ") you reported. It no longer counts in your "
+                    + "rating.";
+            case KEPT -> "The platform looked at your report on the review (" + reviewId + ") and kept it.";
+            case RESTORED -> "The review (" + reviewId + ") that had been hidden counts in your rating again.";
+        };
+        emailProvider.send(toEmail, "About a review you reported", body);
+    }
+
     public void sendStaffCannotAttendEmail(String toEmail, UUID bookingId) {
         emailProvider.send(toEmail, "A staff member can't attend an appointment",
                 "A staff member can't attend booking (" + bookingId + "). Open the app to reassign it, move it "
@@ -149,6 +165,15 @@ public class NotificationService {
     public void sendBookingReminderEmail(UUID recipientUserId, String toEmail, UUID bookingId) {
         String title = "Upcoming booking reminder";
         String body = "Your booking (" + bookingId + ") is coming up in about an hour. See you soon!";
+        emailProvider.send(toEmail, title, body);
+        recordInApp(recipientUserId, InAppNotificationType.BOOKING_REMINDER, title, body);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void sendBookingDayReminderEmail(UUID recipientUserId, String toEmail, UUID bookingId, Instant startsAt) {
+        String title = "Your visit is coming up";
+        String body = "Your booking (" + bookingId + ") is at " + startsAt + ". Need another time? Open the app and "
+                + "tap Reschedule.";
         emailProvider.send(toEmail, title, body);
         recordInApp(recipientUserId, InAppNotificationType.BOOKING_REMINDER, title, body);
     }

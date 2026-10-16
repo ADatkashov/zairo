@@ -289,6 +289,8 @@ class WorkerDirectoryApiTests {
         assertThat(mine[0].get("displayName")).isEqualTo("Fav Master");
         assertThat(mine[0].get("providerName")).isEqualTo("Fav Studio " + runId);
         assertThat(((Number) mine[0].get("averageRating")).doubleValue()).isEqualTo(5.0);
+        // No schedule of their own, so no "next free time" to show.
+        assertThat(mine[0].get("nextFreeAt")).isNull();
 
         // Someone else can neither read nor change it; anonymous is turned away.
         HttpEntity<Void> asStranger = new HttpEntity<>(null, TestAuth.authHeaders(stranger.accessToken()));

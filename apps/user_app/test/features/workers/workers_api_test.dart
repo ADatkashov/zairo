@@ -149,6 +149,7 @@ void main() {
               'photoUrl': 'https://cdn.example/a.jpg',
               'averageRating': 4.5,
               'reviewCount': 4,
+              'nextFreeAt': '2026-10-20T10:00:00Z',
             },
             {
               'id': 'w2',
@@ -169,6 +170,8 @@ void main() {
         expect(list[1].averageRating, isNull);
         expect(list[1].photoUrl, isNull);
         expect(list[1].reviewCount, 0);
+        expect(list[0].nextFreeAt, DateTime.utc(2026, 10, 20, 10));
+        expect(list[1].nextFreeAt, isNull);
       });
 
       test('"is a favorite" is true on 200, false on 404 and rethrows other errors', () async {

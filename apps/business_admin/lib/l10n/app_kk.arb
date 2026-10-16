@@ -901,6 +901,8 @@
   "cancelInvitationTooltip": "Шақыруды болдырмау",
   "dashboardAgendaTitle": "Бүгін",
   "dashboardAgendaEmpty": "Бүгін жазылулар жоқ.",
+  "dashboardTodayFree": "{count, plural, other{бүгін {count} бос уақыт қалды}}",
+  "dashboardTodayOff": "{count, plural, other{қазір {count} адам жұмыс істемейді}}",
   "bookingStatusPendingPayment": "Төлемді күтуде",
   "bookingStatusNoShow": "Келмеді",
   "bookingStatusPending": "Күтілуде",

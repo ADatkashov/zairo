@@ -50,7 +50,14 @@ ProviderReview _review(String id, int rating, {String? reply, String? moderation
   moderationStatus: moderation,
 );
 
-Future<void> _pump(WidgetTester tester, List<ProviderReview> reviews, Size size, {_FakeReviewsApi? api}) async {
+Future<void> _pump(
+  WidgetTester tester,
+  List<ProviderReview> reviews,
+  Size size, {
+  _FakeReviewsApi? api,
+  double textScale = 1,
+  bool dark = false,
+}) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -58,9 +65,13 @@ Future<void> _pump(WidgetTester tester, List<ProviderReview> reviews, Size size,
     ProviderScope(
       overrides: [reviewsApiProvider.overrideWithValue(api ?? _FakeReviewsApi(reviews))],
       child: MaterialApp(
-        theme: factoryLightTheme(),
+        theme: dark ? factoryDarkTheme() : factoryLightTheme(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
         home: const ReviewsScreen(providerId: 'p-1', providerName: 'Zen Spa'),
       ),
     ),
@@ -156,6 +167,31 @@ void main() {
     expect(find.text('Report this review'), findsNothing);
     expect(find.text('Reported — the platform is looking at it'), findsOneWidget);
     expect(find.text('Hidden by the platform — it no longer counts in your rating'), findsOneWidget);
+    expect(find.text('The platform looked at it and kept it'), findsOneWidget);
+  });
+
+  testWidgets('review cards with report actions and statuses fit a 320 px phone with a large font in the dark theme', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      [
+        _review('1', 1),
+        _review('2', 2, reply: 'Thank you for telling us, we are sorry about this', moderation: 'OPEN'),
+        _review('3', 3, moderation: 'HIDDEN'),
+        _review('4', 4, moderation: 'DISMISSED'),
+      ],
+      const Size(320, 640),
+      textScale: 2,
+      dark: true,
+    );
+
+    // Walk down the list so every card is built at this size.
+    for (var i = 0; i < 6; i++) {
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -500));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
     expect(find.text('The platform looked at it and kept it'), findsOneWidget);
   });
 }

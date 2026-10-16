@@ -42,4 +42,35 @@ void main() {
     expect(find.text('New Master'), findsOneWidget);
     expect(find.byType(FactoryRatingLabel), findsNothing);
   });
+
+  testWidgets('an optional caption sits under the rating and the card height makes room for it', (tester) async {
+    await tester.pumpWidget(
+      _app(
+        MasterAvatarCard(
+          displayName: 'Aigerim',
+          photoUrl: null,
+          averageRating: 4.8,
+          reviewCount: 3,
+          caption: 'Today 14:00',
+          onTap: () {},
+        ),
+      ),
+    );
+
+    expect(find.text('Today 14:00'), findsOneWidget);
+    late double plain;
+    late double withCaption;
+    await tester.pumpWidget(
+      _app(
+        Builder(
+          builder: (context) {
+            plain = MasterAvatarCard.heightFor(context);
+            withCaption = MasterAvatarCard.heightFor(context, withCaption: true);
+            return const SizedBox();
+          },
+        ),
+      ),
+    );
+    expect(withCaption, greaterThan(plain));
+  });
 }

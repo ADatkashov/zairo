@@ -44,6 +44,13 @@ public final class BookingDtos {
             String reason) {
     }
 
+    public record RescheduleRequest(@Schema(example = "550e8400-e29b-41d4-a716-446655440000") UUID slotId) {
+    }
+
+    /** One time a customer can move their booking to. */
+    public record RescheduleOption(UUID slotId, Instant startsAt, Instant endsAt) {
+    }
+
     public record BookingResponse(
             @Schema(example = "550e8400-e29b-41d4-a716-446655440000") UUID id,
             @Schema(example = "550e8400-e29b-41d4-a716-446655440000") UUID userId,
