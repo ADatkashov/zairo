@@ -419,5 +419,6 @@
   "commissionSaved": "Комиссия обновлена",
   "commissionReset": "Категория снова использует ставку по умолчанию",
   "commissionInvalid": "Введите число от 0 до 100 (до 2 знаков после запятой)",
-  "navQuickActions": "Быстрые действия"
+  "navQuickActions": "Быстрые действия",
+  "reviewsDecidedOn": "Решение принято {date}"
 }

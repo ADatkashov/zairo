@@ -839,5 +839,7 @@
   "commissionInvalid": "Enter a number from 0 to 100 (up to 2 decimals)",
   "@commissionInvalid": {"description": "commissionInvalid"},
   "navQuickActions": "Quick actions",
-  "@navQuickActions": {"description": "Screen-reader label of the round + button in the middle of the phone bottom bar; opens a fan of shortcuts."}
+  "@navQuickActions": {"description": "Screen-reader label of the round + button in the middle of the phone bottom bar; opens a fan of shortcuts."},
+  "reviewsDecidedOn": "Decided on {date}",
+  "@reviewsDecidedOn": {"description": "Line on a decided review: the date of the platform decision.", "placeholders": {"date": {"type": "String"}}}
 }
