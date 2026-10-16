@@ -2622,5 +2622,19 @@
   "chatQuickThanks": "Thank you! We'll be in touch shortly.",
   "@chatQuickThanks": {"description": "A ready sentence above the chat compose field."},
   "chatQuickTaken": "Sorry, that time is taken. Would another time work?",
-  "@chatQuickTaken": {"description": "A ready sentence above the chat compose field."}
+  "@chatQuickTaken": {"description": "A ready sentence above the chat compose field."},
+  "bookingCancelledBecause": "Reason: {reason}",
+  "@bookingCancelledBecause": {"description": "Line under a cancelled booking: the reason the customer gave.", "placeholders": {"reason": {"type": "String"}}},
+  "chatQuickEditTooltip": "Edit ready sentences",
+  "@chatQuickEditTooltip": {"description": "Editing the ready sentences of the chat."},
+  "chatQuickEditTitle": "Your ready sentences",
+  "@chatQuickEditTitle": {"description": "Editing the ready sentences of the chat."},
+  "chatQuickEditHint": "These three sentences appear above the message field. Leave a field empty to drop it.",
+  "@chatQuickEditHint": {"description": "Editing the ready sentences of the chat."},
+  "chatQuickEditField": "Sentence",
+  "@chatQuickEditField": {"description": "Editing the ready sentences of the chat."},
+  "chatQuickEditSave": "Save",
+  "@chatQuickEditSave": {"description": "Editing the ready sentences of the chat."},
+  "chatQuickEditReset": "Back to the built-in ones",
+  "@chatQuickEditReset": {"description": "Editing the ready sentences of the chat."}
 }

@@ -624,6 +624,44 @@ void main() {
     expect(find.text('Completed'), findsOneWidget);
   });
 
+  testWidgets('a cancelled booking shows the reason the customer gave, and only then', (tester) async {
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    AdminBooking cancelled(String id, {String? reason}) => AdminBooking(
+      id: id,
+      userId: 'u1',
+      serviceId: 's1',
+      availabilitySlotId: 'slot-$id',
+      status: 'CANCELLED',
+      totalPrice: 25,
+      createdAt: DateTime(2026, 1, 1, 10, 0),
+      cancellationReason: reason,
+    );
+    final fakeApi = _FakeSalonAdminApi(bookings: [cancelled('b1', reason: 'Found another time'), cancelled('b2')]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(fakeApi),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SalonDetailScreen(provider: _provider),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await _openTab(tester, 'Bookings');
+    await tester.ensureVisible(find.text('Reason: Found another time'));
+
+    expect(find.text('Reason: Found another time'), findsOneWidget);
+    expect(find.textContaining('Reason:'), findsOneWidget);
+  });
+
   testWidgets('editing the salon calls updateProvider and updates the AppBar title', (tester) async {
     final fakeApi = _FakeSalonAdminApi();
 

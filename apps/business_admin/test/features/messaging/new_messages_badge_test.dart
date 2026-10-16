@@ -17,6 +17,7 @@ import 'package:business_admin/features/messaging/presentation/providers/messagi
 import 'package:business_admin/features/salon/data/models/admin_provider.dart';
 import 'package:business_admin/features/salon/data/salon_admin_api.dart';
 import 'package:business_admin/features/salon/presentation/providers/salon_providers.dart';
+
 import '../../app/admin_test_harness.dart';
 
 class _MemoryStorage extends SecureStorageService {
@@ -35,9 +36,16 @@ class _FakeSalonAdminApi extends SalonAdminApi {
   _FakeSalonAdminApi() : super(DioClient(Dio()));
 
   @override
-  Future<List<AdminProvider>> listMyProviders(String ownerUserId) async => const [
-    AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE'),
-  ];
+  Future<List<AdminProvider>> listMyProviders(String ownerUserId) async =>
+      const [
+        AdminProvider(
+          id: 'p1',
+          ownerUserId: 'owner-1',
+          name: 'Glow Salon',
+          vertical: 'beauty',
+          status: 'ACTIVE',
+        ),
+      ];
 }
 
 class _FakeMessagingApi extends MessagingApi {
@@ -46,7 +54,8 @@ class _FakeMessagingApi extends MessagingApi {
   final List<Conversation> conversations;
 
   @override
-  Future<List<Conversation>> inboxForProvider(String providerId) async => conversations;
+  Future<List<Conversation>> inboxForProvider(String providerId) async =>
+      conversations;
 }
 
 class _FakeBillingApi extends BillingApi {
@@ -72,8 +81,12 @@ class _FakeBillingApi extends BillingApi {
 
 class _Owner extends AuthController {
   @override
-  Future<UserSummary?> build() async =>
-      const UserSummary(id: 'owner-1', email: 'o@example.com', displayName: 'Jamie Owner', role: 'PROVIDER_OWNER');
+  Future<UserSummary?> build() async => const UserSummary(
+    id: 'owner-1',
+    email: 'o@example.com',
+    displayName: 'Jamie Owner',
+    role: 'PROVIDER_OWNER',
+  );
 }
 
 Conversation _conversation(String id, DateTime lastMessageAt) => Conversation(
@@ -102,21 +115,34 @@ void _phone(WidgetTester tester) {
 void main() {
   test('MessageSeen: a conversation is new until its thread has been opened past its last message', () {
     final baseline = DateTime.utc(2026, 1, 10);
-    final seen = MessageSeen(baseline: baseline, seen: {'c1': DateTime.utc(2026, 1, 12)});
+    final seen = MessageSeen(
+      baseline: baseline,
+      seen: {'c1': DateTime.utc(2026, 1, 12)},
+    );
 
-    expect(seen.isNew('c0', DateTime.utc(2026, 1, 9)), isFalse, reason: 'older than the first run');
+    expect(
+      seen.isNew('c0', DateTime.utc(2026, 1, 9)),
+      isFalse,
+      reason: 'older than the first run',
+    );
     expect(seen.isNew('c2', DateTime.utc(2026, 1, 11)), isTrue);
     expect(seen.isNew('c1', DateTime.utc(2026, 1, 12)), isFalse);
     expect(seen.isNew('c1', DateTime.utc(2026, 1, 13)), isTrue);
   });
 
-  testWidgets('the Messages tab counts conversations with something new', (tester) async {
+  testWidgets('the Messages tab counts conversations with something new', (
+    tester,
+  ) async {
     _phone(tester);
     final later = DateTime.now().add(const Duration(hours: 1));
 
     await pumpAdminApp(
       tester,
-      overrides: _overrides([_conversation('a', later), _conversation('b', later), _conversation('old', DateTime(2020))]),
+      overrides: _overrides([
+        _conversation('a', later),
+        _conversation('b', later),
+        _conversation('old', DateTime(2020)),
+      ]),
     );
 
     expect(find.text('2'), findsOneWidget);
@@ -125,7 +151,10 @@ void main() {
   testWidgets('no badge when nothing is new', (tester) async {
     _phone(tester);
 
-    await pumpAdminApp(tester, overrides: _overrides([_conversation('old', DateTime(2020))]));
+    await pumpAdminApp(
+      tester,
+      overrides: _overrides([_conversation('old', DateTime(2020))]),
+    );
 
     expect(find.text('0'), findsNothing);
     expect(find.text('1'), findsNothing);

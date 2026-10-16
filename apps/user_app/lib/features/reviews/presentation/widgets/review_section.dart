@@ -28,14 +28,26 @@ class ReviewSection extends ConsumerWidget {
     return reviewAsync.when(
       data: (review) {
         if (review == null) {
-          return Align(
-            alignment: Alignment.centerLeft,
-            child: FactoryButton(
-              icon: Symbols.star_rounded,
-              label: l10n.reviewLeaveButton,
-              variant: FactoryButtonVariant.text,
-              onPressed: () => _openLeaveReviewDialog(context, ref),
-            ),
+          // The stars are right here: a tap on one opens the form with that mark already chosen, so a rating
+          // is two taps (star, send) instead of three. The comment stays optional; nothing is sent before "Send".
+          return Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              FactoryButton(
+                icon: Symbols.star_rounded,
+                label: l10n.reviewLeaveButton,
+                variant: FactoryButtonVariant.text,
+                onPressed: () => _openLeaveReviewDialog(context, ref),
+              ),
+              for (var i = 1; i <= 5; i++)
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  tooltip: l10n.reviewQuickStarTooltip(i),
+                  onPressed: () =>
+                      _openLeaveReviewDialog(context, ref, initialRating: i),
+                  icon: Icon(Symbols.star_rounded, color: colors.accent),
+                ),
+            ],
           );
         }
         return Padding(
@@ -78,11 +90,15 @@ class ReviewSection extends ConsumerWidget {
 
   Future<void> _openLeaveReviewDialog(
     BuildContext context,
-    WidgetRef ref,
-  ) async {
+    WidgetRef ref, {
+    int initialRating = 0,
+  }) async {
     final submitted = await showDialog<bool>(
       context: context,
-      builder: (_) => _LeaveReviewDialog(bookingId: bookingId),
+      builder: (_) => _LeaveReviewDialog(
+        bookingId: bookingId,
+        initialRating: initialRating,
+      ),
     );
     if (submitted == true) {
       ref.invalidate(reviewForBookingProvider(bookingId));
@@ -93,14 +109,17 @@ class ReviewSection extends ConsumerWidget {
 class _LeaveReviewDialog extends ConsumerStatefulWidget {
   final String bookingId;
 
-  const _LeaveReviewDialog({required this.bookingId});
+  /// The mark already chosen when the guest tapped a star on the booking card; 0 = none.
+  final int initialRating;
+
+  const _LeaveReviewDialog({required this.bookingId, this.initialRating = 0});
 
   @override
   ConsumerState<_LeaveReviewDialog> createState() => _LeaveReviewDialogState();
 }
 
 class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
-  int _rating = 0;
+  late int _rating = widget.initialRating;
 
   /// The optional separate rating of the person; 0 = not given (the one rating counts for them too).
   int _workerRating = 0;
@@ -135,7 +154,9 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
                     FactoryAvatar(
                       initials: initialsFor(worker.displayName),
                       size: 36,
-                      image: worker.photoUrl != null ? NetworkImage(worker.photoUrl!) : null,
+                      image: worker.photoUrl != null
+                          ? NetworkImage(worker.photoUrl!)
+                          : null,
                     ),
                     const SizedBox(width: FactorySpacing.space3),
                     Expanded(
@@ -148,17 +169,34 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
                 ),
               ),
             if (worker != null)
-              Text(l10n.reviewRateBusiness, style: Theme.of(context).textTheme.labelLarge),
-            _stars(_rating, (value) => setState(() => _rating = value), l10n, colors),
+              Text(
+                l10n.reviewRateBusiness,
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+            _stars(
+              _rating,
+              (value) => setState(() => _rating = value),
+              l10n,
+              colors,
+            ),
             // A second, optional row: the business and the person can deserve different marks.
             if (worker != null) ...[
-              Text(worker.displayName, style: Theme.of(context).textTheme.labelLarge),
-              _stars(_workerRating, (value) => setState(() => _workerRating = value), l10n, colors),
+              Text(
+                worker.displayName,
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+              _stars(
+                _workerRating,
+                (value) => setState(() => _workerRating = value),
+                l10n,
+                colors,
+              ),
               Padding(
                 padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
                 child: Text(
                   l10n.reviewWorkerOptionalHint(worker.displayName),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: colors.textSecondary),
                 ),
               ),
             ],
@@ -196,14 +234,23 @@ class _LeaveReviewDialogState extends ConsumerState<_LeaveReviewDialog> {
     );
   }
 
-  Widget _stars(int value, ValueChanged<int> onChanged, AppLocalizations l10n, FactoryColors colors) {
+  Widget _stars(
+    int value,
+    ValueChanged<int> onChanged,
+    AppLocalizations l10n,
+    FactoryColors colors,
+  ) {
     return Wrap(
       children: List.generate(
         5,
         (i) => IconButton(
           onPressed: _isSubmitting ? null : () => onChanged(i + 1),
           tooltip: l10n.starRatingSemanticLabel(i + 1),
-          icon: Icon(Symbols.star_rounded, fill: i < value ? 1 : 0, color: colors.accent),
+          icon: Icon(
+            Symbols.star_rounded,
+            fill: i < value ? 1 : 0,
+            color: colors.accent,
+          ),
         ),
       ),
     );
