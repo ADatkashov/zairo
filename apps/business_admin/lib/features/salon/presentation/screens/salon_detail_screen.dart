@@ -1943,6 +1943,12 @@ class _BookingAdminRow extends StatelessWidget {
                   formatMonthDayTime(l10n, booking.createdAt.toLocal()),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
                 ),
+                // Why the customer cancelled, when they said: the owner learns what to fix.
+                if (booking.status == 'CANCELLED' && booking.cancellationReason != null)
+                  Text(
+                    l10n.bookingCancelledBecause(booking.cancellationReason!),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                  ),
               ],
             ),
           ),

@@ -2622,5 +2622,7 @@
   "chatQuickThanks": "Thank you! We'll be in touch shortly.",
   "@chatQuickThanks": {"description": "A ready sentence above the chat compose field."},
   "chatQuickTaken": "Sorry, that time is taken. Would another time work?",
-  "@chatQuickTaken": {"description": "A ready sentence above the chat compose field."}
+  "@chatQuickTaken": {"description": "A ready sentence above the chat compose field."},
+  "bookingCancelledBecause": "Reason: {reason}",
+  "@bookingCancelledBecause": {"description": "Line under a cancelled booking: the reason the customer gave.", "placeholders": {"reason": {"type": "String"}}}
 }
