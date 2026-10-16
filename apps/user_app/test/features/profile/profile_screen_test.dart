@@ -264,4 +264,36 @@ void main() {
 
     expect(find.textContaining(' pts'), findsNothing);
   });
+
+  testWidgets('Profile fits a 320 px phone with a large font in the dark theme, signed in and out', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    Widget app(AuthController controller) => ProviderScope(
+      overrides: [authControllerProvider.overrideWith(() => controller)],
+      child: MaterialApp(
+        theme: factoryDarkTheme(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(2)),
+          child: child!,
+        ),
+        home: const ProfileScreen(),
+      ),
+    );
+
+    await tester.pumpWidget(app(_LoggedOutAuthController()));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(app(_LoggedInAuthController()));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    for (var i = 0; i < 12; i++) {
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -400));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
+  });
 }
