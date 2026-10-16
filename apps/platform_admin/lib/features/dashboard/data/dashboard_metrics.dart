@@ -25,6 +25,9 @@ class DashboardMetrics {
   final num platformCommission;
   final String? commissionCurrency;
 
+  /// Reviews a business reported that wait for a platform decision.
+  final int reviewsReported;
+
   const DashboardMetrics({
     required this.users,
     required this.businessesTotal,
@@ -50,6 +53,7 @@ class DashboardMetrics {
     required this.currency,
     required this.platformCommission,
     required this.commissionCurrency,
+    this.reviewsReported = 0,
   });
 
   factory DashboardMetrics.fromJson(Map<String, dynamic> json) {
@@ -60,6 +64,7 @@ class DashboardMetrics {
     final bookings = json['bookings'] as Map<String, dynamic>? ?? const {};
     final payments = json['payments'] as Map<String, dynamic>? ?? const {};
     final revenue = json['revenue'] as Map<String, dynamic>? ?? const {};
+    final reviews = json['reviews'] as Map<String, dynamic>? ?? const {};
     return DashboardMetrics(
       users: n(users, 'total'),
       businessesTotal: n(businesses, 'total'),
@@ -85,6 +90,7 @@ class DashboardMetrics {
       currency: revenue['currency'] as String?,
       platformCommission: _decimal(revenue['platformCommission']),
       commissionCurrency: revenue['platformCommissionCurrency'] as String?,
+      reviewsReported: n(reviews, 'reportedOpen'),
     );
   }
 }
