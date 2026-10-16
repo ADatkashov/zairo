@@ -15,6 +15,10 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
 
     Optional<Review> findByBookingId(UUID bookingId);
 
+    /** Reports waiting for a platform decision (the dashboard's "to review" count). */
+    @Query("select count(r) from Review r where r.reportedAt is not null and r.reportResolvedAt is null")
+    long countOpenReports();
+
     boolean existsByBookingId(UUID bookingId);
 
     List<Review> findByBookingIdIn(Collection<UUID> bookingIds);
