@@ -205,6 +205,8 @@ class WorkerRating {
 }
 
 class WorkerReviewItem {
+  /// What the reply endpoint takes.
+  final String reviewId;
   final String? customerName;
   final int rating;
   final String? comment;
@@ -212,6 +214,7 @@ class WorkerReviewItem {
   final String? businessReply;
 
   const WorkerReviewItem({
+    required this.reviewId,
     required this.customerName,
     required this.rating,
     required this.comment,
@@ -221,6 +224,7 @@ class WorkerReviewItem {
 
   factory WorkerReviewItem.fromJson(Map<String, dynamic> json) {
     return WorkerReviewItem(
+      reviewId: json['reviewId'] as String,
       customerName: json['customerName'] as String?,
       rating: (json['rating'] as num).toInt(),
       comment: json['comment'] as String?,
