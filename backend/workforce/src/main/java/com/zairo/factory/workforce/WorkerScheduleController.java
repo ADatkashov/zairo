@@ -36,12 +36,14 @@ public class WorkerScheduleController {
     private final WorkerScheduleService scheduleService;
     private final WorkerTimeOffService timeOffService;
     private final WorkforceSettingsService settingsService;
+    private final WorkerPortalService portalService;
 
     public WorkerScheduleController(WorkerScheduleService scheduleService, WorkerTimeOffService timeOffService,
-            WorkforceSettingsService settingsService) {
+            WorkforceSettingsService settingsService, WorkerPortalService portalService) {
         this.scheduleService = scheduleService;
         this.timeOffService = timeOffService;
         this.settingsService = settingsService;
+        this.portalService = portalService;
     }
 
     @Operation(summary = "The business's workers", description = "Owner-only. Every master / mechanic / cleaner / "
@@ -65,7 +67,8 @@ public class WorkerScheduleController {
     @GetMapping("/api/v1/providers/{providerId}/workers/{workerId}/rating")
     public WorkerPortalDtos.WorkerRatingResponse rating(@PathVariable UUID providerId, @PathVariable UUID workerId,
             HttpServletRequest request) {
-        return scheduleService.rating(providerId, workerId, CurrentUser.requireUserId(request));
+        return portalService.ratingOf(
+                scheduleService.requireOwnerOfWorker(providerId, workerId, CurrentUser.requireUserId(request)));
     }
 
     @Operation(summary = "A worker's weekly schedule", description = "Owner-only. configured=false means the worker "
