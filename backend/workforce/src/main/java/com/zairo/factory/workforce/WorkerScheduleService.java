@@ -34,25 +34,16 @@ public class WorkerScheduleService {
     private final WorkerWorkHoursRepository hoursRepository;
     private final WorkerTimeOffRepository timeOffRepository;
     private final WorkerSlotGenerator generator;
-    private final WorkerPortalService portalService;
 
     public WorkerScheduleService(ProviderOwnership providerOwnership, WorkerCatalog catalog,
             WorkerScheduleRepository scheduleRepository, WorkerWorkHoursRepository hoursRepository,
-            WorkerTimeOffRepository timeOffRepository, WorkerSlotGenerator generator,
-            WorkerPortalService portalService) {
+            WorkerTimeOffRepository timeOffRepository, WorkerSlotGenerator generator) {
         this.providerOwnership = providerOwnership;
         this.catalog = catalog;
         this.scheduleRepository = scheduleRepository;
         this.hoursRepository = hoursRepository;
         this.timeOffRepository = timeOffRepository;
         this.generator = generator;
-        this.portalService = portalService;
-    }
-
-    /** One worker's rating and newest reviews, for the business owner. */
-    @Transactional(readOnly = true)
-    public WorkerPortalDtos.WorkerRatingResponse rating(UUID providerId, UUID workerId, UUID ownerId) {
-        return portalService.ratingOf(requireOwnerOfWorker(providerId, workerId, ownerId));
     }
 
     /** Everyone who works at the business, with whether they have their own schedule. */
