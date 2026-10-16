@@ -96,7 +96,7 @@ public class NotificationService {
                 + "Bookings: " + report.totalBookings() + delta(report.totalBookings(), report.previousTotalBookings())
                 + "\n"
                 + "Completed: " + report.completedBookings() + "\n"
-                + "Cancelled: " + report.cancelledBookings() + "\n"
+                + "Cancelled: " + report.cancelledBookings() + cancelReasons(report.cancelReasons()) + "\n"
                 + "No-shows: " + report.noShowBookings() + "\n"
                 + "Revenue: " + report.totalRevenue() + currency
                 + (report.previousRevenue() == null ? "" : delta(report.totalRevenue(), report.previousRevenue()))
@@ -105,6 +105,14 @@ public class NotificationService {
                         : "Rating: " + String.format(java.util.Locale.ROOT, "%.1f", report.averageRating())
                                 + " (" + report.newReviews() + " new)");
         emailProvider.send(toEmail, "Your week: " + report.providerName(), body);
+    }
+
+    private static String cancelReasons(java.util.Map<String, Long> reasons) {
+        if (reasons == null || reasons.isEmpty()) {
+            return "";
+        }
+        return " (" + reasons.entrySet().stream().map(e -> e.getValue() + " " + e.getKey())
+                .collect(java.util.stream.Collectors.joining(", ")) + ")";
     }
 
     private static String delta(long now, long before) {

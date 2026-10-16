@@ -100,6 +100,35 @@ class WeeklyBusinessReportApiTests {
         });
     }
 
+    @Test
+    void theReportListsWhyGuestsCancelled() {
+        String runId = UUID.randomUUID().toString();
+        String ownerEmail = "week-cancel-" + runId + "@example.com";
+        Registered owner = TestAuth.registerOwner(restTemplate, ownerEmail);
+        Registered customer = TestAuth.registerCustomer(restTemplate, "week-canceller-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Cancel Week Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Cancel Service", new BigDecimal("40.00"));
+        String[] reasons = {"Found another time", "Found another time", "Change of plans"};
+        for (int i = 0; i < reasons.length; i++) {
+            Instant start = Instant.now().plus(1, ChronoUnit.DAYS).plus(i, ChronoUnit.HOURS);
+            UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+            String bookingId = restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
+                    new HttpEntity<>(new CreateBookingRequest(customer.userId(), serviceId, slotId,
+                            new BigDecimal("40.00")), TestAuth.authHeaders(customer.accessToken())), Map.class)
+                    .getBody().get("id").toString();
+            restTemplate.exchange("/api/v1/bookings/" + bookingId + "/cancel", HttpMethod.POST,
+                    new HttpEntity<>(Map.of("reason", reasons[i]), TestAuth.authHeaders(customer.accessToken())),
+                    Map.class);
+        }
+
+        reportService.publishReports(Instant.now().plus(2, ChronoUnit.DAYS));
+
+        assertThat(capturedEmails.sent).anySatisfy(email -> {
+            assertThat(email.toEmail()).isEqualTo(ownerEmail);
+            assertThat(email.body()).contains("Cancelled: 3 (2 Found another time, 1 Change of plans)");
+        });
+    }
+
     private UUID createProvider(Registered owner, String name) {
         var request = new CreateProviderRequest(owner.userId(), name, "beauty");
         ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
