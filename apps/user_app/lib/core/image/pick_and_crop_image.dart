@@ -2,10 +2,20 @@ import 'dart:typed_data';
 
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../l10n/app_localizations.dart';
+
+/// How a screen asks the person for a cropped photo. A provider so tests can answer without the camera/gallery and the
+/// native crop screen, which only exist on a device.
+typedef PickPhoto = Future<PickedCroppedImage?> Function(BuildContext context, {required String cropTitle});
+
+final pickPhotoProvider = Provider<PickPhoto>(
+  (ref) =>
+      (context, {required cropTitle}) => pickAndCropImage(context, cropTitle: cropTitle),
+);
 
 class PickedCroppedImage {
   final Uint8List bytes;
