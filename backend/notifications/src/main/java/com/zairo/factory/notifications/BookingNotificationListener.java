@@ -9,6 +9,7 @@ import com.zairo.factory.booking.BookingRescheduledByCustomerEvent;
 import com.zairo.factory.providers.Provider;
 import com.zairo.factory.providers.ProviderRepository;
 import com.zairo.factory.reviews.ReviewModerationDecidedEvent;
+import com.zairo.factory.waitlist.WaitlistSlotOpenedEvent;
 import com.zairo.factory.workforce.WorkerCannotAttendEvent;
 import com.zairo.factory.workforce.WorkerNotAcceptedEvent;
 import com.zairo.factory.workforce.WorkerChangeRequestedEvent;
@@ -129,6 +130,14 @@ class BookingNotificationListener {
         userRepository.findById(event.userId())
                 .ifPresent(customer -> notificationService.sendBookingDayReminderEmail(customer.getId(),
                         customer.getEmail(), event.bookingId(), event.startsAt()));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    void onWaitlistSlotOpened(WaitlistSlotOpenedEvent event) {
+        providerRepository.findById(event.providerId()).ifPresent(provider -> userRepository
+                .findById(event.userId())
+                .ifPresent(customer -> notificationService.sendWaitlistSlotOpenedEmail(customer.getId(),
+                        customer.getEmail(), provider.getName(), event.startsAt())));
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

@@ -34,6 +34,7 @@ import '../../../reviews/presentation/widgets/reviews_preview.dart';
 import '../../../staff/data/models/staff.dart';
 import '../../../staff/data/staff_exception.dart';
 import '../../../staff/presentation/providers/staff_providers.dart';
+import '../../../waitlist/presentation/widgets/no_times_waitlist.dart';
 import '../../../workforce/data/models/any_slot.dart';
 import '../../../workforce/presentation/providers/workforce_providers.dart';
 import '../../data/booking_exception.dart';
@@ -725,12 +726,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     Widget picker(List<AvailabilitySlot> slots) {
       final openSlots = slots.where((s) => s.isOpen).toList();
       if (openSlots.isEmpty) {
-        return FactoryEmptyState(
-          compact: true,
-          icon: Symbols.event_busy_rounded,
-          title: l10n.noOpenTimesTitle,
-          message: l10n.noOpenTimesMessage,
-        );
+        return NoTimesWaitlist(providerId: widget.provider.id);
       }
       return DaySlotPicker(
         slots: openSlots,

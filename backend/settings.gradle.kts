@@ -19,6 +19,7 @@ include(
     "notifications",
     "search",
     "favorites",
+    "waitlist",
     "vertical-beauty",
     "vertical-auto",
     "vertical-cleaning",
