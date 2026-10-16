@@ -264,7 +264,6 @@
   "servicesSectionTitle": "Қызметтер",
   "availableTimesSectionTitle": "Бос уақыттар",
   "noOpenTimesTitle": "Бос уақыт жоқ",
-  "noOpenTimesMessage": "Қазір бос уақыт жоқ. Сұрау үшін бизнеске жазыңыз немесе басқасын таңдаңыз.",
   "errorAvailabilityLoadFailed": "Бос уақытты жүктеу мүмкін болмады.",
   "bookButton": "Брондау",
   "viewPortfolioTooltip": "Портфолионы көру",
@@ -724,5 +723,12 @@
   "cancelReasonPlans": "Жоспар өзгерді",
   "cancelReasonOtherTime": "Басқа уақыт таптым",
   "cancelReasonMistake": "Қателесіп жазылдым",
-  "reviewQuickStarTooltip": "{count, plural, other{Визитті бағалау: {count} жұлдыз}}"
+  "reviewQuickStarTooltip": "{count, plural, other{Визитті бағалау: {count} жұлдыз}}",
+
+  "noOpenTimesWaitlistMessage": "Қазір бос уақыт жоқ. Уақыт босаған бойда хабарлаймыз.",
+  "waitlistJoinButton": "Маған хабарла",
+  "waitlistJoinedTitle": "Сіз күту тізіміндесіз",
+  "waitlistJoinedMessage": "Мұнда уақыт босаған бойда хабарлаймыз. Ол бірінші жазылғанға тиеді.",
+  "waitlistLeaveButton": "Енді күтпеу",
+  "waitlistFailed": "Күту тізімін жаңарту мүмкін болмады. Қайталап көріңіз."
 }

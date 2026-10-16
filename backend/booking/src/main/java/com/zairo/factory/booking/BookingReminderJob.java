@@ -7,15 +7,15 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
- * "Your booking is in about an hour" — runs every 5 minutes, cheap window
+ * "Your booking is in about two hours" — runs every 5 minutes, cheap window
  * query (usually zero matching rows), same cadence reasoning as {@link
  * BookingPaymentTimeoutJob}: frequent enough that the reminder lands close
- * to the hour-before mark without needing per-booking precision scheduling.
+ * to the two-hours-before mark without needing per-booking precision scheduling.
  */
 @Component
 class BookingReminderJob {
 
-    private static final Duration REMINDER_LEAD_TIME = Duration.ofHours(1);
+    private static final Duration REMINDER_LEAD_TIME = Duration.ofHours(2);
     private static final Duration DAY_REMINDER_LEAD_TIME = Duration.ofHours(24);
     private static final Duration DAY_REMINDER_EARLIEST = Duration.ofHours(2);
 

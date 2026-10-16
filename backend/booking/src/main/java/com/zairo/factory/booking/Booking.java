@@ -90,7 +90,7 @@ public class Booking {
     @Column(name = "cancellation_reason")
     private String cancellationReason;
 
-    /** Set once {@link BookingReminderJob} has sent the "your booking is in an hour" reminder — guards against sending it twice. */
+    /** Set once {@link BookingReminderJob} has sent the "your booking is in two hours" reminder — guards against sending it twice. */
     @Column(name = "reminder_sent_at")
     private Instant reminderSentAt;
 
