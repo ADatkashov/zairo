@@ -782,8 +782,10 @@ class _BookAgainSection extends ConsumerWidget {
               final suggestion = suggestions[index];
               return _BookAgainCard(
                 suggestion: suggestion,
+                // Straight to the booking steps with the same service picked: the customer
+                // only has to choose a time.
                 onTap: () => context.push(
-                  AppRoutes.provider(suggestion.providerId),
+                  AppRoutes.provider(suggestion.providerId, book: true, serviceId: suggestion.serviceId),
                   extra: suggestion.toProviderSearchResult(),
                 ),
               );

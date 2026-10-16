@@ -64,7 +64,7 @@ class BookingNotificationListener {
                         customer.getEmail(), event.bookingId()));
         ownerEmailFor(event.providerId())
                 .ifPresent(ownerEmail -> notificationService.sendProviderBookingCancelledEmail(ownerEmail,
-                        event.bookingId()));
+                        event.bookingId(), event.reason()));
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

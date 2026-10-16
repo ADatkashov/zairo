@@ -720,5 +720,8 @@
   "bookingHintService": "Выберите услугу",
   "bookingHintPerson": "Выберите специалиста",
   "bookingHintVehicle": "Выберите автомобиль",
-  "bookingHintTime": "Выберите время"
+  "bookingHintTime": "Выберите время",
+  "cancelReasonPlans": "Изменились планы",
+  "cancelReasonOtherTime": "Нашёл другое время",
+  "cancelReasonMistake": "Записался по ошибке"
 }

@@ -52,6 +52,28 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
             """, nativeQuery = true)
     List<ProviderRatingRow> aggregateRatingsByProviderIds(@Param("providerIds") Collection<UUID> providerIds);
 
+    /**
+     * Average rating and number of the visible reviews a provider received in [from, to) — the weekly report's
+     * "how did the week feel". Same review -> booking -> slot join as {@link #aggregateRatingsByProviderIds}.
+     */
+    @Query(value = """
+            select avg(r.rating) as averageRating, count(*) as reviewCount
+            from review r
+            join booking b on b.id = r.booking_id
+            join availability_slot s on s.id = b.availability_slot_id
+            where s.provider_id = :providerId and r.hidden_at is null
+              and r.created_at >= :from and r.created_at < :to
+            """, nativeQuery = true)
+    PeriodRatingRow ratingInPeriod(@Param("providerId") UUID providerId, @Param("from") java.time.Instant from,
+            @Param("to") java.time.Instant to);
+
+    interface PeriodRatingRow {
+        /** Null when there were no reviews. */
+        Double getAverageRating();
+
+        long getReviewCount();
+    }
+
     interface ProviderRatingRow {
         UUID getProviderId();
 

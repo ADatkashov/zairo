@@ -288,6 +288,43 @@ void main() {
     }
   });
 
+  group('BookingApi cancel', () {
+    Map<String, Object?> cancelled() => {
+      'id': 'b1',
+      'userId': 'u',
+      'serviceId': 's',
+      'availabilitySlotId': 'o1',
+      'status': 'CANCELLED',
+      'totalPrice': 20,
+      'createdAt': '2026-10-01T10:00:00Z',
+    };
+
+    test('sends the reason when there is one and nothing when there is not', () async {
+      final http = FakeHttp()
+        ..reply('POST', '/bookings/b1/cancel', cancelled())
+        ..reply('POST', '/bookings/b2/cancel', cancelled());
+      final api = BookingApi(http.client());
+
+      await api.cancelBooking('b1', reason: 'Change of plans');
+      await api.cancelBooking('b2');
+
+      expect(http.bodyOf('POST', '/bookings/b1/cancel'), {'reason': 'Change of plans'});
+      expect(http.calls('POST', '/bookings/b2/cancel').single.data, isNull);
+    });
+
+    test('maps 409 and 403 to booking errors', () async {
+      final http = FakeHttp()
+        ..fail('POST', '/bookings/late/cancel', 409)
+        ..fail('POST', '/bookings/foreign/cancel', 403)
+        ..fail('POST', '/bookings/broken/cancel', 500);
+      final api = BookingApi(http.client());
+
+      await expectLater(api.cancelBooking('late'), throwsA(isA<BookingException>()));
+      await expectLater(api.cancelBooking('foreign'), throwsA(isA<BookingException>()));
+      await expectLater(api.cancelBooking('broken'), throwsA(isA<DioException>()));
+    });
+  });
+
   group('BookingApi reschedule', () {
     test('reads the options', () async {
       final http = FakeHttp()

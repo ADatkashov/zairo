@@ -422,5 +422,7 @@
   "navQuickActions": "Жылдам әрекеттер",
   "reviewsDecidedOn": "Шешім қабылданды: {date}",
   "businessesCopyCsv": "Тізімді CSV ретінде көшіру",
-  "businessesCsvCopied": "{count, plural, other{{count} бизнес CSV ретінде көшірілді}}"
+  "businessesCsvCopied": "{count, plural, other{{count} бизнес CSV ретінде көшірілді}}",
+  "reviewsCopyCsv": "Тізімді CSV ретінде көшіру",
+  "reviewsCsvCopied": "{count, plural, other{{count} пікір CSV ретінде көшірілді}}"
 }
