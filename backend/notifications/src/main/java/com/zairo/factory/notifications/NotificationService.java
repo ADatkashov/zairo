@@ -91,13 +91,31 @@ public class NotificationService {
 
     public void sendWeeklyReportEmail(String toEmail,
             com.zairo.factory.providerinsights.WeeklyBusinessReportEvent report) {
+        String currency = report.currency() == null ? "" : " " + report.currency();
         String body = report.providerName() + " — last 7 days\n"
-                + "Bookings: " + report.totalBookings() + "\n"
+                + "Bookings: " + report.totalBookings() + delta(report.totalBookings(), report.previousTotalBookings())
+                + "\n"
                 + "Completed: " + report.completedBookings() + "\n"
                 + "Cancelled: " + report.cancelledBookings() + "\n"
                 + "No-shows: " + report.noShowBookings() + "\n"
-                + "Revenue: " + report.totalRevenue() + (report.currency() == null ? "" : " " + report.currency());
+                + "Revenue: " + report.totalRevenue() + currency
+                + (report.previousRevenue() == null ? "" : delta(report.totalRevenue(), report.previousRevenue()))
+                + "\n"
+                + (report.averageRating() == null ? "No new reviews"
+                        : "Rating: " + String.format(java.util.Locale.ROOT, "%.1f", report.averageRating())
+                                + " (" + report.newReviews() + " new)");
         emailProvider.send(toEmail, "Your week: " + report.providerName(), body);
+    }
+
+    private static String delta(long now, long before) {
+        return delta(java.math.BigDecimal.valueOf(now), java.math.BigDecimal.valueOf(before));
+    }
+
+    private static String delta(java.math.BigDecimal now, java.math.BigDecimal before) {
+        java.math.BigDecimal diff = now.subtract(before);
+        return diff.signum() == 0 ? " (same as the week before)"
+                : " (" + (diff.signum() > 0 ? "+" : "") + diff.stripTrailingZeros().toPlainString()
+                        + " vs the week before)";
     }
 
     public void sendReviewDecisionEmail(String toEmail, UUID reviewId,

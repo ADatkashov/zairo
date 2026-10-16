@@ -40,4 +40,7 @@ dependencies {
     // recomputing any of it here -- same read-composition reasoning as
     // the dependencies above.
     implementation(project(":customer-intelligence"))
+
+    // The weekly report quotes the week's average rating.
+    implementation(project(":reviews"))
 }

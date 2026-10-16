@@ -64,9 +64,40 @@ class WeeklyBusinessReportApiTests {
         assertThat(capturedEmails.sent).anySatisfy(email -> {
             assertThat(email.toEmail()).isEqualTo(busyEmail);
             assertThat(email.subject()).isEqualTo("Your week: Busy Week Salon " + runId);
-            assertThat(email.body()).contains("Bookings: 1");
+            assertThat(email.body()).contains("Bookings: 1 (+1 vs the week before)").contains("No new reviews");
         });
         assertThat(capturedEmails.sent).noneSatisfy(email -> assertThat(email.toEmail()).isEqualTo(quietEmail));
+    }
+
+    @Test
+    void theReportQuotesTheWeeksAverageRatingWhenGuestsReviewed() {
+        String runId = UUID.randomUUID().toString();
+        String ownerEmail = "week-rated-" + runId + "@example.com";
+        Registered owner = TestAuth.registerOwner(restTemplate, ownerEmail);
+        Registered customer = TestAuth.registerCustomer(restTemplate, "week-rater-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Rated Week Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Rated Service", new BigDecimal("40.00"));
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+        ResponseEntity<Map> booking = restTemplate.exchange("/api/v1/bookings", HttpMethod.POST,
+                new HttpEntity<>(new CreateBookingRequest(customer.userId(), serviceId, slotId,
+                        new BigDecimal("40.00")), TestAuth.authHeaders(customer.accessToken())), Map.class);
+        String bookingId = booking.getBody().get("id").toString();
+        restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        restTemplate.exchange("/api/v1/bookings/" + bookingId + "/complete", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(restTemplate.exchange("/api/v1/bookings/" + bookingId + "/reviews", HttpMethod.POST,
+                new HttpEntity<>(Map.of("rating", 4, "comment", "Good"),
+                        TestAuth.authHeaders(customer.accessToken())), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.CREATED);
+
+        reportService.publishReports(Instant.now().plus(2, ChronoUnit.DAYS));
+
+        assertThat(capturedEmails.sent).anySatisfy(email -> {
+            assertThat(email.toEmail()).isEqualTo(ownerEmail);
+            assertThat(email.body()).contains("Rating: 4.0 (1 new)").contains("Completed: 1");
+        });
     }
 
     private UUID createProvider(Registered owner, String name) {
