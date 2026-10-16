@@ -25,7 +25,8 @@ class BusinessInboxScreen extends ConsumerStatefulWidget {
   const BusinessInboxScreen({super.key, required this.ownerUserId});
 
   @override
-  ConsumerState<BusinessInboxScreen> createState() => _BusinessInboxScreenState();
+  ConsumerState<BusinessInboxScreen> createState() =>
+      _BusinessInboxScreenState();
 }
 
 class _BusinessInboxScreenState extends ConsumerState<BusinessInboxScreen> {
@@ -50,10 +51,15 @@ class _BusinessInboxScreenState extends ConsumerState<BusinessInboxScreen> {
           if (providers.isEmpty) {
             return NoBusinessState(message: l10n.businessInboxNoBusinesses);
           }
-          if (_providerId == null || !providers.any((p) => p.id == _providerId)) {
+          if (_providerId == null ||
+              !providers.any((p) => p.id == _providerId)) {
             _providerId = providers.first.id;
           }
-          return _BusinessInboxBody(providerId: _providerId!, providers: providers, onSelectProvider: _selectProvider);
+          return _BusinessInboxBody(
+            providerId: _providerId!,
+            providers: providers,
+            onSelectProvider: _selectProvider,
+          );
         },
         loading: () => const FactoryLoadingState(),
         error: (error, _) => Center(
@@ -61,7 +67,8 @@ class _BusinessInboxScreenState extends ConsumerState<BusinessInboxScreen> {
             padding: const EdgeInsets.all(FactorySpacing.space4),
             child: FactoryErrorState(
               message: l10n.errorBusinessesLoadFailed,
-              onRetry: () => ref.invalidate(myProvidersProvider(widget.ownerUserId)),
+              onRetry: () =>
+                  ref.invalidate(myProvidersProvider(widget.ownerUserId)),
             ),
           ),
         ),
@@ -75,7 +82,11 @@ class _BusinessInboxBody extends ConsumerWidget {
   final List<AdminProvider> providers;
   final ValueChanged<String> onSelectProvider;
 
-  const _BusinessInboxBody({required this.providerId, required this.providers, required this.onSelectProvider});
+  const _BusinessInboxBody({
+    required this.providerId,
+    required this.providers,
+    required this.onSelectProvider,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -90,19 +101,30 @@ class _BusinessInboxBody extends ConsumerWidget {
         children: [
           Text(
             l10n.businessInboxSubtitle,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(color: colors.textSecondary),
           ),
           const SizedBox(height: FactorySpacing.space4),
           if (providers.length > 1) ...[
-            _ProviderPicker(providers: providers, selectedId: providerId, onSelect: onSelectProvider),
+            _ProviderPicker(
+              providers: providers,
+              selectedId: providerId,
+              onSelect: onSelectProvider,
+            ),
             const SizedBox(height: FactorySpacing.space4),
           ],
           inboxAsync.when(
             data: (conversations) => conversations.isEmpty
                 ? Padding(
-                    padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space6),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: FactorySpacing.space6,
+                    ),
                     child: Center(
-                      child: FactoryEmptyState(icon: Icons.forum_outlined, title: l10n.businessInboxEmpty, message: ''),
+                      child: FactoryEmptyState(
+                        icon: Icons.forum_outlined,
+                        title: l10n.businessInboxEmpty,
+                        message: '',
+                      ),
                     ),
                   )
                 : Column(
@@ -114,7 +136,9 @@ class _BusinessInboxBody extends ConsumerWidget {
                             MaterialPageRoute(
                               builder: (_) => BusinessChatThreadScreen(
                                 conversationId: conversation.id,
-                                customerDisplayName: conversation.customerDisplayName ?? l10n.messagingUnknownCustomer,
+                                customerDisplayName:
+                                    conversation.customerDisplayName ??
+                                    l10n.messagingUnknownCustomer,
                               ),
                             ),
                           ),
@@ -128,10 +152,13 @@ class _BusinessInboxBody extends ConsumerWidget {
               child: FactoryLoadingState(),
             ),
             error: (error, _) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space4),
+              padding: const EdgeInsets.symmetric(
+                vertical: FactorySpacing.space4,
+              ),
               child: FactoryErrorState(
                 message: l10n.errorConversationsLoadFailed,
-                onRetry: () => ref.invalidate(providerInboxProvider(providerId)),
+                onRetry: () =>
+                    ref.invalidate(providerInboxProvider(providerId)),
               ),
             ),
           ),
@@ -146,7 +173,11 @@ class _ProviderPicker extends StatelessWidget {
   final String selectedId;
   final ValueChanged<String> onSelect;
 
-  const _ProviderPicker({required this.providers, required this.selectedId, required this.onSelect});
+  const _ProviderPicker({
+    required this.providers,
+    required this.selectedId,
+    required this.onSelect,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -155,7 +186,11 @@ class _ProviderPicker extends StatelessWidget {
       runSpacing: 8,
       children: [
         for (final provider in providers)
-          FactoryChip(label: provider.name, selected: provider.id == selectedId, onTap: () => onSelect(provider.id)),
+          FactoryChip(
+            label: provider.name,
+            selected: provider.id == selectedId,
+            onTap: () => onSelect(provider.id),
+          ),
       ],
     );
   }
@@ -169,12 +204,18 @@ class _ConversationCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isNew = ref.watch(messageSeenProvider).value?.isNew(conversation.id, conversation.lastMessageAt) ?? false;
+    final isNew =
+        ref
+            .watch(messageSeenProvider)
+            .value
+            ?.isNew(conversation.id, conversation.lastMessageAt) ??
+        false;
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
     final locale = Localizations.localeOf(context).toString();
-    final name = conversation.customerDisplayName ?? l10n.messagingUnknownCustomer;
+    final name =
+        conversation.customerDisplayName ?? l10n.messagingUnknownCustomer;
 
     return FactoryCard(
       onTap: onTap,
@@ -189,14 +230,20 @@ class _ConversationCard extends ConsumerWidget {
               children: [
                 Text(
                   name,
-                  style: textTheme.titleSmall?.copyWith(fontWeight: isNew ? FontWeight.w800 : null),
+                  style: textTheme.titleSmall?.copyWith(
+                    fontWeight: isNew ? FontWeight.w800 : null,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  DateFormat.yMMMd(locale).add_Hm().format(conversation.lastMessageAt.toLocal()),
-                  style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+                  DateFormat.yMMMd(locale)
+                      .add_Hm()
+                      .format(conversation.lastMessageAt.toLocal()),
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colors.textTertiary,
+                  ),
                 ),
               ],
             ),
@@ -205,7 +252,10 @@ class _ConversationCard extends ConsumerWidget {
             Container(
               width: 10,
               height: 10,
-              decoration: BoxDecoration(color: colors.error, shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: colors.error,
+                shape: BoxShape.circle,
+              ),
             ),
             const SizedBox(width: FactorySpacing.space2),
           ],
@@ -217,10 +267,16 @@ class _ConversationCard extends ConsumerWidget {
 }
 
 String _initialsFor(String name) {
-  final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+  final parts = name
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((p) => p.isNotEmpty)
+      .toList();
   if (parts.isEmpty) return '?';
   if (parts.length == 1) {
-    return parts.first.substring(0, parts.first.length >= 2 ? 2 : 1).toUpperCase();
+    return parts.first
+        .substring(0, parts.first.length >= 2 ? 2 : 1)
+        .toUpperCase();
   }
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
