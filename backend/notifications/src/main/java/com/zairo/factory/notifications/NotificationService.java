@@ -88,6 +88,17 @@ public class NotificationService {
                 "A customer moved booking (" + bookingId + ") to " + newStartsAt + ".");
     }
 
+    public void sendWeeklyReportEmail(String toEmail,
+            com.zairo.factory.providerinsights.WeeklyBusinessReportEvent report) {
+        String body = report.providerName() + " — last 7 days\n"
+                + "Bookings: " + report.totalBookings() + "\n"
+                + "Completed: " + report.completedBookings() + "\n"
+                + "Cancelled: " + report.cancelledBookings() + "\n"
+                + "No-shows: " + report.noShowBookings() + "\n"
+                + "Revenue: " + report.totalRevenue() + (report.currency() == null ? "" : " " + report.currency());
+        emailProvider.send(toEmail, "Your week: " + report.providerName(), body);
+    }
+
     public void sendReviewDecisionEmail(String toEmail, UUID reviewId,
             com.zairo.factory.reviews.ReviewModerationDecidedEvent.Decision decision) {
         String body = switch (decision) {
