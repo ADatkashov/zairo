@@ -2,6 +2,7 @@ package com.zairo.factory.providerinsights;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -12,9 +13,11 @@ import java.util.UUID;
  * @param averageRating average of the week's visible reviews; null when nobody reviewed
  * @param previousTotalBookings bookings in the seven days before this week
  * @param previousRevenue revenue in the seven days before this week
+ * @param cancelReasons how many cancellations gave each reason this week, most frequent first (at most three);
+ *        empty when nobody said why
  */
 public record WeeklyBusinessReportEvent(UUID providerId, String providerName, Instant from, Instant to,
         long totalBookings, long completedBookings, long cancelledBookings, long noShowBookings,
         BigDecimal totalRevenue, String currency, long previousTotalBookings, BigDecimal previousRevenue,
-        Double averageRating, long newReviews) {
+        Double averageRating, long newReviews, Map<String, Long> cancelReasons) {
 }
