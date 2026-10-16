@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../city/data/models/city.dart';
 import '../../../city/presentation/providers/city_providers.dart';
 import '../../data/models/booking_worker.dart';
+import '../../data/models/favorite_worker.dart';
 import '../../data/models/top_worker.dart';
 import '../../data/models/worker_profile.dart';
 import '../../data/workers_api.dart';
@@ -37,4 +38,14 @@ final bookingWorkerProvider = FutureProvider.autoDispose.family<BookingWorker?, 
   } catch (_) {
     return null;
   }
+});
+
+/// The customer's "My masters". Keyed by user id like the business favorites.
+final myFavoriteWorkersProvider = FutureProvider.autoDispose.family<List<FavoriteWorker>, String>((ref, userId) {
+  return ref.watch(workersApiProvider).listFavoriteWorkers(userId);
+});
+
+final isFavoriteWorkerProvider =
+    FutureProvider.autoDispose.family<bool, ({String userId, String workerId})>((ref, key) {
+  return ref.watch(workersApiProvider).isFavoriteWorker(key.userId, key.workerId);
 });

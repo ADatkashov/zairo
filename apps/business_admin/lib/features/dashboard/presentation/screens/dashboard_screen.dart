@@ -20,6 +20,7 @@ import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../../city/presentation/providers/city_providers.dart';
 import '../../../loyalty/presentation/screens/loyalty_screen.dart';
 import '../../../messaging/presentation/screens/business_inbox_screen.dart';
+import '../../../staff_owner/presentation/providers/staff_owner_providers.dart';
 import '../../../salon/data/models/admin_provider.dart';
 import '../../../salon/presentation/providers/salon_providers.dart';
 import '../../../salon/presentation/screens/week_calendar_screen.dart';
@@ -150,6 +151,7 @@ class DashboardScreen extends ConsumerWidget {
               if (index == 1) {
                 return _NeedsAttentionStrip(
                   ownerUserId: user.id,
+                  providers: providers,
                   subscription: subscriptionAsync.value,
                 );
               }
@@ -449,9 +451,10 @@ class _OverviewStat extends StatelessWidget {
 /// banner) and [ownerSmartActionsProvider] (Campaign Center's smart-actions
 /// endpoint, previously fetched by no screen at all).
 class _NeedsAttentionStrip extends ConsumerWidget {
-  const _NeedsAttentionStrip({required this.ownerUserId, required this.subscription});
+  const _NeedsAttentionStrip({required this.ownerUserId, required this.providers, required this.subscription});
 
   final String ownerUserId;
+  final List<AdminProvider> providers;
   final Subscription? subscription;
 
   @override
@@ -470,7 +473,27 @@ class _NeedsAttentionStrip extends ConsumerWidget {
           MaterialPageRoute(builder: (_) => CampaignCenterScreen(ownerUserId: ownerUserId)),
         );
 
+    // Appointments whose person cannot come: the most urgent thing an owner can be told, as a customer is waiting for
+    // an answer. Each business reports its own count and opens straight on the place where the decision is made.
+    final decisions = <_AttentionItem>[
+      for (final provider in providers)
+        if ((ref.watch(needsAttentionProvider(provider.id)).value?.length ?? 0) > 0)
+          _AttentionItem(
+            icon: Icons.event_busy_rounded,
+            label: providers.length > 1
+                ? l10n.dashboardAttentionNeedsDecisionAt(
+                    ref.watch(needsAttentionProvider(provider.id)).value!.length,
+                    provider.name,
+                  )
+                : l10n.dashboardAttentionNeedsDecision(ref.watch(needsAttentionProvider(provider.id)).value!.length),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => SalonDetailScreen(provider: provider)),
+            ),
+          ),
+    ];
+
     final items = <_AttentionItem>[
+      ...decisions,
       if (subscription?.status == 'PAST_DUE')
         _AttentionItem(
           icon: Icons.warning_amber_rounded,

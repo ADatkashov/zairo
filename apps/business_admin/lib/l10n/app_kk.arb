@@ -262,6 +262,8 @@
   "dashboardBusinessesCountLabel": "Бизнестер",
   "dashboardNeedsAttentionTitle": "Бүгін назар аудартатын мәселелер",
   "dashboardAttentionAllClear": "Бәрі дұрыс — бүгін назар аудартатын ештеңе жоқ.",
+  "dashboardAttentionNeedsDecision": "{count, plural, other{{count} жазылу сіздің шешіміңізді күтуде}}",
+  "dashboardAttentionNeedsDecisionAt": "{count, plural, other{{count} жазылу сіздің шешіміңізді күтуде · {business}}}",
   "dashboardAttentionBillingPastDue": "Төлем өтпеді — PRO сақтау үшін төлемді түзетіңіз",
   "dashboardAttentionCampaignExpiringSoon": "{count, plural, other{{count} науқан жақында аяқталады}}",
   "dashboardAttentionFailedCampaign": "{count, plural, other{{count} сәтсіз науқанды қайталау керек}}",

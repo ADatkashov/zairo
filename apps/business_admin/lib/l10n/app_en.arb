@@ -225,6 +225,16 @@
 
   "dashboardAttentionAllClear": "All caught up — nothing needs attention today.",
   "@dashboardAttentionAllClear": {"description": "Shown in place of the attention strip when there's nothing to flag."},
+  "dashboardAttentionNeedsDecision": "{count, plural, one{{count} appointment needs your decision} other{{count} appointments need your decision}}",
+  "@dashboardAttentionNeedsDecision": {
+    "description": "Attention strip item: appointments whose person cannot attend and the owner must decide (single business).",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "dashboardAttentionNeedsDecisionAt": "{count, plural, one{{count} appointment needs your decision · {business}} other{{count} appointments need your decision · {business}}}",
+  "@dashboardAttentionNeedsDecisionAt": {
+    "description": "Same, for an owner with several businesses: names the business.",
+    "placeholders": {"count": {"type": "int"}, "business": {"type": "String"}}
+  },
 
   "dashboardAttentionBillingPastDue": "Payment failed — fix billing to keep PRO",
   "@dashboardAttentionBillingPastDue": {"description": "Attention strip item, shown when the owner's subscription is PAST_DUE."},

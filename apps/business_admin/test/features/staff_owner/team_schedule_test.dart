@@ -1,3 +1,5 @@
+import 'package:business_admin/features/reviews/data/api/reviews_api.dart';
+import 'package:business_admin/features/reviews/presentation/providers/reviews_providers.dart';
 import 'package:business_admin/features/staff_owner/data/models/needs_attention.dart';
 import 'package:business_admin/features/staff_owner/data/models/worker_schedule.dart';
 import 'package:business_admin/features/staff_owner/data/staff_owner_api.dart';
@@ -127,8 +129,42 @@ class _FakeApi extends StaffOwnerApi {
   Future<List<NeedsAttentionItem>> needsAttention(String providerId) async => const [];
 }
 
-Widget _wrap(_FakeApi api, Widget home) => ProviderScope(
-      overrides: [staffOwnerApiProvider.overrideWithValue(api)],
+/// Records the owner's replies; saving one also puts it on the review the rating page reloads.
+class _FakeReviewsApi extends ReviewsApi {
+  _FakeReviewsApi(this.staffApi) : super(DioClient(Dio()));
+
+  final _FakeApi staffApi;
+  final List<({String reviewId, String reply})> replies = [];
+
+  @override
+  Future<({String reply, DateTime repliedAt})> replyToReview(String reviewId, String reply) async {
+    replies.add((reviewId: reviewId, reply: reply));
+    final current = staffApi.rating;
+    staffApi.rating = WorkerRating(
+      averageRating: current.averageRating,
+      reviewCount: current.reviewCount,
+      distribution: current.distribution,
+      reviews: [
+        for (final r in current.reviews)
+          WorkerReviewItem(
+            reviewId: r.reviewId,
+            customerName: r.customerName,
+            rating: r.rating,
+            comment: r.comment,
+            createdAt: r.createdAt,
+            businessReply: r.reviewId == reviewId ? reply : r.businessReply,
+          ),
+      ],
+    );
+    return (reply: reply, repliedAt: DateTime(2026, 10, 13));
+  }
+}
+
+Widget _wrap(_FakeApi api, Widget home, {ReviewsApi? reviewsApi}) => ProviderScope(
+      overrides: [
+        staffOwnerApiProvider.overrideWithValue(api),
+        if (reviewsApi != null) reviewsApiProvider.overrideWithValue(reviewsApi),
+      ],
       child: MaterialApp(
         theme: factoryLightTheme(profile: FactoryAppProfile.business),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -146,6 +182,7 @@ void main() {
         distribution: const [0, 0, 0, 1, 1],
         reviews: [
           WorkerReviewItem(
+            reviewId: 'r1',
             customerName: 'Aisha K.',
             rating: 5,
             comment: 'Lovely work',
@@ -169,6 +206,79 @@ void main() {
     expect(find.text('Reply from the business'), findsOneWidget);
     expect(find.text('Thanks!'), findsOneWidget);
     expect(find.text('Oct 12, 2026'), findsOneWidget);
+  });
+
+  testWidgets('the owner answers a review from the rating page, and edits an answer already given', (tester) async {
+    WorkerReviewItem review(String id, String name, {String? reply}) => WorkerReviewItem(
+          reviewId: id,
+          customerName: name,
+          rating: 5,
+          comment: 'Great',
+          createdAt: DateTime(2026, 10, 12),
+          businessReply: reply,
+        );
+    final api = _FakeApi([_worker('w1', 'Aigerim', rating: 5, reviews: 2)])
+      ..rating = WorkerRating(
+        averageRating: 5,
+        reviewCount: 2,
+        distribution: const [0, 0, 0, 0, 2],
+        reviews: [review('r1', 'Aisha K.'), review('r2', 'Dana S.', reply: 'Thank you!')],
+      );
+    final reviews = _FakeReviewsApi(api);
+    await tester.pumpWidget(_wrap(api, const TeamScheduleScreen(providerId: 'p1'), reviewsApi: reviews));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Rating and reviews'));
+    await tester.pumpAndSettle();
+
+    // One review has no answer yet ("Reply"), the other can be edited ("Edit reply").
+    expect(find.text('Reply'), findsOneWidget);
+    expect(find.text('Edit reply'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Reply'));
+    await tester.tap(find.text('Reply'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Thank you, Aisha!');
+    await tester.tap(find.text('Post reply'));
+    await tester.pumpAndSettle();
+
+    expect(reviews.replies, [(reviewId: 'r1', reply: 'Thank you, Aisha!')]);
+    // The page reloaded: both reviews now carry an answer.
+    expect(find.text('Thank you, Aisha!'), findsOneWidget);
+    expect(find.text('Reply'), findsNothing);
+    expect(find.text('Edit reply'), findsNWidgets(2));
+  });
+
+  testWidgets('cancelling the reply dialog changes nothing', (tester) async {
+    final api = _FakeApi([_worker('w1', 'Aigerim', rating: 5, reviews: 1)])
+      ..rating = WorkerRating(
+        averageRating: 5,
+        reviewCount: 1,
+        distribution: const [0, 0, 0, 0, 1],
+        reviews: [
+          WorkerReviewItem(
+            reviewId: 'r1',
+            customerName: 'Aisha K.',
+            rating: 5,
+            comment: 'Great',
+            createdAt: DateTime(2026, 10, 12),
+            businessReply: null,
+          ),
+        ],
+      );
+    final reviews = _FakeReviewsApi(api);
+    await tester.pumpWidget(_wrap(api, const TeamScheduleScreen(providerId: 'p1'), reviewsApi: reviews));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Rating and reviews'));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Reply'));
+    await tester.tap(find.text('Reply'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(reviews.replies, isEmpty);
+    expect(find.text('Reply'), findsOneWidget);
   });
 
   testWidgets('a person with no reviews shows the empty state and what it takes', (tester) async {
