@@ -215,7 +215,7 @@ class BookingApiTests {
     }
 
     @Test
-    void sendsABookingReminderOnceAndOnlyOnceForASlotStartingWithinTheWindow() {
+    void sendsATwoHourReminderOnceAndOnlyOnceForABookingMadeAheadOfTheWindow() {
         String runId = UUID.randomUUID().toString();
         String customerEmail = "reminder-customer-" + runId + "@example.com";
         Registered customer = TestAuth.registerCustomer(restTemplate, customerEmail);
@@ -223,23 +223,36 @@ class BookingApiTests {
 
         UUID providerId = createProvider(owner, "Reminder Salon " + runId);
         UUID serviceId = createService(owner, providerId, "Reminder Service", new BigDecimal("25.00"));
-        Instant start = Instant.now().plus(30, ChronoUnit.MINUTES);
+
+        // Booked just now for 30 minutes from now: the customer has only just made it, so no "in 2 hours" nudge.
+        Instant soon = Instant.now().plus(30, ChronoUnit.MINUTES);
+        UUID soonSlot = createSlot(owner, providerId, soon, soon.plus(30, ChronoUnit.MINUTES));
+        UUID soonBooking = UUID.fromString(createBooking(customer, new CreateBookingRequest(customer.userId(),
+                serviceId, soonSlot, new BigDecimal("25.00"))).getBody().get("id").toString());
+        payForBooking(soonBooking, customer);
+        Instant realNow = Instant.now();
+        bookingService.sendDueReminders(realNow, realNow.plus(2, ChronoUnit.HOURS));
+        assertThat(capturedEmails.sent).noneSatisfy(email -> assertThat(email.body()).contains(soonBooking.toString())
+                .contains("2 hours"));
+
+        // Booked now for 3 hours from now, looked at 90 minutes before it starts: inside the 2-hour window, due.
+        Instant start = Instant.now().plus(3, ChronoUnit.HOURS);
         UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
 
         var bookingRequest = new CreateBookingRequest(customer.userId(), serviceId, slotId, new BigDecimal("25.00"));
         UUID bookingId = UUID.fromString(createBooking(customer, bookingRequest).getBody().get("id").toString());
         payForBooking(bookingId, customer);
 
-        Instant now = Instant.now();
-        bookingService.sendDueReminders(now, now.plus(1, ChronoUnit.HOURS));
+        Instant now = start.minus(90, ChronoUnit.MINUTES);
+        bookingService.sendDueReminders(now, now.plus(2, ChronoUnit.HOURS));
         assertThat(capturedEmails.sent).anySatisfy(email -> {
             assertThat(email.toEmail()).isEqualTo(customerEmail);
             assertThat(email.subject()).isEqualTo("Upcoming booking reminder");
-            assertThat(email.body()).contains(bookingId.toString());
+            assertThat(email.body()).contains(bookingId.toString()).contains("2 hours");
         });
 
         int sentAfterFirstRun = capturedEmails.sent.size();
-        bookingService.sendDueReminders(now, now.plus(1, ChronoUnit.HOURS));
+        bookingService.sendDueReminders(now, now.plus(2, ChronoUnit.HOURS));
         assertThat(capturedEmails.sent).hasSize(sentAfterFirstRun);
     }
 

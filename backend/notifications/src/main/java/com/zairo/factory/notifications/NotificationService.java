@@ -202,7 +202,7 @@ public class NotificationService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void sendBookingReminderEmail(UUID recipientUserId, String toEmail, UUID bookingId) {
         String title = "Upcoming booking reminder";
-        String body = "Your booking (" + bookingId + ") is coming up in about an hour. See you soon!";
+        String body = "Your booking (" + bookingId + ") is coming up in about 2 hours. See you soon!";
         emailProvider.send(toEmail, title, body);
         recordInApp(recipientUserId, InAppNotificationType.BOOKING_REMINDER, title, body);
     }
@@ -214,6 +214,17 @@ public class NotificationService {
                 + "tap Reschedule.";
         emailProvider.send(toEmail, title, body);
         recordInApp(recipientUserId, InAppNotificationType.BOOKING_REMINDER, title, body);
+    }
+
+    /** A time freed up at a business the customer put themselves on the waitlist of. */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void sendWaitlistSlotOpenedEmail(UUID recipientUserId, String toEmail, String providerName,
+            Instant startsAt) {
+        String title = "A time just opened up";
+        String body = "A time opened up at " + providerName + ": " + SMART_FILL_SLOT_TIME.format(startsAt)
+                + ". It goes to whoever books first — open the app to take it.";
+        emailProvider.send(toEmail, title, body);
+        recordInApp(recipientUserId, InAppNotificationType.WAITLIST_SLOT_OPENED, title, body);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

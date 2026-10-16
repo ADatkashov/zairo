@@ -817,8 +817,6 @@
   "noOpenTimesTitle": "No open times",
   "@noOpenTimesTitle": {"description": "Provider detail screen empty state title when there are no open slots."},
 
-  "noOpenTimesMessage": "No free times right now. Message the business to ask, or try another one.",
-  "@noOpenTimesMessage": {"description": "Provider detail screen empty state message when there are no open slots."},
 
   "errorAvailabilityLoadFailed": "Couldn't load availability.",
   "@errorAvailabilityLoadFailed": {"description": "Provider detail screen error state when slots fail to load."},
@@ -1994,5 +1992,23 @@
   "cancelReasonMistake": "Booked by mistake",
   "@cancelReasonMistake": {"description": "A one-tap reason in the cancel-booking dialog."},
   "reviewQuickStarTooltip": "{count, plural, one{Rate your visit {count} star} other{Rate your visit {count} stars}}",
-  "@reviewQuickStarTooltip": {"description": "Tooltip of a star on a completed booking card: opens the review form with that mark chosen.", "placeholders": {"count": {"type": "int"}}}
+  "@reviewQuickStarTooltip": {"description": "Tooltip of a star on a completed booking card: opens the review form with that mark chosen.", "placeholders": {"count": {"type": "int"}}},
+
+  "noOpenTimesWaitlistMessage": "No free times right now. We'll tell you the moment one opens up.",
+  "@noOpenTimesWaitlistMessage": {"description": "Provider detail empty state message when there are no open slots; the button below it joins the business's waitlist."},
+
+  "waitlistJoinButton": "Notify me",
+  "@waitlistJoinButton": {"description": "Button that puts the customer on a business's waitlist (told when a time frees up)."},
+
+  "waitlistJoinedTitle": "You're on the waitlist",
+  "@waitlistJoinedTitle": {"description": "Title shown once the customer is on a business's waitlist."},
+
+  "waitlistJoinedMessage": "We'll notify you as soon as a time opens up here. It goes to whoever books first.",
+  "@waitlistJoinedMessage": {"description": "Explains what happens after joining a business's waitlist."},
+
+  "waitlistLeaveButton": "Stop waiting",
+  "@waitlistLeaveButton": {"description": "Button that takes the customer off a business's waitlist."},
+
+  "waitlistFailed": "Couldn't update the waitlist. Try again.",
+  "@waitlistFailed": {"description": "Snackbar when joining or leaving a waitlist fails."}
 }

@@ -35,6 +35,8 @@ import 'package:zairo/features/staff/presentation/providers/staff_providers.dart
 import 'package:zairo/features/workforce/data/models/any_slot.dart';
 import 'package:zairo/features/workforce/data/workforce_api.dart';
 import 'package:zairo/features/workforce/presentation/providers/workforce_providers.dart';
+import 'package:zairo/features/waitlist/data/waitlist_api.dart';
+import 'package:zairo/features/waitlist/presentation/providers/waitlist_providers.dart';
 import 'package:zairo/l10n/app_localizations.dart';
 
 class _FakeBookingApi extends BookingApi {
@@ -76,6 +78,13 @@ class _FakeBookingApi extends BookingApi {
       createdAt: DateTime.now(),
     );
   }
+}
+
+class _FakeWaitlistApi extends WaitlistApi {
+  _FakeWaitlistApi() : super(DioClient(Dio()));
+
+  @override
+  Future<Set<String>> waitingProviderIds(String userId) async => <String>{};
 }
 
 class _FakePaymentsApi extends PaymentsApi {
@@ -1218,6 +1227,7 @@ void main() {
         overrides: [
           bookingApiProvider.overrideWithValue(fakeApi),
           beautyApiProvider.overrideWithValue(_FakeBeautyApi()),
+          waitlistApiProvider.overrideWithValue(_FakeWaitlistApi()),
           authControllerProvider.overrideWith(_LoggedInAuthController.new),
         ],
         child: MaterialApp(
@@ -1231,6 +1241,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('No open times'), findsOneWidget);
+    // The one thing to do about it is on the spot: ask to be told when a time opens.
+    expect(find.text('Notify me'), findsOneWidget);
   });
 
   testWidgets('a payment that is still pending sends the customer to pay instead of showing "confirmed"', (tester) async {

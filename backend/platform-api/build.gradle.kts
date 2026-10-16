@@ -27,6 +27,7 @@ dependencies {
     implementation(project(":notifications"))
     implementation(project(":search"))
     implementation(project(":favorites"))
+    implementation(project(":waitlist"))
     implementation(project(":vertical-beauty"))
     implementation(project(":vertical-auto"))
     implementation(project(":vertical-cleaning"))
