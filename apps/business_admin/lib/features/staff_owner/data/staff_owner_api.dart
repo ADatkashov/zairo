@@ -62,6 +62,11 @@ class StaffOwnerApi {
     return data.map((e) => WorkerSummary.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  Future<WorkerRating> workerRating(String providerId, String workerId) async {
+    final response = await _dioClient.get('/providers/$providerId/workers/$workerId/rating');
+    return WorkerRating.fromJson(response.data as Map<String, dynamic>);
+  }
+
   Future<WorkerScheduleData> schedule(String providerId, String workerId) async {
     final response = await _dioClient.get('/providers/$providerId/workers/$workerId/schedule');
     return WorkerScheduleData.fromJson(response.data as Map<String, dynamic>);

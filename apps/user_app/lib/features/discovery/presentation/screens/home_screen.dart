@@ -574,14 +574,24 @@ class _CategoriesSection extends ConsumerWidget {
               }
               final (code, label) = entry;
               final accent = colorForCategory(context, code);
-              return FactoryCategoryTile(
-                icon: iconForCategory(code),
-                label: label,
-                labelMaxWidth: cell,
-                dense: dense,
-                accentColor: accent?.color,
-                accentTint: accent?.tint,
-                onTap: () => context.go(AppRoutes.search(category: code)),
+              // The label may use the gap beside its cell too: a long single word ("Образование") would otherwise
+              // break in the middle at 320-390 px. The tile is at most as wide as the cell plus that gap.
+              return SizedBox(
+                height: tileHeight,
+                child: OverflowBox(
+                  alignment: Alignment.topCenter,
+                  maxWidth: cell + _gap,
+                  maxHeight: tileHeight,
+                  child: FactoryCategoryTile(
+                    icon: iconForCategory(code),
+                    label: label,
+                    labelMaxWidth: cell + _gap,
+                    dense: dense,
+                    accentColor: accent?.color,
+                    accentTint: accent?.tint,
+                    onTap: () => context.go(AppRoutes.search(category: code)),
+                  ),
+                ),
               );
             }
 

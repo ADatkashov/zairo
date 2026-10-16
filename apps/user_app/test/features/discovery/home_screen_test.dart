@@ -328,6 +328,23 @@ void main() {
     expect(find.text('Earn rewards for every visit'), findsNothing);
   });
 
+  testWidgets('a category label may use the gap beside its cell, so a long word does not break in the middle', (tester) async {
+    _useTallWindow(tester);
+
+    // 20 categories scroll: 4.4 columns on screen. 800 px wide minus the 16 px page padding on both sides.
+    await tester.pumpWidget(searchRouteApp(manyCategories(20)));
+    await tester.pumpAndSettle();
+    const gap = 8.0;
+    final scrollingCell = (768 - gap * 4) / 4.4;
+    expect(tester.widget<FactoryCategoryTile>(find.byType(FactoryCategoryTile).first).labelMaxWidth, closeTo(scrollingCell + gap, 0.01));
+
+    // 8 or fewer fit four exact columns.
+    await tester.pumpWidget(searchRouteApp(manyCategories(8)));
+    await tester.pumpAndSettle();
+    final fixedCell = (768 - gap * 3) / 4;
+    expect(tester.widget<FactoryCategoryTile>(find.byType(FactoryCategoryTile).first).labelMaxWidth, closeTo(fixedCell + gap, 0.01));
+  });
+
   testWidgets('exactly eight categories fit the 4x2 grid without scrolling', (tester) async {
     _useTallWindow(tester);
     await tester.pumpWidget(searchRouteApp(manyCategories(8)));

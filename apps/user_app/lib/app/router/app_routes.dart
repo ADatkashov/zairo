@@ -105,12 +105,15 @@ abstract final class AppRoutes {
     String? workerId,
     String? workerKind,
     String? slotId,
+    String? serviceId,
   }) {
     final query = <String, String>{
       if (book) 'book': '1',
       if (workerId != null && workerKind != null) ...{'worker': workerId, 'kind': workerKind},
       // A time to have picked as well; only meaningful together with a worker.
       if (workerId != null && workerKind != null && slotId != null) 'slot': slotId,
+      // A service to have picked: what a service row on a master's page wants.
+      'service': ?serviceId,
     };
     final path = '/provider/$providerId';
     return query.isEmpty ? path : Uri(path: path, queryParameters: query).toString();

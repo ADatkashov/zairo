@@ -19,6 +19,12 @@ final workersProvider = FutureProvider.autoDispose.family<List<WorkerSummary>, S
   return ref.watch(staffOwnerApiProvider).workers(providerId);
 });
 
+/// One person's rating, star distribution and newest reviews.
+final workerRatingProvider =
+    FutureProvider.autoDispose.family<WorkerRating, (String providerId, String workerId)>((ref, key) {
+  return ref.watch(staffOwnerApiProvider).workerRating(key.$1, key.$2);
+});
+
 final workerScheduleProvider =
     FutureProvider.autoDispose.family<WorkerScheduleData, (String providerId, String workerId)>((ref, key) {
   return ref.watch(staffOwnerApiProvider).schedule(key.$1, key.$2);

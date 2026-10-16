@@ -23,12 +23,14 @@ class ProviderDetailRoute extends ConsumerWidget {
     this.startAtBooking = false,
     this.preselectedWorker,
     this.preselectedSlotId,
+    this.preselectedServiceId,
   });
 
   final String providerId;
   final bool startAtBooking;
   final PreselectedWorker? preselectedWorker;
   final String? preselectedSlotId;
+  final String? preselectedServiceId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -45,6 +47,7 @@ class ProviderDetailRoute extends ConsumerWidget {
               startAtBooking: startAtBooking,
               preselectedWorker: preselectedWorker,
               preselectedSlotId: preselectedSlotId,
+              preselectedServiceId: preselectedServiceId,
             );
           }
         }
