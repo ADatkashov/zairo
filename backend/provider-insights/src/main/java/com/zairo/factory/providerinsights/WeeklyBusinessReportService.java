@@ -3,6 +3,7 @@ package com.zairo.factory.providerinsights;
 import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.OverviewResponse;
 import com.zairo.factory.providers.Provider;
 import com.zairo.factory.providers.ProviderRepository;
+import com.zairo.factory.reviews.ReviewRepository;
 import java.time.Duration;
 import java.time.Instant;
 import org.springframework.context.ApplicationEventPublisher;
@@ -21,12 +22,15 @@ public class WeeklyBusinessReportService {
 
     private final ProviderRepository providerRepository;
     private final BusinessAnalyticsService analyticsService;
+    private final ReviewRepository reviewRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     public WeeklyBusinessReportService(ProviderRepository providerRepository,
-            BusinessAnalyticsService analyticsService, ApplicationEventPublisher eventPublisher) {
+            BusinessAnalyticsService analyticsService, ReviewRepository reviewRepository,
+            ApplicationEventPublisher eventPublisher) {
         this.providerRepository = providerRepository;
         this.analyticsService = analyticsService;
+        this.reviewRepository = reviewRepository;
         this.eventPublisher = eventPublisher;
     }
 
@@ -39,9 +43,13 @@ public class WeeklyBusinessReportService {
             if (overview.totalBookings() == 0) {
                 continue;
             }
+            OverviewResponse before = analyticsService.overview(provider.getId(), from.minus(PERIOD), from);
+            var rating = reviewRepository.ratingInPeriod(provider.getId(), from, now);
             eventPublisher.publishEvent(new WeeklyBusinessReportEvent(provider.getId(), provider.getName(), from, now,
                     overview.totalBookings(), overview.completedBookings(), overview.cancelledBookings(),
-                    overview.noShowBookings(), overview.totalRevenue(), overview.currency()));
+                    overview.noShowBookings(), overview.totalRevenue(), overview.currency(),
+                    before.totalBookings(), before.totalRevenue(), rating.getAverageRating(),
+                    rating.getReviewCount()));
             published++;
         }
         return published;
