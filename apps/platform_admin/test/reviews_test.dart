@@ -1,5 +1,6 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:platform_admin/app/routes.dart';
 import 'package:platform_admin/app/shell.dart';
@@ -277,5 +278,41 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
     }
+  });
+
+  testWidgets('Copy list as CSV puts the reviews of the open tab on the clipboard', (tester) async {
+    String? copied;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') {
+        copied = (call.arguments as Map)['text'] as String;
+      }
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    final backend = _backend(
+      queues: {
+        'OPEN': [_row('r1', 'OPEN', business: 'Glow, Salon')],
+        'HIDDEN': [_row('r2', 'HIDDEN', business: 'Zen Spa', hiddenReason: 'Contains abuse')],
+      },
+    );
+    await pumpConsole(tester, backend: backend, location: ConsoleRoutes.reviews);
+
+    await tester.tap(find.byTooltip('Copy list as CSV'));
+    await tester.pumpAndSettle();
+
+    final lines = copied!.split('\r\n');
+    expect(lines.first, 'id,business,rating,comment,status,reported,report_reason,decided');
+    expect(lines.length, 2);
+    expect(lines[1], contains('"Glow, Salon"'));
+    expect(lines[1], contains('Abusive language'));
+    expect(find.text('1 review copied as CSV'), findsOneWidget);
+
+    // Another tab copies that tab's list.
+    await tester.tap(find.text('Hidden'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Copy list as CSV'));
+    await tester.pumpAndSettle();
+    expect(copied, contains('Zen Spa'));
+    expect(copied, isNot(contains('Glow')));
   });
 }

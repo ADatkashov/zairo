@@ -342,7 +342,8 @@ public class BookingService {
         booking.markCancelled(reason);
         Booking cancelled = bookingRepository.save(booking);
 
-        eventPublisher.publishEvent(new BookingCancelledEvent(cancelled.getId(), callerId, slot.getProviderId()));
+        eventPublisher.publishEvent(new BookingCancelledEvent(cancelled.getId(), callerId, slot.getProviderId(),
+                reason));
         return cancelled;
     }
 
@@ -366,7 +367,7 @@ public class BookingService {
         booking.markCancelled(reason);
         Booking cancelled = bookingRepository.save(booking);
         eventPublisher.publishEvent(new BookingCancelledEvent(cancelled.getId(), cancelled.getUserId(),
-                slot.getProviderId()));
+                slot.getProviderId(), reason));
         return cancelled;
     }
 

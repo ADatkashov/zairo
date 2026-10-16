@@ -38,6 +38,7 @@ class _FakeBookingApi extends BookingApi {
 
   final List<Booking> _bookings;
   String? lastCancelledBookingId;
+  String? lastCancelReason;
   Object? errorOnCancel;
 
   @override
@@ -47,9 +48,10 @@ class _FakeBookingApi extends BookingApi {
   Future<List<AvailabilitySlot>> listAvailabilitySlots(String providerId) async => const [];
 
   @override
-  Future<Booking> cancelBooking(String bookingId) async {
+  Future<Booking> cancelBooking(String bookingId, {String? reason}) async {
     if (errorOnCancel != null) throw errorOnCancel!;
     lastCancelledBookingId = bookingId;
+    lastCancelReason = reason;
     final index = _bookings.indexWhere((b) => b.id == bookingId);
     final cancelled = Booking(
       id: _bookings[index].id,
@@ -462,6 +464,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(fakeApi.lastCancelledBookingId, 'booking-1');
+    // The reason is optional: nobody is forced to give one.
+    expect(fakeApi.lastCancelReason, isNull);
     expect(find.text('Booking cancelled.'), findsOneWidget);
 
     // The booking left the Upcoming tab now that it's CANCELLED — it only
@@ -469,6 +473,51 @@ void main() {
     await tester.tap(find.text('Cancelled').first);
     await tester.pumpAndSettle();
     expect(find.text('Cancelled'), findsWidgets);
+  });
+
+  testWidgets('a one-tap reason chosen in the cancel dialog is sent with the cancellation, and tapping it again clears it', (tester) async {
+    final booking = Booking(
+      id: 'booking-1',
+      userId: 'user-1',
+      serviceId: 'service-1',
+      availabilitySlotId: 'slot-1',
+      status: 'CONFIRMED',
+      totalPrice: 20,
+      createdAt: DateTime(2026, 1, 1),
+    );
+    final fakeApi = _FakeBookingApi([booking]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(fakeApi),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const MyBookingsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Cancel booking'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Found another time'));
+    await tester.pump();
+    await tester.tap(find.text('Found another time'));
+    await tester.pump();
+    await tester.tap(find.text('Change of plans'));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Cancel booking'));
+    await tester.pumpAndSettle();
+
+    expect(fakeApi.lastCancelledBookingId, 'booking-1');
+    expect(fakeApi.lastCancelReason, 'Change of plans');
   });
 
   testWidgets('shows a readable error when cancellation fails', (tester) async {

@@ -124,4 +124,48 @@ void main() {
     expect(find.textContaining("Couldn't send message"), findsOneWidget);
     expect(find.text('Hello'), findsOneWidget);
   });
+
+  testWidgets('a ready sentence fills the field, can be edited, and is sent as typed', (tester) async {
+    final api = _FakeMessagingApi();
+    await tester.pumpWidget(_wrap(api: api));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Yes, that time works. See you then!'));
+    await tester.pump();
+    expect(find.widgetWithText(TextField, 'Yes, that time works. See you then!'), findsOneWidget);
+
+    // Choosing another sentence replaces the first rather than stacking them.
+    await tester.tap(find.text("Thank you! We'll be in touch shortly."));
+    await tester.pump();
+    await tester.tap(find.byTooltip('Send'));
+    await tester.pumpAndSettle();
+
+    expect(api.lastReplyBody, "Thank you! We'll be in touch shortly.");
+  });
+
+  testWidgets('the ready sentences and the field fit a 320 px phone with a large font in the dark theme', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          messagingApiProvider.overrideWithValue(_FakeMessagingApi()),
+          authControllerProvider.overrideWith(_LoggedInOwnerController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryDarkTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: const BusinessChatThreadScreen(conversationId: 'conv-1', customerDisplayName: 'Aigerim Bekova'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
 }

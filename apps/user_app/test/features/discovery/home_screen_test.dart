@@ -860,6 +860,52 @@ void main() {
     expect(find.textContaining('Next free:'), findsOneWidget);
   });
 
+  testWidgets('tapping a Book Again card opens the provider at the booking steps with the same service', (tester) async {
+    _useTallWindow(tester);
+    final api = _FakeBookingApiWithSuggestions([
+      BookAgainSuggestion(
+        providerId: 'p1',
+        providerName: 'Aigerim Beauty Studio',
+        vertical: 'beauty',
+        serviceId: 's1',
+        serviceTitle: 'Haircut',
+        durationMinutes: 30,
+        price: 25.0,
+        currency: 'USD',
+        lastVisitAt: DateTime.now().subtract(const Duration(days: 14)),
+      ),
+    ]);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi(const [])),
+          bookingApiProvider.overrideWithValue(api),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp.router(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: GoRouter(
+            routes: [
+              GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+              GoRoute(
+                path: '/provider/:id',
+                builder: (_, state) => Scaffold(body: Text('Provider ${state.uri}')),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Aigerim Beauty Studio'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Provider /provider/p1?book=1&service=s1'), findsOneWidget);
+  });
+
   testWidgets('the Book Again card fits a 320 px phone with a large font in the dark theme', (tester) async {
     tester.view.physicalSize = const Size(320, 640);
     tester.view.devicePixelRatio = 1;

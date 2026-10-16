@@ -576,10 +576,27 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
 
   Future<void> _confirmAndCancel() async {
     final l10n = AppLocalizations.of(context)!;
+    // An optional, one-tap reason: the business learns why, the customer is never forced to say.
+    final reasons = [l10n.cancelReasonPlans, l10n.cancelReasonOtherTime, l10n.cancelReasonMistake];
+    String? reason;
     final confirmed = await showFactoryDialog<bool>(
       context: context,
       title: l10n.cancelBookingConfirmTitle,
       message: l10n.cancelBookingConfirmMessage,
+      content: StatefulBuilder(
+        builder: (context, setDialogState) => Wrap(
+          spacing: FactorySpacing.space2,
+          runSpacing: FactorySpacing.space2,
+          children: [
+            for (final option in reasons)
+              ChoiceChip(
+                label: Text(option),
+                selected: reason == option,
+                onSelected: (picked) => setDialogState(() => reason = picked ? option : null),
+              ),
+          ],
+        ),
+      ),
       actions: [
         Builder(
           builder: (dialogContext) => FactoryButton(
@@ -601,7 +618,7 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
 
     setState(() => _isCancelling = true);
     try {
-      await ref.read(bookingApiProvider).cancelBooking(widget.booking.id);
+      await ref.read(bookingApiProvider).cancelBooking(widget.booking.id, reason: reason);
       ref.invalidate(myBookingsProvider(widget.userId));
       ref.invalidate(paymentForBookingProvider(widget.booking.id));
       if (!mounted) return;
