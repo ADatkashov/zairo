@@ -1052,5 +1052,13 @@
   "salonTabTeam": "Команда",
   "salonTabBookings": "Жазылулар",
   "salonTabSettings": "Баптаулар",
-  "navQuickActions": "Жылдам әрекеттер"
+  "navQuickActions": "Жылдам әрекеттер",
+  "appointmentActionsMove": "Басқа уақытқа көшіру",
+  "appointmentActionsNoShow": "Клиент келмеді",
+  "appointmentActionsComplete": "Визит өтті",
+  "appointmentMoveTitle": "Басқа уақытқа көшіру",
+  "appointmentMoveHint": "Сол маманның бос уақыттары. Уақытты түртіңіз — жазылу көшіріледі, клиентке хабарлама барады.",
+  "appointmentMoveEmpty": "Қазір басқа бос уақыт жоқ.",
+  "appointmentMoved": "Көшірілді. Клиентке хабарланды.",
+  "appointmentActionFailed": "Орындалмады. Қайталап көріңіз."
 }

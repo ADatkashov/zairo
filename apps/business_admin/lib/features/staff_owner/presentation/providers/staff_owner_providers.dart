@@ -2,6 +2,7 @@ import 'package:core_network/core_network.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/needs_attention.dart';
+import '../../data/models/reschedule_option.dart';
 import '../../data/models/worker_schedule.dart';
 import '../../data/staff_owner_api.dart';
 
@@ -42,4 +43,9 @@ final workforceSettingsProvider = FutureProvider.autoDispose.family<WorkforceSet
 final workerPricesProvider =
     FutureProvider.autoDispose.family<Map<String, double>, (String providerId, String workerId)>((ref, key) {
   return ref.watch(staffOwnerApiProvider).workerPrices(key.$1, key.$2);
+});
+
+/// The times an appointment can be moved to; read when the owner opens the move sheet.
+final ownerRescheduleOptionsProvider = FutureProvider.autoDispose.family<List<RescheduleOption>, String>((ref, bookingId) {
+  return ref.watch(staffOwnerApiProvider).rescheduleOptions(bookingId);
 });

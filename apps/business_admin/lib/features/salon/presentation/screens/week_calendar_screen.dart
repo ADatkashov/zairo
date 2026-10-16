@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../data/models/schedule_entry.dart';
 import '../providers/salon_providers.dart';
+import '../../../staff_owner/presentation/widgets/appointment_actions.dart';
 import '../../../staff_owner/presentation/widgets/no_show_correction.dart';
 import '../widgets/agenda_row.dart';
 import 'booking_board_screen.dart';
@@ -236,8 +237,14 @@ class _DayStripAndList extends StatelessWidget {
                   separatorBuilder: (_, _) => Divider(height: FactorySpacing.space4, color: colors.border),
                   itemBuilder: (context, i) {
                     final row = AgendaRow(item: items[i], showProvider: multiple);
-                    if (items[i].entry.status != 'NO_SHOW') return row;
-                    return NoShowCorrection(item: items[i], onCorrected: onRefresh, child: row);
+                    final status = items[i].entry.status;
+                    if (status == 'NO_SHOW') {
+                      return NoShowCorrection(item: items[i], onCorrected: onRefresh, child: row);
+                    }
+                    if (status == 'CONFIRMED' || status == 'PENDING_PAYMENT') {
+                      return AppointmentActions(item: items[i], onChanged: onRefresh, child: row);
+                    }
+                    return row;
                   },
                 ),
         ),

@@ -168,6 +168,28 @@ void main() {
     });
   });
 
+  group('appointment actions', () {
+    test('no-show, completion and the move go to the booking endpoints', () async {
+      http.reply('GET', '/bookings/b1/owner-reschedule-options', [
+        {'slotId': 's2', 'startsAt': '2026-10-20T09:00:00Z', 'endsAt': '2026-10-20T10:00:00Z'},
+      ]);
+      http.reply('POST', '/bookings/b1/no-show', {});
+      http.reply('POST', '/bookings/b1/complete', {});
+      http.reply('POST', '/bookings/b1/owner-reschedule', {});
+
+      final options = await api.rescheduleOptions('b1');
+      await api.markNoShow('b1');
+      await api.markCompleted('b1');
+      await api.reschedule('b1', 's2');
+
+      expect(options.single.slotId, 's2');
+      expect(options.single.startsAt, DateTime.utc(2026, 10, 20, 9));
+      expect(http.calls('POST', '/bookings/b1/no-show'), hasLength(1));
+      expect(http.calls('POST', '/bookings/b1/complete'), hasLength(1));
+      expect(http.bodyOf('POST', '/bookings/b1/owner-reschedule'), {'slotId': 's2'});
+    });
+  });
+
   group('worker prices', () {
     test('workerPrices maps service id to its price', () async {
       http.reply('GET', '$_base/workers/w1/prices', [

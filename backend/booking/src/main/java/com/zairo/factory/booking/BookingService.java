@@ -456,15 +456,55 @@ public class BookingService {
         return moved;
     }
 
+    /**
+     * The times the business can move one of its customers' bookings to: the same list the customer is offered. Owner
+     * only (403 otherwise); 409 when the booking cannot be moved any more.
+     */
+    @Transactional(readOnly = true)
+    public java.util.List<AvailabilitySlot> rescheduleOptionsForOwner(UUID bookingId, UUID callerId) {
+        Booking booking = loadBooking(bookingId);
+        AvailabilitySlot current = requireMovableByOwner(booking, callerId);
+        return openSlotsLike(current).stream().limit(MAX_RESCHEDULE_OPTIONS).toList();
+    }
+
+    /**
+     * The business moves a customer's booking to another open time with the same person — a salon that has to shift
+     * an appointment can do it itself instead of cancelling. The customer is told by the ordinary
+     * {@link BookingMovedEvent}; the price and any payment stay as they are.
+     */
+    @Transactional
+    public Booking rescheduleByOwner(UUID bookingId, UUID callerId, UUID newSlotId) {
+        Booking booking = loadBooking(bookingId);
+        AvailabilitySlot current = requireMovableByOwner(booking, callerId);
+        AvailabilitySlot target = availabilitySlotRepository.findById(newSlotId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Availability slot not found: " + newSlotId));
+        boolean samePerson = java.util.Objects.equals(current.getEmployeeId(), target.getEmployeeId());
+        if (!target.getProviderId().equals(current.getProviderId()) || !samePerson
+                || !target.getStartsAt().isAfter(Instant.now())) {
+            throw new SlotNotAvailableException("Pick one of the offered times with the same person: " + newSlotId);
+        }
+        return moveToSlotAuthorized(bookingId, newSlotId);
+    }
+
+    private AvailabilitySlot requireMovableByOwner(Booking booking, UUID callerId) {
+        AvailabilitySlot slot = loadSlot(booking);
+        providerOwnership.requireOwner(slot.getProviderId(), callerId);
+        return requireMovable(booking, slot);
+    }
+
     private AvailabilitySlot requireMovableByCustomer(Booking booking, UUID callerId) {
         if (!booking.getUserId().equals(callerId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not own this booking: " + booking.getId());
         }
+        return requireMovable(booking, loadSlot(booking));
+    }
+
+    private AvailabilitySlot requireMovable(Booking booking, AvailabilitySlot slot) {
         if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
             throw new InvalidBookingStateException("Booking is not in a movable state: " + booking.getId()
                     + " (status=" + booking.getStatus() + ")");
         }
-        AvailabilitySlot slot = loadSlot(booking);
         if (!slot.getStartsAt().isAfter(Instant.now())) {
             throw new InvalidBookingStateException("The appointment has already started: " + booking.getId());
         }
