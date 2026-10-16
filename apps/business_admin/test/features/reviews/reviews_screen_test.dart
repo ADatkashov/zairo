@@ -194,4 +194,31 @@ void main() {
     }
     expect(find.text('The platform looked at it and kept it'), findsOneWidget);
   });
+
+  testWidgets('a new reply offers three ready sentences; tapping one fills the field, which stays editable', (tester) async {
+    await _pump(tester, [_review('1', 5)], const Size(390, 1200));
+
+    await tester.tap(find.text('Reply'));
+    await tester.pumpAndSettle();
+    expect(find.text('Thank you for your feedback!'), findsOneWidget);
+    expect(find.text("We're glad you liked it. See you again soon!"), findsOneWidget);
+    expect(find.textContaining("We're sorry about this"), findsOneWidget);
+
+    await tester.tap(find.text('Thank you for your feedback!'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextField, 'Thank you for your feedback!'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'Thank you, Aisha!');
+    await tester.pump();
+    expect(find.widgetWithText(TextField, 'Thank you, Aisha!'), findsOneWidget);
+  });
+
+  testWidgets('editing an existing reply offers no templates', (tester) async {
+    await _pump(tester, [_review('1', 5, reply: 'Already answered')], const Size(390, 1200));
+
+    await tester.tap(find.text('Edit reply'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ActionChip), findsNothing);
+  });
 }
