@@ -35,7 +35,7 @@ void main() {
         'distribution': [0, 0, 0, 1, 1],
         'reviews': [
           {
-            'id': 'r1',
+            'reviewId': 'r1',
             'bookingId': 'b1',
             'customerName': 'Aisha K.',
             'rating': 5,
@@ -43,7 +43,7 @@ void main() {
             'createdAt': '2026-10-12T10:00:00Z',
             'businessReply': 'Thanks',
           },
-          {'customerName': null, 'rating': 4, 'comment': null, 'createdAt': '2026-10-01T10:00:00Z'},
+          {'reviewId': 'r2', 'customerName': null, 'rating': 4, 'comment': null, 'createdAt': '2026-10-01T10:00:00Z'},
         ],
       });
 
@@ -52,6 +52,7 @@ void main() {
       expect(rating.averageRating, 4.5);
       expect(rating.reviewCount, 2);
       expect(rating.distribution, [0, 0, 0, 1, 1]);
+      expect(rating.reviews[0].reviewId, 'r1');
       expect(rating.reviews[0].customerName, 'Aisha K.');
       expect(rating.reviews[0].comment, 'Lovely');
       expect(rating.reviews[0].businessReply, 'Thanks');
