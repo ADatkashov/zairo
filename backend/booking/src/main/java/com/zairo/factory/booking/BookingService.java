@@ -244,8 +244,7 @@ public class BookingService {
         AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
                         + booking.getAvailabilitySlotId()));
-        slot.markOpen();
-        availabilitySlotRepository.save(slot);
+        releaseSlot(slot, booking.getUserId());
 
         booking.markCancelled(reason);
         return bookingRepository.save(booking);
@@ -336,8 +335,7 @@ public class BookingService {
         AvailabilitySlot slot = availabilitySlotRepository.findById(booking.getAvailabilitySlotId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
                         + booking.getAvailabilitySlotId()));
-        slot.markOpen();
-        availabilitySlotRepository.save(slot);
+        releaseSlot(slot, booking.getUserId());
 
         booking.markCancelled(reason);
         Booking cancelled = bookingRepository.save(booking);
@@ -361,8 +359,7 @@ public class BookingService {
                     + " (status=" + booking.getStatus() + ")");
         }
         AvailabilitySlot slot = loadSlot(booking);
-        slot.markOpen();
-        availabilitySlotRepository.save(slot);
+        releaseSlot(slot, booking.getUserId());
 
         booking.markCancelled(reason);
         Booking cancelled = bookingRepository.save(booking);
@@ -404,8 +401,7 @@ public class BookingService {
             // Someone else claimed it between our read and the write.
             throw new SlotNotAvailableException("That time was just taken: " + newSlotId);
         }
-        oldSlot.markOpen();
-        availabilitySlotRepository.save(oldSlot);
+        releaseSlot(oldSlot, booking.getUserId());
 
         booking.moveToSlot(newSlotId);
         Booking moved = bookingRepository.save(booking);
@@ -609,6 +605,19 @@ public class BookingService {
     }
 
     /**
+     * Puts a slot back to OPEN and tells waitlist, unless it is already in the past (nobody can book that). The
+     * releasing customer is named so they are not told about a time they just gave up.
+     */
+    private void releaseSlot(AvailabilitySlot slot, UUID releasedByUserId) {
+        slot.markOpen();
+        availabilitySlotRepository.save(slot);
+        if (slot.getStartsAt().isAfter(Instant.now())) {
+            eventPublisher.publishEvent(new AvailabilitySlotOpenedEvent(slot.getId(), slot.getProviderId(),
+                    slot.getStartsAt(), slot.getEndsAt(), releasedByUserId));
+        }
+    }
+
+    /**
      * {@link BookingReminderJob}'s one call — marks each qualifying booking
      * reminded and publishes {@link BookingReminderDueEvent} for
      * notifications to actually email, in the same transaction as the
@@ -630,7 +639,7 @@ public class BookingService {
 
     /**
      * Sends the "your visit is tomorrow" reminder for confirmed bookings starting after {@code from} (two hours from
-     * now: the one-hour reminder covers anything closer) and up to {@code to} (a day from now), once each.
+     * now: the two-hour reminder covers anything closer) and up to {@code to} (a day from now), once each.
      */
     @Transactional
     public void sendDueDayReminders(Instant now, Instant from, Instant to) {

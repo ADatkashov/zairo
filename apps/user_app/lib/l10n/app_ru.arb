@@ -264,7 +264,6 @@
   "servicesSectionTitle": "Услуги",
   "availableTimesSectionTitle": "Доступное время",
   "noOpenTimesTitle": "Нет свободного времени",
-  "noOpenTimesMessage": "Сейчас нет свободного времени. Напишите бизнесу, чтобы уточнить, или выберите другой.",
   "errorAvailabilityLoadFailed": "Не удалось загрузить доступное время.",
   "bookButton": "Забронировать",
   "viewPortfolioTooltip": "Смотреть портфолио",
@@ -724,5 +723,12 @@
   "cancelReasonPlans": "Изменились планы",
   "cancelReasonOtherTime": "Нашёл другое время",
   "cancelReasonMistake": "Записался по ошибке",
-  "reviewQuickStarTooltip": "Оценить визит: {count, plural, one{{count} звезда} few{{count} звезды} many{{count} звёзд} other{{count} звёзд}}"
+  "reviewQuickStarTooltip": "Оценить визит: {count, plural, one{{count} звезда} few{{count} звезды} many{{count} звёзд} other{{count} звёзд}}",
+
+  "noOpenTimesWaitlistMessage": "Сейчас нет свободного времени. Сообщим, как только оно освободится.",
+  "waitlistJoinButton": "Сообщить мне",
+  "waitlistJoinedTitle": "Вы в листе ожидания",
+  "waitlistJoinedMessage": "Сообщим, как только здесь освободится время. Оно достанется тому, кто запишется первым.",
+  "waitlistLeaveButton": "Больше не ждать",
+  "waitlistFailed": "Не удалось обновить лист ожидания. Попробуйте ещё раз."
 }
