@@ -10,6 +10,7 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/models/chat_message.dart';
 import '../providers/message_seen_provider.dart';
 import '../providers/messaging_providers.dart';
+import '../providers/quick_replies_provider.dart';
 
 /// One conversation's full thread, from the business owner's side --
 /// plain REST polling only, no WebSocket/read-receipts (see backend/
@@ -206,7 +207,7 @@ class _BusinessChatThreadScreenState
   }
 }
 
-class _ComposeBar extends StatelessWidget {
+class _ComposeBar extends ConsumerWidget {
   final TextEditingController controller;
   final bool isSending;
   final VoidCallback onSend;
@@ -218,9 +219,12 @@ class _ComposeBar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
+    final replies =
+        ref.watch(quickRepliesProvider).value ??
+        [l10n.chatQuickAvailable, l10n.chatQuickThanks, l10n.chatQuickTaken];
 
     return SafeArea(
       top: false,
@@ -238,35 +242,44 @@ class _ComposeBar extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Three ready sentences for the answers a salon gives all day: one tap fills the field, the owner
-            // can still edit before sending. Scrolls sideways so it never takes a second line of screen.
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  for (final template in [
-                    l10n.chatQuickAvailable,
-                    l10n.chatQuickThanks,
-                    l10n.chatQuickTaken,
-                  ])
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        right: FactorySpacing.space2,
-                      ),
-                      child: ActionChip(
-                        label: Text(template),
-                        onPressed: isSending
-                            ? null
-                            : () => controller.value = TextEditingValue(
-                                text: template,
-                                selection: TextSelection.collapsed(
-                                  offset: template.length,
-                                ),
-                              ),
-                      ),
+            // Ready sentences for the answers a salon gives all day: one tap fills the field, the owner can still
+            // edit before sending. The chips scroll sideways (never a second line of screen); the edit button stays put.
+            Row(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (final template in replies)
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              right: FactorySpacing.space2,
+                            ),
+                            child: ActionChip(
+                              label: Text(template),
+                              onPressed: isSending
+                                  ? null
+                                  : () => controller.value = TextEditingValue(
+                                      text: template,
+                                      selection: TextSelection.collapsed(
+                                        offset: template.length,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                      ],
                     ),
-                ],
-              ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: l10n.chatQuickEditTooltip,
+                  icon: const Icon(Icons.edit_outlined, size: 20),
+                  onPressed: isSending
+                      ? null
+                      : () => _editReplies(context, ref, replies),
+                ),
+              ],
             ),
             const SizedBox(height: FactorySpacing.space2),
             Row(
@@ -303,6 +316,99 @@ class _ComposeBar extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+Future<void> _editReplies(
+  BuildContext context,
+  WidgetRef ref,
+  List<String> current,
+) async {
+  final result = await showDialog<_RepliesEdit>(
+    context: context,
+    builder: (_) => _EditRepliesDialog(current: current),
+  );
+  if (result == null) return;
+  if (result.reset) {
+    await ref.read(quickRepliesProvider.notifier).reset();
+  } else {
+    await ref.read(quickRepliesProvider.notifier).save(result.texts);
+  }
+}
+
+class _RepliesEdit {
+  const _RepliesEdit({required this.reset, this.texts = const []});
+
+  final bool reset;
+  final List<String> texts;
+}
+
+class _EditRepliesDialog extends StatefulWidget {
+  const _EditRepliesDialog({required this.current});
+
+  final List<String> current;
+
+  @override
+  State<_EditRepliesDialog> createState() => _EditRepliesDialogState();
+}
+
+class _EditRepliesDialogState extends State<_EditRepliesDialog> {
+  late final List<TextEditingController> _controllers = [
+    for (var i = 0; i < quickReplyCount; i++)
+      TextEditingController(
+        text: i < widget.current.length ? widget.current[i] : '',
+      ),
+  ];
+
+  @override
+  void dispose() {
+    for (final controller in _controllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return FactoryDialog(
+      title: l10n.chatQuickEditTitle,
+      message: l10n.chatQuickEditHint,
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final controller in _controllers)
+              Padding(
+                padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
+                child: FactoryTextField(
+                  controller: controller,
+                  label: l10n.chatQuickEditField,
+                  minLines: 1,
+                  maxLines: 3,
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        FactoryButton(
+          label: l10n.chatQuickEditReset,
+          variant: FactoryButtonVariant.text,
+          onPressed: () =>
+              Navigator.of(context).pop(const _RepliesEdit(reset: true)),
+        ),
+        FactoryButton(
+          label: l10n.chatQuickEditSave,
+          onPressed: () => Navigator.of(context).pop(
+            _RepliesEdit(
+              reset: false,
+              texts: [for (final c in _controllers) c.text],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
