@@ -925,6 +925,40 @@ void main() {
     expect(find.text('Worker page w1'), findsOneWidget);
   });
 
+  testWidgets('Home fits a 320 px phone with a large font in the dark theme: categories, masters, providers', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi([_open, _closed])),
+          catalogApiProvider.overrideWithValue(_FakeCatalogApi(manyCategories(10))),
+          workersApiProvider.overrideWithValue(_FakeWorkersApi(const [_aigerim])),
+        ],
+        child: MaterialApp(
+          theme: factoryDarkTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: const HomeScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    // Walk down the page so every section is built at this size.
+    for (var i = 0; i < 8; i++) {
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -400));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
+  });
+
   testWidgets('no best masters rail while nobody has enough reviews yet', (tester) async {
     _useTallWindow(tester);
     await tester.pumpWidget(mastersApp(const []));

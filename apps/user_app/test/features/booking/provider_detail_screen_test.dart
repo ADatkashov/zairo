@@ -315,10 +315,14 @@ Future<void> tapVisible(WidgetTester tester, Finder finder) async {
 
 /// The detail screen at `/`, plus the confirmation route it replaces itself
 /// with after a booking (the real router declares both as root routes).
-Widget _routerApp(ProviderSearchResult provider) => MaterialApp.router(
-      theme: factoryLightTheme(),
+Widget _routerApp(ProviderSearchResult provider, {double textScale = 1, bool dark = false}) => MaterialApp.router(
+      theme: dark ? factoryDarkTheme() : factoryLightTheme(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
+        child: child!,
+      ),
       routerConfig: GoRouter(
         routes: [
           GoRoute(path: '/', builder: (_, _) => ProviderDetailScreen(provider: provider)),
@@ -421,6 +425,56 @@ void main() {
     await tester.tap(confirm);
     await tester.pumpAndSettle();
     expect(fakeApi.lastBookingCall, isNotNull);
+  });
+
+  testWidgets('the business page fits a 320 px phone with a large font in the dark theme', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    final day = DateTime.now().add(const Duration(days: 1));
+    final fakeApi = _FakeBookingApi([
+      for (var i = 0; i < 6; i++)
+        AvailabilitySlot(
+          id: 'slot-$i',
+          providerId: 'provider-1',
+          startsAt: DateTime(day.year, day.month, day.day, 9 + i),
+          endsAt: DateTime(day.year, day.month, day.day, 10 + i),
+          status: 'OPEN',
+        ),
+    ]);
+    const provider = ProviderSearchResult(
+      id: 'provider-1',
+      name: 'A Salon With A Rather Long Name That Wraps',
+      vertical: 'beauty',
+      status: 'ACTIVE',
+      hasOpenAvailability: true,
+      minPrice: 30,
+      services: [
+        ServiceSummary(id: 'service-1', title: 'Haircut with a long description', durationMinutes: 30, price: 30, currency: 'USD'),
+        ServiceSummary(id: 'service-2', title: 'Colouring', durationMinutes: 120, price: 90, currency: 'USD'),
+      ],
+      averageRating: 4.2,
+      reviewCount: 55,
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(fakeApi),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          beautyApiProvider.overrideWithValue(_FakeBeautyApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: _routerApp(provider, textScale: 2, dark: true),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    for (var i = 0; i < 10; i++) {
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -400));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
   });
 
   testWidgets('selecting a service and slot enables booking and submits the right data', (tester) async {

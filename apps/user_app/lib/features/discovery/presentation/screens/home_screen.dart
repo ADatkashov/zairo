@@ -147,8 +147,11 @@ class HomeScreen extends ConsumerWidget {
                     )
                   else
                     SizedBox(
-                      // The card's own height plus the "Book" button under it.
-                      height: 252 + providerCardActionHeight,
+                      // The card's own height plus the "Book" button under it, and room for larger system text
+                      // (the photo keeps its size, the text under it grows).
+                      height: 252 +
+                          providerCardActionHeight +
+                          110 * (MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0) - 1),
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: topRated.length,
