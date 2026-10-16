@@ -107,9 +107,13 @@ class BookingApi {
     }
   }
 
-  Future<Booking> cancelBooking(String bookingId) async {
+  /// [reason] is optional: why the customer is cancelling (the business sees it).
+  Future<Booking> cancelBooking(String bookingId, {String? reason}) async {
     try {
-      final response = await _dioClient.post('/bookings/$bookingId/cancel');
+      final response = await _dioClient.post(
+        '/bookings/$bookingId/cancel',
+        data: reason == null ? null : {'reason': reason},
+      );
       return Booking.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       if (e.response?.statusCode == 409) {
