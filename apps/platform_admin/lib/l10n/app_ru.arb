@@ -420,5 +420,7 @@
   "commissionReset": "Категория снова использует ставку по умолчанию",
   "commissionInvalid": "Введите число от 0 до 100 (до 2 знаков после запятой)",
   "navQuickActions": "Быстрые действия",
-  "reviewsDecidedOn": "Решение принято {date}"
+  "reviewsDecidedOn": "Решение принято {date}",
+  "businessesCopyCsv": "Скопировать список как CSV",
+  "businessesCsvCopied": "{count, plural, one{Скопирован {count} бизнес в формате CSV} few{Скопировано {count} бизнеса в формате CSV} many{Скопировано {count} бизнесов в формате CSV} other{Скопировано {count} бизнеса в формате CSV}}"
 }

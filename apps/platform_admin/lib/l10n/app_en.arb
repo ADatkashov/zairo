@@ -841,5 +841,9 @@
   "navQuickActions": "Quick actions",
   "@navQuickActions": {"description": "Screen-reader label of the round + button in the middle of the phone bottom bar; opens a fan of shortcuts."},
   "reviewsDecidedOn": "Decided on {date}",
-  "@reviewsDecidedOn": {"description": "Line on a decided review: the date of the platform decision.", "placeholders": {"date": {"type": "String"}}}
+  "@reviewsDecidedOn": {"description": "Line on a decided review: the date of the platform decision.", "placeholders": {"date": {"type": "String"}}},
+  "businessesCopyCsv": "Copy list as CSV",
+  "businessesCsvCopied": "{count, plural, =1{1 business copied as CSV} other{{count} businesses copied as CSV}}",
+  "@businessesCopyCsv": {"description": "Tooltip of the button that copies the visible businesses as CSV."},
+  "@businessesCsvCopied": {"description": "Snackbar after copying the businesses as CSV.", "placeholders": {"count": {"type": "int"}}}
 }
