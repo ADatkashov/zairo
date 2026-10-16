@@ -417,6 +417,71 @@ public class BookingService {
         return moved;
     }
 
+    /** How many alternative times a customer is offered when moving a booking. */
+    static final int MAX_RESCHEDULE_OPTIONS = 30;
+
+    /**
+     * The times the customer can move their booking to: open, still in the future, with the same person (or, for a
+     * business that works without a team, the shared times), soonest first, never the booking's current time.
+     * Customer-only (403 otherwise); 409 for a booking that cannot be moved any more.
+     */
+    @Transactional(readOnly = true)
+    public java.util.List<AvailabilitySlot> rescheduleOptions(UUID bookingId, UUID callerId) {
+        Booking booking = loadBooking(bookingId);
+        AvailabilitySlot current = requireMovableByCustomer(booking, callerId);
+        return openSlotsLike(current).stream().limit(MAX_RESCHEDULE_OPTIONS).toList();
+    }
+
+    /**
+     * The customer moves their own booking to another open time with the same person. The move itself (atomic claim of
+     * the new time, release of the old one, "moved" notice to the customer) is {@link #moveToSlotAuthorized}; this adds
+     * the customer-side rules: it is their booking, it has not started, and the new time is one of
+     * {@link #rescheduleOptions} — same business, same person. The business is told.
+     */
+    @Transactional
+    public Booking rescheduleByCustomer(UUID bookingId, UUID callerId, UUID newSlotId) {
+        Booking booking = loadBooking(bookingId);
+        AvailabilitySlot current = requireMovableByCustomer(booking, callerId);
+        AvailabilitySlot target = availabilitySlotRepository.findById(newSlotId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Availability slot not found: " + newSlotId));
+        boolean samePerson = java.util.Objects.equals(current.getEmployeeId(), target.getEmployeeId());
+        if (!target.getProviderId().equals(current.getProviderId()) || !samePerson
+                || !target.getStartsAt().isAfter(Instant.now())) {
+            throw new SlotNotAvailableException("Pick one of the offered times with the same person: " + newSlotId);
+        }
+        Booking moved = moveToSlotAuthorized(bookingId, newSlotId);
+        eventPublisher.publishEvent(new BookingRescheduledByCustomerEvent(moved.getId(), target.getProviderId(),
+                target.getStartsAt()));
+        return moved;
+    }
+
+    private AvailabilitySlot requireMovableByCustomer(Booking booking, UUID callerId) {
+        if (!booking.getUserId().equals(callerId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not own this booking: " + booking.getId());
+        }
+        if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            throw new InvalidBookingStateException("Booking is not in a movable state: " + booking.getId()
+                    + " (status=" + booking.getStatus() + ")");
+        }
+        AvailabilitySlot slot = loadSlot(booking);
+        if (!slot.getStartsAt().isAfter(Instant.now())) {
+            throw new InvalidBookingStateException("The appointment has already started: " + booking.getId());
+        }
+        return slot;
+    }
+
+    private java.util.List<AvailabilitySlot> openSlotsLike(AvailabilitySlot current) {
+        Instant now = Instant.now();
+        java.util.List<AvailabilitySlot> slots = current.getEmployeeId() == null
+                ? availabilitySlotRepository.findByProviderIdAndEmployeeIdIsNullAndStatusAndStartsAtAfter(
+                        current.getProviderId(), AvailabilityStatus.OPEN, now)
+                : availabilitySlotRepository.findByProviderIdAndEmployeeIdAndStatusAndStartsAtAfter(
+                        current.getProviderId(), current.getEmployeeId(), AvailabilityStatus.OPEN, now);
+        return slots.stream().filter(s -> !s.getId().equals(current.getId()))
+                .sorted(java.util.Comparator.comparing(AvailabilitySlot::getStartsAt)).toList();
+    }
+
     /** {@link #markNoShow} without the provider-owner check — see {@link #completeBookingAuthorized}. */
     @Transactional
     public Booking markNoShowAuthorized(UUID bookingId) {

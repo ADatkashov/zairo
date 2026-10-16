@@ -121,6 +121,94 @@ class WorkerScheduleApiTests {
     }
 
     @Test
+    void aCustomerMovesTheirBookingToAnotherTimeWithTheSamePerson() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "mv-owner-" + runId + "@example.com");
+        Registered worker = TestAuth.registerCustomer(restTemplate, "mv-worker-" + runId + "@example.com");
+        Registered customer = TestAuth.registerCustomer(restTemplate, "mv-customer-" + runId + "@example.com");
+        Registered other = TestAuth.registerCustomer(restTemplate, "mv-other-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "Move Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Cut");
+        UUID staffId = addStaffFromUser(owner, providerId, worker.userId());
+        restTemplate.exchange("/api/v1/staff/" + staffId + "/services/" + serviceId, HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Void.class);
+        put("/api/v1/providers/" + providerId + "/workers/" + staffId + "/schedule", owner,
+                scheduleBody(workingDays("09:00:00", "17:00:00")));
+
+        UUID at10 = tomorrowSlot(providerId, staffId, 10);
+        UUID at11 = tomorrowSlot(providerId, staffId, 11);
+        UUID at12 = tomorrowSlot(providerId, staffId, 12);
+        UUID bookingId = bookWithStaff(customer, staffId, serviceId, at10);
+        // Someone else already holds 12:00, and the business also has a shared (no particular person) time.
+        bookWithStaff(other, staffId, serviceId, at12);
+        Instant shared = Instant.now().plusSeconds(3 * 86400);
+        UUID sharedSlot = UUID.fromString(restTemplate.exchange("/api/v1/providers/" + providerId
+                + "/availability-slots", HttpMethod.POST, new HttpEntity<>(Map.of("startsAt", shared.toString(),
+                "endsAt", shared.plusSeconds(3600).toString()), TestAuth.authHeaders(owner.accessToken())),
+                Map.class).getBody().get("id").toString());
+
+        String options = "/api/v1/bookings/" + bookingId + "/reschedule-options";
+        String move = "/api/v1/bookings/" + bookingId + "/reschedule";
+        List<Map> offered = getList(options, customer);
+        List<String> offeredIds = offered.stream().map(o -> o.get("slotId").toString()).toList();
+        // The same person's other open times, soonest first; never the current time, a taken one or a shared one.
+        assertThat(offeredIds).contains(at11.toString()).doesNotContain(at10.toString(), at12.toString(),
+                sharedSlot.toString());
+        assertThat(offered.size()).isLessThanOrEqualTo(30);
+
+        // Only the booking's own customer — not the owner, a stranger, or nobody.
+        assertThat(restTemplate.exchange(options, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(other.accessToken())), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(restTemplate.exchange(move, HttpMethod.POST, new HttpEntity<>(Map.of("slotId", at11.toString()),
+                TestAuth.authHeaders(owner.accessToken())), Map.class).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(restTemplate.getForEntity(options, Map.class).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        // Not a time with the same person, not a time that is taken, not a time that does not exist.
+        assertThat(restTemplate.exchange(move, HttpMethod.POST, new HttpEntity<>(
+                Map.of("slotId", sharedSlot.toString()), TestAuth.authHeaders(customer.accessToken())), Map.class)
+                .getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(restTemplate.exchange(move, HttpMethod.POST, new HttpEntity<>(Map.of("slotId", at12.toString()),
+                TestAuth.authHeaders(customer.accessToken())), Map.class).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(restTemplate.exchange(move, HttpMethod.POST, new HttpEntity<>(
+                Map.of("slotId", UUID.randomUUID().toString()), TestAuth.authHeaders(customer.accessToken())),
+                Map.class).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        // The move: same booking, the new time, the old one is open for others again.
+        ResponseEntity<Map> moved = restTemplate.exchange(move, HttpMethod.POST, new HttpEntity<>(
+                Map.of("slotId", at11.toString()), TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(moved.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(moved.getBody().get("availabilitySlotId")).isEqualTo(at11.toString());
+        assertThat(moved.getBody().get("id")).isEqualTo(bookingId.toString());
+        List<String> after = getList(options, customer).stream().map(o -> o.get("slotId").toString()).toList();
+        assertThat(after).contains(at10.toString()).doesNotContain(at11.toString());
+
+        // A cancelled booking can no longer be moved.
+        restTemplate.exchange("/api/v1/bookings/" + bookingId + "/cancel", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(restTemplate.exchange(options, HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    private UUID tomorrowSlot(UUID providerId, UUID staffId, int hour) {
+        LocalDate tomorrow = LocalDate.now(ZoneOffset.UTC).plusDays(1);
+        return UUID.fromString(getSlots(providerId, staffId).stream()
+                .filter(s -> Instant.parse(s.get("startsAt").toString()).atZone(ZoneOffset.UTC).toLocalDate()
+                        .equals(tomorrow)
+                        && Instant.parse(s.get("startsAt").toString()).atZone(ZoneOffset.UTC).getHour() == hour)
+                .findFirst().orElseThrow().get("id").toString());
+    }
+
+    private UUID bookWithStaff(Registered customer, UUID staffId, UUID serviceId, UUID slotId) {
+        ResponseEntity<Map> booked = restTemplate.exchange("/api/v1/staff/bookings", HttpMethod.POST,
+                new HttpEntity<>(new CreateStaffBookingRequest(customer.userId(), staffId, serviceId, slotId,
+                        new BigDecimal("25.00")), TestAuth.authHeaders(customer.accessToken())), Map.class);
+        assertThat(booked.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        return UUID.fromString(booked.getBody().get("bookingId").toString());
+    }
+
+    @Test
     void timeOffClosesNewBookingsButNeverCancelsExistingOnes() {
         String runId = UUID.randomUUID().toString();
         Registered owner = TestAuth.registerOwner(restTemplate, "off-owner-" + runId + "@example.com");

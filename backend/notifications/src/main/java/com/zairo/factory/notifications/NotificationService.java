@@ -83,6 +83,11 @@ public class NotificationService {
                 "A customer cancelled booking (" + bookingId + ").");
     }
 
+    public void sendProviderBookingRescheduledEmail(String toEmail, UUID bookingId, Instant newStartsAt) {
+        emailProvider.send(toEmail, "A customer moved a booking",
+                "A customer moved booking (" + bookingId + ") to " + newStartsAt + ".");
+    }
+
     public void sendStaffCannotAttendEmail(String toEmail, UUID bookingId) {
         emailProvider.send(toEmail, "A staff member can't attend an appointment",
                 "A staff member can't attend booking (" + bookingId + "). Open the app to reassign it, move it "
