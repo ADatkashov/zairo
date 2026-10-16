@@ -1,6 +1,7 @@
 import 'package:business_admin/features/loyalty/data/models/loyalty_page.dart';
 import 'package:business_admin/features/reviews/data/api/reviews_api.dart';
 import 'package:business_admin/features/reviews/data/models/provider_review.dart';
+import 'package:business_admin/features/reviews/data/reviews_exception.dart';
 import 'package:business_admin/features/reviews/presentation/providers/reviews_providers.dart';
 import 'package:business_admin/features/reviews/presentation/screens/reviews_screen.dart';
 import 'package:business_admin/l10n/app_localizations.dart';
@@ -15,6 +16,8 @@ class _FakeReviewsApi extends ReviewsApi {
   _FakeReviewsApi(this._reviews) : super(DioClient(Dio()));
 
   final List<ProviderReview> _reviews;
+  final List<({String reviewId, String reason})> reports = [];
+  Object? reportError;
 
   @override
   Future<LoyaltyPage<ProviderReview>> fetchReviews(String providerId, {int page = 0, int size = 20}) async =>
@@ -27,9 +30,15 @@ class _FakeReviewsApi extends ReviewsApi {
         first: true,
         last: true,
       );
+
+  @override
+  Future<void> reportReview(String reviewId, String reason) async {
+    reports.add((reviewId: reviewId, reason: reason));
+    if (reportError != null) throw reportError!;
+  }
 }
 
-ProviderReview _review(String id, int rating, {String? reply}) => ProviderReview(
+ProviderReview _review(String id, int rating, {String? reply, String? moderation}) => ProviderReview(
   id: id,
   bookingId: 'b-$id',
   customerName: 'Customer $id',
@@ -38,15 +47,16 @@ ProviderReview _review(String id, int rating, {String? reply}) => ProviderReview
   createdAt: DateTime(2026, 1, 1),
   businessReply: reply,
   businessReplyAt: reply == null ? null : DateTime(2026, 1, 2),
+  moderationStatus: moderation,
 );
 
-Future<void> _pump(WidgetTester tester, List<ProviderReview> reviews, Size size) async {
+Future<void> _pump(WidgetTester tester, List<ProviderReview> reviews, Size size, {_FakeReviewsApi? api}) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [reviewsApiProvider.overrideWithValue(_FakeReviewsApi(reviews))],
+      overrides: [reviewsApiProvider.overrideWithValue(api ?? _FakeReviewsApi(reviews))],
       child: MaterialApp(
         theme: factoryLightTheme(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -79,5 +89,73 @@ void main() {
     await _pump(tester, [_review('1', 3)], const Size(320, 640));
 
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a review can be reported once: the reason is asked for, sent, and the card then shows where it stands',
+      (tester) async {
+    final reviews = [_review('1', 1)];
+    final api = _FakeReviewsApi(reviews);
+    await _pump(tester, reviews, const Size(390, 900), api: api);
+
+    await tester.tap(find.text('Report this review'));
+    await tester.pumpAndSettle();
+    // An empty reason is not sent.
+    await tester.tap(find.text('Report'));
+    await tester.pumpAndSettle();
+    expect(find.text('Please say what is wrong with it.'), findsOneWidget);
+    expect(api.reports, isEmpty);
+
+    await tester.enterText(find.byType(TextField), 'Abusive language');
+    await tester.tap(find.text('Report'));
+    await tester.pumpAndSettle();
+
+    expect(api.reports, [(reviewId: '1', reason: 'Abusive language')]);
+    expect(find.text('Report this review'), findsNothing);
+    expect(find.text('Reported — the platform is looking at it'), findsOneWidget);
+  });
+
+  testWidgets('cancelling the report dialog leaves the review as it was', (tester) async {
+    final reviews = [_review('1', 1)];
+    final api = _FakeReviewsApi(reviews);
+    await _pump(tester, reviews, const Size(390, 900), api: api);
+
+    await tester.tap(find.text('Report this review'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(api.reports, isEmpty);
+    expect(find.text('Report this review'), findsOneWidget);
+  });
+
+  testWidgets('a refused report says why in the dialog and can be retried', (tester) async {
+    final reviews = [_review('1', 1)];
+    final api = _FakeReviewsApi(reviews)..reportError = const ReviewsException(statusCode: 409);
+    await _pump(tester, reviews, const Size(390, 900), api: api);
+
+    await tester.tap(find.text('Report this review'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Abusive language');
+    await tester.tap(find.text('Report'));
+    await tester.pumpAndSettle();
+    expect(find.text('This review was already reported.'), findsOneWidget);
+
+    api.reportError = Exception('offline');
+    await tester.tap(find.text('Report'));
+    await tester.pumpAndSettle();
+    expect(find.text('Something went wrong'), findsOneWidget);
+  });
+
+  testWidgets('reviews already reported show their state instead of the report button', (tester) async {
+    await _pump(
+      tester,
+      [_review('1', 1, moderation: 'OPEN'), _review('2', 1, moderation: 'HIDDEN'), _review('3', 1, moderation: 'DISMISSED')],
+      const Size(390, 1800),
+    );
+
+    expect(find.text('Report this review'), findsNothing);
+    expect(find.text('Reported — the platform is looking at it'), findsOneWidget);
+    expect(find.text('Hidden by the platform — it no longer counts in your rating'), findsOneWidget);
+    expect(find.text('The platform looked at it and kept it'), findsOneWidget);
   });
 }
