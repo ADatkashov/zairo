@@ -850,6 +850,51 @@ void main() {
     expect(find.text('Book again'), findsOneWidget);
     expect(find.text('Aigerim Beauty Studio'), findsOneWidget);
     expect(find.text('Haircut'), findsOneWidget);
+    expect(find.textContaining('Last visit:'), findsOneWidget);
+  });
+
+  testWidgets('the Book Again card fits a 320 px phone with a large font in the dark theme', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final fakeBookingApi = _FakeBookingApiWithSuggestions([
+      BookAgainSuggestion(
+        providerId: 'p1',
+        providerName: 'Aigerim Beauty Studio With A Very Long Name',
+        vertical: 'beauty',
+        serviceId: 's1',
+        serviceTitle: 'Haircut and styling with a long title',
+        durationMinutes: 30,
+        price: 25.0,
+        currency: 'USD',
+        lastVisitAt: DateTime.now().subtract(const Duration(days: 14)),
+      ),
+    ]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi(const [])),
+          bookingApiProvider.overrideWithValue(fakeBookingApi),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryDarkTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: const HomeScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Book again'), 200, scrollable: find.byType(Scrollable).first);
+
+    expect(find.textContaining('Last visit:'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('the header heart opens Favorites, even for a guest', (tester) async {

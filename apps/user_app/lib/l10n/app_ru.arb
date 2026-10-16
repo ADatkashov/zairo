@@ -145,6 +145,7 @@
   "allCategoriesSearchEmptyMessage": "Ничего не найдено по запросу «{query}». Попробуйте другое слово.",
   "errorCategoriesLoadFailed": "Не удалось загрузить категории.",
   "homeBookAgainTitle": "Повторить запись",
+  "homeBookAgainLastVisit": "Прошлый визит: {date}",
   "homeRecommendedTitle": "Рекомендуем для вас",
 
   "searchHint": "Поиск услуг или провайдеров",
