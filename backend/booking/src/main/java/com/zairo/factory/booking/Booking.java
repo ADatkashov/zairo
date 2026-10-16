@@ -94,6 +94,10 @@ public class Booking {
     @Column(name = "reminder_sent_at")
     private Instant reminderSentAt;
 
+    /** Set once the "your visit is tomorrow" reminder has gone out — guards against sending it twice. */
+    @Column(name = "day_reminder_sent_at")
+    private Instant dayReminderSentAt;
+
     @Column(name = "city_code")
     private String cityCode;
 
@@ -213,6 +217,14 @@ public class Booking {
         return cityCode;
     }
 
+    void markDayReminderSent(Instant now) {
+        this.dayReminderSentAt = now;
+    }
+
+    public Instant getDayReminderSentAt() {
+        return dayReminderSentAt;
+    }
+
     void markReminderSent(Instant now) {
         this.reminderSentAt = now;
     }
@@ -231,6 +243,7 @@ public class Booking {
         this.availabilitySlotId = newSlotId;
         // A reminder already sent was for the old time; the new one deserves its own.
         this.reminderSentAt = null;
+        this.dayReminderSentAt = null;
     }
 
     void markCancelled(String reason) {

@@ -159,6 +159,15 @@ public class NotificationService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void sendBookingDayReminderEmail(UUID recipientUserId, String toEmail, UUID bookingId, Instant startsAt) {
+        String title = "Your visit is coming up";
+        String body = "Your booking (" + bookingId + ") is at " + startsAt + ". Need another time? Open the app and "
+                + "tap Reschedule.";
+        emailProvider.send(toEmail, title, body);
+        recordInApp(recipientUserId, InAppNotificationType.BOOKING_REMINDER, title, body);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void sendPaymentRefundedEmail(UUID recipientUserId, String toEmail, UUID bookingId, BigDecimal amount,
             String currency) {
         String title = "Refund processed";

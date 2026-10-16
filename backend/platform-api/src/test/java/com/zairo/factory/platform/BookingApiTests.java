@@ -244,6 +244,51 @@ class BookingApiTests {
     }
 
     @Test
+    void sendsAVisitIsTomorrowReminderOnceForABookingMadeAtLeastADayAhead() {
+        String runId = UUID.randomUUID().toString();
+        String customerEmail = "day-reminder-customer-" + runId + "@example.com";
+        Registered customer = TestAuth.registerCustomer(restTemplate, customerEmail);
+        Registered owner = TestAuth.registerOwner(restTemplate, "day-reminder-owner-" + runId + "@example.com");
+
+        UUID providerId = createProvider(owner, "Day Reminder Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Day Reminder Service", new BigDecimal("25.00"));
+        // Starts in 20 hours, but booked now: not "made a day ahead", so no tomorrow reminder.
+        Instant soon = Instant.now().plus(20, ChronoUnit.HOURS);
+        UUID soonSlot = createSlot(owner, providerId, soon, soon.plus(30, ChronoUnit.MINUTES));
+        UUID soonBooking = UUID.fromString(createBooking(customer, new CreateBookingRequest(customer.userId(),
+                serviceId, soonSlot, new BigDecimal("25.00"))).getBody().get("id").toString());
+        payForBooking(soonBooking, customer);
+
+        // With the real clock the 20-hour booking is inside the window, yet was made less than a day ahead: skipped.
+        Instant real = Instant.now();
+        bookingService.sendDueDayReminders(real, real.plus(2, ChronoUnit.HOURS), real.plus(24, ChronoUnit.HOURS));
+        assertThat(capturedEmails.sent).noneSatisfy(email -> assertThat(email.body()).contains(soonBooking.toString())
+                .contains("Reschedule"));
+
+        // A booking made five days ahead, looked at from 20 hours before it starts: due.
+        Instant start = Instant.now().plus(5, ChronoUnit.DAYS);
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+        UUID bookingId = UUID.fromString(createBooking(customer, new CreateBookingRequest(customer.userId(),
+                serviceId, slotId, new BigDecimal("25.00"))).getBody().get("id").toString());
+        payForBooking(bookingId, customer);
+
+        Instant now = start.minus(20, ChronoUnit.HOURS);
+        bookingService.sendDueDayReminders(now, now.plus(2, ChronoUnit.HOURS), now.plus(24, ChronoUnit.HOURS));
+
+        assertThat(capturedEmails.sent).anySatisfy(email -> {
+            assertThat(email.toEmail()).isEqualTo(customerEmail);
+            assertThat(email.subject()).isEqualTo("Your visit is coming up");
+            assertThat(email.body()).contains(bookingId.toString()).contains("Reschedule");
+        });
+        assertThat(capturedEmails.sent).noneSatisfy(email -> assertThat(email.body()).contains(soonBooking.toString())
+                .contains("Reschedule"));
+
+        int sent = capturedEmails.sent.size();
+        bookingService.sendDueDayReminders(now, now.plus(2, ChronoUnit.HOURS), now.plus(24, ChronoUnit.HOURS));
+        assertThat(capturedEmails.sent).hasSize(sent);
+    }
+
+    @Test
     void cancellingABookingNotifiesBothTheCustomerAndTheProviderOwner() {
         String runId = UUID.randomUUID().toString();
         String customerEmail = "notify-cancel-customer-" + runId + "@example.com";
