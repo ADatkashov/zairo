@@ -1024,37 +1024,24 @@ class _RecommendedRow extends StatelessWidget {
 
 /// The "open slots today" promo under the launcher: a live count of nearby
 /// businesses with a free slot, which no admin-made banner can show. Shown only
-/// when there is something to show. A horizontal list so a second card can be
-/// added without reflowing the screen.
+/// when there is something to show. It is the only card here, so it spans the
+/// page width like the search field above it instead of leaving a gap at the right.
 class _PromoStrip extends StatelessWidget {
   const _PromoStrip({required this.openCount, required this.onViewAvailable});
 
   final int openCount;
   final VoidCallback onViewAvailable;
 
-  static const _cardWidth = 272.0;
   static const _cardHeight = 120.0;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return SizedBox(
+    return FactoryPromoCard(
       height: _cardHeight,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        // Let the next card run to the screen edge instead of being cut at
-        // the page padding — the cue that the strip scrolls.
-        clipBehavior: Clip.none,
-        children: [
-          FactoryPromoCard(
-            width: _cardWidth,
-            height: _cardHeight,
-            title: l10n.homeAvailabilityHero(openCount),
-            icon: Symbols.event_available_rounded,
-            onTap: onViewAvailable,
-          ),
-        ],
-      ),
+      title: l10n.homeAvailabilityHero(openCount),
+      icon: Symbols.event_available_rounded,
+      onTap: onViewAvailable,
     );
   }
 }

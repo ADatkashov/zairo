@@ -1444,6 +1444,15 @@ void main() {
       expect(tester.widget<FactoryButton>(find.widgetWithText(FactoryButton, 'Book')).onPressed, isNotNull);
     });
 
+    testWidgets('the hint is readable, not caption-sized: it is why Book is disabled', (tester) async {
+      await pump(tester, salon([haircut, colour]));
+
+      final style = tester.widget<Text>(find.byKey(const Key('bookingNextStepHint'))).style!;
+      expect(style.fontSize, greaterThanOrEqualTo(14));
+      expect(style.fontWeight, FontWeight.w600);
+      expect(style.color, FactoryColors.light.text);
+    });
+
     testWidgets('one service is already picked, so the first thing asked is the time', (tester) async {
       await pump(tester, salon([haircut]));
 

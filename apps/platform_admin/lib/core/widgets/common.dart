@@ -50,11 +50,17 @@ class AreaScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // On a wide window the content is a column in the middle of a big pane: a centred title floated over
+    // nothing, away from it. Left-aligned it reads as the heading of the page, next to the sidebar.
+    final wide = MediaQuery.sizeOf(context).width >= FactoryBreakpoints.tablet;
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
+        centerTitle: wide ? false : null,
+        titleSpacing: wide ? FactorySpacing.space6 : null,
         leading: leading,
-        actions: actions,
+        // The round buttons used to sit flush against the window edge.
+        actions: [...actions, const SizedBox(width: FactorySpacing.space2)],
         bottom: bottom,
         automaticallyImplyLeading: false,
       ),
