@@ -15,8 +15,9 @@ const double businessesTableMinWidth = 640;
 /// Columns the businesses table can be sorted by.
 enum BusinessSortColumn { name, registered }
 
-/// Width of the trailing actions column: room for "Approve" + "Suspend".
-const double _actionsWidth = 200;
+/// Width of the trailing actions column: room for "Approve" + "Suspend" side by side (the Russian labels are
+/// the longest; they used to wrap under each other and make that row taller than the rest).
+const double _actionsWidth = 236;
 
 /// Width of the leading checkbox column.
 const double _checkWidth = 40;
@@ -212,11 +213,11 @@ class BusinessesTable extends StatelessWidget {
                 ),
                 SizedBox(
                   width: _actionsWidth,
-                  child: Wrap(
-                    alignment: WrapAlignment.end,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: FactorySpacing.space1,
-                    children: actions,
+                  // One line always: a long label shrinks the pair a little rather than wrapping the row.
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: Row(mainAxisSize: MainAxisSize.min, spacing: FactorySpacing.space1, children: actions),
                   ),
                 ),
               ],
