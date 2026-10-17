@@ -1211,8 +1211,10 @@ class _BookingCta extends StatelessWidget {
               hint!,
               key: const Key('bookingNextStepHint'),
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colors.textSecondary,
+              // While Book is disabled this line is the reason; a caption-sized grey line read as decoration.
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colors.text,
+                    fontWeight: FontWeight.w600,
                   ),
             ),
           ],

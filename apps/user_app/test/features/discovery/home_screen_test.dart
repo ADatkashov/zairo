@@ -226,6 +226,28 @@ void main() {
     );
   });
 
+  testWidgets('the availability promo spans the page width, like the search field', (tester) async {
+    tester.view.physicalSize = const Size(390, 3000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi([_open, _closed]))],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const HomeScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final promo = tester.getRect(find.byType(FactoryPromoCard));
+    expect(promo.width, 390 - 2 * FactorySpacing.space4);
+    expect(promo.left, FactorySpacing.space4);
+  });
+
   testWidgets('shows the availability hero only when something is open today', (tester) async {
     final fakeApi = _FakeDiscoveryApi([_open, _closed]);
 

@@ -781,6 +781,28 @@ void main() {
     },
   );
 
+  testWidgets('FactorySectionHeader keeps its action at the far edge even inside a start-aligned Column', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        SizedBox(
+          width: 360,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              FactorySectionHeader(title: 'Businesses', actionLabel: 'Open', onActionTap: () {}),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // A Column with start alignment gives its children loose width; the header used to shrink to its content
+    // and leave "Open" glued to the title instead of at the right edge.
+    final header = tester.getRect(find.byType(FactorySectionHeader));
+    expect(header.width, 360);
+    expect(tester.getRect(find.byType(TextButton)).right, closeTo(header.right, 0.5));
+  });
+
   testWidgets('FactoryAppBar renders its title', (tester) async {
     await tester.pumpWidget(
       MaterialApp(

@@ -5,6 +5,19 @@ import 'package:platform_admin/app/routes.dart';
 import 'support/harness.dart';
 
 void main() {
+  testWidgets('a pending row keeps Approve and Suspend on one line, as tall as the other rows', (tester) async {
+    await pumpConsole(tester, backend: defaultBackend(), location: ConsoleRoutes.businesses);
+
+    final approve = find.widgetWithText(FilledButton, 'Approve');
+    final suspend = find.widgetWithText(TextButton, 'Suspend');
+    // Glow Salon (pending) shows both; Zen Spa (active) only Suspend.
+    expect(suspend, findsNWidgets(2));
+    expect(tester.getCenter(approve).dy, closeTo(tester.getCenter(suspend.first).dy, 1));
+    final glow = tester.getRect(find.ancestor(of: find.text('Glow Salon'), matching: find.byType(InkWell)).first);
+    final zen = tester.getRect(find.ancestor(of: find.text('Zen Spa'), matching: find.byType(InkWell)).first);
+    expect(glow.height, closeTo(zen.height, 1));
+  });
+
   testWidgets('words not codes; pending first with a banner; approve in one tap', (tester) async {
     final backend = defaultBackend();
     await pumpConsole(tester, backend: backend, location: ConsoleRoutes.businesses);
