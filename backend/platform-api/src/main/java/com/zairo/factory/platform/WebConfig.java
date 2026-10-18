@@ -1,8 +1,10 @@
 package com.zairo.factory.platform;
 
+import com.zairo.factory.platform.security.RequireAuthenticationInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
@@ -19,8 +21,17 @@ class WebConfig implements WebMvcConfigurer {
 
     private final String[] allowedOrigins;
 
-    WebConfig(@Value("${app.cors.allowed-origins:http://localhost:*}") String allowedOrigins) {
+    private final RequireAuthenticationInterceptor requireAuthentication;
+
+    WebConfig(@Value("${app.cors.allowed-origins:http://localhost:*}") String allowedOrigins,
+            RequireAuthenticationInterceptor requireAuthentication) {
         this.allowedOrigins = allowedOrigins.split(",");
+        this.requireAuthentication = requireAuthentication;
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(requireAuthentication).addPathPatterns("/api/**");
     }
 
     @Override

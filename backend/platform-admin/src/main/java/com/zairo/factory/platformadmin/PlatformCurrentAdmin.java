@@ -15,6 +15,11 @@ public final class PlatformCurrentAdmin {
     private PlatformCurrentAdmin() {
     }
 
+    /** Whether the request carries a valid platform access token. Never throws. */
+    public static boolean isAuthenticated(HttpServletRequest request) {
+        return request.getAttribute(PlatformAuthFilter.ADMIN_ID_ATTRIBUTE) instanceof UUID;
+    }
+
     /** 401 if there's no valid platform access token on the request. */
     public static UUID requireAdminId(HttpServletRequest request) {
         Object value = request.getAttribute(PlatformAuthFilter.ADMIN_ID_ATTRIBUTE);

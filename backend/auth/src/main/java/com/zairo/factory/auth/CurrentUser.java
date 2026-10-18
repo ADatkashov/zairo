@@ -21,6 +21,11 @@ public final class CurrentUser {
     private CurrentUser() {
     }
 
+    /** Whether the request carries a valid customer/business access token. Never throws. */
+    public static boolean isAuthenticated(HttpServletRequest request) {
+        return request.getAttribute(JwtAuthFilter.USER_ID_ATTRIBUTE) instanceof UUID;
+    }
+
     /** 401 if there's no valid access token on the request. */
     public static UUID requireUserId(HttpServletRequest request) {
         Object value = request.getAttribute(JwtAuthFilter.USER_ID_ATTRIBUTE);
