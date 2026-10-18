@@ -49,6 +49,5 @@ void main() {
       );
       await tester.pumpAndSettle();
     },
-    skip: true,
   );
 }
