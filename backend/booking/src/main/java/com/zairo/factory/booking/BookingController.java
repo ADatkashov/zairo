@@ -7,6 +7,7 @@ import com.zairo.factory.booking.BookingDtos.CreateBookingRequest;
 import com.zairo.factory.booking.BookingDtos.RescheduleOption;
 import com.zairo.factory.booking.BookingDtos.RescheduleRequest;
 import com.zairo.factory.booking.BookingDtos.ScheduleEntryResponse;
+import com.zairo.factory.providers.OwnsProvider;
 import com.zairo.factory.providers.ProviderOwnership;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -268,10 +269,10 @@ public class BookingController {
     @ApiResponse(responseCode = "404", ref = "NotFound", description = "The provider doesn't exist.")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/providers/{providerId}/bookings")
+    @OwnsProvider
     public List<BookingResponse> listByProvider(
             @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             HttpServletRequest httpRequest) {
-        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         List<UUID> slotIds = availabilitySlotRepository.findByProviderId(providerId).stream()
                 .map(AvailabilitySlot::getId).toList();
         return detailsAssembler.many(bookingRepository.findByAvailabilitySlotIdIn(slotIds));
@@ -292,12 +293,12 @@ public class BookingController {
     @ApiResponse(responseCode = "404", ref = "NotFound", description = "The provider doesn't exist.")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/providers/{providerId}/schedule")
+    @OwnsProvider
     public List<ScheduleEntryResponse> schedule(
             @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             @Parameter(description = "Window start, inclusive (ISO-8601 instant).") @RequestParam Instant from,
             @Parameter(description = "Window end, exclusive (ISO-8601 instant).") @RequestParam Instant to,
             HttpServletRequest httpRequest) {
-        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         if (!from.isBefore(to) || Duration.between(from, to).compareTo(MAX_SCHEDULE_WINDOW) > 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "`from` must be before `to`, at most 31 days apart");

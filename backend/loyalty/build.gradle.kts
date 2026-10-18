@@ -5,6 +5,7 @@ description = "Loyalty & Rewards: a business-scoped points ledger and reward cat
         "and FIFO earn-lot bookkeeping for cheap, auditable point expiration."
 
 dependencies {
+    implementation("org.springframework.security:spring-security-core:7.1.1")
     compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:2.2.55")
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")

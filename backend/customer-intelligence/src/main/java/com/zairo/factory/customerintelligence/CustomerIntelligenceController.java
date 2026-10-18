@@ -3,6 +3,7 @@ package com.zairo.factory.customerintelligence;
 import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.customerintelligence.CustomerIntelligenceDtos.BusinessCustomerIntelligenceResponse;
 import com.zairo.factory.customerintelligence.CustomerIntelligenceDtos.MyIntelligenceResponse;
+import com.zairo.factory.providers.OwnsProvider;
 import com.zairo.factory.providers.ProviderOwnership;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -63,10 +64,10 @@ public class CustomerIntelligenceController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/providers/{providerId}/customers/{userId}/intelligence")
+    @OwnsProvider
     public BusinessCustomerIntelligenceResponse businessCustomerIntelligence(
             @Parameter(description = "The business's id.") @PathVariable UUID providerId,
             @Parameter(description = "The customer's id.") @PathVariable UUID userId, HttpServletRequest httpRequest) {
-        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         return BusinessCustomerIntelligenceResponse.from(service.getOrCalculateProviderProfile(userId, providerId));
     }
 }

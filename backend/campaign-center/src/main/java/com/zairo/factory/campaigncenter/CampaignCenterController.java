@@ -9,6 +9,7 @@ import com.zairo.factory.campaigncenter.CampaignCenterDtos.CampaignStatsResponse
 import com.zairo.factory.campaigncenter.CampaignCenterDtos.CampaignStatus;
 import com.zairo.factory.campaigncenter.CampaignCenterDtos.CampaignTimelineResponse;
 import com.zairo.factory.campaigncenter.CampaignCenterDtos.SmartActionsResponse;
+import com.zairo.factory.providers.OwnsProvider;
 import com.zairo.factory.providers.ProviderOwnership;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -58,6 +59,7 @@ public class CampaignCenterController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/providers/{providerId}/campaigns")
+    @OwnsProvider
     public CampaignListResponse list(
             @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             @RequestParam(required = false) CampaignType type,
@@ -74,7 +76,6 @@ public class CampaignCenterController {
             @RequestParam(defaultValue = "20") int pageSize,
             @RequestParam(defaultValue = "true") boolean newestFirst,
             HttpServletRequest httpRequest) {
-        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         return campaignCenterService.list(providerId,
                 new CampaignListFilter(type, status, serviceId, employeeId, from, to, search, page, pageSize, newestFirst));
     }
@@ -90,9 +91,9 @@ public class CampaignCenterController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/providers/{providerId}/campaigns/stats")
+    @OwnsProvider
     public CampaignStatsResponse stats(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             HttpServletRequest httpRequest) {
-        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         return campaignCenterService.stats(providerId);
     }
 
@@ -107,9 +108,9 @@ public class CampaignCenterController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/providers/{providerId}/smart-actions")
+    @OwnsProvider
     public SmartActionsResponse smartActions(
             @Parameter(description = "The provider's id.") @PathVariable UUID providerId, HttpServletRequest httpRequest) {
-        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         return campaignCenterService.smartActions(providerId);
     }
 
@@ -120,9 +121,9 @@ public class CampaignCenterController {
     @ApiResponse(responseCode = "404", description = "Provider or campaign not found, or the campaign belongs to another provider")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/providers/{providerId}/campaigns/{type}/{campaignId}")
+    @OwnsProvider
     public CampaignDto detail(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             @PathVariable CampaignType type, @PathVariable UUID campaignId, HttpServletRequest httpRequest) {
-        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         return campaignCenterService.detail(providerId, type, campaignId);
     }
 
@@ -136,9 +137,9 @@ public class CampaignCenterController {
     @ApiResponse(responseCode = "404", description = "Provider or campaign not found, or the campaign belongs to another provider")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/providers/{providerId}/campaigns/{type}/{campaignId}/timeline")
+    @OwnsProvider
     public CampaignTimelineResponse timeline(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             @PathVariable CampaignType type, @PathVariable UUID campaignId, HttpServletRequest httpRequest) {
-        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         return campaignCenterService.timeline(providerId, type, campaignId);
     }
 
@@ -150,9 +151,9 @@ public class CampaignCenterController {
     @ApiResponse(responseCode = "409", description = "The campaign isn't in a state this action applies to, or this type doesn't support it")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/providers/{providerId}/campaigns/{type}/{campaignId}/pause")
+    @OwnsProvider
     public CampaignDto pause(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             @PathVariable CampaignType type, @PathVariable UUID campaignId, HttpServletRequest httpRequest) {
-        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         campaignCenterService.executeAction(providerId, type, campaignId, CampaignActionType.PAUSE);
         return campaignCenterService.detail(providerId, type, campaignId);
     }
@@ -165,9 +166,9 @@ public class CampaignCenterController {
     @ApiResponse(responseCode = "409", description = "The campaign isn't in a state this action applies to, or this type doesn't support it")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/providers/{providerId}/campaigns/{type}/{campaignId}/resume")
+    @OwnsProvider
     public CampaignDto resume(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             @PathVariable CampaignType type, @PathVariable UUID campaignId, HttpServletRequest httpRequest) {
-        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         campaignCenterService.executeAction(providerId, type, campaignId, CampaignActionType.RESUME);
         return campaignCenterService.detail(providerId, type, campaignId);
     }
@@ -184,9 +185,9 @@ public class CampaignCenterController {
     @ApiResponse(responseCode = "409", description = "The campaign is already terminal (completed/expired/cancelled)")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/providers/{providerId}/campaigns/{type}/{campaignId}/cancel")
+    @OwnsProvider
     public CampaignDto cancel(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             @PathVariable CampaignType type, @PathVariable UUID campaignId, HttpServletRequest httpRequest) {
-        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         campaignCenterService.executeAction(providerId, type, campaignId, CampaignActionType.CANCEL);
         return campaignCenterService.detail(providerId, type, campaignId);
     }
@@ -204,9 +205,9 @@ public class CampaignCenterController {
     @ApiResponse(responseCode = "409", description = "Not retriable right now (not expired, already recovered, slot no longer open, or no eligible candidates), or this type doesn't support it")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/providers/{providerId}/campaigns/{type}/{campaignId}/retry")
+    @OwnsProvider
     public CampaignDto retry(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             @PathVariable CampaignType type, @PathVariable UUID campaignId, HttpServletRequest httpRequest) {
-        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         campaignCenterService.executeAction(providerId, type, campaignId, CampaignActionType.RETRY);
         return campaignCenterService.detail(providerId, type, campaignId);
     }
