@@ -11,12 +11,12 @@ import jakarta.servlet.http.HttpServletRequest;
  * places from the <em>right</em> — entries further left are client-supplied
  * and spoofable. 0 ignores the header (app exposed directly).
  */
-final class ClientIp {
+public final class ClientIp {
 
     private ClientIp() {
     }
 
-    static String of(HttpServletRequest request, int trustedProxyHops) {
+    public static String of(HttpServletRequest request, int trustedProxyHops) {
         if (trustedProxyHops > 0) {
             String header = request.getHeader("X-Forwarded-For");
             if (header != null && !header.isBlank()) {
