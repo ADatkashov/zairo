@@ -1,6 +1,8 @@
 package com.zairo.factory.providers;
 
 import com.zairo.factory.platformadmin.PlatformAdminService;
+import com.zairo.factory.platformadmin.AnyPlatformRole;
+import com.zairo.factory.platformadmin.PlatformModerationCapable;
 import com.zairo.factory.platformadmin.PlatformCurrentAdmin;
 import com.zairo.factory.providers.ProviderDtos.PlatformSetProviderStatusRequest;
 import com.zairo.factory.providers.ProviderDtos.ProviderResponse;
@@ -50,10 +52,10 @@ public class ProviderAdminController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/platform/businesses")
+    @AnyPlatformRole
     public List<ProviderResponse> list(
             @Parameter(description = "Filter to one moderation status. Omit for every provider.")
             @RequestParam(required = false) ProviderStatus status, HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requireAnyRole(httpRequest);
         return providerAdminService.list(status);
     }
 
@@ -69,10 +71,10 @@ public class ProviderAdminController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/api/v1/platform/businesses/{id}/status")
+    @PlatformModerationCapable
     public ProviderResponse setStatus(@PathVariable UUID id, @Valid @RequestBody PlatformSetProviderStatusRequest request,
             HttpServletRequest httpRequest) {
         UUID actorId = PlatformCurrentAdmin.requireAdminId(httpRequest);
-        PlatformCurrentAdmin.requireModerationCapable(httpRequest);
         String actorEmail = platformAdminService.me(actorId).email();
         return providerAdminService.setStatus(actorId, actorEmail, id, request);
     }

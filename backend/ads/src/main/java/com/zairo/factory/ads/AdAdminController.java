@@ -5,6 +5,8 @@ import com.zairo.factory.ads.AdDtos.CreateBannerRequest;
 import com.zairo.factory.ads.AdDtos.SetStatusRequest;
 import com.zairo.factory.ads.AdDtos.UpdateBannerRequest;
 import com.zairo.factory.platformadmin.PlatformAdminService;
+import com.zairo.factory.platformadmin.AnyPlatformRole;
+import com.zairo.factory.platformadmin.PlatformModerationCapable;
 import com.zairo.factory.platformadmin.PlatformCurrentAdmin;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -49,9 +51,9 @@ public class AdAdminController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping
+    @AnyPlatformRole
     public List<AdminBannerResponse> list(HttpServletRequest httpRequest) {
         PlatformCurrentAdmin.requireAdminId(httpRequest);
-        PlatformCurrentAdmin.requireAnyRole(httpRequest);
         return adService.listAll();
     }
 
@@ -64,6 +66,7 @@ public class AdAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PlatformModerationCapable
     public AdminBannerResponse create(@Valid @RequestBody CreateBannerRequest request,
             HttpServletRequest httpRequest) {
         return adService.create(actorId(httpRequest), actorEmail(httpRequest), request);
@@ -74,6 +77,7 @@ public class AdAdminController {
     @ApiResponse(responseCode = "404", description = "No such banner")
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/{id}")
+    @PlatformModerationCapable
     public AdminBannerResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateBannerRequest request,
             HttpServletRequest httpRequest) {
         return adService.update(actorId(httpRequest), actorEmail(httpRequest), id, request);
@@ -86,6 +90,7 @@ public class AdAdminController {
     @ApiResponse(responseCode = "409", description = "Not an allowed move from the current status")
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/{id}/status")
+    @PlatformModerationCapable
     public AdminBannerResponse setStatus(@PathVariable UUID id, @Valid @RequestBody SetStatusRequest request,
             HttpServletRequest httpRequest) {
         return adService.setStatus(actorId(httpRequest), actorEmail(httpRequest), id, request);
@@ -97,13 +102,13 @@ public class AdAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PlatformModerationCapable
     public void delete(@PathVariable UUID id, HttpServletRequest httpRequest) {
         adService.delete(actorId(httpRequest), actorEmail(httpRequest), id);
     }
 
     private UUID actorId(HttpServletRequest httpRequest) {
         UUID adminId = PlatformCurrentAdmin.requireAdminId(httpRequest);
-        PlatformCurrentAdmin.requireModerationCapable(httpRequest);
         return adminId;
     }
 

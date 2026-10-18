@@ -3,6 +3,7 @@ package com.zairo.factory.payments;
 import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.payments.OfflinePaymentDtos.RecordPaymentRequest;
 import com.zairo.factory.payments.PaymentDtos.PaymentResponse;
+import com.zairo.factory.platformadmin.PlatformAdminOnly;
 import com.zairo.factory.platformadmin.PlatformCurrentAdmin;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -108,9 +109,9 @@ public class PaymentsController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/payments/{paymentId}/refund")
+    @PlatformAdminOnly
     public PaymentResponse refund(@Parameter(description = "The payment's id.") @PathVariable UUID paymentId,
             HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requirePlatformAdmin(httpRequest);
         return toResponse(paymentsService.refundPayment(paymentId));
     }
 

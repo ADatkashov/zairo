@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -25,6 +26,8 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
  *       {@link TokenAuthenticationFilter} turns a valid one into an authenticated principal.</li>
  *   <li>{@link EndpointAuthorizationManager} denies by default: an endpoint documented with
  *       {@code @SecurityRequirement} needs authentication, everything else is public.</li>
+ *   <li>Role rules live on the endpoints as annotations ({@code @PlatformAdminOnly} and friends,
+ *       {@code @PreAuthorize}); ownership rules are moving the same way.</li>
  *   <li>No sessions, no CSRF (bearer tokens are not sent by the browser on their own), no form login.</li>
  *   <li>401/403 are rendered by the app's normal exception advice, so the body is the same
  *       {@code ApiError} JSON as everywhere else.</li>
@@ -32,6 +35,7 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
  * </ul>
  */
 @Configuration
+@EnableMethodSecurity
 class SecurityConfig {
 
     /**

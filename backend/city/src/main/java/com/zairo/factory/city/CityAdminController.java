@@ -3,6 +3,7 @@ package com.zairo.factory.city;
 import com.zairo.factory.city.CityDtos.CreateCityRequest;
 import com.zairo.factory.city.CityDtos.CityDto;
 import com.zairo.factory.city.CityDtos.UpdateCityRequest;
+import com.zairo.factory.platformadmin.PlatformAdminOnly;
 import com.zairo.factory.platformadmin.PlatformCurrentAdmin;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -49,11 +50,11 @@ public class CityAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PlatformAdminOnly
     public CityDto createCity(
             @Valid @RequestBody CreateCityRequest request,
             HttpServletRequest httpRequest) {
         PlatformCurrentAdmin.requireAdminId(httpRequest);
-        PlatformCurrentAdmin.requirePlatformAdmin(httpRequest);
         return cityService.createCity(request);
     }
 
@@ -66,13 +67,13 @@ public class CityAdminController {
     @ApiResponse(responseCode = "404", description = "City not found")
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/{code}")
+    @PlatformAdminOnly
     public CityDto updateCity(
             @Parameter(description = "City code (e.g., 'almaty')", example = "almaty")
             @PathVariable String code,
             @Valid @RequestBody UpdateCityRequest request,
             HttpServletRequest httpRequest) {
         PlatformCurrentAdmin.requireAdminId(httpRequest);
-        PlatformCurrentAdmin.requirePlatformAdmin(httpRequest);
         return cityService.updateCity(code, request);
     }
 
@@ -85,12 +86,12 @@ public class CityAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/{code}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PlatformAdminOnly
     public void deleteCity(
             @Parameter(description = "City code (e.g., 'almaty')", example = "almaty")
             @PathVariable String code,
             HttpServletRequest httpRequest) {
         PlatformCurrentAdmin.requireAdminId(httpRequest);
-        PlatformCurrentAdmin.requirePlatformAdmin(httpRequest);
         cityService.deleteCity(code);
     }
 }

@@ -3,6 +3,8 @@ package com.zairo.factory.payments;
 import com.zairo.factory.payments.CommissionDtos.CommissionSettingsResponse;
 import com.zairo.factory.payments.CommissionDtos.SetCommissionRequest;
 import com.zairo.factory.platformadmin.PlatformAdminService;
+import com.zairo.factory.platformadmin.AnyPlatformRole;
+import com.zairo.factory.platformadmin.PlatformAdminOnly;
 import com.zairo.factory.platformadmin.PlatformCurrentAdmin;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -45,8 +47,8 @@ public class CommissionAdminController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/platform/commission")
+    @AnyPlatformRole
     public CommissionSettingsResponse settings(HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requireAnyRole(httpRequest);
         return commissionRateService.settings();
     }
 
@@ -58,6 +60,7 @@ public class CommissionAdminController {
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/api/v1/platform/commission/default")
+    @PlatformAdminOnly
     public CommissionSettingsResponse setDefault(@Valid @RequestBody SetCommissionRequest request,
             HttpServletRequest httpRequest) {
         UUID actorId = actorId(httpRequest);
@@ -73,6 +76,7 @@ public class CommissionAdminController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/api/v1/platform/commission/categories/{categoryId}")
+    @PlatformAdminOnly
     public CommissionSettingsResponse setCategory(@PathVariable UUID categoryId,
             @Valid @RequestBody SetCommissionRequest request, HttpServletRequest httpRequest) {
         UUID actorId = actorId(httpRequest);
@@ -87,6 +91,7 @@ public class CommissionAdminController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/api/v1/platform/commission/categories/{categoryId}")
+    @PlatformAdminOnly
     public CommissionSettingsResponse clearCategory(@PathVariable UUID categoryId, HttpServletRequest httpRequest) {
         UUID actorId = actorId(httpRequest);
         return commissionRateService.clearCategory(actorId, actorEmail(actorId), categoryId);
@@ -94,7 +99,6 @@ public class CommissionAdminController {
 
     private UUID actorId(HttpServletRequest httpRequest) {
         UUID adminId = PlatformCurrentAdmin.requireAdminId(httpRequest);
-        PlatformCurrentAdmin.requirePlatformAdmin(httpRequest);
         return adminId;
     }
 

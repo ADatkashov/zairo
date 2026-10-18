@@ -21,9 +21,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * validate their own JWT and run first) into Spring Security: if either found a
  * valid token, the request gets an authenticated principal here.
  *
- * <p>Authorities: {@code ROLE_<role>} for a customer/business token and
- * {@code PLATFORM_<role>} for a platform one — the two token families stay
- * distinct, so one can never stand in for the other.
+ * <p>Authorities: {@code ROLE_<role>} for a customer/business token (e.g. {@code ROLE_ADMIN})
+ * and the platform role's own name ({@code PLATFORM_ADMIN}, {@code PLATFORM_MODERATOR},
+ * {@code PLATFORM_SUPPORT}) for a platform one — the two token families stay distinct,
+ * so one can never stand in for the other.
  */
 final class TokenAuthenticationFilter extends OncePerRequestFilter {
 
@@ -37,7 +38,7 @@ final class TokenAuthenticationFilter extends OncePerRequestFilter {
             authenticate(userId.get(), "ROLE_" + CurrentUser.requireRole(request));
         } else if (PlatformCurrentAdmin.isAuthenticated(request)) {
             authenticate(PlatformCurrentAdmin.requireAdminId(request),
-                    "PLATFORM_" + PlatformCurrentAdmin.requireAnyRole(request).name());
+                    PlatformCurrentAdmin.requireAnyRole(request).name());
         }
         chain.doFilter(request, response);
     }

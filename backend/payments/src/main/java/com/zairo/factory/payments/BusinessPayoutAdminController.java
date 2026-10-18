@@ -3,6 +3,8 @@ package com.zairo.factory.payments;
 import com.zairo.factory.payments.BusinessPayoutDtos.MarkFailedRequest;
 import com.zairo.factory.payments.BusinessPayoutDtos.MarkPaidRequest;
 import com.zairo.factory.payments.BusinessPayoutDtos.PayoutResponse;
+import com.zairo.factory.platformadmin.AnyPlatformRole;
+import com.zairo.factory.platformadmin.PlatformAdminOnly;
 import com.zairo.factory.platformadmin.PlatformCurrentAdmin;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -44,10 +46,10 @@ public class BusinessPayoutAdminController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/platform/payouts")
+    @AnyPlatformRole
     public List<PayoutResponse> list(
             @Parameter(description = "Filter by status; omit for every payout.") @RequestParam(required = false) BusinessPayoutStatus status,
             HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requireAnyRole(httpRequest);
         List<BusinessPayout> payouts = status == null ? payoutRepository.findAll()
                 : payoutRepository.findByStatusOrderByCreatedAtDesc(status);
         return payouts.stream().map(PayoutResponse::from).toList();
@@ -62,8 +64,8 @@ public class BusinessPayoutAdminController {
     @ApiResponse(responseCode = "409", description = "Already PAID (terminal).")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/platform/payouts/{payoutId}/mark-processing")
+    @PlatformAdminOnly
     public PayoutResponse markProcessing(@PathVariable UUID payoutId, HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requirePlatformAdmin(httpRequest);
         return PayoutResponse.from(payoutService.markProcessing(payoutId));
     }
 
@@ -77,9 +79,9 @@ public class BusinessPayoutAdminController {
     @ApiResponse(responseCode = "409", description = "Already PAID (terminal).")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/platform/payouts/{payoutId}/mark-paid")
+    @PlatformAdminOnly
     public PayoutResponse markPaid(@PathVariable UUID payoutId, @RequestBody(required = false) MarkPaidRequest request,
             HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requirePlatformAdmin(httpRequest);
         String reference = request == null ? null : request.providerReference();
         return PayoutResponse.from(payoutService.markPaid(payoutId, reference));
     }
@@ -93,9 +95,9 @@ public class BusinessPayoutAdminController {
     @ApiResponse(responseCode = "409", description = "Already PAID (terminal).")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/platform/payouts/{payoutId}/mark-failed")
+    @PlatformAdminOnly
     public PayoutResponse markFailed(@PathVariable UUID payoutId, @RequestBody(required = false) MarkFailedRequest request,
             HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requirePlatformAdmin(httpRequest);
         String reason = request == null ? null : request.reason();
         return PayoutResponse.from(payoutService.markFailed(payoutId, reason));
     }
