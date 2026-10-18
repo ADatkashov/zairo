@@ -2,7 +2,7 @@ package com.zairo.factory.platform;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.zairo.factory.platform.security.RequireAuthenticationInterceptor;
+import com.zairo.factory.platform.security.EndpointAuthorizationManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +27,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 /**
  * Default-deny policy for the whole HTTP API. Every {@code /api} endpoint is
  * either documented as needing a bearer token ({@code @SecurityRequirement}, which
- * {@link RequireAuthenticationInterceptor} enforces with a 401 before anything
+ * {@link EndpointAuthorizationManager} enforces with a 401 before anything
  * else) or is listed in {@link #PUBLIC} on purpose. Adding an endpoint without
  * the annotation fails this test until someone decides, in review, that it is
  * public and adds it here.
@@ -119,7 +119,7 @@ class EndpointAuthPolicyTests {
         }
 
         boolean secured() {
-            return RequireAuthenticationInterceptor.requiresAuthentication(handler);
+            return EndpointAuthorizationManager.requiresAuthentication(handler);
         }
     }
 
