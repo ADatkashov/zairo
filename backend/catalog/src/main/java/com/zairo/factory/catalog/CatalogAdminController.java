@@ -14,6 +14,7 @@ import com.zairo.factory.catalog.CatalogDtos.UpdateCatalogServiceRequest;
 import com.zairo.factory.catalog.CatalogDtos.UpdateCategoryRequest;
 import com.zairo.factory.catalog.CatalogDtos.UpdateSubsphereRequest;
 import com.zairo.factory.platformadmin.PlatformAdminService;
+import com.zairo.factory.platformadmin.PlatformAdminOnly;
 import com.zairo.factory.platformadmin.PlatformCurrentAdmin;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -76,6 +77,7 @@ public class CatalogAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/platform/categories")
     @ResponseStatus(HttpStatus.CREATED)
+    @PlatformAdminOnly
     public CategoryResponse createCategory(@Valid @RequestBody CreateCategoryRequest request,
             HttpServletRequest httpRequest) {
         return catalogAdminService.createCategory(actorId(httpRequest), actorEmail(httpRequest), request);
@@ -88,6 +90,7 @@ public class CatalogAdminController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/api/v1/platform/categories/{id}")
+    @PlatformAdminOnly
     public CategoryResponse updateCategory(@PathVariable UUID id, @Valid @RequestBody UpdateCategoryRequest request,
             HttpServletRequest httpRequest) {
         return catalogAdminService.updateCategory(actorId(httpRequest), actorEmail(httpRequest), id, request);
@@ -100,6 +103,7 @@ public class CatalogAdminController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/api/v1/platform/categories/{id}/status")
+    @PlatformAdminOnly
     public CategoryResponse setCategoryStatus(@PathVariable UUID id, @Valid @RequestBody SetStatusRequest request,
             HttpServletRequest httpRequest) {
         return catalogAdminService.setCategoryStatus(actorId(httpRequest), actorEmail(httpRequest), id, request);
@@ -133,6 +137,7 @@ public class CatalogAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/platform/business-types")
     @ResponseStatus(HttpStatus.CREATED)
+    @PlatformAdminOnly
     public BusinessTypeResponse createBusinessType(@Valid @RequestBody CreateBusinessTypeRequest request,
             HttpServletRequest httpRequest) {
         return catalogAdminService.createBusinessType(actorId(httpRequest), actorEmail(httpRequest), request);
@@ -145,6 +150,7 @@ public class CatalogAdminController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/api/v1/platform/business-types/{id}")
+    @PlatformAdminOnly
     public BusinessTypeResponse updateBusinessType(@PathVariable UUID id,
             @Valid @RequestBody UpdateBusinessTypeRequest request, HttpServletRequest httpRequest) {
         return catalogAdminService.updateBusinessType(actorId(httpRequest), actorEmail(httpRequest), id, request);
@@ -157,6 +163,7 @@ public class CatalogAdminController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/api/v1/platform/business-types/{id}/status")
+    @PlatformAdminOnly
     public BusinessTypeResponse setBusinessTypeStatus(@PathVariable UUID id,
             @Valid @RequestBody SetStatusRequest request, HttpServletRequest httpRequest) {
         return catalogAdminService.setBusinessTypeStatus(actorId(httpRequest), actorEmail(httpRequest), id, request);
@@ -189,6 +196,7 @@ public class CatalogAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/platform/subspheres")
     @ResponseStatus(HttpStatus.CREATED)
+    @PlatformAdminOnly
     public SubsphereResponse createSubsphere(@Valid @RequestBody CreateSubsphereRequest request,
             HttpServletRequest httpRequest) {
         return catalogAdminService.createSubsphere(actorId(httpRequest), actorEmail(httpRequest), request);
@@ -201,6 +209,7 @@ public class CatalogAdminController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/api/v1/platform/subspheres/{id}")
+    @PlatformAdminOnly
     public SubsphereResponse updateSubsphere(@PathVariable UUID id, @Valid @RequestBody UpdateSubsphereRequest request,
             HttpServletRequest httpRequest) {
         return catalogAdminService.updateSubsphere(actorId(httpRequest), actorEmail(httpRequest), id, request);
@@ -213,6 +222,7 @@ public class CatalogAdminController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/api/v1/platform/subspheres/{id}/status")
+    @PlatformAdminOnly
     public SubsphereResponse setSubsphereStatus(@PathVariable UUID id, @Valid @RequestBody SetStatusRequest request,
             HttpServletRequest httpRequest) {
         return catalogAdminService.setSubsphereStatus(actorId(httpRequest), actorEmail(httpRequest), id, request);
@@ -244,6 +254,7 @@ public class CatalogAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/platform/services")
     @ResponseStatus(HttpStatus.CREATED)
+    @PlatformAdminOnly
     public CatalogServiceResponse createCatalogService(@Valid @RequestBody CreateCatalogServiceRequest request,
             HttpServletRequest httpRequest) {
         return catalogAdminService.createCatalogService(actorId(httpRequest), actorEmail(httpRequest), request);
@@ -256,6 +267,7 @@ public class CatalogAdminController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/api/v1/platform/services/{id}")
+    @PlatformAdminOnly
     public CatalogServiceResponse updateCatalogService(@PathVariable UUID id,
             @Valid @RequestBody UpdateCatalogServiceRequest request, HttpServletRequest httpRequest) {
         return catalogAdminService.updateCatalogService(actorId(httpRequest), actorEmail(httpRequest), id, request);
@@ -268,6 +280,7 @@ public class CatalogAdminController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/api/v1/platform/services/{id}/status")
+    @PlatformAdminOnly
     public CatalogServiceResponse setCatalogServiceStatus(@PathVariable UUID id,
             @Valid @RequestBody SetStatusRequest request, HttpServletRequest httpRequest) {
         return catalogAdminService.setCatalogServiceStatus(actorId(httpRequest), actorEmail(httpRequest), id,
@@ -278,7 +291,6 @@ public class CatalogAdminController {
 
     private UUID actorId(HttpServletRequest httpRequest) {
         UUID adminId = PlatformCurrentAdmin.requireAdminId(httpRequest);
-        PlatformCurrentAdmin.requirePlatformAdmin(httpRequest);
         return adminId;
     }
 

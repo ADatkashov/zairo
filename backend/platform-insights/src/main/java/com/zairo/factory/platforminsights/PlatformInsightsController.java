@@ -1,5 +1,6 @@
 package com.zairo.factory.platforminsights;
 
+import com.zairo.factory.platformadmin.AnyPlatformRole;
 import com.zairo.factory.platformadmin.PlatformCurrentAdmin;
 import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformDashboardMetrics;
 import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformReport;
@@ -33,8 +34,8 @@ public class PlatformInsightsController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/platform/dashboard")
+    @AnyPlatformRole
     public PlatformDashboardMetrics dashboard(HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requireAnyRole(httpRequest);
         return platformInsightsService.dashboardMetrics();
     }
 
@@ -45,8 +46,8 @@ public class PlatformInsightsController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/platform/dashboard/trends")
+    @AnyPlatformRole
     public PlatformTrends trends(HttpServletRequest httpRequest, @RequestParam(defaultValue = "14") int days) {
-        PlatformCurrentAdmin.requireAnyRole(httpRequest);
         return platformInsightsService.trends(days);
     }
 
@@ -58,8 +59,8 @@ public class PlatformInsightsController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/platform/reports")
+    @AnyPlatformRole
     public PlatformReport report(HttpServletRequest httpRequest, @RequestParam(defaultValue = "30") int days) {
-        PlatformCurrentAdmin.requireAnyRole(httpRequest);
         return platformInsightsService.report(days);
     }
 }

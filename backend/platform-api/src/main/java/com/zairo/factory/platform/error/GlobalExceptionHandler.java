@@ -17,6 +17,8 @@ import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -122,6 +124,19 @@ class GlobalExceptionHandler {
     ResponseEntity<ApiError> handleMediaTypeNotAcceptable(HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(ApiError.of(406, "Not Acceptable",
                 "This endpoint can only respond with application/json", request.getRequestURI()));
+    }
+
+    // Method security (@PreAuthorize and the role annotations) throws these from inside the controller call.
+    @ExceptionHandler(AccessDeniedException.class)
+    ResponseEntity<ApiError> handleAccessDenied(HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiError.of(403, "Forbidden", "Access denied", request.getRequestURI()));
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    ResponseEntity<ApiError> handleAuthentication(HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiError.of(401, "Unauthorized",
+                "Missing or invalid access token", request.getRequestURI()));
     }
 
     @ExceptionHandler(ResponseStatusException.class)
