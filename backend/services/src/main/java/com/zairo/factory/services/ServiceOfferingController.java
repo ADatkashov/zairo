@@ -1,6 +1,7 @@
 package com.zairo.factory.services;
 
 import com.zairo.factory.auth.CurrentUser;
+import com.zairo.factory.providers.OwnsProvider;
 import com.zairo.factory.providers.ProviderOwnership;
 import com.zairo.factory.users.UserRepository;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
@@ -58,9 +59,9 @@ public class ServiceOfferingController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/providers/{providerId}/services")
     @ResponseStatus(HttpStatus.CREATED)
+    @OwnsProvider
     public ServiceResponse create(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             @Valid @RequestBody CreateServiceRequest request, HttpServletRequest httpRequest) {
-        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         UUID catalogServiceId = serviceCatalogPolicy.resolveForSave(providerId, request.title(),
                 request.catalogServiceId());
         ServiceOffering service = new ServiceOffering(UUID.randomUUID(), providerId, request.title(),

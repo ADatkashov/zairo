@@ -2,6 +2,8 @@ package com.zairo.factory.providers;
 
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -21,6 +23,22 @@ public class ProviderOwnership {
 
     public ProviderOwnership(ProviderRepository providerRepository) {
         this.providerRepository = providerRepository;
+    }
+
+    /**
+     * Method-security form of {@link #requireOwner} for {@link OwnsProvider}: the caller is whoever the
+     * security context says is signed in (a customer/business token — a platform token is never an owner).
+     * Always returns {@code true}; a refusal is the exception.
+     */
+    public boolean requireCurrentOwner(UUID providerId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        boolean customerToken = authentication != null && authentication.getPrincipal() instanceof UUID
+                && authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().startsWith("ROLE_"));
+        if (!customerToken) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid access token");
+        }
+        requireOwner(providerId, (UUID) authentication.getPrincipal());
+        return true;
     }
 
     /** 404 if the provider doesn't exist, 403 if it exists but isn't owned by {@code userId}. */

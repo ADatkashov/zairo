@@ -5,6 +5,7 @@ import com.zairo.factory.booking.AvailabilitySlotDtos.AvailabilitySlotResponse;
 import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequest;
 import com.zairo.factory.booking.AvailabilitySlotDtos.RecurringScheduleRequest;
 import com.zairo.factory.booking.AvailabilitySlotDtos.RecurringScheduleResult;
+import com.zairo.factory.providers.OwnsProvider;
 import com.zairo.factory.providers.ProviderOwnership;
 import com.zairo.factory.subscriptions.SubscriptionLimitService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -55,9 +56,9 @@ public class AvailabilitySlotController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/providers/{providerId}/availability-slots")
     @ResponseStatus(HttpStatus.CREATED)
+    @OwnsProvider
     public AvailabilitySlotResponse create(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             @Valid @RequestBody CreateAvailabilitySlotRequest request, HttpServletRequest httpRequest) {
-        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         AvailabilitySlot slot = new AvailabilitySlot(UUID.randomUUID(), providerId, request.startsAt(),
                 request.endsAt(), AvailabilityStatus.OPEN, request.employeeId());
         return AvailabilitySlotResponse.from(availabilitySlotRepository.save(slot));

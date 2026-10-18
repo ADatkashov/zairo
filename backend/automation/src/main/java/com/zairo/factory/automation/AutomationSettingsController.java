@@ -3,6 +3,7 @@ package com.zairo.factory.automation;
 import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.automation.AutomationDtos.AutomationSettingsResponse;
 import com.zairo.factory.automation.AutomationDtos.UpdateAutomationSettingsRequest;
+import com.zairo.factory.providers.OwnsProvider;
 import com.zairo.factory.providers.ProviderOwnership;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -38,17 +39,17 @@ public class AutomationSettingsController {
             description = "Creates an all-enabled, all-default draft on first access -- never 404s for an owned provider.")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/business/{providerId}/automation/settings")
+    @OwnsProvider
     public AutomationSettingsResponse getSettings(@PathVariable UUID providerId, HttpServletRequest httpRequest) {
-        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         return AutomationSettingsResponse.from(settingsService.getOrCreateDraft(providerId));
     }
 
     @Operation(summary = "Update this business's automation settings")
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/api/v1/business/{providerId}/automation/settings")
+    @OwnsProvider
     public AutomationSettingsResponse updateSettings(@PathVariable UUID providerId,
             @RequestBody UpdateAutomationSettingsRequest request, HttpServletRequest httpRequest) {
-        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
         return AutomationSettingsResponse.from(settingsService.updateSettings(providerId, request));
     }
 }
