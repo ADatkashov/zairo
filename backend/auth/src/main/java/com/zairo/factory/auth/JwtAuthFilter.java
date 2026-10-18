@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -17,6 +18,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * (which endpoints require which role) is a decision for whenever the app
  * has enough protected endpoints to need one, not a single-endpoint MVP.
  */
+// Runs before the Spring Security filter chain (order -100) so the chain sees who the caller is.
+@Order(-110)
 @Component
 class JwtAuthFilter extends OncePerRequestFilter {
 
