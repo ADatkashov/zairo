@@ -167,8 +167,10 @@ void main() {
     await tester.tap(find.text('Reschedule'));
     await tester.pumpAndSettle();
     expect(find.text('Move to another time'), findsOneWidget);
-    // Times are grouped by day: two on the first day, one on the next.
-    expect(find.text('10:00'), findsNWidgets(2));
+    // The same picker as a new booking: Soonest chips, the first day's times, a calendar for the rest.
+    expect(find.byKey(const Key('bookingSoonest')), findsOneWidget);
+    expect(find.byKey(const Key('bookingCalendarButton')), findsOneWidget);
+    expect(find.text('10:00'), findsOneWidget);
     expect(find.text('11:00'), findsOneWidget);
 
     await tester.tap(find.text('11:00'));
@@ -177,6 +179,26 @@ void main() {
     expect(api.moves, ['o2']);
     expect(find.text('Move to another time'), findsNothing);
     expect(find.textContaining('Moved to'), findsOneWidget);
+  });
+
+  testWidgets('a Soonest chip moves the booking too, and a later day is reachable from the day strip', (tester) async {
+    final api = _FakeBookingApi(
+      [_booking()],
+      options: [_option('o1', tenAm), _option('o3', tenAm.add(const Duration(days: 1, hours: 2)))],
+    );
+    await _pump(tester, api);
+
+    await tester.tap(find.text('Reschedule'));
+    await tester.pumpAndSettle();
+    // Only the first day's times are listed; the other day is one tap away on the strip.
+    expect(find.text('12:00'), findsNothing);
+    await tester.tap(find.descendant(of: find.byType(ListView), matching: find.byType(InkWell)).last);
+    await tester.pumpAndSettle();
+    expect(find.text('12:00'), findsOneWidget);
+
+    await tester.tap(find.descendant(of: find.byKey(const Key('bookingSoonest')), matching: find.byType(InkWell)).first);
+    await tester.pumpAndSettle();
+    expect(api.moves, ['o1']);
   });
 
   testWidgets('with no other free time it says so', (tester) async {
