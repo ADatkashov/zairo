@@ -1,3 +1,6 @@
+# DISABLED to save GitHub Actions minutes: Dependabot version updates run as Actions jobs
+# on the private-repo quota (2000 min/month) and every PR it opens triggered CI.
+# To bring it back: rename this file to dependabot.yml (see docs/ci-cd.md "Actions minutes").
 version: 2
 
 # Conservative on purpose: weekly, low PR limits, and every update PRs

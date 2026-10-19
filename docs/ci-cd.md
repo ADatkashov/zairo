@@ -10,17 +10,45 @@ module).
 
 ## 1. What GitHub Actions does here today
 
-It validates every pull request and every push to `develop`, `test`, or
-`master` (this repo's branch chain — see `CLAUDE.md`): Flutter analyze +
-test for all six Flutter packages, and Gradle build + test for the whole
-backend. On top of that, pushes to those same three branches also
-assemble installable artifacts (Android APKs, the backend's bootJar) and
-attach them to the workflow run.
+Since 2026-10 it is deliberately **narrow** (the repo is private: 2000 free minutes a month, see
+"Actions minutes" below): Flutter analyze + test for all seven packages and the Gradle build + test of the
+backend run **only on a push to `test`** (what you get when you merge develop -> test), or when started by hand
+(*Actions -> run workflow*). Nothing runs on pull requests, on `develop` or on `master`.
 
-GitHub Actions itself still does **not** deploy anything or touch any of
-`test`/`staging`/`production` as real environments — those don't exist as
-CI targets yet. §12 covers a real (manually set up, not CI-triggered)
-cloud deployment of the backend that now exists alongside this.
+GitHub Actions itself still does **not** deploy anything. The artifact workflows are kept as `*.yml.disabled`.
+
+## Actions minutes
+
+What was checked before anything was switched on (2026-10-19):
+
+- The repo is **private**, so Actions bills against the plan's 2000 free minutes a month (Linux x1).
+- Until now the workflows ran on every PR and every push to develop/test/master, and Dependabot (weekly, up to
+  ~20 PRs) added a CI run per PR plus its own Dependabot-update jobs. The last runs (to 2026-09-29) failed in 3-6
+  seconds with no steps: the account was blocked by billing, so they used no minutes, but the moment the block
+  is lifted all of that would have started to burn them.
+
+What is done so the quota is not spent:
+
+| Measure | Effect |
+|---|---|
+| Triggers cut to `push: [test]` + manual `workflow_dispatch` | No run on PRs (a PR into `test` plus its merge push would count twice), none for develop/master |
+| `paths-ignore`: `*.md`, `docs/`, `scripts/`, `.circleci/` | A docs-only merge costs 0 minutes |
+| Flutter: one job instead of a 7-package matrix | The SDK is set up once, not 7 times; every job is rounded up to a whole minute |
+| Removed the report-only `dart format` step | One step less per package |
+| `timeout-minutes` (backend 30, flutter 40) | A hung run cannot burn minutes for hours |
+| `concurrency` with `cancel-in-progress` | A newer push cancels a run still going |
+| Dependabot switched off (`dependabot.yml.disabled`) | No update jobs, no PR-triggered CI |
+| CircleCI switched off (kept) | No second CI running in parallel |
+
+Rough budget (an estimate, not measured: backend ~15-20 min, Flutter ~10-15 min): about 30 minutes per push to
+`test`, i.e. roughly 60 runs a month. Watch the real figure in *Settings -> Billing -> Usage* after the first
+runs. Also set a spending limit of $0 there so that nothing is ever charged past the free minutes.
+
+Switching things back:
+
+- **Dependabot:** rename `.github/dependabot.yml.disabled` to `dependabot.yml`.
+- **CircleCI:** in `.circleci/config.yml` replace `circleci-switch` with `test` in the branch filters.
+- **More branches in Actions:** add them to `on.push.branches` in the two workflows.
 
 ### When GitHub Actions is not running
 
