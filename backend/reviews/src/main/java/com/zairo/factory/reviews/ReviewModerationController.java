@@ -1,6 +1,8 @@
 package com.zairo.factory.reviews;
 
 import com.zairo.factory.platformadmin.PlatformAdminService;
+import com.zairo.factory.platformadmin.AnyPlatformRole;
+import com.zairo.factory.platformadmin.PlatformModerationCapable;
 import com.zairo.factory.platformadmin.PlatformCurrentAdmin;
 import com.zairo.factory.reviews.ReviewDtos.ModerationDecisionRequest;
 import com.zairo.factory.reviews.ReviewDtos.ModerationReviewResponse;
@@ -8,7 +10,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -46,10 +47,10 @@ public class ReviewModerationController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping
+    @AnyPlatformRole
     public Page<ModerationReviewResponse> queue(@RequestParam(defaultValue = "OPEN") String status,
-            Pageable pageable, HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requireAdminId(httpRequest);
-        PlatformCurrentAdmin.requireAnyRole(httpRequest);
+            Pageable pageable) {
+        PlatformCurrentAdmin.requireAdminId();
         return service.queue(status, pageable);
     }
 
@@ -61,9 +62,9 @@ public class ReviewModerationController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/{id}/hide")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void hide(@PathVariable UUID id, @Valid @RequestBody(required = false) ModerationDecisionRequest request,
-            HttpServletRequest httpRequest) {
-        service.hide(actorId(httpRequest), actorEmail(httpRequest), id, request == null ? null : request.reason());
+    @PlatformModerationCapable
+    public void hide(@PathVariable UUID id, @Valid @RequestBody(required = false) ModerationDecisionRequest request) {
+        service.hide(actorId(), actorEmail(), id, request == null ? null : request.reason());
     }
 
     @Operation(summary = "Restore a hidden review")
@@ -72,9 +73,9 @@ public class ReviewModerationController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/{id}/restore")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void restore(@PathVariable UUID id, @Valid @RequestBody(required = false) ModerationDecisionRequest request,
-            HttpServletRequest httpRequest) {
-        service.restore(actorId(httpRequest), actorEmail(httpRequest), id, request == null ? null : request.reason());
+    @PlatformModerationCapable
+    public void restore(@PathVariable UUID id, @Valid @RequestBody(required = false) ModerationDecisionRequest request) {
+        service.restore(actorId(), actorEmail(), id, request == null ? null : request.reason());
     }
 
     @Operation(summary = "Keep a reported review", description = "Closes the open report; the review stays and "
@@ -85,18 +86,17 @@ public class ReviewModerationController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/{id}/dismiss")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void dismiss(@PathVariable UUID id, @Valid @RequestBody(required = false) ModerationDecisionRequest request,
-            HttpServletRequest httpRequest) {
-        service.dismiss(actorId(httpRequest), actorEmail(httpRequest), id, request == null ? null : request.reason());
+    @PlatformModerationCapable
+    public void dismiss(@PathVariable UUID id, @Valid @RequestBody(required = false) ModerationDecisionRequest request) {
+        service.dismiss(actorId(), actorEmail(), id, request == null ? null : request.reason());
     }
 
-    private UUID actorId(HttpServletRequest httpRequest) {
-        UUID adminId = PlatformCurrentAdmin.requireAdminId(httpRequest);
-        PlatformCurrentAdmin.requireModerationCapable(httpRequest);
+    private UUID actorId() {
+        UUID adminId = PlatformCurrentAdmin.requireAdminId();
         return adminId;
     }
 
-    private String actorEmail(HttpServletRequest httpRequest) {
-        return platformAdminService.me(PlatformCurrentAdmin.requireAdminId(httpRequest)).email();
+    private String actorEmail() {
+        return platformAdminService.me(PlatformCurrentAdmin.requireAdminId()).email();
     }
 }

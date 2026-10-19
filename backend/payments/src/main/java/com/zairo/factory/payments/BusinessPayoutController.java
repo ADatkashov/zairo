@@ -2,13 +2,13 @@ package com.zairo.factory.payments;
 
 import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.payments.BusinessPayoutDtos.PayoutResponse;
+import com.zairo.factory.providers.OwnsProvider;
 import com.zairo.factory.providers.ProviderOwnership;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -47,11 +47,10 @@ public class BusinessPayoutController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/providers/{providerId}/payouts")
+    @OwnsProvider
     public List<PayoutResponse> listForProvider(
-            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
-        providerOwnership.requireOwner(providerId, callerId);
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId) {
+        UUID callerId = CurrentUser.requireUserId();
         return payoutRepository.findByProviderIdOrderByCreatedAtDesc(providerId).stream()
                 .map(PayoutResponse::from)
                 .toList();

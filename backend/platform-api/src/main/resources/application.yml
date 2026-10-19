@@ -318,10 +318,17 @@ rating:
     min-reviews-for-confidence: ${RATING_BAYESIAN_MIN_REVIEWS:25}
 
 management:
+  # Default: health + info only. To scrape metrics set
+  # MANAGEMENT_ENDPOINTS_EXPOSE=health,info,prometheus AND move the actuator
+  # off the public port with MANAGEMENT_SERVER_PORT=<internal port> — the app
+  # has no Spring Security, so /actuator/prometheus must never be reachable
+  # from the internet.
+  server:
+    port: ${MANAGEMENT_SERVER_PORT:}
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: ${MANAGEMENT_ENDPOINTS_EXPOSE:health,info}
 
 springdoc:
   swagger-ui:
