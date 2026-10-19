@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -48,8 +47,8 @@ public class CustomerIntelligenceController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/me/customer-intelligence")
-    public MyIntelligenceResponse myIntelligence(HttpServletRequest httpRequest) {
-        UUID userId = CurrentUser.requireUserId(httpRequest);
+    public MyIntelligenceResponse myIntelligence() {
+        UUID userId = CurrentUser.requireUserId();
         return MyIntelligenceResponse.from(service.getOrCalculateProfile(userId));
     }
 
@@ -67,7 +66,7 @@ public class CustomerIntelligenceController {
     @OwnsProvider
     public BusinessCustomerIntelligenceResponse businessCustomerIntelligence(
             @Parameter(description = "The business's id.") @PathVariable UUID providerId,
-            @Parameter(description = "The customer's id.") @PathVariable UUID userId, HttpServletRequest httpRequest) {
+            @Parameter(description = "The customer's id.") @PathVariable UUID userId) {
         return BusinessCustomerIntelligenceResponse.from(service.getOrCalculateProviderProfile(userId, providerId));
     }
 }

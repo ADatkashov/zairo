@@ -13,7 +13,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -55,7 +54,7 @@ public class ProviderAdminController {
     @AnyPlatformRole
     public List<ProviderResponse> list(
             @Parameter(description = "Filter to one moderation status. Omit for every provider.")
-            @RequestParam(required = false) ProviderStatus status, HttpServletRequest httpRequest) {
+            @RequestParam(required = false) ProviderStatus status) {
         return providerAdminService.list(status);
     }
 
@@ -72,9 +71,8 @@ public class ProviderAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/api/v1/platform/businesses/{id}/status")
     @PlatformModerationCapable
-    public ProviderResponse setStatus(@PathVariable UUID id, @Valid @RequestBody PlatformSetProviderStatusRequest request,
-            HttpServletRequest httpRequest) {
-        UUID actorId = PlatformCurrentAdmin.requireAdminId(httpRequest);
+    public ProviderResponse setStatus(@PathVariable UUID id, @Valid @RequestBody PlatformSetProviderStatusRequest request) {
+        UUID actorId = PlatformCurrentAdmin.requireAdminId();
         String actorEmail = platformAdminService.me(actorId).email();
         return providerAdminService.setStatus(actorId, actorEmail, id, request);
     }

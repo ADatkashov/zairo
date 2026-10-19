@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -37,8 +36,8 @@ public class WorkerChangeController {
     @ApiResponse(responseCode = "200", description = "The open requests (empty if none)")
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @GetMapping("/api/v1/me/change-requests")
-    public List<ChangeRequestResponse> list(HttpServletRequest request) {
-        return changeService.list(CurrentUser.requireUserId(request));
+    public List<ChangeRequestResponse> list() {
+        return changeService.list(CurrentUser.requireUserId());
     }
 
     @Operation(summary = "Decide: colleague, another time, or cancel", description = "REPLACE needs workerId, MOVE "
@@ -51,8 +50,7 @@ public class WorkerChangeController {
     @ApiResponse(responseCode = "409", description = "That choice is no longer possible.")
     @PostMapping("/api/v1/me/change-requests/{bookingId}/respond")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void respond(@PathVariable UUID bookingId, @Valid @RequestBody ChangeResponseRequest body,
-            HttpServletRequest request) {
-        changeService.respond(CurrentUser.requireUserId(request), bookingId, body);
+    public void respond(@PathVariable UUID bookingId, @Valid @RequestBody ChangeResponseRequest body) {
+        changeService.respond(CurrentUser.requireUserId(), bookingId, body);
     }
 }

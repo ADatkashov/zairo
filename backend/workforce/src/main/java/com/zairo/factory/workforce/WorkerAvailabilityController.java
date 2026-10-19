@@ -9,7 +9,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -67,8 +66,7 @@ public class WorkerAvailabilityController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/providers/{providerId}/bookings/any")
     @ResponseStatus(HttpStatus.CREATED)
-    public BookAnyResponse bookAny(@PathVariable UUID providerId, @Valid @RequestBody BookAnyRequest body,
-            HttpServletRequest request) {
-        return anyBookingService.book(providerId, CurrentUser.requireUserId(request), body);
+    public BookAnyResponse bookAny(@PathVariable UUID providerId, @Valid @RequestBody BookAnyRequest body) {
+        return anyBookingService.book(providerId, CurrentUser.requireUserId(), body);
     }
 }

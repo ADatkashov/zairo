@@ -22,7 +22,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -62,8 +61,8 @@ public class CatalogAdminController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/platform/categories")
-    public List<CategoryResponse> listAllCategories(HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requireAdminId(httpRequest);
+    public List<CategoryResponse> listAllCategories() {
+        PlatformCurrentAdmin.requireAdminId();
         return catalogAdminService.listAllCategories();
     }
 
@@ -78,9 +77,8 @@ public class CatalogAdminController {
     @PostMapping("/api/v1/platform/categories")
     @ResponseStatus(HttpStatus.CREATED)
     @PlatformAdminOnly
-    public CategoryResponse createCategory(@Valid @RequestBody CreateCategoryRequest request,
-            HttpServletRequest httpRequest) {
-        return catalogAdminService.createCategory(actorId(httpRequest), actorEmail(httpRequest), request);
+    public CategoryResponse createCategory(@Valid @RequestBody CreateCategoryRequest request) {
+        return catalogAdminService.createCategory(actorId(), actorEmail(), request);
     }
 
     @Operation(summary = "Update a category's names/sort order")
@@ -91,9 +89,8 @@ public class CatalogAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/api/v1/platform/categories/{id}")
     @PlatformAdminOnly
-    public CategoryResponse updateCategory(@PathVariable UUID id, @Valid @RequestBody UpdateCategoryRequest request,
-            HttpServletRequest httpRequest) {
-        return catalogAdminService.updateCategory(actorId(httpRequest), actorEmail(httpRequest), id, request);
+    public CategoryResponse updateCategory(@PathVariable UUID id, @Valid @RequestBody UpdateCategoryRequest request) {
+        return catalogAdminService.updateCategory(actorId(), actorEmail(), id, request);
     }
 
     @Operation(summary = "Activate, deactivate, or archive a category")
@@ -104,9 +101,8 @@ public class CatalogAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/api/v1/platform/categories/{id}/status")
     @PlatformAdminOnly
-    public CategoryResponse setCategoryStatus(@PathVariable UUID id, @Valid @RequestBody SetStatusRequest request,
-            HttpServletRequest httpRequest) {
-        return catalogAdminService.setCategoryStatus(actorId(httpRequest), actorEmail(httpRequest), id, request);
+    public CategoryResponse setCategoryStatus(@PathVariable UUID id, @Valid @RequestBody SetStatusRequest request) {
+        return catalogAdminService.setCategoryStatus(actorId(), actorEmail(), id, request);
     }
 
     // ---- BusinessType --------------------------------------------------
@@ -119,9 +115,8 @@ public class CatalogAdminController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/platform/categories/{id}/business-types")
-    public List<BusinessTypeResponse> listAllBusinessTypes(@PathVariable UUID id,
-            HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requireAdminId(httpRequest);
+    public List<BusinessTypeResponse> listAllBusinessTypes(@PathVariable UUID id) {
+        PlatformCurrentAdmin.requireAdminId();
         return catalogAdminService.listAllBusinessTypes(id);
     }
 
@@ -138,9 +133,8 @@ public class CatalogAdminController {
     @PostMapping("/api/v1/platform/business-types")
     @ResponseStatus(HttpStatus.CREATED)
     @PlatformAdminOnly
-    public BusinessTypeResponse createBusinessType(@Valid @RequestBody CreateBusinessTypeRequest request,
-            HttpServletRequest httpRequest) {
-        return catalogAdminService.createBusinessType(actorId(httpRequest), actorEmail(httpRequest), request);
+    public BusinessTypeResponse createBusinessType(@Valid @RequestBody CreateBusinessTypeRequest request) {
+        return catalogAdminService.createBusinessType(actorId(), actorEmail(), request);
     }
 
     @Operation(summary = "Update a business type's names/sort order")
@@ -152,8 +146,8 @@ public class CatalogAdminController {
     @PatchMapping("/api/v1/platform/business-types/{id}")
     @PlatformAdminOnly
     public BusinessTypeResponse updateBusinessType(@PathVariable UUID id,
-            @Valid @RequestBody UpdateBusinessTypeRequest request, HttpServletRequest httpRequest) {
-        return catalogAdminService.updateBusinessType(actorId(httpRequest), actorEmail(httpRequest), id, request);
+            @Valid @RequestBody UpdateBusinessTypeRequest request) {
+        return catalogAdminService.updateBusinessType(actorId(), actorEmail(), id, request);
     }
 
     @Operation(summary = "Activate, deactivate, or archive a business type")
@@ -165,8 +159,8 @@ public class CatalogAdminController {
     @PatchMapping("/api/v1/platform/business-types/{id}/status")
     @PlatformAdminOnly
     public BusinessTypeResponse setBusinessTypeStatus(@PathVariable UUID id,
-            @Valid @RequestBody SetStatusRequest request, HttpServletRequest httpRequest) {
-        return catalogAdminService.setBusinessTypeStatus(actorId(httpRequest), actorEmail(httpRequest), id, request);
+            @Valid @RequestBody SetStatusRequest request) {
+        return catalogAdminService.setBusinessTypeStatus(actorId(), actorEmail(), id, request);
     }
 
     // ---- Subsphere -------------------------------------------------------
@@ -179,8 +173,8 @@ public class CatalogAdminController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/platform/business-types/{id}/subspheres")
-    public List<SubsphereResponse> listAllSubspheres(@PathVariable UUID id, HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requireAdminId(httpRequest);
+    public List<SubsphereResponse> listAllSubspheres(@PathVariable UUID id) {
+        PlatformCurrentAdmin.requireAdminId();
         return catalogAdminService.listAllSubspheres(id);
     }
 
@@ -197,9 +191,8 @@ public class CatalogAdminController {
     @PostMapping("/api/v1/platform/subspheres")
     @ResponseStatus(HttpStatus.CREATED)
     @PlatformAdminOnly
-    public SubsphereResponse createSubsphere(@Valid @RequestBody CreateSubsphereRequest request,
-            HttpServletRequest httpRequest) {
-        return catalogAdminService.createSubsphere(actorId(httpRequest), actorEmail(httpRequest), request);
+    public SubsphereResponse createSubsphere(@Valid @RequestBody CreateSubsphereRequest request) {
+        return catalogAdminService.createSubsphere(actorId(), actorEmail(), request);
     }
 
     @Operation(summary = "Update a subsphere's names/sort order")
@@ -210,9 +203,8 @@ public class CatalogAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/api/v1/platform/subspheres/{id}")
     @PlatformAdminOnly
-    public SubsphereResponse updateSubsphere(@PathVariable UUID id, @Valid @RequestBody UpdateSubsphereRequest request,
-            HttpServletRequest httpRequest) {
-        return catalogAdminService.updateSubsphere(actorId(httpRequest), actorEmail(httpRequest), id, request);
+    public SubsphereResponse updateSubsphere(@PathVariable UUID id, @Valid @RequestBody UpdateSubsphereRequest request) {
+        return catalogAdminService.updateSubsphere(actorId(), actorEmail(), id, request);
     }
 
     @Operation(summary = "Activate, deactivate, or archive a subsphere")
@@ -223,9 +215,8 @@ public class CatalogAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/api/v1/platform/subspheres/{id}/status")
     @PlatformAdminOnly
-    public SubsphereResponse setSubsphereStatus(@PathVariable UUID id, @Valid @RequestBody SetStatusRequest request,
-            HttpServletRequest httpRequest) {
-        return catalogAdminService.setSubsphereStatus(actorId(httpRequest), actorEmail(httpRequest), id, request);
+    public SubsphereResponse setSubsphereStatus(@PathVariable UUID id, @Valid @RequestBody SetStatusRequest request) {
+        return catalogAdminService.setSubsphereStatus(actorId(), actorEmail(), id, request);
     }
 
     // ---- CatalogService --------------------------------------------------
@@ -238,9 +229,8 @@ public class CatalogAdminController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/platform/business-types/{id}/services")
-    public List<CatalogServiceResponse> listAllCatalogServices(@PathVariable UUID id,
-            HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requireAdminId(httpRequest);
+    public List<CatalogServiceResponse> listAllCatalogServices(@PathVariable UUID id) {
+        PlatformCurrentAdmin.requireAdminId();
         return catalogAdminService.listAllCatalogServices(id);
     }
 
@@ -255,9 +245,8 @@ public class CatalogAdminController {
     @PostMapping("/api/v1/platform/services")
     @ResponseStatus(HttpStatus.CREATED)
     @PlatformAdminOnly
-    public CatalogServiceResponse createCatalogService(@Valid @RequestBody CreateCatalogServiceRequest request,
-            HttpServletRequest httpRequest) {
-        return catalogAdminService.createCatalogService(actorId(httpRequest), actorEmail(httpRequest), request);
+    public CatalogServiceResponse createCatalogService(@Valid @RequestBody CreateCatalogServiceRequest request) {
+        return catalogAdminService.createCatalogService(actorId(), actorEmail(), request);
     }
 
     @Operation(summary = "Update a catalog service's names/sort order")
@@ -269,8 +258,8 @@ public class CatalogAdminController {
     @PatchMapping("/api/v1/platform/services/{id}")
     @PlatformAdminOnly
     public CatalogServiceResponse updateCatalogService(@PathVariable UUID id,
-            @Valid @RequestBody UpdateCatalogServiceRequest request, HttpServletRequest httpRequest) {
-        return catalogAdminService.updateCatalogService(actorId(httpRequest), actorEmail(httpRequest), id, request);
+            @Valid @RequestBody UpdateCatalogServiceRequest request) {
+        return catalogAdminService.updateCatalogService(actorId(), actorEmail(), id, request);
     }
 
     @Operation(summary = "Activate, deactivate, or archive a catalog service")
@@ -282,19 +271,19 @@ public class CatalogAdminController {
     @PatchMapping("/api/v1/platform/services/{id}/status")
     @PlatformAdminOnly
     public CatalogServiceResponse setCatalogServiceStatus(@PathVariable UUID id,
-            @Valid @RequestBody SetStatusRequest request, HttpServletRequest httpRequest) {
-        return catalogAdminService.setCatalogServiceStatus(actorId(httpRequest), actorEmail(httpRequest), id,
+            @Valid @RequestBody SetStatusRequest request) {
+        return catalogAdminService.setCatalogServiceStatus(actorId(), actorEmail(), id,
                 request);
     }
 
     // ---- caller resolution ------------------------------------------
 
-    private UUID actorId(HttpServletRequest httpRequest) {
-        UUID adminId = PlatformCurrentAdmin.requireAdminId(httpRequest);
+    private UUID actorId() {
+        UUID adminId = PlatformCurrentAdmin.requireAdminId();
         return adminId;
     }
 
-    private String actorEmail(HttpServletRequest httpRequest) {
-        return platformAdminService.me(PlatformCurrentAdmin.requireAdminId(httpRequest)).email();
+    private String actorEmail() {
+        return platformAdminService.me(PlatformCurrentAdmin.requireAdminId()).email();
     }
 }

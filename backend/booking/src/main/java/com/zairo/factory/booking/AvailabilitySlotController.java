@@ -15,7 +15,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -58,7 +57,7 @@ public class AvailabilitySlotController {
     @ResponseStatus(HttpStatus.CREATED)
     @OwnsProvider
     public AvailabilitySlotResponse create(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            @Valid @RequestBody CreateAvailabilitySlotRequest request, HttpServletRequest httpRequest) {
+            @Valid @RequestBody CreateAvailabilitySlotRequest request) {
         AvailabilitySlot slot = new AvailabilitySlot(UUID.randomUUID(), providerId, request.startsAt(),
                 request.endsAt(), AvailabilityStatus.OPEN, request.employeeId());
         return AvailabilitySlotResponse.from(availabilitySlotRepository.save(slot));
@@ -86,8 +85,8 @@ public class AvailabilitySlotController {
     @OwnsProvider
     public RecurringScheduleResult createRecurring(
             @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            @RequestBody RecurringScheduleRequest request, HttpServletRequest httpRequest) {
-        UUID ownerId = CurrentUser.requireUserId(httpRequest);
+            @RequestBody RecurringScheduleRequest request) {
+        UUID ownerId = CurrentUser.requireUserId();
         subscriptionLimitService.checkRecurringScheduleAllowed(ownerId);
         return recurringScheduleService.generate(providerId, request);
     }
@@ -119,8 +118,7 @@ public class AvailabilitySlotController {
     @DeleteMapping("/api/v1/availability-slots/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @OwnsSlot
-    public void delete(@Parameter(description = "The slot's id.") @PathVariable UUID id,
-            HttpServletRequest httpRequest) {
+    public void delete(@Parameter(description = "The slot's id.") @PathVariable UUID id) {
         AvailabilitySlot slot = availabilitySlotRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
                         + id));

@@ -16,7 +16,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -74,8 +73,7 @@ public class CampaignCenterController {
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int pageSize,
-            @RequestParam(defaultValue = "true") boolean newestFirst,
-            HttpServletRequest httpRequest) {
+            @RequestParam(defaultValue = "true") boolean newestFirst) {
         return campaignCenterService.list(providerId,
                 new CampaignListFilter(type, status, serviceId, employeeId, from, to, search, page, pageSize, newestFirst));
     }
@@ -92,8 +90,7 @@ public class CampaignCenterController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/providers/{providerId}/campaigns/stats")
     @OwnsProvider
-    public CampaignStatsResponse stats(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            HttpServletRequest httpRequest) {
+    public CampaignStatsResponse stats(@Parameter(description = "The provider's id.") @PathVariable UUID providerId) {
         return campaignCenterService.stats(providerId);
     }
 
@@ -110,7 +107,7 @@ public class CampaignCenterController {
     @GetMapping("/api/v1/providers/{providerId}/smart-actions")
     @OwnsProvider
     public SmartActionsResponse smartActions(
-            @Parameter(description = "The provider's id.") @PathVariable UUID providerId, HttpServletRequest httpRequest) {
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId) {
         return campaignCenterService.smartActions(providerId);
     }
 
@@ -123,7 +120,7 @@ public class CampaignCenterController {
     @GetMapping("/api/v1/providers/{providerId}/campaigns/{type}/{campaignId}")
     @OwnsProvider
     public CampaignDto detail(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            @PathVariable CampaignType type, @PathVariable UUID campaignId, HttpServletRequest httpRequest) {
+            @PathVariable CampaignType type, @PathVariable UUID campaignId) {
         return campaignCenterService.detail(providerId, type, campaignId);
     }
 
@@ -139,7 +136,7 @@ public class CampaignCenterController {
     @GetMapping("/api/v1/providers/{providerId}/campaigns/{type}/{campaignId}/timeline")
     @OwnsProvider
     public CampaignTimelineResponse timeline(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            @PathVariable CampaignType type, @PathVariable UUID campaignId, HttpServletRequest httpRequest) {
+            @PathVariable CampaignType type, @PathVariable UUID campaignId) {
         return campaignCenterService.timeline(providerId, type, campaignId);
     }
 
@@ -153,7 +150,7 @@ public class CampaignCenterController {
     @PostMapping("/api/v1/providers/{providerId}/campaigns/{type}/{campaignId}/pause")
     @OwnsProvider
     public CampaignDto pause(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            @PathVariable CampaignType type, @PathVariable UUID campaignId, HttpServletRequest httpRequest) {
+            @PathVariable CampaignType type, @PathVariable UUID campaignId) {
         campaignCenterService.executeAction(providerId, type, campaignId, CampaignActionType.PAUSE);
         return campaignCenterService.detail(providerId, type, campaignId);
     }
@@ -168,7 +165,7 @@ public class CampaignCenterController {
     @PostMapping("/api/v1/providers/{providerId}/campaigns/{type}/{campaignId}/resume")
     @OwnsProvider
     public CampaignDto resume(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            @PathVariable CampaignType type, @PathVariable UUID campaignId, HttpServletRequest httpRequest) {
+            @PathVariable CampaignType type, @PathVariable UUID campaignId) {
         campaignCenterService.executeAction(providerId, type, campaignId, CampaignActionType.RESUME);
         return campaignCenterService.detail(providerId, type, campaignId);
     }
@@ -187,7 +184,7 @@ public class CampaignCenterController {
     @PostMapping("/api/v1/providers/{providerId}/campaigns/{type}/{campaignId}/cancel")
     @OwnsProvider
     public CampaignDto cancel(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            @PathVariable CampaignType type, @PathVariable UUID campaignId, HttpServletRequest httpRequest) {
+            @PathVariable CampaignType type, @PathVariable UUID campaignId) {
         campaignCenterService.executeAction(providerId, type, campaignId, CampaignActionType.CANCEL);
         return campaignCenterService.detail(providerId, type, campaignId);
     }
@@ -207,7 +204,7 @@ public class CampaignCenterController {
     @PostMapping("/api/v1/providers/{providerId}/campaigns/{type}/{campaignId}/retry")
     @OwnsProvider
     public CampaignDto retry(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            @PathVariable CampaignType type, @PathVariable UUID campaignId, HttpServletRequest httpRequest) {
+            @PathVariable CampaignType type, @PathVariable UUID campaignId) {
         campaignCenterService.executeAction(providerId, type, campaignId, CampaignActionType.RETRY);
         return campaignCenterService.detail(providerId, type, campaignId);
     }

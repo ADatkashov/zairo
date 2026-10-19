@@ -22,7 +22,6 @@ import com.zairo.factory.users.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -86,8 +85,7 @@ public class LoyaltyAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/business/{providerId}/loyalty/settings")
     @OwnsProvider
-    public LoyaltyAdminDtos.LoyaltySettingsResponse getSettings(@PathVariable UUID providerId,
-            HttpServletRequest httpRequest) {
+    public LoyaltyAdminDtos.LoyaltySettingsResponse getSettings(@PathVariable UUID providerId) {
         return LoyaltyAdminDtos.LoyaltySettingsResponse.from(programService.getOrCreateDraft(providerId,
                 "Loyalty Rewards"));
     }
@@ -98,7 +96,7 @@ public class LoyaltyAdminController {
     @PutMapping("/api/v1/business/{providerId}/loyalty/settings")
     @OwnsProvider
     public LoyaltyAdminDtos.LoyaltySettingsResponse updateSettings(@PathVariable UUID providerId,
-            @RequestBody UpdateLoyaltySettingsRequest request, HttpServletRequest httpRequest) {
+            @RequestBody UpdateLoyaltySettingsRequest request) {
         LoyaltyProgram program = programService.updateSettings(providerId, request.enabled(), request.name(),
                 request.description(), request.fixedPointsPerBooking(), request.pointsPerCurrencyUnit(),
                 request.firstBookingBonusPoints(), request.repeatVisitBonusPoints(), request.repeatVisitThreshold(),
@@ -113,7 +111,7 @@ public class LoyaltyAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/business/{providerId}/loyalty/milestones")
     @OwnsProvider
-    public List<MilestoneResponse> getMilestones(@PathVariable UUID providerId, HttpServletRequest httpRequest) {
+    public List<MilestoneResponse> getMilestones(@PathVariable UUID providerId) {
         return programService.getMilestones(providerId).stream().map(MilestoneResponse::from).toList();
     }
 
@@ -123,7 +121,7 @@ public class LoyaltyAdminController {
     @PutMapping("/api/v1/business/{providerId}/loyalty/milestones")
     @OwnsProvider
     public List<MilestoneResponse> replaceMilestones(@PathVariable UUID providerId,
-            @RequestBody ReplaceMilestonesRequest request, HttpServletRequest httpRequest) {
+            @RequestBody ReplaceMilestonesRequest request) {
         List<LoyaltyProgramService.MilestoneInput> inputs = request.milestones().stream()
                 .map(m -> new LoyaltyProgramService.MilestoneInput(m.visitsRequired(), m.pointsAwarded(), m.label()))
                 .toList();
@@ -134,7 +132,7 @@ public class LoyaltyAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/business/{providerId}/loyalty/tiers")
     @OwnsProvider
-    public List<TierResponse> getTiers(@PathVariable UUID providerId, HttpServletRequest httpRequest) {
+    public List<TierResponse> getTiers(@PathVariable UUID providerId) {
         return programService.getTiers(providerId).stream().map(TierResponse::from).toList();
     }
 
@@ -142,8 +140,7 @@ public class LoyaltyAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/api/v1/business/{providerId}/loyalty/tiers")
     @OwnsProvider
-    public List<TierResponse> replaceTiers(@PathVariable UUID providerId, @RequestBody ReplaceTiersRequest request,
-            HttpServletRequest httpRequest) {
+    public List<TierResponse> replaceTiers(@PathVariable UUID providerId, @RequestBody ReplaceTiersRequest request) {
         List<LoyaltyProgramService.TierInput> inputs = request.tiers().stream()
                 .map(t -> new LoyaltyProgramService.TierInput(t.name(), t.minLifetimePoints())).toList();
         return programService.replaceTiers(providerId, inputs).stream().map(TierResponse::from).toList();
@@ -156,7 +153,7 @@ public class LoyaltyAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/business/{providerId}/loyalty/overview")
     @OwnsProvider
-    public OverviewResponse getOverview(@PathVariable UUID providerId, HttpServletRequest httpRequest) {
+    public OverviewResponse getOverview(@PathVariable UUID providerId) {
         return OverviewResponse.from(dashboardService.getOverview(providerId));
     }
 
@@ -170,7 +167,7 @@ public class LoyaltyAdminController {
     @GetMapping("/api/v1/business/{providerId}/loyalty/birthdays")
     @OwnsProvider
     public List<LoyaltyAdminDtos.BirthdayResponse> getBirthdays(@PathVariable UUID providerId,
-            @RequestParam(defaultValue = "30") int days, HttpServletRequest httpRequest) {
+            @RequestParam(defaultValue = "30") int days) {
         int window = Math.max(0, Math.min(days, 366));
         LoyaltyProgram program = programService.getOrCreateDraft(providerId, "Loyalty Rewards");
         int bonus = program.isEnabled() ? program.getBirthdayBonusPoints() : 0;
@@ -191,8 +188,8 @@ public class LoyaltyAdminController {
     @ResponseStatus(HttpStatus.CREATED)
     @OwnsProvider
     public LoyaltyAdminDtos.GreetingResponse greet(@PathVariable UUID providerId, @PathVariable UUID userId,
-            @RequestBody LoyaltyAdminDtos.SendGreetingRequest request, HttpServletRequest httpRequest) {
-        UUID ownerId = CurrentUser.requireUserId(httpRequest);
+            @RequestBody LoyaltyAdminDtos.SendGreetingRequest request) {
+        UUID ownerId = CurrentUser.requireUserId();
         LoyaltyGreeting greeting = greetingService.send(providerId, userId, ownerId, request.message(),
                 request.bonusPoints() == null ? 0 : request.bonusPoints());
         return new LoyaltyAdminDtos.GreetingResponse(greeting.getId(), greeting.getBonusPoints(),
@@ -206,8 +203,7 @@ public class LoyaltyAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/business/{providerId}/loyalty/customers")
     @OwnsProvider
-    public Page<CustomerInsightResponse> getCustomers(@PathVariable UUID providerId, Pageable pageable,
-            HttpServletRequest httpRequest) {
+    public Page<CustomerInsightResponse> getCustomers(@PathVariable UUID providerId, Pageable pageable) {
         Page<CustomerLoyaltyInsight> insights = customerInsightsService.listForBusiness(providerId, pageable);
         Map<UUID, User> users = userRepository
                 .findAllById(insights.map(CustomerLoyaltyInsight::userId).toList()).stream()
@@ -219,8 +215,7 @@ public class LoyaltyAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/business/{providerId}/loyalty/customers/{userId}")
     @OwnsProvider
-    public CustomerInsightResponse getCustomer(@PathVariable UUID providerId, @PathVariable UUID userId,
-            HttpServletRequest httpRequest) {
+    public CustomerInsightResponse getCustomer(@PathVariable UUID providerId, @PathVariable UUID userId) {
         CustomerLoyaltyInsight insight = customerInsightsService.getForCustomer(providerId, userId);
         return toResponse(insight, userRepository.findById(userId).orElse(null));
     }
@@ -233,8 +228,8 @@ public class LoyaltyAdminController {
     @PostMapping("/api/v1/business/{providerId}/loyalty/customers/{userId}/adjust")
     @OwnsProvider
     public LoyaltyDtos.LoyaltyTransactionResponse adjustPoints(@PathVariable UUID providerId,
-            @PathVariable UUID userId, @RequestBody AdjustPointsRequest request, HttpServletRequest httpRequest) {
-        UUID actorId = CurrentUser.requireUserId(httpRequest);
+            @PathVariable UUID userId, @RequestBody AdjustPointsRequest request) {
+        UUID actorId = CurrentUser.requireUserId();
         LoyaltyProgram program = programService.findByProviderId(providerId).orElse(null);
         LoyaltyTransaction tx = ledgerService.adjust(providerId, userId, request.delta(), request.reason(), actorId,
                 program);
@@ -247,7 +242,7 @@ public class LoyaltyAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/business/{providerId}/loyalty/rewards")
     @OwnsProvider
-    public List<RewardResponse> listRewards(@PathVariable UUID providerId, HttpServletRequest httpRequest) {
+    public List<RewardResponse> listRewards(@PathVariable UUID providerId) {
         return rewardService.listAll(providerId).stream().map(RewardResponse::from).toList();
     }
 
@@ -256,8 +251,7 @@ public class LoyaltyAdminController {
     @PostMapping("/api/v1/business/{providerId}/loyalty/rewards")
     @ResponseStatus(HttpStatus.CREATED)
     @OwnsProvider
-    public RewardResponse createReward(@PathVariable UUID providerId, @RequestBody RewardRequest request,
-            HttpServletRequest httpRequest) {
+    public RewardResponse createReward(@PathVariable UUID providerId, @RequestBody RewardRequest request) {
         LoyaltyReward reward = rewardService.create(providerId, request.name(), request.description(),
                 request.type(), request.pointsCost(), request.discountAmount(), request.discountCurrency(),
                 request.discountPercentage(), request.serviceId(), request.maxRedemptions(), request.startsAt(),
@@ -271,7 +265,7 @@ public class LoyaltyAdminController {
     @PutMapping("/api/v1/business/{providerId}/loyalty/rewards/{rewardId}")
     @OwnsProvider
     public RewardResponse updateReward(@PathVariable UUID providerId, @PathVariable UUID rewardId,
-            @RequestBody RewardRequest request, HttpServletRequest httpRequest) {
+            @RequestBody RewardRequest request) {
         LoyaltyReward reward = rewardService.update(providerId, rewardId, request.name(), request.description(),
                 request.type(), request.pointsCost(), request.discountAmount(), request.discountCurrency(),
                 request.discountPercentage(), request.serviceId(), request.maxRedemptions(), request.startsAt(),
@@ -283,8 +277,7 @@ public class LoyaltyAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/business/{providerId}/loyalty/rewards/{rewardId}/activate")
     @OwnsProvider
-    public RewardResponse activateReward(@PathVariable UUID providerId, @PathVariable UUID rewardId,
-            HttpServletRequest httpRequest) {
+    public RewardResponse activateReward(@PathVariable UUID providerId, @PathVariable UUID rewardId) {
         return RewardResponse.from(rewardService.setActive(providerId, rewardId, true));
     }
 
@@ -292,8 +285,7 @@ public class LoyaltyAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/business/{providerId}/loyalty/rewards/{rewardId}/deactivate")
     @OwnsProvider
-    public RewardResponse deactivateReward(@PathVariable UUID providerId, @PathVariable UUID rewardId,
-            HttpServletRequest httpRequest) {
+    public RewardResponse deactivateReward(@PathVariable UUID providerId, @PathVariable UUID rewardId) {
         return RewardResponse.from(rewardService.setActive(providerId, rewardId, false));
     }
 
@@ -302,8 +294,7 @@ public class LoyaltyAdminController {
     @DeleteMapping("/api/v1/business/{providerId}/loyalty/rewards/{rewardId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @OwnsProvider
-    public void deleteReward(@PathVariable UUID providerId, @PathVariable UUID rewardId,
-            HttpServletRequest httpRequest) {
+    public void deleteReward(@PathVariable UUID providerId, @PathVariable UUID rewardId) {
         rewardService.delete(providerId, rewardId);
     }
 
@@ -313,8 +304,7 @@ public class LoyaltyAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/business/{providerId}/loyalty/redemptions")
     @OwnsProvider
-    public Page<RedemptionAdminResponse> listRedemptions(@PathVariable UUID providerId, Pageable pageable,
-            HttpServletRequest httpRequest) {
+    public Page<RedemptionAdminResponse> listRedemptions(@PathVariable UUID providerId, Pageable pageable) {
         return redemptionService.findByBusiness(providerId, pageable).map(RedemptionAdminResponse::from);
     }
 
@@ -326,7 +316,7 @@ public class LoyaltyAdminController {
     @PostMapping("/api/v1/business/{providerId}/loyalty/redemptions/{code}/apply")
     @OwnsProvider
     public RedemptionAdminResponse applyRedemption(@PathVariable UUID providerId, @PathVariable String code,
-            @RequestBody ApplyRedemptionRequest request, HttpServletRequest httpRequest) {
+            @RequestBody ApplyRedemptionRequest request) {
         return RedemptionAdminResponse.from(redemptionService.applyToBooking(providerId, code, request.bookingId()));
     }
 
@@ -335,7 +325,7 @@ public class LoyaltyAdminController {
     @PostMapping("/api/v1/business/{providerId}/loyalty/redemptions/{id}/cancel")
     @OwnsProvider
     public RedemptionAdminResponse cancelRedemption(@PathVariable UUID providerId, @PathVariable UUID id,
-            @RequestBody(required = false) CancelRedemptionRequest request, HttpServletRequest httpRequest) {
+            @RequestBody(required = false) CancelRedemptionRequest request) {
         String reason = request == null ? null : request.reason();
         return RedemptionAdminResponse.from(redemptionService.cancelAsBusiness(providerId, id, reason));
     }

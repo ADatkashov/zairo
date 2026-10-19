@@ -12,7 +12,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -52,8 +51,8 @@ public class AdAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping
     @AnyPlatformRole
-    public List<AdminBannerResponse> list(HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requireAdminId(httpRequest);
+    public List<AdminBannerResponse> list() {
+        PlatformCurrentAdmin.requireAdminId();
         return adService.listAll();
     }
 
@@ -67,9 +66,8 @@ public class AdAdminController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PlatformModerationCapable
-    public AdminBannerResponse create(@Valid @RequestBody CreateBannerRequest request,
-            HttpServletRequest httpRequest) {
-        return adService.create(actorId(httpRequest), actorEmail(httpRequest), request);
+    public AdminBannerResponse create(@Valid @RequestBody CreateBannerRequest request) {
+        return adService.create(actorId(), actorEmail(), request);
     }
 
     @Operation(summary = "Edit a banner's content and schedule (status moves through /status)")
@@ -78,9 +76,8 @@ public class AdAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/{id}")
     @PlatformModerationCapable
-    public AdminBannerResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateBannerRequest request,
-            HttpServletRequest httpRequest) {
-        return adService.update(actorId(httpRequest), actorEmail(httpRequest), id, request);
+    public AdminBannerResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateBannerRequest request) {
+        return adService.update(actorId(), actorEmail(), id, request);
     }
 
     @Operation(summary = "Approve, pause or reject a banner", description = "Rejecting needs a reason. "
@@ -91,9 +88,8 @@ public class AdAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/{id}/status")
     @PlatformModerationCapable
-    public AdminBannerResponse setStatus(@PathVariable UUID id, @Valid @RequestBody SetStatusRequest request,
-            HttpServletRequest httpRequest) {
-        return adService.setStatus(actorId(httpRequest), actorEmail(httpRequest), id, request);
+    public AdminBannerResponse setStatus(@PathVariable UUID id, @Valid @RequestBody SetStatusRequest request) {
+        return adService.setStatus(actorId(), actorEmail(), id, request);
     }
 
     @Operation(summary = "Delete a banner for good (pause it instead to keep the record)")
@@ -103,16 +99,16 @@ public class AdAdminController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PlatformModerationCapable
-    public void delete(@PathVariable UUID id, HttpServletRequest httpRequest) {
-        adService.delete(actorId(httpRequest), actorEmail(httpRequest), id);
+    public void delete(@PathVariable UUID id) {
+        adService.delete(actorId(), actorEmail(), id);
     }
 
-    private UUID actorId(HttpServletRequest httpRequest) {
-        UUID adminId = PlatformCurrentAdmin.requireAdminId(httpRequest);
+    private UUID actorId() {
+        UUID adminId = PlatformCurrentAdmin.requireAdminId();
         return adminId;
     }
 
-    private String actorEmail(HttpServletRequest httpRequest) {
-        return platformAdminService.me(PlatformCurrentAdmin.requireAdminId(httpRequest)).email();
+    private String actorEmail() {
+        return platformAdminService.me(PlatformCurrentAdmin.requireAdminId()).email();
     }
 }

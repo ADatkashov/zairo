@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -44,8 +43,8 @@ public class VehicleController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/vehicles")
     @ResponseStatus(HttpStatus.CREATED)
-    public VehicleResponse create(@Valid @RequestBody CreateVehicleRequest request, HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+    public VehicleResponse create(@Valid @RequestBody CreateVehicleRequest request) {
+        UUID callerId = CurrentUser.requireUserId();
         if (!callerId.equals(request.ownerUserId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot register a vehicle for a different "
                     + "user");
@@ -63,9 +62,8 @@ public class VehicleController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/vehicles/{vehicleId}")
-    public VehicleResponse getById(@Parameter(description = "The vehicle's id.") @PathVariable UUID vehicleId,
-            HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+    public VehicleResponse getById(@Parameter(description = "The vehicle's id.") @PathVariable UUID vehicleId) {
+        UUID callerId = CurrentUser.requireUserId();
         return VehicleResponse.from(vehicleService.getVehicle(vehicleId, callerId));
     }
 
@@ -76,9 +74,8 @@ public class VehicleController {
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/users/{userId}/vehicles")
-    public List<VehicleResponse> listByUser(@Parameter(description = "The user's id.") @PathVariable UUID userId,
-            HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+    public List<VehicleResponse> listByUser(@Parameter(description = "The user's id.") @PathVariable UUID userId) {
+        UUID callerId = CurrentUser.requireUserId();
         if (!callerId.equals(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot view another user's vehicles");
         }
@@ -93,8 +90,7 @@ public class VehicleController {
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/api/v1/vehicles/{vehicleId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@Parameter(description = "The vehicle's id.") @PathVariable UUID vehicleId,
-            HttpServletRequest httpRequest) {
-        vehicleService.deleteVehicle(vehicleId, CurrentUser.requireUserId(httpRequest));
+    public void delete(@Parameter(description = "The vehicle's id.") @PathVariable UUID vehicleId) {
+        vehicleService.deleteVehicle(vehicleId, CurrentUser.requireUserId());
     }
 }

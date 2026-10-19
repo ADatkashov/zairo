@@ -12,7 +12,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -52,9 +51,8 @@ public class CityAdminController {
     @ResponseStatus(HttpStatus.CREATED)
     @PlatformAdminOnly
     public CityDto createCity(
-            @Valid @RequestBody CreateCityRequest request,
-            HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requireAdminId(httpRequest);
+            @Valid @RequestBody CreateCityRequest request) {
+        PlatformCurrentAdmin.requireAdminId();
         return cityService.createCity(request);
     }
 
@@ -71,9 +69,8 @@ public class CityAdminController {
     public CityDto updateCity(
             @Parameter(description = "City code (e.g., 'almaty')", example = "almaty")
             @PathVariable String code,
-            @Valid @RequestBody UpdateCityRequest request,
-            HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requireAdminId(httpRequest);
+            @Valid @RequestBody UpdateCityRequest request) {
+        PlatformCurrentAdmin.requireAdminId();
         return cityService.updateCity(code, request);
     }
 
@@ -89,9 +86,8 @@ public class CityAdminController {
     @PlatformAdminOnly
     public void deleteCity(
             @Parameter(description = "City code (e.g., 'almaty')", example = "almaty")
-            @PathVariable String code,
-            HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requireAdminId(httpRequest);
+            @PathVariable String code) {
+        PlatformCurrentAdmin.requireAdminId();
         cityService.deleteCity(code);
     }
 }

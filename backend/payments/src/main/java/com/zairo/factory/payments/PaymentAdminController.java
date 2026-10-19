@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
@@ -56,7 +55,7 @@ public class PaymentAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/platform/payments/failed-refunds")
     @AnyPlatformRole
-    public List<PaymentResponse> failedRefunds(HttpServletRequest httpRequest) {
+    public List<PaymentResponse> failedRefunds() {
         return paymentRepository.findByStatusOrderByCreatedAtDesc(PaymentStatus.REFUND_FAILED).stream()
                 .map(PaymentResponse::from)
                 .toList();
@@ -73,7 +72,7 @@ public class PaymentAdminController {
     @PostMapping("/api/v1/platform/payments/{paymentId}/reconcile")
     @AnyPlatformRole
     public ReconciliationResponse reconcile(
-            @Parameter(description = "The payment's id.") @PathVariable UUID paymentId, HttpServletRequest httpRequest) {
+            @Parameter(description = "The payment's id.") @PathVariable UUID paymentId) {
         return ReconciliationResponse.from(reconciliationService.reconcile(paymentId));
     }
 
@@ -90,8 +89,7 @@ public class PaymentAdminController {
     @GetMapping("/api/v1/platform/payments/refund-requests")
     @AnyPlatformRole
     public List<RefundRequestResponse> refundRequests(
-            @Parameter(description = "Which status to list.") @RequestParam PaymentRefundRequestStatus status,
-            HttpServletRequest httpRequest) {
+            @Parameter(description = "Which status to list.") @RequestParam PaymentRefundRequestStatus status) {
         return refundRequestRepository.findByStatusOrderByCreatedAtDesc(status,
                         PageRequest.of(0, REFUND_REQUEST_LIST_LIMIT)).stream()
                 .map(RefundRequestResponse::from)

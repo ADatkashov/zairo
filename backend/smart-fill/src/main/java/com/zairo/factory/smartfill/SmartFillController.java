@@ -9,7 +9,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.List;
@@ -60,9 +59,8 @@ public class SmartFillController {
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/users/{userId}/smart-fill-offers")
-    public List<CandidateOfferResponse> list(@Parameter(description = "The user's id.") @PathVariable UUID userId,
-            HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+    public List<CandidateOfferResponse> list(@Parameter(description = "The user's id.") @PathVariable UUID userId) {
+        UUID callerId = CurrentUser.requireUserId();
         if (!callerId.equals(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot view another user's Smart Fill offers");
         }
@@ -97,8 +95,8 @@ public class SmartFillController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/users/{userId}/smart-fill-preference")
     public SmartFillPreferenceResponse getPreference(
-            @Parameter(description = "The user's id.") @PathVariable UUID userId, HttpServletRequest httpRequest) {
-        UUID callerId = requireSelf(userId, httpRequest);
+            @Parameter(description = "The user's id.") @PathVariable UUID userId) {
+        UUID callerId = requireSelf(userId);
         return preferenceRepository.findByUserId(callerId)
                 .map(SmartFillPreferenceResponse::from)
                 .orElse(new SmartFillPreferenceResponse(callerId, false));
@@ -114,16 +112,16 @@ public class SmartFillController {
     @PutMapping("/api/v1/users/{userId}/smart-fill-preference")
     public SmartFillPreferenceResponse updatePreference(
             @Parameter(description = "The user's id.") @PathVariable UUID userId,
-            @Valid @RequestBody UpdateSmartFillPreferenceRequest request, HttpServletRequest httpRequest) {
-        UUID callerId = requireSelf(userId, httpRequest);
+            @Valid @RequestBody UpdateSmartFillPreferenceRequest request) {
+        UUID callerId = requireSelf(userId);
         SmartFillUserPreference preference = preferenceRepository.findByUserId(callerId)
                 .orElseGet(() -> new SmartFillUserPreference(callerId, false, Instant.now()));
         preference.update(request.optedOut(), Instant.now());
         return SmartFillPreferenceResponse.from(preferenceRepository.save(preference));
     }
 
-    private static UUID requireSelf(UUID userId, HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+    private static UUID requireSelf(UUID userId) {
+        UUID callerId = CurrentUser.requireUserId();
         if (!callerId.equals(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot manage another user's Smart Fill preference");
         }

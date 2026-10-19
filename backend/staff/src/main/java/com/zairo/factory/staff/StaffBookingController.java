@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -54,9 +53,8 @@ public class StaffBookingController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/staff/bookings")
     @ResponseStatus(HttpStatus.CREATED)
-    public StaffBookingResponse create(@Valid @RequestBody CreateStaffBookingRequest request,
-            HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+    public StaffBookingResponse create(@Valid @RequestBody CreateStaffBookingRequest request) {
+        UUID callerId = CurrentUser.requireUserId();
         if (!callerId.equals(request.userId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot book on behalf of a different user");
         }
@@ -75,9 +73,8 @@ public class StaffBookingController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/staff/bookings/{bookingId}")
-    public StaffBookingResponse getById(@Parameter(description = "The booking's id.") @PathVariable UUID bookingId,
-            HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+    public StaffBookingResponse getById(@Parameter(description = "The booking's id.") @PathVariable UUID bookingId) {
+        UUID callerId = CurrentUser.requireUserId();
         StaffBookingResult result = staffBookingService.getBooking(bookingId, callerId);
         return StaffBookingResponse.from(result.booking(), result.staffId());
     }
