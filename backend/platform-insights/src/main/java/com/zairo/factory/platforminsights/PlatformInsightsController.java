@@ -1,5 +1,6 @@
 package com.zairo.factory.platforminsights;
 
+import com.zairo.factory.platformadmin.AnyPlatformRole;
 import com.zairo.factory.platformadmin.PlatformCurrentAdmin;
 import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformDashboardMetrics;
 import com.zairo.factory.platforminsights.PlatformInsightsDtos.PlatformReport;
@@ -8,7 +9,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,8 +33,8 @@ public class PlatformInsightsController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/platform/dashboard")
-    public PlatformDashboardMetrics dashboard(HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requireAnyRole(httpRequest);
+    @AnyPlatformRole
+    public PlatformDashboardMetrics dashboard() {
         return platformInsightsService.dashboardMetrics();
     }
 
@@ -45,8 +45,8 @@ public class PlatformInsightsController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/platform/dashboard/trends")
-    public PlatformTrends trends(HttpServletRequest httpRequest, @RequestParam(defaultValue = "14") int days) {
-        PlatformCurrentAdmin.requireAnyRole(httpRequest);
+    @AnyPlatformRole
+    public PlatformTrends trends(@RequestParam(defaultValue = "14") int days) {
         return platformInsightsService.trends(days);
     }
 
@@ -58,8 +58,8 @@ public class PlatformInsightsController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/platform/reports")
-    public PlatformReport report(HttpServletRequest httpRequest, @RequestParam(defaultValue = "30") int days) {
-        PlatformCurrentAdmin.requireAnyRole(httpRequest);
+    @AnyPlatformRole
+    public PlatformReport report(@RequestParam(defaultValue = "30") int days) {
         return platformInsightsService.report(days);
     }
 }

@@ -3,13 +3,13 @@ package com.zairo.factory.customerintelligence;
 import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.customerintelligence.CustomerIntelligenceDtos.BusinessCustomerIntelligenceResponse;
 import com.zairo.factory.customerintelligence.CustomerIntelligenceDtos.MyIntelligenceResponse;
+import com.zairo.factory.providers.OwnsProvider;
 import com.zairo.factory.providers.ProviderOwnership;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -47,8 +47,8 @@ public class CustomerIntelligenceController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/me/customer-intelligence")
-    public MyIntelligenceResponse myIntelligence(HttpServletRequest httpRequest) {
-        UUID userId = CurrentUser.requireUserId(httpRequest);
+    public MyIntelligenceResponse myIntelligence() {
+        UUID userId = CurrentUser.requireUserId();
         return MyIntelligenceResponse.from(service.getOrCalculateProfile(userId));
     }
 
@@ -63,10 +63,10 @@ public class CustomerIntelligenceController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/providers/{providerId}/customers/{userId}/intelligence")
+    @OwnsProvider
     public BusinessCustomerIntelligenceResponse businessCustomerIntelligence(
             @Parameter(description = "The business's id.") @PathVariable UUID providerId,
-            @Parameter(description = "The customer's id.") @PathVariable UUID userId, HttpServletRequest httpRequest) {
-        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
+            @Parameter(description = "The customer's id.") @PathVariable UUID userId) {
         return BusinessCustomerIntelligenceResponse.from(service.getOrCalculateProviderProfile(userId, providerId));
     }
 }

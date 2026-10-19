@@ -59,6 +59,9 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    // /actuator/prometheus — off unless MANAGEMENT_ENDPOINTS_EXPOSE adds it (see application.yml).
+    implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     // Spring Boot 4.1 split Flyway's autoconfiguration into its own starter
     // (spring-boot-flyway) — flyway-core alone doesn't wire the

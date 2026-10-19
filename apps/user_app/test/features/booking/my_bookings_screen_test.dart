@@ -19,6 +19,7 @@ import 'package:zairo/features/booking/presentation/providers/booking_providers.
 import 'package:zairo/app/router/app_routes.dart';
 import 'package:zairo/features/booking/presentation/screens/booking_payment_screen.dart';
 import 'package:zairo/features/booking/presentation/screens/my_bookings_screen.dart';
+import 'package:zairo/features/booking/presentation/widgets/booking_payment_summary.dart';
 import 'package:zairo/features/messaging/data/messaging_api.dart';
 import 'package:zairo/features/messaging/data/messaging_exception.dart';
 import 'package:zairo/features/messaging/data/models/chat_message.dart';
@@ -966,5 +967,53 @@ void main() {
     final sooner = tester.getTopLeft(find.text('Sooner visit')).dy;
     final later = tester.getTopLeft(find.text('Later visit')).dy;
     expect(sooner, lessThan(later));
+  });
+
+  testWidgets('the amounts use the whole card and the time stays on one line',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 740);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final booking = Booking(
+      id: 'booking-1',
+      userId: 'user-1',
+      serviceId: 'service-1',
+      availabilitySlotId: 'slot-1',
+      status: 'CONFIRMED',
+      totalPrice: 5500,
+      depositAmount: 0,
+      createdAt: DateTime(2026, 1, 1),
+      serviceTitle: 'Haircut',
+      providerName: 'Salon Aurora',
+      startsAt: DateTime(2026, 10, 5, 14, 30).toUtc(),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(_FakeBookingApi([booking])),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const MyBookingsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final card = tester.getRect(find.byType(FactoryCard).first);
+    final amounts = tester.getRect(find.byType(BookingAmounts));
+    // Full width of the card (minus its padding), not a narrow column.
+    expect(amounts.width, greaterThan(card.width - 64));
+    // The appointment time stays on one line (the badge no longer squeezes
+    // the headline) and the status sits on the "Booked on" line below.
+    final when = tester.getRect(find.text('Mon, Oct 5 · 14:30'));
+    expect(when.height, lessThan(24));
+    final badge = tester.getRect(find.byType(FactoryBadge).first);
+    expect(badge.top, greaterThanOrEqualTo(amounts.bottom));
   });
 }

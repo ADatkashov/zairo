@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,9 +51,8 @@ public class UserLookupController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/users/lookup")
     public UserLookupResponse lookupByPhone(
-            @Parameter(description = "Phone number.", example = "+77001234567") @RequestParam String phone,
-            HttpServletRequest httpRequest) {
-        CurrentUser.requireUserId(httpRequest);
+            @Parameter(description = "Phone number.", example = "+77001234567") @RequestParam String phone) {
+        CurrentUser.requireUserId();
         String normalized = phoneNumberNormalizer.normalize(phone);
         return identityLookupService.findExisting(IdentityProvider.PHONE, normalized)
                 .filter(user -> !user.isDeleted())

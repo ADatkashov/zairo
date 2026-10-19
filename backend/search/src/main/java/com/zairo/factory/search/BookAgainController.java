@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -35,9 +34,8 @@ public class BookAgainController {
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/users/{userId}/book-again")
-    public List<BookAgainSuggestion> bookAgain(@Parameter(description = "The user's id.") @PathVariable UUID userId,
-            HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+    public List<BookAgainSuggestion> bookAgain(@Parameter(description = "The user's id.") @PathVariable UUID userId) {
+        UUID callerId = CurrentUser.requireUserId();
         if (!callerId.equals(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot view another user's suggestions");
         }

@@ -20,7 +20,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -119,11 +118,8 @@ public class AuthController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/auth/me")
-    public UserSummary me(HttpServletRequest request) {
-        UUID userId = (UUID) request.getAttribute(JwtAuthFilter.USER_ID_ATTRIBUTE);
-        if (userId == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid access token");
-        }
+    public UserSummary me() {
+        UUID userId = CurrentUser.requireUserId();
         User user = userRepository.findById(userId)
                 .filter(u -> !u.isDeleted())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User no longer exists"));
@@ -144,8 +140,8 @@ public class AuthController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/auth/me/delete")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteAccount(@Valid @RequestBody DeleteAccountRequest request, HttpServletRequest httpRequest) {
-        authService.deleteAccount(CurrentUser.requireUserId(httpRequest), request.password(),
+    public void deleteAccount(@Valid @RequestBody DeleteAccountRequest request) {
+        authService.deleteAccount(CurrentUser.requireUserId(), request.password(),
                 request.confirmation());
     }
 
@@ -156,11 +152,8 @@ public class AuthController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/api/v1/auth/me/avatar")
-    public UserSummary updateAvatar(@Valid @RequestBody UpdateAvatarRequest request, HttpServletRequest httpRequest) {
-        UUID userId = (UUID) httpRequest.getAttribute(JwtAuthFilter.USER_ID_ATTRIBUTE);
-        if (userId == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid access token");
-        }
+    public UserSummary updateAvatar(@Valid @RequestBody UpdateAvatarRequest request) {
+        UUID userId = CurrentUser.requireUserId();
         return authService.updateAvatar(userId, request.avatarUrl());
     }
 
@@ -177,9 +170,8 @@ public class AuthController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/api/v1/auth/me")
-    public UserSummary updateProfile(@Valid @RequestBody UpdateProfileRequest request,
-            HttpServletRequest httpRequest) {
-        return authService.updateProfile(CurrentUser.requireUserId(httpRequest), request);
+    public UserSummary updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
+        return authService.updateProfile(CurrentUser.requireUserId(), request);
     }
 
     @Operation(summary = "List the current user's linked sign-in methods", description = """
@@ -190,8 +182,8 @@ public class AuthController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/auth/identities")
-    public IdentitiesResponse listIdentities(HttpServletRequest httpRequest) {
-        UUID userId = CurrentUser.requireUserId(httpRequest);
+    public IdentitiesResponse listIdentities() {
+        UUID userId = CurrentUser.requireUserId();
         return new IdentitiesResponse(identityService.listIdentities(userId));
     }
 
@@ -205,8 +197,7 @@ public class AuthController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/auth/me/biometric-audit")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void auditBiometricToggle(@Valid @RequestBody BiometricAuditRequest request,
-            HttpServletRequest httpRequest) {
-        auditLog.biometricToggled(CurrentUser.requireUserId(httpRequest), Boolean.TRUE.equals(request.enabled()));
+    public void auditBiometricToggle(@Valid @RequestBody BiometricAuditRequest request) {
+        auditLog.biometricToggled(CurrentUser.requireUserId(), Boolean.TRUE.equals(request.enabled()));
     }
 }

@@ -593,3 +593,17 @@ same policy as §10's keystore passwords. They were handed to the
 project owner directly when this section was written. Rotate any of
 them by generating a new value and updating the one Render env var —
 nothing else references them.
+
+## 13. Метрики (Prometheus)
+
+`platform-api` содержит `micrometer-registry-prometheus`, но по умолчанию наружу
+отдаются только `health` и `info`. В приложении нет Spring Security, поэтому
+`/actuator/prometheus` нельзя открывать на публичном порту. Чтобы собирать метрики:
+
+```
+MANAGEMENT_ENDPOINTS_EXPOSE=health,info,prometheus
+MANAGEMENT_SERVER_PORT=9090   # внутренний порт, не пробрасывать наружу
+```
+
+Prometheus скрейпит `http://<хост>:9090/actuator/prometheus`. Поведение покрыто
+тестом `MetricsEndpointApiTests`.

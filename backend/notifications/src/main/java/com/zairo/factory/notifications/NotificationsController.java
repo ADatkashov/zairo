@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -43,8 +42,8 @@ public class NotificationsController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/users/{userId}/notifications")
     public List<NotificationResponse> list(
-            @Parameter(description = "The user's id.") @PathVariable UUID userId, HttpServletRequest httpRequest) {
-        requireSelf(userId, httpRequest);
+            @Parameter(description = "The user's id.") @PathVariable UUID userId) {
+        requireSelf(userId);
         return notificationService.list(userId);
     }
 
@@ -56,8 +55,8 @@ public class NotificationsController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/users/{userId}/notifications/unread-count")
     public UnreadCountResponse unreadCount(
-            @Parameter(description = "The user's id.") @PathVariable UUID userId, HttpServletRequest httpRequest) {
-        requireSelf(userId, httpRequest);
+            @Parameter(description = "The user's id.") @PathVariable UUID userId) {
+        requireSelf(userId);
         return notificationService.unreadCount(userId);
     }
 
@@ -71,9 +70,8 @@ public class NotificationsController {
     @PostMapping("/api/v1/users/{userId}/notifications/{notificationId}/read")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void markRead(@Parameter(description = "The user's id.") @PathVariable UUID userId,
-            @Parameter(description = "The notification's id.") @PathVariable UUID notificationId,
-            HttpServletRequest httpRequest) {
-        requireSelf(userId, httpRequest);
+            @Parameter(description = "The notification's id.") @PathVariable UUID notificationId) {
+        requireSelf(userId);
         notificationService.markRead(userId, notificationId);
     }
 
@@ -86,13 +84,13 @@ public class NotificationsController {
     @PostMapping("/api/v1/users/{userId}/notifications/read-all")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void markAllRead(
-            @Parameter(description = "The user's id.") @PathVariable UUID userId, HttpServletRequest httpRequest) {
-        requireSelf(userId, httpRequest);
+            @Parameter(description = "The user's id.") @PathVariable UUID userId) {
+        requireSelf(userId);
         notificationService.markAllRead(userId);
     }
 
-    private static void requireSelf(UUID userId, HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+    private static void requireSelf(UUID userId) {
+        UUID callerId = CurrentUser.requireUserId();
         if (!callerId.equals(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot act on another user's notifications");
         }

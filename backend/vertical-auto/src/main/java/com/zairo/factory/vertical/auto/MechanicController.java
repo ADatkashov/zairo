@@ -13,7 +13,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -53,9 +52,9 @@ public class MechanicController {
     @PostMapping("/api/v1/auto/providers/{providerId}/mechanics")
     @ResponseStatus(HttpStatus.CREATED)
     public MechanicResponse create(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            @Valid @RequestBody CreateMechanicRequest request, HttpServletRequest httpRequest) {
+            @Valid @RequestBody CreateMechanicRequest request) {
         Mechanic mechanic = mechanicDirectoryService.createMechanic(providerId, request.displayName(),
-                request.bio(), request.photoUrl(), CurrentUser.requireUserId(httpRequest));
+                request.bio(), request.photoUrl(), CurrentUser.requireUserId());
         return MechanicResponse.from(mechanic);
     }
 
@@ -72,9 +71,9 @@ public class MechanicController {
     @PostMapping("/api/v1/auto/providers/{providerId}/mechanics/from-user")
     @ResponseStatus(HttpStatus.CREATED)
     public MechanicResponse createFromUser(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            @Valid @RequestBody CreateMechanicFromUserRequest request, HttpServletRequest httpRequest) {
+            @Valid @RequestBody CreateMechanicFromUserRequest request) {
         return MechanicResponse.from(mechanicDirectoryService.createMechanicFromUser(providerId, request.userId(),
-                CurrentUser.requireUserId(httpRequest)));
+                CurrentUser.requireUserId()));
     }
 
     @Operation(summary = "List a provider's mechanics", description = "Active mechanics by default. Pass "
@@ -105,9 +104,8 @@ public class MechanicController {
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/api/v1/auto/mechanics/{mechanicId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deactivate(@Parameter(description = "The mechanic's id.") @PathVariable UUID mechanicId,
-            HttpServletRequest httpRequest) {
-        mechanicDirectoryService.deactivateMechanic(mechanicId, CurrentUser.requireUserId(httpRequest));
+    public void deactivate(@Parameter(description = "The mechanic's id.") @PathVariable UUID mechanicId) {
+        mechanicDirectoryService.deactivateMechanic(mechanicId, CurrentUser.requireUserId());
     }
 
     @Operation(summary = "Reactivate a mechanic", description = "Owner-only, idempotent — undoes deactivate().")
@@ -117,10 +115,9 @@ public class MechanicController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/auto/mechanics/{mechanicId}/reactivate")
-    public MechanicResponse reactivate(@Parameter(description = "The mechanic's id.") @PathVariable UUID mechanicId,
-            HttpServletRequest httpRequest) {
+    public MechanicResponse reactivate(@Parameter(description = "The mechanic's id.") @PathVariable UUID mechanicId) {
         return MechanicResponse.from(
-                mechanicDirectoryService.reactivateMechanic(mechanicId, CurrentUser.requireUserId(httpRequest)));
+                mechanicDirectoryService.reactivateMechanic(mechanicId, CurrentUser.requireUserId()));
     }
 
     @Operation(summary = "Update a mechanic's photo", description = "Owner-only. Upload the file via POST "
@@ -133,9 +130,9 @@ public class MechanicController {
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/api/v1/auto/mechanics/{mechanicId}/photo")
     public MechanicResponse updatePhoto(@Parameter(description = "The mechanic's id.") @PathVariable UUID mechanicId,
-            @Valid @RequestBody UpdatePhotoRequest request, HttpServletRequest httpRequest) {
+            @Valid @RequestBody UpdatePhotoRequest request) {
         return MechanicResponse.from(mechanicDirectoryService.updateMechanicPhoto(mechanicId, request.photoUrl(),
-                CurrentUser.requireUserId(httpRequest)));
+                CurrentUser.requireUserId()));
     }
 
     @Operation(summary = "Link a service to a mechanic", description = "Owner-only. Marks that this mechanic "
@@ -150,9 +147,8 @@ public class MechanicController {
     @PostMapping("/api/v1/auto/mechanics/{mechanicId}/services/{serviceId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void linkService(@Parameter(description = "The mechanic's id.") @PathVariable UUID mechanicId,
-            @Parameter(description = "The service's id.") @PathVariable UUID serviceId,
-            HttpServletRequest httpRequest) {
-        mechanicDirectoryService.linkService(mechanicId, serviceId, CurrentUser.requireUserId(httpRequest));
+            @Parameter(description = "The service's id.") @PathVariable UUID serviceId) {
+        mechanicDirectoryService.linkService(mechanicId, serviceId, CurrentUser.requireUserId());
     }
 
     @Operation(summary = "Unlink a service from a mechanic", description = "Owner-only.")
@@ -163,9 +159,8 @@ public class MechanicController {
     @DeleteMapping("/api/v1/auto/mechanics/{mechanicId}/services/{serviceId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void unlinkService(@Parameter(description = "The mechanic's id.") @PathVariable UUID mechanicId,
-            @Parameter(description = "The service's id.") @PathVariable UUID serviceId,
-            HttpServletRequest httpRequest) {
-        mechanicDirectoryService.unlinkService(mechanicId, serviceId, CurrentUser.requireUserId(httpRequest));
+            @Parameter(description = "The service's id.") @PathVariable UUID serviceId) {
+        mechanicDirectoryService.unlinkService(mechanicId, serviceId, CurrentUser.requireUserId());
     }
 
     @Operation(summary = "List the services a mechanic performs", description = "No authentication required.")

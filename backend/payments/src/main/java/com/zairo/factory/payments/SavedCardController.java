@@ -6,7 +6,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
@@ -53,8 +52,8 @@ public class SavedCardController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/me/payment-cards")
-    public SavedCardsResponse list(HttpServletRequest httpRequest) {
-        UUID userId = CurrentUser.requireUserId(httpRequest);
+    public SavedCardsResponse list() {
+        UUID userId = CurrentUser.requireUserId();
         return new SavedCardsResponse(
                 savedCardService.list(userId).stream().map(SavedCardResponse::from).toList(),
                 savedCardService.saveOnNextPayment(userId), savedCardService.canPayWithSavedCard());
@@ -67,11 +66,10 @@ public class SavedCardController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/api/v1/me/payment-cards/preference")
-    public SavedCardsResponse setPreference(@Valid @RequestBody SavePreferenceRequest request,
-            HttpServletRequest httpRequest) {
-        UUID userId = CurrentUser.requireUserId(httpRequest);
+    public SavedCardsResponse setPreference(@Valid @RequestBody SavePreferenceRequest request) {
+        UUID userId = CurrentUser.requireUserId();
         savedCardService.setSaveOnNextPayment(userId, request.saveOnNextPayment());
-        return list(httpRequest);
+        return list();
     }
 
     @Operation(summary = "Remove a saved card", description = "Forgets the card on our side so it is never "
@@ -82,7 +80,7 @@ public class SavedCardController {
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/api/v1/me/payment-cards/{cardId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void remove(@PathVariable UUID cardId, HttpServletRequest httpRequest) {
-        savedCardService.remove(cardId, CurrentUser.requireUserId(httpRequest));
+    public void remove(@PathVariable UUID cardId) {
+        savedCardService.remove(cardId, CurrentUser.requireUserId());
     }
 }

@@ -6,7 +6,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -41,8 +40,8 @@ public class SubscriptionController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/subscriptions/me")
-    public SubscriptionResponse getMine(HttpServletRequest httpRequest) {
-        UUID ownerUserId = CurrentUser.requireUserId(httpRequest);
+    public SubscriptionResponse getMine() {
+        UUID ownerUserId = CurrentUser.requireUserId();
         return SubscriptionResponse.from(subscriptionService.getOrCreate(ownerUserId), currency);
     }
 
@@ -54,8 +53,8 @@ public class SubscriptionController {
     @ApiResponse(responseCode = "402", description = "The payment was declined or the payment provider errored.")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/subscriptions/upgrade")
-    public SubscriptionResponse upgrade(HttpServletRequest httpRequest) {
-        UUID ownerUserId = CurrentUser.requireUserId(httpRequest);
+    public SubscriptionResponse upgrade() {
+        UUID ownerUserId = CurrentUser.requireUserId();
         SubscriptionService.SubscriptionUpgradeResult result = subscriptionService.upgradeToPro(ownerUserId);
         return SubscriptionResponse.from(result.subscription(), result.checkoutUrl(), currency);
     }
@@ -67,8 +66,8 @@ public class SubscriptionController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/subscriptions/downgrade")
-    public SubscriptionResponse downgrade(HttpServletRequest httpRequest) {
-        UUID ownerUserId = CurrentUser.requireUserId(httpRequest);
+    public SubscriptionResponse downgrade() {
+        UUID ownerUserId = CurrentUser.requireUserId();
         return SubscriptionResponse.from(subscriptionService.downgradeToFreeAtPeriodEnd(ownerUserId), currency);
     }
 
@@ -82,8 +81,8 @@ public class SubscriptionController {
     @ApiResponse(responseCode = "409", description = "Subscription is not past due.")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/subscriptions/retry-charge")
-    public SubscriptionResponse retryCharge(HttpServletRequest httpRequest) {
-        UUID ownerUserId = CurrentUser.requireUserId(httpRequest);
+    public SubscriptionResponse retryCharge() {
+        UUID ownerUserId = CurrentUser.requireUserId();
         SubscriptionService.SubscriptionUpgradeResult result = subscriptionRenewalService
                 .retryPastDueCharge(ownerUserId);
         return SubscriptionResponse.from(result.subscription(), result.checkoutUrl(), currency);
@@ -95,8 +94,8 @@ public class SubscriptionController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/subscriptions/me/payment-method")
-    public SubscriptionDtos.PaymentMethodResponse getPaymentMethod(HttpServletRequest httpRequest) {
-        UUID ownerUserId = CurrentUser.requireUserId(httpRequest);
+    public SubscriptionDtos.PaymentMethodResponse getPaymentMethod() {
+        UUID ownerUserId = CurrentUser.requireUserId();
         Subscription subscription = subscriptionService.getOrCreate(ownerUserId);
         return paymentMethodService.find(subscription.getId())
                 .map(method -> new SubscriptionDtos.PaymentMethodResponse(true, method.getCardBrand(),
@@ -113,8 +112,8 @@ public class SubscriptionController {
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/api/v1/subscriptions/me/payment-method")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void removePaymentMethod(HttpServletRequest httpRequest) {
-        UUID ownerUserId = CurrentUser.requireUserId(httpRequest);
+    public void removePaymentMethod() {
+        UUID ownerUserId = CurrentUser.requireUserId();
         paymentMethodService.remove(subscriptionService.getOrCreate(ownerUserId).getId());
     }
 
@@ -125,8 +124,8 @@ public class SubscriptionController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/subscriptions/me/charges")
-    public List<SubscriptionDtos.SubscriptionChargeResponse> listCharges(HttpServletRequest httpRequest) {
-        UUID ownerUserId = CurrentUser.requireUserId(httpRequest);
+    public List<SubscriptionDtos.SubscriptionChargeResponse> listCharges() {
+        UUID ownerUserId = CurrentUser.requireUserId();
         return subscriptionService.listCharges(ownerUserId).stream()
                 .map(SubscriptionDtos.SubscriptionChargeResponse::from).toList();
     }
