@@ -2,6 +2,7 @@ import 'package:core_network/core_network.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -306,6 +307,26 @@ class _LoggedInAuthController extends AuthController {
 /// Scrolls [finder] clear of the sticky "Book" bar and the bottom edge before
 /// tapping it. `scrollUntilVisible` stops as soon as a widget is merely on
 /// screen, which can leave it underneath the bar (a tap there silently misses).
+/// The people (masters, mechanics, …) sit behind the one-line "Specialist" row ("Any master" is the default):
+/// opens the full list, once.
+Future<void> openPeople(WidgetTester tester) async {
+  final row = find.byKey(const Key('bookingSpecialist'));
+  // The page builds lazily: scroll the row into existence first.
+  if (row.evaluate().isEmpty) {
+    final page = find.byType(Scrollable).first;
+    try {
+      await tester.scrollUntilVisible(row, 200, scrollable: page, maxScrolls: 30);
+    } on StateError {
+      return; // a business without people has no such row
+    }
+  }
+  // Already open (the chevron points up): leave it, so calling this twice is harmless.
+  if (find.descendant(of: row, matching: find.byIcon(Symbols.expand_less_rounded)).evaluate().isNotEmpty) return;
+  await tester.ensureVisible(row);
+  await tester.tap(row);
+  await tester.pumpAndSettle();
+}
+
 Future<void> tapVisible(WidgetTester tester, Finder finder) async {
   // The photo-first header pushes lower sections past the lazily-built part
   // of the list, so scroll a not-yet-built target into existence first.
@@ -400,16 +421,17 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // The progress bar follows the selection: service -> time -> confirm.
-    BookingStepper stepper() => tester.widget<BookingStepper>(find.byType(BookingStepper));
-    // A single-service salon has nothing to choose: the service is already picked.
-    expect(stepper().step, 1);
+    // The bar above "Book" follows the selection and confirms it: a single-service salon has nothing to
+    // choose, so the first thing asked is the time; once picked, the bar shows the day and time.
+    expect(find.byType(BookingStepper), findsNothing, reason: 'the heavy stepper is gone from this screen');
+    expect(find.byKey(const Key('bookingCtaWhen')), findsNothing);
     await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Haircut'));
     await tester.pumpAndSettle();
-    expect(stepper().step, 1, reason: 'tapping the picked service keeps it picked');
+    expect(find.byKey(const Key('bookingCtaWhen')), findsNothing, reason: 'tapping the picked service keeps it picked');
     await tapVisible(tester, find.text('10:00'));
     await tester.pumpAndSettle();
-    expect(stepper().step, 2);
+    expect(find.byKey(const Key('bookingCtaWhen')), findsOneWidget);
+    expect(tester.widget<Text>(find.byKey(const Key('bookingCtaWhen'))).data, contains('10:00'));
 
     // "Book" opens the summary instead of booking.
     await tester.tap(find.widgetWithText(FactoryButton, 'Book'));
@@ -424,7 +446,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Check your booking'), findsNothing);
     expect(fakeApi.lastBookingCall, isNull);
-    expect(stepper().step, 2);
+    expect(find.byKey(const Key('bookingCtaWhen')), findsOneWidget, reason: 'selection kept');
 
     // Confirm: now it books.
     await tester.tap(find.widgetWithText(FactoryButton, 'Book'));
@@ -610,7 +632,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(find.text('Jamie Stylist'), 200);
+    await openPeople(tester);
     expect(find.text('Jamie Stylist'), findsOneWidget);
 
     final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');
@@ -699,9 +721,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(find.text('Yerlan Mechanic'), 200);
+    await openPeople(tester);
     expect(find.text('Yerlan Mechanic'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Toyota Camry (2019)'), 200);
     expect(find.text('Toyota Camry (2019)'), findsOneWidget);
 
     final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');
@@ -786,6 +807,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await openPeople(tester);
     expect(find.text('Dr. Aliya'), findsOneWidget);
 
     final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');
@@ -994,6 +1016,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('45'), findsNothing);
 
+    await openPeople(tester);
     await tapVisible(tester, find.text('Jamie Stylist'));
     await tester.pumpAndSettle();
     expect(find.textContaining('45'), findsWidgets);
@@ -1045,6 +1068,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      await openPeople(tester);
     }
 
     bool selected(WidgetTester tester, String name) =>
@@ -1395,8 +1419,9 @@ void main() {
           status: 'OPEN',
         );
 
-    Future<void> pump(WidgetTester tester, ProviderSearchResult provider, {List<Master> masters = const []}) async {
-      tester.view.physicalSize = const Size(800, 1600);
+    Future<void> pump(WidgetTester tester, ProviderSearchResult provider,
+        {List<Master> masters = const [], Size size = const Size(800, 1600)}) async {
+      tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
       await tester.pumpWidget(
@@ -1405,6 +1430,19 @@ void main() {
             bookingApiProvider.overrideWithValue(_FakeBookingApi([slot()])),
             paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
             beautyApiProvider.overrideWithValue(_FakeBeautyApi(masters)),
+            // With people on the page the times come from the workforce API ("any master" is the default).
+            workforceApiProvider.overrideWithValue(_FakeWorkforceApi(
+              slots: [slot()],
+              anySlotList: [
+                AnySlot(
+                  slotId: 'slot-1',
+                  startsAt: DateTime(2026, 1, 1, 10, 0),
+                  endsAt: DateTime(2026, 1, 1, 10, 30),
+                  workerId: 'master-1',
+                  workerKind: 'MASTER',
+                ),
+              ],
+            )),
             authControllerProvider.overrideWith(_LoggedInAuthController.new),
           ],
           child: _routerApp(provider),
@@ -1457,10 +1495,11 @@ void main() {
       await pump(tester, salon([haircut]));
 
       expect(hint(tester), 'Choose a time');
-      expect(find.byType(BookingStepper), findsOneWidget);
+      expect(find.byType(BookingStepper), findsNothing);
     });
 
-    testWidgets('with masters, the person is asked for before the time', (tester) async {
+    testWidgets('with masters, "Any master" is the default: times show at once and nobody is asked to pick a person',
+        (tester) async {
       await pump(
         tester,
         salon([haircut]),
@@ -1469,10 +1508,88 @@ void main() {
         ],
       );
 
-      expect(hint(tester), 'Choose a specialist');
+      expect(hint(tester), 'Choose a time', reason: 'no "Choose a specialist" step any more');
+      expect(find.text('Choose a specialist'), findsNothing);
+      // The free times are already there, with no master picked first.
+      await tapVisible(tester, find.text('10:00'));
+      await tester.pumpAndSettle();
+      expect(hint(tester), isNull);
+      expect(tester.widget<FactoryButton>(find.widgetWithText(FactoryButton, 'Book')).onPressed, isNotNull);
+    });
+
+    testWidgets('picking a service brings the free times into view (they sit below the choices)', (tester) async {
+      await pump(tester, salon([haircut, colour]), size: const Size(400, 640));
+
+      // Before the pick the times are far below the fold of a phone-sized screen.
+      expect(find.text('10:00').hitTestable(), findsNothing);
+      await tester.tap(find.widgetWithText(FactoryServiceCard, 'Colouring'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('10:00').hitTestable(), findsOneWidget,
+          reason: 'the page scrolled to the times after the service was chosen');
+    });
+
+    testWidgets('services come before the people, and the times come last', (tester) async {
+      await pump(
+        tester,
+        salon([haircut]),
+        masters: const [
+          Master(id: 'master-1', providerId: 'provider-1', displayName: 'Jamie Stylist', active: true),
+        ],
+      );
+
+      await openPeople(tester);
+      double top(Finder f) => tester.getTopLeft(f).dy;
+      await tester.dragUntilVisible(find.text('Available times'), find.byType(Scrollable).first, const Offset(0, -200));
+      final services = top(find.text('Services'));
+      final masters = top(find.text('Masters'));
+      final times = top(find.text('Available times'));
+      expect(services, lessThan(masters), reason: 'the service decides who can do it, so it is asked first');
+      expect(masters, lessThan(times));
+    });
+
+    testWidgets('the people sit behind one "Specialist" row that says "Any master" and opens the full list',
+        (tester) async {
+      await pump(
+        tester,
+        salon([haircut]),
+        masters: const [
+          Master(id: 'master-1', providerId: 'provider-1', displayName: 'Jamie Stylist', active: true),
+        ],
+      );
+
+      final row = find.byKey(const Key('bookingSpecialist'));
+      await tester.ensureVisible(row);
+      expect(find.descendant(of: row, matching: find.text('Any master')), findsOneWidget);
+      expect(find.text('Jamie Stylist'), findsNothing, reason: 'collapsed: the list does not push the times away');
+
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      expect(find.text('Jamie Stylist'), findsOneWidget);
+      expect(find.text('Masters'), findsOneWidget);
+
+      // Opening it again closes it.
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      expect(find.text('Jamie Stylist'), findsNothing);
+    });
+
+    testWidgets('choosing a person still works and keeps asking only for the time', (tester) async {
+      await pump(
+        tester,
+        salon([haircut]),
+        masters: const [
+          Master(id: 'master-1', providerId: 'provider-1', displayName: 'Jamie Stylist', active: true),
+        ],
+      );
+
+      await openPeople(tester);
       await tapVisible(tester, find.text('Jamie Stylist'));
       await tester.pumpAndSettle();
       expect(hint(tester), 'Choose a time');
+      // Choosing closes the list and the one-line row names the person.
+      expect(find.text('Jamie Stylist'), findsOneWidget);
+      expect(find.text('Any master'), findsNothing);
     });
   });
 }
