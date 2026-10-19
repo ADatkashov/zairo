@@ -260,16 +260,12 @@
   "errorReviewLoadFailed": "Пікірді жүктеу мүмкін болмады",
 
   "viewOnMapButton": "Картадан көру",
-  "mastersSectionTitle": "Шеберлер",
   "servicesSectionTitle": "Қызметтер",
   "availableTimesSectionTitle": "Бос уақыттар",
   "noOpenTimesTitle": "Бос уақыт жоқ",
   "errorAvailabilityLoadFailed": "Бос уақытты жүктеу мүмкін болмады.",
   "bookButton": "Брондау",
   "viewPortfolioTooltip": "Портфолионы көру",
-  "mechanicsSectionTitle": "Механиктер",
-  "cleanersSectionTitle": "Тазалаушылар",
-  "staffSectionTitle": "Қызметкерлер",
   "vehiclesSectionTitle": "Сіздің көлігіңіз",
   "vehiclesEmptyTitle": "Әзірге көлік жоқ",
   "vehiclesEmptyMessage": "Автосервиске жазылу үшін көлік қосыңыз.",
@@ -579,8 +575,6 @@
   "staffCabinetAnonymousCustomer": "Клиент",
   "staffCabinetAverageRatingLabel": "Орташа баға",
   "staffCabinetDeclinedBadge": "Иесіне жіберілді",
-  "anyMasterOptionTitle": "Кез келген шебер",
-  "anyMasterOptionSubtitle": "Таңдаған уақытыңызда бос шеберді тағайындаймыз",
   "workforceChooseMasterTitle": "Кімге жазылғыңыз келеді?",
   "workforceChooseMasterMessage": "Бос уақытты көру үшін шеберді немесе «Кез келген шеберді» таңдаңыз.",
   "workforceChooseServiceTitle": "Алдымен қызметті таңдаңыз",
@@ -745,5 +739,7 @@
   "bookingCalendarNextMonth": "Келесі ай",
   "bookingCalendarDayFree": "{day}: бос уақыт бар",
   "bookingCalendarDayBusy": "{day}: бос уақыт жоқ",
-  "bookingSpecialistLabel": "Маман"
+  "bookingSpecialistLabel": "Маман",
+  "bookingSpecialistAnyHint": "Таңдалмады — бос маманды тағайындаймыз",
+  "bookingSpecialistChosenHint": "Қайта басыңыз — біз тағайындаймыз"
 }

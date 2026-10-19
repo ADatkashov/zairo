@@ -805,8 +805,6 @@
   "viewOnMapButton": "View on map",
   "@viewOnMapButton": {"description": "Provider detail screen's button opening the mock map screen."},
 
-  "mastersSectionTitle": "Masters",
-  "@mastersSectionTitle": {"description": "Provider detail screen's masters section header."},
 
   "servicesSectionTitle": "Services",
   "@servicesSectionTitle": {"description": "Provider detail screen's services section header."},
@@ -827,14 +825,8 @@
   "viewPortfolioTooltip": "View portfolio",
   "@viewPortfolioTooltip": {"description": "Tooltip on the master row's portfolio icon button."},
 
-  "mechanicsSectionTitle": "Mechanics",
-  "@mechanicsSectionTitle": {"description": "Provider detail screen's mechanics section header (auto vertical)."},
 
-  "cleanersSectionTitle": "Cleaners",
-  "@cleanersSectionTitle": {"description": "Provider detail screen's cleaners section header (cleaning vertical)."},
 
-  "staffSectionTitle": "Staff",
-  "@staffSectionTitle": {"description": "Provider detail screen's generic staff section header, shown for categories with no dedicated staff module."},
 
   "vehiclesSectionTitle": "Your vehicle",
   "@vehiclesSectionTitle": {"description": "Provider detail screen's vehicle-selection section header (auto vertical)."},
@@ -1767,10 +1759,6 @@
   "@staffCabinetAverageRatingLabel": {"description": "Staff cabinet: AverageRatingLabel"},
   "staffCabinetDeclinedBadge": "Sent to the owner",
   "@staffCabinetDeclinedBadge": {"description": "staffCabinetDeclinedBadge"},
-  "anyMasterOptionTitle": "Any master",
-  "@anyMasterOptionTitle": {"description": "anyMasterOptionTitle"},
-  "anyMasterOptionSubtitle": "We'll assign whoever is free at the time you pick",
-  "@anyMasterOptionSubtitle": {"description": "anyMasterOptionSubtitle"},
   "workforceChooseMasterTitle": "Who would you like to see?",
   "@workforceChooseMasterTitle": {"description": "workforceChooseMasterTitle"},
   "workforceChooseMasterMessage": "Pick a master, or \"Any master\", to see the available times.",
@@ -2040,5 +2028,9 @@
   "bookingCalendarDayBusy": "{day}: no free times",
   "@bookingCalendarDayBusy": {"description": "Accessibility label of a calendar day without free times.", "placeholders": {"day": {"type": "String"}}},
   "bookingSpecialistLabel": "Specialist",
-  "@bookingSpecialistLabel": {"description": "Booking: label of the one-line person picker (master, mechanic, cleaner or staff member)."}
+  "@bookingSpecialistLabel": {"description": "Booking: label of the one-line person picker (master, mechanic, cleaner or staff member)."},
+  "bookingSpecialistAnyHint": "Not chosen — we'll assign whoever is free",
+  "@bookingSpecialistAnyHint": {"description": "Booking: caption under the person strip when nobody is picked (any free person is assigned)."},
+  "bookingSpecialistChosenHint": "Tap again to let us choose",
+  "@bookingSpecialistChosenHint": {"description": "Booking: caption under the person strip when someone is picked."}
 }
