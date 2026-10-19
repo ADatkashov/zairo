@@ -1,3 +1,5 @@
+# УСТАРЕЛО: бизнес больше не может создавать услуги «с нуля» (нужен catalogServiceId).
+# Актуальный сид — scripts/seed-demo-data.sh.
 name: Seed Demo Businesses
 
 # One-shot (or re-runnable) helper that populates the live backend with a

@@ -13,7 +13,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -53,9 +52,9 @@ public class CleanerController {
     @PostMapping("/api/v1/cleaning/providers/{providerId}/cleaners")
     @ResponseStatus(HttpStatus.CREATED)
     public CleanerResponse create(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            @Valid @RequestBody CreateCleanerRequest request, HttpServletRequest httpRequest) {
+            @Valid @RequestBody CreateCleanerRequest request) {
         Cleaner cleaner = cleanerDirectoryService.createCleaner(providerId, request.displayName(), request.bio(),
-                request.photoUrl(), CurrentUser.requireUserId(httpRequest));
+                request.photoUrl(), CurrentUser.requireUserId());
         return CleanerResponse.from(cleaner);
     }
 
@@ -72,9 +71,9 @@ public class CleanerController {
     @PostMapping("/api/v1/cleaning/providers/{providerId}/cleaners/from-user")
     @ResponseStatus(HttpStatus.CREATED)
     public CleanerResponse createFromUser(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            @Valid @RequestBody CreateCleanerFromUserRequest request, HttpServletRequest httpRequest) {
+            @Valid @RequestBody CreateCleanerFromUserRequest request) {
         return CleanerResponse.from(cleanerDirectoryService.createCleanerFromUser(providerId, request.userId(),
-                CurrentUser.requireUserId(httpRequest)));
+                CurrentUser.requireUserId()));
     }
 
     @Operation(summary = "List a provider's cleaners", description = "Active cleaners by default. Pass "
@@ -105,9 +104,8 @@ public class CleanerController {
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/api/v1/cleaning/cleaners/{cleanerId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deactivate(@Parameter(description = "The cleaner's id.") @PathVariable UUID cleanerId,
-            HttpServletRequest httpRequest) {
-        cleanerDirectoryService.deactivateCleaner(cleanerId, CurrentUser.requireUserId(httpRequest));
+    public void deactivate(@Parameter(description = "The cleaner's id.") @PathVariable UUID cleanerId) {
+        cleanerDirectoryService.deactivateCleaner(cleanerId, CurrentUser.requireUserId());
     }
 
     @Operation(summary = "Reactivate a cleaner", description = "Owner-only, idempotent — undoes deactivate().")
@@ -117,10 +115,9 @@ public class CleanerController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/cleaning/cleaners/{cleanerId}/reactivate")
-    public CleanerResponse reactivate(@Parameter(description = "The cleaner's id.") @PathVariable UUID cleanerId,
-            HttpServletRequest httpRequest) {
+    public CleanerResponse reactivate(@Parameter(description = "The cleaner's id.") @PathVariable UUID cleanerId) {
         return CleanerResponse.from(
-                cleanerDirectoryService.reactivateCleaner(cleanerId, CurrentUser.requireUserId(httpRequest)));
+                cleanerDirectoryService.reactivateCleaner(cleanerId, CurrentUser.requireUserId()));
     }
 
     @Operation(summary = "Update a cleaner's photo", description = "Owner-only. Upload the file via POST "
@@ -133,9 +130,9 @@ public class CleanerController {
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/api/v1/cleaning/cleaners/{cleanerId}/photo")
     public CleanerResponse updatePhoto(@Parameter(description = "The cleaner's id.") @PathVariable UUID cleanerId,
-            @Valid @RequestBody UpdatePhotoRequest request, HttpServletRequest httpRequest) {
+            @Valid @RequestBody UpdatePhotoRequest request) {
         return CleanerResponse.from(cleanerDirectoryService.updateCleanerPhoto(cleanerId, request.photoUrl(),
-                CurrentUser.requireUserId(httpRequest)));
+                CurrentUser.requireUserId()));
     }
 
     @Operation(summary = "Link a service to a cleaner", description = "Owner-only. Marks that this cleaner "
@@ -150,9 +147,8 @@ public class CleanerController {
     @PostMapping("/api/v1/cleaning/cleaners/{cleanerId}/services/{serviceId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void linkService(@Parameter(description = "The cleaner's id.") @PathVariable UUID cleanerId,
-            @Parameter(description = "The service's id.") @PathVariable UUID serviceId,
-            HttpServletRequest httpRequest) {
-        cleanerDirectoryService.linkService(cleanerId, serviceId, CurrentUser.requireUserId(httpRequest));
+            @Parameter(description = "The service's id.") @PathVariable UUID serviceId) {
+        cleanerDirectoryService.linkService(cleanerId, serviceId, CurrentUser.requireUserId());
     }
 
     @Operation(summary = "Unlink a service from a cleaner", description = "Owner-only.")
@@ -163,9 +159,8 @@ public class CleanerController {
     @DeleteMapping("/api/v1/cleaning/cleaners/{cleanerId}/services/{serviceId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void unlinkService(@Parameter(description = "The cleaner's id.") @PathVariable UUID cleanerId,
-            @Parameter(description = "The service's id.") @PathVariable UUID serviceId,
-            HttpServletRequest httpRequest) {
-        cleanerDirectoryService.unlinkService(cleanerId, serviceId, CurrentUser.requireUserId(httpRequest));
+            @Parameter(description = "The service's id.") @PathVariable UUID serviceId) {
+        cleanerDirectoryService.unlinkService(cleanerId, serviceId, CurrentUser.requireUserId());
     }
 
     @Operation(summary = "List the services a cleaner performs", description = "No authentication required.")

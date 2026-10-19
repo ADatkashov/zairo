@@ -436,10 +436,22 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
         children: [
           if (booking.serviceTitle != null || booking.startsAt != null)
             _BookingHeadline(booking: booking),
+          // Full card width: beside a status badge the amounts wrapped into a
+          // narrow column and the appointment time broke onto two lines.
+          BookingAmounts(booking: booking, compact: true),
+          const SizedBox(height: FactorySpacing.space2),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(child: BookingAmounts(booking: booking, compact: true)),
+              Flexible(
+                child: Text(
+                  l10n.bookedOnLabel(
+                    formatMonthDayTime(l10n, booking.createdAt.toLocal()),
+                  ),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: colors.textTertiary),
+                ),
+              ),
               const SizedBox(width: FactorySpacing.space2),
               Flexible(
                 child: FactoryBadge(
@@ -448,14 +460,6 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: FactorySpacing.space2),
-          Text(
-            l10n.bookedOnLabel(
-              formatMonthDayTime(l10n, booking.createdAt.toLocal()),
-            ),
-            style: Theme.of(context).textTheme.bodySmall
-                ?.copyWith(color: colors.textTertiary),
           ),
           const SizedBox(height: FactorySpacing.space2),
           PaymentStatusChip(bookingId: booking.id),

@@ -13,7 +13,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -58,9 +57,9 @@ public class StaffController {
     @PostMapping("/api/v1/providers/{providerId}/staff")
     @ResponseStatus(HttpStatus.CREATED)
     public StaffResponse create(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            @Valid @RequestBody CreateStaffRequest request, HttpServletRequest httpRequest) {
+            @Valid @RequestBody CreateStaffRequest request) {
         Staff staff = staffDirectoryService.createStaff(providerId, request.displayName(), request.bio(),
-                request.photoUrl(), CurrentUser.requireUserId(httpRequest));
+                request.photoUrl(), CurrentUser.requireUserId());
         return StaffResponse.from(staff);
     }
 
@@ -77,9 +76,9 @@ public class StaffController {
     @PostMapping("/api/v1/providers/{providerId}/staff/from-user")
     @ResponseStatus(HttpStatus.CREATED)
     public StaffResponse createFromUser(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            @Valid @RequestBody CreateStaffFromUserRequest request, HttpServletRequest httpRequest) {
+            @Valid @RequestBody CreateStaffFromUserRequest request) {
         return StaffResponse.from(staffDirectoryService.createStaffFromUser(providerId, request.userId(),
-                CurrentUser.requireUserId(httpRequest)));
+                CurrentUser.requireUserId()));
     }
 
     @Operation(summary = "List a provider's staff", description = "Active staff by default. Pass "
@@ -110,9 +109,8 @@ public class StaffController {
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/api/v1/staff/{staffId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deactivate(@Parameter(description = "The staff member's id.") @PathVariable UUID staffId,
-            HttpServletRequest httpRequest) {
-        staffDirectoryService.deactivateStaff(staffId, CurrentUser.requireUserId(httpRequest));
+    public void deactivate(@Parameter(description = "The staff member's id.") @PathVariable UUID staffId) {
+        staffDirectoryService.deactivateStaff(staffId, CurrentUser.requireUserId());
     }
 
     @Operation(summary = "Reactivate a staff member", description = "Owner-only, idempotent — undoes deactivate().")
@@ -122,10 +120,9 @@ public class StaffController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/staff/{staffId}/reactivate")
-    public StaffResponse reactivate(@Parameter(description = "The staff member's id.") @PathVariable UUID staffId,
-            HttpServletRequest httpRequest) {
+    public StaffResponse reactivate(@Parameter(description = "The staff member's id.") @PathVariable UUID staffId) {
         return StaffResponse.from(
-                staffDirectoryService.reactivateStaff(staffId, CurrentUser.requireUserId(httpRequest)));
+                staffDirectoryService.reactivateStaff(staffId, CurrentUser.requireUserId()));
     }
 
     @Operation(summary = "Update a staff member's photo", description = "Owner-only. Upload the file via POST "
@@ -138,9 +135,9 @@ public class StaffController {
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/api/v1/staff/{staffId}/photo")
     public StaffResponse updatePhoto(@Parameter(description = "The staff member's id.") @PathVariable UUID staffId,
-            @Valid @RequestBody UpdatePhotoRequest request, HttpServletRequest httpRequest) {
+            @Valid @RequestBody UpdatePhotoRequest request) {
         return StaffResponse.from(staffDirectoryService.updateStaffPhoto(staffId, request.photoUrl(),
-                CurrentUser.requireUserId(httpRequest)));
+                CurrentUser.requireUserId()));
     }
 
     @Operation(summary = "Link a service to a staff member", description = "Owner-only. Marks that this staff "
@@ -155,9 +152,8 @@ public class StaffController {
     @PostMapping("/api/v1/staff/{staffId}/services/{serviceId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void linkService(@Parameter(description = "The staff member's id.") @PathVariable UUID staffId,
-            @Parameter(description = "The service's id.") @PathVariable UUID serviceId,
-            HttpServletRequest httpRequest) {
-        staffDirectoryService.linkService(staffId, serviceId, CurrentUser.requireUserId(httpRequest));
+            @Parameter(description = "The service's id.") @PathVariable UUID serviceId) {
+        staffDirectoryService.linkService(staffId, serviceId, CurrentUser.requireUserId());
     }
 
     @Operation(summary = "Unlink a service from a staff member", description = "Owner-only.")
@@ -168,9 +164,8 @@ public class StaffController {
     @DeleteMapping("/api/v1/staff/{staffId}/services/{serviceId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void unlinkService(@Parameter(description = "The staff member's id.") @PathVariable UUID staffId,
-            @Parameter(description = "The service's id.") @PathVariable UUID serviceId,
-            HttpServletRequest httpRequest) {
-        staffDirectoryService.unlinkService(staffId, serviceId, CurrentUser.requireUserId(httpRequest));
+            @Parameter(description = "The service's id.") @PathVariable UUID serviceId) {
+        staffDirectoryService.unlinkService(staffId, serviceId, CurrentUser.requireUserId());
     }
 
     @Operation(summary = "List the services a staff member performs", description = "No authentication required.")

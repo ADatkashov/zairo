@@ -3,6 +3,7 @@ package com.zairo.factory.payments;
 import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.payments.OfflinePaymentDtos.RecordPaymentRequest;
 import com.zairo.factory.payments.PaymentDtos.PaymentResponse;
+import com.zairo.factory.platformadmin.PlatformAdminOnly;
 import com.zairo.factory.platformadmin.PlatformCurrentAdmin;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -11,7 +12,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -69,8 +69,8 @@ public class PaymentsController {
     @PostMapping("/api/v1/bookings/{bookingId}/payments")
     @ResponseStatus(HttpStatus.CREATED)
     public PaymentResponse createPayment(@Parameter(description = "The booking's id.") @PathVariable UUID bookingId,
-            @RequestBody(required = false) CreatePaymentRequest request, HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+            @RequestBody(required = false) CreatePaymentRequest request) {
+        UUID callerId = CurrentUser.requireUserId();
         UUID savedCardId = request == null ? null : request.savedCardId();
         return toResponse(paymentsService.createPayment(bookingId, callerId, savedCardId));
     }
@@ -87,9 +87,8 @@ public class PaymentsController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/bookings/{bookingId}/payments")
     public PaymentResponse getPaymentForBooking(
-            @Parameter(description = "The booking's id.") @PathVariable UUID bookingId,
-            HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+            @Parameter(description = "The booking's id.") @PathVariable UUID bookingId) {
+        UUID callerId = CurrentUser.requireUserId();
         return toResponse(paymentsService.getPaymentForBooking(bookingId, callerId));
     }
 
@@ -108,9 +107,8 @@ public class PaymentsController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/payments/{paymentId}/refund")
-    public PaymentResponse refund(@Parameter(description = "The payment's id.") @PathVariable UUID paymentId,
-            HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requirePlatformAdmin(httpRequest);
+    @PlatformAdminOnly
+    public PaymentResponse refund(@Parameter(description = "The payment's id.") @PathVariable UUID paymentId) {
         return toResponse(paymentsService.refundPayment(paymentId));
     }
 
@@ -132,8 +130,8 @@ public class PaymentsController {
     @ResponseStatus(HttpStatus.CREATED)
     public OfflinePaymentDtos.PaymentResponse recordOfflinePayment(
             @Parameter(description = "The booking's id.") @PathVariable UUID bookingId,
-            @Valid @RequestBody RecordPaymentRequest request, HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+            @Valid @RequestBody RecordPaymentRequest request) {
+        UUID callerId = CurrentUser.requireUserId();
         Payment payment = paymentsService.recordOfflinePayment(bookingId, request.amount(), request.method(), callerId);
         return OfflinePaymentDtos.PaymentResponse.from(payment);
     }

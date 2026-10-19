@@ -3,6 +3,7 @@ package com.zairo.factory.city;
 import com.zairo.factory.city.CityDtos.CreateCityRequest;
 import com.zairo.factory.city.CityDtos.CityDto;
 import com.zairo.factory.city.CityDtos.UpdateCityRequest;
+import com.zairo.factory.platformadmin.PlatformAdminOnly;
 import com.zairo.factory.platformadmin.PlatformCurrentAdmin;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -11,7 +12,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -49,11 +49,10 @@ public class CityAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PlatformAdminOnly
     public CityDto createCity(
-            @Valid @RequestBody CreateCityRequest request,
-            HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requireAdminId(httpRequest);
-        PlatformCurrentAdmin.requirePlatformAdmin(httpRequest);
+            @Valid @RequestBody CreateCityRequest request) {
+        PlatformCurrentAdmin.requireAdminId();
         return cityService.createCity(request);
     }
 
@@ -66,13 +65,12 @@ public class CityAdminController {
     @ApiResponse(responseCode = "404", description = "City not found")
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/{code}")
+    @PlatformAdminOnly
     public CityDto updateCity(
             @Parameter(description = "City code (e.g., 'almaty')", example = "almaty")
             @PathVariable String code,
-            @Valid @RequestBody UpdateCityRequest request,
-            HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requireAdminId(httpRequest);
-        PlatformCurrentAdmin.requirePlatformAdmin(httpRequest);
+            @Valid @RequestBody UpdateCityRequest request) {
+        PlatformCurrentAdmin.requireAdminId();
         return cityService.updateCity(code, request);
     }
 
@@ -85,12 +83,11 @@ public class CityAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/{code}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PlatformAdminOnly
     public void deleteCity(
             @Parameter(description = "City code (e.g., 'almaty')", example = "almaty")
-            @PathVariable String code,
-            HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requireAdminId(httpRequest);
-        PlatformCurrentAdmin.requirePlatformAdmin(httpRequest);
+            @PathVariable String code) {
+        PlatformCurrentAdmin.requireAdminId();
         cityService.deleteCity(code);
     }
 }

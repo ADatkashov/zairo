@@ -14,7 +14,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -53,8 +52,8 @@ public class WorkerScheduleController {
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/providers/{providerId}/workers")
-    public List<WorkerSummaryResponse> workers(@PathVariable UUID providerId, HttpServletRequest request) {
-        return scheduleService.workers(providerId, CurrentUser.requireUserId(request));
+    public List<WorkerSummaryResponse> workers(@PathVariable UUID providerId) {
+        return scheduleService.workers(providerId, CurrentUser.requireUserId());
     }
 
     @Operation(summary = "A worker's rating and reviews", description = "Owner-only. Average rating (the person's own "
@@ -65,10 +64,9 @@ public class WorkerScheduleController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/providers/{providerId}/workers/{workerId}/rating")
-    public WorkerPortalDtos.WorkerRatingResponse rating(@PathVariable UUID providerId, @PathVariable UUID workerId,
-            HttpServletRequest request) {
+    public WorkerPortalDtos.WorkerRatingResponse rating(@PathVariable UUID providerId, @PathVariable UUID workerId) {
         return portalService.ratingOf(
-                scheduleService.requireOwnerOfWorker(providerId, workerId, CurrentUser.requireUserId(request)));
+                scheduleService.requireOwnerOfWorker(providerId, workerId, CurrentUser.requireUserId()));
     }
 
     @Operation(summary = "A worker's weekly schedule", description = "Owner-only. configured=false means the worker "
@@ -78,9 +76,8 @@ public class WorkerScheduleController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/providers/{providerId}/workers/{workerId}/schedule")
-    public ScheduleResponse getSchedule(@PathVariable UUID providerId, @PathVariable UUID workerId,
-            HttpServletRequest request) {
-        return scheduleService.get(providerId, workerId, CurrentUser.requireUserId(request));
+    public ScheduleResponse getSchedule(@PathVariable UUID providerId, @PathVariable UUID workerId) {
+        return scheduleService.get(providerId, workerId, CurrentUser.requireUserId());
     }
 
     @Operation(summary = "Set a worker's weekly schedule", description = "Owner-only. Replaces the weekly hours and "
@@ -93,8 +90,8 @@ public class WorkerScheduleController {
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/api/v1/providers/{providerId}/workers/{workerId}/schedule")
     public SaveScheduleResult saveSchedule(@PathVariable UUID providerId, @PathVariable UUID workerId,
-            @Valid @RequestBody SaveScheduleRequest body, HttpServletRequest request) {
-        return scheduleService.save(providerId, workerId, CurrentUser.requireUserId(request), body);
+            @Valid @RequestBody SaveScheduleRequest body) {
+        return scheduleService.save(providerId, workerId, CurrentUser.requireUserId(), body);
     }
 
     @Operation(summary = "Remove a worker's own schedule", description = "Owner-only. The worker goes back to the "
@@ -105,9 +102,8 @@ public class WorkerScheduleController {
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/api/v1/providers/{providerId}/workers/{workerId}/schedule")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteSchedule(@PathVariable UUID providerId, @PathVariable UUID workerId,
-            HttpServletRequest request) {
-        scheduleService.delete(providerId, workerId, CurrentUser.requireUserId(request));
+    public void deleteSchedule(@PathVariable UUID providerId, @PathVariable UUID workerId) {
+        scheduleService.delete(providerId, workerId, CurrentUser.requireUserId());
     }
 
     @Operation(summary = "A worker's upcoming time off", description = "Owner-only.")
@@ -116,9 +112,8 @@ public class WorkerScheduleController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/providers/{providerId}/workers/{workerId}/time-off")
-    public List<TimeOffResponse> listTimeOff(@PathVariable UUID providerId, @PathVariable UUID workerId,
-            HttpServletRequest request) {
-        return timeOffService.list(providerId, workerId, CurrentUser.requireUserId(request));
+    public List<TimeOffResponse> listTimeOff(@PathVariable UUID providerId, @PathVariable UUID workerId) {
+        return timeOffService.list(providerId, workerId, CurrentUser.requireUserId());
     }
 
     @Operation(summary = "The master isn't in", description = "Owner-only. Closes the worker's availability for the "
@@ -132,8 +127,8 @@ public class WorkerScheduleController {
     @PostMapping("/api/v1/providers/{providerId}/workers/{workerId}/time-off")
     @ResponseStatus(HttpStatus.CREATED)
     public TimeOffCreatedResponse createTimeOff(@PathVariable UUID providerId, @PathVariable UUID workerId,
-            @Valid @RequestBody TimeOffRequest body, HttpServletRequest request) {
-        return timeOffService.createByOwner(providerId, workerId, CurrentUser.requireUserId(request), body);
+            @Valid @RequestBody TimeOffRequest body) {
+        return timeOffService.createByOwner(providerId, workerId, CurrentUser.requireUserId(), body);
     }
 
     @Operation(summary = "The worker is available again", description = "Owner-only. Removes a time-off period.")
@@ -143,9 +138,8 @@ public class WorkerScheduleController {
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/api/v1/providers/{providerId}/time-off/{timeOffId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteTimeOff(@PathVariable UUID providerId, @PathVariable UUID timeOffId,
-            HttpServletRequest request) {
-        timeOffService.delete(providerId, timeOffId, CurrentUser.requireUserId(request));
+    public void deleteTimeOff(@PathVariable UUID providerId, @PathVariable UUID timeOffId) {
+        timeOffService.delete(providerId, timeOffId, CurrentUser.requireUserId());
     }
 
     @Operation(summary = "Worker rules of a business", description = "Public: the booking screen needs "
@@ -165,7 +159,7 @@ public class WorkerScheduleController {
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/api/v1/providers/{providerId}/workforce-settings")
     public WorkforceSettingsResponse updateSettings(@PathVariable UUID providerId,
-            @RequestBody UpdateWorkforceSettingsRequest body, HttpServletRequest request) {
-        return settingsService.update(providerId, CurrentUser.requireUserId(request), body);
+            @RequestBody UpdateWorkforceSettingsRequest body) {
+        return settingsService.update(providerId, CurrentUser.requireUserId(), body);
     }
 }
