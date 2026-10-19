@@ -15,7 +15,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -55,9 +54,9 @@ public class MasterController {
     @PostMapping("/api/v1/beauty/providers/{providerId}/masters")
     @ResponseStatus(HttpStatus.CREATED)
     public MasterResponse create(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            @Valid @RequestBody CreateMasterRequest request, HttpServletRequest httpRequest) {
+            @Valid @RequestBody CreateMasterRequest request) {
         Master master = masterDirectoryService.createMaster(providerId, request.displayName(), request.bio(),
-                request.photoUrl(), CurrentUser.requireUserId(httpRequest));
+                request.photoUrl(), CurrentUser.requireUserId());
         return MasterResponse.from(master);
     }
 
@@ -74,9 +73,9 @@ public class MasterController {
     @PostMapping("/api/v1/beauty/providers/{providerId}/masters/from-user")
     @ResponseStatus(HttpStatus.CREATED)
     public MasterResponse createFromUser(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            @Valid @RequestBody CreateMasterFromUserRequest request, HttpServletRequest httpRequest) {
+            @Valid @RequestBody CreateMasterFromUserRequest request) {
         return MasterResponse.from(masterDirectoryService.createMasterFromUser(providerId, request.userId(),
-                CurrentUser.requireUserId(httpRequest)));
+                CurrentUser.requireUserId()));
     }
 
     @Operation(summary = "List a provider's masters", description = "Active masters by default. Pass "
@@ -107,9 +106,8 @@ public class MasterController {
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/api/v1/beauty/masters/{masterId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deactivate(@Parameter(description = "The master's id.") @PathVariable UUID masterId,
-            HttpServletRequest httpRequest) {
-        masterDirectoryService.deactivateMaster(masterId, CurrentUser.requireUserId(httpRequest));
+    public void deactivate(@Parameter(description = "The master's id.") @PathVariable UUID masterId) {
+        masterDirectoryService.deactivateMaster(masterId, CurrentUser.requireUserId());
     }
 
     @Operation(summary = "Reactivate a master", description = "Owner-only, idempotent — undoes deactivate().")
@@ -119,10 +117,9 @@ public class MasterController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/beauty/masters/{masterId}/reactivate")
-    public MasterResponse reactivate(@Parameter(description = "The master's id.") @PathVariable UUID masterId,
-            HttpServletRequest httpRequest) {
+    public MasterResponse reactivate(@Parameter(description = "The master's id.") @PathVariable UUID masterId) {
         return MasterResponse.from(
-                masterDirectoryService.reactivateMaster(masterId, CurrentUser.requireUserId(httpRequest)));
+                masterDirectoryService.reactivateMaster(masterId, CurrentUser.requireUserId()));
     }
 
     @Operation(summary = "Update a master's photo", description = "Owner-only. Upload the file via POST "
@@ -135,9 +132,9 @@ public class MasterController {
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/api/v1/beauty/masters/{masterId}/photo")
     public MasterResponse updatePhoto(@Parameter(description = "The master's id.") @PathVariable UUID masterId,
-            @Valid @RequestBody UpdatePhotoRequest request, HttpServletRequest httpRequest) {
+            @Valid @RequestBody UpdatePhotoRequest request) {
         return MasterResponse.from(masterDirectoryService.updateMasterPhoto(masterId, request.photoUrl(),
-                CurrentUser.requireUserId(httpRequest)));
+                CurrentUser.requireUserId()));
     }
 
     @Operation(summary = "Add a portfolio photo", description = "Owner-only. Upload the file via POST "
@@ -152,9 +149,9 @@ public class MasterController {
     @ResponseStatus(HttpStatus.CREATED)
     public PortfolioItemResponse addPortfolioItem(
             @Parameter(description = "The master's id.") @PathVariable UUID masterId,
-            @Valid @RequestBody AddPortfolioItemRequest request, HttpServletRequest httpRequest) {
+            @Valid @RequestBody AddPortfolioItemRequest request) {
         return PortfolioItemResponse.from(masterDirectoryService.addPortfolioItem(masterId, request.imageUrl(),
-                request.caption(), CurrentUser.requireUserId(httpRequest)));
+                request.caption(), CurrentUser.requireUserId()));
     }
 
     @Operation(summary = "List a master's portfolio photos", description = "No authentication required.")
@@ -177,9 +174,8 @@ public class MasterController {
     @PostMapping("/api/v1/beauty/masters/{masterId}/services/{serviceId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void linkService(@Parameter(description = "The master's id.") @PathVariable UUID masterId,
-            @Parameter(description = "The service's id.") @PathVariable UUID serviceId,
-            HttpServletRequest httpRequest) {
-        masterDirectoryService.linkService(masterId, serviceId, CurrentUser.requireUserId(httpRequest));
+            @Parameter(description = "The service's id.") @PathVariable UUID serviceId) {
+        masterDirectoryService.linkService(masterId, serviceId, CurrentUser.requireUserId());
     }
 
     @Operation(summary = "Unlink a service from a master", description = "Owner-only.")
@@ -190,9 +186,8 @@ public class MasterController {
     @DeleteMapping("/api/v1/beauty/masters/{masterId}/services/{serviceId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void unlinkService(@Parameter(description = "The master's id.") @PathVariable UUID masterId,
-            @Parameter(description = "The service's id.") @PathVariable UUID serviceId,
-            HttpServletRequest httpRequest) {
-        masterDirectoryService.unlinkService(masterId, serviceId, CurrentUser.requireUserId(httpRequest));
+            @Parameter(description = "The service's id.") @PathVariable UUID serviceId) {
+        masterDirectoryService.unlinkService(masterId, serviceId, CurrentUser.requireUserId());
     }
 
     @Operation(summary = "List the services a master performs", description = "No authentication required.")

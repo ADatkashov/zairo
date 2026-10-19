@@ -5,6 +5,7 @@ import com.zairo.factory.booking.AvailabilitySlotDtos.AvailabilitySlotResponse;
 import com.zairo.factory.booking.AvailabilitySlotDtos.CreateAvailabilitySlotRequest;
 import com.zairo.factory.booking.AvailabilitySlotDtos.RecurringScheduleRequest;
 import com.zairo.factory.booking.AvailabilitySlotDtos.RecurringScheduleResult;
+import com.zairo.factory.providers.OwnsProvider;
 import com.zairo.factory.providers.ProviderOwnership;
 import com.zairo.factory.subscriptions.SubscriptionLimitService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,7 +15,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -55,9 +55,9 @@ public class AvailabilitySlotController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/providers/{providerId}/availability-slots")
     @ResponseStatus(HttpStatus.CREATED)
+    @OwnsProvider
     public AvailabilitySlotResponse create(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            @Valid @RequestBody CreateAvailabilitySlotRequest request, HttpServletRequest httpRequest) {
-        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
+            @Valid @RequestBody CreateAvailabilitySlotRequest request) {
         AvailabilitySlot slot = new AvailabilitySlot(UUID.randomUUID(), providerId, request.startsAt(),
                 request.endsAt(), AvailabilityStatus.OPEN, request.employeeId());
         return AvailabilitySlotResponse.from(availabilitySlotRepository.save(slot));
@@ -82,11 +82,11 @@ public class AvailabilitySlotController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/providers/{providerId}/availability-slots/recurring")
     @ResponseStatus(HttpStatus.CREATED)
+    @OwnsProvider
     public RecurringScheduleResult createRecurring(
             @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            @RequestBody RecurringScheduleRequest request, HttpServletRequest httpRequest) {
-        UUID ownerId = CurrentUser.requireUserId(httpRequest);
-        providerOwnership.requireOwner(providerId, ownerId);
+            @RequestBody RecurringScheduleRequest request) {
+        UUID ownerId = CurrentUser.requireUserId();
         subscriptionLimitService.checkRecurringScheduleAllowed(ownerId);
         return recurringScheduleService.generate(providerId, request);
     }
@@ -117,12 +117,11 @@ public class AvailabilitySlotController {
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/api/v1/availability-slots/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@Parameter(description = "The slot's id.") @PathVariable UUID id,
-            HttpServletRequest httpRequest) {
+    @OwnsSlot
+    public void delete(@Parameter(description = "The slot's id.") @PathVariable UUID id) {
         AvailabilitySlot slot = availabilitySlotRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability slot not found: "
                         + id));
-        providerOwnership.requireOwner(slot.getProviderId(), CurrentUser.requireUserId(httpRequest));
         if (slot.getStatus() != AvailabilityStatus.OPEN) {
             throw new SlotNotAvailableException("Only an open slot can be removed: " + id);
         }

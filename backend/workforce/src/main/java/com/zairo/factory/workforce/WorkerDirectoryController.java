@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -55,7 +54,7 @@ public class WorkerDirectoryController {
     @ApiResponse(responseCode = "404", description = "No such booking, or it has no named person.")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/bookings/{bookingId}/worker")
-    public BookingWorkerResponse ofBooking(@PathVariable UUID bookingId, HttpServletRequest request) {
-        return service.workerOfBooking(bookingId, CurrentUser.requireUserId(request));
+    public BookingWorkerResponse ofBooking(@PathVariable UUID bookingId) {
+        return service.workerOfBooking(bookingId, CurrentUser.requireUserId());
     }
 }

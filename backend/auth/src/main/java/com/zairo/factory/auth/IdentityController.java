@@ -92,8 +92,8 @@ public class IdentityController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/auth/identities/google")
-    public UserSummary linkGoogle(@Valid @RequestBody GoogleAuthRequest request, HttpServletRequest httpRequest) {
-        UUID userId = CurrentUser.requireUserId(httpRequest);
+    public UserSummary linkGoogle(@Valid @RequestBody GoogleAuthRequest request) {
+        UUID userId = CurrentUser.requireUserId();
         return identityService.linkGoogle(userId, request.idToken());
     }
 
@@ -122,8 +122,8 @@ public class IdentityController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/auth/identities/apple")
-    public UserSummary linkApple(@Valid @RequestBody AppleAuthRequest request, HttpServletRequest httpRequest) {
-        UUID userId = CurrentUser.requireUserId(httpRequest);
+    public UserSummary linkApple(@Valid @RequestBody AppleAuthRequest request) {
+        UUID userId = CurrentUser.requireUserId();
         return identityService.linkApple(userId, request.identityToken());
     }
 
@@ -151,8 +151,8 @@ public class IdentityController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/auth/identities/facebook")
-    public UserSummary linkFacebook(@Valid @RequestBody FacebookAuthRequest request, HttpServletRequest httpRequest) {
-        UUID userId = CurrentUser.requireUserId(httpRequest);
+    public UserSummary linkFacebook(@Valid @RequestBody FacebookAuthRequest request) {
+        UUID userId = CurrentUser.requireUserId();
         return identityService.linkFacebook(userId, request.accessToken());
     }
 
@@ -200,8 +200,8 @@ public class IdentityController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/auth/identities/phone/verify-otp")
-    public UserSummary linkPhone(@Valid @RequestBody VerifyPhoneOtpRequest request, HttpServletRequest httpRequest) {
-        UUID userId = CurrentUser.requireUserId(httpRequest);
+    public UserSummary linkPhone(@Valid @RequestBody VerifyPhoneOtpRequest request) {
+        UUID userId = CurrentUser.requireUserId();
         return identityService.linkPhone(userId, request.phone(), request.code());
     }
 
