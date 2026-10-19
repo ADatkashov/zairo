@@ -6,11 +6,22 @@ name: Backend CI
 # needed here. MinIO is NOT Testcontainerized (see StorageApiTests'
 # javadoc), so it's started manually below with the same image/creds
 # infrastructure/docker-compose.yml uses for local dev.
+#
+# MINUTES: the repo is private, so this draws on the free 2000 Actions minutes a
+# month. It therefore runs ONLY on a push to `test` (i.e. after you merge
+# develop -> test) or when started by hand. Not on pull requests (a PR into
+# `test` plus the merge push would count twice), not on develop/master, and not
+# for changes that touch no code. See docs/ci-cd.md "Actions minutes".
 on:
-  pull_request:
-    branches: [develop, test, master]
   push:
-    branches: [develop, test, master]
+    branches: [test]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "scripts/**"
+      - ".circleci/**"
+      - ".github/dependabot.yml"
+  workflow_dispatch:
 
 concurrency:
   group: backend-ci-${{ github.ref }}
@@ -23,6 +34,8 @@ jobs:
   backend:
     name: backend (build + test)
     runs-on: ubuntu-latest
+    # A hung Testcontainers/Gradle run must not burn minutes for hours.
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v7
