@@ -84,17 +84,24 @@ async function customer() {
   await shot(page, 'user-05-home');
   await tap(page, 'Search', 3500);
   await tap(page, 'Book', 5000);
-  await scroll(page, 900);
-  await tap(page, 'Женская стрижка');
-  await scroll(page, -250);
-  await tap(page, 'Айгуль Стилист', 2500);
-  await scroll(page, 1100);
+  await scroll(page, 450);
+  await shot(page, 'user-06a-services');
+  // Picking a service brings the free times into view by itself ("Any master" is already chosen).
+  await tap(page, 'Женская стрижка', 3500);
   await shot(page, 'user-06-times');
-  // Первый свободный час (а не фиксированный: список зависит от текущего времени).
+  await tap(page, 'Calendar', 1500);
+  await shot(page, 'user-06b-calendar');
+  // The first day that has free times ("…: free times"; busy days read "…: no free times").
+  const day = await page.evaluateHandle((roles) => [...document.querySelectorAll(roles)]
+    .find((e) => /: free times$/.test((e.getAttribute('aria-label') || e.textContent || '').trim())), ROLES);
+  await day.asElement().click({ timeout: 8000 });
+  await page.waitForTimeout(1800);
+  // First free time of the chosen day (the "Soonest" chips start with the day, the list with the time).
   const chip = await page.evaluateHandle((roles) => [...document.querySelectorAll(roles)]
     .find((e) => /^\d{2}:\d{2}/.test((e.getAttribute('aria-label') || e.textContent || '').trim())), ROLES);
   await chip.asElement().click({ timeout: 8000 });
   await page.waitForTimeout(1500);
+  await shot(page, 'user-06c-time-picked');
   await tap(page, 'Book', 4000);
   await shot(page, 'user-07-review-booking');
   await tap(page, 'Confirm booking', 6000);
