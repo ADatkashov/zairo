@@ -189,10 +189,10 @@ public class LoyaltyAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/business/{providerId}/loyalty/customers/{userId}/greet")
     @ResponseStatus(HttpStatus.CREATED)
+    @OwnsProvider
     public LoyaltyAdminDtos.GreetingResponse greet(@PathVariable UUID providerId, @PathVariable UUID userId,
             @RequestBody LoyaltyAdminDtos.SendGreetingRequest request, HttpServletRequest httpRequest) {
         UUID ownerId = CurrentUser.requireUserId(httpRequest);
-        providerOwnership.requireOwner(providerId, ownerId);
         LoyaltyGreeting greeting = greetingService.send(providerId, userId, ownerId, request.message(),
                 request.bonusPoints() == null ? 0 : request.bonusPoints());
         return new LoyaltyAdminDtos.GreetingResponse(greeting.getId(), greeting.getBonusPoints(),
@@ -231,10 +231,10 @@ public class LoyaltyAdminController {
             credits points; negative debits them (rejected with 409 if it would take the balance negative).""")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/business/{providerId}/loyalty/customers/{userId}/adjust")
+    @OwnsProvider
     public LoyaltyDtos.LoyaltyTransactionResponse adjustPoints(@PathVariable UUID providerId,
             @PathVariable UUID userId, @RequestBody AdjustPointsRequest request, HttpServletRequest httpRequest) {
         UUID actorId = CurrentUser.requireUserId(httpRequest);
-        providerOwnership.requireOwner(providerId, actorId);
         LoyaltyProgram program = programService.findByProviderId(providerId).orElse(null);
         LoyaltyTransaction tx = ledgerService.adjust(providerId, userId, request.delta(), request.reason(), actorId,
                 program);

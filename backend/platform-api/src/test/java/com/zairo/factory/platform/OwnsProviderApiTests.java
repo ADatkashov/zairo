@@ -101,4 +101,28 @@ class OwnsProviderApiTests {
         assertThat(annotated).as("annotated endpoints found").isGreaterThan(40);
         assertThat(wrong).isEmpty();
     }
+
+    /** {@code @OwnsService} / {@code @OwnsSlot} read {@code #id}: same guard against a renamed parameter. */
+    @Test
+    void everyOwnsServiceAndOwnsSlotEndpointHasAnIdUuidParameter() {
+        List<String> wrong = new ArrayList<>();
+        int annotated = 0;
+        for (HandlerMethod handler : handlerMapping.getHandlerMethods().values()) {
+            Method method = handler.getMethod();
+            boolean entityOwnership = java.util.Arrays.stream(method.getAnnotations()).anyMatch(a ->
+                    a.annotationType().getSimpleName().equals("OwnsService")
+                            || a.annotationType().getSimpleName().equals("OwnsSlot"));
+            if (!entityOwnership) {
+                continue;
+            }
+            annotated++;
+            if (java.util.Arrays.stream(method.getParameters())
+                    .noneMatch(p -> p.getName().equals("id") && p.getType() == UUID.class)) {
+                wrong.add(method.toString());
+            }
+        }
+
+        assertThat(annotated).as("annotated endpoints found").isEqualTo(5);
+        assertThat(wrong).isEmpty();
+    }
 }

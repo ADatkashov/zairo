@@ -2,6 +2,7 @@ package com.zairo.factory.payments;
 
 import com.zairo.factory.auth.CurrentUser;
 import com.zairo.factory.payments.BusinessPayoutDtos.PayoutResponse;
+import com.zairo.factory.providers.OwnsProvider;
 import com.zairo.factory.providers.ProviderOwnership;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -47,11 +48,11 @@ public class BusinessPayoutController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/providers/{providerId}/payouts")
+    @OwnsProvider
     public List<PayoutResponse> listForProvider(
             @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             HttpServletRequest httpRequest) {
         UUID callerId = CurrentUser.requireUserId(httpRequest);
-        providerOwnership.requireOwner(providerId, callerId);
         return payoutRepository.findByProviderIdOrderByCreatedAtDesc(providerId).stream()
                 .map(PayoutResponse::from)
                 .toList();
