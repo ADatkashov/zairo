@@ -1,15 +1,16 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../data/booking_exception.dart';
+import '../../data/models/availability_slot.dart';
 import '../../data/models/booking.dart';
 import '../../data/models/reschedule_option.dart';
 import '../providers/booking_providers.dart';
+import 'day_slot_picker.dart';
 
-/// "Reschedule": the free times of the same business and person, grouped by day. One tap on a time moves the booking
+/// "Reschedule": the free times of the same business and person in the booking's own day / time picker. One tap on a time moves the booking
 /// (a move is easy to undo by moving again, so there is no extra confirmation). Pops with the moved [Booking], or null
 /// when the sheet was dismissed.
 Future<Booking?> showRescheduleSheet(BuildContext context, {required Booking booking}) {
@@ -60,12 +61,14 @@ class _RescheduleSheetState extends ConsumerState<_RescheduleSheet> {
     }
   }
 
+  ValueChanged<String> _pickById(List<RescheduleOption> items) =>
+      (slotId) => _pick(items.firstWhere((o) => o.slotId == slotId));
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
-    final locale = Localizations.localeOf(context).toLanguageTag();
     final options = ref.watch(rescheduleOptionsProvider(widget.booking.id));
 
     return ConstrainedBox(
@@ -99,31 +102,22 @@ class _RescheduleSheetState extends ConsumerState<_RescheduleSheet> {
                     child: Text(l10n.bookingRescheduleEmpty, style: textTheme.bodyMedium),
                   );
                 }
-                final byDay = <DateTime, List<RescheduleOption>>{};
-                for (final option in items) {
-                  final local = option.startsAt.toLocal();
-                  byDay.putIfAbsent(DateTime(local.year, local.month, local.day), () => []).add(option);
-                }
-                return ListView(
-                  shrinkWrap: true,
-                  children: [
-                    for (final day in byDay.entries) ...[
-                      Text(DateFormat.MMMEd(locale).format(day.key), style: textTheme.titleSmall),
-                      const SizedBox(height: FactorySpacing.space2),
-                      Wrap(
-                        spacing: FactorySpacing.space2,
-                        runSpacing: FactorySpacing.space2,
-                        children: [
-                          for (final option in day.value)
-                            FactoryTimeSlot(
-                              label: DateFormat.Hm(locale).format(option.startsAt.toLocal()),
-                              onTap: _moving ? null : () => _pick(option),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: FactorySpacing.space4),
-                    ],
-                  ],
+                // The same day / time picker as a new booking; a tap on a time moves the booking at once.
+                final slots = [
+                  for (final option in items)
+                    AvailabilitySlot(
+                      id: option.slotId,
+                      providerId: widget.booking.providerId ?? '',
+                      startsAt: option.startsAt,
+                      endsAt: option.endsAt,
+                      status: 'OPEN',
+                    ),
+                ];
+                return SingleChildScrollView(
+                  child: IgnorePointer(
+                    ignoring: _moving,
+                    child: DaySlotPicker(slots: slots, selectedSlotId: null, onSelected: _pickById(items)),
+                  ),
                 );
               },
             ),
