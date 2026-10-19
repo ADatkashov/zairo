@@ -1,5 +1,9 @@
 package com.zairo.factory.platform.security;
 
+import com.zairo.factory.auth.JwtAuthFilter;
+import com.zairo.factory.auth.JwtService;
+import com.zairo.factory.platformadmin.PlatformAdminJwtService;
+import com.zairo.factory.platformadmin.PlatformAuthFilter;
 import jakarta.servlet.DispatcherType;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -22,8 +26,9 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
  * Spring Security for the stateless JSON API.
  *
  * <ul>
- *   <li>Tokens are still validated by {@code JwtAuthFilter} / {@code PlatformAuthFilter};
- *       {@link TokenAuthenticationFilter} turns a valid one into an authenticated principal.</li>
+ *   <li>{@code JwtAuthFilter} (customers/businesses) and {@code PlatformAuthFilter} (platform console, its
+ *       own secret) sit in this chain: a valid token signs the request in, with {@code ROLE_<role>} or the
+ *       platform role's own name as the authority.</li>
  *   <li>{@link EndpointAuthorizationManager} denies by default: an endpoint documented with
  *       {@code @SecurityRequirement} needs authentication, everything else is public.</li>
  *   <li>Role rules live on the endpoints as annotations ({@code @PlatformAdminOnly} and friends,
@@ -50,6 +55,7 @@ class SecurityConfig {
 
     @Bean
     SecurityFilterChain apiSecurity(HttpSecurity http, EndpointAuthorizationManager endpoints,
+            JwtService customerTokens, PlatformAdminJwtService platformTokens,
             @Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -64,7 +70,8 @@ class SecurityConfig {
                         .cacheControl(cache -> cache.disable())
                         .frameOptions(frame -> frame.deny())
                         .referrerPolicy(referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER)))
-                .addFilterBefore(new TokenAuthenticationFilter(), AuthorizationFilter.class)
+                .addFilterBefore(new JwtAuthFilter(customerTokens), AuthorizationFilter.class)
+                .addFilterBefore(new PlatformAuthFilter(platformTokens), AuthorizationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .dispatcherTypeMatchers(DispatcherType.ERROR, DispatcherType.FORWARD).permitAll()
                         .anyRequest().access(endpoints))
