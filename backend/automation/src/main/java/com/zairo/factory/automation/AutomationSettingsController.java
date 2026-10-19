@@ -8,7 +8,6 @@ import com.zairo.factory.providers.ProviderOwnership;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,7 +39,7 @@ public class AutomationSettingsController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/business/{providerId}/automation/settings")
     @OwnsProvider
-    public AutomationSettingsResponse getSettings(@PathVariable UUID providerId, HttpServletRequest httpRequest) {
+    public AutomationSettingsResponse getSettings(@PathVariable UUID providerId) {
         return AutomationSettingsResponse.from(settingsService.getOrCreateDraft(providerId));
     }
 
@@ -49,7 +48,7 @@ public class AutomationSettingsController {
     @PutMapping("/api/v1/business/{providerId}/automation/settings")
     @OwnsProvider
     public AutomationSettingsResponse updateSettings(@PathVariable UUID providerId,
-            @RequestBody UpdateAutomationSettingsRequest request, HttpServletRequest httpRequest) {
+            @RequestBody UpdateAutomationSettingsRequest request) {
         return AutomationSettingsResponse.from(settingsService.updateSettings(providerId, request));
     }
 }

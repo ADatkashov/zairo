@@ -16,7 +16,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.time.Duration;
 import java.time.Instant;
@@ -84,8 +83,8 @@ public class BookingController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/bookings")
     @ResponseStatus(HttpStatus.CREATED)
-    public BookingResponse create(@Valid @RequestBody CreateBookingRequest request, HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+    public BookingResponse create(@Valid @RequestBody CreateBookingRequest request) {
+        UUID callerId = CurrentUser.requireUserId();
         if (!callerId.equals(request.userId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot book on behalf of a different user");
         }
@@ -104,9 +103,8 @@ public class BookingController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/bookings/{id}")
-    public BookingResponse getById(@Parameter(description = "The booking's id.") @PathVariable UUID id,
-            HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+    public BookingResponse getById(@Parameter(description = "The booking's id.") @PathVariable UUID id) {
+        UUID callerId = CurrentUser.requireUserId();
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: " + id));
 
@@ -133,9 +131,8 @@ public class BookingController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/bookings/{id}/complete")
-    public BookingResponse complete(@Parameter(description = "The booking's id.") @PathVariable UUID id,
-            HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+    public BookingResponse complete(@Parameter(description = "The booking's id.") @PathVariable UUID id) {
+        UUID callerId = CurrentUser.requireUserId();
         return detailsAssembler.one(bookingService.completeBooking(id, callerId));
     }
 
@@ -154,8 +151,8 @@ public class BookingController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/bookings/{id}/cancel")
     public BookingResponse cancel(@Parameter(description = "The booking's id.") @PathVariable UUID id,
-            @RequestBody(required = false) CancelBookingRequest request, HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+            @RequestBody(required = false) CancelBookingRequest request) {
+        UUID callerId = CurrentUser.requireUserId();
         String reason = request == null ? null : request.reason();
         return detailsAssembler.one(bookingService.cancelBooking(id, callerId, reason));
     }
@@ -170,8 +167,8 @@ public class BookingController {
     @ApiResponse(responseCode = "409", description = "Not movable any more.")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/bookings/{id}/reschedule-options")
-    public java.util.List<RescheduleOption> rescheduleOptions(@PathVariable UUID id, HttpServletRequest httpRequest) {
-        return bookingService.rescheduleOptions(id, CurrentUser.requireUserId(httpRequest)).stream()
+    public java.util.List<RescheduleOption> rescheduleOptions(@PathVariable UUID id) {
+        return bookingService.rescheduleOptions(id, CurrentUser.requireUserId()).stream()
                 .map(s -> new RescheduleOption(s.getId(), s.getStartsAt(), s.getEndsAt())).toList();
     }
 
@@ -185,9 +182,8 @@ public class BookingController {
     @ApiResponse(responseCode = "409", description = "Booking not movable, or that time is not available.")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/bookings/{id}/reschedule")
-    public BookingResponse reschedule(@PathVariable UUID id, @RequestBody RescheduleRequest request,
-            HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+    public BookingResponse reschedule(@PathVariable UUID id, @RequestBody RescheduleRequest request) {
+        UUID callerId = CurrentUser.requireUserId();
         return detailsAssembler.one(bookingService.rescheduleByCustomer(id, callerId, request.slotId()));
     }
 
@@ -201,9 +197,8 @@ public class BookingController {
     @ApiResponse(responseCode = "409", description = "Not movable any more.")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/bookings/{id}/owner-reschedule-options")
-    public java.util.List<RescheduleOption> ownerRescheduleOptions(@PathVariable UUID id,
-            HttpServletRequest httpRequest) {
-        return bookingService.rescheduleOptionsForOwner(id, CurrentUser.requireUserId(httpRequest)).stream()
+    public java.util.List<RescheduleOption> ownerRescheduleOptions(@PathVariable UUID id) {
+        return bookingService.rescheduleOptionsForOwner(id, CurrentUser.requireUserId()).stream()
                 .map(s -> new RescheduleOption(s.getId(), s.getStartsAt(), s.getEndsAt())).toList();
     }
 
@@ -217,9 +212,8 @@ public class BookingController {
     @ApiResponse(responseCode = "409", description = "Booking not movable, or that time is not available.")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/bookings/{id}/owner-reschedule")
-    public BookingResponse ownerReschedule(@PathVariable UUID id, @RequestBody RescheduleRequest request,
-            HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+    public BookingResponse ownerReschedule(@PathVariable UUID id, @RequestBody RescheduleRequest request) {
+        UUID callerId = CurrentUser.requireUserId();
         return detailsAssembler.one(bookingService.rescheduleByOwner(id, callerId, request.slotId()));
     }
 
@@ -235,9 +229,8 @@ public class BookingController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/bookings/{id}/no-show")
-    public BookingResponse markNoShow(@Parameter(description = "The booking's id.") @PathVariable UUID id,
-            HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+    public BookingResponse markNoShow(@Parameter(description = "The booking's id.") @PathVariable UUID id) {
+        UUID callerId = CurrentUser.requireUserId();
         return detailsAssembler.one(bookingService.markNoShow(id, callerId));
     }
 
@@ -249,9 +242,8 @@ public class BookingController {
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/users/{userId}/bookings")
-    public List<BookingResponse> listByUser(@Parameter(description = "The user's id.") @PathVariable UUID userId,
-            HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+    public List<BookingResponse> listByUser(@Parameter(description = "The user's id.") @PathVariable UUID userId) {
+        UUID callerId = CurrentUser.requireUserId();
         if (!callerId.equals(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot view another user's bookings");
         }
@@ -271,8 +263,7 @@ public class BookingController {
     @GetMapping("/api/v1/providers/{providerId}/bookings")
     @OwnsProvider
     public List<BookingResponse> listByProvider(
-            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            HttpServletRequest httpRequest) {
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId) {
         List<UUID> slotIds = availabilitySlotRepository.findByProviderId(providerId).stream()
                 .map(AvailabilitySlot::getId).toList();
         return detailsAssembler.many(bookingRepository.findByAvailabilitySlotIdIn(slotIds));
@@ -297,8 +288,7 @@ public class BookingController {
     public List<ScheduleEntryResponse> schedule(
             @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             @Parameter(description = "Window start, inclusive (ISO-8601 instant).") @RequestParam Instant from,
-            @Parameter(description = "Window end, exclusive (ISO-8601 instant).") @RequestParam Instant to,
-            HttpServletRequest httpRequest) {
+            @Parameter(description = "Window end, exclusive (ISO-8601 instant).") @RequestParam Instant to) {
         if (!from.isBefore(to) || Duration.between(from, to).compareTo(MAX_SCHEDULE_WINDOW) > 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "`from` must be before `to`, at most 31 days apart");

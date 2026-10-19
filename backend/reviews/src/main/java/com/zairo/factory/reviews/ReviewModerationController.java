@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -50,8 +49,8 @@ public class ReviewModerationController {
     @GetMapping
     @AnyPlatformRole
     public Page<ModerationReviewResponse> queue(@RequestParam(defaultValue = "OPEN") String status,
-            Pageable pageable, HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requireAdminId(httpRequest);
+            Pageable pageable) {
+        PlatformCurrentAdmin.requireAdminId();
         return service.queue(status, pageable);
     }
 
@@ -64,9 +63,8 @@ public class ReviewModerationController {
     @PostMapping("/{id}/hide")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PlatformModerationCapable
-    public void hide(@PathVariable UUID id, @Valid @RequestBody(required = false) ModerationDecisionRequest request,
-            HttpServletRequest httpRequest) {
-        service.hide(actorId(httpRequest), actorEmail(httpRequest), id, request == null ? null : request.reason());
+    public void hide(@PathVariable UUID id, @Valid @RequestBody(required = false) ModerationDecisionRequest request) {
+        service.hide(actorId(), actorEmail(), id, request == null ? null : request.reason());
     }
 
     @Operation(summary = "Restore a hidden review")
@@ -76,9 +74,8 @@ public class ReviewModerationController {
     @PostMapping("/{id}/restore")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PlatformModerationCapable
-    public void restore(@PathVariable UUID id, @Valid @RequestBody(required = false) ModerationDecisionRequest request,
-            HttpServletRequest httpRequest) {
-        service.restore(actorId(httpRequest), actorEmail(httpRequest), id, request == null ? null : request.reason());
+    public void restore(@PathVariable UUID id, @Valid @RequestBody(required = false) ModerationDecisionRequest request) {
+        service.restore(actorId(), actorEmail(), id, request == null ? null : request.reason());
     }
 
     @Operation(summary = "Keep a reported review", description = "Closes the open report; the review stays and "
@@ -90,17 +87,16 @@ public class ReviewModerationController {
     @PostMapping("/{id}/dismiss")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PlatformModerationCapable
-    public void dismiss(@PathVariable UUID id, @Valid @RequestBody(required = false) ModerationDecisionRequest request,
-            HttpServletRequest httpRequest) {
-        service.dismiss(actorId(httpRequest), actorEmail(httpRequest), id, request == null ? null : request.reason());
+    public void dismiss(@PathVariable UUID id, @Valid @RequestBody(required = false) ModerationDecisionRequest request) {
+        service.dismiss(actorId(), actorEmail(), id, request == null ? null : request.reason());
     }
 
-    private UUID actorId(HttpServletRequest httpRequest) {
-        UUID adminId = PlatformCurrentAdmin.requireAdminId(httpRequest);
+    private UUID actorId() {
+        UUID adminId = PlatformCurrentAdmin.requireAdminId();
         return adminId;
     }
 
-    private String actorEmail(HttpServletRequest httpRequest) {
-        return platformAdminService.me(PlatformCurrentAdmin.requireAdminId(httpRequest)).email();
+    private String actorEmail() {
+        return platformAdminService.me(PlatformCurrentAdmin.requireAdminId()).email();
     }
 }

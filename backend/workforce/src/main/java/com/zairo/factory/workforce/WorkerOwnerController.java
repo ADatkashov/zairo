@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -40,8 +39,8 @@ public class WorkerOwnerController {
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @GetMapping("/api/v1/providers/{providerId}/appointments/needs-attention")
-    public List<NeedsAttentionResponse> needsAttention(@PathVariable UUID providerId, HttpServletRequest request) {
-        return ownerService.needsAttention(providerId, CurrentUser.requireUserId(request));
+    public List<NeedsAttentionResponse> needsAttention(@PathVariable UUID providerId) {
+        return ownerService.needsAttention(providerId, CurrentUser.requireUserId());
     }
 
     @Operation(summary = "Give an appointment to a colleague", description = "Owner-only. The colleague must be of "
@@ -54,8 +53,8 @@ public class WorkerOwnerController {
     @PostMapping("/api/v1/providers/{providerId}/appointments/{bookingId}/reassign")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void reassign(@PathVariable UUID providerId, @PathVariable UUID bookingId,
-            @Valid @RequestBody ReassignRequest body, HttpServletRequest request) {
-        ownerService.reassign(providerId, bookingId, CurrentUser.requireUserId(request), body.workerId());
+            @Valid @RequestBody ReassignRequest body) {
+        ownerService.reassign(providerId, bookingId, CurrentUser.requireUserId(), body.workerId());
     }
 
     @Operation(summary = "Ask the customer to decide", description = "Owner-only. For a customer who chose this "
@@ -67,8 +66,8 @@ public class WorkerOwnerController {
     @ApiResponse(responseCode = "409", description = "Nothing needs a decision for this appointment.")
     @PostMapping("/api/v1/providers/{providerId}/appointments/{bookingId}/ask-customer")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void askCustomer(@PathVariable UUID providerId, @PathVariable UUID bookingId, HttpServletRequest request) {
-        ownerService.askCustomer(providerId, bookingId, CurrentUser.requireUserId(request));
+    public void askCustomer(@PathVariable UUID providerId, @PathVariable UUID bookingId) {
+        ownerService.askCustomer(providerId, bookingId, CurrentUser.requireUserId());
     }
 
     @Operation(summary = "Cancel an appointment (owner)", description = "Owner-only. Releases the slot, refunds a "
@@ -80,8 +79,8 @@ public class WorkerOwnerController {
     @PostMapping("/api/v1/providers/{providerId}/appointments/{bookingId}/cancel")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancel(@PathVariable UUID providerId, @PathVariable UUID bookingId,
-            @Valid @RequestBody(required = false) OwnerCancelRequest body, HttpServletRequest request) {
-        ownerService.cancel(providerId, bookingId, CurrentUser.requireUserId(request),
+            @Valid @RequestBody(required = false) OwnerCancelRequest body) {
+        ownerService.cancel(providerId, bookingId, CurrentUser.requireUserId(),
                 body == null ? null : body.reason());
     }
 
@@ -94,8 +93,7 @@ public class WorkerOwnerController {
     @ApiResponse(responseCode = "409", description = "The appointment isn't a no-show.")
     @PostMapping("/api/v1/providers/{providerId}/appointments/{bookingId}/mark-attended")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void markAttended(@PathVariable UUID providerId, @PathVariable UUID bookingId,
-            HttpServletRequest request) {
-        ownerService.markAttended(providerId, bookingId, CurrentUser.requireUserId(request));
+    public void markAttended(@PathVariable UUID providerId, @PathVariable UUID bookingId) {
+        ownerService.markAttended(providerId, bookingId, CurrentUser.requireUserId());
     }
 }

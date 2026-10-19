@@ -6,7 +6,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -38,8 +37,8 @@ public class FavoriteWorkerController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/users/{userId}/favorite-workers/{workerId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void add(@PathVariable UUID userId, @PathVariable UUID workerId, HttpServletRequest request) {
-        requireSelf(userId, request);
+    public void add(@PathVariable UUID userId, @PathVariable UUID workerId) {
+        requireSelf(userId);
         service.add(userId, workerId);
     }
 
@@ -50,8 +49,8 @@ public class FavoriteWorkerController {
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/api/v1/users/{userId}/favorite-workers/{workerId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void remove(@PathVariable UUID userId, @PathVariable UUID workerId, HttpServletRequest request) {
-        requireSelf(userId, request);
+    public void remove(@PathVariable UUID userId, @PathVariable UUID workerId) {
+        requireSelf(userId);
         service.remove(userId, workerId);
     }
 
@@ -63,8 +62,8 @@ public class FavoriteWorkerController {
     @ApiResponse(responseCode = "404", ref = "NotFound", description = "Not on the list.")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/users/{userId}/favorite-workers/{workerId}")
-    public void check(@PathVariable UUID userId, @PathVariable UUID workerId, HttpServletRequest request) {
-        requireSelf(userId, request);
+    public void check(@PathVariable UUID userId, @PathVariable UUID workerId) {
+        requireSelf(userId);
         if (!service.isFavorited(userId, workerId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Not on the list");
         }
@@ -77,13 +76,13 @@ public class FavoriteWorkerController {
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/users/{userId}/favorite-workers")
-    public List<FavoriteWorkerResponse> list(@PathVariable UUID userId, HttpServletRequest request) {
-        requireSelf(userId, request);
+    public List<FavoriteWorkerResponse> list(@PathVariable UUID userId) {
+        requireSelf(userId);
         return service.list(userId);
     }
 
-    private static void requireSelf(UUID userId, HttpServletRequest request) {
-        if (!CurrentUser.requireUserId(request).equals(userId)) {
+    private static void requireSelf(UUID userId) {
+        if (!CurrentUser.requireUserId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot act on another user's masters");
         }
     }

@@ -14,7 +14,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -80,8 +79,8 @@ public class LoyaltyController {
             module's own package-info: loyalty is never pooled across businesses).""")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/loyalty")
-    public List<LoyaltyBusinessSummaryResponse> myLoyalty(HttpServletRequest httpRequest) {
-        UUID userId = CurrentUser.requireUserId(httpRequest);
+    public List<LoyaltyBusinessSummaryResponse> myLoyalty() {
+        UUID userId = CurrentUser.requireUserId();
         Instant expiringCutoff = Instant.now().plus(EXPIRING_SOON_DAYS, ChronoUnit.DAYS);
         return accountRepository.findByUserId(userId).stream().map(account -> {
             String providerName = providerRepository.findById(account.getProviderId()).map(Provider::getName)
@@ -102,9 +101,8 @@ public class LoyaltyController {
             created the first time points are actually earned or redeemed.""")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/loyalty/businesses/{providerId}")
-    public LoyaltyBusinessDetailResponse businessLoyalty(@PathVariable UUID providerId,
-            HttpServletRequest httpRequest) {
-        UUID userId = CurrentUser.requireUserId(httpRequest);
+    public LoyaltyBusinessDetailResponse businessLoyalty(@PathVariable UUID providerId) {
+        UUID userId = CurrentUser.requireUserId();
         Provider provider = providerRepository.findById(providerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Provider not found: "
                         + providerId));
@@ -134,8 +132,8 @@ public class LoyaltyController {
             "Empty if the business has no enabled loyalty program, or none of its rewards are currently active.")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/loyalty/businesses/{providerId}/rewards")
-    public List<LoyaltyRewardResponse> rewards(@PathVariable UUID providerId, HttpServletRequest httpRequest) {
-        UUID userId = CurrentUser.requireUserId(httpRequest);
+    public List<LoyaltyRewardResponse> rewards(@PathVariable UUID providerId) {
+        UUID userId = CurrentUser.requireUserId();
         LoyaltyProgram program = programService.findByProviderId(providerId).orElse(null);
         if (program == null || !program.isEnabled()) {
             return List.of();
@@ -149,9 +147,8 @@ public class LoyaltyController {
             "Every EARNED/BONUS/REDEEMED/EXPIRED/REFUND/ADJUSTMENT/REVERSAL row, newest first -- the immutable ledger, unfiltered.")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/loyalty/businesses/{providerId}/history")
-    public Page<LoyaltyTransactionResponse> history(@PathVariable UUID providerId, Pageable pageable,
-            HttpServletRequest httpRequest) {
-        UUID userId = CurrentUser.requireUserId(httpRequest);
+    public Page<LoyaltyTransactionResponse> history(@PathVariable UUID providerId, Pageable pageable) {
+        UUID userId = CurrentUser.requireUserId();
         return transactionRepository.findByProviderIdAndUserIdOrderByCreatedAtDesc(providerId, userId, pageable)
                 .map(LoyaltyTransactionResponse::from);
     }
@@ -164,8 +161,8 @@ public class LoyaltyController {
     @PostMapping("/api/v1/loyalty/rewards/{rewardId}/redeem")
     @ResponseStatus(HttpStatus.CREATED)
     public LoyaltyRedemptionResponse redeem(@Parameter(description = "The reward to redeem.") @PathVariable
-            UUID rewardId, HttpServletRequest httpRequest) {
-        UUID userId = CurrentUser.requireUserId(httpRequest);
+            UUID rewardId) {
+        UUID userId = CurrentUser.requireUserId();
         LoyaltyRedemption redemption = redemptionService.redeem(userId, rewardId);
         return toResponse(redemption);
     }
@@ -174,16 +171,16 @@ public class LoyaltyController {
             "Active codes, applied history, and cancelled/expired ones -- newest first.")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/loyalty/redemptions")
-    public Page<LoyaltyRedemptionResponse> myRedemptions(Pageable pageable, HttpServletRequest httpRequest) {
-        UUID userId = CurrentUser.requireUserId(httpRequest);
+    public Page<LoyaltyRedemptionResponse> myRedemptions(Pageable pageable) {
+        UUID userId = CurrentUser.requireUserId();
         return redemptionService.findByCustomer(userId, pageable).map(this::toResponse);
     }
 
     @Operation(summary = "One of this customer's own redemptions", description = "404 if it isn't the caller's own.")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/loyalty/redemptions/{id}")
-    public LoyaltyRedemptionResponse myRedemption(@PathVariable UUID id, HttpServletRequest httpRequest) {
-        UUID userId = CurrentUser.requireUserId(httpRequest);
+    public LoyaltyRedemptionResponse myRedemption(@PathVariable UUID id) {
+        UUID userId = CurrentUser.requireUserId();
         return toResponse(redemptionService.getOwnedByCustomer(id, userId));
     }
 
@@ -193,8 +190,8 @@ public class LoyaltyController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/loyalty/redemptions/{id}/cancel")
     public LoyaltyRedemptionResponse cancelMyRedemption(@PathVariable UUID id,
-            @RequestBody(required = false) CancelRedemptionRequest request, HttpServletRequest httpRequest) {
-        UUID userId = CurrentUser.requireUserId(httpRequest);
+            @RequestBody(required = false) CancelRedemptionRequest request) {
+        UUID userId = CurrentUser.requireUserId();
         String reason = request == null ? null : request.reason();
         return toResponse(redemptionService.cancelAsCustomer(id, userId, reason));
     }

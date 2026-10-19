@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -48,7 +47,7 @@ public class CommissionAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/platform/commission")
     @AnyPlatformRole
-    public CommissionSettingsResponse settings(HttpServletRequest httpRequest) {
+    public CommissionSettingsResponse settings() {
         return commissionRateService.settings();
     }
 
@@ -61,9 +60,8 @@ public class CommissionAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/api/v1/platform/commission/default")
     @PlatformAdminOnly
-    public CommissionSettingsResponse setDefault(@Valid @RequestBody SetCommissionRequest request,
-            HttpServletRequest httpRequest) {
-        UUID actorId = actorId(httpRequest);
+    public CommissionSettingsResponse setDefault(@Valid @RequestBody SetCommissionRequest request) {
+        UUID actorId = actorId();
         return commissionRateService.setDefault(actorId, actorEmail(actorId), request.ratePercent());
     }
 
@@ -78,8 +76,8 @@ public class CommissionAdminController {
     @PutMapping("/api/v1/platform/commission/categories/{categoryId}")
     @PlatformAdminOnly
     public CommissionSettingsResponse setCategory(@PathVariable UUID categoryId,
-            @Valid @RequestBody SetCommissionRequest request, HttpServletRequest httpRequest) {
-        UUID actorId = actorId(httpRequest);
+            @Valid @RequestBody SetCommissionRequest request) {
+        UUID actorId = actorId();
         return commissionRateService.setCategory(actorId, actorEmail(actorId), categoryId, request.ratePercent());
     }
 
@@ -92,13 +90,13 @@ public class CommissionAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/api/v1/platform/commission/categories/{categoryId}")
     @PlatformAdminOnly
-    public CommissionSettingsResponse clearCategory(@PathVariable UUID categoryId, HttpServletRequest httpRequest) {
-        UUID actorId = actorId(httpRequest);
+    public CommissionSettingsResponse clearCategory(@PathVariable UUID categoryId) {
+        UUID actorId = actorId();
         return commissionRateService.clearCategory(actorId, actorEmail(actorId), categoryId);
     }
 
-    private UUID actorId(HttpServletRequest httpRequest) {
-        UUID adminId = PlatformCurrentAdmin.requireAdminId(httpRequest);
+    private UUID actorId() {
+        UUID adminId = PlatformCurrentAdmin.requireAdminId();
         return adminId;
     }
 

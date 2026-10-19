@@ -11,7 +11,6 @@ import com.zairo.factory.providers.ProviderOwnership;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,7 +38,7 @@ public class PaymentSettingsController {
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Get payment settings for a provider", description = "Returns the current payment settings (deposit policy) for the specified provider")
     @OwnsProvider
-    public PaymentSettingsResponse getSettings(@RequestParam UUID providerId, HttpServletRequest httpRequest) {
+    public PaymentSettingsResponse getSettings(@RequestParam UUID providerId) {
         PaymentSettings settings = paymentSettingsService.getOrCreateSettings(providerId);
         return PaymentSettingsResponse.from(settings);
     }
@@ -57,7 +56,7 @@ public class PaymentSettingsController {
     @Operation(summary = "Update payment settings for a provider", description = "Set the deposit policy for new bookings at this provider")
     @OwnsProvider
     public PaymentSettingsResponse updateSettings(@RequestParam UUID providerId,
-            @Valid @RequestBody UpdatePaymentSettingsRequest request, HttpServletRequest httpRequest) {
+            @Valid @RequestBody UpdatePaymentSettingsRequest request) {
         PaymentSettings settings = paymentSettingsService.updateSettings(providerId, request.depositType(),
                 request.depositValueType(), request.depositValue());
         return PaymentSettingsResponse.from(settings);

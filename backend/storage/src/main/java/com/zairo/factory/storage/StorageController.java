@@ -69,7 +69,7 @@ public class StorageController {
     @ResponseStatus(HttpStatus.CREATED)
     public UploadResponse upload(@Parameter(description = "The file to upload.", schema = @Schema(type = "string",
             format = "binary")) @RequestParam MultipartFile file, HttpServletRequest request) {
-        CurrentUser.requireUserId(request);
+        CurrentUser.requireUserId();
         if (file.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File is empty");
         }
@@ -97,7 +97,7 @@ public class StorageController {
     public UploadResponse uploadAsPlatformStaff(@Parameter(description = "The file to upload.",
             schema = @Schema(type = "string", format = "binary")) @RequestParam MultipartFile file,
             HttpServletRequest request) {
-        PlatformCurrentAdmin.requireAdminId(request);
+        PlatformCurrentAdmin.requireAdminId();
         if (file.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File is empty");
         }

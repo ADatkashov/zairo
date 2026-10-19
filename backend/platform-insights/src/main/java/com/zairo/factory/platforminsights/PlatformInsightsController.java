@@ -9,7 +9,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,7 +34,7 @@ public class PlatformInsightsController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/platform/dashboard")
     @AnyPlatformRole
-    public PlatformDashboardMetrics dashboard(HttpServletRequest httpRequest) {
+    public PlatformDashboardMetrics dashboard() {
         return platformInsightsService.dashboardMetrics();
     }
 
@@ -47,7 +46,7 @@ public class PlatformInsightsController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/platform/dashboard/trends")
     @AnyPlatformRole
-    public PlatformTrends trends(HttpServletRequest httpRequest, @RequestParam(defaultValue = "14") int days) {
+    public PlatformTrends trends(@RequestParam(defaultValue = "14") int days) {
         return platformInsightsService.trends(days);
     }
 
@@ -60,7 +59,7 @@ public class PlatformInsightsController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/platform/reports")
     @AnyPlatformRole
-    public PlatformReport report(HttpServletRequest httpRequest, @RequestParam(defaultValue = "30") int days) {
+    public PlatformReport report(@RequestParam(defaultValue = "30") int days) {
         return platformInsightsService.report(days);
     }
 }

@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -45,8 +44,8 @@ public class WaitlistController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void join(@Parameter(description = "The user's id.") @PathVariable UUID userId,
             @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            @RequestBody(required = false) JoinWaitlistRequest request, HttpServletRequest httpRequest) {
-        requireSelf(userId, httpRequest);
+            @RequestBody(required = false) JoinWaitlistRequest request) {
+        requireSelf(userId);
         waitlistService.join(userId, providerId, request == null ? null : request.from(),
                 request == null ? null : request.to());
     }
@@ -60,9 +59,8 @@ public class WaitlistController {
     @DeleteMapping("/api/v1/users/{userId}/waitlist/{providerId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void leave(@Parameter(description = "The user's id.") @PathVariable UUID userId,
-            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            HttpServletRequest httpRequest) {
-        requireSelf(userId, httpRequest);
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId) {
+        requireSelf(userId);
         waitlistService.leave(userId, providerId);
     }
 
@@ -73,14 +71,13 @@ public class WaitlistController {
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/users/{userId}/waitlist")
-    public List<WaitlistEntryResponse> list(@Parameter(description = "The user's id.") @PathVariable UUID userId,
-            HttpServletRequest httpRequest) {
-        requireSelf(userId, httpRequest);
+    public List<WaitlistEntryResponse> list(@Parameter(description = "The user's id.") @PathVariable UUID userId) {
+        requireSelf(userId);
         return waitlistService.list(userId);
     }
 
-    private static void requireSelf(UUID userId, HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+    private static void requireSelf(UUID userId) {
+        UUID callerId = CurrentUser.requireUserId();
         if (!callerId.equals(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot act on another user's waitlist");
         }

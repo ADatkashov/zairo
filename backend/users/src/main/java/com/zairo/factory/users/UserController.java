@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.List;
@@ -46,7 +45,7 @@ public class UserController {
     @PostMapping("/api/v1/users")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
-    public UserResponse create(@Valid @RequestBody CreateUserRequest request, HttpServletRequest httpRequest) {
+    public UserResponse create(@Valid @RequestBody CreateUserRequest request) {
         User user = new User(UUID.randomUUID(), request.email(), request.phone(), request.displayName(),
                 request.role(), Instant.now());
         return UserResponse.from(userRepository.save(user));
@@ -60,7 +59,7 @@ public class UserController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/users")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public List<UserResponse> list(HttpServletRequest httpRequest) {
+    public List<UserResponse> list() {
         return userRepository.findAll().stream().map(UserResponse::from).toList();
     }
 
@@ -74,8 +73,7 @@ public class UserController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/users/{id}")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public UserResponse getById(@Parameter(description = "The user's id.") @PathVariable UUID id,
-            HttpServletRequest httpRequest) {
+    public UserResponse getById(@Parameter(description = "The user's id.") @PathVariable UUID id) {
         return userRepository.findById(id).map(UserResponse::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found: " + id));
     }

@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -45,9 +44,9 @@ public class InvitationController {
     @PostMapping("/api/v1/providers/{providerId}/staff-invitations")
     @ResponseStatus(HttpStatus.CREATED)
     public InvitationResponse create(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            @Valid @RequestBody CreateInvitationRequest request, HttpServletRequest httpRequest) {
+            @Valid @RequestBody CreateInvitationRequest request) {
         return InvitationResponse.from(invitationService.invite(providerId, request.phone(),
-                CurrentUser.requireUserId(httpRequest)));
+                CurrentUser.requireUserId()));
     }
 
     @Operation(summary = "List a business's pending invitations", description = "Owner-only.")
@@ -56,9 +55,8 @@ public class InvitationController {
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/providers/{providerId}/staff-invitations")
-    public List<InvitationResponse> list(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            HttpServletRequest httpRequest) {
-        return invitationService.listPending(providerId, CurrentUser.requireUserId(httpRequest)).stream()
+    public List<InvitationResponse> list(@Parameter(description = "The provider's id.") @PathVariable UUID providerId) {
+        return invitationService.listPending(providerId, CurrentUser.requireUserId()).stream()
                 .map(InvitationResponse::from).toList();
     }
 
@@ -69,8 +67,7 @@ public class InvitationController {
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/api/v1/staff-invitations/{invitationId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void cancel(@Parameter(description = "The invitation's id.") @PathVariable UUID invitationId,
-            HttpServletRequest httpRequest) {
-        invitationService.cancel(invitationId, CurrentUser.requireUserId(httpRequest));
+    public void cancel(@Parameter(description = "The invitation's id.") @PathVariable UUID invitationId) {
+        invitationService.cancel(invitationId, CurrentUser.requireUserId());
     }
 }

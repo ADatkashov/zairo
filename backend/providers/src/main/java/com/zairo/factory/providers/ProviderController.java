@@ -19,7 +19,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.List;
@@ -76,8 +75,8 @@ public class ProviderController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/providers")
     @ResponseStatus(HttpStatus.CREATED)
-    public ProviderResponse create(@Valid @RequestBody CreateProviderRequest request, HttpServletRequest httpRequest) {
-        UUID currentUserId = CurrentUser.requireUserId(httpRequest);
+    public ProviderResponse create(@Valid @RequestBody CreateProviderRequest request) {
+        UUID currentUserId = CurrentUser.requireUserId();
         if (!request.ownerUserId().equals(currentUserId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Cannot create a provider owned by a different user");
@@ -133,9 +132,9 @@ public class ProviderController {
     public List<ProviderResponse> list(
             @Parameter(description = "Filter to one moderation status. Omit for every provider. Any value "
                     + "other than ACTIVE requires an authenticated platform role.")
-            @RequestParam(required = false) ProviderStatus status, HttpServletRequest httpRequest) {
+            @RequestParam(required = false) ProviderStatus status) {
         if (status != null && status != ProviderStatus.ACTIVE) {
-            PlatformCurrentAdmin.requireAnyRole(httpRequest);
+            PlatformCurrentAdmin.requireAnyRole();
         }
         List<Provider> providers = status == null ? providerRepository.findAll()
                 : providerRepository.findByStatus(status);
@@ -146,15 +145,14 @@ public class ProviderController {
     @ApiResponse(responseCode = "200", description = "The provider")
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @GetMapping("/api/v1/providers/{id}")
-    public ProviderResponse getById(@Parameter(description = "The provider's id.") @PathVariable UUID id,
-            HttpServletRequest httpRequest) {
+    public ProviderResponse getById(@Parameter(description = "The provider's id.") @PathVariable UUID id) {
         Provider provider = providerRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Provider not found: " + id));
         // No-op today (nothing listens yet) — see the discovery ADR's
         // analytics-hooks section. viewerUserId is null for an anonymous
         // caller, not omitted — this endpoint doesn't require auth.
         eventPublisher.publishEvent(
-                new ProviderViewedEvent(id, CurrentUser.optionalUserId(httpRequest).orElse(null)));
+                new ProviderViewedEvent(id, CurrentUser.optionalUserId().orElse(null)));
         return ProviderResponse.from(provider);
     }
 
@@ -170,10 +168,10 @@ public class ProviderController {
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/api/v1/providers/{id}")
     public ProviderResponse update(@Parameter(description = "The provider's id.") @PathVariable UUID id,
-            @Valid @RequestBody UpdateProviderRequest request, HttpServletRequest httpRequest) {
+            @Valid @RequestBody UpdateProviderRequest request) {
         Provider provider = providerRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Provider not found: " + id));
-        UUID currentUserId = CurrentUser.requireUserId(httpRequest);
+        UUID currentUserId = CurrentUser.requireUserId();
         if (!provider.getOwnerUserId().equals(currentUserId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not own this provider: " + id);
         }
@@ -207,8 +205,8 @@ public class ProviderController {
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/api/v1/providers/{id}/status")
     public ProviderResponse updateStatus(@Parameter(description = "The provider's id.") @PathVariable UUID id,
-            @Valid @RequestBody UpdateProviderStatusRequest request, HttpServletRequest httpRequest) {
-        CurrentUser.requireAdmin(httpRequest);
+            @Valid @RequestBody UpdateProviderStatusRequest request) {
+        CurrentUser.requireAdmin();
         Provider provider = providerRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Provider not found: " + id));
         provider.updateStatus(request.status());

@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -35,9 +34,8 @@ public class WorkerPricingController {
     @ApiResponse(responseCode = "403", ref = "Forbidden")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/providers/{providerId}/workers/{workerId}/prices")
-    public List<WorkerPriceResponse> prices(@PathVariable UUID providerId, @PathVariable UUID workerId,
-            HttpServletRequest request) {
-        return pricingService.ofWorker(providerId, workerId, CurrentUser.requireUserId(request));
+    public List<WorkerPriceResponse> prices(@PathVariable UUID providerId, @PathVariable UUID workerId) {
+        return pricingService.ofWorker(providerId, workerId, CurrentUser.requireUserId());
     }
 
     @Operation(summary = "Set or clear a worker's price for a service", description = "Owner-only. A null price or "
@@ -49,8 +47,8 @@ public class WorkerPricingController {
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/api/v1/providers/{providerId}/workers/{workerId}/prices")
     public List<WorkerPriceResponse> setPrice(@PathVariable UUID providerId, @PathVariable UUID workerId,
-            @Valid @RequestBody SetWorkerPriceRequest body, HttpServletRequest request) {
-        return pricingService.set(providerId, workerId, CurrentUser.requireUserId(request), body);
+            @Valid @RequestBody SetWorkerPriceRequest body) {
+        return pricingService.set(providerId, workerId, CurrentUser.requireUserId(), body);
     }
 
     @Operation(summary = "Worker prices for a service (public)", description = "Who charges something other than "

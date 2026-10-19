@@ -22,7 +22,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -65,8 +64,7 @@ public class ProviderInsightsController {
     @GetMapping("/api/v1/providers/{providerId}/customers")
     @OwnsProvider
     public List<CustomerSummary> customerHistory(
-            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            HttpServletRequest httpRequest) {
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId) {
         return providerInsightsService.customerHistory(providerId);
     }
 
@@ -82,8 +80,7 @@ public class ProviderInsightsController {
     @GetMapping("/api/v1/providers/{providerId}/dashboard")
     @OwnsProvider
     public DashboardMetrics dashboardMetrics(
-            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            HttpServletRequest httpRequest) {
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId) {
         return providerInsightsService.dashboardMetrics(providerId);
     }
 
@@ -101,8 +98,7 @@ public class ProviderInsightsController {
     @GetMapping("/api/v1/providers/{providerId}/smart-fill/performance")
     @OwnsProvider
     public SmartFillPerformanceResponse smartFillPerformance(
-            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            HttpServletRequest httpRequest) {
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId) {
         return smartFillAnalyticsService.performance(providerId);
     }
 
@@ -119,8 +115,7 @@ public class ProviderInsightsController {
     @GetMapping("/api/v1/providers/{providerId}/revenue-engine/summary")
     @OwnsProvider
     public RevenueSummaryResponse revenueSummary(
-            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            HttpServletRequest httpRequest) {
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId) {
         return revenueAttributionService.summary(providerId);
     }
 
@@ -144,8 +139,7 @@ public class ProviderInsightsController {
                     + "current UTC calendar month.")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @Parameter(description = "End of the reporting period, exclusive. Defaults to now.")
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
-            HttpServletRequest httpRequest) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to) {
         return businessAnalyticsService.overview(providerId, from, to);
     }
 
@@ -164,8 +158,7 @@ public class ProviderInsightsController {
     public RevenueAnalyticsResponse analyticsRevenue(
             @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
-            HttpServletRequest httpRequest) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to) {
         return businessAnalyticsService.revenue(providerId, from, to);
     }
 
@@ -183,8 +176,7 @@ public class ProviderInsightsController {
     public BookingAnalyticsResponse analyticsBookings(
             @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
-            HttpServletRequest httpRequest) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to) {
         return businessAnalyticsService.bookings(providerId, from, to);
     }
 
@@ -203,8 +195,7 @@ public class ProviderInsightsController {
     public SmartFillPerformanceResponse analyticsSmartFill(
             @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
-            HttpServletRequest httpRequest) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to) {
         return businessAnalyticsService.smartFillPerformance(providerId, from, to);
     }
 
@@ -224,8 +215,7 @@ public class ProviderInsightsController {
     public CustomerAnalyticsResponse analyticsCustomers(
             @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
-            HttpServletRequest httpRequest) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to) {
         return businessAnalyticsService.customers(providerId, from, to);
     }
 
@@ -242,8 +232,7 @@ public class ProviderInsightsController {
     @GetMapping("/api/v1/providers/{providerId}/analytics/actions")
     @OwnsProvider
     public ActionCenterResponse analyticsActions(
-            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            HttpServletRequest httpRequest) {
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId) {
         return businessAnalyticsService.actions(providerId);
     }
 
@@ -259,8 +248,7 @@ public class ProviderInsightsController {
     @GetMapping("/api/v1/providers/{providerId}/analytics/smart-fill/active")
     @OwnsProvider
     public List<CampaignSummary> analyticsActiveSmartFillCampaigns(
-            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            HttpServletRequest httpRequest) {
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId) {
         return smartFillAnalyticsService.activeCampaigns(providerId);
     }
 
@@ -279,8 +267,7 @@ public class ProviderInsightsController {
     public List<CustomerListItem> analyticsCustomersList(
             @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             @Parameter(description = "Only customers currently in this retention state. Omit for every customer.")
-            @RequestParam(required = false) RetentionStatus retentionStatus,
-            HttpServletRequest httpRequest) {
+            @RequestParam(required = false) RetentionStatus retentionStatus) {
         return businessAnalyticsService.customersList(providerId, retentionStatus);
     }
 }

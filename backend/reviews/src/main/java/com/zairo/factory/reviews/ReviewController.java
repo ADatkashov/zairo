@@ -17,7 +17,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.Map;
 import java.util.UUID;
@@ -69,8 +68,8 @@ public class ReviewController {
     @PostMapping("/api/v1/bookings/{bookingId}/reviews")
     @ResponseStatus(HttpStatus.CREATED)
     public ReviewResponse create(@Parameter(description = "The booking's id.") @PathVariable UUID bookingId,
-            @Valid @RequestBody CreateReviewRequest request, HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+            @Valid @RequestBody CreateReviewRequest request) {
+        UUID callerId = CurrentUser.requireUserId();
         Review review = reviewService.createReview(bookingId, callerId, request.rating(), request.workerRating(),
                 request.comment());
         return ReviewResponse.from(review);
@@ -97,8 +96,8 @@ public class ReviewController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/reviews/{reviewId}/reply")
     public ReviewResponse reply(@Parameter(description = "The review's id.") @PathVariable UUID reviewId,
-            @Valid @RequestBody ReplyToReviewRequest request, HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+            @Valid @RequestBody ReplyToReviewRequest request) {
+        UUID callerId = CurrentUser.requireUserId();
         Review review = reviewService.replyToReview(reviewId, callerId, request.reply());
         return ReviewResponse.from(review);
     }
@@ -116,8 +115,8 @@ public class ReviewController {
     @PostMapping("/api/v1/reviews/{reviewId}/report")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void report(@Parameter(description = "The review's id.") @PathVariable UUID reviewId,
-            @Valid @RequestBody ReportReviewRequest request, HttpServletRequest httpRequest) {
-        reviewService.reportReview(reviewId, CurrentUser.requireUserId(httpRequest), request.reason());
+            @Valid @RequestBody ReportReviewRequest request) {
+        reviewService.reportReview(reviewId, CurrentUser.requireUserId(), request.reason());
     }
 
     @Operation(summary = "List a provider's reviews", description = """
@@ -130,9 +129,8 @@ public class ReviewController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/providers/{providerId}/reviews")
     public Page<ProviderReviewResponse> listByProvider(
-            @Parameter(description = "The provider's id.") @PathVariable UUID providerId, Pageable pageable,
-            HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId, Pageable pageable) {
+        UUID callerId = CurrentUser.requireUserId();
         Page<ReviewRepository.OwnerReviewRow> rows = reviewService.listByProvider(providerId, callerId, pageable);
 
         Map<UUID, String> namesByUserId = userRepository
