@@ -120,10 +120,7 @@ public class AuthController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/auth/me")
     public UserSummary me(HttpServletRequest request) {
-        UUID userId = (UUID) request.getAttribute(JwtAuthFilter.USER_ID_ATTRIBUTE);
-        if (userId == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid access token");
-        }
+        UUID userId = CurrentUser.requireUserId();
         User user = userRepository.findById(userId)
                 .filter(u -> !u.isDeleted())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User no longer exists"));
@@ -157,10 +154,7 @@ public class AuthController {
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/api/v1/auth/me/avatar")
     public UserSummary updateAvatar(@Valid @RequestBody UpdateAvatarRequest request, HttpServletRequest httpRequest) {
-        UUID userId = (UUID) httpRequest.getAttribute(JwtAuthFilter.USER_ID_ATTRIBUTE);
-        if (userId == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid access token");
-        }
+        UUID userId = CurrentUser.requireUserId();
         return authService.updateAvatar(userId, request.avatarUrl());
     }
 

@@ -1,5 +1,6 @@
 package com.zairo.factory.platform.security;
 
+import com.zairo.factory.auth.JwtAuthFilter;
 import com.zairo.factory.platformadmin.AnyPlatformRole;
 import com.zairo.factory.platformadmin.PlatformAdminOnly;
 import com.zairo.factory.platformadmin.PlatformModerationCapable;
@@ -50,11 +51,18 @@ public class EndpointAuthorizationManager implements AuthorizationManager<Reques
         Authentication current = authentication.get();
         boolean authenticated = current != null && current.isAuthenticated()
                 && !(current instanceof AnonymousAuthenticationToken);
-        if (authenticated && requiresPlatformRole(handlerFor(context.getRequest()))
-                && current.getAuthorities().stream().noneMatch(a -> a.getAuthority().startsWith("PLATFORM_"))) {
-            // A customer/business token is not a platform credential: on a platform endpoint it counts
-            // as no credential at all (401), not as "known but not allowed" (403).
-            throw new InsufficientAuthenticationException("A platform access token is required");
+        if (authenticated) {
+            HandlerMethod handler = handlerFor(context.getRequest());
+            boolean platformEndpoint = requiresPlatformRole(handler)
+                    || context.getRequest().getRequestURI().startsWith("/api/v1/platform/");
+            String required = platformEndpoint ? "PLATFORM_" : JwtAuthFilter.ROLE_PREFIX;
+            if (current.getAuthorities().stream().noneMatch(a -> a.getAuthority().startsWith(required))) {
+                // The two token families never stand in for each other: a customer/business token on a
+                // platform endpoint, or a platform token on a customer endpoint, counts as no credential
+                // at all (401), not as "known but not allowed" (403).
+                throw new InsufficientAuthenticationException("A "
+                        + (platformEndpoint ? "platform" : "customer/business") + " access token is required");
+            }
         }
         return new AuthorizationDecision(authenticated);
     }
