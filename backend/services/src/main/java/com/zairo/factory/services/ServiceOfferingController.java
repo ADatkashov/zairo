@@ -126,11 +126,11 @@ public class ServiceOfferingController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/api/v1/services/{id}")
+    @OwnsService
     public ServiceResponse update(@Parameter(description = "The service's id.") @PathVariable UUID id,
             @Valid @RequestBody UpdateServiceRequest request, HttpServletRequest httpRequest) {
         ServiceOffering service = serviceOfferingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found: " + id));
-        providerOwnership.requireOwner(service.getProviderId(), CurrentUser.requireUserId(httpRequest));
         UUID catalogServiceId = serviceCatalogPolicy.resolveForSave(service.getProviderId(), request.title(),
                 request.catalogServiceId());
         service.update(request.title(), request.durationMinutes(), request.price(), request.currency());
@@ -151,10 +151,10 @@ public class ServiceOfferingController {
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/api/v1/services/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @OwnsService
     public void deactivate(@Parameter(description = "The service's id.") @PathVariable UUID id,
             HttpServletRequest httpRequest) {
         serviceOfferingRepository.findById(id).ifPresent(service -> {
-            providerOwnership.requireOwner(service.getProviderId(), CurrentUser.requireUserId(httpRequest));
             service.deactivate();
             serviceOfferingRepository.save(service);
         });
@@ -167,11 +167,11 @@ public class ServiceOfferingController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/services/{id}/reactivate")
+    @OwnsService
     public ServiceResponse reactivate(@Parameter(description = "The service's id.") @PathVariable UUID id,
             HttpServletRequest httpRequest) {
         ServiceOffering service = serviceOfferingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found: " + id));
-        providerOwnership.requireOwner(service.getProviderId(), CurrentUser.requireUserId(httpRequest));
         service.reactivate();
         return ServiceResponse.from(serviceOfferingRepository.save(service));
     }
@@ -188,11 +188,11 @@ public class ServiceOfferingController {
             ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/api/v1/services/{id}/catalog-link")
+    @OwnsService
     public ServiceResponse linkCatalogService(@Parameter(description = "The service's id.") @PathVariable UUID id,
             @Valid @RequestBody LinkCatalogServiceRequest request, HttpServletRequest httpRequest) {
         ServiceOffering service = serviceOfferingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found: " + id));
-        providerOwnership.requireOwner(service.getProviderId(), CurrentUser.requireUserId(httpRequest));
         service.linkCatalogService(serviceCatalogPolicy.resolveForLink(service.getProviderId(),
                 request.catalogServiceId()));
         return ServiceResponse.from(serviceOfferingRepository.save(service));
