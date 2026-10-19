@@ -5,27 +5,32 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import org.springframework.stereotype.Component;
+import java.util.List;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * Not a global "protect everything" gate — this only populates
- * request attributes when a valid Bearer token is present. Endpoints that
- * require auth check for the attribute themselves (see AuthController.me)
- * and reject with 401 if missing; endpoints that don't require auth (e.g.
- * search/browse) are unaffected either way. A real access-control policy
- * (which endpoints require which role) is a decision for whenever the app
- * has enough protected endpoints to need one, not a single-endpoint MVP.
+ * Validates a customer/business Bearer token and, when it is valid, signs the request in: the
+ * principal is the user's id ({@link java.util.UUID}) and the one authority is {@code ROLE_<role>}
+ * (e.g. {@code ROLE_ADMIN}). An invalid or missing token leaves the request anonymous — whether that
+ * is acceptable is the endpoint's rule (see the platform's {@code EndpointAuthorizationManager}).
+ *
+ * <p>Not a bean: the platform's {@code SecurityConfig} puts it into the Spring Security filter chain
+ * itself, so it runs exactly once and inside the security context's lifecycle.
  */
-@Component
-class JwtAuthFilter extends OncePerRequestFilter {
+public class JwtAuthFilter extends OncePerRequestFilter {
 
-    static final String USER_ID_ATTRIBUTE = "auth.userId";
-    static final String ROLE_ATTRIBUTE = "auth.role";
+    /** Prefix of the customer/business role authorities ({@code ROLE_ADMIN}, {@code ROLE_PROVIDER_OWNER}…). */
+    public static final String ROLE_PREFIX = "ROLE_";
 
     private final JwtService jwtService;
+    private final SecurityContextHolderStrategy contextHolder = SecurityContextHolder.getContextHolderStrategy();
 
-    JwtAuthFilter(JwtService jwtService) {
+    public JwtAuthFilter(JwtService jwtService) {
         this.jwtService = jwtService;
     }
 
@@ -34,10 +39,11 @@ class JwtAuthFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         String header = request.getHeader("Authorization");
         if (header != null && header.startsWith("Bearer ")) {
-            String token = header.substring("Bearer ".length());
-            jwtService.validateAccessToken(token).ifPresent(claims -> {
-                request.setAttribute(USER_ID_ATTRIBUTE, claims.userId());
-                request.setAttribute(ROLE_ATTRIBUTE, claims.role());
+            jwtService.validateAccessToken(header.substring("Bearer ".length())).ifPresent(claims -> {
+                SecurityContext context = contextHolder.createEmptyContext();
+                context.setAuthentication(UsernamePasswordAuthenticationToken.authenticated(claims.userId(), null,
+                        List.of(new SimpleGrantedAuthority(ROLE_PREFIX + claims.role()))));
+                contextHolder.setContext(context);
             });
         }
         chain.doFilter(request, response);

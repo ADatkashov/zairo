@@ -14,7 +14,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -63,8 +62,8 @@ public class PlatformAdminController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/platform/auth/me")
-    public AdminSummary me(HttpServletRequest httpRequest) {
-        UUID adminId = PlatformCurrentAdmin.requireAdminId(httpRequest);
+    public AdminSummary me() {
+        UUID adminId = PlatformCurrentAdmin.requireAdminId();
         return adminService.me(adminId);
     }
 
@@ -82,9 +81,9 @@ public class PlatformAdminController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/platform/admins")
     @ResponseStatus(HttpStatus.CREATED)
-    public AdminSummary createAdmin(@Valid @RequestBody CreateAdminRequest request, HttpServletRequest httpRequest) {
-        UUID actorId = PlatformCurrentAdmin.requireAdminId(httpRequest);
-        PlatformCurrentAdmin.requirePlatformAdmin(httpRequest);
+    @PlatformAdminOnly
+    public AdminSummary createAdmin(@Valid @RequestBody CreateAdminRequest request) {
+        UUID actorId = PlatformCurrentAdmin.requireAdminId();
         String actorEmail = adminService.me(actorId).email();
         return adminService.createAdmin(actorId, actorEmail, request);
     }
@@ -96,8 +95,8 @@ public class PlatformAdminController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/api/v1/platform/auth/me/avatar")
-    public AdminSummary updateAvatar(@Valid @RequestBody UpdateAvatarRequest request, HttpServletRequest httpRequest) {
-        UUID adminId = PlatformCurrentAdmin.requireAdminId(httpRequest);
+    public AdminSummary updateAvatar(@Valid @RequestBody UpdateAvatarRequest request) {
+        UUID adminId = PlatformCurrentAdmin.requireAdminId();
         return adminService.updateAvatar(adminId, request.avatarUrl());
     }
 
@@ -110,8 +109,8 @@ public class PlatformAdminController {
             content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ApiError")))
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/platform/admins")
-    public List<AdminSummary> listAdmins(HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requirePlatformAdmin(httpRequest);
+    @PlatformAdminOnly
+    public List<AdminSummary> listAdmins() {
         return adminService.listAdmins();
     }
 
@@ -128,10 +127,10 @@ public class PlatformAdminController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/platform/admins/{adminId}/deactivate")
+    @PlatformAdminOnly
     public AdminSummary deactivateAdmin(@Parameter(description = "The target account's id.") @PathVariable UUID adminId,
-            @RequestBody(required = false) DeactivateAdminRequest request, HttpServletRequest httpRequest) {
-        UUID actorId = PlatformCurrentAdmin.requireAdminId(httpRequest);
-        PlatformCurrentAdmin.requirePlatformAdmin(httpRequest);
+            @RequestBody(required = false) DeactivateAdminRequest request) {
+        UUID actorId = PlatformCurrentAdmin.requireAdminId();
         String actorEmail = adminService.me(actorId).email();
         String reason = request == null ? null : request.reason();
         return adminService.deactivateAdmin(actorId, actorEmail, adminId, reason);
@@ -146,10 +145,10 @@ public class PlatformAdminController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/platform/admins/{adminId}/reactivate")
+    @PlatformAdminOnly
     public AdminSummary reactivateAdmin(@Parameter(description = "The target account's id.") @PathVariable UUID adminId,
-            @RequestBody(required = false) DeactivateAdminRequest request, HttpServletRequest httpRequest) {
-        UUID actorId = PlatformCurrentAdmin.requireAdminId(httpRequest);
-        PlatformCurrentAdmin.requirePlatformAdmin(httpRequest);
+            @RequestBody(required = false) DeactivateAdminRequest request) {
+        UUID actorId = PlatformCurrentAdmin.requireAdminId();
         String actorEmail = adminService.me(actorId).email();
         String reason = request == null ? null : request.reason();
         return adminService.reactivateAdmin(actorId, actorEmail, adminId, reason);
@@ -161,8 +160,8 @@ public class PlatformAdminController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/platform/audit-log")
-    public Page<AuditLogEntryResponse> auditLog(Pageable pageable, HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requireAnyRole(httpRequest);
+    @AnyPlatformRole
+    public Page<AuditLogEntryResponse> auditLog(Pageable pageable) {
         return auditLogRepository.findAllByOrderByCreatedAtDesc(pageable).map(AuditLogEntryResponse::from);
     }
 }

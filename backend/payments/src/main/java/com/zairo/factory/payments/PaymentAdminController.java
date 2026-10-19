@@ -3,13 +3,13 @@ package com.zairo.factory.payments;
 import com.zairo.factory.payments.PaymentDtos.PaymentResponse;
 import com.zairo.factory.payments.PaymentDtos.ReconciliationResponse;
 import com.zairo.factory.payments.PaymentDtos.RefundRequestResponse;
+import com.zairo.factory.platformadmin.AnyPlatformRole;
 import com.zairo.factory.platformadmin.PlatformCurrentAdmin;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
@@ -54,8 +54,8 @@ public class PaymentAdminController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/platform/payments/failed-refunds")
-    public List<PaymentResponse> failedRefunds(HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requireAnyRole(httpRequest);
+    @AnyPlatformRole
+    public List<PaymentResponse> failedRefunds() {
         return paymentRepository.findByStatusOrderByCreatedAtDesc(PaymentStatus.REFUND_FAILED).stream()
                 .map(PaymentResponse::from)
                 .toList();
@@ -70,9 +70,9 @@ public class PaymentAdminController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/platform/payments/{paymentId}/reconcile")
+    @AnyPlatformRole
     public ReconciliationResponse reconcile(
-            @Parameter(description = "The payment's id.") @PathVariable UUID paymentId, HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requireAnyRole(httpRequest);
+            @Parameter(description = "The payment's id.") @PathVariable UUID paymentId) {
         return ReconciliationResponse.from(reconciliationService.reconcile(paymentId));
     }
 
@@ -87,10 +87,9 @@ public class PaymentAdminController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/platform/payments/refund-requests")
+    @AnyPlatformRole
     public List<RefundRequestResponse> refundRequests(
-            @Parameter(description = "Which status to list.") @RequestParam PaymentRefundRequestStatus status,
-            HttpServletRequest httpRequest) {
-        PlatformCurrentAdmin.requireAnyRole(httpRequest);
+            @Parameter(description = "Which status to list.") @RequestParam PaymentRefundRequestStatus status) {
         return refundRequestRepository.findByStatusOrderByCreatedAtDesc(status,
                         PageRequest.of(0, REFUND_REQUEST_LIST_LIMIT)).stream()
                 .map(RefundRequestResponse::from)

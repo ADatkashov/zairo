@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -82,8 +81,8 @@ public class CityController {
     @ApiResponse(responseCode = "404", description = "User has not selected a city yet")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/user/current")
-    public CityDto getUserCurrentCity(HttpServletRequest httpRequest) {
-        UUID userId = CurrentUser.requireUserId(httpRequest);
+    public CityDto getUserCurrentCity() {
+        UUID userId = CurrentUser.requireUserId();
         return cityService.getUserCurrentCity(userId);
     }
 
@@ -96,9 +95,8 @@ public class CityController {
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/user/current")
     public CityDto setUserCurrentCity(
-            @Valid @RequestBody SetCurrentCityRequest request,
-            HttpServletRequest httpRequest) {
-        UUID userId = CurrentUser.requireUserId(httpRequest);
+            @Valid @RequestBody SetCurrentCityRequest request) {
+        UUID userId = CurrentUser.requireUserId();
         return cityService.setUserCurrentCity(userId, request.cityCode());
     }
 

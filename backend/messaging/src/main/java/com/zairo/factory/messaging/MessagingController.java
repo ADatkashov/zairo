@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -43,8 +42,8 @@ public class MessagingController {
     @PostMapping("/api/v1/providers/{providerId}/messages")
     @ResponseStatus(HttpStatus.CREATED)
     public MessageResponse sendToProvider(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            @Valid @RequestBody SendMessageRequest request, HttpServletRequest httpRequest) {
-        UUID customerId = CurrentUser.requireUserId(httpRequest);
+            @Valid @RequestBody SendMessageRequest request) {
+        UUID customerId = CurrentUser.requireUserId();
         return MessageResponse.from(messagingService.sendAsCustomer(customerId, providerId, request.body()));
     }
 
@@ -55,9 +54,8 @@ public class MessagingController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/providers/{providerId}/messages")
     public List<MessageResponse> getThreadWithProvider(
-            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            HttpServletRequest httpRequest) {
-        UUID customerId = CurrentUser.requireUserId(httpRequest);
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId) {
+        UUID customerId = CurrentUser.requireUserId();
         return messagingService.getMessagesForCustomerAndProvider(customerId, providerId).stream()
                 .map(MessageResponse::from).toList();
     }
@@ -70,9 +68,8 @@ public class MessagingController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/providers/{providerId}/conversations")
     public List<ConversationResponse> providerInbox(
-            @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+            @Parameter(description = "The provider's id.") @PathVariable UUID providerId) {
+        UUID callerId = CurrentUser.requireUserId();
         return messagingService.conversationsForProvider(providerId, callerId);
     }
 
@@ -81,8 +78,8 @@ public class MessagingController {
     @ApiResponse(responseCode = "401", ref = "Unauthorized")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/conversations/mine")
-    public List<ConversationResponse> myInbox(HttpServletRequest httpRequest) {
-        UUID customerId = CurrentUser.requireUserId(httpRequest);
+    public List<ConversationResponse> myInbox() {
+        UUID customerId = CurrentUser.requireUserId();
         return messagingService.conversationsForCustomer(customerId);
     }
 
@@ -99,8 +96,8 @@ public class MessagingController {
     @PostMapping("/api/v1/bookings/{bookingId}/messages")
     @ResponseStatus(HttpStatus.CREATED)
     public MessageResponse sendAboutBooking(@Parameter(description = "The booking's id.") @PathVariable UUID bookingId,
-            @Valid @RequestBody SendMessageRequest request, HttpServletRequest httpRequest) {
-        UUID customerId = CurrentUser.requireUserId(httpRequest);
+            @Valid @RequestBody SendMessageRequest request) {
+        UUID customerId = CurrentUser.requireUserId();
         return MessageResponse.from(messagingService.sendAsCustomerForBooking(bookingId, customerId, request.body()));
     }
 
@@ -116,8 +113,8 @@ public class MessagingController {
     @PostMapping("/api/v1/conversations/{conversationId}/messages")
     @ResponseStatus(HttpStatus.CREATED)
     public MessageResponse reply(@Parameter(description = "The conversation's id.") @PathVariable UUID conversationId,
-            @Valid @RequestBody SendMessageRequest request, HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+            @Valid @RequestBody SendMessageRequest request) {
+        UUID callerId = CurrentUser.requireUserId();
         return MessageResponse.from(messagingService.reply(conversationId, callerId, request.body()));
     }
 
@@ -131,9 +128,8 @@ public class MessagingController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/api/v1/conversations/{conversationId}/messages")
     public List<MessageResponse> getConversation(
-            @Parameter(description = "The conversation's id.") @PathVariable UUID conversationId,
-            HttpServletRequest httpRequest) {
-        UUID callerId = CurrentUser.requireUserId(httpRequest);
+            @Parameter(description = "The conversation's id.") @PathVariable UUID conversationId) {
+        UUID callerId = CurrentUser.requireUserId();
         return messagingService.getMessages(conversationId, callerId).stream().map(MessageResponse::from).toList();
     }
 }

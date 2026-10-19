@@ -1,6 +1,7 @@
 package com.zairo.factory.services;
 
 import com.zairo.factory.auth.CurrentUser;
+import com.zairo.factory.providers.OwnsProvider;
 import com.zairo.factory.providers.ProviderOwnership;
 import com.zairo.factory.users.UserRepository;
 import com.zairo.factory.services.ServiceOfferingDtos.CreateServiceRequest;
@@ -12,7 +13,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -58,9 +58,9 @@ public class ServiceOfferingController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/providers/{providerId}/services")
     @ResponseStatus(HttpStatus.CREATED)
+    @OwnsProvider
     public ServiceResponse create(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
-            @Valid @RequestBody CreateServiceRequest request, HttpServletRequest httpRequest) {
-        providerOwnership.requireOwner(providerId, CurrentUser.requireUserId(httpRequest));
+            @Valid @RequestBody CreateServiceRequest request) {
         UUID catalogServiceId = serviceCatalogPolicy.resolveForSave(providerId, request.title(),
                 request.catalogServiceId());
         ServiceOffering service = new ServiceOffering(UUID.randomUUID(), providerId, request.title(),
@@ -69,9 +69,9 @@ public class ServiceOfferingController {
         return ServiceResponse.from(serviceOfferingRepository.save(service));
     }
 
-    private String getUserCurrentCityCode(HttpServletRequest httpRequest) {
+    private String getUserCurrentCityCode() {
         try {
-            UUID userId = CurrentUser.requireUserId(httpRequest);
+            UUID userId = CurrentUser.requireUserId();
             return userRepository.findById(userId)
                     .map(user -> user.getCurrentCityCode())
                     .orElse(null);
@@ -91,13 +91,12 @@ public class ServiceOfferingController {
     public List<ServiceResponse> listByProvider(
             @Parameter(description = "The provider's id.") @PathVariable UUID providerId,
             @Parameter(description = "Include deactivated services too.")
-            @RequestParam(defaultValue = "false") boolean includeInactive,
-            HttpServletRequest httpRequest) {
+            @RequestParam(defaultValue = "false") boolean includeInactive) {
         List<ServiceOffering> services;
         if (includeInactive) {
             services = serviceOfferingRepository.findByProviderId(providerId);
         } else {
-            String cityCode = getUserCurrentCityCode(httpRequest);
+            String cityCode = getUserCurrentCityCode();
             if (cityCode != null) {
                 services = serviceOfferingRepository.findByProviderIdAndCityCodeAndActiveTrue(providerId, cityCode);
             } else {
@@ -125,11 +124,11 @@ public class ServiceOfferingController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/api/v1/services/{id}")
+    @OwnsService
     public ServiceResponse update(@Parameter(description = "The service's id.") @PathVariable UUID id,
-            @Valid @RequestBody UpdateServiceRequest request, HttpServletRequest httpRequest) {
+            @Valid @RequestBody UpdateServiceRequest request) {
         ServiceOffering service = serviceOfferingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found: " + id));
-        providerOwnership.requireOwner(service.getProviderId(), CurrentUser.requireUserId(httpRequest));
         UUID catalogServiceId = serviceCatalogPolicy.resolveForSave(service.getProviderId(), request.title(),
                 request.catalogServiceId());
         service.update(request.title(), request.durationMinutes(), request.price(), request.currency());
@@ -150,10 +149,9 @@ public class ServiceOfferingController {
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/api/v1/services/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deactivate(@Parameter(description = "The service's id.") @PathVariable UUID id,
-            HttpServletRequest httpRequest) {
+    @OwnsService
+    public void deactivate(@Parameter(description = "The service's id.") @PathVariable UUID id) {
         serviceOfferingRepository.findById(id).ifPresent(service -> {
-            providerOwnership.requireOwner(service.getProviderId(), CurrentUser.requireUserId(httpRequest));
             service.deactivate();
             serviceOfferingRepository.save(service);
         });
@@ -166,11 +164,10 @@ public class ServiceOfferingController {
     @ApiResponse(responseCode = "404", ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/api/v1/services/{id}/reactivate")
-    public ServiceResponse reactivate(@Parameter(description = "The service's id.") @PathVariable UUID id,
-            HttpServletRequest httpRequest) {
+    @OwnsService
+    public ServiceResponse reactivate(@Parameter(description = "The service's id.") @PathVariable UUID id) {
         ServiceOffering service = serviceOfferingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found: " + id));
-        providerOwnership.requireOwner(service.getProviderId(), CurrentUser.requireUserId(httpRequest));
         service.reactivate();
         return ServiceResponse.from(serviceOfferingRepository.save(service));
     }
@@ -187,11 +184,11 @@ public class ServiceOfferingController {
             ref = "NotFound")
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/api/v1/services/{id}/catalog-link")
+    @OwnsService
     public ServiceResponse linkCatalogService(@Parameter(description = "The service's id.") @PathVariable UUID id,
-            @Valid @RequestBody LinkCatalogServiceRequest request, HttpServletRequest httpRequest) {
+            @Valid @RequestBody LinkCatalogServiceRequest request) {
         ServiceOffering service = serviceOfferingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found: " + id));
-        providerOwnership.requireOwner(service.getProviderId(), CurrentUser.requireUserId(httpRequest));
         service.linkCatalogService(serviceCatalogPolicy.resolveForLink(service.getProviderId(),
                 request.catalogServiceId()));
         return ServiceResponse.from(serviceOfferingRepository.save(service));

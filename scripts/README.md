@@ -23,6 +23,15 @@ chmod +x scripts/*.sh
 `./scripts/verify-local.sh` — те же проверки, что в CI (Flutter analyze + test по всем пакетам и тесты бэкенда), локально.
 Нужен, когда GitHub Actions не запускается. Подробности: `docs/ci-cd.md`.
 
+## Демо-данные и скриншоты
+
+- `./scripts/seed-demo-data.sh` — четыре демо-бизнеса (услуги из каталога, мастера,
+  график), одобренные через API, и один клиент. Локально: `PG_CONTAINER=<postgres> ./scripts/seed-demo-data.sh`
+  (создаст и админа платформы `admin@zairo-demo.test`).
+- `./scripts/screenshots.sh [папка]` — собирает три приложения под web и снимает
+  клиентский сценарий записи, кабинет владельца и консоль платформы
+  (Playwright + Chromium). Нужны backend с демо-данными, Flutter, Node.
+
 ## Доступные скрипты
 
 ### 1. `start.sh` — Главный скрипт
