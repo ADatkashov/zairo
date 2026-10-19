@@ -1,3 +1,8 @@
+# CircleCI is SWITCHED OFF (kept as an option): every workflow below is limited to a
+# branch named `circleci-switch`, which does not exist, so no pipeline ever runs.
+# GitHub Actions (.github/workflows, branch `test`) is the active CI.
+# To switch back: replace `circleci-switch` with `test` in the branch filters
+# (see docs/ci-cd.md "Actions minutes").
 version: 2.1
 
 jobs:
@@ -394,7 +399,7 @@ workflows:
           filters:
             branches:
               only:
-                - test
+                - circleci-switch
       - build-android-apk:
           name: build-android-apk-user
           app_dir: apps/user_app
@@ -402,7 +407,7 @@ workflows:
           filters:
             branches:
               only:
-                - test
+                - circleci-switch
           requires:
             - build-for-testing
       - build-android-apk:
@@ -412,14 +417,14 @@ workflows:
           filters:
             branches:
               only:
-                - test
+                - circleci-switch
           requires:
             - build-for-testing
       - test-platform-admin:
           filters:
             branches:
               only:
-                - test
+                - circleci-switch
       - build-android-apk:
           name: build-android-apk-platform
           app_dir: apps/platform_admin
@@ -427,7 +432,7 @@ workflows:
           filters:
             branches:
               only:
-                - test
+                - circleci-switch
           requires:
             - test-platform-admin
 
@@ -439,12 +444,12 @@ workflows:
           filters:
             branches:
               only:
-                - test
+                - circleci-switch
       - flutter-check:
           filters:
             branches:
               only:
-                - test
+                - circleci-switch
           # The Flutter jobs are the expensive ones (~5 min each, x7), while
           # backend-api-tests fails fast when its environment is broken. Wait for
           # it so a broken backend gate does not burn the Flutter quota.
@@ -464,4 +469,4 @@ workflows:
           filters:
             branches:
               only:
-                - test
+                - circleci-switch
