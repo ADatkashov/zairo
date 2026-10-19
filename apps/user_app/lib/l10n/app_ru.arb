@@ -717,7 +717,6 @@
   "bookingReviewTotal": "Итого",
   "bookingStepsDone": "Все шаги пройдены",
   "bookingHintService": "Выберите услугу",
-  "bookingHintPerson": "Выберите специалиста",
   "bookingHintVehicle": "Выберите автомобиль",
   "bookingHintTime": "Выберите время",
   "cancelReasonPlans": "Изменились планы",
@@ -735,5 +734,16 @@
   "waitlistAnyDay": "Любой день",
   "waitlistToday": "Сегодня",
   "waitlistTomorrow": "Завтра",
-  "waitlistJoinedDayMessage": "Сообщим, как только освободится время на {day}. Оно достанется тому, кто запишется первым."
+  "waitlistJoinedDayMessage": "Сообщим, как только освободится время на {day}. Оно достанется тому, кто запишется первым.",
+  "bookingSoonest": "Ближайшее",
+  "bookingPartMorning": "Утро",
+  "bookingPartAfternoon": "День",
+  "bookingPartEvening": "Вечер",
+  "bookingCalendarButton": "Календарь",
+  "bookingCalendarTitle": "Выберите дату",
+  "bookingCalendarPrevMonth": "Предыдущий месяц",
+  "bookingCalendarNextMonth": "Следующий месяц",
+  "bookingCalendarDayFree": "{day}: есть время",
+  "bookingCalendarDayBusy": "{day}: нет времени",
+  "bookingSpecialistLabel": "Специалист"
 }

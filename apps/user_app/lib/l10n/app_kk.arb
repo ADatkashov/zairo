@@ -717,7 +717,6 @@
   "bookingReviewTotal": "Барлығы",
   "bookingStepsDone": "Барлық қадам аяқталды",
   "bookingHintService": "Қызметті таңдаңыз",
-  "bookingHintPerson": "Маманды таңдаңыз",
   "bookingHintVehicle": "Көлікті таңдаңыз",
   "bookingHintTime": "Уақытты таңдаңыз",
   "cancelReasonPlans": "Жоспар өзгерді",
@@ -735,5 +734,16 @@
   "waitlistAnyDay": "Кез келген күн",
   "waitlistToday": "Бүгін",
   "waitlistTomorrow": "Ертең",
-  "waitlistJoinedDayMessage": "{day} күні уақыт босаған бойда хабарлаймыз. Ол бірінші жазылғанға тиеді."
+  "waitlistJoinedDayMessage": "{day} күні уақыт босаған бойда хабарлаймыз. Ол бірінші жазылғанға тиеді.",
+  "bookingSoonest": "Ең жақын",
+  "bookingPartMorning": "Таңертең",
+  "bookingPartAfternoon": "Күндіз",
+  "bookingPartEvening": "Кешке",
+  "bookingCalendarButton": "Күнтізбе",
+  "bookingCalendarTitle": "Күнді таңдаңыз",
+  "bookingCalendarPrevMonth": "Алдыңғы ай",
+  "bookingCalendarNextMonth": "Келесі ай",
+  "bookingCalendarDayFree": "{day}: бос уақыт бар",
+  "bookingCalendarDayBusy": "{day}: бос уақыт жоқ",
+  "bookingSpecialistLabel": "Маман"
 }

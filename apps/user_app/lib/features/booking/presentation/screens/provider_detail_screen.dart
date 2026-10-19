@@ -41,9 +41,9 @@ import '../../data/booking_exception.dart';
 import '../../data/models/availability_slot.dart';
 import '../../data/models/booking.dart';
 import '../../data/models/payment_plan.dart';
+import '../../../../core/formatting/month_day_time.dart';
 import '../providers/booking_providers.dart';
 import '../widgets/booking_review_sheet.dart';
-import '../widgets/booking_stepper.dart';
 import '../widgets/day_slot_picker.dart';
 import 'booking_confirmation_screen.dart';
 import 'booking_payment_screen.dart';
@@ -119,6 +119,42 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
 
   /// Marks where the booking steps begin — just above the first of them.
   final _bookingStartKey = GlobalKey();
+
+  /// Whether the full list of people is open. Collapsed by default: "Any master" is already chosen, and a long
+  /// list of masters between the service and the times would push the times off the screen.
+  bool _peopleExpanded = false;
+
+  /// Marks the "Available times" section, so the page can bring it into view once the choices above it are made.
+  final _timesKey = GlobalKey();
+
+  /// A scroll to the times is wanted as soon as they are on the page (set when a service or person is picked).
+  bool _revealPending = false;
+
+  /// After a service or a person is picked, scrolls the free times into view (they sit below the choices, often
+  /// off screen) — the customer should never have to hunt for the next step. The scroll waits until the times
+  /// have actually loaded (see [_buildTimes]): scrolling to a half-empty section would stop short of them.
+  void _revealTimes() {
+    _revealPending = true;
+    // Already loaded (the times did not change)? Then no rebuild will come to trigger it: do it now.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_revealPending && _timesLoaded) _scrollToTimes();
+    });
+  }
+
+  /// Whether the times section currently shows times (set while building).
+  bool _timesLoaded = false;
+
+  void _scrollToTimes() {
+    _revealPending = false;
+    final anchor = _timesKey.currentContext;
+    if (!mounted || anchor == null || _selectedServiceId == null || _selectedSlotId != null) return;
+    Scrollable.ensureVisible(
+      anchor,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+      alignment: 0.0,
+    );
+  }
 
   @override
   void initState() {
@@ -199,12 +235,14 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       cleaners: cleanersAsync.hasValue ? cleaners : null,
       staff: staffAsync.hasValue ? staffMembers : null,
     );
-    final anyMode = hasWorkers && (_anyMaster || !allowChoice);
-    _anyModeNow = anyMode;
     final selectedWorkerId = _selectedMasterId ??
         _selectedMechanicId ??
         _selectedCleanerId ??
         _selectedStaffId;
+    // "Any master" is the default: nobody has to pick a person before they can see times (one step fewer);
+    // choosing a person is still one tap away.
+    final anyMode = hasWorkers && (_anyMaster || !allowChoice || selectedWorkerId == null);
+    _anyModeNow = anyMode;
     _applyPreselectedSlot(selectedWorkerId, anyMode);
     // A person may charge their own price (the owner's choice); it is shown here, before the customer confirms,
     // exactly as the server will charge it. "Any master" is always the base price.
@@ -239,11 +277,11 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.all(FactorySpacing.space4),
-                // The anchor sits below the hero and the info, so build well past the
-                // first screenful: it has to exist before it can be scrolled to.
+                // The anchors (booking start, available times) sit below the hero and the info, so build well
+                // past the first screenful: they have to exist before they can be scrolled to.
                 // Finite on purpose — an infinite extent breaks semantics ("non-finite
                 // rect") for screen readers.
-                scrollCacheExtent: widget.startAtBooking ? const ScrollCacheExtent.pixels(4000) : null,
+                scrollCacheExtent: const ScrollCacheExtent.pixels(4000),
                 children: [
                   _ProviderHero(provider: widget.provider),
                   const SizedBox(height: FactorySpacing.space4),
@@ -339,22 +377,64 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                     ),
                   ),
                   SizedBox.shrink(key: _bookingStartKey),
+                  const SizedBox(height: FactorySpacing.space4),
+                  Text(l10n.servicesSectionTitle, style: textTheme.titleMedium),
+                  const SizedBox(height: FactorySpacing.space2),
+                  ...widget.provider.services.map(
+                    (service) => FactoryServiceCard(
+                      title: service.title,
+                      metaText: l10n.serviceDurationMinutes(
+                        service.durationMinutes,
+                      ),
+                      price: service.price,
+                      // The service's own currency — the sticky bar and the
+                      // payment summary already use it; without this the row
+                      // fell back to the platform default and could disagree.
+                      currencySymbol: service.currency,
+                      selected: _selectedServiceId == service.id,
+                      onTap: () {
+                        setState(() {
+                          if (_selectedServiceId != service.id && anyMode) {
+                            _selectedSlotId = null;
+                            _selectedSlotStartsAt = null;
+                          }
+                          _selectedServiceId = service.id;
+                        });
+                        _revealTimes();
+                      },
+                    ),
+                  ),
                   if (hasWorkers && allowChoice) ...[
-                    const SizedBox(height: FactorySpacing.space6),
-                    _AnyMasterOption(
-                      selected: _anyMaster,
-                      onTap: () => setState(() {
-                        _anyMaster = true;
-                        _selectedMasterId = null;
-                        _selectedMechanicId = null;
-                        _selectedCleanerId = null;
-                        _selectedStaffId = null;
-                        _selectedSlotId = null;
-                        _selectedSlotStartsAt = null;
-                      }),
+                    const SizedBox(height: FactorySpacing.space4),
+                    _SpecialistSummary(
+                      value: anyMode
+                          ? l10n.anyMasterOptionTitle
+                          : (_workerName(masters, mechanics, cleaners, staffMembers, selectedWorkerId) ??
+                              l10n.anyMasterOptionTitle),
+                      expanded: _peopleExpanded,
+                      onTap: () => setState(() => _peopleExpanded = !_peopleExpanded),
                     ),
                   ],
-                  if (masters.isNotEmpty && allowChoice) ...[
+                  if (hasWorkers && allowChoice && _peopleExpanded) ...[
+                    const SizedBox(height: FactorySpacing.space3),
+                    _AnyMasterOption(
+                      selected: anyMode,
+                      onTap: () {
+                        setState(() {
+                          _peopleExpanded = false;
+                          _anyMaster = true;
+                          _selectedMasterId = null;
+                          _selectedMechanicId = null;
+                          _selectedCleanerId = null;
+                          _selectedStaffId = null;
+                          _selectedSlotId = null;
+                          _selectedSlotStartsAt = null;
+                        });
+                        _revealTimes();
+                      },
+                    ),
+                  ],
+                  if (masters.isNotEmpty && allowChoice && _peopleExpanded) ...[
                     const SizedBox(height: FactorySpacing.space6),
                     Text(
                       l10n.mastersSectionTitle,
@@ -382,7 +462,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                       ),
                     ),
                   ],
-                  if (mechanics.isNotEmpty && allowChoice) ...[
+                  if (mechanics.isNotEmpty && allowChoice && _peopleExpanded) ...[
                     const SizedBox(height: FactorySpacing.space6),
                     Text(
                       l10n.mechanicsSectionTitle,
@@ -404,7 +484,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                       ),
                     ),
                   ],
-                  if (cleaners.isNotEmpty && allowChoice) ...[
+                  if (cleaners.isNotEmpty && allowChoice && _peopleExpanded) ...[
                     const SizedBox(height: FactorySpacing.space6),
                     Text(
                       l10n.cleanersSectionTitle,
@@ -426,7 +506,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                       ),
                     ),
                   ],
-                  if (staffMembers.isNotEmpty && allowChoice) ...[
+                  if (staffMembers.isNotEmpty && allowChoice && _peopleExpanded) ...[
                     const SizedBox(height: FactorySpacing.space6),
                     Text(l10n.staffSectionTitle, style: textTheme.titleMedium),
                     const SizedBox(height: FactorySpacing.space3),
@@ -485,30 +565,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                     ),
                   ],
                   const SizedBox(height: FactorySpacing.space6),
-                  Text(l10n.servicesSectionTitle, style: textTheme.titleMedium),
-                  const SizedBox(height: FactorySpacing.space2),
-                  ...widget.provider.services.map(
-                    (service) => FactoryServiceCard(
-                      title: service.title,
-                      metaText: l10n.serviceDurationMinutes(
-                        service.durationMinutes,
-                      ),
-                      price: service.price,
-                      // The service's own currency — the sticky bar and the
-                      // payment summary already use it; without this the row
-                      // fell back to the platform default and could disagree.
-                      currencySymbol: service.currency,
-                      selected: _selectedServiceId == service.id,
-                      onTap: () => setState(() {
-                        if (_selectedServiceId != service.id && anyMode) {
-                          _selectedSlotId = null;
-                          _selectedSlotStartsAt = null;
-                        }
-                        _selectedServiceId = service.id;
-                      }),
-                    ),
-                  ),
-                  const SizedBox(height: FactorySpacing.space6),
+                  SizedBox.shrink(key: _timesKey),
                   Text(
                     l10n.availableTimesSectionTitle,
                     style: textTheme.titleMedium,
@@ -531,15 +588,13 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
             _BookingCta(
               hint: _nextStepHint(
                 l10n,
-                needsPerson: !anyMode &&
-                    ((masters.isNotEmpty && _selectedMasterId == null) ||
-                        (mechanics.isNotEmpty && _selectedMechanicId == null) ||
-                        (cleaners.isNotEmpty && _selectedCleanerId == null) ||
-                        (staffMembers.isNotEmpty && _selectedStaffId == null)),
                 needsVehicle: requiresVehicleSelection && _selectedVehicleId == null,
               ),
-              step: _selectedServiceId == null ? 0 : (_selectedSlotId == null ? 1 : 2),
               selectedService: _selectedService(),
+              when: _selectedSlotStartsAt == null || _selectedSlotId == null
+                  ? null
+                  : '${formatWeekdayMonthDay(l10n, _selectedSlotStartsAt!.toLocal())} · '
+                      '${formatHourMinute(_selectedSlotStartsAt!.toLocal())}',
               price: _effectivePrice,
               plan: _paymentPlan(),
               isLoading: _isBooking,
@@ -574,15 +629,13 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
   }
 
   /// What is still missing before "Book" works, in the order the page asks for
-  /// it (service, person, vehicle, time) — null once the booking is complete.
+  /// it (service, vehicle, time — the person defaults to "any master") — null once the booking is complete.
   /// A greyed-out button on its own never says why.
   String? _nextStepHint(
     AppLocalizations l10n, {
-    required bool needsPerson,
     required bool needsVehicle,
   }) {
     if (_selectedServiceId == null) return l10n.bookingHintService;
-    if (needsPerson) return l10n.bookingHintPerson;
     if (needsVehicle) return l10n.bookingHintVehicle;
     if (_selectedSlotId == null) return l10n.bookingHintTime;
     return null;
@@ -683,6 +736,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
   /// Picking a person (rather than "any master") shows that person's own times, so the previous pick is dropped.
   void _pickWorker(VoidCallback select) {
     setState(() {
+      _peopleExpanded = false;
       _anyMaster = false;
       _selectedMasterId = null;
       _selectedMechanicId = null;
@@ -692,6 +746,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       _selectedSlotId = null;
       _selectedSlotStartsAt = null;
     });
+    _revealTimes();
   }
 
   void _onSlotPicked(String slotId, List<AvailabilitySlot> slots) {
@@ -723,10 +778,15 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     required bool anyMode,
     required String? workerId,
   }) {
+    _timesLoaded = false;
     Widget picker(List<AvailabilitySlot> slots) {
       final openSlots = slots.where((s) => s.isOpen).toList();
       if (openSlots.isEmpty) {
         return NoTimesWaitlist(providerId: widget.provider.id);
+      }
+      _timesLoaded = true;
+      if (_revealPending) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToTimes());
       }
       return DaySlotPicker(
         slots: openSlots,
@@ -1112,7 +1172,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
 class _BookingCta extends StatelessWidget {
   const _BookingCta({
     required this.hint,
-    required this.step,
+    required this.when,
     required this.selectedService,
     required this.price,
     required this.plan,
@@ -1123,8 +1183,9 @@ class _BookingCta extends StatelessWidget {
   /// What the customer still has to pick; null when "Book" is ready.
   final String? hint;
 
-  /// Zero-based step of the booking progress bar (service, time, confirm).
-  final int step;
+  /// The picked day and time ("Mon, Oct 5 · 10:00"), shown in the summary so the choice is confirmed at a glance;
+  /// null until a time is picked.
+  final String? when;
   final ServiceSummary? selectedService;
   final double? price;
   final PaymentPlan? plan;
@@ -1204,9 +1265,7 @@ class _BookingCta extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          BookingStepper(step: step),
           if (hint != null) ...[
-            const SizedBox(height: FactorySpacing.space2),
             Text(
               hint!,
               key: const Key('bookingNextStepHint'),
@@ -1234,6 +1293,17 @@ class _BookingCta extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodySmall
                         ?.copyWith(color: colors.textTertiary),
                   ),
+                  if (when != null)
+                    Text(
+                      when!,
+                      key: const Key('bookingCtaWhen'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: colors.text,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
                   ..._paymentLines(context, l10n, colors),
                 ],
               ),
@@ -1384,6 +1454,60 @@ class _CleanerOption extends StatelessWidget {
       ),
       selected: selected,
       onTap: onTap,
+    );
+  }
+}
+
+/// One line that says who the booking is with ("Any master" by default) and opens the full list of people.
+class _SpecialistSummary extends StatelessWidget {
+  const _SpecialistSummary({required this.value, required this.expanded, required this.onTap});
+
+  final String value;
+  final bool expanded;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    return Semantics(
+      button: true,
+      expanded: expanded,
+      label: '${l10n.bookingSpecialistLabel}: $value',
+      excludeSemantics: true,
+      child: InkWell(
+        key: const Key('bookingSpecialist'),
+        onTap: onTap,
+        borderRadius: FactoryRadius.mdRadius,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 56),
+          padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4, vertical: FactorySpacing.space2),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: FactoryRadius.mdRadius,
+            border: Border.all(color: colors.border, width: 1.5),
+          ),
+          child: Row(
+            children: [
+              Icon(Symbols.person_rounded, color: colors.textSecondary),
+              const SizedBox(width: FactorySpacing.space3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(l10n.bookingSpecialistLabel,
+                        style: textTheme.labelSmall?.copyWith(color: colors.textTertiary)),
+                    Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: textTheme.titleSmall),
+                  ],
+                ),
+              ),
+              Icon(expanded ? Symbols.expand_less_rounded : Symbols.expand_more_rounded, color: colors.textSecondary),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
