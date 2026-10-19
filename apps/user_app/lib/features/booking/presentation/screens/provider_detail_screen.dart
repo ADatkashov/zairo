@@ -104,9 +104,6 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
   /// The [ProviderDetailScreen.preselectedSlotId] until that person's times have loaded and it has been applied or dropped.
   String? _pendingSlotId;
 
-  /// "Any master": the customer picks a time, the system assigns a free person.
-  bool _anyMaster = false;
-
   /// The selected service's price for the selected person (see build).
   double? _effectivePrice;
 
@@ -119,10 +116,6 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
 
   /// Marks where the booking steps begin — just above the first of them.
   final _bookingStartKey = GlobalKey();
-
-  /// Whether the full list of people is open. Collapsed by default: "Any master" is already chosen, and a long
-  /// list of masters between the service and the times would push the times off the screen.
-  bool _peopleExpanded = false;
 
   /// Marks the "Available times" section, so the page can bring it into view once the choices above it are made.
   final _timesKey = GlobalKey();
@@ -239,9 +232,9 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
         _selectedMechanicId ??
         _selectedCleanerId ??
         _selectedStaffId;
-    // "Any master" is the default: nobody has to pick a person before they can see times (one step fewer);
-    // choosing a person is still one tap away.
-    final anyMode = hasWorkers && (_anyMaster || !allowChoice || selectedWorkerId == null);
+    // No person picked = "any master": the system assigns whoever is free at the chosen time. Nobody has to pick
+    // a person before they can see times; choosing one is a tap on the strip (and a second tap clears it).
+    final anyMode = hasWorkers && (!allowChoice || selectedWorkerId == null);
     _anyModeNow = anyMode;
     _applyPreselectedSlot(selectedWorkerId, anyMode);
     // A person may charge their own price (the owner's choice); it is shown here, before the customer confirms,
@@ -406,123 +399,55 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                   ),
                   if (hasWorkers && allowChoice) ...[
                     const SizedBox(height: FactorySpacing.space4),
-                    _SpecialistSummary(
-                      value: anyMode
-                          ? l10n.anyMasterOptionTitle
-                          : (_workerName(masters, mechanics, cleaners, staffMembers, selectedWorkerId) ??
-                              l10n.anyMasterOptionTitle),
-                      expanded: _peopleExpanded,
-                      onTap: () => setState(() => _peopleExpanded = !_peopleExpanded),
-                    ),
-                  ],
-                  if (hasWorkers && allowChoice && _peopleExpanded) ...[
-                    const SizedBox(height: FactorySpacing.space3),
-                    _AnyMasterOption(
-                      selected: anyMode,
-                      onTap: () {
-                        setState(() {
-                          _peopleExpanded = false;
-                          _anyMaster = true;
-                          _selectedMasterId = null;
-                          _selectedMechanicId = null;
-                          _selectedCleanerId = null;
-                          _selectedStaffId = null;
-                          _selectedSlotId = null;
-                          _selectedSlotStartsAt = null;
-                        });
-                        _revealTimes();
-                      },
-                    ),
-                  ],
-                  if (masters.isNotEmpty && allowChoice && _peopleExpanded) ...[
-                    const SizedBox(height: FactorySpacing.space6),
+                    Text(l10n.bookingSpecialistLabel, style: textTheme.titleMedium),
+                    const SizedBox(height: FactorySpacing.space1),
+                    // No person picked means "whoever is free": said out loud, so nobody wonders.
                     Text(
-                      l10n.mastersSectionTitle,
-                      style: textTheme.titleMedium,
+                      selectedWorkerId == null ? l10n.bookingSpecialistAnyHint : l10n.bookingSpecialistChosenHint,
+                      key: const Key('bookingSpecialistHint'),
+                      style: textTheme.bodySmall?.copyWith(color: colors.textSecondary),
                     ),
                     const SizedBox(height: FactorySpacing.space3),
-                    ...masters.map(
-                      (master) => Padding(
-                        padding: const EdgeInsets.only(
-                          bottom: FactorySpacing.space2,
-                        ),
-                        child: _MasterOption(
-                          master: master,
-                          selected: _selectedMasterId == master.id,
-                          onTap: () => _pickWorker(
-                            () => _selectedMasterId = master.id,
-                          ),
-                          onViewPortfolio: () => context.push(
-                            AppRoutes.portfolio(
-                              master.id,
-                              masterName: master.displayName,
+                    _PeopleStrip(
+                      people: [
+                        for (final master in masters)
+                          _PersonChoice(
+                            id: master.id,
+                            name: master.displayName,
+                            photoUrl: master.photoUrl,
+                            selected: _selectedMasterId == master.id,
+                            onTap: () => _togglePerson(_selectedMasterId == master.id, () => _selectedMasterId = master.id),
+                            onViewPortfolio: () => context.push(
+                              AppRoutes.portfolio(master.id, masterName: master.displayName),
                             ),
                           ),
-                        ),
-                      ),
-                    ),
-                  ],
-                  if (mechanics.isNotEmpty && allowChoice && _peopleExpanded) ...[
-                    const SizedBox(height: FactorySpacing.space6),
-                    Text(
-                      l10n.mechanicsSectionTitle,
-                      style: textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: FactorySpacing.space3),
-                    ...mechanics.map(
-                      (mechanic) => Padding(
-                        padding: const EdgeInsets.only(
-                          bottom: FactorySpacing.space2,
-                        ),
-                        child: _MechanicOption(
-                          mechanic: mechanic,
-                          selected: _selectedMechanicId == mechanic.id,
-                          onTap: () => _pickWorker(
-                            () => _selectedMechanicId = mechanic.id,
+                        for (final mechanic in mechanics)
+                          _PersonChoice(
+                            id: mechanic.id,
+                            name: mechanic.displayName,
+                            photoUrl: mechanic.photoUrl,
+                            selected: _selectedMechanicId == mechanic.id,
+                            onTap: () => _togglePerson(
+                                _selectedMechanicId == mechanic.id, () => _selectedMechanicId = mechanic.id),
                           ),
-                        ),
-                      ),
-                    ),
-                  ],
-                  if (cleaners.isNotEmpty && allowChoice && _peopleExpanded) ...[
-                    const SizedBox(height: FactorySpacing.space6),
-                    Text(
-                      l10n.cleanersSectionTitle,
-                      style: textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: FactorySpacing.space3),
-                    ...cleaners.map(
-                      (cleaner) => Padding(
-                        padding: const EdgeInsets.only(
-                          bottom: FactorySpacing.space2,
-                        ),
-                        child: _CleanerOption(
-                          cleaner: cleaner,
-                          selected: _selectedCleanerId == cleaner.id,
-                          onTap: () => _pickWorker(
-                            () => _selectedCleanerId = cleaner.id,
+                        for (final cleaner in cleaners)
+                          _PersonChoice(
+                            id: cleaner.id,
+                            name: cleaner.displayName,
+                            photoUrl: cleaner.photoUrl,
+                            selected: _selectedCleanerId == cleaner.id,
+                            onTap: () => _togglePerson(
+                                _selectedCleanerId == cleaner.id, () => _selectedCleanerId = cleaner.id),
                           ),
-                        ),
-                      ),
-                    ),
-                  ],
-                  if (staffMembers.isNotEmpty && allowChoice && _peopleExpanded) ...[
-                    const SizedBox(height: FactorySpacing.space6),
-                    Text(l10n.staffSectionTitle, style: textTheme.titleMedium),
-                    const SizedBox(height: FactorySpacing.space3),
-                    ...staffMembers.map(
-                      (staff) => Padding(
-                        padding: const EdgeInsets.only(
-                          bottom: FactorySpacing.space2,
-                        ),
-                        child: _StaffOption(
-                          staff: staff,
-                          selected: _selectedStaffId == staff.id,
-                          onTap: () => _pickWorker(
-                            () => _selectedStaffId = staff.id,
+                        for (final staff in staffMembers)
+                          _PersonChoice(
+                            id: staff.id,
+                            name: staff.displayName,
+                            selected: _selectedStaffId == staff.id,
+                            onTap: () =>
+                                _togglePerson(_selectedStaffId == staff.id, () => _selectedStaffId = staff.id),
                           ),
-                        ),
-                      ),
+                      ],
                     ),
                   ],
                   if (widget.provider.vertical == 'auto' &&
@@ -733,16 +658,15 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     );
   }
 
-  /// Picking a person (rather than "any master") shows that person's own times, so the previous pick is dropped.
-  void _pickWorker(VoidCallback select) {
+  /// Tapping a person picks them (their own times show, so the previous time pick is dropped); tapping the picked
+  /// person again clears the choice — back to "any master", whoever is free.
+  void _togglePerson(bool alreadyPicked, VoidCallback select) {
     setState(() {
-      _peopleExpanded = false;
-      _anyMaster = false;
       _selectedMasterId = null;
       _selectedMechanicId = null;
       _selectedCleanerId = null;
       _selectedStaffId = null;
-      select();
+      if (!alreadyPicked) select();
       _selectedSlotId = null;
       _selectedSlotStartsAt = null;
     });
@@ -1333,241 +1257,116 @@ class _BookingCta extends StatelessWidget {
   }
 }
 
-class _MasterOption extends StatelessWidget {
-  const _MasterOption({
-    required this.master,
+/// One person to choose from.
+class _PersonChoice {
+  const _PersonChoice({
+    required this.id,
+    required this.name,
     required this.selected,
     required this.onTap,
-    required this.onViewPortfolio,
+    this.photoUrl,
+    this.onViewPortfolio,
   });
 
-  final Master master;
+  final String id;
+  final String name;
+  final String? photoUrl;
   final bool selected;
   final VoidCallback onTap;
-  final VoidCallback onViewPortfolio;
+
+  /// Beauty masters have a portfolio; the others have none.
+  final VoidCallback? onViewPortfolio;
+}
+
+/// The people of the business in one horizontally scrolling row: avatar and name, the picked one ringed with a
+/// check (state is never colour alone). Nothing picked means "any master". A master's portfolio is one tap on the
+/// small gallery icon.
+class _PeopleStrip extends StatelessWidget {
+  const _PeopleStrip({required this.people});
+
+  final List<_PersonChoice> people;
+
+  @override
+  Widget build(BuildContext context) {
+    final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
+    return SizedBox(
+      height: 72 * scale,
+      child: ListView.separated(
+        key: const Key('bookingPeopleStrip'),
+        scrollDirection: Axis.horizontal,
+        itemCount: people.length,
+        separatorBuilder: (_, _) => const SizedBox(width: FactorySpacing.space2),
+        itemBuilder: (context, i) => _PersonCard(person: people[i]),
+      ),
+    );
+  }
+}
+
+class _PersonCard extends StatelessWidget {
+  const _PersonCard({required this.person});
+
+  final _PersonChoice person;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
+    final selected = person.selected;
 
-    return FactorySelectableTile(
-      title: master.displayName,
-      subtitle: master.bio != null
-          ? Text(
-              master.bio!,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-            )
-          : null,
-      leading: FactoryAvatar(
-        initials: initialsFor(master.displayName),
-        image: master.photoUrl != null ? NetworkImage(master.photoUrl!) : null,
-      ),
-      trailing: IconButton(
-        icon: const Icon(Symbols.photo_library_rounded),
-        tooltip: l10n.viewPortfolioTooltip,
-        style: IconButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          side: BorderSide.none,
-          foregroundColor: colors.textSecondary,
-        ),
-        onPressed: onViewPortfolio,
-      ),
-      selected: selected,
-      onTap: onTap,
-    );
-  }
-}
-
-class _MechanicOption extends StatelessWidget {
-  const _MechanicOption({
-    required this.mechanic,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final Mechanic mechanic;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.factoryColors;
-    final textTheme = Theme.of(context).textTheme;
-
-    return FactorySelectableTile(
-      title: mechanic.displayName,
-      subtitle: mechanic.bio != null
-          ? Text(
-              mechanic.bio!,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-            )
-          : null,
-      leading: FactoryAvatar(
-        initials: initialsFor(mechanic.displayName),
-        image: mechanic.photoUrl != null
-            ? NetworkImage(mechanic.photoUrl!)
-            : null,
-      ),
-      selected: selected,
-      onTap: onTap,
-    );
-  }
-}
-
-class _CleanerOption extends StatelessWidget {
-  const _CleanerOption({
-    required this.cleaner,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final Cleaner cleaner;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.factoryColors;
-    final textTheme = Theme.of(context).textTheme;
-
-    return FactorySelectableTile(
-      title: cleaner.displayName,
-      subtitle: cleaner.bio != null
-          ? Text(
-              cleaner.bio!,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-            )
-          : null,
-      leading: FactoryAvatar(
-        initials: initialsFor(cleaner.displayName),
-        image: cleaner.photoUrl != null
-            ? NetworkImage(cleaner.photoUrl!)
-            : null,
-      ),
-      selected: selected,
-      onTap: onTap,
-    );
-  }
-}
-
-/// One line that says who the booking is with ("Any master" by default) and opens the full list of people.
-class _SpecialistSummary extends StatelessWidget {
-  const _SpecialistSummary({required this.value, required this.expanded, required this.onTap});
-
-  final String value;
-  final bool expanded;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
-    final textTheme = Theme.of(context).textTheme;
     return Semantics(
       button: true,
-      expanded: expanded,
-      label: '${l10n.bookingSpecialistLabel}: $value',
-      excludeSemantics: true,
-      child: InkWell(
-        key: const Key('bookingSpecialist'),
-        onTap: onTap,
-        borderRadius: FactoryRadius.mdRadius,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 56),
-          padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4, vertical: FactorySpacing.space2),
-          decoration: BoxDecoration(
-            color: colors.surface,
-            borderRadius: FactoryRadius.mdRadius,
-            border: Border.all(color: colors.border, width: 1.5),
-          ),
-          child: Row(
-            children: [
-              Icon(Symbols.person_rounded, color: colors.textSecondary),
-              const SizedBox(width: FactorySpacing.space3),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(l10n.bookingSpecialistLabel,
-                        style: textTheme.labelSmall?.copyWith(color: colors.textTertiary)),
-                    Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: textTheme.titleSmall),
+      selected: selected,
+      label: person.name,
+      child: Material(
+        color: selected ? colors.primary.withValues(alpha: 0.10) : colors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: FactoryRadius.mdRadius,
+          side: BorderSide(color: selected ? colors.primary : colors.border, width: 1.5),
+        ),
+        child: InkWell(
+          key: Key('person-${person.id}'),
+          onTap: person.onTap,
+          borderRadius: FactoryRadius.mdRadius,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 132, maxWidth: 220),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(FactorySpacing.space3, FactorySpacing.space2, FactorySpacing.space2,
+                  FactorySpacing.space2),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FactoryAvatar(
+                    initials: initialsFor(person.name),
+                    image: person.photoUrl != null ? NetworkImage(person.photoUrl!) : null,
+                  ),
+                  const SizedBox(width: FactorySpacing.space2),
+                  Flexible(
+                    child: Text(
+                      person.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.titleSmall,
+                    ),
+                  ),
+                  if (selected) ...[
+                    const SizedBox(width: FactorySpacing.space1),
+                    Icon(Symbols.check_circle_rounded, size: 20, color: colors.primary),
                   ],
-                ),
+                  if (person.onViewPortfolio != null)
+                    IconButton(
+                      icon: const Icon(Symbols.photo_library_rounded, size: 20),
+                      tooltip: l10n.viewPortfolioTooltip,
+                      visualDensity: VisualDensity.compact,
+                      color: colors.textSecondary,
+                      onPressed: person.onViewPortfolio,
+                    ),
+                ],
               ),
-              Icon(expanded ? Symbols.expand_less_rounded : Symbols.expand_more_rounded, color: colors.textSecondary),
-            ],
+            ),
           ),
         ),
       ),
-    );
-  }
-}
-
-class _AnyMasterOption extends StatelessWidget {
-  const _AnyMasterOption({required this.selected, required this.onTap});
-
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final colors = context.factoryColors;
-
-    return FactorySelectableTile(
-      title: l10n.anyMasterOptionTitle,
-      subtitle: Text(
-        l10n.anyMasterOptionSubtitle,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-      ),
-      leading: Icon(Symbols.groups_rounded, color: colors.textSecondary),
-      selected: selected,
-      onTap: onTap,
-    );
-  }
-}
-
-class _StaffOption extends StatelessWidget {
-  const _StaffOption({
-    required this.staff,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final Staff staff;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.factoryColors;
-    final textTheme = Theme.of(context).textTheme;
-
-    return FactorySelectableTile(
-      title: staff.displayName,
-      subtitle: staff.bio != null
-          ? Text(
-              staff.bio!,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-            )
-          : null,
-      leading: FactoryAvatar(
-        initials: initialsFor(staff.displayName),
-        image: staff.photoUrl != null ? NetworkImage(staff.photoUrl!) : null,
-      ),
-      selected: selected,
-      onTap: onTap,
     );
   }
 }

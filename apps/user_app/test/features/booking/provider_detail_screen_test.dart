@@ -307,24 +307,18 @@ class _LoggedInAuthController extends AuthController {
 /// Scrolls [finder] clear of the sticky "Book" bar and the bottom edge before
 /// tapping it. `scrollUntilVisible` stops as soon as a widget is merely on
 /// screen, which can leave it underneath the bar (a tap there silently misses).
-/// The people (masters, mechanics, …) sit behind the one-line "Specialist" row ("Any master" is the default):
-/// opens the full list, once.
+/// The people (masters, mechanics, …) are one horizontally scrolling strip below the services: brings it into
+/// view (the page builds lazily, so it may not exist yet). A business without people has no strip.
 Future<void> openPeople(WidgetTester tester) async {
-  final row = find.byKey(const Key('bookingSpecialist'));
-  // The page builds lazily: scroll the row into existence first.
-  if (row.evaluate().isEmpty) {
-    final page = find.byType(Scrollable).first;
+  final strip = find.byKey(const Key('bookingPeopleStrip'));
+  if (strip.evaluate().isEmpty) {
     try {
-      await tester.scrollUntilVisible(row, 200, scrollable: page, maxScrolls: 30);
+      await tester.scrollUntilVisible(strip, 200, scrollable: find.byType(Scrollable).first, maxScrolls: 30);
     } on StateError {
-      return; // a business without people has no such row
+      return;
     }
   }
-  // Already open (the chevron points up): leave it, so calling this twice is harmless.
-  if (find.descendant(of: row, matching: find.byIcon(Symbols.expand_less_rounded)).evaluate().isNotEmpty) return;
-  await tester.ensureVisible(row);
-  await tester.tap(row);
-  await tester.pumpAndSettle();
+  await tester.ensureVisible(strip);
 }
 
 Future<void> tapVisible(WidgetTester tester, Finder finder) async {
@@ -723,6 +717,7 @@ void main() {
 
     await openPeople(tester);
     expect(find.text('Yerlan Mechanic'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Toyota Camry (2019)'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text('Toyota Camry (2019)'), findsOneWidget);
 
     final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');
@@ -893,9 +888,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final bookButtonFinder = find.widgetWithText(FactoryButton, 'Book');
-    await tapVisible(tester, find.text('Any master'));
-    await tester.pumpAndSettle();
-    // The times for "Any master" depend on the service.
+    // Nobody picked = any master by default; its times depend on the service.
     expect(find.text('Choose a service first'), findsOneWidget);
 
     await tapVisible(tester, find.widgetWithText(FactoryServiceCard, 'Checkup'));
@@ -1071,8 +1064,14 @@ void main() {
       await openPeople(tester);
     }
 
-    bool selected(WidgetTester tester, String name) =>
-        tester.widget<FactorySelectableTile>(find.widgetWithText(FactorySelectableTile, name)).selected;
+    /// A picked person's card carries a check mark (state is never colour alone).
+    bool selected(WidgetTester tester, String name) => find
+        .descendant(
+          of: find.ancestor(of: find.text(name), matching: find.byType(InkWell)).first,
+          matching: find.byIcon(Symbols.check_circle_rounded),
+        )
+        .evaluate()
+        .isNotEmpty;
 
     testWidgets('is already selected, the others are not', (tester) async {
       await pump(tester, (kind: 'STAFF', id: 'staff-2'));
@@ -1542,13 +1541,13 @@ void main() {
       double top(Finder f) => tester.getTopLeft(f).dy;
       await tester.dragUntilVisible(find.text('Available times'), find.byType(Scrollable).first, const Offset(0, -200));
       final services = top(find.text('Services'));
-      final masters = top(find.text('Masters'));
+      final masters = top(find.text('Specialist'));
       final times = top(find.text('Available times'));
       expect(services, lessThan(masters), reason: 'the service decides who can do it, so it is asked first');
       expect(masters, lessThan(times));
     });
 
-    testWidgets('the people sit behind one "Specialist" row that says "Any master" and opens the full list',
+    testWidgets('the people are one scrolling strip; nobody picked means "whoever is free", and a second tap clears',
         (tester) async {
       await pump(
         tester,
@@ -1558,20 +1557,22 @@ void main() {
         ],
       );
 
-      final row = find.byKey(const Key('bookingSpecialist'));
-      await tester.ensureVisible(row);
-      expect(find.descendant(of: row, matching: find.text('Any master')), findsOneWidget);
-      expect(find.text('Jamie Stylist'), findsNothing, reason: 'collapsed: the list does not push the times away');
+      await openPeople(tester);
+      expect(find.byKey(const Key('bookingPeopleStrip')), findsOneWidget);
+      expect(find.text('Any master'), findsNothing, reason: 'no separate "Any master" option');
+      expect(find.text("Not chosen — we'll assign whoever is free"), findsOneWidget);
 
-      await tester.tap(row);
+      await tester.tap(find.text('Jamie Stylist'));
       await tester.pumpAndSettle();
-      expect(find.text('Jamie Stylist'), findsOneWidget);
-      expect(find.text('Masters'), findsOneWidget);
+      expect(find.text('Tap again to let us choose'), findsOneWidget);
+      final strip = find.byKey(const Key('bookingPeopleStrip'));
+      expect(find.descendant(of: strip, matching: find.byIcon(Symbols.check_circle_rounded)), findsOneWidget);
 
-      // Opening it again closes it.
-      await tester.tap(row);
+      // The same person again clears the choice: back to whoever is free.
+      await tester.tap(find.text('Jamie Stylist'));
       await tester.pumpAndSettle();
-      expect(find.text('Jamie Stylist'), findsNothing);
+      expect(find.text("Not chosen — we'll assign whoever is free"), findsOneWidget);
+      expect(find.descendant(of: strip, matching: find.byIcon(Symbols.check_circle_rounded)), findsNothing);
     });
 
     testWidgets('choosing a person still works and keeps asking only for the time', (tester) async {
@@ -1587,9 +1588,7 @@ void main() {
       await tapVisible(tester, find.text('Jamie Stylist'));
       await tester.pumpAndSettle();
       expect(hint(tester), 'Choose a time');
-      // Choosing closes the list and the one-line row names the person.
       expect(find.text('Jamie Stylist'), findsOneWidget);
-      expect(find.text('Any master'), findsNothing);
     });
   });
 }
