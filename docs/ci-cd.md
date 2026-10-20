@@ -501,6 +501,8 @@ testing in Postman.
 
 ## 12. Running the backend in the cloud (no local machine required)
 
+> **Production in Kazakhstan** (all data stored on one VPS in KZ, no foreign storage): see `deploy/kz/README.md`. The section below describes the free test setup (Neon + R2 + Render), which keeps data abroad and is not suitable for real users.
+
 **Current status: deployed and live.** The setup below is running for
 real at `https://zairo-backend.onrender.com` (Neon + Cloudflare R2 +
 Render, wired exactly as described in this section) — `/actuator/health`

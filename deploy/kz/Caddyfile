@@ -1,0 +1,32 @@
+# Automatic HTTPS (Let's Encrypt). Only the API and the health probe are
+# exposed; Swagger, the metrics port and everything else stay closed.
+{
+	email {$ACME_EMAIL}
+}
+
+{$API_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		-Server
+	}
+
+	# Photos are up to 10 MB (spring.servlet.multipart); leave a little headroom.
+	request_body {
+		max_size 12MB
+	}
+
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+
+	handle /actuator/health {
+		reverse_proxy backend:8080
+	}
+
+	handle {
+		respond "Not found" 404
+	}
+}
