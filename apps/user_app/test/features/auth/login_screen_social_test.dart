@@ -4,6 +4,7 @@ import 'package:core_ui/core_ui.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zairo/features/auth/data/apple_sign_in_service.dart';
@@ -118,6 +119,7 @@ Future<void> _open(
   _FakeAuthApi api, {
   String? googleToken,
   AppleSignInResult? apple,
+  List<Override> extraOverrides = const [],
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -129,6 +131,7 @@ Future<void> _open(
         appleSignInServiceProvider.overrideWithValue(_FakeApple(result: apple)),
         googleSignInServiceProvider.overrideWithValue(_FakeGoogle(googleToken)),
         biometricAuthServiceProvider.overrideWithValue(_NoBiometrics()),
+        ...extraOverrides,
       ],
       child: MaterialApp(
         theme: factoryLightTheme(),
@@ -154,6 +157,34 @@ Future<void> _open(
 }
 
 void main() {
+  testWidgets('with Google and Apple switched off their buttons are gone and email/phone remains', (tester) async {
+    await _open(
+      tester,
+      _FakeAuthApi(),
+      googleToken: 'g-token',
+      apple: const AppleSignInResult(identityToken: 'a-token'),
+      extraOverrides: [
+        googleSignInEnabledProvider.overrideWithValue(false),
+        appleSignInEnabledProvider.overrideWithValue(false),
+      ],
+    );
+
+    expect(find.byTooltip('Continue with Google'), findsNothing);
+    expect(find.byTooltip('Continue with Apple'), findsNothing);
+    expect(find.byIcon(Icons.mail_outline), findsOneWidget);
+  });
+
+  testWidgets('Apple stays hidden when switched off even on a device that supports it', (tester) async {
+    await _open(
+      tester,
+      _FakeAuthApi(),
+      extraOverrides: [appleSignInEnabledProvider.overrideWithValue(false)],
+    );
+
+    expect(find.byTooltip('Continue with Apple'), findsNothing);
+    expect(find.byTooltip('Continue with Google'), findsOneWidget);
+  });
+
   testWidgets('Google sign-in sends the token and closes the sign-in screen', (
     tester,
   ) async {

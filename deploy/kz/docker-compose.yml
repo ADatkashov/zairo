@@ -56,7 +56,11 @@ services:
       FREEDOMPAY_API_URL: ${FREEDOMPAY_API_URL:-}
       FREEDOMPAY_MERCHANT_ID: ${FREEDOMPAY_MERCHANT_ID:-}
       FREEDOMPAY_SECRET_KEY: ${FREEDOMPAY_SECRET_KEY:-}
-      # The prod profile refuses to start without these (see ProductionSecretsValidator).
+      # With a provider enabled the prod profile refuses to start without its ids (ProductionSecretsValidator).
+      # Off by default in this deployment (data stays in Kazakhstan). The code is kept; to turn a
+      # provider on set *_ENABLED=true in .env together with its client ids.
+      GOOGLE_OAUTH_ENABLED: ${GOOGLE_OAUTH_ENABLED:-false}
+      APPLE_OAUTH_ENABLED: ${APPLE_OAUTH_ENABLED:-false}
       GOOGLE_OAUTH_CLIENT_IDS: ${GOOGLE_OAUTH_CLIENT_IDS:-}
       APPLE_CLIENT_IDS: ${APPLE_CLIENT_IDS:-}
       FACEBOOK_APP_ID: ${FACEBOOK_APP_ID:-}
