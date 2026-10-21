@@ -50,6 +50,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final l10n = AppLocalizations.of(context)!;
     final authState = ref.watch(authControllerProvider);
     final isLoading = authState.isLoading || _isProviderSigningIn;
+    final showGoogle = ref.watch(googleSignInEnabledProvider);
     final showApple = ref.watch(appleSignInAvailableProvider).value ?? false;
 
     ref.listen(authControllerProvider, (previous, next) {
@@ -101,21 +102,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  SocialLoginButton(
-                    tooltip: l10n.loginContinueWithGoogle,
-                    isLoading: _isProviderSigningIn,
-                    onPressed: isLoading ? null : _signInWithGoogle,
-                    child: const GoogleLogo(),
-                  ),
-                  if (showApple) ...[
+                  if (showGoogle) ...[
+                    SocialLoginButton(
+                      tooltip: l10n.loginContinueWithGoogle,
+                      isLoading: _isProviderSigningIn,
+                      onPressed: isLoading ? null : _signInWithGoogle,
+                      child: const GoogleLogo(),
+                    ),
                     const SizedBox(width: FactorySpacing.space4),
+                  ],
+                  if (showApple) ...[
                     SocialLoginButton(
                       tooltip: l10n.loginContinueWithApple,
                       onPressed: isLoading ? null : _signInWithApple,
                       child: const AppleLogo(),
                     ),
+                    const SizedBox(width: FactorySpacing.space4),
                   ],
-                  const SizedBox(width: FactorySpacing.space4),
                   SocialLoginButton(
                     tooltip: _showEmailForm ? l10n.loginContinueWithPhone : l10n.loginContinueWithEmail,
                     onPressed: isLoading ? null : () => setState(() => _showEmailForm = !_showEmailForm),

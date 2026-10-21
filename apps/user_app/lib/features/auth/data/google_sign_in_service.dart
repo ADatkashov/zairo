@@ -57,3 +57,12 @@ class DefaultGoogleSignInService implements GoogleSignInService {
 final googleSignInServiceProvider = Provider<GoogleSignInService>((ref) {
   return DefaultGoogleSignInService();
 });
+
+/// Whether the Google button is offered at all. A deployment that does not use
+/// Google sign-in (for example one that keeps all data in Kazakhstan) builds
+/// the app with `--dart-define=GOOGLE_SIGN_IN_ENABLED=false`; the code stays,
+/// only the buttons disappear. The server refuses the endpoints in that case
+/// too (`GOOGLE_OAUTH_ENABLED=false`), so both sides are switched together.
+final googleSignInEnabledProvider = Provider<bool>(
+  (ref) => const bool.fromEnvironment('GOOGLE_SIGN_IN_ENABLED', defaultValue: true),
+);

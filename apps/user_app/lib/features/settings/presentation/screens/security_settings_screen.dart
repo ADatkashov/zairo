@@ -119,13 +119,14 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
               padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4, vertical: FactorySpacing.space2),
               child: FactorySettingsGroup(
                 children: [
-                  ListTile(
-                    leading: const FactoryIconBadge(icon: Icons.account_circle_outlined),
-                    title: Text(l10n.loginContinueWithGoogle),
-                    trailing: _isLinked('GOOGLE')
-                        ? Icon(Icons.check_circle, color: colors.primary)
-                        : TextButton(onPressed: _isLinking ? null : _linkGoogle, child: Text(l10n.securityLinkButton)),
-                  ),
+                  if (ref.watch(googleSignInEnabledProvider))
+                    ListTile(
+                      leading: const FactoryIconBadge(icon: Icons.account_circle_outlined),
+                      title: Text(l10n.loginContinueWithGoogle),
+                      trailing: _isLinked('GOOGLE')
+                          ? Icon(Icons.check_circle, color: colors.primary)
+                          : TextButton(onPressed: _isLinking ? null : _linkGoogle, child: Text(l10n.securityLinkButton)),
+                    ),
                   if (ref.watch(appleSignInAvailableProvider).value ?? false)
                     ListTile(
                       leading: const FactoryIconBadge(icon: Icons.apple),
