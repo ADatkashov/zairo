@@ -535,6 +535,15 @@
   "searchFilterApplyButton": "Apply",
   "@searchFilterApplyButton": {"description": "Search filters dialog button that applies the chosen filters."},
 
+  "searchFilterShowResults": "{count, plural, one{Show {count} option} other{Show {count} options}}",
+  "@searchFilterShowResults": {
+    "description": "Primary button of the search filters sheet: applies the filters and says how many providers they match.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+
+  "searchFilterCloseTooltip": "Close filters",
+  "@searchFilterCloseTooltip": {"description": "Tooltip/semantic label of the close (X) button in the search filters sheet; closes it without applying."},
+
   "searchRecentTitle": "Recent searches",
   "@searchRecentTitle": {"description": "Search screen section header for the user's own recent search queries, shown before the first search of the session."},
 
