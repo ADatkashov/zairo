@@ -96,6 +96,16 @@ void main() {
     expect(find.text('Create an account'), findsOneWidget);
   });
 
+  testWidgets('a phone-only build offers just Log in when logged out (the phone form registers too)', (tester) async {
+    await tester.pumpWidget(
+      _wrap(_LoggedOutAuthController(), extraOverrides: [emailSignInEnabledProvider.overrideWithValue(false)]),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text("You're not logged in"), findsOneWidget);
+    expect(find.text('Create an account'), findsNothing);
+  });
+
   testWidgets('shows the avatar initials, name, email and menu when logged in', (tester) async {
     await tester.pumpWidget(_wrap(_LoggedInAuthController()));
     await tester.pumpAndSettle();

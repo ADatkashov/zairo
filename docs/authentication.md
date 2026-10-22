@@ -333,6 +333,28 @@ None of these replace or duplicate an existing endpoint; `/auth/register`,
 
 ## Provider configuration
 
+### Switching Google / Apple sign-in off (code stays)
+
+A deployment that must not send tokens to Google or Apple (for example one that keeps all data in Kazakhstan, see
+`deploy/kz/`) turns them off on both sides:
+
+- **Backend:** `GOOGLE_OAUTH_ENABLED=false` / `APPLE_OAUTH_ENABLED=false`. The verifier then rejects every token
+  (so the sign-in, link and link-with-password endpoints answer 401) without contacting Google/Apple, even when the
+  client-id list is blank, and the `prod` profile no longer requires the ids. Default is `true`.
+- **App:** build with `--dart-define=GOOGLE_SIGN_IN_ENABLED=false` / `--dart-define=APPLE_SIGN_IN_ENABLED=false`; the
+  login buttons and the "linked accounts" rows disappear. Default is `true`.
+
+Turning one back on is the same switch plus its client ids.
+
+### Phone-only app build
+
+`--dart-define=EMAIL_SIGN_IN_ENABLED=false` removes e-mail + password sign-in, the e-mail registration page, "forgot
+password" and the "create an account" button from the customer app. What is left is the phone-number form, which signs
+in an existing account and registers a new one (SMS code, then a password for new accounts). Together with the two
+flags above this gives a phone-only app. The backend e-mail endpoints are untouched (the business and platform admin
+apps still use them); only the customer app UI changes.
+
+
 Nothing here is faked — every adapter below is a real integration, just one
 that needs real external credentials before it does anything beyond
 rejecting every request with "not configured." Nothing about local dev,
