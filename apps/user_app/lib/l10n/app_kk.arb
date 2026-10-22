@@ -179,6 +179,8 @@
   "searchFilterMinRatingValue": "{rating} жұлдыздан бастап",
   "searchFilterClearButton": "Тазарту",
   "searchFilterApplyButton": "Қолдану",
+  "searchFilterShowResults": "{count, plural, other{{count} нұсқаны көрсету}}",
+  "searchFilterCloseTooltip": "Сүзгілерді жабу",
   "searchRecentTitle": "Соңғы іздеулер",
   "searchRecentClearButton": "Тазалау",
   "searchPopularTitle": "Танымал сұраулар",

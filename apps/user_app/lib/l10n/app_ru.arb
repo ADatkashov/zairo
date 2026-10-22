@@ -179,6 +179,8 @@
   "searchFilterMinRatingValue": "От {rating} звёзд",
   "searchFilterClearButton": "Сбросить",
   "searchFilterApplyButton": "Применить",
+  "searchFilterShowResults": "{count, plural, one{Показать {count} вариант} few{Показать {count} варианта} many{Показать {count} вариантов} other{Показать {count} варианта}}",
+  "searchFilterCloseTooltip": "Закрыть фильтры",
   "searchRecentTitle": "Недавние поиски",
   "searchRecentClearButton": "Очистить",
   "searchPopularTitle": "Популярные запросы",

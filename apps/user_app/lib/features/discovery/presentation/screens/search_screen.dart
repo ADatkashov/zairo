@@ -155,6 +155,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         await showFactoryBottomSheet<DiscoveryQuery>(
                           context: context,
                           isScrollControlled: true,
+                          // The sheet pins its own header and actions around
+                          // a scrolling body.
+                          scrollable: false,
                           builder: (_) => _FilterSheet(initial: _query),
                         );
                     if (updated != null) {
@@ -452,6 +455,12 @@ class _FilterSheetState extends State<_FilterSheet> {
   late bool _minRatingEnabled;
   late double _minRating;
 
+  /// The draft the "Show N options" counter is computed for. Lags [_draft] on
+  /// purpose while a price is being typed or a slider dragged, so the sheet
+  /// asks the server once the person pauses, not on every keystroke/frame.
+  late DiscoveryQuery _countQuery;
+  Timer? _countTimer;
+
   @override
   void initState() {
     super.initState();
@@ -469,202 +478,280 @@ class _FilterSheetState extends State<_FilterSheet> {
     _maxDistanceKm = initial.maxDistanceKm ?? 10;
     _minRatingEnabled = initial.minRating != null;
     _minRating = initial.minRating ?? 4;
+    _countQuery = _draft();
   }
 
   @override
   void dispose() {
+    _countTimer?.cancel();
     _minPriceController.dispose();
     _maxPriceController.dispose();
     super.dispose();
+  }
+
+  /// What "Apply" would search for with the form as it stands now.
+  DiscoveryQuery _draft() => DiscoveryQuery(
+    query: widget.initial.query,
+    vertical: _vertical,
+    minPrice: double.tryParse(_minPriceController.text.trim()),
+    maxPrice: double.tryParse(_maxPriceController.text.trim()),
+    maxDistanceKm: _distanceEnabled ? _maxDistanceKm : null,
+    minRating: _minRatingEnabled ? _minRating : null,
+    availableOnly: _availableOnly,
+    sort: _sort,
+  );
+
+  /// Re-point the counter at the current draft — at once for a tap, after a
+  /// short pause for typing.
+  void _refreshCount({bool debounce = false}) {
+    _countTimer?.cancel();
+    if (!debounce) {
+      setState(() => _countQuery = _draft());
+      return;
+    }
+    _countTimer = Timer(const Duration(milliseconds: 400), () {
+      if (mounted) setState(() => _countQuery = _draft());
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
+    final media = MediaQuery.of(context);
+    final textTheme = Theme.of(context).textTheme;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        FactorySpacing.space4,
-        0,
-        FactorySpacing.space4,
-        FactorySpacing.space4,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.searchFiltersTitle,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: FactorySpacing.space4),
-          Text(
-            l10n.searchFilterCategoryLabel,
-            style: Theme.of(context).textTheme.labelLarge,
-          ),
-          const SizedBox(height: FactorySpacing.space2),
-          Consumer(
-            builder: (context, ref, _) {
-              final categoriesAsync = ref.watch(categoriesProvider);
-              final languageCode = Localizations.localeOf(context).languageCode;
-              // Board 07 (v2 design audit) — this used to hardcode exactly
-              // the three verticals that existed when this screen was first
-              // built (beauty/auto/cleaning), so a platform admin adding a
-              // new category — or deactivating an old one — never showed up
-              // here. Sourced from the same master catalog Home's category
-              // grid already reads, ACTIVE-only by construction (see
-              // CatalogController).
-              final categories = categoriesAsync.value ?? const [];
-              return Wrap(
-                spacing: FactorySpacing.space2,
-                runSpacing: FactorySpacing.space2,
+      // Lift the sheet above the keyboard so a price field never hides
+      // behind it; the body scrolls inside what's left.
+      padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: (media.size.height - media.viewInsets.bottom) * 0.9,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Title + close stay on screen however long the form is.
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: FactorySpacing.space4,
+              ),
+              child: Row(
                 children: [
-                  _verticalChip(l10n.searchFilterCategoryAll, null),
-                  for (final category in categories)
-                    _verticalChip(
-                      category.nameFor(languageCode),
-                      category.code,
+                  Expanded(
+                    child: Text(
+                      l10n.searchFiltersTitle,
+                      style: textTheme.titleMedium,
                     ),
+                  ),
+                  FactoryIconButton(
+                    icon: Symbols.close_rounded,
+                    semanticLabel: l10n.searchFilterCloseTooltip,
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
                 ],
-              );
-            },
-          ),
-          const SizedBox(height: FactorySpacing.space4),
-          Text(
-            l10n.searchSortLabel,
-            style: Theme.of(context).textTheme.labelLarge,
-          ),
-          const SizedBox(height: FactorySpacing.space2),
-          Wrap(
+              ),
+            ),
+            const SizedBox(height: FactorySpacing.space2),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: FactorySpacing.space4,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: _fields(context, l10n, colors),
+                ),
+              ),
+            ),
+            // The main action is always one tap away, and says what it will
+            // do: how many providers the current choices match.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                FactorySpacing.space4,
+                FactorySpacing.space3,
+                FactorySpacing.space4,
+                FactorySpacing.space4,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: FactoryButton(
+                      label: l10n.searchFilterClearButton,
+                      variant: FactoryButtonVariant.secondary,
+                      onPressed: () => Navigator.of(
+                        context,
+                      ).pop(DiscoveryQuery(query: widget.initial.query)),
+                    ),
+                  ),
+                  const SizedBox(width: FactorySpacing.space3),
+                  Expanded(
+                    flex: 3,
+                    child: Consumer(
+                      builder: (context, ref, _) {
+                        final count = ref
+                            .watch(searchResultsProvider(_countQuery))
+                            .asData
+                            ?.value
+                            .length;
+                        return FactoryButton(
+                          label: count == null
+                              ? l10n.searchFilterApplyButton
+                              : l10n.searchFilterShowResults(count),
+                          onPressed: () => Navigator.of(context).pop(_draft()),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _fields(
+    BuildContext context,
+    AppLocalizations l10n,
+    FactoryColors colors,
+  ) {
+    final textTheme = Theme.of(context).textTheme;
+    return [
+      Text(l10n.searchFilterCategoryLabel, style: textTheme.labelLarge),
+      const SizedBox(height: FactorySpacing.space2),
+      Consumer(
+        builder: (context, ref, _) {
+          final categoriesAsync = ref.watch(categoriesProvider);
+          final languageCode = Localizations.localeOf(context).languageCode;
+          // Board 07 (v2 design audit) — this used to hardcode exactly
+          // the three verticals that existed when this screen was first
+          // built (beauty/auto/cleaning), so a platform admin adding a
+          // new category — or deactivating an old one — never showed up
+          // here. Sourced from the same master catalog Home's category
+          // grid already reads, ACTIVE-only by construction (see
+          // CatalogController).
+          final categories = categoriesAsync.value ?? const [];
+          return Wrap(
             spacing: FactorySpacing.space2,
             runSpacing: FactorySpacing.space2,
             children: [
-              _sortChip(l10n.searchSortRecommended, DiscoverySort.recommended),
-              _sortChip(l10n.searchSortPriceAsc, DiscoverySort.priceAsc),
-              _sortChip(l10n.searchSortPriceDesc, DiscoverySort.priceDesc),
-              _sortChip(l10n.searchSortDistance, DiscoverySort.distance),
-              _sortChip(l10n.searchSortRating, DiscoverySort.rating),
+              _verticalChip(l10n.searchFilterCategoryAll, null),
+              for (final category in categories)
+                _verticalChip(category.nameFor(languageCode), category.code),
             ],
-          ),
-          const SizedBox(height: FactorySpacing.space4),
-          Text(
-            l10n.searchFilterPriceRangeLabel,
-            style: Theme.of(context).textTheme.labelLarge,
-          ),
-          const SizedBox(height: FactorySpacing.space2),
-          Row(
-            children: [
-              Expanded(
-                child: FactoryTextField(
-                  controller: _minPriceController,
-                  keyboardType: TextInputType.number,
-                  label: l10n.searchFilterPriceMinHint,
-                ),
-              ),
-              const SizedBox(width: FactorySpacing.space2),
-              Expanded(
-                child: FactoryTextField(
-                  controller: _maxPriceController,
-                  keyboardType: TextInputType.number,
-                  label: l10n.searchFilterPriceMaxHint,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: FactorySpacing.space2),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(l10n.searchFilterAvailableOnlyLabel),
-            value: _availableOnly,
-            onChanged: (value) => setState(() => _availableOnly = value),
-          ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(l10n.searchFilterMaxDistanceLabel),
-            value: _distanceEnabled,
-            onChanged: (value) => setState(() => _distanceEnabled = value),
-          ),
-          if (_distanceEnabled) ...[
-            Text(
-              l10n.searchFilterMaxDistanceValue(_maxDistanceKm.round()),
-              style: Theme.of(context).textTheme.bodyMedium
-                  ?.copyWith(color: colors.textSecondary),
+          );
+        },
+      ),
+      const SizedBox(height: FactorySpacing.space4),
+      Text(l10n.searchSortLabel, style: textTheme.labelLarge),
+      const SizedBox(height: FactorySpacing.space2),
+      Wrap(
+        spacing: FactorySpacing.space2,
+        runSpacing: FactorySpacing.space2,
+        children: [
+          _sortChip(l10n.searchSortRecommended, DiscoverySort.recommended),
+          _sortChip(l10n.searchSortPriceAsc, DiscoverySort.priceAsc),
+          _sortChip(l10n.searchSortPriceDesc, DiscoverySort.priceDesc),
+          _sortChip(l10n.searchSortDistance, DiscoverySort.distance),
+          _sortChip(l10n.searchSortRating, DiscoverySort.rating),
+        ],
+      ),
+      const SizedBox(height: FactorySpacing.space4),
+      Text(l10n.searchFilterPriceRangeLabel, style: textTheme.labelLarge),
+      const SizedBox(height: FactorySpacing.space2),
+      Row(
+        children: [
+          Expanded(
+            child: FactoryTextField(
+              controller: _minPriceController,
+              keyboardType: TextInputType.number,
+              label: l10n.searchFilterPriceMinHint,
+              onChanged: (_) => _refreshCount(debounce: true),
             ),
-            Slider(
-              value: _maxDistanceKm,
-              min: 1,
-              max: 50,
-              divisions: 49,
-              onChanged: (value) => setState(() => _maxDistanceKm = value),
-            ),
-          ],
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(l10n.searchFilterMinRatingLabel),
-            value: _minRatingEnabled,
-            onChanged: (value) => setState(() => _minRatingEnabled = value),
           ),
-          if (_minRatingEnabled) ...[
-            Text(
-              l10n.searchFilterMinRatingValue(_minRating.toStringAsFixed(1)),
-              style: Theme.of(context).textTheme.bodyMedium
-                  ?.copyWith(color: colors.textSecondary),
+          const SizedBox(width: FactorySpacing.space2),
+          Expanded(
+            child: FactoryTextField(
+              controller: _maxPriceController,
+              keyboardType: TextInputType.number,
+              label: l10n.searchFilterPriceMaxHint,
+              onChanged: (_) => _refreshCount(debounce: true),
             ),
-            Slider(
-              value: _minRating,
-              min: 1,
-              max: 5,
-              divisions: 8,
-              onChanged: (value) => setState(() => _minRating = value),
-            ),
-          ],
-          const SizedBox(height: FactorySpacing.space4),
-          Row(
-            children: [
-              Expanded(
-                child: FactoryButton(
-                  label: l10n.searchFilterClearButton,
-                  variant: FactoryButtonVariant.secondary,
-                  onPressed: () =>
-                      Navigator.of(context)
-                          .pop(DiscoveryQuery(query: widget.initial.query)),
-                ),
-              ),
-              const SizedBox(width: FactorySpacing.space3),
-              Expanded(
-                child: FactoryButton(
-                  label: l10n.searchFilterApplyButton,
-                  onPressed: () => Navigator.of(context).pop(
-                    DiscoveryQuery(
-                      query: widget.initial.query,
-                      vertical: _vertical,
-                      minPrice: double.tryParse(
-                        _minPriceController.text.trim(),
-                      ),
-                      maxPrice: double.tryParse(
-                        _maxPriceController.text.trim(),
-                      ),
-                      maxDistanceKm: _distanceEnabled ? _maxDistanceKm : null,
-                      minRating: _minRatingEnabled ? _minRating : null,
-                      availableOnly: _availableOnly,
-                      sort: _sort,
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       ),
-    );
+      const SizedBox(height: FactorySpacing.space2),
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(l10n.searchFilterAvailableOnlyLabel),
+        value: _availableOnly,
+        onChanged: (value) {
+          _availableOnly = value;
+          _refreshCount();
+        },
+      ),
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(l10n.searchFilterMaxDistanceLabel),
+        value: _distanceEnabled,
+        onChanged: (value) {
+          _distanceEnabled = value;
+          _refreshCount();
+        },
+      ),
+      if (_distanceEnabled) ...[
+        Text(
+          l10n.searchFilterMaxDistanceValue(_maxDistanceKm.round()),
+          style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
+        ),
+        Slider(
+          value: _maxDistanceKm,
+          min: 1,
+          max: 50,
+          divisions: 49,
+          onChanged: (value) => setState(() => _maxDistanceKm = value),
+          onChangeEnd: (_) => _refreshCount(),
+        ),
+      ],
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(l10n.searchFilterMinRatingLabel),
+        value: _minRatingEnabled,
+        onChanged: (value) {
+          _minRatingEnabled = value;
+          _refreshCount();
+        },
+      ),
+      if (_minRatingEnabled) ...[
+        Text(
+          l10n.searchFilterMinRatingValue(_minRating.toStringAsFixed(1)),
+          style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
+        ),
+        Slider(
+          value: _minRating,
+          min: 1,
+          max: 5,
+          divisions: 8,
+          onChanged: (value) => setState(() => _minRating = value),
+          onChangeEnd: (_) => _refreshCount(),
+        ),
+      ],
+    ];
   }
 
   Widget _verticalChip(String label, String? value) {
     return FactoryChip(
       label: label,
       selected: _vertical == value,
-      onTap: () => setState(() => _vertical = value),
+      onTap: () {
+        _vertical = value;
+        _refreshCount();
+      },
     );
   }
 
@@ -672,7 +759,10 @@ class _FilterSheetState extends State<_FilterSheet> {
     return FactoryChip(
       label: label,
       selected: _sort == value,
-      onTap: () => setState(() => _sort = value),
+      onTap: () {
+        _sort = value;
+        _refreshCount();
+      },
     );
   }
 }
