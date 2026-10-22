@@ -69,8 +69,8 @@ values (gen_random_uuid(),'admin@your.kz',crypt('СИЛЬНЫЙ_ПАРОЛЬ',ge
 
 Соберите с боевым адресом `https://api.<домен>/api/v1` (параметр `api_base_url`,
 см. `docs/ci-cd.md` §10) и с выключенным входом через Google и Apple:
-`--dart-define=GOOGLE_SIGN_IN_ENABLED=false --dart-define=APPLE_SIGN_IN_ENABLED=false`
-(кнопок в приложении не будет; код остаётся). Опубликуйте в Google Play / App Store. Сами приложения
+`--dart-define=GOOGLE_SIGN_IN_ENABLED=false --dart-define=APPLE_SIGN_IN_ENABLED=false --dart-define=EMAIL_SIGN_IN_ENABLED=false`
+(в приложении остаётся **только вход и регистрация по номеру телефона**; код остаётся). Опубликуйте в Google Play / App Store. Сами приложения
 данных пользователей на серверах не хранят.
 
 ## 5. Обновление

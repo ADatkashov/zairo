@@ -15,6 +15,13 @@ import '../../data/models/sms_mode.dart';
 import '../../data/models/user_summary.dart';
 import '../../data/token_storage.dart';
 
+/// Whether e-mail + password sign-in and registration are offered. A phone-only build
+/// (`--dart-define=EMAIL_SIGN_IN_ENABLED=false`) shows just the phone-number form, which
+/// both signs in and registers. The e-mail code stays; the server endpoints are untouched.
+final emailSignInEnabledProvider = Provider<bool>(
+  (ref) => const bool.fromEnvironment('EMAIL_SIGN_IN_ENABLED', defaultValue: true),
+);
+
 final authApiProvider = Provider<AuthApi>((ref) {
   return AuthApi(ref.watch(dioClientProvider));
 });

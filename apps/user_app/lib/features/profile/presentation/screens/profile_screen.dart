@@ -58,11 +58,11 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-class _LoggedOutView extends StatelessWidget {
+class _LoggedOutView extends ConsumerWidget {
   const _LoggedOutView();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     return Center(
       // Scrolls when a large font on a small phone makes it taller than the screen.
@@ -78,11 +78,13 @@ class _LoggedOutView extends StatelessWidget {
               actionLabel: l10n.loginTitle,
               onAction: () => pushAuthScreen(context, const LoginScreen()),
             ),
-            FactoryButton(
-              label: l10n.profileCreateAccount,
-              variant: FactoryButtonVariant.text,
-              onPressed: () => pushAuthScreen(context, const RegisterScreen()),
-            ),
+            // Phone-only builds: the phone form already registers, so no separate e-mail sign-up.
+            if (ref.watch(emailSignInEnabledProvider))
+              FactoryButton(
+                label: l10n.profileCreateAccount,
+                variant: FactoryButtonVariant.text,
+                onPressed: () => pushAuthScreen(context, const RegisterScreen()),
+              ),
           ],
         ),
       ),
