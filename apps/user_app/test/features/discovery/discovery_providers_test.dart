@@ -6,6 +6,7 @@ import 'package:zairo/features/city/data/models/city.dart';
 import 'package:zairo/features/city/presentation/providers/city_providers.dart';
 import 'package:zairo/features/discovery/data/discovery_api.dart';
 import 'package:zairo/features/discovery/data/models/provider_search_result.dart';
+import 'package:zairo/features/discovery/data/models/service_summary.dart';
 import 'package:zairo/features/discovery/presentation/providers/discovery_providers.dart';
 import 'package:zairo/features/maps/presentation/providers/maps_providers.dart';
 
@@ -90,5 +91,47 @@ void main() {
 
     expect(api.calls, 1);
     expect(api.lastCity, isNull);
+  });
+
+  group('PriceBounds.fromResults', () {
+    ProviderSearchResult provider(double? price, {String currency = 'KZT'}) => ProviderSearchResult(
+      id: 'p$price',
+      name: 'P',
+      vertical: 'beauty',
+      status: 'ACTIVE',
+      hasOpenAvailability: true,
+      minPrice: price,
+      services: price == null
+          ? const []
+          : [ServiceSummary(id: 's', title: 'S', durationMinutes: 30, price: price, currency: currency)],
+    );
+
+    test('rounds the cheapest and dearest outwards to a step that fits the spread', () {
+      final bounds = PriceBounds.fromResults([provider(1200), provider(8000), provider(20700)])!;
+      expect(bounds.min, 1000);
+      expect(bounds.max, 21000);
+      expect(bounds.step, 500);
+      expect(bounds.divisions, 40);
+      expect(bounds.currency, 'KZT');
+    });
+
+    test('a wide spread gets coarse steps, a narrow one fine steps', () {
+      expect(PriceBounds.fromResults([provider(1000), provider(90000)])!.step, 1000);
+      expect(PriceBounds.fromResults([provider(1000), provider(2000)])!.step, 50);
+      expect(PriceBounds.fromResults([provider(1000), provider(1100)])!.step, 5);
+      expect(PriceBounds.fromResults([provider(10), provider(20)])!.step, 1);
+    });
+
+    test('providers without a price are ignored for the scale', () {
+      final bounds = PriceBounds.fromResults([provider(null), provider(300), provider(900)])!;
+      expect(bounds.min, 300);
+      expect(bounds.max, 900);
+    });
+
+    test('nothing to choose between gives no bounds', () {
+      expect(PriceBounds.fromResults(const []), isNull);
+      expect(PriceBounds.fromResults([provider(null)]), isNull);
+      expect(PriceBounds.fromResults([provider(500), provider(500)]), isNull);
+    });
   });
 }
