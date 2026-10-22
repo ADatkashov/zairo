@@ -60,19 +60,23 @@ class AppleIdTokenVerifierAdapter implements AppleIdTokenVerifierPort {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final List<String> audiences;
     private final String keysUrl;
+    private final boolean enabled;
 
     private volatile Map<String, PublicKey> keysById = Map.of();
     private volatile Instant keysFetchedAt = Instant.EPOCH;
 
     AppleIdTokenVerifierAdapter(@Value("${app.oauth.apple.client-ids:}") String clientIdsCsv,
-            @Value("${app.oauth.apple.keys-url:https://appleid.apple.com/auth/keys}") String keysUrl) {
+            @Value("${app.oauth.apple.keys-url:https://appleid.apple.com/auth/keys}") String keysUrl,
+            @Value("${app.oauth.apple.enabled:true}") boolean enabled) {
+        this.enabled = enabled;
         this.audiences = Arrays.stream(clientIdsCsv.split(",")).map(String::trim).filter(id -> !id.isEmpty()).toList();
         this.keysUrl = keysUrl;
     }
 
     @Override
     public Optional<VerifiedIdentity> verify(String identityToken) {
-        if (identityToken == null || identityToken.isBlank()) {
+        // Switched off (app.oauth.apple.enabled=false): see GoogleIdTokenVerifierAdapter.
+        if (!enabled || identityToken == null || identityToken.isBlank()) {
             return Optional.empty();
         }
         try {

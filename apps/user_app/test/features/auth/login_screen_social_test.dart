@@ -4,6 +4,7 @@ import 'package:core_ui/core_ui.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zairo/features/auth/data/apple_sign_in_service.dart';
@@ -15,6 +16,7 @@ import 'package:zairo/features/auth/data/models/auth_tokens.dart';
 import 'package:zairo/features/auth/data/models/user_summary.dart';
 import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/auth/presentation/screens/login_screen.dart';
+import 'package:zairo/features/auth/presentation/screens/phone_login_screen.dart';
 import 'package:zairo/l10n/app_localizations.dart';
 
 const _user = UserSummary(
@@ -118,6 +120,7 @@ Future<void> _open(
   _FakeAuthApi api, {
   String? googleToken,
   AppleSignInResult? apple,
+  List<Override> extraOverrides = const [],
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -129,6 +132,7 @@ Future<void> _open(
         appleSignInServiceProvider.overrideWithValue(_FakeApple(result: apple)),
         googleSignInServiceProvider.overrideWithValue(_FakeGoogle(googleToken)),
         biometricAuthServiceProvider.overrideWithValue(_NoBiometrics()),
+        ...extraOverrides,
       ],
       child: MaterialApp(
         theme: factoryLightTheme(),
@@ -154,6 +158,64 @@ Future<void> _open(
 }
 
 void main() {
+  testWidgets('with Google and Apple switched off their buttons are gone and email/phone remains', (tester) async {
+    await _open(
+      tester,
+      _FakeAuthApi(),
+      googleToken: 'g-token',
+      apple: const AppleSignInResult(identityToken: 'a-token'),
+      extraOverrides: [
+        googleSignInEnabledProvider.overrideWithValue(false),
+        appleSignInEnabledProvider.overrideWithValue(false),
+      ],
+    );
+
+    expect(find.byTooltip('Continue with Google'), findsNothing);
+    expect(find.byTooltip('Continue with Apple'), findsNothing);
+    expect(find.byIcon(Icons.mail_outline), findsOneWidget);
+  });
+
+  testWidgets('a phone-only build shows just the phone form: no e-mail, no providers, no sign-up page', (tester) async {
+    await _open(
+      tester,
+      _FakeAuthApi(),
+      extraOverrides: [
+        emailSignInEnabledProvider.overrideWithValue(false),
+        googleSignInEnabledProvider.overrideWithValue(false),
+        appleSignInEnabledProvider.overrideWithValue(false),
+      ],
+    );
+
+    expect(find.byType(PhoneLoginForm), findsOneWidget);
+    expect(find.byIcon(Icons.mail_outline), findsNothing);
+    expect(find.text('or'), findsNothing);
+    expect(find.text("Don't have an account? Register"), findsNothing);
+    expect(find.text('Forgot password?'), findsNothing);
+  });
+
+  testWidgets('with e-mail off but Google on, the providers row stays and the e-mail button is gone', (tester) async {
+    await _open(
+      tester,
+      _FakeAuthApi(),
+      extraOverrides: [emailSignInEnabledProvider.overrideWithValue(false)],
+    );
+
+    expect(find.byTooltip('Continue with Google'), findsOneWidget);
+    expect(find.byIcon(Icons.mail_outline), findsNothing);
+    expect(find.text('or'), findsOneWidget);
+  });
+
+  testWidgets('Apple stays hidden when switched off even on a device that supports it', (tester) async {
+    await _open(
+      tester,
+      _FakeAuthApi(),
+      extraOverrides: [appleSignInEnabledProvider.overrideWithValue(false)],
+    );
+
+    expect(find.byTooltip('Continue with Apple'), findsNothing);
+    expect(find.byTooltip('Continue with Google'), findsOneWidget);
+  });
+
   testWidgets('Google sign-in sends the token and closes the sign-in screen', (
     tester,
   ) async {

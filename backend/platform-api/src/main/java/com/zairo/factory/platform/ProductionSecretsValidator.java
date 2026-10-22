@@ -59,6 +59,8 @@ class ProductionSecretsValidator {
     private final String twilioFrom;
     private final String twilioMessagingServiceSid;
     private final String otpMockCode;
+    private final boolean googleEnabled;
+    private final boolean appleEnabled;
 
     ProductionSecretsValidator(Environment environment, @Value("${app.jwt.secret}") String jwtSecret,
             @Value("${app.jwt.platform-admin-secret}") String platformAdminJwtSecret,
@@ -70,7 +72,11 @@ class ProductionSecretsValidator {
             @Value("${app.sms.twilio.auth-token:}") String twilioAuthToken,
             @Value("${app.sms.twilio.from:}") String twilioFrom,
             @Value("${app.sms.twilio.messaging-service-sid:}") String twilioMessagingServiceSid,
-            @Value("${app.otp.mock-code:}") String otpMockCode) {
+            @Value("${app.otp.mock-code:}") String otpMockCode,
+            @Value("${app.oauth.google.enabled:true}") boolean googleEnabled,
+            @Value("${app.oauth.apple.enabled:true}") boolean appleEnabled) {
+        this.googleEnabled = googleEnabled;
+        this.appleEnabled = appleEnabled;
         this.environment = environment;
         this.jwtSecret = jwtSecret;
         this.platformAdminJwtSecret = platformAdminJwtSecret;
@@ -103,10 +109,16 @@ class ProductionSecretsValidator {
         // *any* app (no audience check at all). Facebook login is not
         // offered any more, so its credentials are no longer required
         // (FacebookGraphIdentityVerifier just rejects every token when blank).
-        checkNotBlank(problems, "GOOGLE_OAUTH_CLIENT_IDS (app.oauth.google.client-ids)", googleClientIds);
+        // A provider switched off (GOOGLE_OAUTH_ENABLED / APPLE_OAUTH_ENABLED = false) needs no client ids:
+        // its verifier rejects every token. Switched on, the ids stay mandatory.
+        if (googleEnabled) {
+            checkNotBlank(problems, "GOOGLE_OAUTH_CLIENT_IDS (app.oauth.google.client-ids)", googleClientIds);
+        }
         // Same security hole as blank Google ids: with no audience configured,
         // an Apple identity token issued to *any* app would be accepted.
-        checkNotBlank(problems, "APPLE_CLIENT_IDS (app.oauth.apple.client-ids)", appleClientIds);
+        if (appleEnabled) {
+            checkNotBlank(problems, "APPLE_CLIENT_IDS (app.oauth.apple.client-ids)", appleClientIds);
+        }
         boolean smsMocked = otpMockCode != null && !otpMockCode.isBlank();
         if (smsMocked) {
             // Allowed on purpose, for a deployed pre-production test environment
