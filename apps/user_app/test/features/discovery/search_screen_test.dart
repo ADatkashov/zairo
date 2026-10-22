@@ -715,16 +715,21 @@ void main() {
   });
 
   testWidgets('the close button dismisses the filter sheet without applying the choices', (tester) async {
-    final api = _RecordingDiscoveryApi();
-    await openFilters(tester, api);
+    await openFilters(tester, _CountingDiscoveryApi());
 
-    await tester.tap(find.text('Price: low to high'));
+    await tester.ensureVisible(find.text('Available today only'));
+    await tester.tap(find.text('Available today only'));
     await tester.pumpAndSettle();
+    expect(find.text('Show 2 options'), findsOneWidget);
+
     await tester.tap(find.byTooltip('Close filters'));
     await tester.pumpAndSettle();
-
     expect(find.text('Filters'), findsNothing);
-    expect(api.lastSort, 'RECOMMENDED');
+
+    // Reopened, the form starts from the unchanged search — nothing was kept.
+    await tester.tap(find.byIcon(Symbols.tune_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text('Show 3 options'), findsOneWidget);
   });
 
   testWidgets('title, close and the main button stay on screen at 320px with a large font', (tester) async {
