@@ -94,6 +94,43 @@ class _RecordingDiscoveryApi extends DiscoveryApi {
   }
 }
 
+/// Answers with 3 providers normally and 2 when "available today only" is on,
+/// so the filter sheet's live "Show N options" counter has something to show.
+class _CountingDiscoveryApi extends DiscoveryApi {
+  _CountingDiscoveryApi() : super(DioClient(Dio()));
+
+  static ProviderSearchResult _provider(String id) => ProviderSearchResult(
+    id: id,
+    name: 'Studio $id',
+    vertical: 'beauty',
+    status: 'ACTIVE',
+    hasOpenAvailability: true,
+    minPrice: 30,
+    services: const [],
+  );
+
+  @override
+  Future<List<ProviderSearchResult>> searchProviders({
+    String? vertical,
+    String? businessTypeId,
+    String? catalogServiceId,
+    String? query,
+    double? lat,
+    double? lng,
+    double? minPrice,
+    double? maxPrice,
+    double? maxDistanceKm,
+    double? minRating,
+    bool availableOnly = false,
+    String? sort,
+    String? cityCode,
+  }) async => [
+    _provider('p1'),
+    _provider('p2'),
+    if (!availableOnly) _provider('p3'),
+  ];
+}
+
 class _FakeCatalogApi extends CatalogApi {
   _FakeCatalogApi(this._categories) : super(DioClient(Dio()));
 
@@ -413,8 +450,8 @@ void main() {
       await tester.tap(find.text('Price: low to high'));
       await tester.ensureVisible(find.text('Available today only'));
       await tester.tap(find.text('Available today only'));
-      await tester.ensureVisible(find.text('Apply'));
-      await tester.tap(find.text('Apply'));
+      await tester.ensureVisible(find.text('Show 0 options'));
+      await tester.tap(find.text('Show 0 options'));
       await tester.pumpAndSettle();
 
       expect(fakeApi.lastSort, 'PRICE_ASC');
@@ -446,8 +483,8 @@ void main() {
       await tester.tap(find.text('Rating'));
       await tester.ensureVisible(find.text('Minimum rating'));
       await tester.tap(find.text('Minimum rating'));
-      await tester.ensureVisible(find.text('Apply'));
-      await tester.tap(find.text('Apply'));
+      await tester.ensureVisible(find.text('Show 0 options'));
+      await tester.tap(find.text('Show 0 options'));
       await tester.pumpAndSettle();
 
       expect(fakeApi.lastSort, 'RATING');
@@ -484,8 +521,8 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Auto'));
-      await tester.ensureVisible(find.text('Apply'));
-      await tester.tap(find.text('Apply'));
+      await tester.ensureVisible(find.text('Show 0 options'));
+      await tester.tap(find.text('Show 0 options'));
       await tester.pumpAndSettle();
 
       expect(fakeApi.lastVertical, 'auto');
@@ -641,5 +678,71 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
     }
+  });
+
+  Future<void> openFilters(WidgetTester tester, DiscoveryApi api, {double textScale = 1}) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [discoveryApiProvider.overrideWithValue(api)],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
+            child: child!,
+          ),
+          home: const SearchScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Symbols.tune_rounded));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('the filter sheet\'s main button says how many providers match and follows the choices', (tester) async {
+    await openFilters(tester, _CountingDiscoveryApi());
+
+    expect(find.text('Show 3 options'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Available today only'));
+    await tester.tap(find.text('Available today only'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Show 2 options'), findsOneWidget);
+    expect(find.text('Show 3 options'), findsNothing);
+  });
+
+  testWidgets('the close button dismisses the filter sheet without applying the choices', (tester) async {
+    await openFilters(tester, _CountingDiscoveryApi());
+
+    await tester.ensureVisible(find.text('Available today only'));
+    await tester.tap(find.text('Available today only'));
+    await tester.pumpAndSettle();
+    expect(find.text('Show 2 options'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Close filters'));
+    await tester.pumpAndSettle();
+    expect(find.text('Filters'), findsNothing);
+
+    // Reopened, the form starts from the unchanged search — nothing was kept.
+    await tester.tap(find.byIcon(Symbols.tune_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text('Show 3 options'), findsOneWidget);
+  });
+
+  testWidgets('title, close and the main button stay on screen at 320px with a large font', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await openFilters(tester, _CountingDiscoveryApi(), textScale: 2);
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Filters'), findsOneWidget);
+    expect(find.byTooltip('Close filters'), findsOneWidget);
+    expect(find.text('Show 3 options'), findsOneWidget);
+    expect(tester.getRect(find.text('Show 3 options')).bottom, lessThanOrEqualTo(640));
   });
 }
