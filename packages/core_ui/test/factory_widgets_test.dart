@@ -1230,6 +1230,51 @@ void main() {
     expect(find.byType(FactoryBottomSheet), findsOneWidget);
   });
 
+  testWidgets('showFactoryBottomSheet with scrollable: false gives the content a bounded height to scroll in', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: factoryLightTheme(),
+        home: Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () => showFactoryBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              scrollable: false,
+              builder: (context) => ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 300),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Header'),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Column(children: [for (var i = 0; i < 40; i++) Text('Row $i')]),
+                      ),
+                    ),
+                    const Text('Pinned action'),
+                  ],
+                ),
+              ),
+            ),
+            child: const Text('Open'),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    // The handle + content aren't wrapped in a second scroll view, so the
+    // header and the pinned action both stay visible beside the long body.
+    expect(find.text('Header'), findsOneWidget);
+    expect(find.text('Pinned action'), findsOneWidget);
+    expect(find.byType(SingleChildScrollView), findsOneWidget);
+  });
+
   group('currency display', () {
     Future<void> pumpPrice(WidgetTester tester, Widget price) => tester.pumpWidget(
           MaterialApp(theme: factoryLightTheme(), home: Scaffold(body: price)),
