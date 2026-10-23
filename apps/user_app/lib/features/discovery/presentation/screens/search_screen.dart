@@ -448,18 +448,18 @@ class _FilterSheetState extends State<_FilterSheet> {
   late String? _vertical;
   late DiscoverySort _sort;
   late bool _availableOnly;
-  late final TextEditingController _minPriceController;
-  late final TextEditingController _maxPriceController;
+  // null = that end of the price range isn't restricted.
+  late double? _priceFrom;
+  late double? _priceTo;
   late bool _distanceEnabled;
   late double _maxDistanceKm;
   late bool _minRatingEnabled;
   late double _minRating;
 
   /// The draft the "Show N options" counter is computed for. Lags [_draft] on
-  /// purpose while a price is being typed or a slider dragged, so the sheet
-  /// asks the server once the person pauses, not on every keystroke/frame.
+  /// purpose while a slider is dragged, so the sheet asks the server once the
+  /// finger lifts, not on every frame.
   late DiscoveryQuery _countQuery;
-  Timer? _countTimer;
 
   @override
   void initState() {
@@ -468,12 +468,8 @@ class _FilterSheetState extends State<_FilterSheet> {
     _vertical = initial.vertical;
     _sort = initial.sort;
     _availableOnly = initial.availableOnly;
-    _minPriceController = TextEditingController(
-      text: initial.minPrice?.toStringAsFixed(0) ?? '',
-    );
-    _maxPriceController = TextEditingController(
-      text: initial.maxPrice?.toStringAsFixed(0) ?? '',
-    );
+    _priceFrom = initial.minPrice;
+    _priceTo = initial.maxPrice;
     _distanceEnabled = initial.maxDistanceKm != null;
     _maxDistanceKm = initial.maxDistanceKm ?? 10;
     _minRatingEnabled = initial.minRating != null;
@@ -483,9 +479,6 @@ class _FilterSheetState extends State<_FilterSheet> {
 
   @override
   void dispose() {
-    _countTimer?.cancel();
-    _minPriceController.dispose();
-    _maxPriceController.dispose();
     super.dispose();
   }
 
@@ -493,26 +486,16 @@ class _FilterSheetState extends State<_FilterSheet> {
   DiscoveryQuery _draft() => DiscoveryQuery(
     query: widget.initial.query,
     vertical: _vertical,
-    minPrice: double.tryParse(_minPriceController.text.trim()),
-    maxPrice: double.tryParse(_maxPriceController.text.trim()),
+    minPrice: _priceFrom,
+    maxPrice: _priceTo,
     maxDistanceKm: _distanceEnabled ? _maxDistanceKm : null,
     minRating: _minRatingEnabled ? _minRating : null,
     availableOnly: _availableOnly,
     sort: _sort,
   );
 
-  /// Re-point the counter at the current draft — at once for a tap, after a
-  /// short pause for typing.
-  void _refreshCount({bool debounce = false}) {
-    _countTimer?.cancel();
-    if (!debounce) {
-      setState(() => _countQuery = _draft());
-      return;
-    }
-    _countTimer = Timer(const Duration(milliseconds: 400), () {
-      if (mounted) setState(() => _countQuery = _draft());
-    });
-  }
+  /// Re-point the counter at the current draft.
+  void _refreshCount() => setState(() => _countQuery = _draft());
 
   @override
   Widget build(BuildContext context) {
@@ -662,30 +645,60 @@ class _FilterSheetState extends State<_FilterSheet> {
         ],
       ),
       const SizedBox(height: FactorySpacing.space4),
-      Text(l10n.searchFilterPriceRangeLabel, style: textTheme.labelLarge),
-      const SizedBox(height: FactorySpacing.space2),
-      Row(
-        children: [
-          Expanded(
-            child: FactoryTextField(
-              controller: _minPriceController,
-              keyboardType: TextInputType.number,
-              label: l10n.searchFilterPriceMinHint,
-              onChanged: (_) => _refreshCount(debounce: true),
-            ),
-          ),
-          const SizedBox(width: FactorySpacing.space2),
-          Expanded(
-            child: FactoryTextField(
-              controller: _maxPriceController,
-              keyboardType: TextInputType.number,
-              label: l10n.searchFilterPriceMaxHint,
-              onChanged: (_) => _refreshCount(debounce: true),
-            ),
-          ),
-        ],
+      Consumer(
+        builder: (context, ref, _) {
+          // The scale comes from the search itself (without the sheet's own
+          // filters, so it doesn't shift while choosing). Nothing to choose
+          // between → no slider, rather than a dead one.
+          final results = ref
+              .watch(searchResultsProvider(DiscoveryQuery(query: widget.initial.query)))
+              .asData
+              ?.value;
+          final bounds = results == null ? null : PriceBounds.fromResults(results);
+          if (bounds == null) return const SizedBox.shrink();
+          final values = RangeValues(
+            (_priceFrom ?? bounds.min).clamp(bounds.min, bounds.max),
+            (_priceTo ?? bounds.max).clamp(bounds.min, bounds.max),
+          );
+          final from = formatFactoryMoney(values.start, bounds.currency);
+          final to = formatFactoryMoney(values.end, bounds.currency);
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // A Wrap, not a Row: with a large font on a narrow phone the
+              // selection drops under the title instead of overflowing.
+              SizedBox(
+                width: double.infinity,
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: FactorySpacing.space2,
+                  children: [
+                    Text(l10n.searchFilterPriceRangeLabel, style: textTheme.labelLarge),
+                    Text(
+                      l10n.searchFilterPriceRangeValue(from, to),
+                      style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+              RangeSlider(
+                values: values,
+                min: bounds.min,
+                max: bounds.max,
+                divisions: bounds.divisions,
+                labels: RangeLabels(from, to),
+                onChanged: (range) => setState(() {
+                  // An end left on its limit means "no limit" on that side.
+                  _priceFrom = range.start <= bounds.min ? null : range.start;
+                  _priceTo = range.end >= bounds.max ? null : range.end;
+                }),
+                onChangeEnd: (_) => _refreshCount(),
+              ),
+            ],
+          );
+        },
       ),
-      const SizedBox(height: FactorySpacing.space2),
       SwitchListTile(
         contentPadding: EdgeInsets.zero,
         title: Text(l10n.searchFilterAvailableOnlyLabel),

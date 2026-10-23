@@ -131,6 +131,49 @@ class _CountingDiscoveryApi extends DiscoveryApi {
   ];
 }
 
+/// Providers at 1 000 / 8 000 / 21 000 ₸ that honours the price filter the way
+/// the backend does (on the provider's cheapest price), and remembers it.
+class _PricedDiscoveryApi extends DiscoveryApi {
+  _PricedDiscoveryApi({this.prices = const [1000, 8000, 21000]}) : super(DioClient(Dio()));
+
+  final List<double> prices;
+  double? lastMinPrice;
+  double? lastMaxPrice;
+
+  @override
+  Future<List<ProviderSearchResult>> searchProviders({
+    String? vertical,
+    String? businessTypeId,
+    String? catalogServiceId,
+    String? query,
+    double? lat,
+    double? lng,
+    double? minPrice,
+    double? maxPrice,
+    double? maxDistanceKm,
+    double? minRating,
+    bool availableOnly = false,
+    String? sort,
+    String? cityCode,
+  }) async {
+    lastMinPrice = minPrice;
+    lastMaxPrice = maxPrice;
+    return [
+      for (final price in prices)
+        if ((minPrice == null || price >= minPrice) && (maxPrice == null || price <= maxPrice))
+          ProviderSearchResult(
+            id: 'p$price',
+            name: 'Studio $price',
+            vertical: 'beauty',
+            status: 'ACTIVE',
+            hasOpenAvailability: true,
+            minPrice: price,
+            services: [ServiceSummary(id: 's$price', title: 'Cut', durationMinutes: 30, price: price, currency: 'KZT')],
+          ),
+    ];
+  }
+}
+
 class _FakeCatalogApi extends CatalogApi {
   _FakeCatalogApi(this._categories) : super(DioClient(Dio()));
 
@@ -744,5 +787,82 @@ void main() {
     expect(find.byTooltip('Close filters'), findsOneWidget);
     expect(find.text('Show 3 options'), findsOneWidget);
     expect(tester.getRect(find.text('Show 3 options')).bottom, lessThanOrEqualTo(640));
+  });
+
+  testWidgets('the price filter is a range slider over the prices actually on offer', (tester) async {
+    final api = _PricedDiscoveryApi();
+    await openFilters(tester, api);
+
+    final slider = tester.widget<RangeSlider>(find.byType(RangeSlider));
+    expect(slider.min, 1000);
+    expect(slider.max, 21000);
+    expect(slider.values, const RangeValues(1000, 21000));
+    expect(find.byType(TextField), findsOneWidget); // only the search field — no From/To boxes
+    expect(find.text('Show 3 options'), findsOneWidget);
+
+    slider.onChanged!(const RangeValues(5000, 21000));
+    await tester.pump();
+    slider.onChangeEnd!(const RangeValues(5000, 21000));
+    await tester.pumpAndSettle();
+    expect(find.text('Show 2 options'), findsOneWidget);
+
+    await tester.tap(find.text('Show 2 options'));
+    await tester.pumpAndSettle();
+
+    // Only the end that was moved is a limit; the other stays open.
+    expect(api.lastMinPrice, 5000);
+    expect(api.lastMaxPrice, isNull);
+  });
+
+  testWidgets('dragging an end back to its limit lifts that limit', (tester) async {
+    final api = _PricedDiscoveryApi();
+    await openFilters(tester, api);
+
+    final slider = tester.widget<RangeSlider>(find.byType(RangeSlider));
+    slider.onChanged!(const RangeValues(1000, 9000));
+    await tester.pump();
+    slider.onChangeEnd!(const RangeValues(1000, 9000));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Show 2 options'));
+    await tester.pumpAndSettle();
+    expect(api.lastMinPrice, isNull);
+    expect(api.lastMaxPrice, 9000);
+  });
+
+  testWidgets('a price limit already applied is shown on the slider when the sheet reopens', (tester) async {
+    final api = _PricedDiscoveryApi();
+    await openFilters(tester, api);
+
+    final slider = tester.widget<RangeSlider>(find.byType(RangeSlider));
+    slider.onChanged!(const RangeValues(5000, 21000));
+    await tester.pump();
+    slider.onChangeEnd!(const RangeValues(5000, 21000));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Show 2 options'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Symbols.tune_rounded));
+    await tester.pumpAndSettle();
+    expect(tester.widget<RangeSlider>(find.byType(RangeSlider)).values, const RangeValues(5000, 21000));
+  });
+
+  testWidgets('no slider when every provider costs the same', (tester) async {
+    await openFilters(tester, _PricedDiscoveryApi(prices: const [5000, 5000]));
+
+    expect(find.byType(RangeSlider), findsNothing);
+    expect(find.text('Price range'), findsNothing);
+    expect(find.text('Show 2 options'), findsOneWidget);
+  });
+
+  testWidgets('the price slider and its label fit 320px with a large font', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await openFilters(tester, _PricedDiscoveryApi(), textScale: 2);
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(RangeSlider), findsOneWidget);
+    expect(find.text('Show 3 options'), findsOneWidget);
   });
 }

@@ -498,12 +498,6 @@
   "searchFilterPriceRangeLabel": "Price range",
   "@searchFilterPriceRangeLabel": {"description": "Search filters dialog section label for the min/max price fields."},
 
-  "searchFilterPriceMinHint": "Min",
-  "@searchFilterPriceMinHint": {"description": "Search filters dialog minimum price field hint."},
-
-  "searchFilterPriceMaxHint": "Max",
-  "@searchFilterPriceMaxHint": {"description": "Search filters dialog maximum price field hint."},
-
   "searchFilterAvailableOnlyLabel": "Available today only",
   "@searchFilterAvailableOnlyLabel": {"description": "Search filters dialog switch label."},
 
@@ -527,6 +521,12 @@
     "placeholders": {
       "rating": {"type": "String"}
     }
+  },
+
+  "searchFilterPriceRangeValue": "{from} – {to}",
+  "@searchFilterPriceRangeValue": {
+    "description": "Current selection above the price range slider in the search filters sheet, e.g. \"2 000 ₸ – 15 000 ₸\".",
+    "placeholders": {"from": {"type": "String"}, "to": {"type": "String"}}
   },
 
   "searchFilterClearButton": "Clear",
