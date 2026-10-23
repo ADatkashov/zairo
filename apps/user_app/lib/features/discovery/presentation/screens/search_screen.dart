@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/provider_grid.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -448,18 +449,23 @@ class _FilterSheetState extends State<_FilterSheet> {
   late String? _vertical;
   late DiscoverySort _sort;
   late bool _availableOnly;
-  // null = that end of the price range isn't restricted.
+  // null = that end of the price range isn't restricted. The slider and the
+  // two boxes under it are two views of these; an empty box means no limit.
   late double? _priceFrom;
   late double? _priceTo;
+  late final TextEditingController _priceFromController;
+  late final TextEditingController _priceToController;
   late bool _distanceEnabled;
   late double _maxDistanceKm;
   late bool _minRatingEnabled;
   late double _minRating;
 
   /// The draft the "Show N options" counter is computed for. Lags [_draft] on
-  /// purpose while a slider is dragged, so the sheet asks the server once the
-  /// finger lifts, not on every frame.
+  /// purpose while a slider is dragged or a price typed, so the sheet asks the
+  /// server once the finger lifts / the typing pauses, not on every frame or
+  /// keystroke.
   late DiscoveryQuery _countQuery;
+  Timer? _countTimer;
 
   @override
   void initState() {
@@ -470,6 +476,8 @@ class _FilterSheetState extends State<_FilterSheet> {
     _availableOnly = initial.availableOnly;
     _priceFrom = initial.minPrice;
     _priceTo = initial.maxPrice;
+    _priceFromController = TextEditingController(text: _priceText(_priceFrom));
+    _priceToController = TextEditingController(text: _priceText(_priceTo));
     _distanceEnabled = initial.maxDistanceKm != null;
     _maxDistanceKm = initial.maxDistanceKm ?? 10;
     _minRatingEnabled = initial.minRating != null;
@@ -479,23 +487,49 @@ class _FilterSheetState extends State<_FilterSheet> {
 
   @override
   void dispose() {
+    _countTimer?.cancel();
+    _priceFromController.dispose();
+    _priceToController.dispose();
     super.dispose();
   }
 
   /// What "Apply" would search for with the form as it stands now.
-  DiscoveryQuery _draft() => DiscoveryQuery(
-    query: widget.initial.query,
-    vertical: _vertical,
-    minPrice: _priceFrom,
-    maxPrice: _priceTo,
-    maxDistanceKm: _distanceEnabled ? _maxDistanceKm : null,
-    minRating: _minRatingEnabled ? _minRating : null,
-    availableOnly: _availableOnly,
-    sort: _sort,
-  );
+  DiscoveryQuery _draft() {
+    // "From 9000 to 3000" is read as 3000–9000, not as an empty result.
+    final swapped = _priceFrom != null && _priceTo != null && _priceFrom! > _priceTo!;
+    return DiscoveryQuery(
+      query: widget.initial.query,
+      vertical: _vertical,
+      minPrice: swapped ? _priceTo : _priceFrom,
+      maxPrice: swapped ? _priceFrom : _priceTo,
+      maxDistanceKm: _distanceEnabled ? _maxDistanceKm : null,
+      minRating: _minRatingEnabled ? _minRating : null,
+      availableOnly: _availableOnly,
+      sort: _sort,
+    );
+  }
 
-  /// Re-point the counter at the current draft.
-  void _refreshCount() => setState(() => _countQuery = _draft());
+  static String _priceText(double? price) => price == null ? '' : price.round().toString();
+
+  /// A price typed in one of the boxes (empty = no limit on that side).
+  void _priceTyped() {
+    _priceFrom = double.tryParse(_priceFromController.text.trim());
+    _priceTo = double.tryParse(_priceToController.text.trim());
+    _refreshCount(debounce: true);
+  }
+
+  /// Re-point the counter at the current draft — at once for a tap, after a
+  /// short pause for typing.
+  void _refreshCount({bool debounce = false}) {
+    _countTimer?.cancel();
+    if (!debounce) {
+      setState(() => _countQuery = _draft());
+      return;
+    }
+    _countTimer = Timer(const Duration(milliseconds: 400), () {
+      if (mounted) setState(() => _countQuery = _draft());
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -630,75 +664,7 @@ class _FilterSheetState extends State<_FilterSheet> {
           );
         },
       ),
-      const SizedBox(height: FactorySpacing.space4),
-      Text(l10n.searchSortLabel, style: textTheme.labelLarge),
       const SizedBox(height: FactorySpacing.space2),
-      Wrap(
-        spacing: FactorySpacing.space2,
-        runSpacing: FactorySpacing.space2,
-        children: [
-          _sortChip(l10n.searchSortRecommended, DiscoverySort.recommended),
-          _sortChip(l10n.searchSortPriceAsc, DiscoverySort.priceAsc),
-          _sortChip(l10n.searchSortPriceDesc, DiscoverySort.priceDesc),
-          _sortChip(l10n.searchSortDistance, DiscoverySort.distance),
-          _sortChip(l10n.searchSortRating, DiscoverySort.rating),
-        ],
-      ),
-      const SizedBox(height: FactorySpacing.space4),
-      Consumer(
-        builder: (context, ref, _) {
-          // The scale comes from the search itself (without the sheet's own
-          // filters, so it doesn't shift while choosing). Nothing to choose
-          // between → no slider, rather than a dead one.
-          final results = ref
-              .watch(searchResultsProvider(DiscoveryQuery(query: widget.initial.query)))
-              .asData
-              ?.value;
-          final bounds = results == null ? null : PriceBounds.fromResults(results);
-          if (bounds == null) return const SizedBox.shrink();
-          final values = RangeValues(
-            (_priceFrom ?? bounds.min).clamp(bounds.min, bounds.max),
-            (_priceTo ?? bounds.max).clamp(bounds.min, bounds.max),
-          );
-          final from = formatFactoryMoney(values.start, bounds.currency);
-          final to = formatFactoryMoney(values.end, bounds.currency);
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // A Wrap, not a Row: with a large font on a narrow phone the
-              // selection drops under the title instead of overflowing.
-              SizedBox(
-                width: double.infinity,
-                child: Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: FactorySpacing.space2,
-                  children: [
-                    Text(l10n.searchFilterPriceRangeLabel, style: textTheme.labelLarge),
-                    Text(
-                      l10n.searchFilterPriceRangeValue(from, to),
-                      style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
-                    ),
-                  ],
-                ),
-              ),
-              RangeSlider(
-                values: values,
-                min: bounds.min,
-                max: bounds.max,
-                divisions: bounds.divisions,
-                labels: RangeLabels(from, to),
-                onChanged: (range) => setState(() {
-                  // An end left on its limit means "no limit" on that side.
-                  _priceFrom = range.start <= bounds.min ? null : range.start;
-                  _priceTo = range.end >= bounds.max ? null : range.end;
-                }),
-                onChangeEnd: (_) => _refreshCount(),
-              ),
-            ],
-          );
-        },
-      ),
       SwitchListTile(
         contentPadding: EdgeInsets.zero,
         title: Text(l10n.searchFilterAvailableOnlyLabel),
@@ -754,6 +720,125 @@ class _FilterSheetState extends State<_FilterSheet> {
           onChangeEnd: (_) => _refreshCount(),
         ),
       ],
+      const SizedBox(height: FactorySpacing.space4),
+      Consumer(
+        builder: (context, ref, _) {
+          // The scale comes from the search itself (without the sheet's own
+          // filters, so it doesn't shift while choosing). Nothing to choose
+          // between → no slider, rather than a dead one; the boxes stay.
+          final results = ref
+              .watch(searchResultsProvider(DiscoveryQuery(query: widget.initial.query)))
+              .asData
+              ?.value;
+          final bounds = results == null ? null : PriceBounds.fromResults(results);
+          RangeValues? values;
+          String from = '';
+          String to = '';
+          if (bounds != null) {
+            // Through the draft, so a pair typed the wrong way round (9000 to
+            // 5000) is ordered for the slider just as it is for the search.
+            final draft = _draft();
+            values = RangeValues(
+              (draft.minPrice ?? bounds.min).clamp(bounds.min, bounds.max),
+              (draft.maxPrice ?? bounds.max).clamp(bounds.min, bounds.max),
+            );
+            from = formatFactoryMoney(values.start, bounds.currency);
+            to = formatFactoryMoney(values.end, bounds.currency);
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // A Wrap, not a Row: with a large font on a narrow phone the
+              // selection drops under the title instead of overflowing.
+              SizedBox(
+                width: double.infinity,
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: FactorySpacing.space2,
+                  children: [
+                    Text(l10n.searchFilterPriceRangeLabel, style: textTheme.labelLarge),
+                    if (bounds != null)
+                      Text(
+                        l10n.searchFilterPriceRangeValue(from, to),
+                        style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
+                      ),
+                  ],
+                ),
+              ),
+              if (bounds != null && values != null)
+                RangeSlider(
+                  values: values,
+                  min: bounds.min,
+                  max: bounds.max,
+                  divisions: bounds.divisions,
+                  labels: RangeLabels(from, to),
+                  onChanged: (range) => setState(() {
+                    // An end left on its limit means "no limit" on that side.
+                    _priceFrom = range.start <= bounds.min ? null : range.start;
+                    _priceTo = range.end >= bounds.max ? null : range.end;
+                    _priceFromController.text = _priceText(_priceFrom);
+                    _priceToController.text = _priceText(_priceTo);
+                  }),
+                  onChangeEnd: (_) => _refreshCount(),
+                )
+              else
+                const SizedBox(height: FactorySpacing.space2),
+              // The exact amounts, typed — the slider moves to follow them.
+              Row(
+                children: [
+                  Expanded(
+                    child: FactoryTextField(
+                      controller: _priceFromController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      label: l10n.searchFilterPriceMinHint,
+                      hint: bounds?.min.round().toString(),
+                      onChanged: (_) => setState(_priceTyped),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space2),
+                    child: Text('—', style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary)),
+                  ),
+                  Expanded(
+                    child: FactoryTextField(
+                      controller: _priceToController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      label: l10n.searchFilterPriceMaxHint,
+                      hint: bounds?.max.round().toString(),
+                      onChanged: (_) => setState(_priceTyped),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+      const SizedBox(height: FactorySpacing.space4),
+      Text(l10n.searchSortLabel, style: textTheme.labelLarge),
+      const SizedBox(height: FactorySpacing.space2),
+      DropdownButtonFormField<DiscoverySort>(
+        initialValue: _sort,
+        isExpanded: true,
+        style: textTheme.bodyMedium?.copyWith(color: colors.text),
+        icon: const Icon(Symbols.expand_more_rounded),
+        items: [
+          for (final sort in DiscoverySort.values)
+            DropdownMenuItem(
+              value: sort,
+              child: Text(_sortLabel(l10n, sort), overflow: TextOverflow.ellipsis),
+            ),
+        ],
+        onChanged: (value) {
+          if (value == null) return;
+          _sort = value;
+          _refreshCount();
+        },
+      ),
+      const SizedBox(height: FactorySpacing.space2),
     ];
   }
 
@@ -763,17 +848,6 @@ class _FilterSheetState extends State<_FilterSheet> {
       selected: _vertical == value,
       onTap: () {
         _vertical = value;
-        _refreshCount();
-      },
-    );
-  }
-
-  Widget _sortChip(String label, DiscoverySort value) {
-    return FactoryChip(
-      label: label,
-      selected: _sort == value,
-      onTap: () {
-        _sort = value;
         _refreshCount();
       },
     );

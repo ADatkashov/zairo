@@ -175,6 +175,8 @@
   "searchFilterMaxDistanceValue": "В пределах {km} км",
   "searchFilterMinRatingLabel": "Минимальный рейтинг",
   "searchFilterMinRatingValue": "От {rating} звёзд",
+  "searchFilterPriceMinHint": "От",
+  "searchFilterPriceMaxHint": "До",
   "searchFilterPriceRangeValue": "{from} – {to}",
   "searchFilterClearButton": "Сбросить",
   "searchFilterApplyButton": "Применить",
