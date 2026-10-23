@@ -490,7 +490,10 @@ void main() {
       await tester.tap(find.byIcon(Symbols.tune_rounded));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Price: low to high'));
+      await tester.tap(find.text('Recommended'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Price: low to high').last);
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Available today only'));
       await tester.tap(find.text('Available today only'));
       await tester.ensureVisible(find.text('Show 0 options'));
@@ -523,7 +526,10 @@ void main() {
       await tester.tap(find.byIcon(Symbols.tune_rounded));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Rating'));
+      await tester.tap(find.text('Recommended'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Rating').last);
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Minimum rating'));
       await tester.tap(find.text('Minimum rating'));
       await tester.ensureVisible(find.text('Show 0 options'));
@@ -797,7 +803,7 @@ void main() {
     expect(slider.min, 1000);
     expect(slider.max, 21000);
     expect(slider.values, const RangeValues(1000, 21000));
-    expect(find.byType(TextField), findsOneWidget); // only the search field — no From/To boxes
+    expect(find.byType(TextField), findsNWidgets(3)); // the search field + the From / To boxes
     expect(find.text('Show 3 options'), findsOneWidget);
 
     slider.onChanged!(const RangeValues(5000, 21000));
@@ -850,7 +856,9 @@ void main() {
     await openFilters(tester, _PricedDiscoveryApi(prices: const [5000, 5000]));
 
     expect(find.byType(RangeSlider), findsNothing);
-    expect(find.text('Price range'), findsNothing);
+    // Nothing to slide between, but exact prices can still be typed.
+    expect(find.text('Price range'), findsOneWidget);
+    expect(find.byType(TextField), findsNWidgets(3));
     expect(find.text('Show 2 options'), findsOneWidget);
   });
 
@@ -864,5 +872,68 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(RangeSlider), findsOneWidget);
     expect(find.text('Show 3 options'), findsOneWidget);
+  });
+
+  testWidgets('typed prices apply as the limits and move the slider', (tester) async {
+    final api = _PricedDiscoveryApi();
+    await openFilters(tester, api);
+
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(1), '5000');
+    await tester.enterText(fields.at(2), '9000');
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<RangeSlider>(find.byType(RangeSlider)).values, const RangeValues(5000, 9000));
+    expect(find.text('Show 1 option'), findsOneWidget);
+
+    await tester.tap(find.text('Show 1 option'));
+    await tester.pumpAndSettle();
+    expect(api.lastMinPrice, 5000);
+    expect(api.lastMaxPrice, 9000);
+  });
+
+  testWidgets('moving the slider fills the price boxes, an end at its limit leaves its box empty', (tester) async {
+    await openFilters(tester, _PricedDiscoveryApi());
+
+    final slider = tester.widget<RangeSlider>(find.byType(RangeSlider));
+    slider.onChanged!(const RangeValues(5000, 21000));
+    await tester.pump();
+
+    String text(int i) => tester.widget<TextField>(find.byType(TextField).at(i)).controller!.text;
+    expect(text(1), '5000');
+    expect(text(2), '');
+  });
+
+  testWidgets('prices typed the wrong way round are read as a range, not as nothing', (tester) async {
+    final api = _PricedDiscoveryApi();
+    await openFilters(tester, api);
+
+    await tester.enterText(find.byType(TextField).at(1), '9000');
+    await tester.enterText(find.byType(TextField).at(2), '5000');
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Show 1 option'));
+    await tester.pumpAndSettle();
+
+    expect(api.lastMinPrice, 5000);
+    expect(api.lastMaxPrice, 9000);
+  });
+
+  testWidgets('sorting is a select: it shows the current choice and applies the picked one', (tester) async {
+    final api = _RecordingDiscoveryApi();
+    await openFilters(tester, api);
+
+    expect(find.byType(DropdownButtonFormField<DiscoverySort>), findsOneWidget);
+    await tester.tap(find.text('Recommended'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Distance').last);
+    await tester.pumpAndSettle();
+    // The chosen option is what the select now shows.
+    expect(find.text('Distance'), findsOneWidget);
+
+    await tester.tap(find.text('Show 0 options'));
+    await tester.pumpAndSettle();
+    expect(api.lastSort, 'DISTANCE');
   });
 }
