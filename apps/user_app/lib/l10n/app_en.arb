@@ -523,6 +523,12 @@
     }
   },
 
+  "searchFilterPriceMinHint": "From",
+  "@searchFilterPriceMinHint": {"description": "Label of the lower-bound price box in the search filters sheet."},
+
+  "searchFilterPriceMaxHint": "To",
+  "@searchFilterPriceMaxHint": {"description": "Label of the upper-bound price box in the search filters sheet."},
+
   "searchFilterPriceRangeValue": "{from} – {to}",
   "@searchFilterPriceRangeValue": {
     "description": "Current selection above the price range slider in the search filters sheet, e.g. \"2 000 ₸ – 15 000 ₸\".",

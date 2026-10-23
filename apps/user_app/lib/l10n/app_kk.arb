@@ -175,6 +175,8 @@
   "searchFilterMaxDistanceValue": "{km} км шегінде",
   "searchFilterMinRatingLabel": "Ең төменгі рейтинг",
   "searchFilterMinRatingValue": "{rating} жұлдыздан бастап",
+  "searchFilterPriceMinHint": "Бастап",
+  "searchFilterPriceMaxHint": "Дейін",
   "searchFilterPriceRangeValue": "{from} – {to}",
   "searchFilterClearButton": "Тазарту",
   "searchFilterApplyButton": "Қолдану",
