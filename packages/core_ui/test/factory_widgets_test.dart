@@ -1560,4 +1560,19 @@ void narrowPhoneTests() {
     expect(zero.style?.color, FactoryColors.light.textTertiary);
     expect(seven.style?.color, isNot(FactoryColors.light.textTertiary));
   });
+
+  testWidgets('the show/hide eye of a password field fits inside the field, with room around it', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: factoryLightTheme(),
+        home: const Scaffold(body: Padding(padding: EdgeInsets.all(16), child: FactoryTextField(label: 'Password', obscureText: true))),
+      ),
+    );
+    final field = tester.getRect(find.byType(TextField));
+    final eye = tester.getRect(find.byType(IconButton));
+    expect(eye.height, lessThanOrEqualTo(field.height - 12), reason: 'not taller than the field');
+    expect(eye.right, lessThanOrEqualTo(field.right - 4), reason: 'not past its edge');
+    expect(eye.top, greaterThan(field.top));
+    expect(eye.bottom, lessThan(field.bottom));
+  });
 }
