@@ -861,5 +861,7 @@
   "detailTechnicalIds": "Technical IDs",
   "@detailTechnicalIds": {"description": "Business details sheet label."},
   "detailBookingsValue": "{total} total · {completed} completed",
-  "@detailBookingsValue": {"description": "Business details sheet: bookings taken and finished.", "placeholders": {"total": {"type": "int"}, "completed": {"type": "int"}}}
+  "@detailBookingsValue": {"description": "Business details sheet: bookings taken and finished.", "placeholders": {"total": {"type": "int"}, "completed": {"type": "int"}}},
+  "adUploadImage": "Upload from device",
+  "@adUploadImage": {"description": "Banner form: picks a cover picture on the device and uploads it, filling the link field."}
 }
