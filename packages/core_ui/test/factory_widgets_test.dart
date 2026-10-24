@@ -1545,4 +1545,19 @@ void narrowPhoneTests() {
       expect(tester.getSize(find.byType(FactoryCategoryTile)).width, 60);
     });
   });
+
+  testWidgets('a stat tile shows zero in grey and a real count in the normal text colour', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: factoryLightTheme(),
+        home: const Scaffold(
+          body: Row(children: [FactoryStatTile(value: '0', label: 'Booked'), FactoryStatTile(value: '7', label: 'Viewed')]),
+        ),
+      ),
+    );
+    final zero = tester.widget<Text>(find.text('0'));
+    final seven = tester.widget<Text>(find.text('7'));
+    expect(zero.style?.color, FactoryColors.light.textTertiary);
+    expect(seven.style?.color, isNot(FactoryColors.light.textTertiary));
+  });
 }
