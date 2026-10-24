@@ -179,6 +179,12 @@ void main() {
     expect(find.byIcon(Icons.check_circle), findsNWidgets(2));
     // Only Apple is left to link.
     expect(find.byType(TextButton), findsOneWidget);
+    // Rows are named by the provider, not by the login button's wording, and linked ones say so.
+    expect(find.text('Google'), findsOneWidget);
+    expect(find.text('Apple'), findsOneWidget);
+    expect(find.text('Phone'), findsOneWidget);
+    expect(find.text('Linked'), findsNWidgets(2));
+    expect(find.text('Continue with Google'), findsNothing);
   });
 
   testWidgets('the Apple row only exists where Apple sign-in does', (tester) async {

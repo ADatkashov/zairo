@@ -764,7 +764,7 @@
   "portfolioEmptyTitle": "No photos yet",
   "@portfolioEmptyTitle": {"description": "Master portfolio screen empty state title."},
 
-  "portfolioEmptyMessage": "No portfolio photos yet.",
+  "portfolioEmptyMessage": "This master hasn't added any work yet. Check back soon.",
   "@portfolioEmptyMessage": {"description": "Master portfolio screen empty state."},
 
   "portfolioPhotoSemanticLabel": "Portfolio photo",
@@ -2113,5 +2113,7 @@
   "searchFilterCategoryMore": "More",
   "@searchFilterCategoryMore": {"description": "Search filters sheet: chip that reveals the remaining categories."},
   "loginMethodPhone": "Phone",
-  "@loginMethodPhone": {"description": "Short caption under the phone sign-in circle on the login screen."}
+  "@loginMethodPhone": {"description": "Short caption under the phone sign-in circle on the login screen."},
+  "securityLinkedLabel": "Linked",
+  "@securityLinkedLabel": {"description": "Security screen: subtitle of a sign-in method that is already linked."}
 }
