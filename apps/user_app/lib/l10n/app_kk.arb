@@ -768,5 +768,8 @@
   "notifChangeRequestedTitle": "Қалай жалғастыру керегін таңдаңыз",
   "notifChangeRequestedBody": "Маман келе алмайды. Жазылуды ашып, сол уақытқа басқа маманды, басқа уақытты таңдаңыз немесе толық қайтарумен бас тартыңыз.",
   "notifWorkerChangedTitle": "Маман ауыстырылды",
-  "notifWorkerChangedBody": "Уақыты сол. Жазылуды ашып, сізді кім қабылдайтынын көріңіз."
+  "notifWorkerChangedBody": "Уақыты сол. Жазылуды ашып, сізді кім қабылдайтынын көріңіз.",
+  "searchActivePriceFrom": "{amount} бастап",
+  "searchActivePriceTo": "{amount} дейін",
+  "searchActiveFilterRemove": "Сүзгіні алып тастау: {filter}"
 }

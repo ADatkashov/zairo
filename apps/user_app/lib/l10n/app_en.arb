@@ -2103,5 +2103,11 @@
   "notifWorkerChangedTitle": "Your specialist has changed",
   "@notifWorkerChangedTitle": {"description": "Notification title: specialist replaced."},
   "notifWorkerChangedBody": "The time is the same. Open the booking to see who will see you.",
-  "@notifWorkerChangedBody": {"description": "Notification text: specialist replaced."}
+  "@notifWorkerChangedBody": {"description": "Notification text: specialist replaced."},
+  "searchActivePriceFrom": "From {amount}",
+  "@searchActivePriceFrom": {"description": "Active-filter chip: minimum price only.", "placeholders": {"amount": {"type": "String"}}},
+  "searchActivePriceTo": "Up to {amount}",
+  "@searchActivePriceTo": {"description": "Active-filter chip: maximum price only.", "placeholders": {"amount": {"type": "String"}}},
+  "searchActiveFilterRemove": "Remove filter: {filter}",
+  "@searchActiveFilterRemove": {"description": "Screen-reader label of an active-filter chip; tapping removes the filter.", "placeholders": {"filter": {"type": "String"}}}
 }

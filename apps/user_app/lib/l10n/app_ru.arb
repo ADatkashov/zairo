@@ -768,5 +768,8 @@
   "notifChangeRequestedTitle": "Выберите, как поступить",
   "notifChangeRequestedBody": "Специалист не сможет принять вас. Откройте запись: можно выбрать коллегу на то же время, другое время или отменить с полным возвратом.",
   "notifWorkerChangedTitle": "Специалист изменился",
-  "notifWorkerChangedBody": "Время то же. Откройте запись, чтобы увидеть, кто вас примет."
+  "notifWorkerChangedBody": "Время то же. Откройте запись, чтобы увидеть, кто вас примет.",
+  "searchActivePriceFrom": "От {amount}",
+  "searchActivePriceTo": "До {amount}",
+  "searchActiveFilterRemove": "Убрать фильтр: {filter}"
 }

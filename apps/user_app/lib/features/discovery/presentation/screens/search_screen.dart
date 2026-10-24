@@ -14,6 +14,7 @@ import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../data/models/provider_search_result.dart';
 import '../providers/discovery_providers.dart';
 import '../providers/recent_searches_provider.dart';
+import '../widgets/active_filters.dart';
 import '../widgets/provider_card.dart';
 
 /// A small, fixed shortlist — not sourced from the catalog or any
@@ -167,6 +168,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   },
                 ),
               ),
+              if (query.hasActiveFilters)
+                ActiveFilters(
+                  query: query,
+                  currency: resultsAsync.asData == null || resultsAsync.asData!.value.isEmpty
+                      ? 'KZT'
+                      : PriceBounds.fromResults(resultsAsync.asData!.value)?.currency ?? 'KZT',
+                  onChanged: (updated) => setState(() => _query = updated),
+                ),
               if (isPristine)
                 // Never more than a third of the screen, scrolling inside: with a large font on a small phone the
                 // shortcuts would otherwise squeeze the results to nothing.
