@@ -1079,5 +1079,14 @@
   "campaignFiltersApply": "Қолдану",
   "campaignFiltersClear": "Тазарту",
   "campaignFiltersButtonCount": "Сүзгілер ({count})",
-  "loyaltyTabProgram": "Бағдарлама"
+  "loyaltyTabProgram": "Бағдарлама",
+  "automationPresetTitle": "ZAIRO клиенттермен қаншалықты белсенді байланысады?",
+  "automationPresetCareful": "Сақ",
+  "automationPresetStandard": "Стандартты",
+  "automationPresetActive": "Белсенді",
+  "automationPresetCarefulHint": "Сирек және кешірек — салмақты тәсілді қалайтын бизнеске.",
+  "automationPresetStandardHint": "ZAIRO ұсынатын әдепкі баптаулар.",
+  "automationPresetActiveHint": "Ұсыныстар жиірек, күту қысқа — кесте тезірек толады.",
+  "automationPresetCustomHint": "Өз мәндеріңіз «Қосымша» бөлімінде.",
+  "automationAdvancedTitle": "Қосымша баптаулар"
 }

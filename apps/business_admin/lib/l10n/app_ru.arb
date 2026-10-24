@@ -1079,5 +1079,14 @@
   "campaignFiltersApply": "Применить",
   "campaignFiltersClear": "Сбросить",
   "campaignFiltersButtonCount": "Фильтры ({count})",
-  "loyaltyTabProgram": "Программа"
+  "loyaltyTabProgram": "Программа",
+  "automationPresetTitle": "Насколько активно ZAIRO связывается с клиентами?",
+  "automationPresetCareful": "Осторожно",
+  "automationPresetStandard": "Стандартно",
+  "automationPresetActive": "Активно",
+  "automationPresetCarefulHint": "Реже и позже — для бизнеса, который не любит навязываться.",
+  "automationPresetStandardHint": "Рекомендуемые настройки ZAIRO.",
+  "automationPresetActiveHint": "Чаще предложения и короче ожидание — расписание заполняется быстрее.",
+  "automationPresetCustomHint": "Свои значения заданы в разделе «Дополнительно».",
+  "automationAdvancedTitle": "Дополнительные настройки"
 }
