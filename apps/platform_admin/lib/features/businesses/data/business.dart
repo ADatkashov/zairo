@@ -40,3 +40,34 @@ class Business {
     );
   }
 }
+
+/// Mirrors `GET /platform/businesses/{id}/overview`: who runs a business and
+/// how big it is, for the moderator's card.
+class BusinessOverview {
+  final String? ownerName;
+  final String? ownerEmail;
+  final String? ownerPhone;
+  final int servicesCount;
+  final int totalBookings;
+  final int completedBookings;
+
+  const BusinessOverview({
+    this.ownerName,
+    this.ownerEmail,
+    this.ownerPhone,
+    required this.servicesCount,
+    required this.totalBookings,
+    required this.completedBookings,
+  });
+
+  factory BusinessOverview.fromJson(Map<String, dynamic> json) {
+    return BusinessOverview(
+      ownerName: json['ownerName'] as String?,
+      ownerEmail: json['ownerEmail'] as String?,
+      ownerPhone: json['ownerPhone'] as String?,
+      servicesCount: (json['servicesCount'] as num).toInt(),
+      totalBookings: (json['totalBookings'] as num).toInt(),
+      completedBookings: (json['completedBookings'] as num).toInt(),
+    );
+  }
+}
