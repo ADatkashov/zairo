@@ -79,7 +79,17 @@ class HomeScreen extends ConsumerWidget {
             final openCount = results
                 .where((r) => r.hasOpenAvailability)
                 .length;
-            final topRated = results.take(8).toList();
+            // "Top rated" only when there are ratings to rank by: three or more rated businesses, best first.
+            // Otherwise the row is simply what is near, under a title that does not claim more than it knows.
+            final rated = results
+                .where((r) => (r.averageRating ?? 0) > 0 && (r.reviewCount ?? 0) > 0)
+                .toList()
+              ..sort((a, b) {
+                final byRating = b.averageRating!.compareTo(a.averageRating!);
+                return byRating != 0 ? byRating : (b.reviewCount ?? 0).compareTo(a.reviewCount ?? 0);
+              });
+            final hasTopRated = rated.length >= 3;
+            final topRated = (hasTopRated ? rated : results).take(8).toList();
             return RefreshIndicator(
               // The pinned hero bar owns the top inset (see [_HomeHeroBar]), so
               // the spinner is nudged below it instead of hiding under it.
@@ -136,7 +146,7 @@ class HomeScreen extends ConsumerWidget {
                   ],
                   const SizedBox(height: FactorySpacing.space6),
                   FactorySectionHeader(
-                    title: l10n.homeTopRatedTitle,
+                    title: hasTopRated ? l10n.homeTopRatedTitle : l10n.homeNearbyTitle,
                     actionLabel: l10n.homeSeeAll,
                     onActionTap: () => context.go(AppRoutes.search()),
                   ),

@@ -2116,5 +2116,7 @@
   "securityLinkedLabel": "Linked",
   "@securityLinkedLabel": {"description": "Security screen: subtitle of a sign-in method that is already linked."},
   "paymentCardsEmptyHint": "Your card is saved the next time you pay online, as long as the switch above is on.",
-  "@paymentCardsEmptyHint": {"description": "Saved cards: how a card gets saved when there are none."}
+  "@paymentCardsEmptyHint": {"description": "Saved cards: how a card gets saved when there are none."},
+  "homeNearbyTitle": "Near you",
+  "@homeNearbyTitle": {"description": "Home section header for the provider rail when there are too few ratings to call it top rated."}
 }
