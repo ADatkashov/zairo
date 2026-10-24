@@ -238,12 +238,16 @@ class _StatCell extends StatelessWidget {
               child: Text(value ?? '—', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
             ),
             const SizedBox(height: 2),
-            Text(
-              label,
-              style: textTheme.labelMedium?.copyWith(color: colors.textSecondary),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            // One line that shrinks rather than breaking in the middle of a
+            // word (a long label in a narrow cell with a large font).
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                style: textTheme.labelMedium?.copyWith(color: colors.textSecondary),
+                maxLines: 1,
+                softWrap: false,
+              ),
             ),
           ],
         ),
