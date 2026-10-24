@@ -771,5 +771,6 @@
   "notifWorkerChangedBody": "Уақыты сол. Жазылуды ашып, сізді кім қабылдайтынын көріңіз.",
   "searchActivePriceFrom": "{amount} бастап",
   "searchActivePriceTo": "{amount} дейін",
-  "searchActiveFilterRemove": "Сүзгіні алып тастау: {filter}"
+  "searchActiveFilterRemove": "Сүзгіні алып тастау: {filter}",
+  "searchFilterCategoryMore": "Тағы"
 }

@@ -2109,5 +2109,7 @@
   "searchActivePriceTo": "Up to {amount}",
   "@searchActivePriceTo": {"description": "Active-filter chip: maximum price only.", "placeholders": {"amount": {"type": "String"}}},
   "searchActiveFilterRemove": "Remove filter: {filter}",
-  "@searchActiveFilterRemove": {"description": "Screen-reader label of an active-filter chip; tapping removes the filter.", "placeholders": {"filter": {"type": "String"}}}
+  "@searchActiveFilterRemove": {"description": "Screen-reader label of an active-filter chip; tapping removes the filter.", "placeholders": {"filter": {"type": "String"}}},
+  "searchFilterCategoryMore": "More",
+  "@searchFilterCategoryMore": {"description": "Search filters sheet: chip that reveals the remaining categories."}
 }
