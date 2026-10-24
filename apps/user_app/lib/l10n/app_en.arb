@@ -747,10 +747,10 @@
   "profileLogOut": "Log out",
   "@profileLogOut": {"description": "Profile screen's logged-in log-out button."},
 
-  "mapPlaceholderTitle": "Map view placeholder",
+  "mapPlaceholderTitle": "Map preview isn't available yet",
   "@mapPlaceholderTitle": {"description": "Mock map screen's placeholder heading."},
 
-  "mapPlaceholderMessage": "Real map rendering (2GIS, with Google Maps as an alternative) is wired in once a map API key is configured.",
+  "mapPlaceholderMessage": "For now, open the place in 2GIS with the button below.",
   "@mapPlaceholderMessage": {"description": "Mock map screen's explanatory placeholder text."},
 
   "masterPortfolioTitle": "{masterName} — Portfolio",
