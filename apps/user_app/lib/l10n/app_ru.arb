@@ -752,5 +752,21 @@
   "bookingCalendarDayBusy": "{day}: нет времени",
   "bookingSpecialistLabel": "Специалист",
   "bookingSpecialistAnyHint": "Не выбран — назначим свободного",
-  "bookingSpecialistChosenHint": "Нажмите ещё раз, чтобы назначили мы"
+  "bookingSpecialistChosenHint": "Нажмите ещё раз, чтобы назначили мы",
+  "notifBookingConfirmedTitle": "Запись подтверждена",
+  "notifBookingConfirmedBody": "Ждём вас!",
+  "notifBookingCancelledTitle": "Запись отменена",
+  "notifBookingCancelledBody": "Эта запись отменена.",
+  "notifReminderSoonTitle": "Визит примерно через 2 часа",
+  "notifReminderSoonBody": "До скорой встречи!",
+  "notifReminderDayTitle": "Скоро ваш визит",
+  "notifReminderDayBody": "Нужно другое время? Откройте запись и нажмите «Перенести».",
+  "notifBookingMovedTitle": "Запись перенесена",
+  "notifBookingMovedBody": "У неё новое время — проверьте детали.",
+  "notifRefundTitle": "Возврат оформлен",
+  "notifRefundBody": "Деньги возвращаются на вашу карту.",
+  "notifChangeRequestedTitle": "Выберите, как поступить",
+  "notifChangeRequestedBody": "Специалист не сможет принять вас. Откройте запись: можно выбрать коллегу на то же время, другое время или отменить с полным возвратом.",
+  "notifWorkerChangedTitle": "Специалист изменился",
+  "notifWorkerChangedBody": "Время то же. Откройте запись, чтобы увидеть, кто вас примет."
 }

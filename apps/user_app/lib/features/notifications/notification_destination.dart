@@ -11,6 +11,9 @@ String? notificationDestination(String type) => switch (type) {
   'BOOKING_CONFIRMED' ||
   'BOOKING_CANCELLED' ||
   'BOOKING_REMINDER' ||
+  'BOOKING_MOVED' ||
+  'CHANGE_REQUESTED' ||
+  'WORKER_CHANGED' ||
   'PAYMENT_REFUNDED' => AppRoutes.bookings,
   'SMART_FILL_OFFER' ||
   'REBOOK_OFFER' ||
