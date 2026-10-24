@@ -227,7 +227,9 @@ class _HomeHeroBar extends StatelessWidget {
   final String greeting;
 
   static const _toolbarHeight = 68.0;
-  static const _expandedHeight = 232.0;
+  /// Toolbar + one or two lines of greeting + the sheet lip, no more: the
+  /// search and the categories are what people come for, so they start high.
+  static const _expandedHeight = 176.0;
 
   /// Taller than the greeting hero: a banner cover needs room to read as one.
   static const _expandedHeightWithBanners = 320.0;
