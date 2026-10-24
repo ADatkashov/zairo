@@ -752,5 +752,21 @@
   "bookingCalendarDayBusy": "{day}: бос уақыт жоқ",
   "bookingSpecialistLabel": "Маман",
   "bookingSpecialistAnyHint": "Таңдалмады — бос маманды тағайындаймыз",
-  "bookingSpecialistChosenHint": "Қайта басыңыз — біз тағайындаймыз"
+  "bookingSpecialistChosenHint": "Қайта басыңыз — біз тағайындаймыз",
+  "notifBookingConfirmedTitle": "Жазылу расталды",
+  "notifBookingConfirmedBody": "Сізді күтеміз!",
+  "notifBookingCancelledTitle": "Жазылу бас тартылды",
+  "notifBookingCancelledBody": "Бұл жазылу бас тартылды.",
+  "notifReminderSoonTitle": "Келу уақыты шамамен 2 сағаттан кейін",
+  "notifReminderSoonBody": "Жақында кездескенше!",
+  "notifReminderDayTitle": "Келу уақыты жақындап қалды",
+  "notifReminderDayBody": "Басқа уақыт керек пе? Жазылуды ашып, «Көшіру» түймесін басыңыз.",
+  "notifBookingMovedTitle": "Жазылу басқа уақытқа көшірілді",
+  "notifBookingMovedBody": "Жаңа уақыт белгіленді — мәліметтерді тексеріңіз.",
+  "notifRefundTitle": "Қайтару рәсімделді",
+  "notifRefundBody": "Ақша картаңызға қайтарылуда.",
+  "notifChangeRequestedTitle": "Қалай жалғастыру керегін таңдаңыз",
+  "notifChangeRequestedBody": "Маман келе алмайды. Жазылуды ашып, сол уақытқа басқа маманды, басқа уақытты таңдаңыз немесе толық қайтарумен бас тартыңыз.",
+  "notifWorkerChangedTitle": "Маман ауыстырылды",
+  "notifWorkerChangedBody": "Уақыты сол. Жазылуды ашып, сізді кім қабылдайтынын көріңіз."
 }
