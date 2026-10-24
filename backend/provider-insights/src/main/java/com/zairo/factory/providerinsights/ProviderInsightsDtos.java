@@ -39,12 +39,12 @@ public final class ProviderInsightsDtos {
             double cancellationRate,
             @Schema(description = "Distinct customers who have ever booked with this provider.", example = "18")
             long totalCustomers,
-            @Schema(description = "Sum of SUCCEEDED payments across this provider's bookings.", example = "2400.00")
+            @Schema(description = "Value of this provider's COMPLETED bookings, however they were paid (online or at the venue).", example = "2400.00")
             BigDecimal totalRevenue,
-            @Schema(description = "totalRevenue divided by the number of SUCCEEDED payments — null if there are none yet.",
+            @Schema(description = "totalRevenue divided by the number of COMPLETED bookings — null if there are none yet.",
                     example = "80.00")
             BigDecimal averageCheck,
-            @Schema(example = "USD", description = "Null if this provider has no SUCCEEDED payments yet.")
+            @Schema(example = "USD", description = "Null if this provider has no COMPLETED bookings yet.")
             String currency,
             @Schema(description = "This provider's services ranked by booking count, most-booked first, capped at 5.")
             List<TopService> topServices) {

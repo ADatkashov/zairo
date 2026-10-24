@@ -97,14 +97,14 @@ public class ProviderInsightsService {
         double cancellationRate = totalBookings == 0 ? 0.0 : (double) cancelledBookings / totalBookings;
         long totalCustomers = bookings.stream().map(Booking::getUserId).distinct().count();
 
-        List<Payment> succeededPayments = bookings.isEmpty() ? List.of()
-                : paymentRepository.findByBookingIdInAndStatus(bookings.stream().map(Booking::getId).toList(),
-                        PaymentStatus.SUCCEEDED);
-        BigDecimal totalRevenue = succeededPayments.stream().map(Payment::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        String currency = succeededPayments.isEmpty() ? null : succeededPayments.get(0).getCurrency();
-        BigDecimal averageCheck = succeededPayments.isEmpty() ? null
-                : totalRevenue.divide(BigDecimal.valueOf(succeededPayments.size()), 2, RoundingMode.HALF_UP);
+        // Revenue is the value of the visits that took place (COMPLETED), however they were paid: a booking paid
+        // at the venue earned money too, so counting only online payments showed "0" to owners who take cash.
+        List<Booking> completed = bookings.stream().filter(b -> b.getStatus() == BookingStatus.COMPLETED).toList();
+        BigDecimal totalRevenue = completed.stream().map(Booking::getTotalPrice).reduce(BigDecimal.ZERO,
+                BigDecimal::add);
+        String currency = completed.isEmpty() ? null : completed.get(0).getCurrency();
+        BigDecimal averageCheck = completed.isEmpty() ? null
+                : totalRevenue.divide(BigDecimal.valueOf(completed.size()), 2, RoundingMode.HALF_UP);
 
         Map<UUID, String> serviceTitleByServiceId = serviceOfferingRepository
                 .findAllById(bookings.stream().map(Booking::getServiceId).distinct().toList()).stream()
