@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../app/router/app_routes.dart';
 import '../../../../core/formatting/initials.dart';
+import '../../../booking/presentation/screens/my_bookings_screen.dart' show upcomingBookingStatuses;
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/data/models/user_summary.dart';
 import '../../../auth/presentation/auth_navigation.dart';
@@ -313,7 +314,12 @@ class _LoggedInView extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
-    final bookingsCount = ref.watch(myBookingsProvider(userId)).value?.length;
+    // Upcoming only: this stat opens the bookings list on that tab, so the number matches its rows.
+    final bookingsCount = ref
+        .watch(myBookingsProvider(userId))
+        .value
+        ?.where((b) => upcomingBookingStatuses.contains(b.status))
+        .length;
     final favoritesCount = ref.watch(myFavoritesProvider(userId)).value?.length;
     final newMessages = ref.watch(newMessagesCountProvider);
     final loyalty = ref.watch(myLoyaltyProvider).value;
@@ -333,7 +339,7 @@ class _LoggedInView extends ConsumerWidget {
             _StatCell(
               icon: Symbols.calendar_month_rounded,
               value: bookingsCount?.toString(),
-              label: l10n.profileStatBookings,
+              label: l10n.profileStatUpcoming,
               // The Bookings tab already exists; switching to it keeps the
               // bottom nav instead of stacking a second copy of the screen.
               onTap: () => context.go('/bookings'),

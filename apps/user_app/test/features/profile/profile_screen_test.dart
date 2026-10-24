@@ -171,11 +171,41 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    expect(find.text('Bookings'), findsOneWidget);
+    expect(find.text('Upcoming'), findsOneWidget);
     expect(find.text('Favorites'), findsOneWidget);
     expect(find.text('Points'), findsOneWidget);
     expect(find.text('1'), findsNWidgets(2)); // one booking, one favorite
     expect(find.text('320'), findsOneWidget); // 120 + 200 points
+  });
+
+  testWidgets('the bookings number counts what the Upcoming tab lists, not finished or cancelled ones', (tester) async {
+    Booking withStatus(String id, String status) => Booking(
+      id: id,
+      userId: 'user-1',
+      serviceId: 's',
+      availabilitySlotId: 'a',
+      status: status,
+      totalPrice: 30,
+      createdAt: DateTime(2026, 1, 1),
+    );
+    await tester.pumpWidget(_wrap(
+      _LoggedInAuthController(),
+      extraOverrides: [
+        bookingApiProvider.overrideWithValue(_FakeBookingApi([
+          withStatus('1', 'CONFIRMED'),
+          withStatus('2', 'PENDING_PAYMENT'),
+          withStatus('3', 'COMPLETED'),
+          withStatus('4', 'CANCELLED'),
+        ])),
+        favoritesApiProvider.overrideWithValue(_FakeFavoritesApi([])),
+        loyaltyApiProvider.overrideWithValue(_FakeLoyaltyApi([])),
+      ],
+    ));
+    await tester.pumpAndSettle();
+
+    // Two upcoming, no favorites, no points.
+    expect(find.text('2'), findsOneWidget);
+    expect(find.text('0'), findsNWidgets(2));
   });
 
   testWidgets('with nothing yet the strip says 0, never a misleading blank', (tester) async {
@@ -214,7 +244,7 @@ void main() {
 
     testWidgets('bookings goes to the bookings tab', (tester) async {
       await openWith(tester);
-      await tester.tap(find.text('Bookings'));
+      await tester.tap(find.text('Upcoming'));
       await tester.pumpAndSettle();
       expect(find.text('Bookings page'), findsOneWidget);
     });

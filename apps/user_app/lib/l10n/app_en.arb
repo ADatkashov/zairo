@@ -1678,8 +1678,8 @@
   "@bookingsTabEmptyCompleted": {"description": "Empty 'Completed' tab of My bookings."},
   "bookingsTabEmptyCancelled": "If you cancel a booking, it will be listed here.",
   "@bookingsTabEmptyCancelled": {"description": "Empty 'Cancelled' tab of My bookings."},
-  "profileStatBookings": "Bookings",
-  "@profileStatBookings": {"description": "Profile stat strip: label under the number of bookings."},
+  "profileStatUpcoming": "Upcoming",
+  "@profileStatUpcoming": {"description": "Profile stat strip: label under the number of upcoming bookings."},
 
   "profileStatFavorites": "Favorites",
   "@profileStatFavorites": {"description": "Profile stat strip: label under the number of favorite providers."},

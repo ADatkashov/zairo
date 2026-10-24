@@ -80,6 +80,11 @@ class MyBookingsScreen extends ConsumerWidget {
   }
 }
 
+/// The statuses of a booking that is still ahead of the customer: what the
+/// "Upcoming" tab lists, and what the profile counts under the same word, so
+/// the number on one screen is the number of rows on the other.
+const upcomingBookingStatuses = {'CONFIRMED', 'PENDING_PAYMENT'};
+
 enum _BookingsTab { upcoming, completed, cancelled }
 
 extension on _BookingsTab {
@@ -87,7 +92,7 @@ extension on _BookingsTab {
   /// still awaiting payment, so the customer can finish paying for it (or
   /// cancel it) instead of it silently disappearing from the list.
   Set<String> get statuses => switch (this) {
-    _BookingsTab.upcoming => const {'CONFIRMED', 'PENDING_PAYMENT'},
+    _BookingsTab.upcoming => upcomingBookingStatuses,
     _BookingsTab.completed => const {'COMPLETED'},
     _BookingsTab.cancelled => const {'CANCELLED'},
   };

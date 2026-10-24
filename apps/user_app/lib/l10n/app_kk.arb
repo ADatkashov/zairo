@@ -529,7 +529,7 @@
   "bookingsTabEmptyUpcoming": "Қызмет пен ыңғайлы уақытты таңдаңыз.",
   "bookingsTabEmptyCompleted": "Өткен визиттер осында көрінеді, әрқайсысына пікір қалдыруға болады.",
   "bookingsTabEmptyCancelled": "Жазылымнан бас тартсаңыз, ол осында көрінеді.",
-  "profileStatBookings": "Брондар",
+  "profileStatUpcoming": "Алдағы",
   "profileStatFavorites": "Таңдаулылар",
   "profileStatPoints": "Бонус",
   "profilePersonalData": "Жеке деректер",

@@ -544,7 +544,7 @@
   "bookingsTabEmptyUpcoming": "Выберите услугу и удобное время.",
   "bookingsTabEmptyCompleted": "Прошедшие визиты появятся здесь, и к каждому можно оставить отзыв.",
   "bookingsTabEmptyCancelled": "Если вы отмените запись, она появится здесь.",
-  "profileStatBookings": "Брони",
+  "profileStatUpcoming": "Предстоящие",
   "profileStatFavorites": "Избранное",
   "profileStatPoints": "Баллы",
   "profilePersonalData": "Личные данные",
