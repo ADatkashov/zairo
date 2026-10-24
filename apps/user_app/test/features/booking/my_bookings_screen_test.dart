@@ -1015,5 +1015,11 @@ void main() {
     expect(when.height, lessThan(24));
     final badge = tester.getRect(find.byType(FactoryBadge).first);
     expect(badge.top, greaterThanOrEqualTo(amounts.bottom));
+
+    // Pay-at-the-venue is one line (what and how much), not "Due now 0 ₸"
+    // followed by a second line saying the same thing.
+    expect(find.text('Pay at the venue'), findsOneWidget);
+    expect(find.text('Due now'), findsNothing);
+    expect(find.text('Pay on the day of service'), findsNothing);
   });
 }
