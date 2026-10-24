@@ -89,11 +89,13 @@ class _LoyaltyBody extends StatelessWidget {
     // Four tabs instead of eight: related parts share a tab behind a small
     // switcher (what a small business owner scans for is "rewards", "customers"
     // and "the programme's rules", not eight separate pages).
+    // Four labels share the width; a long one (Customers) shrinks a little instead of being cut off.
+    Tab tab(String label) => Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text(label)));
     final tabs = [
-      Tab(text: l10n.loyaltyTabOverview),
-      Tab(text: l10n.loyaltyTabRewards),
-      Tab(text: l10n.loyaltyTabCustomers),
-      Tab(text: l10n.loyaltyTabProgram),
+      tab(l10n.loyaltyTabOverview),
+      tab(l10n.loyaltyTabRewards),
+      tab(l10n.loyaltyTabCustomers),
+      tab(l10n.loyaltyTabProgram),
     ];
     final tabViews = [
       LoyaltyOverviewScreen(providerId: providerId),
@@ -154,7 +156,7 @@ class _LoyaltyBody extends StatelessWidget {
             ),
           Container(
             color: colors.surface,
-            child: TabBar(tabs: tabs),
+            child: TabBar(tabs: tabs, labelPadding: const EdgeInsets.symmetric(horizontal: 4)),
           ),
           Expanded(child: TabBarView(children: tabViews)),
         ],

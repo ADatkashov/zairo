@@ -72,6 +72,20 @@ void main() {
     expect(http.calls('GET', '/business/p1/loyalty/overview'), hasLength(1));
   });
 
+  testWidgets('on a 320 px phone every tab label still fits inside its tab', (tester) async {
+    useTallScreen(tester, size: const Size(320, 800));
+    await tester.pumpWidget(appOn(_backend(), const LoyaltyScreen(ownerUserId: 'o1')));
+    await tester.pumpAndSettle();
+
+    final tabBar = tester.getRect(find.byType(TabBar));
+    for (final label in [en.loyaltyTabOverview, en.loyaltyTabRewards, en.loyaltyTabCustomers, en.loyaltyTabProgram]) {
+      final text = tester.getRect(find.descendant(of: find.byType(TabBar), matching: find.text(label)));
+      expect(text.left, greaterThanOrEqualTo(tabBar.left), reason: label);
+      expect(text.right, lessThanOrEqualTo(tabBar.right), reason: label);
+    }
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('a part loads when its tab or its switcher segment is opened, and not before', (tester) async {
     final http = _backend();
     await _open(tester, http);
