@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 /// A round, logo-only sign-in button (Google / Facebook / email / phone).
 /// [tooltip] doubles as the accessibility label since there is no text.
+/// [caption] is the short visible name under the circle ("Google", "Email"),
+/// so nobody has to guess what a bare logo or envelope does.
 class SocialLoginButton extends StatelessWidget {
   const SocialLoginButton({
     super.key,
@@ -9,9 +11,11 @@ class SocialLoginButton extends StatelessWidget {
     required this.tooltip,
     required this.onPressed,
     this.isLoading = false,
+    this.caption,
   });
 
   final Widget child;
+  final String? caption;
   final String tooltip;
   final VoidCallback? onPressed;
   final bool isLoading;
@@ -21,7 +25,7 @@ class SocialLoginButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Semantics(
+    final button = Semantics(
       button: true,
       label: tooltip,
       child: Tooltip(
@@ -44,6 +48,19 @@ class SocialLoginButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+    final caption = this.caption;
+    if (caption == null) return button;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        button,
+        const SizedBox(height: 4),
+        // The circle already announces itself; the caption is for eyes only.
+        ExcludeSemantics(
+          child: Text(caption, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+        ),
+      ],
     );
   }
 }

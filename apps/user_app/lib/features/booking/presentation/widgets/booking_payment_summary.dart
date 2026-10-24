@@ -86,20 +86,34 @@ class BookingAmounts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (booking.depositAmount != null) {
-      return BookingPaymentSummary(
-        compact: compact,
-        plan: PaymentPlan.fromAmounts(total: booking.totalPrice, deposit: booking.depositAmount),
-      );
-    }
     final l10n = AppLocalizations.of(context)!;
+    if (booking.depositAmount != null) {
+      final plan = PaymentPlan.fromAmounts(total: booking.totalPrice, deposit: booking.depositAmount);
+      // Nothing is charged online: "Due now 0 ₸" plus a second line would be two
+      // rows to say "you pay at the venue", so it is one.
+      if (plan.mode != PaymentMode.free) return BookingPaymentSummary(compact: compact, plan: plan);
+      return _AmountRow(label: l10n.bookingPayAtVenue, amount: booking.totalPrice);
+    }
+    return _AmountRow(label: l10n.bookingPayServicePrice, amount: booking.totalPrice);
+  }
+}
+
+/// One line: what the amount is, and the amount.
+class _AmountRow extends StatelessWidget {
+  final String label;
+  final double amount;
+
+  const _AmountRow({required this.label, required this.amount});
+
+  @override
+  Widget build(BuildContext context) {
     final colors = context.factoryColors;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Flexible(
           child: Text(
-            l10n.bookingPayServicePrice,
+            label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
           ),
         ),
@@ -109,7 +123,7 @@ class BookingAmounts extends StatelessWidget {
           child: FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerRight,
-            child: FactoryPriceText(amount: booking.totalPrice, fontSize: 16, weight: FontWeight.w700),
+            child: FactoryPriceText(amount: amount, fontSize: 16, weight: FontWeight.w700),
           ),
         ),
       ],

@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../l10n/app_localizations.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../auth/presentation/widgets/logged_out_gate.dart';
 import '../../data/loyalty_exception.dart';
 import '../../data/models/loyalty.dart';
 import '../providers/loyalty_providers.dart';
@@ -37,6 +39,20 @@ class _BusinessLoyaltyScreenState extends ConsumerState<BusinessLoyaltyScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
+
+    // Points belong to a person: a guest gets an invitation to log in, not a
+    // "couldn't load" error with a Try again that can never work.
+    final auth = ref.watch(authControllerProvider);
+    if (auth.isLoading && !auth.hasValue || auth.hasValue && auth.value == null) {
+      return Scaffold(
+        backgroundColor: colors.bg,
+        appBar: FactoryAppBar(title: widget.providerName ?? l10n.loyaltyEntryTileTitle),
+        body: auth.hasValue
+            ? LoggedOutGate(icon: Symbols.toll_rounded, message: l10n.loyaltyBusinessLoggedOutPrompt)
+            : const FactoryLoadingState(),
+      );
+    }
+
     final detailAsync = ref.watch(loyaltyBusinessDetailProvider(widget.providerId));
 
     return Scaffold(

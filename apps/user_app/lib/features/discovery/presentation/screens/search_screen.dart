@@ -14,6 +14,7 @@ import '../../../catalog/presentation/providers/catalog_providers.dart';
 import '../../data/models/provider_search_result.dart';
 import '../providers/discovery_providers.dart';
 import '../providers/recent_searches_provider.dart';
+import '../widgets/active_filters.dart';
 import '../widgets/provider_card.dart';
 
 /// A small, fixed shortlist — not sourced from the catalog or any
@@ -167,6 +168,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   },
                 ),
               ),
+              if (query.hasActiveFilters)
+                ActiveFilters(
+                  query: query,
+                  currency: resultsAsync.asData == null || resultsAsync.asData!.value.isEmpty
+                      ? 'KZT'
+                      : PriceBounds.fromResults(resultsAsync.asData!.value)?.currency ?? 'KZT',
+                  onChanged: (updated) => setState(() => _query = updated),
+                ),
               if (isPristine)
                 // Never more than a third of the screen, scrolling inside: with a large font on a small phone the
                 // shortcuts would otherwise squeeze the results to nothing.
@@ -446,7 +455,13 @@ class _FilterSheet extends StatefulWidget {
 }
 
 class _FilterSheetState extends State<_FilterSheet> {
+  static const _collapsedCategoryCount = 8;
+
   late String? _vertical;
+
+  /// Only the first few categories are chips until the person asks for the rest
+  /// (22 chips pushed price and sorting off the sheet).
+  bool _allCategories = false;
   late DiscoverySort _sort;
   late bool _availableOnly;
   // null = that end of the price range isn't restricted. The slider and the
@@ -653,13 +668,26 @@ class _FilterSheetState extends State<_FilterSheet> {
           // grid already reads, ACTIVE-only by construction (see
           // CatalogController).
           final categories = categoriesAsync.value ?? const [];
+          // A chosen category stays visible even when it is beyond the first few.
+          final shown = _allCategories
+              ? categories
+              : [
+                  for (var i = 0; i < categories.length; i++)
+                    if (i < _collapsedCategoryCount || categories[i].code == _vertical) categories[i],
+                ];
           return Wrap(
             spacing: FactorySpacing.space2,
             runSpacing: FactorySpacing.space2,
             children: [
               _verticalChip(l10n.searchFilterCategoryAll, null),
-              for (final category in categories)
+              for (final category in shown)
                 _verticalChip(category.nameFor(languageCode), category.code),
+              if (!_allCategories && shown.length < categories.length)
+                FactoryChip(
+                  label: l10n.searchFilterCategoryMore,
+                  icon: Symbols.expand_more_rounded,
+                  onTap: () => setState(() => _allCategories = true),
+                ),
             ],
           );
         },

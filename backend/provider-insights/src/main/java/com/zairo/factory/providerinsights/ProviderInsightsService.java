@@ -11,6 +11,9 @@ import com.zairo.factory.payments.PaymentStatus;
 import com.zairo.factory.providerinsights.ProviderInsightsDtos.CustomerSummary;
 import com.zairo.factory.providerinsights.ProviderInsightsDtos.DashboardMetrics;
 import com.zairo.factory.providerinsights.ProviderInsightsDtos.DashboardMetrics.TopService;
+import com.zairo.factory.providerinsights.ProviderInsightsDtos.PlatformBusinessOverview;
+import com.zairo.factory.providers.Provider;
+import com.zairo.factory.providers.ProviderRepository;
 import com.zairo.factory.services.ServiceOffering;
 import com.zairo.factory.services.ServiceOfferingRepository;
 import com.zairo.factory.users.User;
@@ -25,7 +28,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Read-only — computed fresh from {@code Booking}/{@code Payment} on every
@@ -43,17 +48,20 @@ public class ProviderInsightsService {
     private final PaymentRepository paymentRepository;
     private final ServiceOfferingRepository serviceOfferingRepository;
     private final UserRepository userRepository;
+    private final ProviderRepository providerRepository;
 
     private static final int MAX_TOP_SERVICES = 5;
 
     public ProviderInsightsService(BookingRepository bookingRepository,
             AvailabilitySlotRepository availabilitySlotRepository, PaymentRepository paymentRepository,
-            ServiceOfferingRepository serviceOfferingRepository, UserRepository userRepository) {
+            ServiceOfferingRepository serviceOfferingRepository, UserRepository userRepository,
+            ProviderRepository providerRepository) {
         this.bookingRepository = bookingRepository;
         this.availabilitySlotRepository = availabilitySlotRepository;
         this.paymentRepository = paymentRepository;
         this.serviceOfferingRepository = serviceOfferingRepository;
         this.userRepository = userRepository;
+        this.providerRepository = providerRepository;
     }
 
     /** Newest-visited customer first; a customer with no completed visit yet sorts last. */
@@ -87,6 +95,18 @@ public class ProviderInsightsService {
                 .toList();
     }
 
+    /** Owner contact, listed services and booking counts for the moderator's business card. */
+    public PlatformBusinessOverview platformOverview(UUID providerId) {
+        Provider provider = providerRepository.findById(providerId).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Provider not found: " + providerId));
+        User owner = userRepository.findById(provider.getOwnerUserId()).orElse(null);
+        List<Booking> bookings = bookingRepository.findByProviderId(providerId);
+        long completed = bookings.stream().filter(b -> b.getStatus() == BookingStatus.COMPLETED).count();
+        return new PlatformBusinessOverview(providerId, owner == null ? null : owner.getDisplayName(),
+                owner == null ? null : owner.getEmail(), owner == null ? null : owner.getPhone(),
+                serviceOfferingRepository.findByProviderId(providerId).size(), bookings.size(), completed);
+    }
+
     /** Revenue/booking-mix/top-services snapshot for this provider's admin dashboard. */
     public DashboardMetrics dashboardMetrics(UUID providerId) {
         List<Booking> bookings = bookingRepository.findByProviderId(providerId);
@@ -97,14 +117,14 @@ public class ProviderInsightsService {
         double cancellationRate = totalBookings == 0 ? 0.0 : (double) cancelledBookings / totalBookings;
         long totalCustomers = bookings.stream().map(Booking::getUserId).distinct().count();
 
-        List<Payment> succeededPayments = bookings.isEmpty() ? List.of()
-                : paymentRepository.findByBookingIdInAndStatus(bookings.stream().map(Booking::getId).toList(),
-                        PaymentStatus.SUCCEEDED);
-        BigDecimal totalRevenue = succeededPayments.stream().map(Payment::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        String currency = succeededPayments.isEmpty() ? null : succeededPayments.get(0).getCurrency();
-        BigDecimal averageCheck = succeededPayments.isEmpty() ? null
-                : totalRevenue.divide(BigDecimal.valueOf(succeededPayments.size()), 2, RoundingMode.HALF_UP);
+        // Revenue is the value of the visits that took place (COMPLETED), however they were paid: a booking paid
+        // at the venue earned money too, so counting only online payments showed "0" to owners who take cash.
+        List<Booking> completed = bookings.stream().filter(b -> b.getStatus() == BookingStatus.COMPLETED).toList();
+        BigDecimal totalRevenue = completed.stream().map(Booking::getTotalPrice).reduce(BigDecimal.ZERO,
+                BigDecimal::add);
+        String currency = completed.isEmpty() ? null : completed.get(0).getCurrency();
+        BigDecimal averageCheck = completed.isEmpty() ? null
+                : totalRevenue.divide(BigDecimal.valueOf(completed.size()), 2, RoundingMode.HALF_UP);
 
         Map<UUID, String> serviceTitleByServiceId = serviceOfferingRepository
                 .findAllById(bookings.stream().map(Booking::getServiceId).distinct().toList()).stream()

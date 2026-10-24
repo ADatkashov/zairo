@@ -112,9 +112,11 @@ void main() {
     await tester.pumpWidget(_wrap(_FakeAuthApi()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Email'), findsNothing);
+    // "Email" is only the caption under the envelope button, not a field label.
+    expect(find.widgetWithText(TextField, 'Email'), findsNothing);
     expect(find.text('Password'), findsNothing);
     expect(find.byTooltip('Continue with email'), findsOneWidget);
+    expect(find.text('Email'), findsOneWidget);
     expect(find.text("Don't have an account? Register"), findsOneWidget);
   });
 
@@ -126,8 +128,12 @@ void main() {
 
     expect(find.text('Email'), findsOneWidget);
     expect(find.text('Password'), findsOneWidget);
+    // The captions under the method buttons make the page a little taller.
+    await tester.scrollUntilVisible(find.text('Forgot password?'), 100, scrollable: find.byType(Scrollable).first);
     expect(find.text('Forgot password?'), findsOneWidget);
     expect(find.byTooltip('Continue with phone'), findsOneWidget);
+    // The toggle now says where it leads: "Phone".
+    expect(find.text('Phone'), findsOneWidget);
   });
 
   testWidgets('the phone button brings the phone form back', (tester) async {
@@ -138,7 +144,7 @@ void main() {
     await tester.tap(find.byTooltip('Continue with phone'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Email'), findsNothing);
+    expect(find.widgetWithText(TextField, 'Email'), findsNothing);
     expect(find.text('Forgot password?'), findsNothing);
   });
 

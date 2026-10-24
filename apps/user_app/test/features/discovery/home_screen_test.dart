@@ -226,6 +226,29 @@ void main() {
     );
   });
 
+  testWidgets('the greeting hero is short: the search field starts in the top quarter of a phone screen', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi([_open, _closed]))],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const HomeScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The main action (search, then categories) must not sit below a third of
+    // the screen of empty green.
+    final search = tester.getRect(find.text('What service are you looking for?'));
+    expect(search.top, lessThan(844 / 4));
+  });
+
   testWidgets('the availability promo spans the page width, like the search field', (tester) async {
     tester.view.physicalSize = const Size(390, 3000);
     tester.view.devicePixelRatio = 1;
