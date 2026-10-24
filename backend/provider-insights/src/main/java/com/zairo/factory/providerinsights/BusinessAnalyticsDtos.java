@@ -33,7 +33,7 @@ public final class BusinessAnalyticsDtos {
             long noShowBookings,
             double cancellationRate,
             double noShowRate,
-            @Schema(description = "Sum of SUCCEEDED payments for bookings in range.") BigDecimal totalRevenue,
+            @Schema(description = "Value of COMPLETED bookings in range, however they were paid (online or at the venue).") BigDecimal totalRevenue,
             BigDecimal averageBookingValue,
             String currency,
             @Schema(description = "Booked slot duration / offered slot duration in range — null if this "

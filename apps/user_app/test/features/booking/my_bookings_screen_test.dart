@@ -1015,5 +1015,53 @@ void main() {
     expect(when.height, lessThan(24));
     final badge = tester.getRect(find.byType(FactoryBadge).first);
     expect(badge.top, greaterThanOrEqualTo(amounts.bottom));
+
+    // Pay-at-the-venue is one line (what and how much), not "Due now 0 ₸"
+    // followed by a second line saying the same thing.
+    expect(find.text('Pay at the venue'), findsOneWidget);
+    expect(find.text('Due now'), findsNothing);
+    expect(find.text('Pay on the day of service'), findsNothing);
+  });
+
+  testWidgets('"Cancel booking" is on its own line at the far edge, away from Reschedule', (tester) async {
+    tester.view.physicalSize = const Size(390, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final booking = Booking(
+      id: 'booking-1',
+      userId: 'user-1',
+      serviceId: 'service-1',
+      availabilitySlotId: 'slot-1',
+      status: 'CONFIRMED',
+      totalPrice: 5500,
+      depositAmount: 0,
+      createdAt: DateTime(2026, 1, 1),
+      serviceTitle: 'Haircut',
+      providerName: 'Salon Aurora',
+      startsAt: DateTime.now().add(const Duration(days: 3)).toUtc(),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(_FakeBookingApi([booking])),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const MyBookingsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final card = tester.getRect(find.byType(FactoryCard).first);
+    final cancel = tester.getRect(find.text('Cancel booking'));
+    final reschedule = tester.getRect(find.text('Reschedule'));
+    expect(cancel.right, greaterThan(card.right - 40), reason: 'pushed to the card edge');
+    expect(cancel.top, greaterThan(reschedule.bottom), reason: 'on its own line, below Reschedule');
   });
 }

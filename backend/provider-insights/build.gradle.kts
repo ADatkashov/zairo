@@ -13,6 +13,9 @@ dependencies {
     // history/dashboard) needs auth's real identity and providers' real
     // ownership data.
     implementation(project(":providers"))
+
+    // The moderator-facing business overview sits under /api/v1/platform and uses the Control Center's role check.
+    implementation(project(":platform-admin"))
     implementation(project(":auth"))
 
     // Reading bookings/payments for this provider, and a booked service's

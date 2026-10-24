@@ -97,4 +97,34 @@ void main() {
     expect(find.byType(AdVideoScreen), findsNothing);
     expect(find.text('Home'), findsWidgets);
   });
+
+  testWidgets('the "+" says what it does and starts a new booking in one tap (no menu in between)', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          networkConfigProvider.overrideWithValue(appNetworkConfig),
+          discoveryApiProvider.overrideWithValue(_EmptyDiscoveryApi()),
+          categoriesProvider.overrideWith((ref) async => const []),
+        ],
+        child: const ZairoApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The name is written in the bar, under the button.
+    final label = find.descendant(of: find.byType(FactoryBottomNavigation), matching: find.text('New booking'));
+    expect(label, findsOneWidget);
+
+    // One tap: straight to choosing a category, not a fan of shortcuts first.
+    await tester.tap(label);
+    await tester.pumpAndSettle();
+    expect(find.text('All categories'), findsOneWidget);
+    expect(find.text('My favorites'), findsNothing);
+
+    // Back is where the person started.
+    ProviderScope.containerOf(tester.element(find.byType(ZairoApp))).read(routerProvider).pop();
+    await tester.pumpAndSettle();
+    expect(find.text('All categories'), findsNothing);
+    expect(label, findsOneWidget);
+  });
 }

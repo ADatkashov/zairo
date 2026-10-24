@@ -191,7 +191,7 @@
   "@dashboardMetricsSectionTitle": {"description": "Salon detail screen's dashboard-metrics section header."},
 
   "dashboardTotalRevenueLabel": "Revenue",
-  "@dashboardTotalRevenueLabel": {"description": "Dashboard stat: sum of succeeded payments."},
+  "@dashboardTotalRevenueLabel": {"description": "Dashboard stat: value of completed bookings, however they were paid (online or at the venue)."},
 
   "dashboardTotalBookingsLabel": "Bookings",
   "@dashboardTotalBookingsLabel": {"description": "Dashboard stat: total booking count, any status."},
@@ -209,7 +209,7 @@
   "@dashboardTotalCustomersLabel": {"description": "Dashboard stat: distinct customers who have ever booked."},
 
   "dashboardAverageCheckLabel": "Average check",
-  "@dashboardAverageCheckLabel": {"description": "Dashboard stat: revenue divided by number of succeeded payments."},
+  "@dashboardAverageCheckLabel": {"description": "Dashboard stat: revenue divided by number of completed bookings."},
 
   "dashboardTopServicesTitle": "Top services",
   "@dashboardTopServicesTitle": {"description": "Dashboard sub-section listing the most-booked services."},
@@ -349,7 +349,7 @@
   "@analyticsReturningCustomerRateLabel": {"description": "Overview stat: lifetime share of customers with more than one completed booking."},
 
   "analyticsAverageBookingValueLabel": "Avg. booking value",
-  "@analyticsAverageBookingValueLabel": {"description": "Overview/revenue stat: revenue divided by number of paid bookings."},
+  "@analyticsAverageBookingValueLabel": {"description": "Overview/revenue stat: revenue divided by number of completed bookings."},
 
   "analyticsRevenueSectionTitle": "Revenue",
   "@analyticsRevenueSectionTitle": {"description": "Business Intelligence Dashboard's revenue section header."},
@@ -2636,5 +2636,7 @@
   "chatQuickEditSave": "Save",
   "@chatQuickEditSave": {"description": "Editing the ready sentences of the chat."},
   "chatQuickEditReset": "Back to the built-in ones",
-  "@chatQuickEditReset": {"description": "Editing the ready sentences of the chat."}
+  "@chatQuickEditReset": {"description": "Editing the ready sentences of the chat."},
+  "loginMethodPhone": "Phone",
+  "@loginMethodPhone": {"description": "Short caption under the phone sign-in circle on the login screen."}
 }

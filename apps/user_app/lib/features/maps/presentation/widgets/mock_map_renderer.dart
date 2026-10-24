@@ -8,8 +8,10 @@ import 'map_renderer.dart';
 /// Stands in for a real interactive map — selected whenever no Maps API
 /// key is configured (see `mapRendererProvider`), which is every CI/test
 /// run and any local dev environment before a real key is wired in. Shows
-/// the target's coordinates as plain text/a static pin illustration rather
-/// than real map tiles.
+/// a static pin illustration rather
+/// than real map tiles. It says plainly that the preview is not there yet and
+/// points to the "Open in 2GIS" button; raw coordinates mean nothing to a
+/// customer, so they are not shown.
 class MockMapRenderer implements MapRenderer {
   @override
   Widget build(
@@ -48,10 +50,6 @@ class MockMapRenderer implements MapRenderer {
               l10n.mapPlaceholderMessage,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodySmall,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '${target.latitude.toStringAsFixed(4)}, ${target.longitude.toStringAsFixed(4)}',
             ),
           ],
         ),

@@ -138,30 +138,18 @@ class ConsoleShell extends ConsumerWidget {
     // Back returns one level: an area opened from "More" goes back to "More",
     // any other area goes back to the dashboard, and only from the dashboard
     // does it leave the app.
-    return FactoryFanBackScope(
+    return PopScope(
       canPop: current == 0,
-      onBack: () =>
-          navigationShell.goBranch(moreBranches.contains(current) ? consoleBranchPaths.indexOf(ConsoleRoutes.more) : 0),
-      builder: (context, setFanOpen) => Scaffold(
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          navigationShell.goBranch(moreBranches.contains(current) ? consoleBranchPaths.indexOf(ConsoleRoutes.more) : 0);
+        }
+      },
+      child: Scaffold(
         body: navigationShell,
         bottomNavigationBar: FactoryBottomNavigation(
           selectedIndex: selectedTab,
-          onFanOpenChanged: setFanOpen,
           onDestinationSelected: (tab) => _goBranch(phoneTabBranches[tab]),
-          // "+": shortcuts to the areas that no longer have a tab of their
-          // own (they are also listed under "More").
-          centerAction: FactoryNavAction(
-            icon: Icons.add_rounded,
-            label: l10n.navQuickActions,
-            quickActions: [
-              for (final path in [ConsoleRoutes.catalog, ConsoleRoutes.cities, ConsoleRoutes.activity])
-                FactoryNavQuickAction(
-                  icon: navItemFor(l10n, path).selectedIcon,
-                  label: navItemFor(l10n, path).label,
-                  onTap: () => _goBranch(consoleBranchPaths.indexOf(path)),
-                ),
-            ],
-          ),
           destinations: [
             for (final branch in phoneTabBranches)
               FactoryNavDestination(

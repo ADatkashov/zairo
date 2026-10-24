@@ -424,5 +424,11 @@
   "businessesCopyCsv": "Скопировать список как CSV",
   "businessesCsvCopied": "{count, plural, one{Скопирован {count} бизнес в формате CSV} few{Скопировано {count} бизнеса в формате CSV} many{Скопировано {count} бизнесов в формате CSV} other{Скопировано {count} бизнеса в формате CSV}}",
   "reviewsCopyCsv": "Скопировать список как CSV",
-  "reviewsCsvCopied": "{count, plural, one{Скопирован {count} отзыв в формате CSV} few{Скопировано {count} отзыва в формате CSV} many{Скопировано {count} отзывов в формате CSV} other{Скопировано {count} отзыва в формате CSV}}"
+  "reviewsCsvCopied": "{count, plural, one{Скопирован {count} отзыв в формате CSV} few{Скопировано {count} отзыва в формате CSV} many{Скопировано {count} отзывов в формате CSV} other{Скопировано {count} отзыва в формате CSV}}",
+  "detailOwner": "Владелец",
+  "detailContact": "Контакт",
+  "detailServices": "Услуги",
+  "detailBookings": "Записи",
+  "detailTechnicalIds": "Технические ID",
+  "detailBookingsValue": "{total} всего · {completed} завершено"
 }

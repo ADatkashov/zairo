@@ -9,7 +9,9 @@ import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.CustomerListItem
 import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.OverviewResponse;
 import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.RevenueAnalyticsResponse;
 import com.zairo.factory.providerinsights.ProviderInsightsDtos.CustomerSummary;
+import com.zairo.factory.platformadmin.AnyPlatformRole;
 import com.zairo.factory.providerinsights.ProviderInsightsDtos.DashboardMetrics;
+import com.zairo.factory.providerinsights.ProviderInsightsDtos.PlatformBusinessOverview;
 import com.zairo.factory.providers.OwnsProvider;
 import com.zairo.factory.providers.ProviderOwnership;
 import com.zairo.factory.revenueengine.RevenueAttributionService;
@@ -49,6 +51,20 @@ public class ProviderInsightsController {
         this.smartFillAnalyticsService = smartFillAnalyticsService;
         this.revenueAttributionService = revenueAttributionService;
         this.businessAnalyticsService = businessAnalyticsService;
+    }
+
+    @Operation(summary = "A business's overview for moderators", description = """
+            Any platform role. Who owns the business and how to reach them, how many services it has listed and how \
+            many bookings it has taken — what a moderator needs to approve or suspend it without leaving the console.""")
+    @ApiResponse(responseCode = "200", description = "The overview")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/platform/businesses/{providerId}/overview")
+    @AnyPlatformRole
+    public PlatformBusinessOverview platformOverview(@PathVariable UUID providerId) {
+        return providerInsightsService.platformOverview(providerId);
     }
 
     @Operation(summary = "This provider's customer history", description = """

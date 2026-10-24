@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:zairo/features/auth/data/models/user_summary.dart';
+import 'package:zairo/features/booking/data/models/booking.dart';
+import 'package:zairo/features/booking/presentation/providers/booking_providers.dart';
 import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/notifications/data/models/app_notification.dart';
 import 'package:zairo/features/notifications/data/notifications_api.dart';
@@ -153,7 +155,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Booking confirmed'), findsOneWidget);
-    expect(find.text('Your booking is confirmed.'), findsOneWidget);
+    // Shown in the app's own words, not the stored English sentence.
+    expect(find.text("We'll see you there!"), findsOneWidget);
 
     await tester.tap(find.text('Booking confirmed'));
     await tester.pumpAndSettle();
@@ -252,7 +255,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Reminder'));
+      await tester.tap(find.text('Your visit is in about 2 hours'));
       await tester.pumpAndSettle();
 
       expect(fakeApi.markedReadIds, ['n1']);
@@ -354,7 +357,7 @@ void main() {
     final now = DateTime.now();
     AppNotification at(String id, DateTime when) => AppNotification(
       id: id,
-      type: 'BOOKING_CONFIRMED',
+      type: 'GREETING',
       title: 'Title $id',
       body: 'Body $id',
       read: true,
@@ -390,5 +393,56 @@ void main() {
     expect(find.text(DateFormat.MMMMd('en').format(older)), findsOneWidget);
     expect(find.text('Title a'), findsOneWidget);
     expect(find.text('Title c'), findsOneWidget);
+  });
+
+  testWidgets('a booking notification names the booking, never its id', (
+    tester,
+  ) async {
+    const bookingId = '3f2b8c1e-5a4d-4e7b-9c10-2d6f8a1b7e90';
+    final booking = Booking(
+      id: bookingId,
+      userId: 'user-1',
+      serviceId: 's',
+      availabilitySlotId: 'a',
+      status: 'CONFIRMED',
+      totalPrice: 1000,
+      createdAt: DateTime(2026, 1, 1),
+      serviceTitle: 'Haircut',
+      providerName: 'Salon X',
+      startsAt: DateTime(2026, 1, 5, 15),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          notificationsApiProvider.overrideWithValue(
+            _FakeNotificationsApi([
+              AppNotification(
+                id: 'n1',
+                type: 'BOOKING_CONFIRMED',
+                title: 'Booking confirmed',
+                body: 'Your booking ($bookingId) is confirmed. See you!',
+                read: false,
+                createdAt: DateTime(2026, 1, 1, 10),
+              ),
+            ]),
+          ),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+          myBookingsProvider.overrideWith((ref, userId) async => [booking]),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const NotificationsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text("Haircut · Salon X · Jan 5, 15:00\nWe'll see you there!"),
+      findsOneWidget,
+    );
+    expect(find.textContaining(bookingId), findsNothing);
   });
 }

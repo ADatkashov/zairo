@@ -285,6 +285,17 @@ void main() {
     expect(cardTaps, 1);
   });
 
+  testWidgets('the Book button on a provider card is the filled brand-colour button, not a pale one', (tester) async {
+    await tester.pumpWidget(
+      _wrap(SizedBox(width: 168, child: FactoryProviderCard(title: 'Studio', actionLabel: 'Book', onAction: () {}))),
+    );
+
+    // Primary leaves the colours to the theme; the tonal variant would have set its own pale tint.
+    final fill = tester.widget<Material>(find.descendant(of: find.byType(FilledButton), matching: find.byType(Material)).first);
+    expect(fill.color, FactoryColors.light.primary);
+    expect(fill.color, isNot(FactoryColors.light.primaryTint));
+  });
+
   testWidgets('FactoryProviderCard has no button unless it is given both a label and an action', (tester) async {
     await tester.pumpWidget(_wrap(const SizedBox(width: 168, child: FactoryProviderCard(title: 'Studio', actionLabel: 'Book'))));
     expect(find.byType(FilledButton), findsNothing);
@@ -901,6 +912,50 @@ void main() {
     await tester.tap(find.text('Bookings'));
     expect(selected, 2, reason: 'indexes are those of the destinations list');
     expect(find.bySemanticsLabel('New booking'), findsOneWidget);
+  });
+
+  testWidgets('FactoryBottomNavigation can write the centre action\'s name under the button; the text acts too', (tester) async {
+    tester.view.physicalSize = const Size(390, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    var actionTaps = 0;
+    Widget bar({required bool visibleLabel}) => _wrap(
+      FactoryBottomNavigation(
+        destinations: const [
+          FactoryNavDestination(icon: Icons.home_rounded, label: 'Home'),
+          FactoryNavDestination(icon: Icons.search_rounded, label: 'Search'),
+          FactoryNavDestination(icon: Icons.calendar_month_rounded, label: 'Bookings'),
+          FactoryNavDestination(icon: Icons.person_rounded, label: 'Profile'),
+        ],
+        selectedIndex: 0,
+        onDestinationSelected: (_) {},
+        centerAction: FactoryNavAction(
+          icon: Icons.add_rounded,
+          label: 'New booking',
+          visibleLabel: visibleLabel,
+          onTap: () => actionTaps++,
+        ),
+      ),
+    );
+
+    // Off by default: the name is only for screen readers.
+    await tester.pumpWidget(bar(visibleLabel: false));
+    expect(find.text('New booking'), findsNothing);
+    expect(find.bySemanticsLabel('New booking'), findsOneWidget);
+
+    await tester.pumpWidget(bar(visibleLabel: true));
+    expect(tester.takeException(), isNull);
+    expect(find.text('New booking'), findsOneWidget);
+    // On the same line as the tab labels and centred under the button, so it reads as part of the bar.
+    expect(tester.getCenter(find.text('New booking')).dy, closeTo(tester.getCenter(find.text('Search')).dy, 1));
+    expect(tester.getCenter(find.text('New booking')).dx, closeTo(195, 1));
+    // Still announced once, not twice.
+    expect(find.bySemanticsLabel('New booking'), findsOneWidget);
+
+    await tester.tap(find.text('New booking'));
+    expect(actionTaps, 1);
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    expect(actionTaps, 2);
   });
 
   testWidgets('FactoryBottomNavigation centre action with quick actions opens a fan, picks one and closes', (

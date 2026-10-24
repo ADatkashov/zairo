@@ -120,6 +120,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 children: [
                   SocialLoginButton(
                     tooltip: l10n.loginContinueWithGoogle,
+                        caption: 'Google',
                     isLoading: _isProviderSigningIn,
                     onPressed: isLoading ? null : _signInWithGoogle,
                     child: const GoogleLogo(),
@@ -128,6 +129,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(width: FactorySpacing.space4),
                     SocialLoginButton(
                       tooltip: l10n.loginContinueWithApple,
+                        caption: 'Apple',
                       onPressed: isLoading ? null : _signInWithApple,
                       child: const AppleLogo(),
                     ),
@@ -135,6 +137,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(width: FactorySpacing.space4),
                   SocialLoginButton(
                     tooltip: _showEmailForm ? l10n.loginContinueWithPhone : l10n.loginContinueWithEmail,
+                        caption: _showEmailForm ? l10n.loginMethodPhone : l10n.emailLabel,
                     onPressed: isLoading ? null : () => setState(() => _showEmailForm = !_showEmailForm),
                     child: Icon(_showEmailForm ? Icons.phone_outlined : Icons.mail_outline, size: 26),
                   ),
