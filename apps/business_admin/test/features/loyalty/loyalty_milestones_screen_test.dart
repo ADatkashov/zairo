@@ -51,6 +51,16 @@ void main() {
 
     expect(find.text(en.loyaltyMilestonesEmpty), findsOneWidget);
     expect(find.widgetWithText(FactoryButton, en.loyaltyMilestoneAddButton), findsOneWidget);
+    // Nothing to save yet: no Save button under an empty list.
+    expect(_save, findsNothing);
+
+    await tester.tap(find.widgetWithText(FactoryButton, en.loyaltyMilestoneAddButton));
+    await tester.pumpAndSettle();
+
+    // A row now exists, so Save appears and the empty state is gone.
+    expect(_visits, findsOneWidget);
+    expect(_save, findsOneWidget);
+    expect(find.text(en.loyaltyMilestonesEmpty), findsNothing);
   });
 
   testWidgets('a list that fails to load shows an error and retrying loads it', (tester) async {

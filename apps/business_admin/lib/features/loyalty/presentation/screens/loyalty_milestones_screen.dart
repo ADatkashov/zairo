@@ -103,10 +103,13 @@ class _MilestonesFormState extends ConsumerState<_MilestonesForm> {
         if (_drafts.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space4),
-            child: Text(
-              l10n.loyaltyMilestonesEmpty,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
+            child: FactoryEmptyState(
+              icon: Icons.flag_outlined,
+              title: l10n.loyaltyMilestonesEmpty,
+              message: '',
+              compact: true,
+              actionLabel: l10n.loyaltyMilestoneAddButton,
+              onAction: () => setState(() => _drafts.add(_MilestoneDraft())),
             ),
           )
         else
@@ -121,23 +124,28 @@ class _MilestonesFormState extends ConsumerState<_MilestonesForm> {
             ),
             const SizedBox(height: FactorySpacing.space3),
           ],
-        FactoryButton(
-          label: l10n.loyaltyMilestoneAddButton,
-          variant: FactoryButtonVariant.secondary,
-          icon: Icons.add,
-          onPressed: _isSubmitting ? null : () => setState(() => _drafts.add(_MilestoneDraft())),
-        ),
+        if (_drafts.isNotEmpty)
+          FactoryButton(
+            label: l10n.loyaltyMilestoneAddButton,
+            variant: FactoryButtonVariant.secondary,
+            icon: Icons.add,
+            onPressed: _isSubmitting ? null : () => setState(() => _drafts.add(_MilestoneDraft())),
+          ),
         if (_error != null) ...[
           const SizedBox(height: FactorySpacing.space3),
           Text(_error!, style: TextStyle(color: colors.error)),
         ],
-        const SizedBox(height: FactorySpacing.space5),
-        FactoryButton(
-          label: l10n.saveButton,
-          expand: true,
-          isLoading: _isSubmitting,
-          onPressed: _isSubmitting ? null : _submit,
-        ),
+        // Nothing to save while there is nothing and there was nothing; after removing the last
+        // row Save stays, because that is how an emptied list is stored.
+        if (_drafts.isNotEmpty || widget.initial.isNotEmpty) ...[
+          const SizedBox(height: FactorySpacing.space5),
+          FactoryButton(
+            label: l10n.saveButton,
+            expand: true,
+            isLoading: _isSubmitting,
+            onPressed: _isSubmitting ? null : _submit,
+          ),
+        ],
       ],
     );
   }
