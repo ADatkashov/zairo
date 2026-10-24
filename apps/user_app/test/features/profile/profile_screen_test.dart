@@ -5,12 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:go_router/go_router.dart';
 import 'package:zairo/features/auth/data/models/user_summary.dart';
 import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/booking/data/booking_api.dart';
 import 'package:zairo/features/booking/data/models/booking.dart';
 import 'package:zairo/features/booking/presentation/providers/booking_providers.dart';
+import 'package:zairo/features/city/data/models/city.dart';
+import 'package:zairo/features/city/presentation/providers/city_providers.dart';
 import 'package:zairo/features/favorites/data/favorites_api.dart';
 import 'package:zairo/features/favorites/data/models/favorite_provider.dart';
 import 'package:zairo/features/favorites/presentation/providers/favorites_providers.dart';
@@ -26,6 +29,17 @@ class _LoggedInAuthController extends AuthController {
   Future<UserSummary?> build() async {
     return const UserSummary(id: 'user-1', email: 'aigerim@example.com', displayName: 'Aigerim K.', role: 'CUSTOMER');
   }
+}
+
+class _LoggedInWithBirthdayAuthController extends AuthController {
+  @override
+  Future<UserSummary?> build() async => UserSummary(
+    id: 'user-1',
+    email: 'aigerim@example.com',
+    displayName: 'Aigerim K.',
+    role: 'CUSTOMER',
+    birthDate: DateTime(1995, 5, 12),
+  );
 }
 
 class _LoggedOutAuthController extends AuthController {
@@ -120,14 +134,17 @@ void main() {
     expect(find.text('Log out'), findsOneWidget);
   });
 
-  testWidgets('the header is brand-coloured with readable text, and menu rows carry tinted icon plates', (tester) async {
+  testWidgets('the header sits on the page: name and e-mail, the avatar with a camera badge, no repeated e-mail', (tester) async {
     await tester.pumpWidget(_wrap(_LoggedInAuthController()));
     await tester.pumpAndSettle();
 
     final colors = FactoryColors.light;
-    // Name and email sit on the green header, so they use onPrimary.
-    expect(tester.widget<Text>(find.text('Aigerim K.')).style?.color, colors.onPrimary);
-    expect(tester.widget<Text>(find.text('aigerim@example.com')).style?.color?.a, closeTo(0.82, 0.01));
+    // Plain page text, not the white-on-green of the old header.
+    expect(tester.widget<Text>(find.text('Aigerim K.')).style?.color, isNot(colors.onPrimary));
+    expect(tester.widget<Text>(find.text('aigerim@example.com')).style?.color, colors.textSecondary);
+    expect(find.byIcon(Symbols.photo_camera_rounded), findsOneWidget);
+    // The e-mail is under the name; the details card doesn't say it a second time.
+    expect(find.text('aigerim@example.com'), findsOneWidget);
 
     // The favourites row shows its heart on a coral plate, not a bare grey outline.
     await tester.scrollUntilVisible(find.text('My vehicles'), 200);
@@ -137,7 +154,88 @@ void main() {
     expect(plates, isNotEmpty);
   });
 
-  testWidgets('shows booking and favorite counts in the stat row', (tester) async {
+  testWidgets('the details card shows the birthday and city, and nudges to add a missing birthday', (tester) async {
+    await tester.pumpWidget(_wrap(
+      _LoggedInAuthController(),
+      extraOverrides: [
+        userCurrentCityProvider.overrideWith(
+          (ref) async => City(code: 'ALA', name: 'Almaty', countryCode: 'KZ', timezone: 'Asia/Almaty', currency: 'KZT', active: true),
+        ),
+      ],
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Details'), findsOneWidget);
+    expect(find.text('Date of birth'), findsOneWidget);
+    expect(find.text('Not set'), findsOneWidget);
+    expect(find.text('Add your birthday to get a gift'), findsOneWidget);
+    expect(find.text('City'), findsOneWidget);
+    expect(find.text('Almaty'), findsOneWidget);
+  });
+
+  testWidgets('a known birthday is shown as a date and the nudge goes away', (tester) async {
+    await tester.pumpWidget(_wrap(_LoggedInWithBirthdayAuthController()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('12 May 1995'), findsNothing); // formatted for the locale, not ISO
+    expect(find.textContaining('1995'), findsOneWidget);
+    expect(find.text('Not set'), findsNothing);
+    expect(find.text('Add your birthday to get a gift'), findsNothing);
+  });
+
+  testWidgets('the settings card lists cards, vehicles, security and the current language, and opens them', (tester) async {
+    final router = GoRouter(routes: [
+      GoRoute(path: '/', builder: (_, _) => const ProfileScreen()),
+      GoRoute(path: '/settings/security', builder: (_, _) => const Scaffold(body: Text('Security page'))),
+      GoRoute(path: '/settings', builder: (_, _) => const Scaffold(body: Text('Settings page'))),
+    ]);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [authControllerProvider.overrideWith(_LoggedInAuthController.new)],
+        child: MaterialApp.router(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.text('Payment cards'), 200);
+    expect(find.text('Payment cards'), findsOneWidget);
+    expect(find.text('English'), findsOneWidget); // the active language, named in its own script
+
+    await tester.scrollUntilVisible(find.text('Security'), 200);
+    await tester.ensureVisible(find.text('Security'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Security'));
+    await tester.pumpAndSettle();
+    expect(find.text('Security page'), findsOneWidget);
+    router.pop();
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.text('English'), 200);
+    await tester.tap(find.text('English'));
+    await tester.pumpAndSettle();
+    expect(find.text('Settings page'), findsOneWidget);
+  });
+
+  testWidgets('log out is a plain card at the end that asks before ending the session', (tester) async {
+    await tester.pumpWidget(_wrap(_LoggedInAuthController()));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.text('Log out'), 200);
+    await tester.tap(find.text('Log out'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Log out of your account?'), findsOneWidget);
+    await tester.tap(find.text('Stay signed in'));
+    await tester.pumpAndSettle();
+    expect(find.text('Log out of your account?'), findsNothing);
+  });
+
+  testWidgets('shows booking and favorite counts on their rows', (tester) async {
     final booking = Booking(
       id: 'booking-1',
       userId: 'user-1',
@@ -166,12 +264,13 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    expect(find.text('1'), findsNWidgets(2));
     expect(find.text('My bookings'), findsOneWidget);
-    expect(find.widgetWithText(FactoryStatTile, 'My favorites'), findsOneWidget);
+    expect(find.text('My favorites'), findsOneWidget);
+    // Each count sits on the right of its row.
+    expect(find.text('1'), findsNWidgets(2));
   });
 
-  testWidgets('tapping the favorites stat tile opens the favorites list (no longer a bottom-nav tab)',
+  testWidgets('tapping the favorites row opens the favorites list (no longer a bottom-nav tab)',
       (tester) async {
     final favorite = FavoriteProvider(
       id: 'provider-1',
@@ -203,13 +302,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(FactoryStatTile, 'My favorites'));
+    await tester.tap(find.text('My favorites'));
     await tester.pumpAndSettle();
 
     expect(find.text('Salon'), findsOneWidget);
   });
 
-  testWidgets('tapping the bookings stat tile goes to the bookings page', (tester) async {
+  testWidgets('tapping the bookings row goes to the bookings page', (tester) async {
     final router = GoRouter(routes: [
       GoRoute(path: '/', builder: (_, _) => const ProfileScreen()),
       GoRoute(path: '/bookings', builder: (_, _) => const Scaffold(body: Text('Bookings page'))),

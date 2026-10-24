@@ -542,6 +542,8 @@
   "bookingsTabEmptyUpcoming": "Выберите услугу и удобное время.",
   "bookingsTabEmptyCompleted": "Прошедшие визиты появятся здесь, и к каждому можно оставить отзыв.",
   "bookingsTabEmptyCancelled": "Если вы отмените запись, она появится здесь.",
+  "profileSectionData": "Данные",
+  "profileCityLabel": "Город",
   "profileSectionActivity": "Моя активность",
   "profileSectionHelp": "Помощь",
   "catalogComparePricesTooltip": "Сравнить цены на услуги этой сферы",
