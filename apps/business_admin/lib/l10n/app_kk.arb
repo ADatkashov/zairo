@@ -1071,5 +1071,12 @@
   "chatQuickEditField": "Сөйлем",
   "chatQuickEditSave": "Сақтау",
   "chatQuickEditReset": "Стандартты қайтару",
-  "loginMethodPhone": "Телефон"
+  "loginMethodPhone": "Телефон",
+  "campaignFiltersButton": "Сүзгілер",
+  "campaignFilterTypeTitle": "Түрі",
+  "campaignFilterPeriodTitle": "Кезең",
+  "campaignFilterServiceTitle": "Қызмет",
+  "campaignFiltersApply": "Қолдану",
+  "campaignFiltersClear": "Тазарту",
+  "campaignFiltersButtonCount": "Сүзгілер ({count})"
 }

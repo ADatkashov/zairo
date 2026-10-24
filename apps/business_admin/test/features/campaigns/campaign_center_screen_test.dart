@@ -36,6 +36,7 @@ class _FakeCampaignCenterApi extends CampaignCenterApi {
   Object? listError;
   CampaignStatsResponse stats = _stats;
   final List<CampaignStatus?> statusCalls = [];
+  final List<CampaignType?> typeCalls = [];
 
   @override
   Future<CampaignListResponse> fetchCampaigns(
@@ -52,6 +53,7 @@ class _FakeCampaignCenterApi extends CampaignCenterApi {
     bool newestFirst = true,
   }) async {
     statusCalls.add(status);
+    typeCalls.add(type);
     if (listError != null) throw listError!;
     return await listResponder!(type, status, page);
   }
@@ -198,6 +200,51 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(api.statusCalls.last, CampaignStatus.completed);
+  });
+
+  testWidgets('type, period and service live behind one Filters button, not three rows of chips', (tester) async {
+    _useTallViewport(tester);
+    final api = _FakeCampaignCenterApi();
+    api.listResponder = (_, _, _) => _page([_campaign('c1')]);
+
+    await tester.pumpWidget(_wrap(api: api));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Filters'), findsOneWidget);
+    // Status stays in view; the rest is in the sheet.
+    expect(find.text('Completed'), findsWidgets);
+    expect(find.text('All types'), findsNothing);
+    expect(find.text('Today'), findsNothing);
+  });
+
+  testWidgets('the Filters sheet applies a type together, counts it on the button and can be cleared', (tester) async {
+    _useTallViewport(tester);
+    final api = _FakeCampaignCenterApi();
+    api.listResponder = (_, _, _) => _page([_campaign('c1')]);
+
+    await tester.pumpWidget(_wrap(api: api));
+    await tester.pumpAndSettle();
+    expect(api.typeCalls.last, isNull);
+
+    await tester.tap(find.text('Filters'));
+    await tester.pumpAndSettle();
+    expect(find.text('All types'), findsOneWidget);
+    await tester.tap(find.text('Rebook'));
+    await tester.tap(find.text('This week'));
+    await tester.tap(find.text('Apply'));
+    await tester.pumpAndSettle();
+
+    expect(api.typeCalls.last, CampaignType.rebook);
+    expect(find.text('Filters (2)'), findsOneWidget);
+
+    await tester.tap(find.text('Filters (2)'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Clear'));
+    await tester.tap(find.text('Apply'));
+    await tester.pumpAndSettle();
+
+    expect(api.typeCalls.last, isNull);
+    expect(find.text('Filters'), findsOneWidget);
   });
 
   testWidgets('shows a business picker when the owner has more than one business', (tester) async {
