@@ -244,7 +244,7 @@
 
   "masterPortfolioTitle": "{masterName} — Портфолио",
   "portfolioEmptyTitle": "Пока нет фото",
-  "portfolioEmptyMessage": "Пока нет фото в портфолио.",
+  "portfolioEmptyMessage": "Мастер ещё не добавил свои работы. Загляните позже.",
   "portfolioPhotoSemanticLabel": "Фото из портфолио",
   "errorPortfolioLoadFailed": "Не удалось загрузить портфолио",
   "portfolioViewerCloseTooltip": "Закрыть",
@@ -773,5 +773,6 @@
   "searchActivePriceTo": "До {amount}",
   "searchActiveFilterRemove": "Убрать фильтр: {filter}",
   "searchFilterCategoryMore": "Ещё",
-  "loginMethodPhone": "Телефон"
+  "loginMethodPhone": "Телефон",
+  "securityLinkedLabel": "Привязан"
 }

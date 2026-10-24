@@ -244,7 +244,7 @@
 
   "masterPortfolioTitle": "{masterName} — Портфолио",
   "portfolioEmptyTitle": "Әзірге фото жоқ",
-  "portfolioEmptyMessage": "Портфолиода әзірге фото жоқ.",
+  "portfolioEmptyMessage": "Шебер әлі жұмыстарын қоспады. Кейінірек қараңыз.",
   "portfolioPhotoSemanticLabel": "Портфолио фотосы",
   "errorPortfolioLoadFailed": "Портфолионы жүктеу мүмкін болмады",
   "portfolioViewerCloseTooltip": "Жабу",
@@ -773,5 +773,6 @@
   "searchActivePriceTo": "{amount} дейін",
   "searchActiveFilterRemove": "Сүзгіні алып тастау: {filter}",
   "searchFilterCategoryMore": "Тағы",
-  "loginMethodPhone": "Телефон"
+  "loginMethodPhone": "Телефон",
+  "securityLinkedLabel": "Байланған"
 }
