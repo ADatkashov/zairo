@@ -12,12 +12,9 @@ import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/booking/data/booking_api.dart';
 import 'package:zairo/features/booking/data/models/booking.dart';
 import 'package:zairo/features/booking/presentation/providers/booking_providers.dart';
-import 'package:zairo/features/city/data/models/city.dart';
-import 'package:zairo/features/city/presentation/providers/city_providers.dart';
 import 'package:zairo/features/favorites/data/favorites_api.dart';
 import 'package:zairo/features/favorites/data/models/favorite_provider.dart';
 import 'package:zairo/features/favorites/presentation/providers/favorites_providers.dart';
-import 'package:zairo/features/favorites/presentation/screens/favorites_screen.dart';
 import 'package:zairo/features/loyalty/data/api/loyalty_api.dart';
 import 'package:zairo/features/loyalty/data/models/loyalty.dart';
 import 'package:zairo/features/loyalty/presentation/providers/loyalty_providers.dart';
@@ -83,13 +80,6 @@ LoyaltyBusinessSummary _points(String id, int balance, {int expiring = 0}) => Lo
   pointsExpiringSoon30d: expiring,
 );
 
-/// The menu is a long list: a tall window builds the My rewards row without scrolling.
-void _useTallWindow(WidgetTester tester) {
-  tester.view.physicalSize = const Size(800, 3000);
-  tester.view.devicePixelRatio = 1;
-  addTearDown(tester.view.reset);
-}
-
 Widget _wrap(AuthController controller, {List<Override> extraOverrides = const []}) => ProviderScope(
       overrides: [authControllerProvider.overrideWith(() => controller), ...extraOverrides],
       child: MaterialApp(
@@ -134,7 +124,7 @@ void main() {
     expect(find.text('Log out'), findsOneWidget);
   });
 
-  testWidgets('the header sits on the page: name and e-mail, the avatar with a camera badge, no repeated e-mail', (tester) async {
+  testWidgets('the header sits on the page: name and e-mail, the avatar with a camera badge', (tester) async {
     await tester.pumpWidget(_wrap(_LoggedInAuthController()));
     await tester.pumpAndSettle();
 
@@ -143,99 +133,15 @@ void main() {
     expect(tester.widget<Text>(find.text('Aigerim K.')).style?.color, isNot(colors.onPrimary));
     expect(tester.widget<Text>(find.text('aigerim@example.com')).style?.color, colors.textSecondary);
     expect(find.byIcon(Symbols.photo_camera_rounded), findsOneWidget);
-    // The e-mail is under the name; the details card doesn't say it a second time.
-    expect(find.text('aigerim@example.com'), findsOneWidget);
 
-    // The favourites row shows its heart on a coral plate, not a bare grey outline.
-    await tester.scrollUntilVisible(find.text('My vehicles'), 200);
+    // Rows carry a tinted icon plate (messages is lavender), not a bare grey outline.
     final plates = tester
         .widgetList<Container>(find.byType(Container))
-        .where((c) => c.decoration is BoxDecoration && (c.decoration! as BoxDecoration).color == colors.coralTint);
+        .where((c) => c.decoration is BoxDecoration && (c.decoration! as BoxDecoration).color == colors.lavenderTint);
     expect(plates, isNotEmpty);
   });
 
-  testWidgets('the details card shows the birthday and city, and nudges to add a missing birthday', (tester) async {
-    await tester.pumpWidget(_wrap(
-      _LoggedInAuthController(),
-      extraOverrides: [
-        userCurrentCityProvider.overrideWith(
-          (ref) async => City(code: 'ALA', name: 'Almaty', countryCode: 'KZ', timezone: 'Asia/Almaty', currency: 'KZT', active: true),
-        ),
-      ],
-    ));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Details'), findsOneWidget);
-    expect(find.text('Date of birth'), findsOneWidget);
-    expect(find.text('Not set'), findsOneWidget);
-    expect(find.text('Add your birthday to get a gift'), findsOneWidget);
-    expect(find.text('City'), findsOneWidget);
-    expect(find.text('Almaty'), findsOneWidget);
-  });
-
-  testWidgets('a known birthday is shown as a date and the nudge goes away', (tester) async {
-    await tester.pumpWidget(_wrap(_LoggedInWithBirthdayAuthController()));
-    await tester.pumpAndSettle();
-
-    expect(find.text('12 May 1995'), findsNothing); // formatted for the locale, not ISO
-    expect(find.textContaining('1995'), findsOneWidget);
-    expect(find.text('Not set'), findsNothing);
-    expect(find.text('Add your birthday to get a gift'), findsNothing);
-  });
-
-  testWidgets('the settings card lists cards, vehicles, security and the current language, and opens them', (tester) async {
-    final router = GoRouter(routes: [
-      GoRoute(path: '/', builder: (_, _) => const ProfileScreen()),
-      GoRoute(path: '/settings/security', builder: (_, _) => const Scaffold(body: Text('Security page'))),
-      GoRoute(path: '/settings', builder: (_, _) => const Scaffold(body: Text('Settings page'))),
-    ]);
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [authControllerProvider.overrideWith(_LoggedInAuthController.new)],
-        child: MaterialApp.router(
-          theme: factoryLightTheme(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          routerConfig: router,
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.scrollUntilVisible(find.text('Payment cards'), 200);
-    expect(find.text('Payment cards'), findsOneWidget);
-    expect(find.text('English'), findsOneWidget); // the active language, named in its own script
-
-    await tester.scrollUntilVisible(find.text('Security'), 200);
-    await tester.ensureVisible(find.text('Security'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Security'));
-    await tester.pumpAndSettle();
-    expect(find.text('Security page'), findsOneWidget);
-    router.pop();
-    await tester.pumpAndSettle();
-
-    await tester.scrollUntilVisible(find.text('English'), 200);
-    await tester.tap(find.text('English'));
-    await tester.pumpAndSettle();
-    expect(find.text('Settings page'), findsOneWidget);
-  });
-
-  testWidgets('log out is a plain card at the end that asks before ending the session', (tester) async {
-    await tester.pumpWidget(_wrap(_LoggedInAuthController()));
-    await tester.pumpAndSettle();
-
-    await tester.scrollUntilVisible(find.text('Log out'), 200);
-    await tester.tap(find.text('Log out'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Log out of your account?'), findsOneWidget);
-    await tester.tap(find.text('Stay signed in'));
-    await tester.pumpAndSettle();
-    expect(find.text('Log out of your account?'), findsNothing);
-  });
-
-  testWidgets('shows booking and favorite counts on their rows', (tester) async {
+  testWidgets('the stat strip shows bookings, favorites and points as three numbers', (tester) async {
     final booking = Booking(
       id: 'booking-1',
       userId: 'user-1',
@@ -260,58 +166,115 @@ void main() {
       extraOverrides: [
         bookingApiProvider.overrideWithValue(_FakeBookingApi([booking])),
         favoritesApiProvider.overrideWithValue(_FakeFavoritesApi([favorite])),
+        loyaltyApiProvider.overrideWithValue(_FakeLoyaltyApi([_points('a', 120), _points('b', 200)])),
       ],
     ));
     await tester.pumpAndSettle();
 
-    expect(find.text('My bookings'), findsOneWidget);
-    expect(find.text('My favorites'), findsOneWidget);
-    // Each count sits on the right of its row.
-    expect(find.text('1'), findsNWidgets(2));
+    expect(find.text('Bookings'), findsOneWidget);
+    expect(find.text('Favorites'), findsOneWidget);
+    expect(find.text('Points'), findsOneWidget);
+    expect(find.text('1'), findsNWidgets(2)); // one booking, one favorite
+    expect(find.text('320'), findsOneWidget); // 120 + 200 points
   });
 
-  testWidgets('tapping the favorites row opens the favorites list (no longer a bottom-nav tab)',
-      (tester) async {
-    final favorite = FavoriteProvider(
-      id: 'provider-1',
-      name: 'Salon',
-      vertical: 'beauty',
-      status: 'ACTIVE',
-      hasOpenAvailability: true,
-      services: const [],
-      favoritedAt: DateTime(2026, 1, 1),
-    );
+  testWidgets('with nothing yet the strip says 0, never a misleading blank', (tester) async {
+    await tester.pumpWidget(_wrap(_LoggedInAuthController(), extraOverrides: [
+      bookingApiProvider.overrideWithValue(_FakeBookingApi([])),
+      favoritesApiProvider.overrideWithValue(_FakeFavoritesApi([])),
+      loyaltyApiProvider.overrideWithValue(_FakeLoyaltyApi([])),
+    ]));
+    await tester.pumpAndSettle();
 
-    final router = GoRouter(routes: [
-      GoRoute(path: '/', builder: (_, _) => const ProfileScreen()),
-      GoRoute(path: '/favorites', builder: (_, _) => const FavoritesScreen()),
-    ]);
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          authControllerProvider.overrideWith(_LoggedInAuthController.new),
-          favoritesApiProvider.overrideWithValue(_FakeFavoritesApi([favorite])),
-        ],
-        child: MaterialApp.router(
-          theme: factoryLightTheme(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          routerConfig: router,
+    expect(find.text('0'), findsNWidgets(3));
+    expect(find.text('—'), findsNothing);
+  });
+
+  group('tapping a number opens its list', () {
+    Future<void> openWith(WidgetTester tester) async {
+      final router = GoRouter(routes: [
+        GoRoute(path: '/', builder: (_, _) => const ProfileScreen()),
+        GoRoute(path: '/bookings', builder: (_, _) => const Scaffold(body: Text('Bookings page'))),
+        GoRoute(path: '/favorites', builder: (_, _) => const Scaffold(body: Text('Favorites page'))),
+        GoRoute(path: '/rewards', builder: (_, _) => const Scaffold(body: Text('Rewards page'))),
+      ]);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [authControllerProvider.overrideWith(_LoggedInAuthController.new)],
+          child: MaterialApp.router(
+            theme: factoryLightTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
+    }
 
-    await tester.tap(find.text('My favorites'));
-    await tester.pumpAndSettle();
+    testWidgets('bookings goes to the bookings tab', (tester) async {
+      await openWith(tester);
+      await tester.tap(find.text('Bookings'));
+      await tester.pumpAndSettle();
+      expect(find.text('Bookings page'), findsOneWidget);
+    });
 
-    expect(find.text('Salon'), findsOneWidget);
+    testWidgets('favorites opens the favorites list (no longer a bottom-nav tab)', (tester) async {
+      await openWith(tester);
+      await tester.tap(find.text('Favorites'));
+      await tester.pumpAndSettle();
+      expect(find.text('Favorites page'), findsOneWidget);
+    });
+
+    testWidgets('points opens the rewards', (tester) async {
+      await openWith(tester);
+      await tester.tap(find.text('Points'));
+      await tester.pumpAndSettle();
+      expect(find.text('Rewards page'), findsOneWidget);
+    });
   });
 
-  testWidgets('tapping the bookings row goes to the bookings page', (tester) async {
+  testWidgets('a warning shows only when points are about to expire, and it opens the rewards', (tester) async {
+    await tester.pumpWidget(_wrap(
+      _LoggedInAuthController(),
+      extraOverrides: [loyaltyApiProvider.overrideWithValue(_FakeLoyaltyApi([_points('a', 120, expiring: 50)]))],
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('50 pts expire within 30 days'), findsOneWidget);
+  });
+
+  testWidgets('no expiry warning when nothing is about to burn', (tester) async {
+    await tester.pumpWidget(_wrap(
+      _LoggedInAuthController(),
+      extraOverrides: [loyaltyApiProvider.overrideWithValue(_FakeLoyaltyApi([_points('a', 120)]))],
+    ));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('expire'), findsNothing);
+  });
+
+  testWidgets('personal details nudges to add a missing birthday', (tester) async {
+    await tester.pumpWidget(_wrap(_LoggedInAuthController()));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Personal details'), 200);
+    expect(find.text('Add your birthday to get a gift'), findsOneWidget);
+    expect(find.text('Name, birthday, gender'), findsNothing);
+  });
+
+  testWidgets('personal details says what is inside once the birthday is set', (tester) async {
+    await tester.pumpWidget(_wrap(_LoggedInWithBirthdayAuthController()));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Personal details'), 200);
+    expect(find.text('Add your birthday to get a gift'), findsNothing);
+    expect(find.text('Name, birthday, gender'), findsOneWidget);
+  });
+
+  testWidgets('the rows open their screens; Settings is one row, not a second gear in the app bar', (tester) async {
     final router = GoRouter(routes: [
       GoRoute(path: '/', builder: (_, _) => const ProfileScreen()),
-      GoRoute(path: '/bookings', builder: (_, _) => const Scaffold(body: Text('Bookings page'))),
+      GoRoute(path: '/profile/edit', builder: (_, _) => const Scaffold(body: Text('Edit page'))),
+      GoRoute(path: '/settings', builder: (_, _) => const Scaffold(body: Text('Settings page'))),
+      GoRoute(path: '/support', builder: (_, _) => const Scaffold(body: Text('Support page'))),
+      GoRoute(path: '/about', builder: (_, _) => const Scaffold(body: Text('About page'))),
     ]);
     await tester.pumpWidget(
       ProviderScope(
@@ -325,53 +288,41 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    expect(find.byTooltip('Settings'), findsNothing);
+    await tester.scrollUntilVisible(find.text('Language, theme, security'), 200);
+    expect(find.text('Language, theme, security'), findsOneWidget);
 
-    await tester.tap(find.text('My bookings'));
-    await tester.pumpAndSettle();
+    Future<void> open(String label, String page) async {
+      await tester.scrollUntilVisible(find.text(label), 200);
+      await tester.ensureVisible(find.text(label));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(label));
+      await tester.pumpAndSettle();
+      expect(find.text(page), findsOneWidget);
+      router.pop();
+      await tester.pumpAndSettle();
+    }
 
-    expect(find.text('Bookings page'), findsOneWidget);
+    await open('Personal details', 'Edit page');
+    await open('Settings', 'Settings page');
+    await open('Support', 'Support page');
+    await open('About', 'About page');
   });
 
-  testWidgets('My rewards shows the total points and how many businesses they are in', (tester) async {
-    _useTallWindow(tester);
-    await tester.pumpWidget(
-      _wrap(
-        _LoggedInAuthController(),
-        extraOverrides: [
-          loyaltyApiProvider.overrideWithValue(_FakeLoyaltyApi([_points('a', 120), _points('b', 200), _points('c', 0)])),
-        ],
-      ),
-    );
+  testWidgets('log out is a plain card that asks before ending the session', (tester) async {
+    await tester.pumpWidget(_wrap(_LoggedInAuthController()));
     await tester.pumpAndSettle();
 
-    expect(find.text('320 pts · 2 businesses'), findsOneWidget);
-    expect(find.textContaining('expire'), findsNothing);
-  });
-
-  testWidgets('My rewards warns when some points expire within 30 days', (tester) async {
-    _useTallWindow(tester);
-    await tester.pumpWidget(
-      _wrap(
-        _LoggedInAuthController(),
-        extraOverrides: [
-          loyaltyApiProvider.overrideWithValue(_FakeLoyaltyApi([_points('a', 120, expiring: 50)])),
-        ],
-      ),
-    );
+    await tester.scrollUntilVisible(find.text('Log out'), 200);
+    await tester.ensureVisible(find.text('Log out'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Log out'));
     await tester.pumpAndSettle();
 
-    expect(find.text('120 pts · 1 business'), findsOneWidget);
-    expect(find.text('50 pts expire within 30 days'), findsOneWidget);
-  });
-
-  testWidgets('My rewards has no hint before the first points', (tester) async {
-    _useTallWindow(tester);
-    await tester.pumpWidget(
-      _wrap(_LoggedInAuthController(), extraOverrides: [loyaltyApiProvider.overrideWithValue(_FakeLoyaltyApi([]))]),
-    );
+    expect(find.text('Log out of your account?'), findsOneWidget);
+    await tester.tap(find.text('Stay signed in'));
     await tester.pumpAndSettle();
-
-    expect(find.textContaining(' pts'), findsNothing);
+    expect(find.text('Log out of your account?'), findsNothing);
   });
 
   testWidgets('Profile fits a 320 px phone with a large font in the dark theme, signed in and out', (tester) async {

@@ -1672,11 +1672,23 @@
   "@bookingsTabEmptyCompleted": {"description": "Empty 'Completed' tab of My bookings."},
   "bookingsTabEmptyCancelled": "If you cancel a booking, it will be listed here.",
   "@bookingsTabEmptyCancelled": {"description": "Empty 'Cancelled' tab of My bookings."},
-  "profileSectionData": "Details",
-  "@profileSectionData": {"description": "Profile card title: the person's own details (birthday, city)."},
+  "profileStatBookings": "Bookings",
+  "@profileStatBookings": {"description": "Profile stat strip: label under the number of bookings."},
 
-  "profileCityLabel": "City",
-  "@profileCityLabel": {"description": "Profile row label for the city the person browses in."},
+  "profileStatFavorites": "Favorites",
+  "@profileStatFavorites": {"description": "Profile stat strip: label under the number of favorite providers."},
+
+  "profileStatPoints": "Points",
+  "@profileStatPoints": {"description": "Profile stat strip: label under the total reward points."},
+
+  "profilePersonalData": "Personal details",
+  "@profilePersonalData": {"description": "Profile row that opens the edit-profile screen."},
+
+  "profilePersonalSubtitle": "Name, birthday, gender",
+  "@profilePersonalSubtitle": {"description": "Hint under the personal details row."},
+
+  "profileSettingsSubtitle": "Language, theme, security",
+  "@profileSettingsSubtitle": {"description": "Hint under the Settings row of the profile."},
 
   "profileSectionActivity": "My activity",
   "@profileSectionActivity": {"description": "Profile list group header: favorites, messages, rewards, coupons, vehicles."},
