@@ -128,27 +128,23 @@ void main() {
     expect(find.text('You have no businesses yet'), findsOneWidget);
   });
 
-  testWidgets('phone: the "+" fans out Loyalty / Automation / Subscription; Back closes the fan first', (tester) async {
+  testWidgets('phone: no "+" — Loyalty / Automation / Subscription are one place, under More', (tester) async {
     _size(tester, const Size(400, 800));
     await pumpAdminApp(tester, overrides: _ownerOverrides());
 
-    await tester.tap(find.byIcon(Icons.add_rounded));
-    await tester.pumpAndSettle();
-    for (final label in ['Loyalty', 'Subscription']) {
-      expect(find.text(label), findsOneWidget, reason: label);
-    }
+    // A second, unlabelled way to the same four areas was only noise.
+    expect(find.byIcon(Icons.add_rounded), findsNothing);
 
-    // Back with the fan open only closes it; the Dashboard stays.
-    await tester.binding.handlePopRoute();
-    await tester.pumpAndSettle();
-    expect(find.text('Loyalty'), findsNothing);
-    expect(find.text('You have no businesses yet'), findsOneWidget);
-
-    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Subscription'));
     await tester.pumpAndSettle();
     expect(find.text('PRO plan'), findsOneWidget);
+
+    // Back from an area goes to the Dashboard, not out of the app.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('You have no businesses yet'), findsOneWidget);
   });
 
   testWidgets('a link straight to an area opens it, and More stays highlighted on a phone', (tester) async {
