@@ -134,6 +134,19 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
     });
   }
 
+  /// Tapping the "Choose a service" line takes the customer to the place where they do it: the times when the
+  /// service (and vehicle) are already chosen, else where the booking steps begin.
+  void _scrollToNextStep({required bool needsVehicle}) {
+    final timesStep = _selectedServiceId != null && !needsVehicle;
+    final anchor = (timesStep ? _timesKey : _bookingStartKey).currentContext;
+    if (!mounted || anchor == null) return;
+    Scrollable.ensureVisible(
+      anchor,
+      duration: FactoryMotion.resolve(context, FactoryMotion.base),
+      curve: FactoryMotion.standard,
+    );
+  }
+
   /// Whether the times section currently shows times (set while building).
   bool _timesLoaded = false;
 
@@ -511,6 +524,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
               ),
             ),
             _BookingCta(
+              onHintTap: () => _scrollToNextStep(needsVehicle: requiresVehicleSelection && _selectedVehicleId == null),
               hint: _nextStepHint(
                 l10n,
                 needsVehicle: requiresVehicleSelection && _selectedVehicleId == null,
@@ -1095,6 +1109,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
 /// risky for a real-money flow, and that reasoning still holds.
 class _BookingCta extends StatelessWidget {
   const _BookingCta({
+    required this.onHintTap,
     required this.hint,
     required this.when,
     required this.selectedService,
@@ -1106,6 +1121,9 @@ class _BookingCta extends StatelessWidget {
 
   /// What the customer still has to pick; null when "Book" is ready.
   final String? hint;
+
+  /// Brings that step into view.
+  final VoidCallback onHintTap;
 
   /// The picked day and time ("Mon, Oct 5 · 10:00"), shown in the summary so the choice is confirmed at a glance;
   /// null until a time is picked.
@@ -1190,15 +1208,32 @@ class _BookingCta extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (hint != null) ...[
-            Text(
-              hint!,
-              key: const Key('bookingNextStepHint'),
-              textAlign: TextAlign.center,
-              // While Book is disabled this line is the reason; a caption-sized grey line read as decoration.
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colors.text,
-                    fontWeight: FontWeight.w600,
-                  ),
+            // The reason Book is disabled is also the way to fix it: tap to jump to that step.
+            InkWell(
+              onTap: onHintTap,
+              borderRadius: FactoryRadius.smRadius,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space2),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        hint!,
+                        key: const Key('bookingNextStepHint'),
+                        textAlign: TextAlign.center,
+                        // While Book is disabled this line is the reason; a caption-sized grey line read as decoration.
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: colors.text,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(Symbols.keyboard_arrow_down_rounded, size: 20, color: colors.primary),
+                  ],
+                ),
+              ),
             ),
           ],
           const SizedBox(height: FactorySpacing.space3),

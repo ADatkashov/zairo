@@ -1490,6 +1490,28 @@ void main() {
       expect(style.color, FactoryColors.light.text);
     });
 
+    testWidgets('tapping the hint brings the step it asks for into view', (tester) async {
+      await pump(tester, salon([haircut, colour]));
+      final card = find.widgetWithText(FactoryServiceCard, 'Haircut');
+
+      await tester.tap(find.byKey(const Key('bookingNextStepHint')));
+      await tester.pumpAndSettle();
+      // Visible on screen now, and still nothing is picked.
+      final screenHeight = tester.view.physicalSize.height / tester.view.devicePixelRatio;
+      expect(tester.getRect(card).top, lessThan(screenHeight));
+      expect(tester.getRect(card).bottom, greaterThan(0));
+      expect(hint(tester), 'Choose a service');
+
+      await tapVisible(tester, card);
+      await tester.pumpAndSettle();
+      expect(hint(tester), 'Choose a time');
+      await tester.tap(find.byKey(const Key('bookingNextStepHint')));
+      await tester.pumpAndSettle();
+      // The times section is what the hint now leads to.
+      expect(find.text('10:00'), findsWidgets);
+      expect(tester.getRect(find.text('10:00').first).top, lessThan(screenHeight));
+    });
+
     testWidgets('one service is already picked, so the first thing asked is the time', (tester) async {
       await pump(tester, salon([haircut]));
 
