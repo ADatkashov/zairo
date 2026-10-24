@@ -55,4 +55,19 @@ public final class ProviderInsightsDtos {
                 @Schema(example = "12") long bookingCount) {
         }
     }
+
+    /**
+     * What a moderator needs to decide about a business without opening it in another tool: who runs it, how to reach
+     * them, and whether it is real (services listed, bookings taken).
+     */
+    public record PlatformBusinessOverview(
+            UUID providerId,
+            @Schema(description = "The owner's display name — null if they have not set one.", example = "Aigerim S.")
+            String ownerName,
+            @Schema(description = "The owner's e-mail — null for a phone-only account.") String ownerEmail,
+            @Schema(description = "The owner's phone — null for an e-mail account.") String ownerPhone,
+            @Schema(description = "Services the business has listed (active or not).", example = "6") long servicesCount,
+            @Schema(example = "42") long totalBookings,
+            @Schema(example = "30") long completedBookings) {
+    }
 }

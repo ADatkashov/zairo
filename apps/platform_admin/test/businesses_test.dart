@@ -90,10 +90,40 @@ void main() {
     await pumpConsole(tester, backend: defaultBackend(), location: ConsoleRoutes.businesses);
     await tester.tap(find.text('Zen Spa'));
     await tester.pumpAndSettle();
-    expect(find.text('Owner ID'), findsOneWidget);
     expect(find.text('Payouts'), findsOneWidget);
     expect(find.text('To pay'), findsOneWidget);
     expect(find.text('Paid'), findsOneWidget);
+  });
+
+  testWidgets('the card says who runs the business and how big it is; ids are tucked away', (tester) async {
+    await pumpConsole(tester, backend: defaultBackend(), location: ConsoleRoutes.businesses);
+    await tester.tap(find.text('Zen Spa'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Aigerim S.'), findsOneWidget);
+    expect(find.text('aigerim@zen.example'), findsOneWidget);
+    expect(find.text('6'), findsOneWidget);
+    expect(find.text('42 total · 30 completed'), findsOneWidget);
+
+    // The codes are for support tickets: there, but not in the way.
+    expect(find.text('Business ID'), findsNothing);
+    await tester.ensureVisible(find.text('Technical IDs'));
+    await tester.tap(find.text('Technical IDs'));
+    await tester.pumpAndSettle();
+    expect(find.text('Owner ID'), findsOneWidget);
+    expect(find.text('Business ID'), findsOneWidget);
+  });
+
+  testWidgets('if the overview cannot be loaded the card still shows what the list knows', (tester) async {
+    final backend = defaultBackend();
+    backend.reply('GET', '/platform/businesses/p2/overview', {'message': 'boom'}, status: 500);
+    await pumpConsole(tester, backend: backend, location: ConsoleRoutes.businesses);
+    await tester.tap(find.text('Zen Spa'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Payouts'), findsOneWidget);
+    expect(find.text('Owner'), findsNothing);
+    expect(find.text('Technical IDs'), findsOneWidget);
   });
 
   testWidgets('support sees businesses but no action buttons', (tester) async {

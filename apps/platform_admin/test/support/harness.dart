@@ -180,6 +180,15 @@ FakeBackend defaultBackend({String role = 'PLATFORM_ADMIN'}) {
   });
   final businesses = [businessJson('p1', 'Glow Salon', 'PENDING'), businessJson('p2', 'Zen Spa', 'ACTIVE')];
   backend.on('GET', '/platform/businesses', (_) => FakeReply(businesses));
+  backend.reply('GET', '/platform/businesses/p2/overview', {
+    'providerId': 'p2',
+    'ownerName': 'Aigerim S.',
+    'ownerEmail': 'aigerim@zen.example',
+    'ownerPhone': null,
+    'servicesCount': 6,
+    'totalBookings': 42,
+    'completedBookings': 30,
+  });
   backend.on('PATCH', '/platform/businesses/p1/status', (o) {
     businesses[0] = businessJson('p1', 'Glow Salon', (o.data as Map)['status'] as String);
     return const FakeReply({});

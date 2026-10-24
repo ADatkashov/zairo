@@ -849,5 +849,17 @@
   "reviewsCopyCsv": "Copy list as CSV",
   "reviewsCsvCopied": "{count, plural, =1{1 review copied as CSV} other{{count} reviews copied as CSV}}",
   "@reviewsCopyCsv": {"description": "Tooltip of the button that copies the reviews list as CSV."},
-  "@reviewsCsvCopied": {"description": "Snackbar after copying the reviews as CSV.", "placeholders": {"count": {"type": "int"}}}
+  "@reviewsCsvCopied": {"description": "Snackbar after copying the reviews as CSV.", "placeholders": {"count": {"type": "int"}}},
+  "detailOwner": "Owner",
+  "@detailOwner": {"description": "Business details sheet label."},
+  "detailContact": "Contact",
+  "@detailContact": {"description": "Business details sheet label."},
+  "detailServices": "Services",
+  "@detailServices": {"description": "Business details sheet label."},
+  "detailBookings": "Bookings",
+  "@detailBookings": {"description": "Business details sheet label."},
+  "detailTechnicalIds": "Technical IDs",
+  "@detailTechnicalIds": {"description": "Business details sheet label."},
+  "detailBookingsValue": "{total} total · {completed} completed",
+  "@detailBookingsValue": {"description": "Business details sheet: bookings taken and finished.", "placeholders": {"total": {"type": "int"}, "completed": {"type": "int"}}}
 }
