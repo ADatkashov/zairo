@@ -383,7 +383,7 @@
   "loyaltyRewardLockedLabel": "Недостаточно баллов",
   "loyaltyRewardEndsOn": "Действует до {date}",
   "loyaltyRewardTerms": "Условия: {terms}",
-  "loyaltyRewardDiscountFixed": "Скидка {amount} {currency}",
+  "loyaltyRewardDiscountFixed": "Скидка {amount}",
   "loyaltyRewardDiscountPercentage": "Скидка {percentage}%",
   "loyaltyRewardFreeService": "Бесплатная услуга",
   "loyaltyRedeemConfirmTitle": "Обменять эту награду?",
