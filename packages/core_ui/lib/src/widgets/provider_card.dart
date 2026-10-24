@@ -250,9 +250,11 @@ class FactoryProviderCard extends StatelessWidget {
           if (actionLabel != null && onAction != null) ...[
             const SizedBox(height: FactorySpacing.space3),
             // Full 48px height: it is a phone tap target, not a dense toolbar button.
+            // The card's one action, so the brand colour — a pale tonal button
+            // read as disabled next to the card's own content.
             FactoryButton(
               label: actionLabel!,
-              variant: FactoryButtonVariant.tonal,
+              variant: FactoryButtonVariant.primary,
               expand: true,
               onPressed: onAction,
             ),
