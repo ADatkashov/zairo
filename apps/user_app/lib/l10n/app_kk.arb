@@ -527,6 +527,8 @@
   "bookingsTabEmptyUpcoming": "Қызмет пен ыңғайлы уақытты таңдаңыз.",
   "bookingsTabEmptyCompleted": "Өткен визиттер осында көрінеді, әрқайсысына пікір қалдыруға болады.",
   "bookingsTabEmptyCancelled": "Жазылымнан бас тартсаңыз, ол осында көрінеді.",
+  "profileSectionData": "Деректер",
+  "profileCityLabel": "Қала",
   "profileSectionActivity": "Менің белсенділігім",
   "profileSectionHelp": "Көмек",
   "catalogComparePricesTooltip": "Осы саладағы қызметтердің бағасын салыстыру",
