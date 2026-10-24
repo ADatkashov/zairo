@@ -57,35 +57,37 @@ void main() {
     expect(find.byType(TabBar), findsOneWidget);
   });
 
-  testWidgets('has a tab for every part of the programme and opens on the overview', (tester) async {
+  testWidgets('four tabs, with related parts one tap apart, and it opens on the overview', (tester) async {
     final http = _backend();
     await _open(tester, http);
 
-    for (final label in [
-      en.loyaltyTabOverview,
-      en.loyaltyTabSettings,
-      en.loyaltyTabRewards,
-      en.loyaltyTabCustomers,
-      en.loyaltyTabBirthdays,
-      en.loyaltyTabRedemptions,
-      en.loyaltyTabMilestones,
-      en.loyaltyTabTiers,
-    ]) {
+    for (final label in [en.loyaltyTabOverview, en.loyaltyTabRewards, en.loyaltyTabCustomers, en.loyaltyTabProgram]) {
       expect(find.descendant(of: find.byType(TabBar), matching: find.text(label)), findsOneWidget, reason: label);
+    }
+    // The rest are not tabs any more.
+    for (final label in [en.loyaltyTabBirthdays, en.loyaltyTabRedemptions, en.loyaltyTabMilestones, en.loyaltyTabTiers]) {
+      expect(find.descendant(of: find.byType(TabBar), matching: find.text(label)), findsNothing, reason: label);
     }
     expect(find.text(en.loyaltyScreenTitle), findsOneWidget);
     expect(http.calls('GET', '/business/p1/loyalty/overview'), hasLength(1));
   });
 
-  testWidgets('opening a tab loads that part for the chosen business', (tester) async {
+  testWidgets('a part loads when its tab or its switcher segment is opened, and not before', (tester) async {
     final http = _backend();
     await _open(tester, http);
+    expect(http.calls('GET', '/business/p1/loyalty/tiers'), isEmpty);
 
-    await tester.tap(find.descendant(of: find.byType(TabBar), matching: find.text(en.loyaltyTabTiers)));
+    await tester.tap(find.descendant(of: find.byType(TabBar), matching: find.text(en.loyaltyTabProgram)));
+    await tester.pumpAndSettle();
+    expect(http.calls('GET', '/business/p1/loyalty/tiers'), isEmpty);
+
+    await tester.tap(find.descendant(of: find.byType(SegmentedButton<int>), matching: find.text(en.loyaltyTabTiers)));
     await tester.pumpAndSettle();
     expect(http.calls('GET', '/business/p1/loyalty/tiers'), hasLength(1));
 
-    await tester.tap(find.descendant(of: find.byType(TabBar), matching: find.text(en.loyaltyTabBirthdays)));
+    await tester.tap(find.descendant(of: find.byType(TabBar), matching: find.text(en.loyaltyTabCustomers)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.descendant(of: find.byType(SegmentedButton<int>), matching: find.text(en.loyaltyTabBirthdays)));
     await tester.pumpAndSettle();
     expect(http.calls('GET', '/business/p1/loyalty/birthdays'), hasLength(1));
   });

@@ -2652,5 +2652,7 @@
   "campaignFiltersClear": "Clear",
   "@campaignFiltersClear": {"description": "Campaign Center filters."},
   "campaignFiltersButtonCount": "Filters ({count})",
-  "@campaignFiltersButtonCount": {"description": "Campaign Center filters button when some are active.", "placeholders": {"count": {"type": "int"}}}
+  "@campaignFiltersButtonCount": {"description": "Campaign Center filters button when some are active.", "placeholders": {"count": {"type": "int"}}},
+  "loyaltyTabProgram": "Program",
+  "@loyaltyTabProgram": {"description": "Loyalty tab that groups the programme rules: settings, milestones and tiers."}
 }
