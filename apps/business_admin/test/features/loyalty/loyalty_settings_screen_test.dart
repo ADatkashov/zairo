@@ -57,6 +57,19 @@ Widget _wrap(_FakeLoyaltyAdminApi api) => ProviderScope(
     );
 
 void main() {
+  testWidgets('on a wide screen the form is a readable column, not a stretch of fields', (tester) async {
+    tester.view.physicalSize = const Size(1800, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(_wrap(_FakeLoyaltyAdminApi()));
+    await tester.pumpAndSettle();
+
+    final field = tester.getRect(find.byType(TextField).first);
+    expect(field.width, lessThanOrEqualTo(720));
+    // ...centred rather than hugging the left edge.
+    expect(field.center.dx, closeTo(900, 1));
+  });
+
   testWidgets('shows the enable switch off and the program name once settings load', (tester) async {
     final api = _FakeLoyaltyAdminApi();
     await tester.pumpWidget(_wrap(api));

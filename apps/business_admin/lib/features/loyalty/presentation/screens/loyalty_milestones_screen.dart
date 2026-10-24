@@ -92,7 +92,10 @@ class _MilestonesFormState extends ConsumerState<_MilestonesForm> {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
 
-    return ListView(
+    // A form is a column, not a 1500 px stretch of fields.
+    return FactoryPageWidth(
+      maxWidth: 720,
+      child: ListView(
       padding: const EdgeInsets.all(FactorySpacing.space4),
       children: [
         Text(
@@ -147,6 +150,7 @@ class _MilestonesFormState extends ConsumerState<_MilestonesForm> {
           ),
         ],
       ],
+    ),
     );
   }
 
