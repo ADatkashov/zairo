@@ -142,16 +142,15 @@ class _BookingsListState extends ConsumerState<_BookingsList> {
             ),
           );
         }
-        final filtered = bookings
-            .where((b) => _tab.statuses.contains(b.status))
-            .toList()
-          ..sort((a, b) {
-            // The next visit first on "Upcoming"; the most recent first on the
-            // other tabs. A booking without a known start time sorts by when
-            // it was made instead.
-            final byTime = _visitOrKey(a).compareTo(_visitOrKey(b));
-            return _tab == _BookingsTab.upcoming ? byTime : -byTime;
-          });
+        final filtered =
+            bookings.where((b) => _tab.statuses.contains(b.status)).toList()
+              ..sort((a, b) {
+                // The next visit first on "Upcoming"; the most recent first on the
+                // other tabs. A booking without a known start time sorts by when
+                // it was made instead.
+                final byTime = _visitOrKey(a).compareTo(_visitOrKey(b));
+                return _tab == _BookingsTab.upcoming ? byTime : -byTime;
+              });
         return Column(
           children: [
             Padding(
@@ -381,7 +380,7 @@ class _BookingHeadline extends StatelessWidget {
     final when = start == null
         ? null
         : '${formatWeekdayMonthDay(l10n, start)} · ${formatHourMinute(start)}'
-            '${end == null ? '' : '–${formatHourMinute(end)}'}';
+              '${end == null ? '' : '–${formatHourMinute(end)}'}';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
@@ -404,7 +403,9 @@ class _BookingHeadline extends StatelessWidget {
                 Flexible(
                   child: Text(
                     when,
-                    style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                    style: textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -471,40 +472,43 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
           if (booking.status == 'COMPLETED')
             ReviewSection(bookingId: booking.id),
           const SizedBox(height: FactorySpacing.space2),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Wrap(
-              spacing: FactorySpacing.space2,
-              children: [
+          // What the person usually wants comes first; the destructive "Cancel"
+          // is on its own line at the far edge, so a tap meant for Reschedule
+          // or Message cannot land on it.
+          Wrap(
+            spacing: FactorySpacing.space2,
+            children: [
+              if (booking.status == 'PENDING_PAYMENT')
                 FactoryButton(
-                  label: l10n.messageAboutBookingButton,
-                  variant: FactoryButtonVariant.text,
-                  onPressed: _openMessageAboutBookingDialog,
+                  label: l10n.bookingPayNowButton,
+                  onPressed: _payNow,
                 ),
-                if (booking.status == 'COMPLETED')
-                  _BookAgainButton(booking: booking, userId: widget.userId),
-                if (booking.status == 'PENDING_PAYMENT')
-                  FactoryButton(
-                    label: l10n.bookingPayNowButton,
-                    onPressed: _payNow,
-                  ),
-                if (_canReschedule(booking))
-                  FactoryButton(
-                    label: l10n.bookingRescheduleButton,
-                    variant: FactoryButtonVariant.text,
-                    onPressed: _reschedule,
-                  ),
-                if (booking.status == 'CONFIRMED' ||
-                    booking.status == 'PENDING_PAYMENT')
-                  FactoryButton(
-                    label: l10n.cancelBookingButton,
-                    variant: FactoryButtonVariant.textDanger,
-                    isLoading: _isCancelling,
-                    onPressed: _isCancelling ? null : _confirmAndCancel,
-                  ),
-              ],
-            ),
+              if (booking.status == 'COMPLETED')
+                _BookAgainButton(booking: booking, userId: widget.userId),
+              if (_canReschedule(booking))
+                FactoryButton(
+                  label: l10n.bookingRescheduleButton,
+                  variant: FactoryButtonVariant.text,
+                  onPressed: _reschedule,
+                ),
+              FactoryButton(
+                label: l10n.messageAboutBookingButton,
+                variant: FactoryButtonVariant.text,
+                onPressed: _openMessageAboutBookingDialog,
+              ),
+            ],
           ),
+          if (booking.status == 'CONFIRMED' ||
+              booking.status == 'PENDING_PAYMENT')
+            Align(
+              alignment: Alignment.centerRight,
+              child: FactoryButton(
+                label: l10n.cancelBookingButton,
+                variant: FactoryButtonVariant.textDanger,
+                isLoading: _isCancelling,
+                onPressed: _isCancelling ? null : _confirmAndCancel,
+              ),
+            ),
         ],
       ),
     );
@@ -579,14 +583,22 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
     final when = moved.startsAt;
     if (when == null) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.bookingRescheduleDone(formatMonthDayTime(l10n, when.toLocal())))),
+      SnackBar(
+        content: Text(
+          l10n.bookingRescheduleDone(formatMonthDayTime(l10n, when.toLocal())),
+        ),
+      ),
     );
   }
 
   Future<void> _confirmAndCancel() async {
     final l10n = AppLocalizations.of(context)!;
     // An optional, one-tap reason: the business learns why, the customer is never forced to say.
-    final reasons = [l10n.cancelReasonPlans, l10n.cancelReasonOtherTime, l10n.cancelReasonMistake];
+    final reasons = [
+      l10n.cancelReasonPlans,
+      l10n.cancelReasonOtherTime,
+      l10n.cancelReasonMistake,
+    ];
     String? reason;
     final confirmed = await showFactoryDialog<bool>(
       context: context,
@@ -601,7 +613,8 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
               ChoiceChip(
                 label: Text(option),
                 selected: reason == option,
-                onSelected: (picked) => setDialogState(() => reason = picked ? option : null),
+                onSelected: (picked) =>
+                    setDialogState(() => reason = picked ? option : null),
               ),
           ],
         ),
@@ -627,7 +640,9 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
 
     setState(() => _isCancelling = true);
     try {
-      await ref.read(bookingApiProvider).cancelBooking(widget.booking.id, reason: reason);
+      await ref
+          .read(bookingApiProvider)
+          .cancelBooking(widget.booking.id, reason: reason);
       ref.invalidate(myBookingsProvider(widget.userId));
       ref.invalidate(paymentForBookingProvider(widget.booking.id));
       if (!mounted) return;
