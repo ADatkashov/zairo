@@ -285,6 +285,17 @@ void main() {
     expect(cardTaps, 1);
   });
 
+  testWidgets('the Book button on a provider card is the filled brand-colour button, not a pale one', (tester) async {
+    await tester.pumpWidget(
+      _wrap(SizedBox(width: 168, child: FactoryProviderCard(title: 'Studio', actionLabel: 'Book', onAction: () {}))),
+    );
+
+    // Primary leaves the colours to the theme; the tonal variant would have set its own pale tint.
+    final fill = tester.widget<Material>(find.descendant(of: find.byType(FilledButton), matching: find.byType(Material)).first);
+    expect(fill.color, FactoryColors.light.primary);
+    expect(fill.color, isNot(FactoryColors.light.primaryTint));
+  });
+
   testWidgets('FactoryProviderCard has no button unless it is given both a label and an action', (tester) async {
     await tester.pumpWidget(_wrap(const SizedBox(width: 168, child: FactoryProviderCard(title: 'Studio', actionLabel: 'Book'))));
     expect(find.byType(FilledButton), findsNothing);
