@@ -192,16 +192,21 @@ class _CategoryRow extends StatelessWidget {
             ),
             if (canEdit && category.hasOverride)
               TextButton(onPressed: onReset, child: Text(l10n.commissionUseDefault)),
+            const SizedBox(width: FactorySpacing.space2),
             Text(
               formatPercent(category.effectivePercent),
               style: FactoryTypography.mono(size: 18, weight: FontWeight.w600, color: colors.text),
             ),
-            if (canEdit)
+            if (canEdit) ...[
+              const SizedBox(width: FactorySpacing.space3),
               IconButton(
                 tooltip: l10n.commissionChange,
-                icon: const Icon(Icons.edit_outlined, size: 20),
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                visualDensity: VisualDensity.compact,
+                style: IconButton.styleFrom(minimumSize: const Size(36, 36), fixedSize: const Size(36, 36)),
                 onPressed: onEdit,
               ),
+            ],
           ],
         ),
       ),

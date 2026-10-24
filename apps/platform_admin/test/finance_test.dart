@@ -135,6 +135,14 @@ group('commission', () {
     expect(find.text('Commission updated'), findsOneWidget);
   });
 
+  testWidgets('a category row keeps its percentage clear of the edit button', (tester) async {
+    await pumpConsole(tester, backend: defaultBackend(), location: '${ConsoleRoutes.finance}?tab=commission');
+
+    final percent = tester.getRect(find.text('8%'));
+    final pencil = tester.getRect(find.byTooltip('Change').first);
+    expect(pencil.left - percent.right, greaterThanOrEqualTo(8));
+  });
+
   testWidgets('tapping a category row itself opens the editor, not only its pencil', (tester) async {
     final backend = defaultBackend();
     await pumpConsole(tester, backend: backend, location: '${ConsoleRoutes.finance}?tab=commission');
