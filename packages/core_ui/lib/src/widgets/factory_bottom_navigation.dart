@@ -50,12 +50,19 @@ class FactoryNavAction {
     required this.label,
     this.onTap,
     this.quickActions = const [],
+    this.visibleLabel = false,
   }) : assert(onTap != null || quickActions.length > 0, 'an action needs an onTap or quick actions');
 
   final IconData icon;
 
-  /// Read by screen readers; the button itself shows no text.
+  /// Read by screen readers. The button itself shows no text unless
+  /// [visibleLabel] is set.
   final String label;
+
+  /// Also write [label] in the bar, under the round button and level with the
+  /// tab labels — an icon alone does not say what a raised "+" will do. Tapping
+  /// the text does the same as tapping the button.
+  final bool visibleLabel;
   final VoidCallback? onTap;
   final List<FactoryNavQuickAction> quickActions;
 }
@@ -208,7 +215,11 @@ class _FactoryBottomNavigationState extends State<FactoryBottomNavigation> with 
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           for (var i = 0; i < destinations.length; i++) ...[
-            if (action != null && i == split) const SizedBox(width: FactoryBottomNavigation._actionSlot),
+            if (action != null && i == split)
+              SizedBox(
+                width: FactoryBottomNavigation._actionSlot,
+                child: action.visibleLabel ? _ActionLabel(label: action.label, onTap: () => _onAction(action)) : null,
+              ),
             tab(i, expand: action != null),
           ],
         ],
@@ -412,6 +423,47 @@ class _Fan extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The action's name in the bar, laid out like a tab (the icon's height left
+/// empty for the round button above it) so it sits on the tab labels' line.
+class _ActionLabel extends StatelessWidget {
+  const _ActionLabel({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    return ExcludeSemantics(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 2),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 22 + 2),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontSize: 10,
+                  letterSpacing: 0,
+                  color: colors.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
         ),
       ),
