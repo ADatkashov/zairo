@@ -2636,5 +2636,7 @@
   "chatQuickEditSave": "Save",
   "@chatQuickEditSave": {"description": "Editing the ready sentences of the chat."},
   "chatQuickEditReset": "Back to the built-in ones",
-  "@chatQuickEditReset": {"description": "Editing the ready sentences of the chat."}
+  "@chatQuickEditReset": {"description": "Editing the ready sentences of the chat."},
+  "loginMethodPhone": "Phone",
+  "@loginMethodPhone": {"description": "Short caption under the phone sign-in circle on the login screen."}
 }

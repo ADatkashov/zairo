@@ -1070,5 +1070,6 @@
   "chatQuickEditHint": "Бұл үш сөйлем хабарлама өрісінің үстінде көрсетіледі. Бос өріс — сөйлем алынып тасталады.",
   "chatQuickEditField": "Сөйлем",
   "chatQuickEditSave": "Сақтау",
-  "chatQuickEditReset": "Стандартты қайтару"
+  "chatQuickEditReset": "Стандартты қайтару",
+  "loginMethodPhone": "Телефон"
 }

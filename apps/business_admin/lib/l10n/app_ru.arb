@@ -1070,5 +1070,6 @@
   "chatQuickEditHint": "Эти три фразы показываются над полем сообщения. Пустое поле — фраза убирается.",
   "chatQuickEditField": "Фраза",
   "chatQuickEditSave": "Сохранить",
-  "chatQuickEditReset": "Вернуть стандартные"
+  "chatQuickEditReset": "Вернуть стандартные",
+  "loginMethodPhone": "Телефон"
 }

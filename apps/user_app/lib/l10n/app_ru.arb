@@ -772,5 +772,6 @@
   "searchActivePriceFrom": "От {amount}",
   "searchActivePriceTo": "До {amount}",
   "searchActiveFilterRemove": "Убрать фильтр: {filter}",
-  "searchFilterCategoryMore": "Ещё"
+  "searchFilterCategoryMore": "Ещё",
+  "loginMethodPhone": "Телефон"
 }
