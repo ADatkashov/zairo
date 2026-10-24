@@ -775,5 +775,6 @@
   "searchFilterCategoryMore": "Тағы",
   "loginMethodPhone": "Телефон",
   "securityLinkedLabel": "Байланған",
-  "paymentCardsEmptyHint": "Жоғарыдағы ауыстырғыш қосулы болса, карта келесі онлайн төлемде сақталады."
+  "paymentCardsEmptyHint": "Жоғарыдағы ауыстырғыш қосулы болса, карта келесі онлайн төлемде сақталады.",
+  "homeNearbyTitle": "Жақыныңызда"
 }

@@ -775,5 +775,6 @@
   "searchFilterCategoryMore": "Ещё",
   "loginMethodPhone": "Телефон",
   "securityLinkedLabel": "Привязан",
-  "paymentCardsEmptyHint": "Карта сохранится при следующей онлайн-оплате, если включён переключатель выше."
+  "paymentCardsEmptyHint": "Карта сохранится при следующей онлайн-оплате, если включён переключатель выше.",
+  "homeNearbyTitle": "Рядом с вами"
 }
