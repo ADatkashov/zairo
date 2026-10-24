@@ -607,6 +607,33 @@ void main() {
     expect(api.lastVertical, 'auto');
   });
 
+  testWidgets('the category that narrows the results is shown as a chip that removes it', (tester) async {
+    final api = _RecordingDiscoveryApi();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          discoveryApiProvider.overrideWithValue(api),
+          catalogApiProvider.overrideWithValue(_FakeCatalogApi([_autoCategory])),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SearchScreen(initialVertical: 'auto'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Auto'), findsOneWidget);
+
+    await tester.tap(find.text('Auto'));
+    await tester.pumpAndSettle();
+
+    expect(api.lastVertical, isNull);
+    expect(find.text('Auto'), findsNothing);
+  });
+
   testWidgets('empty results for a query offer to reset the search',
       (tester) async {
     final api = _RecordingDiscoveryApi();
