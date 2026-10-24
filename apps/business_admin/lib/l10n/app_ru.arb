@@ -1071,5 +1071,12 @@
   "chatQuickEditField": "Фраза",
   "chatQuickEditSave": "Сохранить",
   "chatQuickEditReset": "Вернуть стандартные",
-  "loginMethodPhone": "Телефон"
+  "loginMethodPhone": "Телефон",
+  "campaignFiltersButton": "Фильтры",
+  "campaignFilterTypeTitle": "Тип",
+  "campaignFilterPeriodTitle": "Период",
+  "campaignFilterServiceTitle": "Услуга",
+  "campaignFiltersApply": "Применить",
+  "campaignFiltersClear": "Сбросить",
+  "campaignFiltersButtonCount": "Фильтры ({count})"
 }

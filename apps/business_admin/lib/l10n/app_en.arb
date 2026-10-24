@@ -2638,5 +2638,19 @@
   "chatQuickEditReset": "Back to the built-in ones",
   "@chatQuickEditReset": {"description": "Editing the ready sentences of the chat."},
   "loginMethodPhone": "Phone",
-  "@loginMethodPhone": {"description": "Short caption under the phone sign-in circle on the login screen."}
+  "@loginMethodPhone": {"description": "Short caption under the phone sign-in circle on the login screen."},
+  "campaignFiltersButton": "Filters",
+  "@campaignFiltersButton": {"description": "Campaign Center filters."},
+  "campaignFilterTypeTitle": "Type",
+  "@campaignFilterTypeTitle": {"description": "Campaign Center filters."},
+  "campaignFilterPeriodTitle": "Period",
+  "@campaignFilterPeriodTitle": {"description": "Campaign Center filters."},
+  "campaignFilterServiceTitle": "Service",
+  "@campaignFilterServiceTitle": {"description": "Campaign Center filters."},
+  "campaignFiltersApply": "Apply",
+  "@campaignFiltersApply": {"description": "Campaign Center filters."},
+  "campaignFiltersClear": "Clear",
+  "@campaignFiltersClear": {"description": "Campaign Center filters."},
+  "campaignFiltersButtonCount": "Filters ({count})",
+  "@campaignFiltersButtonCount": {"description": "Campaign Center filters button when some are active.", "placeholders": {"count": {"type": "int"}}}
 }
