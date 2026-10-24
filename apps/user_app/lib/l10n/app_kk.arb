@@ -239,8 +239,8 @@
   "profileCreateAccount": "Аккаунт құру",
   "profileLogOut": "Шығу",
 
-  "mapPlaceholderTitle": "Карта орынбасары",
-  "mapPlaceholderMessage": "Нақты карта (2GIS, балама ретінде Google Maps) карта API кілті бапталған соң қосылады.",
+  "mapPlaceholderTitle": "Карта алдын ала көрінісі әзірге жоқ",
+  "mapPlaceholderMessage": "Әзірге орынды төмендегі түймемен 2GIS-те ашыңыз.",
 
   "masterPortfolioTitle": "{masterName} — Портфолио",
   "portfolioEmptyTitle": "Әзірге фото жоқ",

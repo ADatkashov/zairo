@@ -239,8 +239,8 @@
   "profileCreateAccount": "Создать аккаунт",
   "profileLogOut": "Выйти",
 
-  "mapPlaceholderTitle": "Заглушка карты",
-  "mapPlaceholderMessage": "Настоящая карта (2GIS, Google Maps — как альтернатива) подключится, когда будет настроен ключ API карт.",
+  "mapPlaceholderTitle": "Предпросмотр карты пока недоступен",
+  "mapPlaceholderMessage": "Пока откройте место в 2GIS кнопкой ниже.",
 
   "masterPortfolioTitle": "{masterName} — Портфолио",
   "portfolioEmptyTitle": "Пока нет фото",
