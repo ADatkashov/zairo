@@ -316,6 +316,8 @@
   "paymentStatusSucceeded": "Успешно",
   "paymentStatusFailed": "Не удалось",
 
+  "loyaltyBusinessLoggedOutPrompt": "Войдите, чтобы увидеть свои баллы и награды в этом бизнесе",
+  "chatLoggedOutPrompt": "Войдите, чтобы написать этому бизнесу",
   "bookingsLoggedOutPrompt": "Войдите, чтобы увидеть свои бронирования",
   "favoritesLoggedOutPrompt": "Войдите, чтобы увидеть избранное",
   "notificationsLoggedOutPrompt": "Войдите, чтобы увидеть уведомления",

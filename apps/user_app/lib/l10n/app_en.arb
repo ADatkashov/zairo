@@ -971,6 +971,12 @@
   "paymentStatusFailed": "Failed",
   "@paymentStatusFailed": {"description": "Payment status badge label for FAILED."},
 
+  "loyaltyBusinessLoggedOutPrompt": "Log in to see your points and rewards at this business",
+  "@loyaltyBusinessLoggedOutPrompt": {"description": "Shown instead of one business's rewards screen when nobody is logged in."},
+
+  "chatLoggedOutPrompt": "Log in to message this business",
+  "@chatLoggedOutPrompt": {"description": "Shown instead of a chat with a business when nobody is logged in."},
+
   "bookingsLoggedOutPrompt": "Log in to see your bookings",
   "@bookingsLoggedOutPrompt": {"description": "Shown on the Bookings tab when reached while logged out."},
 

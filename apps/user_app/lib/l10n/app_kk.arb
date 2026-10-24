@@ -316,6 +316,8 @@
   "paymentStatusSucceeded": "Сәтті",
   "paymentStatusFailed": "Сәтсіз",
 
+  "loyaltyBusinessLoggedOutPrompt": "Осы бизнестегі ұпайларыңыз бен марапаттарыңызды көру үшін кіріңіз",
+  "chatLoggedOutPrompt": "Осы бизнеске жазу үшін кіріңіз",
   "bookingsLoggedOutPrompt": "Брондарыңызды көру үшін кіріңіз",
   "favoritesLoggedOutPrompt": "Таңдаулыларды көру үшін кіріңіз",
   "notificationsLoggedOutPrompt": "Хабарландыруларды көру үшін кіріңіз",
