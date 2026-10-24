@@ -1186,12 +1186,11 @@
     }
   },
 
-  "loyaltyRewardDiscountFixed": "{amount} {currency} off",
+  "loyaltyRewardDiscountFixed": "{amount} off",
   "@loyaltyRewardDiscountFixed": {
     "description": "Reward card's FIXED_DISCOUNT summary line.",
     "placeholders": {
-      "amount": {"type": "String"},
-      "currency": {"type": "String"}
+      "amount": {"type": "String"}
     }
   },
 

@@ -383,7 +383,7 @@
   "loyaltyRewardLockedLabel": "Ұпай жеткіліксіз",
   "loyaltyRewardEndsOn": "{date} дейін жарамды",
   "loyaltyRewardTerms": "Шарттары: {terms}",
-  "loyaltyRewardDiscountFixed": "{amount} {currency} жеңілдік",
+  "loyaltyRewardDiscountFixed": "{amount} жеңілдік",
   "loyaltyRewardDiscountPercentage": "{percentage}% жеңілдік",
   "loyaltyRewardFreeService": "Тегін қызмет",
   "loyaltyRedeemConfirmTitle": "Бұл сыйлықты айырбастайсыз ба?",
