@@ -124,8 +124,8 @@ group('commission', () {
     backend.on('PUT', '/platform/commission/categories/c-auto', (_) => FakeReply(commissionJson()));
     await pumpConsole(tester, backend: backend, location: '${ConsoleRoutes.finance}?tab=commission');
 
-    // Auto is the second card; its "Change" button is the last one.
-    await tester.tap(find.widgetWithText(FilledButton, 'Change').last);
+    // Auto is the second row; its edit button is the last "Change" tooltip.
+    await tester.tap(find.byTooltip('Change').last);
     await tester.pumpAndSettle();
     await tester.enterText(find.widgetWithText(TextFormField, 'Percent (%)'), '7,5');
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));
@@ -133,6 +133,16 @@ group('commission', () {
 
     expect((backend.calls('PUT', '/platform/commission/categories/c-auto').single.data as Map)['ratePercent'], 7.5);
     expect(find.text('Commission updated'), findsOneWidget);
+  });
+
+  testWidgets('tapping a category row itself opens the editor, not only its pencil', (tester) async {
+    final backend = defaultBackend();
+    await pumpConsole(tester, backend: backend, location: '${ConsoleRoutes.finance}?tab=commission');
+
+    await tester.tap(find.text('Auto'));
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(TextFormField, 'Percent (%)'), findsOneWidget);
   });
 
   testWidgets('an out-of-range percent is rejected before anything is sent', (tester) async {
@@ -167,6 +177,7 @@ group('commission', () {
     );
     expect(find.text('Beauty'), findsOneWidget);
     expect(find.text('Change'), findsNothing);
+    expect(find.byTooltip('Change'), findsNothing);
     expect(find.text('Use default'), findsNothing);
   });
 });
