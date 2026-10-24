@@ -1475,7 +1475,8 @@ class _ProviderHero extends StatelessWidget {
     return ClipRRect(
       borderRadius: radius,
       child: SizedBox(
-        height: 220,
+        // A photo earns a tall header; a bare icon on a gradient does not — it only pushes the services down.
+        height: provider.coverPhotoUrl == null ? 120 : 220,
         width: double.infinity,
         child: Stack(
           fit: StackFit.expand,
