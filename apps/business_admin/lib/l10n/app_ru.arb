@@ -1088,5 +1088,6 @@
   "automationPresetStandardHint": "Рекомендуемые настройки ZAIRO.",
   "automationPresetActiveHint": "Чаще предложения и короче ожидание — расписание заполняется быстрее.",
   "automationPresetCustomHint": "Свои значения заданы в разделе «Дополнительно».",
-  "automationAdvancedTitle": "Дополнительные настройки"
+  "automationAdvancedTitle": "Дополнительные настройки",
+  "recurringScheduleProButton": "Повторяющееся расписание · PRO"
 }

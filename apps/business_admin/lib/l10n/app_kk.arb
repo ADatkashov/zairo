@@ -1088,5 +1088,6 @@
   "automationPresetStandardHint": "ZAIRO ұсынатын әдепкі баптаулар.",
   "automationPresetActiveHint": "Ұсыныстар жиірек, күту қысқа — кесте тезірек толады.",
   "automationPresetCustomHint": "Өз мәндеріңіз «Қосымша» бөлімінде.",
-  "automationAdvancedTitle": "Қосымша баптаулар"
+  "automationAdvancedTitle": "Қосымша баптаулар",
+  "recurringScheduleProButton": "Қайталанатын кесте · PRO"
 }
