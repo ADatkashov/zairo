@@ -648,7 +648,7 @@
   "paymentConfirmedSnack": "Оплата получена — бронь подтверждена.",
   "paymentCardsTitle": "Платёжные карты",
   "paymentCardsIntro": "Платите быстрее сохранённой картой. Мы храним только бренд и последние 4 цифры.",
-  "paymentCardsEmpty": "Сохранённых карт пока нет.",
+  "paymentCardsEmpty": "Сохранённых карт пока нет",
   "paymentCardsSaveSwitch": "Сохранить карту при следующей оплате",
   "paymentCardsSaveSwitchHint": "Карта сохранится при следующей онлайн-оплате, и дальше вы сможете платить в одно касание.",
   "paymentCardsPageOnlyNote": "Пока оплата по-прежнему открывается на странице оплаты; сохранённые карты останутся для будущего.",
@@ -774,5 +774,6 @@
   "searchActiveFilterRemove": "Убрать фильтр: {filter}",
   "searchFilterCategoryMore": "Ещё",
   "loginMethodPhone": "Телефон",
-  "securityLinkedLabel": "Привязан"
+  "securityLinkedLabel": "Привязан",
+  "paymentCardsEmptyHint": "Карта сохранится при следующей онлайн-оплате, если включён переключатель выше."
 }

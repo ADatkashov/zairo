@@ -1870,7 +1870,7 @@
   "@paymentCardsTitle": {"description": "paymentCardsTitle"},
   "paymentCardsIntro": "Pay faster with a saved card. We keep only the card's brand and its last four digits.",
   "@paymentCardsIntro": {"description": "paymentCardsIntro"},
-  "paymentCardsEmpty": "No saved cards yet.",
+  "paymentCardsEmpty": "No saved cards yet",
   "@paymentCardsEmpty": {"description": "paymentCardsEmpty"},
   "paymentCardsSaveSwitch": "Save my card at my next payment",
   "@paymentCardsSaveSwitch": {"description": "paymentCardsSaveSwitch"},
@@ -2114,5 +2114,7 @@
   "loginMethodPhone": "Phone",
   "@loginMethodPhone": {"description": "Short caption under the phone sign-in circle on the login screen."},
   "securityLinkedLabel": "Linked",
-  "@securityLinkedLabel": {"description": "Security screen: subtitle of a sign-in method that is already linked."}
+  "@securityLinkedLabel": {"description": "Security screen: subtitle of a sign-in method that is already linked."},
+  "paymentCardsEmptyHint": "Your card is saved the next time you pay online, as long as the switch above is on.",
+  "@paymentCardsEmptyHint": {"description": "Saved cards: how a card gets saved when there are none."}
 }

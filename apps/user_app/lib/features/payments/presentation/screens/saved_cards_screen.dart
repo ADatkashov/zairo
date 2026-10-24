@@ -66,9 +66,12 @@ class SavedCardsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: FactorySpacing.space4),
             if (info.cards.isEmpty)
-              Text(
-                l10n.paymentCardsEmpty,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
+              // There is no "add a card" form: a card is saved while paying. Say that, instead of a bare grey line.
+              FactoryEmptyState(
+                icon: Symbols.credit_card_rounded,
+                title: l10n.paymentCardsEmpty,
+                message: l10n.paymentCardsEmptyHint,
+                compact: true,
               )
             else
               for (final card in info.cards) ...[
