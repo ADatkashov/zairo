@@ -430,5 +430,6 @@
   "detailServices": "Услуги",
   "detailBookings": "Записи",
   "detailTechnicalIds": "Технические ID",
-  "detailBookingsValue": "{total} всего · {completed} завершено"
+  "detailBookingsValue": "{total} всего · {completed} завершено",
+  "adUploadImage": "Загрузить с устройства"
 }
