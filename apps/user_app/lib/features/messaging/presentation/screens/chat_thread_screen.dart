@@ -8,6 +8,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../../../core/formatting/month_day_time.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../auth/presentation/widgets/logged_out_gate.dart';
 import '../../data/models/chat_message.dart';
 import '../providers/message_seen_provider.dart';
 import '../providers/messaging_providers.dart';
@@ -78,8 +79,20 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
+    final auth = ref.watch(authControllerProvider);
+    // A guest has no conversation: invite them to log in instead of showing a
+    // "couldn't load" error and a message box that can't send.
+    if (auth.isLoading && !auth.hasValue || auth.hasValue && auth.value == null) {
+      return Scaffold(
+        backgroundColor: colors.bg,
+        appBar: FactoryAppBar(title: widget.providerName),
+        body: auth.hasValue
+            ? LoggedOutGate(icon: Symbols.chat_bubble_rounded, message: l10n.chatLoggedOutPrompt)
+            : const FactoryLoadingState(),
+      );
+    }
     final messagesAsync = ref.watch(threadWithProviderProvider(widget.providerId));
-    final currentUserId = ref.watch(authControllerProvider).value?.id;
+    final currentUserId = auth.value?.id;
 
     return Scaffold(
       backgroundColor: colors.bg,
