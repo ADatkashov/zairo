@@ -92,6 +92,20 @@ void main() {
     expect(find.widgetWithText(FactoryTextField, 'Phone'), findsNothing);
   });
 
+  testWidgets('each round sign-in button is named in words under it', (tester) async {
+    await tester.pumpWidget(_wrap(_RecordingAuthController()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Google'), findsOneWidget);
+    // On the phone form the envelope leads to Email ...
+    expect(find.text('Email'), findsOneWidget);
+
+    await _showEmailForm(tester);
+
+    // ... and on the email form the same slot leads back to Phone.
+    expect(find.text('Phone'), findsOneWidget);
+  });
+
   testWidgets('validates the email form and blocks an empty submit', (tester) async {
     final controller = _RecordingAuthController();
     await tester.pumpWidget(_wrap(controller));

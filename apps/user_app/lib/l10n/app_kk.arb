@@ -772,5 +772,6 @@
   "searchActivePriceFrom": "{amount} бастап",
   "searchActivePriceTo": "{amount} дейін",
   "searchActiveFilterRemove": "Сүзгіні алып тастау: {filter}",
-  "searchFilterCategoryMore": "Тағы"
+  "searchFilterCategoryMore": "Тағы",
+  "loginMethodPhone": "Телефон"
 }
