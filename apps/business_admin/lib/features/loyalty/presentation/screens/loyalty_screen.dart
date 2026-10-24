@@ -86,25 +86,42 @@ class _LoyaltyBody extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
 
+    // Four tabs instead of eight: related parts share a tab behind a small
+    // switcher (what a small business owner scans for is "rewards", "customers"
+    // and "the programme's rules", not eight separate pages).
     final tabs = [
       Tab(text: l10n.loyaltyTabOverview),
-      Tab(text: l10n.loyaltyTabSettings),
       Tab(text: l10n.loyaltyTabRewards),
       Tab(text: l10n.loyaltyTabCustomers),
-      Tab(text: l10n.loyaltyTabBirthdays),
-      Tab(text: l10n.loyaltyTabRedemptions),
-      Tab(text: l10n.loyaltyTabMilestones),
-      Tab(text: l10n.loyaltyTabTiers),
+      Tab(text: l10n.loyaltyTabProgram),
     ];
     final tabViews = [
       LoyaltyOverviewScreen(providerId: providerId),
-      LoyaltySettingsScreen(providerId: providerId),
-      LoyaltyRewardsScreen(providerId: providerId),
-      LoyaltyCustomersScreen(providerId: providerId),
-      LoyaltyBirthdaysScreen(providerId: providerId),
-      LoyaltyRedemptionsScreen(providerId: providerId),
-      LoyaltyMilestonesScreen(providerId: providerId),
-      LoyaltyTiersScreen(providerId: providerId),
+      _PaneSwitcher(
+        key: ValueKey('rewards-$providerId'),
+        labels: [l10n.loyaltyTabRewards, l10n.loyaltyTabRedemptions],
+        builders: [
+          () => LoyaltyRewardsScreen(providerId: providerId),
+          () => LoyaltyRedemptionsScreen(providerId: providerId),
+        ],
+      ),
+      _PaneSwitcher(
+        key: ValueKey('customers-$providerId'),
+        labels: [l10n.loyaltyTabCustomers, l10n.loyaltyTabBirthdays],
+        builders: [
+          () => LoyaltyCustomersScreen(providerId: providerId),
+          () => LoyaltyBirthdaysScreen(providerId: providerId),
+        ],
+      ),
+      _PaneSwitcher(
+        key: ValueKey('program-$providerId'),
+        labels: [l10n.loyaltyTabSettings, l10n.loyaltyTabMilestones, l10n.loyaltyTabTiers],
+        builders: [
+          () => LoyaltySettingsScreen(providerId: providerId),
+          () => LoyaltyMilestonesScreen(providerId: providerId),
+          () => LoyaltyTiersScreen(providerId: providerId),
+        ],
+      ),
     ];
 
     return DefaultTabController(
@@ -137,11 +154,63 @@ class _LoyaltyBody extends StatelessWidget {
             ),
           Container(
             color: colors.surface,
-            child: TabBar(isScrollable: true, tabs: tabs),
+            child: TabBar(tabs: tabs),
           ),
           Expanded(child: TabBarView(children: tabViews)),
         ],
       ),
+    );
+  }
+}
+
+/// Parts of one tab, one visible at a time. A part is built the first time it
+/// is shown and then kept, so a half-filled form survives a look at its sibling.
+class _PaneSwitcher extends StatefulWidget {
+  final List<String> labels;
+  final List<Widget Function()> builders;
+
+  const _PaneSwitcher({super.key, required this.labels, required this.builders});
+
+  @override
+  State<_PaneSwitcher> createState() => _PaneSwitcherState();
+}
+
+class _PaneSwitcherState extends State<_PaneSwitcher> with AutomaticKeepAliveClientMixin {
+  int _selected = 0;
+  final Set<int> _built = {0};
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(FactorySpacing.space4, FactorySpacing.space3, FactorySpacing.space4, 0),
+          child: SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<int>(
+              showSelectedIcon: false,
+              segments: [for (var i = 0; i < widget.labels.length; i++) ButtonSegment(value: i, label: Text(widget.labels[i]))],
+              selected: {_selected},
+              onSelectionChanged: (value) => setState(() {
+                _selected = value.first;
+                _built.add(_selected);
+              }),
+            ),
+          ),
+        ),
+        Expanded(
+          child: IndexedStack(
+            index: _selected,
+            children: [
+              for (var i = 0; i < widget.builders.length; i++) _built.contains(i) ? widget.builders[i]() : const SizedBox.shrink(),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
