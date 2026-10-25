@@ -7,6 +7,7 @@ import '../../../../app/theme/theme_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/widgets/confirm_log_out.dart';
+import '../../../backup/presentation/backup_screen.dart';
 import '../../../billing/presentation/screens/billing_screen.dart';
 import '../../../staff/presentation/providers/staff_cabinet_link_providers.dart';
 import '../../../staff/presentation/staff_cabinet_launcher.dart';
@@ -71,6 +72,13 @@ class SettingsScreen extends ConsumerWidget {
                       builder: (_) => const SecuritySettingsScreen(),
                     ),
                   ),
+                ),
+                ListTile(
+                  leading: const FactoryIconBadge(icon: Icons.cloud_download_outlined),
+                  title: Text(l10n.backupSettingsRowTitle),
+                  subtitle: Text(l10n.backupSettingsRowSubtitle),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BackupScreen())),
                 ),
                 ListTile(
                   leading: const FactoryIconBadge(icon: Icons.workspace_premium_outlined),

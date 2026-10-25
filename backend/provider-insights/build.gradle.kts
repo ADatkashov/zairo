@@ -47,4 +47,12 @@ dependencies {
 
     // The weekly report quotes the week's average rating.
     implementation(project(":reviews"))
+
+    // The backup file names the person (master) of each booking.
+    implementation(project(":staff"))
+
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.assertj:assertj-core")
+    testImplementation("org.mockito:mockito-core")
 }
