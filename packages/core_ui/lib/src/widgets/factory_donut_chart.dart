@@ -9,13 +9,23 @@ import '../theme/factory_typography.dart';
 /// One slice of a [FactoryDonutChart]. [valueLabel] is the already-formatted
 /// figure shown in the legend (money, a count) — the chart only needs
 /// [value] for proportions. A null [color] takes the next hue of the palette.
+///
+/// With [onTap] the slice's legend row becomes a link (a chevron marks it) —
+/// "Awaiting approval 3" opening the list of exactly those businesses.
 class FactoryChartSegment {
-  const FactoryChartSegment({required this.label, required this.value, required this.valueLabel, this.color});
+  const FactoryChartSegment({
+    required this.label,
+    required this.value,
+    required this.valueLabel,
+    this.color,
+    this.onTap,
+  });
 
   final String label;
   final double value;
   final String valueLabel;
   final Color? color;
+  final VoidCallback? onTap;
 }
 
 /// A ring chart with a total in the middle and a legend beside it (stacked
@@ -97,22 +107,7 @@ class FactoryDonutChart extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (var i = 0; i < visible.length; i++)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 3),
-            child: Row(
-              children: [
-                Container(width: 10, height: 10, decoration: BoxDecoration(color: resolved[i], shape: BoxShape.circle)),
-                const SizedBox(width: FactorySpacing.space2),
-                Expanded(child: Text(visible[i].label, maxLines: 1, overflow: TextOverflow.ellipsis, style: textTheme.bodySmall)),
-                const SizedBox(width: FactorySpacing.space2),
-                Text(
-                  visible[i].valueLabel,
-                  style: textTheme.bodySmall?.copyWith(color: colors.textSecondary, fontWeight: FontWeight.w600),
-                ),
-              ],
-            ),
-          ),
+        for (var i = 0; i < visible.length; i++) _LegendRow(segment: visible[i], color: resolved[i]),
       ],
     );
 
@@ -125,6 +120,38 @@ class FactoryDonutChart extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [ring, const SizedBox(width: FactorySpacing.space4), Expanded(child: legend)],
             ),
+    );
+  }
+}
+
+class _LegendRow extends StatelessWidget {
+  const _LegendRow({required this.segment, required this.color});
+
+  final FactoryChartSegment segment;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    final onTap = segment.onTap;
+    final row = Row(
+      children: [
+        Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: FactorySpacing.space2),
+        Expanded(child: Text(segment.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: textTheme.bodySmall)),
+        const SizedBox(width: FactorySpacing.space2),
+        Text(segment.valueLabel, style: textTheme.bodySmall?.copyWith(color: colors.textSecondary, fontWeight: FontWeight.w600)),
+        if (onTap != null) Icon(Icons.chevron_right_rounded, size: 18, color: colors.textTertiary),
+      ],
+    );
+    if (onTap == null) {
+      return Padding(padding: const EdgeInsets.symmetric(vertical: 3), child: row);
+    }
+    // A link needs a finger-sized row, not the hairline height of plain text.
+    return InkWell(
+      onTap: onTap,
+      child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 36), child: Align(alignment: Alignment.centerLeft, child: row)),
     );
   }
 }

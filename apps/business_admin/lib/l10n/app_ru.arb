@@ -1089,5 +1089,19 @@
   "automationPresetActiveHint": "Чаще предложения и короче ожидание — расписание заполняется быстрее.",
   "automationPresetCustomHint": "Свои значения заданы в разделе «Дополнительно».",
   "automationAdvancedTitle": "Дополнительные настройки",
-  "recurringScheduleProButton": "Повторяющееся расписание · PRO"
+  "recurringScheduleProButton": "Повторяющееся расписание · PRO",
+
+  "dashboardPulseToday": "Заработано сегодня",
+  "dashboardPulseWeek": "Последние 7 дней",
+  "dashboardPulseMonth": "Последние 30 дней",
+  "dashboardPulseVsYesterday": "к вчера",
+  "dashboardPulseVsPrevious7": "к предыдущим 7 дням",
+  "dashboardPulseVsPrevious30": "к предыдущим 30 дням",
+  "dashboardPulseTrendLabel": "Выручка по дням за последние {days} дн.",
+  "dashboardServiceMixTitle": "Откуда приходят деньги",
+  "dashboardServiceMixOther": "Другое",
+  "dashboardServiceFallback": "Услуга",
+  "dashboardTopCustomersTitle": "Лучшие клиенты",
+  "dashboardTopCustomersSubtitle": "Доля от всех расходов клиентов",
+  "dashboardCustomerFallback": "Клиент"
 }
