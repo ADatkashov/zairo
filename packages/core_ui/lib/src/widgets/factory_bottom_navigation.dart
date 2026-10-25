@@ -27,31 +27,16 @@ class FactoryNavDestination {
   final int badgeCount;
 }
 
-/// One shortcut in the fan that opens from a [FactoryNavAction].
-class FactoryNavQuickAction {
-  const FactoryNavQuickAction({required this.icon, required this.label, required this.onTap});
-
-  final IconData icon;
-
-  /// Shown under the round button and read by screen readers.
-  final String label;
-  final VoidCallback onTap;
-}
-
 /// The raised round action in the middle of a [FactoryBottomNavigation] (a
 /// "+"). It is an action, not a tab: it never shows a selected state and
-/// does not take an index in `destinations`.
-///
-/// With [quickActions] it opens a fan of those shortcuts above the bar (the
-/// "+" turns into a "×"); without them a tap just calls [onTap].
+/// does not take an index in `destinations`. A tap calls [onTap].
 class FactoryNavAction {
   const FactoryNavAction({
     required this.icon,
     required this.label,
-    this.onTap,
-    this.quickActions = const [],
+    required this.onTap,
     this.visibleLabel = false,
-  }) : assert(onTap != null || quickActions.length > 0, 'an action needs an onTap or quick actions');
+  });
 
   final IconData icon;
 
@@ -63,8 +48,7 @@ class FactoryNavAction {
   /// tab labels — an icon alone does not say what a raised "+" will do. Tapping
   /// the text does the same as tapping the button.
   final bool visibleLabel;
-  final VoidCallback? onTap;
-  final List<FactoryNavQuickAction> quickActions;
+  final VoidCallback onTap;
 }
 
 /// The customer app's tab bar — never more than four or five destinations
@@ -80,24 +64,18 @@ class FactoryNavAction {
 /// Public API (`destinations`/`selectedIndex`/`onDestinationSelected`) is
 /// unchanged from the previous `NavigationBar`-backed version, so call sites
 /// (`MainWrapper`) didn't need to change.
-class FactoryBottomNavigation extends StatefulWidget {
+class FactoryBottomNavigation extends StatelessWidget {
   const FactoryBottomNavigation({
     super.key,
     required this.destinations,
     required this.selectedIndex,
     required this.onDestinationSelected,
     this.centerAction,
-    this.onFanOpenChanged,
   });
 
   final List<FactoryNavDestination> destinations;
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
-
-  /// Called when the quick-action fan opens or closes. While it is open the
-  /// bar itself answers the system Back button (by closing the fan), so a
-  /// parent that also handles Back should stand down; this tells it when.
-  final ValueChanged<bool>? onFanOpenChanged;
 
   /// Round action placed between the first and second half of
   /// [destinations]. Tab indexes reported by [onDestinationSelected] stay
@@ -115,68 +93,9 @@ class FactoryBottomNavigation extends StatefulWidget {
   static const double _notchGap = 6;
 
   @override
-  State<FactoryBottomNavigation> createState() => _FactoryBottomNavigationState();
-}
-
-class _FactoryBottomNavigationState extends State<FactoryBottomNavigation> with SingleTickerProviderStateMixin {
-  final _portal = OverlayPortalController();
-  final _link = LayerLink();
-  late final AnimationController _fan = AnimationController(vsync: this, duration: FactoryMotion.base);
-
-  bool get _fanOpen => _fan.status == AnimationStatus.forward || _fan.status == AnimationStatus.completed;
-
-  bool _reportedOpen = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _fan.addStatusListener((_) {
-      if (!mounted) return;
-      setState(() {}); // PopScope.canPop follows _fanOpen
-      if (_fanOpen != _reportedOpen) {
-        _reportedOpen = _fanOpen;
-        widget.onFanOpenChanged?.call(_fanOpen);
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _fan.dispose();
-    super.dispose();
-  }
-
-  Future<void> _toggleFan() async {
-    _fan.duration = FactoryMotion.resolve(context, FactoryMotion.base);
-    if (_fanOpen) {
-      await _fan.reverse();
-      if (mounted && _fan.status == AnimationStatus.dismissed) _portal.hide();
-    } else {
-      _portal.show();
-      await _fan.forward();
-    }
-  }
-
-  void _onAction(FactoryNavAction action) {
-    if (action.quickActions.isEmpty) {
-      action.onTap?.call();
-    } else {
-      _toggleFan();
-    }
-  }
-
-  Future<void> _pick(FactoryNavQuickAction quick) async {
-    // Close first so the screen it opens is not stacked under an open fan.
-    final closing = _toggleFan();
-    quick.onTap();
-    await closing;
-  }
-
-  @override
   Widget build(BuildContext context) {
     final colors = context.factoryColors;
-    final action = widget.centerAction;
-    final destinations = widget.destinations;
+    final action = centerAction;
     final split = destinations.length ~/ 2;
 
     Widget tab(int i, {required bool expand}) {
@@ -186,8 +105,8 @@ class _FactoryBottomNavigationState extends State<FactoryBottomNavigation> with 
         // and it ellipsized to "Бизне…".
         dense: destinations.length > 4 || action != null,
         destination: destinations[i],
-        isSelected: i == widget.selectedIndex,
-        onTap: () => widget.onDestinationSelected(i),
+        isSelected: i == selectedIndex,
+        onTap: () => onDestinationSelected(i),
       );
       // Equal shares around the action keep it exactly centred; without one,
       // Flexible (loose) lets four short labels keep their natural width.
@@ -218,7 +137,7 @@ class _FactoryBottomNavigationState extends State<FactoryBottomNavigation> with 
             if (action != null && i == split)
               SizedBox(
                 width: FactoryBottomNavigation._actionSlot,
-                child: action.visibleLabel ? _ActionLabel(label: action.label, onTap: () => _onAction(action)) : null,
+                child: action.visibleLabel ? _ActionLabel(label: action.label, onTap: action.onTap) : null,
               ),
             tab(i, expand: action != null),
           ],
@@ -240,193 +159,12 @@ class _FactoryBottomNavigationState extends State<FactoryBottomNavigation> with 
                   padding: const EdgeInsets.only(top: FactoryBottomNavigation._actionRise),
                   child: bar,
                 ),
-                OverlayPortal(
-                  controller: _portal,
-                  overlayChildBuilder: (_) => _Fan(
-                    link: _link,
-                    progress: _fan,
-                    quickActions: action.quickActions,
-                    // The dimmed page covers the real button, so the open fan
-                    // carries its own undimmed copy (the "×") on top.
-                    button: AnimatedBuilder(
-                      animation: _fan,
-                      builder: (context, _) => _ActionButton(
-                        action: action,
-                        turns: _fan.value * 0.125,
-                        expanded: true,
-                        onTap: _toggleFan,
-                      ),
-                    ),
-                    onDismiss: _toggleFan,
-                    onPick: _pick,
-                  ),
-                  child: CompositedTransformTarget(
-                    link: _link,
-                    child: AnimatedBuilder(
-                      animation: _fan,
-                      builder: (context, _) => _ActionButton(
-                        action: action,
-                        turns: action.quickActions.isEmpty ? 0 : _fan.value * 0.125,
-                        expanded: action.quickActions.isEmpty ? null : _fanOpen,
-                        onTap: () => _onAction(action),
-                      ),
-                    ),
-                  ),
-                ),
+                _ActionButton(action: action, onTap: action.onTap),
               ],
             ),
     );
 
-    if (action == null || action.quickActions.isEmpty) return nav;
-    // System Back closes an open fan first; only then does it navigate.
-    return PopScope(
-      canPop: !_fanOpen,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && _fanOpen) _toggleFan();
-      },
-      child: nav,
-    );
-  }
-}
-
-/// The shortcuts, fanned out above the "+" over a dimmed page.
-class _Fan extends StatelessWidget {
-  const _Fan({
-    required this.link,
-    required this.progress,
-    required this.quickActions,
-    required this.button,
-    required this.onDismiss,
-    required this.onPick,
-  });
-
-  final Widget button;
-  final LayerLink link;
-  final Animation<double> progress;
-  final List<FactoryNavQuickAction> quickActions;
-  final VoidCallback onDismiss;
-  final ValueChanged<FactoryNavQuickAction> onPick;
-
-  static const double _radius = 96;
-  static const double _item = 52;
-  static const double _labelWidth = 112;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.factoryColors;
-    final n = quickActions.length;
-
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: onDismiss,
-            child: AnimatedBuilder(
-              animation: progress,
-              builder: (_, _) => ColoredBox(color: Colors.black.withValues(alpha: 0.28 * progress.value)),
-            ),
-          ),
-        ),
-        CompositedTransformFollower(
-          link: link,
-          targetAnchor: Alignment.center,
-          followerAnchor: Alignment.bottomCenter,
-          child: SizedBox(
-            width: _radius * 2 + _labelWidth,
-            height: _radius + _item + 28,
-            child: AnimatedBuilder(
-              animation: progress,
-              builder: (context, _) {
-                final t = Curves.easeOutBack.transform(progress.value.clamp(0.0, 1.0));
-                return Stack(
-                  clipBehavior: Clip.none,
-                  children: [for (var i = 0; i < n; i++) _positioned(context, colors, i, n, t)],
-                );
-              },
-            ),
-          ),
-        ),
-        CompositedTransformFollower(
-          link: link,
-          targetAnchor: Alignment.center,
-          followerAnchor: Alignment.center,
-          child: Align(alignment: Alignment.center, widthFactor: 1, heightFactor: 1, child: button),
-        ),
-      ],
-    );
-  }
-
-  Widget _positioned(BuildContext context, FactoryColors colors, int i, int n, double t) {
-    // Spread over a 120deg arc centred straight up; one item sits at the top.
-    const spread = 120.0;
-    final deg = n == 1 ? 90.0 : 90 + spread / 2 - spread * i / (n - 1);
-    final rad = deg * math.pi / 180;
-    final dx = _radius * t * math.cos(rad);
-    final dy = _radius * t * math.sin(rad);
-    final item = quickActions[i];
-    final width = _radius * 2 + _labelWidth;
-
-    return Positioned(
-      left: width / 2 + dx - _labelWidth / 2,
-      bottom: dy - _item / 2 - 6,
-      width: _labelWidth,
-      child: Opacity(
-        opacity: progress.value.clamp(0.0, 1.0),
-        child: Semantics(
-          button: true,
-          label: item.label,
-          excludeSemantics: true,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => onPick(item),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: _item,
-                  height: _item,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: colors.surface,
-                    boxShadow: context.factoryElevation(FactoryElevationLevel.md),
-                  ),
-                  child: Container(
-                    margin: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(shape: BoxShape.circle, color: colors.primaryTint),
-                    child: Icon(item.icon, size: 22, color: colors.primary),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                // A dark pill behind the label: on a dark page the dimming is
-                // too faint to keep white text readable over the content.
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.55),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    child: Text(
-                      item.label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        fontSize: 11,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+    return nav;
   }
 }
 
@@ -472,23 +210,16 @@ class _ActionLabel extends StatelessWidget {
 }
 
 class _ActionButton extends StatelessWidget {
-  const _ActionButton({required this.action, required this.onTap, this.turns = 0, this.expanded});
+  const _ActionButton({required this.action, required this.onTap});
 
   final FactoryNavAction action;
   final VoidCallback onTap;
-
-  /// Fraction of a full turn the icon is rotated by: 0.125 turns "+" into "×".
-  final double turns;
-
-  /// Whether the fan is open (null when the action has no fan).
-  final bool? expanded;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.factoryColors;
     return Semantics(
       button: true,
-      expanded: expanded,
       label: action.label,
       excludeSemantics: true,
       // No ring any more: the bar's cut-out is the frame. A soft halo of the
@@ -506,10 +237,7 @@ class _ActionButton extends StatelessWidget {
           child: InkWell(
             customBorder: const CircleBorder(),
             onTap: onTap,
-            child: Transform.rotate(
-              angle: turns * 2 * math.pi,
-              child: Icon(action.icon, size: 28, color: colors.onPrimary),
-            ),
+            child: Icon(action.icon, size: 28, color: colors.onPrimary),
           ),
         ),
       ),
@@ -696,39 +424,6 @@ class _CountBadge extends StatelessWidget {
           height: 1,
         ),
       ),
-    );
-  }
-}
-
-/// Wraps a screen's own "Back goes to the home tab" rule so it stands down
-/// while the bar's quick-action fan is open (the bar closes the fan on Back
-/// itself). Pass the `setFanOpen` handed to [builder] as
-/// [FactoryBottomNavigation.onFanOpenChanged].
-class FactoryFanBackScope extends StatefulWidget {
-  const FactoryFanBackScope({super.key, required this.canPop, required this.onBack, required this.builder});
-
-  /// Whether Back may leave the screen (false once it should go "home" first).
-  final bool canPop;
-
-  /// What Back does when [canPop] is false and no fan is open.
-  final VoidCallback onBack;
-  final Widget Function(BuildContext context, ValueChanged<bool> setFanOpen) builder;
-
-  @override
-  State<FactoryFanBackScope> createState() => _FactoryFanBackScopeState();
-}
-
-class _FactoryFanBackScopeState extends State<FactoryFanBackScope> {
-  bool _fanOpen = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return PopScope(
-      canPop: widget.canPop,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && !_fanOpen) widget.onBack();
-      },
-      child: widget.builder(context, (open) => _fanOpen = open),
     );
   }
 }

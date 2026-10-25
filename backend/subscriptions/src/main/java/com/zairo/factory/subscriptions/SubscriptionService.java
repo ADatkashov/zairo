@@ -24,14 +24,14 @@ public class SubscriptionService {
     private final PaymentProvider paymentProvider;
     private final SubscriptionPaymentMethodService paymentMethodService;
     private final PaymentProviderName providerName;
-    private final String defaultCurrency;
+    private final SubscriptionPricing pricing;
     private final String successUrl;
     private final String failureUrl;
 
     public SubscriptionService(SubscriptionRepository subscriptionRepository,
             SubscriptionChargeRepository subscriptionChargeRepository, PaymentProvider paymentProvider,
             SubscriptionPaymentMethodService paymentMethodService, @Value("${payment.provider:mock}") String providerName,
-            @Value("${app.platform.default-currency:USD}") String defaultCurrency,
+            SubscriptionPricing pricing,
             @Value("${payment.return.success-url:}") String successUrl,
             @Value("${payment.return.failure-url:}") String failureUrl) {
         this.subscriptionRepository = subscriptionRepository;
@@ -39,7 +39,7 @@ public class SubscriptionService {
         this.paymentProvider = paymentProvider;
         this.paymentMethodService = paymentMethodService;
         this.providerName = PaymentProviderName.valueOf(providerName.toUpperCase());
-        this.defaultCurrency = defaultCurrency;
+        this.pricing = pricing;
         this.successUrl = successUrl;
         this.failureUrl = failureUrl;
     }
@@ -92,8 +92,9 @@ public class SubscriptionService {
                                     + "that checkout before trying again.");
                 });
 
+        SubscriptionPricing.Price price = pricing.pro();
         SubscriptionCharge charge = subscriptionChargeRepository.save(new SubscriptionCharge(UUID.randomUUID(),
-                subscription.getId(), SubscriptionPlan.PRO.monthlyPrice, defaultCurrency, providerName, null,
+                subscription.getId(), price.amount(), price.currency(), providerName, null,
                 Instant.now()));
 
         PaymentInitiation result;
