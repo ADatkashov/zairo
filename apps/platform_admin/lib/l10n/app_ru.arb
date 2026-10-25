@@ -431,5 +431,14 @@
   "detailBookings": "Записи",
   "detailTechnicalIds": "Технические ID",
   "detailBookingsValue": "{total} всего · {completed} завершено",
-  "adUploadImage": "Загрузить с устройства"
+  "adUploadImage": "Загрузить с устройства",
+  "financeSubscription": "Подписка",
+  "subscriptionPriceTitle": "Цена подписки PRO",
+  "subscriptionPerMonth": "/ месяц",
+  "subscriptionPriceHelp": "Сколько владельцы платят за PRO в месяц. Новая цена действует для следующих списаний, прошлые не меняются.",
+  "subscriptionPriceEditMessage": "Новая цена в месяц, в тенге (₸).",
+  "subscriptionPriceField": "Цена в месяц (₸)",
+  "subscriptionPriceInvalid": "Введите сумму больше 0, не более двух знаков после запятой.",
+  "subscriptionPriceSaved": "Цена обновлена",
+  "subscriptionNotTenge": "PRO сейчас списывается в {currency}, а не в тенге. Задайте цену, чтобы перейти на тенге."
 }
