@@ -6,6 +6,7 @@ import '../../../../app/locale/locale_controller.dart';
 import '../../../../app/theme/theme_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../auth/presentation/widgets/confirm_log_out.dart';
 import '../../../billing/presentation/screens/billing_screen.dart';
 import '../../../staff/presentation/providers/staff_cabinet_link_providers.dart';
 import '../../../staff/presentation/staff_cabinet_launcher.dart';
@@ -104,6 +105,22 @@ class SettingsScreen extends ConsumerWidget {
                 ],
               ),
             ],
+            // Signing out used to be reachable only from the dashboard's top bar.
+            const SizedBox(height: FactorySpacing.space4),
+            FactorySettingsGroup(
+              children: [
+                ListTile(
+                  leading: const FactoryIconBadge(icon: Icons.logout),
+                  title: Text(l10n.logOutTooltip),
+                  onTap: () async {
+                    if (await confirmLogOut(context)) {
+                      ref.read(authControllerProvider.notifier).logout();
+                      if (context.mounted) Navigator.of(context).maybePop();
+                    }
+                  },
+                ),
+              ],
+            ),
           ],
         ],
       ),

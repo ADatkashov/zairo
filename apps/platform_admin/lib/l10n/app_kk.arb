@@ -430,5 +430,6 @@
   "detailServices": "Қызметтер",
   "detailBookings": "Жазылулар",
   "detailTechnicalIds": "Техникалық ID",
-  "detailBookingsValue": "{total} барлығы · {completed} аяқталған"
+  "detailBookingsValue": "{total} барлығы · {completed} аяқталған",
+  "adUploadImage": "Құрылғыдан жүктеу"
 }

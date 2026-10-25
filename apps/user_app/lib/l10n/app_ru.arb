@@ -244,7 +244,7 @@
 
   "masterPortfolioTitle": "{masterName} — Портфолио",
   "portfolioEmptyTitle": "Пока нет фото",
-  "portfolioEmptyMessage": "Пока нет фото в портфолио.",
+  "portfolioEmptyMessage": "Мастер ещё не добавил свои работы. Загляните позже.",
   "portfolioPhotoSemanticLabel": "Фото из портфолио",
   "errorPortfolioLoadFailed": "Не удалось загрузить портфолио",
   "portfolioViewerCloseTooltip": "Закрыть",
@@ -383,7 +383,7 @@
   "loyaltyRewardLockedLabel": "Недостаточно баллов",
   "loyaltyRewardEndsOn": "Действует до {date}",
   "loyaltyRewardTerms": "Условия: {terms}",
-  "loyaltyRewardDiscountFixed": "Скидка {amount} {currency}",
+  "loyaltyRewardDiscountFixed": "Скидка {amount}",
   "loyaltyRewardDiscountPercentage": "Скидка {percentage}%",
   "loyaltyRewardFreeService": "Бесплатная услуга",
   "loyaltyRedeemConfirmTitle": "Обменять эту награду?",
@@ -648,7 +648,7 @@
   "paymentConfirmedSnack": "Оплата получена — бронь подтверждена.",
   "paymentCardsTitle": "Платёжные карты",
   "paymentCardsIntro": "Платите быстрее сохранённой картой. Мы храним только бренд и последние 4 цифры.",
-  "paymentCardsEmpty": "Сохранённых карт пока нет.",
+  "paymentCardsEmpty": "Сохранённых карт пока нет",
   "paymentCardsSaveSwitch": "Сохранить карту при следующей оплате",
   "paymentCardsSaveSwitchHint": "Карта сохранится при следующей онлайн-оплате, и дальше вы сможете платить в одно касание.",
   "paymentCardsPageOnlyNote": "Пока оплата по-прежнему открывается на странице оплаты; сохранённые карты останутся для будущего.",
@@ -773,5 +773,8 @@
   "searchActivePriceTo": "До {amount}",
   "searchActiveFilterRemove": "Убрать фильтр: {filter}",
   "searchFilterCategoryMore": "Ещё",
-  "loginMethodPhone": "Телефон"
+  "loginMethodPhone": "Телефон",
+  "securityLinkedLabel": "Привязан",
+  "paymentCardsEmptyHint": "Карта сохранится при следующей онлайн-оплате, если включён переключатель выше.",
+  "homeNearbyTitle": "Рядом с вами"
 }

@@ -541,6 +541,9 @@ class _FiltersSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final servicesAsync = ref.watch(providerServicesProvider((providerId, false)));
+    final moreFiltersCount = (filters.type != null ? 1 : 0) +
+        (datePreset != _DatePreset.allTime ? 1 : 0) +
+        (filters.serviceId != null ? 1 : 0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -575,126 +578,220 @@ class _FiltersSection extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: FactorySpacing.space2),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            FactoryChip(
-              label: l10n.campaignFilterTypeAll,
-              selected: filters.type == null,
-              onTap: () => onFiltersChanged(filters.copyWith(clearType: true)),
-            ),
-            for (final type in CampaignType.values)
-              FactoryChip(
-                label: campaignTypeLabel(l10n, type),
-                selected: filters.type == type,
-                onTap: () => onFiltersChanged(filters.copyWith(type: type)),
-              ),
-          ],
-        ),
-        const SizedBox(height: FactorySpacing.space2),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            FactoryChip(
-              label: l10n.campaignFilterDateAll,
-              selected: datePreset == _DatePreset.allTime,
-              onTap: () {
-                onDatePresetChanged(_DatePreset.allTime, null);
-                onFiltersChanged(filters.copyWith(clearRange: true));
-              },
-            ),
-            FactoryChip(
-              label: l10n.analyticsPeriodToday,
-              selected: datePreset == _DatePreset.today,
-              onTap: () => _applyPreset(context, _DatePreset.today),
-            ),
-            FactoryChip(
-              label: l10n.analyticsPeriodThisWeek,
-              selected: datePreset == _DatePreset.thisWeek,
-              onTap: () => _applyPreset(context, _DatePreset.thisWeek),
-            ),
-            FactoryChip(
-              label: l10n.analyticsPeriodThisMonth,
-              selected: datePreset == _DatePreset.thisMonth,
-              onTap: () => _applyPreset(context, _DatePreset.thisMonth),
-            ),
-            FactoryChip(
-              label: datePreset == _DatePreset.custom && customRange != null
-                  ? '${DateFormat.yMMMd(Localizations.localeOf(context).toString()).format(customRange!.start)} – '
-                        '${DateFormat.yMMMd(Localizations.localeOf(context).toString()).format(customRange!.end)}'
-                  : l10n.analyticsPeriodCustom,
-              selected: datePreset == _DatePreset.custom,
-              icon: Icons.calendar_month_outlined,
-              onTap: () => _pickCustomRange(context),
-            ),
-          ],
-        ),
-        const SizedBox(height: FactorySpacing.space2),
-        servicesAsync.maybeWhen(
-          data: (services) => services.isEmpty
-              ? const SizedBox.shrink()
-              : Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    FactoryChip(
-                      label: l10n.campaignFilterServiceAll,
-                      selected: filters.serviceId == null,
-                      onTap: () => onFiltersChanged(filters.copyWith(clearServiceId: true)),
-                    ),
-                    for (final service in services)
-                      FactoryChip(
-                        label: service.title,
-                        selected: filters.serviceId == service.id,
-                        onTap: () => onFiltersChanged(filters.copyWith(serviceId: service.id)),
-                      ),
-                  ],
-                ),
-          orElse: () => const SizedBox.shrink(),
+        // Type, period and service are one button: four rows of chips pushed the
+        // campaigns themselves below the fold. Status stays in view (the most used).
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: FactoryChip(
+            label: moreFiltersCount == 0 ? l10n.campaignFiltersButton : l10n.campaignFiltersButtonCount(moreFiltersCount),
+            selected: moreFiltersCount > 0,
+            icon: Icons.tune_rounded,
+            onTap: () => _openMoreFilters(context, servicesAsync.value ?? const []),
+          ),
         ),
       ],
     );
   }
 
-  (DateTime, DateTime) _rangeFor(_DatePreset preset) {
-    final now = DateTime.now();
-    switch (preset) {
-      case _DatePreset.allTime:
-      case _DatePreset.custom:
-        return (now, now);
-      case _DatePreset.today:
-        final start = DateTime(now.year, now.month, now.day);
-        return (start, start.add(const Duration(days: 1)));
-      case _DatePreset.thisWeek:
-        final todayStart = DateTime(now.year, now.month, now.day);
-        final weekStart = todayStart.subtract(Duration(days: now.weekday - 1));
-        return (weekStart, weekStart.add(const Duration(days: 7)));
-      case _DatePreset.thisMonth:
-        final monthStart = DateTime(now.year, now.month, 1);
-        final nextMonth = now.month == 12 ? DateTime(now.year + 1, 1, 1) : DateTime(now.year, now.month + 1, 1);
-        return (monthStart, nextMonth);
-    }
+  Future<void> _openMoreFilters(BuildContext context, List<dynamic> services) async {
+    final result = await showFactoryBottomSheet<_MoreFiltersResult>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _MoreFiltersSheet(filters: filters, datePreset: datePreset, customRange: customRange, services: services),
+    );
+    if (result == null) return;
+    onDatePresetChanged(result.preset, result.customRange);
+    onFiltersChanged(result.filters);
   }
+}
 
-  void _applyPreset(BuildContext context, _DatePreset preset) {
-    onDatePresetChanged(preset, null);
-    final (from, to) = _rangeFor(preset);
-    onFiltersChanged(filters.copyWith(from: from, to: to));
+/// What the "Filters" sheet hands back when applied.
+class _MoreFiltersResult {
+  final CampaignFilters filters;
+  final _DatePreset preset;
+  final DateTimeRange? customRange;
+
+  const _MoreFiltersResult(this.filters, this.preset, this.customRange);
+}
+
+(DateTime, DateTime) _rangeFor(_DatePreset preset) {
+  final now = DateTime.now();
+  switch (preset) {
+    case _DatePreset.allTime:
+    case _DatePreset.custom:
+      return (now, now);
+    case _DatePreset.today:
+      final start = DateTime(now.year, now.month, now.day);
+      return (start, start.add(const Duration(days: 1)));
+    case _DatePreset.thisWeek:
+      final todayStart = DateTime(now.year, now.month, now.day);
+      final weekStart = todayStart.subtract(Duration(days: now.weekday - 1));
+      return (weekStart, weekStart.add(const Duration(days: 7)));
+    case _DatePreset.thisMonth:
+      final monthStart = DateTime(now.year, now.month, 1);
+      final nextMonth = now.month == 12 ? DateTime(now.year + 1, 1, 1) : DateTime(now.year, now.month + 1, 1);
+      return (monthStart, nextMonth);
   }
+}
 
-  Future<void> _pickCustomRange(BuildContext context) async {
+/// Type, period and service, edited on a draft and applied together.
+class _MoreFiltersSheet extends StatefulWidget {
+  final CampaignFilters filters;
+  final _DatePreset datePreset;
+  final DateTimeRange? customRange;
+  final List<dynamic> services;
+
+  const _MoreFiltersSheet({
+    required this.filters,
+    required this.datePreset,
+    required this.customRange,
+    required this.services,
+  });
+
+  @override
+  State<_MoreFiltersSheet> createState() => _MoreFiltersSheetState();
+}
+
+class _MoreFiltersSheetState extends State<_MoreFiltersSheet> {
+  late CampaignType? _type = widget.filters.type;
+  late String? _serviceId = widget.filters.serviceId;
+  late _DatePreset _preset = widget.datePreset;
+  late DateTimeRange? _custom = widget.customRange;
+
+  Future<void> _pickCustomRange() async {
     final now = DateTime.now();
     final picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(now.year - 3),
       lastDate: now,
-      initialDateRange: customRange ?? DateTimeRange(start: now.subtract(const Duration(days: 7)), end: now),
+      initialDateRange: _custom ?? DateTimeRange(start: now.subtract(const Duration(days: 7)), end: now),
     );
     if (picked == null) return;
-    onDatePresetChanged(_DatePreset.custom, picked);
-    // showDateRangePicker's end is inclusive of that whole day; the API's [from, to) is exclusive.
-    onFiltersChanged(filters.copyWith(from: picked.start, to: picked.end.add(const Duration(days: 1))));
+    setState(() {
+      _preset = _DatePreset.custom;
+      _custom = picked;
+    });
+  }
+
+  void _apply() {
+    var next = widget.filters.copyWith(
+      clearType: _type == null,
+      type: _type,
+      clearServiceId: _serviceId == null,
+      serviceId: _serviceId,
+      clearRange: true,
+    );
+    if (_preset == _DatePreset.custom && _custom != null) {
+      // showDateRangePicker's end is inclusive of that whole day; the API's [from, to) is exclusive.
+      next = next.copyWith(from: _custom!.start, to: _custom!.end.add(const Duration(days: 1)));
+    } else if (_preset != _DatePreset.allTime && _preset != _DatePreset.custom) {
+      final (from, to) = _rangeFor(_preset);
+      next = next.copyWith(from: from, to: to);
+    }
+    Navigator.of(context).pop(_MoreFiltersResult(next, _custom == null && _preset == _DatePreset.custom ? _DatePreset.allTime : _preset, _custom));
+  }
+
+  void _clear() => setState(() {
+    _type = null;
+    _serviceId = null;
+    _preset = _DatePreset.allTime;
+    _custom = null;
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final textTheme = Theme.of(context).textTheme;
+    final locale = Localizations.localeOf(context).toString();
+
+    Widget group(String title, List<Widget> chips) => Padding(
+      padding: const EdgeInsets.only(bottom: FactorySpacing.space4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: textTheme.labelLarge),
+          const SizedBox(height: FactorySpacing.space2),
+          Wrap(spacing: 8, runSpacing: 8, children: chips),
+        ],
+      ),
+    );
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.campaignFiltersButton, style: textTheme.titleLarge),
+        const SizedBox(height: FactorySpacing.space4),
+        group(l10n.campaignFilterTypeTitle, [
+          FactoryChip(
+            label: l10n.campaignFilterTypeAll,
+            selected: _type == null,
+            onTap: () => setState(() => _type = null),
+          ),
+          for (final type in CampaignType.values)
+            FactoryChip(
+              label: campaignTypeLabel(l10n, type),
+              selected: _type == type,
+              onTap: () => setState(() => _type = type),
+            ),
+        ]),
+        group(l10n.campaignFilterPeriodTitle, [
+          FactoryChip(
+            label: l10n.campaignFilterDateAll,
+            selected: _preset == _DatePreset.allTime,
+            onTap: () => setState(() {
+              _preset = _DatePreset.allTime;
+              _custom = null;
+            }),
+          ),
+          FactoryChip(
+            label: l10n.analyticsPeriodToday,
+            selected: _preset == _DatePreset.today,
+            onTap: () => setState(() => _preset = _DatePreset.today),
+          ),
+          FactoryChip(
+            label: l10n.analyticsPeriodThisWeek,
+            selected: _preset == _DatePreset.thisWeek,
+            onTap: () => setState(() => _preset = _DatePreset.thisWeek),
+          ),
+          FactoryChip(
+            label: l10n.analyticsPeriodThisMonth,
+            selected: _preset == _DatePreset.thisMonth,
+            onTap: () => setState(() => _preset = _DatePreset.thisMonth),
+          ),
+          FactoryChip(
+            label: _preset == _DatePreset.custom && _custom != null
+                ? '${DateFormat.yMMMd(locale).format(_custom!.start)} – ${DateFormat.yMMMd(locale).format(_custom!.end)}'
+                : l10n.analyticsPeriodCustom,
+            selected: _preset == _DatePreset.custom,
+            icon: Icons.calendar_month_outlined,
+            onTap: _pickCustomRange,
+          ),
+        ]),
+        if (widget.services.isNotEmpty)
+          group(l10n.campaignFilterServiceTitle, [
+            FactoryChip(
+              label: l10n.campaignFilterServiceAll,
+              selected: _serviceId == null,
+              onTap: () => setState(() => _serviceId = null),
+            ),
+            for (final service in widget.services)
+              FactoryChip(
+                label: service.title as String,
+                selected: _serviceId == service.id,
+                onTap: () => setState(() => _serviceId = service.id as String),
+              ),
+          ]),
+        Row(
+          children: [
+            Expanded(
+              child: FactoryButton(label: l10n.campaignFiltersClear, variant: FactoryButtonVariant.secondary, onPressed: _clear),
+            ),
+            const SizedBox(width: FactorySpacing.space3),
+            Expanded(child: FactoryButton(label: l10n.campaignFiltersApply, onPressed: _apply)),
+          ],
+        ),
+      ],
+    );
   }
 }

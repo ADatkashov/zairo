@@ -12,6 +12,9 @@ import 'package:business_admin/features/beauty/data/models/admin_master.dart';
 import 'package:business_admin/features/beauty/presentation/providers/beauty_admin_providers.dart';
 import 'package:business_admin/features/city/data/models/city.dart';
 import 'package:business_admin/features/city/presentation/providers/city_providers.dart';
+import 'package:business_admin/features/billing/data/models/subscription.dart';
+import 'package:business_admin/features/billing/presentation/providers/billing_providers.dart';
+import 'package:business_admin/features/billing/presentation/screens/billing_screen.dart';
 import 'package:business_admin/features/salon/data/models/admin_booking.dart';
 import 'package:business_admin/features/salon/data/models/admin_provider.dart';
 import 'package:business_admin/features/salon/data/models/admin_service.dart';
@@ -903,6 +906,52 @@ void main() {
       findsOneWidget,
     );
     expect(fakeApi.lastRecurringScheduleCall, isNull);
+  });
+
+  testWidgets('on a plan without recurring schedules the button says PRO and leads to the plans', (tester) async {
+    final fakeApi = _FakeSalonAdminApi();
+    final freePlan = Subscription.fromJson({
+      'id': 'sub1',
+      'ownerUserId': 'o1',
+      'plan': 'FREE',
+      'status': 'ACTIVE',
+      'limits': {
+        'maxProviders': 1,
+        'maxStaffPerProvider': 3,
+        'maxBookingsPerMonth': 50,
+        'recurringScheduleAllowed': false,
+      },
+      'currentPeriodStart': '2026-10-01T00:00:00Z',
+      'currentPeriodEnd': '2026-10-31T00:00:00Z',
+      'gracePeriodEndsAt': null,
+      'cancelAtPeriodEnd': false,
+    });
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          salonAdminApiProvider.overrideWithValue(fakeApi),
+          beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+          mySubscriptionProvider.overrideWith((ref) async => freePlan),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SalonDetailScreen(provider: _provider),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await _openTab(tester, 'Services');
+
+    expect(find.widgetWithText(TextButton, 'Recurring schedule'), findsNothing);
+    await tester.tap(find.widgetWithText(TextButton, 'Recurring schedule · PRO'));
+    await tester.pumpAndSettle();
+
+    // The plans screen, not the form the server would refuse.
+    expect(find.byType(BillingScreen), findsOneWidget);
+    expect(find.text('Generate recurring schedule'), findsNothing);
   });
 
   testWidgets('shows mechanics for an auto workshop and adding one calls the API and refreshes the list',
