@@ -1,3 +1,4 @@
+import '../../backup/data/business_backup.dart';
 import 'package:core_network/core_network.dart';
 import 'package:dio/dio.dart';
 
@@ -423,5 +424,12 @@ class SalonAdminApi {
     );
     final data = response.data as List<dynamic>;
     return data.map((e) => CustomerListItem.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// A copy of the business's schedule (last 30 days, next 180), customers with contacts and services, to keep
+  /// for working without the app. Owner-only; contains customers' personal data.
+  Future<BusinessBackup> fetchBackup(String providerId, {required String providerName}) async {
+    final response = await _dioClient.get('/providers/$providerId/backup');
+    return BusinessBackup.fromJson(response.data as Map<String, dynamic>, providerName: providerName);
   }
 }
