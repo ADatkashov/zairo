@@ -20,6 +20,9 @@ dependencies {
     // same reasoning as providers' own dependency on auth.
     implementation(project(":auth"))
 
+    // PRO's price is set by the platform (PLATFORM_ADMIN), audit-logged — same machinery payments uses for commission.
+    implementation(project(":platform-admin"))
+
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("org.assertj:assertj-core")

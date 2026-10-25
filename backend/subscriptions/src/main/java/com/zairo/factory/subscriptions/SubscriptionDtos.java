@@ -33,16 +33,16 @@ public final class SubscriptionDtos {
             @Schema(description = "ISO 4217 currency PRO is charged in.", example = "USD")
             String currency) {
 
-        static SubscriptionResponse from(Subscription subscription, String currency) {
-            return from(subscription, null, currency);
+        static SubscriptionResponse from(Subscription subscription, SubscriptionPricing.Price price) {
+            return from(subscription, null, price);
         }
 
-        static SubscriptionResponse from(Subscription subscription, String checkoutUrl, String currency) {
+        static SubscriptionResponse from(Subscription subscription, String checkoutUrl, SubscriptionPricing.Price price) {
             SubscriptionPlan plan = subscription.getPlan();
             return new SubscriptionResponse(subscription.getId(), subscription.getOwnerUserId(), plan,
                     subscription.getStatus(), PlanLimits.from(plan), subscription.getCurrentPeriodStart(),
                     subscription.getCurrentPeriodEnd(), subscription.getGracePeriodEndsAt(),
-                    subscription.isCancelAtPeriodEnd(), checkoutUrl, SubscriptionPlan.PRO.monthlyPrice, currency);
+                    subscription.isCancelAtPeriodEnd(), checkoutUrl, price.amount(), price.currency());
         }
     }
 
@@ -82,5 +82,24 @@ public final class SubscriptionDtos {
             return new PlanLimits(plan.maxProviders, plan.maxStaffPerProvider, plan.maxBookingsPerMonth,
                     plan.recurringScheduleAllowed);
         }
+    }
+
+    @Schema(description = "What PRO costs per month.")
+    public record SubscriptionPriceResponse(
+            @Schema(example = "14900.00") BigDecimal monthlyPrice,
+            @Schema(description = "ISO 4217 currency PRO is charged in.", example = "KZT") String currency) {
+
+        static SubscriptionPriceResponse from(SubscriptionPricing.Price price) {
+            return new SubscriptionPriceResponse(price.amount(), price.currency());
+        }
+    }
+
+    public record SetSubscriptionPriceRequest(
+            @Schema(description = "Monthly price, more than 0, at most 2 decimals.", example = "14900")
+            @jakarta.validation.constraints.NotNull @jakarta.validation.constraints.DecimalMin("0.01")
+            @jakarta.validation.constraints.Digits(integer = 10, fraction = 2) BigDecimal monthlyPrice,
+            @Schema(description = "ISO 4217 code, three letters.", example = "KZT")
+            @jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Pattern(regexp = "^[A-Za-z]{3}$")
+            String currency) {
     }
 }
