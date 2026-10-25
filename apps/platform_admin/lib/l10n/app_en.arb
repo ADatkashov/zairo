@@ -881,5 +881,16 @@
   "subscriptionPriceSaved": "Price updated",
   "@subscriptionPriceSaved": {"description": "Finance → Subscription price."},
   "subscriptionNotTenge": "PRO is still charged in {currency}, not tenge. Set the price to switch it to tenge.",
-  "@subscriptionNotTenge": {"description": "Finance → Subscription: warning while the price is not in tenge.", "placeholders": {"currency": {"type": "String"}}}
+  "@subscriptionNotTenge": {"description": "Finance → Subscription: warning while the price is not in tenge.", "placeholders": {"currency": {"type": "String"}}},
+
+  "dashVsPrevious7": "vs previous 7 days",
+  "@dashVsPrevious7": {"description": "Small print next to the change chip of the bookings card."},
+  "dashBookingsPeriods": "Today {today} · This week {week} · This month {month}",
+  "@dashBookingsPeriods": {"description": "One-line summary under the bookings chart title. Counts are pre-formatted.", "placeholders": {"today": {"type": "String"}, "week": {"type": "String"}, "month": {"type": "String"}}},
+  "dashSubscriptionStates": "Active {active} · Past due {pastDue} · Cancelled {cancelled}",
+  "@dashSubscriptionStates": {"description": "One-line summary under the subscriptions chart title. Counts are pre-formatted.", "placeholders": {"active": {"type": "String"}, "pastDue": {"type": "String"}, "cancelled": {"type": "String"}}},
+  "dashTotalCount": "Total: {count}",
+  "@dashTotalCount": {"description": "Summary under a chart title: the overall count (pre-formatted).", "placeholders": {"count": {"type": "String"}}},
+  "dashOther": "Other",
+  "@dashOther": {"description": "Chart legend: everything not named by the other slices."}
 }
