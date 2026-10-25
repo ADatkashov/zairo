@@ -22,6 +22,8 @@ import 'package:business_admin/features/salon/data/models/admin_booking.dart';
 import 'package:business_admin/features/salon/data/models/admin_provider.dart';
 import 'package:business_admin/features/salon/data/models/admin_service.dart';
 import 'package:business_admin/features/salon/data/models/admin_slot.dart';
+import 'package:business_admin/features/salon/data/models/business_analytics.dart';
+import 'package:business_admin/features/dashboard/presentation/widgets/revenue_insights.dart';
 import 'package:business_admin/features/salon/data/models/dashboard_metrics.dart';
 import 'package:business_admin/features/salon/data/models/schedule_entry.dart';
 import 'package:business_admin/features/salon/data/salon_admin_api.dart';
@@ -53,6 +55,36 @@ class _FakeSalonAdminApi extends SalonAdminApi {
   /// Null = the schedule endpoint "fails" (the card stays hidden, as on a
   /// real error), so tests that aren't about the agenda are unaffected.
   List<ScheduleEntry>? schedule;
+
+  /// Revenue analytics per business; a business with no entry has earned nothing.
+  Map<String, BusinessAnalyticsRevenue> revenue = {};
+
+  /// When set, every revenue request fails with it.
+  Object? revenueError;
+
+  /// The (from, to) of each revenue request, in the order they were made.
+  final revenueRanges = <(DateTime, DateTime)>[];
+
+  /// The customers of each business, as the customer list returns them.
+  Map<String, List<CustomerListItem>> customers = {};
+
+  @override
+  Future<BusinessAnalyticsRevenue> fetchAnalyticsRevenue(String providerId, {DateTime? from, DateTime? to}) async {
+    if (revenueError != null) throw revenueError!;
+    revenueRanges.add((from!, to!));
+    return revenue[providerId] ??
+        const BusinessAnalyticsRevenue(
+          totalRevenue: 0,
+          revenueByDay: [],
+          revenueByService: [],
+          revenueByStaff: [],
+          revenueRecovered: 0,
+        );
+  }
+
+  @override
+  Future<List<CustomerListItem>> fetchCustomerList(String providerId, {CustomerRetentionStatus? retentionStatus}) async =>
+      customers[providerId] ?? const [];
 
   @override
   Future<List<AdminProvider>> listMyProviders(String ownerUserId) async => _providers;
@@ -793,5 +825,239 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
     }
+  });
+
+  group('earnings overview', () {
+    final today = DateTime.now();
+    DateTime daysAgo(int n) => DateTime(today.year, today.month, today.day - n);
+
+    const glow = AdminProvider(id: 'p1', ownerUserId: 'owner-1', name: 'Glow Salon', vertical: 'beauty', status: 'ACTIVE');
+
+    Future<void> pump(
+      WidgetTester tester,
+      _FakeSalonAdminApi api, {
+      Size size = const Size(400, 3200),
+      ThemeData? theme,
+      double textScale = 1,
+    }) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            salonAdminApiProvider.overrideWithValue(api),
+            beautyAdminApiProvider.overrideWithValue(_FakeBeautyAdminApi()),
+            billingApiProvider.overrideWithValue(_FakeBillingApi()),
+            campaignCenterApiProvider.overrideWithValue(_FakeCampaignCenterApi()),
+            staffOwnerApiProvider.overrideWithValue(_FakeStaffOwnerApi(const {})),
+            authControllerProvider.overrideWith(_LoggedInOwnerController.new),
+          ],
+          child: MaterialApp(
+            theme: theme ?? factoryLightTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
+              child: child!,
+            ),
+            home: const DashboardScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    BusinessAnalyticsRevenue earned({List<RevenueByService> services = const []}) => BusinessAnalyticsRevenue(
+      totalRevenue: 35000,
+      currency: 'KZT',
+      revenueByDay: [
+        DailyAmount(date: daysAgo(0), amount: 20000),
+        DailyAmount(date: daysAgo(1), amount: 10000),
+        DailyAmount(date: daysAgo(10), amount: 5000),
+      ],
+      revenueByService: services,
+      revenueByStaff: const [],
+      revenueRecovered: 0,
+    );
+
+    RevenueByService service(String id, String title, double amount) =>
+        RevenueByService(serviceId: id, title: title, amount: amount, bookingCount: 1);
+
+    CustomerListItem customer(String id, String? name, double spent) => CustomerListItem(
+      userId: id,
+      displayName: name,
+      retentionStatus: CustomerRetentionStatus.active,
+      totalSpent: spent,
+      currency: 'KZT',
+    );
+
+    testWidgets('revenue cards show today, 7 days and 30 days, each against the period before', (tester) async {
+      final api = _FakeSalonAdminApi([glow])..revenue = {'p1': earned()};
+      await pump(tester, api);
+
+      expect(find.text('Earned today'), findsOneWidget);
+      expect(find.text('20 000 ₸'), findsOneWidget);
+      expect(find.text('Last 7 days'), findsOneWidget);
+      expect(find.text('30 000 ₸'), findsOneWidget, reason: 'today + yesterday');
+      expect(find.text('Last 30 days'), findsOneWidget);
+      expect(find.text('35 000 ₸'), findsOneWidget);
+
+      // today vs yesterday: +100 %; 7 days vs the 7 before (5 000): +500 %; 30 days has nothing before it.
+      expect(find.text('▲ +100%'), findsOneWidget);
+      expect(find.text('▲ +500%'), findsOneWidget);
+      expect(find.byType(FactoryTrendBadge), findsNWidgets(2));
+      expect(find.text('vs yesterday'), findsOneWidget);
+      expect(find.text('vs previous 7 days'), findsOneWidget);
+      expect(find.byType(FactorySparkline), findsNWidgets(3));
+    });
+
+    testWidgets('revenue is asked for 60 days (series) and 30 days (service split), per business', (tester) async {
+      final api = _FakeSalonAdminApi([glow]);
+      await pump(tester, api);
+
+      expect(api.revenueRanges, hasLength(2));
+      final spans = api.revenueRanges.map((r) => r.$2.difference(r.$1).inDays).toList()..sort();
+      expect(spans, [30, 60]);
+      expect(api.revenueRanges.every((r) => r.$2 == DateTime(today.year, today.month, today.day + 1)), isTrue);
+    });
+
+    testWidgets('a business that has earned nothing yet shows no revenue cards, but the rest stays', (tester) async {
+      await pump(tester, _FakeSalonAdminApi([glow]));
+
+      expect(find.text('Earned today'), findsNothing);
+      expect(find.text('Where the money comes from'), findsNothing);
+      expect(find.text('Top customers'), findsNothing);
+      expect(find.text('Glow Salon'), findsOneWidget);
+    });
+
+    testWidgets('when the revenue request fails the cards stay out of the way', (tester) async {
+      final api = _FakeSalonAdminApi([glow])..revenueError = StateError('offline');
+      await pump(tester, api);
+
+      expect(find.text('Earned today'), findsNothing);
+      expect(find.text('Glow Salon'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the service ring lists the top services and folds the rest into Other', (tester) async {
+      final api = _FakeSalonAdminApi([glow])
+        ..revenue = {
+          'p1': earned(
+            services: [
+              service('a', 'Gel manicure', 60000),
+              service('b', 'Haircut', 40000),
+              service('c', 'Colour', 30000),
+              service('d', 'Brows', 20000),
+              service('e', 'Wax', 6000),
+              service('f', 'Massage', 4000),
+            ],
+          ),
+        };
+      await pump(tester, api);
+
+      expect(find.text('Where the money comes from'), findsOneWidget);
+      expect(find.byType(FactoryDonutChart), findsOneWidget);
+      expect(find.text('Gel manicure'), findsOneWidget);
+      expect(find.text('60 000 ₸'), findsOneWidget);
+      expect(find.text('Brows'), findsOneWidget);
+      expect(find.text('Wax'), findsNothing, reason: 'only the top four are named');
+      expect(find.text('Other'), findsOneWidget);
+      expect(find.text('10 000 ₸'), findsOneWidget, reason: 'Wax + Massage');
+      expect(find.text('160 000 ₸'), findsOneWidget, reason: 'the ring total');
+    });
+
+    testWidgets('a service with no title in the data is called "Service"', (tester) async {
+      final api = _FakeSalonAdminApi([glow])
+        ..revenue = {
+          'p1': earned(services: [RevenueByService(serviceId: 'a', amount: 1000, bookingCount: 1)]),
+        };
+      await pump(tester, api);
+
+      expect(find.text('Service'), findsOneWidget);
+    });
+
+    testWidgets('top customers are ranked with their share of everything spent', (tester) async {
+      final api = _FakeSalonAdminApi([glow])
+        ..revenue = {'p1': earned()}
+        ..customers = {
+          'p1': [customer('u1', 'Aisha Nur', 10000), customer('u2', 'Bek Sar', 30000), customer('u3', null, 10000)],
+        };
+      await pump(tester, api);
+
+      expect(find.text('Top customers'), findsOneWidget);
+      final bek = tester.getTopLeft(find.text('Bek Sar')).dy;
+      final aisha = tester.getTopLeft(find.text('Aisha Nur')).dy;
+      expect(bek, lessThan(aisha), reason: 'the biggest spender is first');
+      expect(find.text('30 000 ₸'), findsNWidgets(2), reason: 'the 7-days card and Bek');
+      expect(find.text('60%'), findsOneWidget);
+      expect(find.text('20%'), findsNWidgets(2));
+      expect(find.text('Customer'), findsOneWidget, reason: 'nameless customer');
+      expect(find.text('BS'), findsOneWidget, reason: 'initials avatar');
+    });
+
+    testWidgets('the two cards sit side by side on a wide screen and stack on a phone', (tester) async {
+      final api = _FakeSalonAdminApi([glow])
+        ..revenue = {'p1': earned(services: [service('a', 'Haircut', 1000)])}
+        ..customers = {'p1': [customer('u1', 'Aisha', 1000)]};
+
+      await pump(tester, api, size: const Size(1100, 3200));
+      expect(
+        tester.getTopLeft(find.byType(ServiceMixCard)).dy,
+        tester.getTopLeft(find.byType(TopCustomersCard)).dy,
+        reason: 'one row',
+      );
+
+      await pump(tester, api, size: const Size(400, 3200));
+      expect(
+        tester.getTopLeft(find.byType(TopCustomersCard)).dy,
+        greaterThan(tester.getBottomLeft(find.byType(ServiceMixCard)).dy),
+        reason: 'one under the other',
+      );
+    });
+
+    testWidgets('only one of the two cards: it takes the whole width', (tester) async {
+      final api = _FakeSalonAdminApi([glow])..revenue = {'p1': earned(services: [service('a', 'Haircut', 1000)])};
+      await pump(tester, api, size: const Size(1100, 3200));
+
+      expect(find.byType(ServiceMixCard), findsOneWidget);
+      expect(find.byType(TopCustomersCard), findsNothing);
+      expect(tester.getSize(find.byType(ServiceMixCard)).width, 1100 - 32);
+    });
+
+    testWidgets('two businesses are added up', (tester) async {
+      final api = _FakeSalonAdminApi([
+        glow,
+        const AdminProvider(id: 'p2', ownerUserId: 'owner-1', name: 'Garage', vertical: 'auto', status: 'ACTIVE'),
+      ])
+        ..revenue = {'p1': earned(), 'p2': earned()};
+      await pump(tester, api);
+
+      expect(find.text('40 000 ₸'), findsOneWidget, reason: 'today: 20 000 + 20 000');
+      expect(find.text('70 000 ₸'), findsOneWidget, reason: '30 days');
+    });
+
+    testWidgets('the whole page fits a 320 px phone with a large font in the dark theme', (tester) async {
+      final api = _FakeSalonAdminApi([glow])
+        ..revenue = {
+          'p1': earned(services: [service('a', 'Gel manicure with a very long name indeed', 60000), service('b', 'Haircut', 40000)]),
+        }
+        ..customers = {'p1': [customer('u1', 'Aisha with a rather long full name', 90000)]};
+      await pump(tester, api, size: const Size(320, 640), theme: factoryDarkTheme(), textScale: 2);
+      expect(tester.takeException(), isNull);
+
+      for (var i = 0; i < 12; i++) {
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -400));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      }
+    });
+
+    testWidgets('what needs the owner is a red panel with a count, and a calm one when nothing does', (tester) async {
+      await pump(tester, _FakeSalonAdminApi([glow]));
+      expect(find.byType(FactoryAlertPanel), findsOneWidget);
+      expect(find.text('All caught up — nothing needs attention today.'), findsOneWidget);
+      expect(find.byIcon(Icons.check_circle_outline_rounded), findsOneWidget);
+    });
   });
 }

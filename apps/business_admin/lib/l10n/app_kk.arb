@@ -1089,5 +1089,19 @@
   "automationPresetActiveHint": "Ұсыныстар жиірек, күту қысқа — кесте тезірек толады.",
   "automationPresetCustomHint": "Өз мәндеріңіз «Қосымша» бөлімінде.",
   "automationAdvancedTitle": "Қосымша баптаулар",
-  "recurringScheduleProButton": "Қайталанатын кесте · PRO"
+  "recurringScheduleProButton": "Қайталанатын кесте · PRO",
+
+  "dashboardPulseToday": "Бүгін тапқаны",
+  "dashboardPulseWeek": "Соңғы 7 күн",
+  "dashboardPulseMonth": "Соңғы 30 күн",
+  "dashboardPulseVsYesterday": "кешегімен салыстырғанда",
+  "dashboardPulseVsPrevious7": "алдыңғы 7 күнмен салыстырғанда",
+  "dashboardPulseVsPrevious30": "алдыңғы 30 күнмен салыстырғанда",
+  "dashboardPulseTrendLabel": "Соңғы {days} күндегі күнделікті түсім",
+  "dashboardServiceMixTitle": "Ақша қайдан келеді",
+  "dashboardServiceMixOther": "Басқа",
+  "dashboardServiceFallback": "Қызмет",
+  "dashboardTopCustomersTitle": "Үздік клиенттер",
+  "dashboardTopCustomersSubtitle": "Барлық клиент шығындарындағы үлесі",
+  "dashboardCustomerFallback": "Клиент"
 }

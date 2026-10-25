@@ -106,8 +106,8 @@ void main() {
   testWidgets('a dashboard number opens the list behind it, filtered the same way', (tester) async {
     await pumpConsole(tester, backend: defaultBackend(), size: const Size(1400, 1000), location: ConsoleRoutes.dashboard);
 
-    // The "Awaiting approval" tile of the Businesses section (not the attention banner's button).
-    await tester.tap(find.widgetWithText(FactoryKpiCard, 'Awaiting approval'));
+    // The "Awaiting approval" row of the Businesses ring (not the attention panel's row, which words it differently).
+    await tester.tap(find.text('Awaiting approval'));
     await tester.pumpAndSettle();
 
     expect(find.text('Glow Salon'), findsOneWidget);
