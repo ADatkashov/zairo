@@ -80,7 +80,9 @@ void main() {
 
     expect(api.removed, ['card-1']);
     expect(find.text('VISA •••• 4242'), findsNothing);
-    expect(find.text('No saved cards yet.'), findsOneWidget);
+    expect(find.text('No saved cards yet'), findsOneWidget);
+    // With a way forward, not just a grey line.
+    expect(find.textContaining('saved the next time you pay online'), findsOneWidget);
   });
 
   testWidgets('when cards cannot be charged yet, it says payments still use the payment page', (tester) async {

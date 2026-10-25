@@ -1545,4 +1545,34 @@ void narrowPhoneTests() {
       expect(tester.getSize(find.byType(FactoryCategoryTile)).width, 60);
     });
   });
+
+  testWidgets('a stat tile shows zero in grey and a real count in the normal text colour', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: factoryLightTheme(),
+        home: const Scaffold(
+          body: Row(children: [FactoryStatTile(value: '0', label: 'Booked'), FactoryStatTile(value: '7', label: 'Viewed')]),
+        ),
+      ),
+    );
+    final zero = tester.widget<Text>(find.text('0'));
+    final seven = tester.widget<Text>(find.text('7'));
+    expect(zero.style?.color, FactoryColors.light.textTertiary);
+    expect(seven.style?.color, isNot(FactoryColors.light.textTertiary));
+  });
+
+  testWidgets('the show/hide eye of a password field fits inside the field, with room around it', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: factoryLightTheme(),
+        home: const Scaffold(body: Padding(padding: EdgeInsets.all(16), child: FactoryTextField(label: 'Password', obscureText: true))),
+      ),
+    );
+    final field = tester.getRect(find.byType(TextField));
+    final eye = tester.getRect(find.byType(IconButton));
+    expect(eye.height, lessThanOrEqualTo(field.height - 12), reason: 'not taller than the field');
+    expect(eye.right, lessThanOrEqualTo(field.right - 4), reason: 'not past its edge');
+    expect(eye.top, greaterThan(field.top));
+    expect(eye.bottom, lessThan(field.bottom));
+  });
 }

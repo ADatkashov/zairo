@@ -202,7 +202,7 @@ void main() {
       ),
     );
 
-    expect(find.text('500 KZT off'), findsOneWidget);
+    expect(find.text('500 ₸ off'), findsOneWidget);
     expect(find.text('10% off'), findsOneWidget);
     expect(find.text('7.5% off'), findsOneWidget);
     expect(find.text('Free service'), findsOneWidget);

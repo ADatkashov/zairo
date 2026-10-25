@@ -1,8 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:platform_admin/app/routes.dart';
 import 'package:platform_admin/features/ads/data/ad_banner.dart';
+import 'package:platform_admin/core/media/pick_image.dart';
 import 'package:platform_admin/features/ads/presentation/ad_dialog.dart';
 
 import 'support/fake_backend.dart';
@@ -140,6 +143,68 @@ void main() {
     final ends = DateTime.parse(body['endsAt'] as String);
     expect(ends.isAfter(starts), isTrue);
     expect(find.text('“New promo” created'), findsOneWidget);
+  });
+
+  testWidgets('add banner: a picture from the device is uploaded and its link fills the cover field', (tester) async {
+    final backend = _backend();
+    backend.on('POST', '/platform/uploads', (_) => const FakeReply({'key': 'k1', 'url': 'https://cdn.example/uploaded.jpg'}, status: 201));
+    backend.on('POST', '/platform/ads', (_) => FakeReply(adJson('a9', 'Photo promo')));
+    await pumpConsole(
+      tester,
+      backend: backend,
+      location: ConsoleRoutes.ads,
+      extraOverrides: [
+        pickImageProvider.overrideWithValue(() async => (bytes: Uint8List.fromList([1, 2, 3]), name: 'promo.jpg')),
+      ],
+    );
+
+    await tester.tap(find.text('Add banner'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextFormField, 'Title'), 'Photo promo');
+    await tester.tap(find.text('Upload from device'));
+    await tester.pumpAndSettle();
+
+    expect(backend.calls('POST', '/platform/uploads'), hasLength(1));
+    expect(find.widgetWithText(TextFormField, 'Cover image link (https)'), findsOneWidget);
+    expect(
+      tester.widget<TextFormField>(find.widgetWithText(TextFormField, 'Cover image link (https)')).controller!.text,
+      'https://cdn.example/uploaded.jpg',
+    );
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Create'));
+    await tester.pumpAndSettle();
+    expect((backend.calls('POST', '/platform/ads').single.data as Map)['imageUrl'], 'https://cdn.example/uploaded.jpg');
+  });
+
+  testWidgets('add banner: backing out of the picker changes nothing, a failed upload says why', (tester) async {
+    final backend = _backend();
+    backend.reply('POST', '/platform/uploads', {'message': 'too big'}, status: 413);
+    var answer = false;
+    await pumpConsole(
+      tester,
+      backend: backend,
+      location: ConsoleRoutes.ads,
+      extraOverrides: [
+        pickImageProvider.overrideWithValue(
+          () async => answer ? (bytes: Uint8List.fromList([1]), name: 'big.jpg') : null,
+        ),
+      ],
+    );
+    await tester.tap(find.text('Add banner'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Upload from device'));
+    await tester.pumpAndSettle();
+    expect(backend.calls('POST', '/platform/uploads'), isEmpty);
+
+    answer = true;
+    await tester.tap(find.text('Upload from device'));
+    await tester.pumpAndSettle();
+    expect(backend.calls('POST', '/platform/uploads'), hasLength(1));
+    expect(
+      tester.widget<TextFormField>(find.widgetWithText(TextFormField, 'Cover image link (https)')).controller!.text,
+      isEmpty,
+    );
   });
 
   testWidgets('add banner: the chosen link target is sent, so a bonuses banner can open the bonuses', (tester) async {

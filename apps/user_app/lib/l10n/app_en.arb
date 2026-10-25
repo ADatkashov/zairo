@@ -764,7 +764,7 @@
   "portfolioEmptyTitle": "No photos yet",
   "@portfolioEmptyTitle": {"description": "Master portfolio screen empty state title."},
 
-  "portfolioEmptyMessage": "No portfolio photos yet.",
+  "portfolioEmptyMessage": "This master hasn't added any work yet. Check back soon.",
   "@portfolioEmptyMessage": {"description": "Master portfolio screen empty state."},
 
   "portfolioPhotoSemanticLabel": "Portfolio photo",
@@ -1186,12 +1186,11 @@
     }
   },
 
-  "loyaltyRewardDiscountFixed": "{amount} {currency} off",
+  "loyaltyRewardDiscountFixed": "{amount} off",
   "@loyaltyRewardDiscountFixed": {
     "description": "Reward card's FIXED_DISCOUNT summary line.",
     "placeholders": {
-      "amount": {"type": "String"},
-      "currency": {"type": "String"}
+      "amount": {"type": "String"}
     }
   },
 
@@ -1871,7 +1870,7 @@
   "@paymentCardsTitle": {"description": "paymentCardsTitle"},
   "paymentCardsIntro": "Pay faster with a saved card. We keep only the card's brand and its last four digits.",
   "@paymentCardsIntro": {"description": "paymentCardsIntro"},
-  "paymentCardsEmpty": "No saved cards yet.",
+  "paymentCardsEmpty": "No saved cards yet",
   "@paymentCardsEmpty": {"description": "paymentCardsEmpty"},
   "paymentCardsSaveSwitch": "Save my card at my next payment",
   "@paymentCardsSaveSwitch": {"description": "paymentCardsSaveSwitch"},
@@ -2113,5 +2112,11 @@
   "searchFilterCategoryMore": "More",
   "@searchFilterCategoryMore": {"description": "Search filters sheet: chip that reveals the remaining categories."},
   "loginMethodPhone": "Phone",
-  "@loginMethodPhone": {"description": "Short caption under the phone sign-in circle on the login screen."}
+  "@loginMethodPhone": {"description": "Short caption under the phone sign-in circle on the login screen."},
+  "securityLinkedLabel": "Linked",
+  "@securityLinkedLabel": {"description": "Security screen: subtitle of a sign-in method that is already linked."},
+  "paymentCardsEmptyHint": "Your card is saved the next time you pay online, as long as the switch above is on.",
+  "@paymentCardsEmptyHint": {"description": "Saved cards: how a card gets saved when there are none."},
+  "homeNearbyTitle": "Near you",
+  "@homeNearbyTitle": {"description": "Home section header for the provider rail when there are too few ratings to call it top rated."}
 }

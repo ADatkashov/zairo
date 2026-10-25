@@ -244,7 +244,7 @@
 
   "masterPortfolioTitle": "{masterName} — Портфолио",
   "portfolioEmptyTitle": "Әзірге фото жоқ",
-  "portfolioEmptyMessage": "Портфолиода әзірге фото жоқ.",
+  "portfolioEmptyMessage": "Шебер әлі жұмыстарын қоспады. Кейінірек қараңыз.",
   "portfolioPhotoSemanticLabel": "Портфолио фотосы",
   "errorPortfolioLoadFailed": "Портфолионы жүктеу мүмкін болмады",
   "portfolioViewerCloseTooltip": "Жабу",
@@ -383,7 +383,7 @@
   "loyaltyRewardLockedLabel": "Ұпай жеткіліксіз",
   "loyaltyRewardEndsOn": "{date} дейін жарамды",
   "loyaltyRewardTerms": "Шарттары: {terms}",
-  "loyaltyRewardDiscountFixed": "{amount} {currency} жеңілдік",
+  "loyaltyRewardDiscountFixed": "{amount} жеңілдік",
   "loyaltyRewardDiscountPercentage": "{percentage}% жеңілдік",
   "loyaltyRewardFreeService": "Тегін қызмет",
   "loyaltyRedeemConfirmTitle": "Бұл сыйлықты айырбастайсыз ба?",
@@ -633,7 +633,7 @@
   "paymentConfirmedSnack": "Төлем алынды — брон расталды.",
   "paymentCardsTitle": "Төлем карталары",
   "paymentCardsIntro": "Сақталған картамен жылдам төлеңіз. Тек бренд пен соңғы 4 цифрды сақтаймыз.",
-  "paymentCardsEmpty": "Сақталған карталар әлі жоқ.",
+  "paymentCardsEmpty": "Сақталған карталар әзірге жоқ",
   "paymentCardsSaveSwitch": "Келесі төлемде картамды сақтау",
   "paymentCardsSaveSwitchHint": "Карта келесі онлайн төлемде сақталады, содан кейін бір басумен төлей аласыз.",
   "paymentCardsPageOnlyNote": "Әзірге төлем бұрынғыдай төлем бетінде ашылады; сақталған карталар кейінге қалады.",
@@ -773,5 +773,8 @@
   "searchActivePriceTo": "{amount} дейін",
   "searchActiveFilterRemove": "Сүзгіні алып тастау: {filter}",
   "searchFilterCategoryMore": "Тағы",
-  "loginMethodPhone": "Телефон"
+  "loginMethodPhone": "Телефон",
+  "securityLinkedLabel": "Байланған",
+  "paymentCardsEmptyHint": "Жоғарыдағы ауыстырғыш қосулы болса, карта келесі онлайн төлемде сақталады.",
+  "homeNearbyTitle": "Жақыныңызда"
 }

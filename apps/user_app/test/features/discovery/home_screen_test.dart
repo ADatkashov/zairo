@@ -191,9 +191,51 @@ void main() {
 
     expect(find.text('Almaty'), findsOneWidget);
     expect(find.text('What service are you looking for?'), findsOneWidget);
-    expect(find.text('Top rated near you'), findsOneWidget);
+    // Nobody has a rating yet, so the row does not claim to be top rated.
+    expect(find.text('Near you'), findsOneWidget);
+    expect(find.text('Top rated near you'), findsNothing);
     expect(find.text('Aigerim Beauty Studio'), findsOneWidget);
     expect(find.text('Nail Bar 21'), findsOneWidget);
+  });
+
+  testWidgets('with three or more rated businesses the row is "Top rated", best first, and leaves out the unrated', (tester) async {
+    _useTallWindow(tester);
+    ProviderSearchResult rated(String id, String name, double rating, int reviews) => ProviderSearchResult(
+      id: id,
+      name: name,
+      vertical: 'beauty',
+      status: 'ACTIVE',
+      hasOpenAvailability: true,
+      services: const [],
+      averageRating: rating,
+      reviewCount: reviews,
+    );
+    final fakeApi = _FakeDiscoveryApi([
+      _closed, // no rating at all
+      rated('r1', 'Good Studio', 4.2, 10),
+      rated('r2', 'Best Studio', 4.9, 3),
+      rated('r3', 'Fine Studio', 4.5, 40),
+    ]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [discoveryApiProvider.overrideWithValue(fakeApi)],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const HomeScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Top rated near you'), findsOneWidget);
+    final best = tester.getTopLeft(find.text('Best Studio').first).dx;
+    final fine = tester.getTopLeft(find.text('Fine Studio').first).dx;
+    final good = tester.getTopLeft(find.text('Good Studio').first).dx;
+    expect(best, lessThan(fine));
+    expect(fine, lessThan(good));
   });
 
   testWidgets('the hero collapses into a pinned bar on scroll and keeps the city + actions visible', (tester) async {
@@ -454,7 +496,9 @@ void main() {
 
     expect(find.byType(FactoryCategoryTile), findsNothing);
     expect(find.text('All'), findsOneWidget);
-    expect(find.text('Top rated near you'), findsOneWidget);
+    // Nobody has a rating yet, so the row does not claim to be top rated.
+    expect(find.text('Near you'), findsOneWidget);
+    expect(find.text('Top rated near you'), findsNothing);
   });
 
   testWidgets('"All" opens the full list and a category picked there carries on to Search', (tester) async {

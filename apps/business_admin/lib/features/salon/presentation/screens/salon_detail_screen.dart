@@ -28,6 +28,8 @@ import '../../../staff/presentation/widgets/add_staff_dialog.dart';
 import '../../../staff/presentation/widgets/manage_staff_services_dialog.dart';
 import '../../../reviews/presentation/screens/reviews_screen.dart';
 import '../../../city/presentation/providers/city_providers.dart';
+import '../../../billing/presentation/providers/billing_providers.dart';
+import '../../../billing/presentation/screens/billing_screen.dart';
 import '../../../storage/presentation/providers/storage_providers.dart';
 import '../../data/models/admin_booking.dart';
 import '../../data/models/admin_payout.dart';
@@ -1079,6 +1081,10 @@ class _AvailabilitySectionState extends ConsumerState<_AvailabilitySection> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final slotsAsync = ref.watch(providerSlotsProvider(providerId));
+    // On a plan without recurring schedules the button says so and leads to the plans, instead of
+    // opening a form the server then refuses. Until the plan is known it behaves as before.
+    final planLacksRecurring =
+        ref.watch(mySubscriptionProvider).value?.limits.recurringScheduleAllowed == false;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1089,10 +1095,15 @@ class _AvailabilitySectionState extends ConsumerState<_AvailabilitySection> {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               FactoryButton(
-                icon: Icons.event_repeat,
-                label: l10n.recurringScheduleButton,
+                icon: planLacksRecurring ? Icons.lock_outline : Icons.event_repeat,
+                label: planLacksRecurring ? l10n.recurringScheduleProButton : l10n.recurringScheduleButton,
                 variant: FactoryButtonVariant.text,
                 onPressed: () async {
+                  if (planLacksRecurring) {
+                    await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const BillingScreen()));
+                    ref.invalidate(mySubscriptionProvider);
+                    return;
+                  }
                   final generated = await showDialog<bool>(
                     context: context,
                     builder: (_) => RecurringScheduleDialog(providerId: providerId),
