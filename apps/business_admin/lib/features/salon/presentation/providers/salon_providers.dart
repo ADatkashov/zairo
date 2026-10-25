@@ -2,6 +2,7 @@ import 'package:core_network/core_network.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
+import '../../../dashboard/data/revenue_pulse.dart';
 import '../../data/models/admin_booking.dart';
 import '../../data/models/admin_payout.dart';
 import '../../data/models/admin_provider.dart';
@@ -74,6 +75,31 @@ final ownerOverviewProvider = FutureProvider.autoDispose.family<OwnerOverview, S
     businessCount: providers.length,
     currency: currency,
   );
+});
+
+/// The Dashboard's Today / 7 days / 30 days cards and the service split, summed
+/// over every business [ownerUserId] manages. Two revenue calls per business:
+/// the long window feeds the daily series and the comparisons, the short one the
+/// split by service, so the ring describes exactly the 30 days the card shows.
+final ownerRevenuePulseProvider = FutureProvider.autoDispose.family<RevenuePulse, String>((ref, ownerUserId) async {
+  final api = ref.watch(salonAdminApiProvider);
+  final providers = await ref.watch(myProvidersProvider(ownerUserId).future);
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final longFrom = DateTime(today.year, today.month, today.day - (pulseDays * 2 - 1));
+  final shortFrom = DateTime(today.year, today.month, today.day - (pulseDays - 1));
+  final endOfToday = DateTime(today.year, today.month, today.day + 1);
+  final long = await Future.wait(providers.map((p) => api.fetchAnalyticsRevenue(p.id, from: longFrom, to: endOfToday)));
+  final short = await Future.wait(providers.map((p) => api.fetchAnalyticsRevenue(p.id, from: shortFrom, to: endOfToday)));
+  return RevenuePulse.fromRevenue(lastTwoPeriods: long, lastPeriod: short, now: now);
+});
+
+/// The owner's biggest customers by what they have spent, across businesses.
+final ownerTopCustomersProvider = FutureProvider.autoDispose.family<CustomerRanking, String>((ref, ownerUserId) async {
+  final api = ref.watch(salonAdminApiProvider);
+  final providers = await ref.watch(myProvidersProvider(ownerUserId).future);
+  final lists = await Future.wait(providers.map((p) => api.fetchCustomerList(p.id)));
+  return CustomerRanking.fromLists(lists);
 });
 
 /// A reporting period's bounds, in UTC — the Business Intelligence

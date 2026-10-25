@@ -440,5 +440,11 @@
   "subscriptionPriceField": "Айына бағасы (₸)",
   "subscriptionPriceInvalid": "0-ден жоғары соманы енгізіңіз, үтірден кейін екі белгіден артық емес.",
   "subscriptionPriceSaved": "Баға жаңартылды",
-  "subscriptionNotTenge": "PRO әлі {currency} валютасында алынады, теңгемен емес. Теңгеге көшу үшін бағаны орнатыңыз."
+  "subscriptionNotTenge": "PRO әлі {currency} валютасында алынады, теңгемен емес. Теңгеге көшу үшін бағаны орнатыңыз.",
+
+  "dashVsPrevious7": "алдыңғы 7 күнмен салыстырғанда",
+  "dashBookingsPeriods": "Бүгін {today} · Осы аптада {week} · Осы айда {month}",
+  "dashSubscriptionStates": "Белсенді {active} · Мерзімі өткен {pastDue} · Бас тартылған {cancelled}",
+  "dashTotalCount": "Барлығы: {count}",
+  "dashOther": "Басқа"
 }

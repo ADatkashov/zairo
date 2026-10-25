@@ -32,6 +32,8 @@ import '../../../salon/presentation/screens/salon_detail_screen.dart';
 import '../../../salon/presentation/widgets/add_service_dialog.dart';
 import '../../../salon/presentation/widgets/recurring_schedule_dialog.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
+import '../widgets/revenue_insights.dart';
+import '../widgets/revenue_pulse_cards.dart';
 
 /// Shown by AuthGate once logged in. Lists the salons/workshops/cleaning
 /// companies this owner manages (usually one, but nothing stops an owner
@@ -76,7 +78,7 @@ class DashboardScreen extends ConsumerWidget {
             child: GestureDetector(
               onTap: () => showChangeAvatarDialog(context, hasCurrentAvatar: user.avatarUrl != null),
               child: FactoryAvatar(
-                initials: _initialsFor(user.displayName),
+                initials: initialsFor(user.displayName),
                 size: 32,
                 image: user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
               ),
@@ -138,52 +140,54 @@ class DashboardScreen extends ConsumerWidget {
             return _CreateSalonForm(ownerUserId: user.id);
           }
           return RefreshIndicator(
-            onRefresh: () => Future.wait([
-              ref.refresh(myProvidersProvider(user.id).future),
-              ref.refresh(mySubscriptionProvider.future),
-            ]),
-            child: ListView.separated(
-            padding: const EdgeInsets.all(FactorySpacing.space4),
-            itemCount: providers.length + 5,
-            separatorBuilder: (_, _) => const SizedBox(height: FactorySpacing.space3),
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                return _OwnerOverviewHero(ownerUserId: user.id);
-              }
-              if (index == 1) {
-                return _NeedsAttentionStrip(
+            onRefresh: () {
+              ref.invalidate(ownerRevenuePulseProvider(user.id));
+              ref.invalidate(ownerTopCustomersProvider(user.id));
+              return Future.wait([
+                ref.refresh(myProvidersProvider(user.id).future),
+                ref.refresh(mySubscriptionProvider.future),
+              ]);
+            },
+            // Order of a glance: what is waiting on the owner, how the business is doing, today, the
+            // two daily actions, who the money comes from, then the businesses themselves. Sections
+            // that can be empty keep their own bottom gap, so a hidden one leaves no hole.
+            child: ListView(
+              padding: const EdgeInsets.all(FactorySpacing.space4),
+              children: [
+                _NeedsAttentionStrip(
                   ownerUserId: user.id,
                   providers: providers,
                   subscription: subscriptionAsync.value,
-                );
-              }
-              if (index == 2) {
-                return _TodayAgenda(ownerUserId: user.id, providers: providers);
-              }
-              if (index == 3) {
-                return _QuickActions(providers: providers);
-              }
-              if (index == providers.length + 4) {
-                final subscription = subscriptionAsync.value;
-                final atLimit = subscription != null && providers.length >= subscription.limits.maxProviders;
-                if (atLimit) {
-                  return _ProviderLimitReachedNotice(subscription: subscription);
-                }
-                return FactoryButton(
-                  icon: Icons.add,
-                  label: l10n.addAnotherBusinessButton,
-                  variant: FactoryButtonVariant.secondary,
-                  onPressed: () => _openCreateSalonDialog(context, ref, user.id),
-                );
-              }
-              final provider = providers[index - 4];
-              return _SalonCard(
-                provider: provider,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => SalonDetailScreen(provider: provider)),
                 ),
-              );
-            },
+                _OwnerOverviewHero(ownerUserId: user.id),
+                RevenuePulseCards(ownerUserId: user.id),
+                _TodayAgenda(ownerUserId: user.id, providers: providers),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
+                  child: _QuickActions(providers: providers),
+                ),
+                RevenueInsights(ownerUserId: user.id),
+                for (final provider in providers)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
+                    child: _SalonCard(
+                      provider: provider,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => SalonDetailScreen(provider: provider)),
+                      ),
+                    ),
+                  ),
+                if (subscriptionAsync.value case final subscription?
+                    when providers.length >= subscription.limits.maxProviders)
+                  _ProviderLimitReachedNotice(subscription: subscription)
+                else
+                  FactoryButton(
+                    icon: Icons.add,
+                    label: l10n.addAnotherBusinessButton,
+                    variant: FactoryButtonVariant.secondary,
+                    onPressed: () => _openCreateSalonDialog(context, ref, user.id),
+                  ),
+              ],
             ),
           );
         },
@@ -348,7 +352,9 @@ class _OwnerOverviewHero extends ConsumerWidget {
     final secondaryStyle = textTheme.headlineSmall?.copyWith(color: colors.onPrimary);
 
     // Bento hero: revenue is the one big number, the rest are secondary.
-    return Container(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
+      child: Container(
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
       padding: const EdgeInsets.all(FactorySpacing.space6),
@@ -416,6 +422,7 @@ class _OwnerOverviewHero extends ConsumerWidget {
           ),
         ],
       ),
+      ),
     );
   }
 }
@@ -462,7 +469,6 @@ class _NeedsAttentionStrip extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final textTheme = Theme.of(context).textTheme;
     final actionsAsync = ref.watch(ownerSmartActionsProvider(ownerUserId));
     final actions = actionsAsync.value ?? const <SmartActionItem>[];
 
@@ -517,30 +523,24 @@ class _NeedsAttentionStrip extends ConsumerWidget {
           ),
     ];
 
+    final Widget panel;
     if (items.isEmpty) {
       // Still loading (actionsAsync not settled) shows nothing rather than
       // a premature "all clear" that would flicker away once data arrives.
       if (!actionsAsync.hasValue && subscription == null) {
         return const SizedBox.shrink();
       }
-      return Text(
-        l10n.dashboardAttentionAllClear,
-        style: textTheme.bodySmall?.copyWith(color: context.factoryColors.textTertiary),
+      panel = FactoryAlertPanel.allClear(title: l10n.dashboardAttentionAllClear);
+    } else {
+      panel = FactoryAlertPanel(
+        title: l10n.dashboardNeedsAttentionTitle,
+        count: items.length,
+        items: [
+          for (final item in items) FactoryAlertItem(label: item.label, icon: item.icon, onTap: item.onTap),
+        ],
       );
     }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(l10n.dashboardNeedsAttentionTitle, style: textTheme.titleSmall),
-        const SizedBox(height: FactorySpacing.space2),
-        for (final item in items)
-          Padding(
-            padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
-            child: _AttentionCard(item: item),
-          ),
-      ],
-    );
+    return Padding(padding: const EdgeInsets.only(bottom: FactorySpacing.space3), child: panel);
   }
 }
 
@@ -550,30 +550,6 @@ class _AttentionItem {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-}
-
-class _AttentionCard extends StatelessWidget {
-  const _AttentionCard({required this.item});
-
-  final _AttentionItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.factoryColors;
-    return FactoryCard(
-      onTap: item.onTap,
-      child: Row(
-        children: [
-          Icon(item.icon, size: 20, color: colors.warning),
-          const SizedBox(width: FactorySpacing.space3),
-          Expanded(
-            child: Text(item.label, style: Theme.of(context).textTheme.bodyMedium),
-          ),
-          Icon(Icons.chevron_right, color: colors.textTertiary),
-        ],
-      ),
-    );
-  }
 }
 
 IconData _smartActionIcon(SmartActionType type) => switch (type) {
@@ -960,16 +936,6 @@ class _CreateSalonFormState extends ConsumerState<_CreateSalonForm> {
   }
 }
 
-String _initialsFor(String name) {
-  final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
-  if (parts.isEmpty) return '?';
-  if (parts.length == 1) {
-    return parts.first.substring(0, parts.first.length >= 2 ? 2 : 1).toUpperCase();
-  }
-  return (parts[0][0] + parts[1][0]).toUpperCase();
-}
-
-
 /// Today's bookings across the owner's businesses: time, service, status.
 /// Shows the next few and says so plainly when there are none. While loading
 /// or on error it stays out of the way (the rest of the dashboard still
@@ -992,7 +958,9 @@ class _TodayAgenda extends ConsumerWidget {
     final textTheme = Theme.of(context).textTheme;
     final multiple = agenda.map((a) => a.providerName).toSet().length > 1;
 
-    return FactoryCard(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
+      child: FactoryCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1023,6 +991,7 @@ class _TodayAgenda extends ConsumerWidget {
               style: FactoryTypography.mono(size: 12, color: colors.textTertiary),
             ),
         ],
+      ),
       ),
     );
   }
