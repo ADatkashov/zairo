@@ -31,6 +31,9 @@ class FinanceScreen extends StatelessWidget {
       child: AreaScaffold(
         title: l10n.navFinance,
         bottom: TabBar(
+          // Four tabs do not fit a phone side by side without cutting their names; they scroll instead.
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           tabs: [
             Tab(text: l10n.financePayouts),
             Tab(text: l10n.financeRefunds),
