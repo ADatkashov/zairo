@@ -194,6 +194,18 @@ group('commission', () {
 group('subscription price', () {
   const location = '${ConsoleRoutes.finance}?tab=subscription';
 
+  testWidgets('on a phone no tab name is cut off: the tab bar scrolls', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pumpConsole(tester, backend: defaultBackend(), location: ConsoleRoutes.finance);
+
+    expect(tester.widget<TabBar>(find.byType(TabBar)).isScrollable, isTrue);
+    await tester.tap(find.text('Subscription'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('subscriptionPrice')), findsOneWidget);
+  });
+
   testWidgets('shows what PRO costs per month, in tenge', (tester) async {
     await pumpConsole(tester, backend: defaultBackend(), location: location);
 
