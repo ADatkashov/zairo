@@ -8,6 +8,7 @@ import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.CustomerAnalytic
 import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.CustomerListItem;
 import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.OverviewResponse;
 import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.RevenueAnalyticsResponse;
+import com.zairo.factory.providerinsights.BusinessBackupDtos.BackupResponse;
 import com.zairo.factory.providerinsights.ProviderInsightsDtos.CustomerSummary;
 import com.zairo.factory.platformadmin.AnyPlatformRole;
 import com.zairo.factory.providerinsights.ProviderInsightsDtos.DashboardMetrics;
@@ -42,15 +43,18 @@ public class ProviderInsightsController {
     private final SmartFillAnalyticsService smartFillAnalyticsService;
     private final RevenueAttributionService revenueAttributionService;
     private final BusinessAnalyticsService businessAnalyticsService;
+    private final BusinessBackupService businessBackupService;
 
     public ProviderInsightsController(ProviderInsightsService providerInsightsService,
             ProviderOwnership providerOwnership, SmartFillAnalyticsService smartFillAnalyticsService,
-            RevenueAttributionService revenueAttributionService, BusinessAnalyticsService businessAnalyticsService) {
+            RevenueAttributionService revenueAttributionService, BusinessAnalyticsService businessAnalyticsService,
+            BusinessBackupService businessBackupService) {
         this.providerInsightsService = providerInsightsService;
         this.providerOwnership = providerOwnership;
         this.smartFillAnalyticsService = smartFillAnalyticsService;
         this.revenueAttributionService = revenueAttributionService;
         this.businessAnalyticsService = businessAnalyticsService;
+        this.businessBackupService = businessBackupService;
     }
 
     @Operation(summary = "A business's overview for moderators", description = """
@@ -285,5 +289,25 @@ public class ProviderInsightsController {
             @Parameter(description = "Only customers currently in this retention state. Omit for every customer.")
             @RequestParam(required = false) RetentionStatus retentionStatus) {
         return businessAnalyticsService.customersList(providerId, retentionStatus);
+    }
+
+    @Operation(summary = "A copy of the business's schedule, customers and services", description = """
+            Owner-only. Everything needed to keep working without the app: bookings in the window with the \
+            customer's name and contact and the person (master) booked, the customer book, and the service price \
+            list. Contains customers' personal details. `from`/`to` default to the last 30 and next 180 days; the \
+            window may span at most 400 days.""")
+    @ApiResponse(responseCode = "200", description = "The copy")
+    @ApiResponse(responseCode = "400", ref = "BadRequest", description = "`from` is not before `to`, or the window "
+            + "is longer than 400 days.")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @ApiResponse(responseCode = "403", ref = "Forbidden")
+    @ApiResponse(responseCode = "404", ref = "NotFound", description = "The provider doesn't exist.")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/providers/{providerId}/backup")
+    @OwnsProvider
+    public BackupResponse backup(@Parameter(description = "The provider's id.") @PathVariable UUID providerId,
+            @Parameter(description = "Window start, inclusive (ISO-8601 instant).") @RequestParam(required = false) Instant from,
+            @Parameter(description = "Window end, exclusive (ISO-8601 instant).") @RequestParam(required = false) Instant to) {
+        return businessBackupService.backup(providerId, from, to);
     }
 }

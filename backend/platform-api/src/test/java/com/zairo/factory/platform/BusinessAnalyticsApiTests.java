@@ -238,6 +238,39 @@ class BusinessAnalyticsApiTests {
     }
 
     @Test
+    void backupGivesTheOwnerTheScheduleWithCustomerContactAndNoOneElse() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "ba-backup-owner-" + runId + "@example.com");
+        Registered otherOwner = TestAuth.registerOwner(restTemplate, "ba-backup-other-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "BA Backup Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Backup facial " + runId, new BigDecimal("40.00"));
+        Registered customer = TestAuth.registerCustomer(restTemplate, "ba-backup-cust-" + runId + "@example.com");
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+        bookWithPrice(customer, serviceId, slotId, new BigDecimal("40.00"));
+
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers/" + providerId + "/backup",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        List<?> bookings = (List<?>) response.getBody().get("bookings");
+        assertThat(bookings).hasSize(1);
+        Map<?, ?> row = (Map<?, ?>) bookings.get(0);
+        assertThat(row.get("customerName")).isEqualTo("Registered Customer");
+        assertThat(row.get("customerPhone")).isEqualTo("+1000000003");
+        assertThat(row.get("serviceTitle")).isEqualTo("Backup facial " + runId);
+        assertThat((List<?>) response.getBody().get("services")).hasSize(1);
+
+        ResponseEntity<Map> forbidden = restTemplate.exchange("/api/v1/providers/" + providerId + "/backup",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(otherOwner.accessToken())), Map.class);
+        assertThat(forbidden.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        ResponseEntity<Map> anonymous = restTemplate.getForEntity("/api/v1/providers/" + providerId + "/backup",
+                Map.class);
+        assertThat(anonymous.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
     void onlyTheOwnerCanReadBusinessAnalytics() {
         String runId = UUID.randomUUID().toString();
         Registered owner = TestAuth.registerOwner(restTemplate, "ba-auth-owner-" + runId + "@example.com");
