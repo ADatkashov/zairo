@@ -372,6 +372,77 @@ void main() {
       expect(entries.single.endsAt.toUtc(), DateTime.utc(2026, 10, 12, 11));
     });
 
+    test('fetchBackup asks for the default window and parses bookings, customers and services', () async {
+      http.reply('GET', '/providers/p1/backup', {
+        'providerId': 'p1',
+        'generatedAt': '2026-10-25T10:00:00Z',
+        'from': '2026-09-25T10:00:00Z',
+        'to': '2027-04-23T10:00:00Z',
+        'bookings': [
+          {
+            'bookingId': 'b1',
+            'startsAt': '2026-10-26T09:00:00Z',
+            'endsAt': '2026-10-26T10:00:00Z',
+            'status': 'CONFIRMED',
+            'serviceTitle': 'Haircut',
+            'staffName': 'Aigerim',
+            'customerName': 'Ana',
+            'customerPhone': '+77001112233',
+            'customerEmail': null,
+            'totalPrice': 9000,
+            'currency': 'KZT',
+          },
+        ],
+        'customers': [
+          {
+            'userId': 'u1',
+            'name': 'Ana',
+            'phone': '+77001112233',
+            'email': 'ana@x.kz',
+            'lastVisitAt': '2026-10-01T10:00:00Z',
+            'totalBookings': 3,
+            'totalSpent': 27000,
+            'currency': 'KZT',
+            'noShows': 1,
+          },
+          {'userId': 'u2', 'totalBookings': 0, 'totalSpent': 0, 'noShows': 0},
+        ],
+        'services': [
+          {'title': 'Haircut', 'durationMinutes': 60, 'price': 9000, 'currency': 'KZT', 'active': true},
+        ],
+      });
+
+      final backup = await api.fetchBackup('p1', providerName: 'Glow Salon');
+
+      expect(http.calls('GET', '/providers/p1/backup').single.queryParameters, isEmpty);
+      expect(backup.providerName, 'Glow Salon');
+      expect(backup.bookings.single.customerPhone, '+77001112233');
+      expect(backup.bookings.single.customerEmail, isNull);
+      expect(backup.bookings.single.staffName, 'Aigerim');
+      expect(backup.bookings.single.endsAt.toUtc(), DateTime.utc(2026, 10, 26, 10));
+      expect(backup.customers.first.lastVisitAt!.toUtc(), DateTime.utc(2026, 10, 1, 10));
+      expect(backup.customers.first.totalSpent, 27000);
+      expect(backup.customers.last.name, isNull, reason: 'a customer the server has no details for');
+      expect(backup.customers.last.lastVisitAt, isNull);
+      expect(backup.services.single.durationMinutes, 60);
+      expect(backup.services.single.active, isTrue);
+    });
+
+    test('fetchBackup tolerates a response with no lists', () async {
+      http.reply('GET', '/providers/p1/backup', {
+        'providerId': 'p1',
+        'generatedAt': '2026-10-25T10:00:00Z',
+        'from': '2026-09-25T10:00:00Z',
+        'to': '2027-04-23T10:00:00Z',
+      });
+
+      final backup = await api.fetchBackup('p1', providerName: 'Glow');
+
+      expect(backup.bookings, isEmpty);
+      expect(backup.customers, isEmpty);
+      expect(backup.services, isEmpty);
+    });
+
     test('listPayouts parses settled and unsettled payouts', () async {
       http.reply('GET', '/providers/p1/payouts', [
         {
