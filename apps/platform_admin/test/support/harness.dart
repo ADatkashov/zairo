@@ -202,6 +202,7 @@ FakeBackend defaultBackend({String role = 'PLATFORM_ADMIN'}) {
     final status = o.queryParameters['status'];
     return FakeReply(status == null ? all : all.where((p) => p['status'] == status).toList());
   });
+  backend.reply('GET', '/platform/subscription-price', {'monthlyPrice': 14900, 'currency': 'KZT'});
   backend.reply('GET', '/platform/commission', commissionJson());
   backend.reply('GET', '/platform/payments/failed-refunds', [
     {

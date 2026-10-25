@@ -431,5 +431,14 @@
   "detailBookings": "Жазылулар",
   "detailTechnicalIds": "Техникалық ID",
   "detailBookingsValue": "{total} барлығы · {completed} аяқталған",
-  "adUploadImage": "Құрылғыдан жүктеу"
+  "adUploadImage": "Құрылғыдан жүктеу",
+  "financeSubscription": "Жазылым",
+  "subscriptionPriceTitle": "PRO жазылым бағасы",
+  "subscriptionPerMonth": "/ ай",
+  "subscriptionPriceHelp": "Иелер PRO үшін айына қанша төлейді. Жаңа баға келесі төлемдерге қолданылады, бұрынғылары өзгермейді.",
+  "subscriptionPriceEditMessage": "Айлық жаңа баға, теңгемен (₸).",
+  "subscriptionPriceField": "Айына бағасы (₸)",
+  "subscriptionPriceInvalid": "0-ден жоғары соманы енгізіңіз, үтірден кейін екі белгіден артық емес.",
+  "subscriptionPriceSaved": "Баға жаңартылды",
+  "subscriptionNotTenge": "PRO әлі {currency} валютасында алынады, теңгемен емес. Теңгеге көшу үшін бағаны орнатыңыз."
 }
