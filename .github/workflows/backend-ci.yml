@@ -33,7 +33,9 @@ permissions:
 jobs:
   backend:
     name: backend (build + test)
-    runs-on: ubuntu-latest
+    # Repo variable CI_RUNS_ON switches to a self-hosted runner, e.g.
+    # ["self-hosted","linux"] (docs/ci-cd.md "Self-hosted runner"); unset = GitHub-hosted.
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     # A hung Testcontainers/Gradle run must not burn minutes for hours.
     timeout-minutes: 30
     steps:
@@ -64,6 +66,8 @@ jobs:
       # block has no field for.
       - name: Start MinIO
         run: |
+          # A self-hosted runner is persistent: drop a leftover container from a cancelled run.
+          docker rm -f minio >/dev/null 2>&1 || true
           docker run -d --name minio \
             -p 9000:9000 -p 9001:9001 \
             -e MINIO_ROOT_USER=app_factory \
@@ -102,3 +106,7 @@ jobs:
           path: backend/**/build/reports/tests/**
           retention-days: 14
           if-no-files-found: ignore
+
+      - name: Stop MinIO
+        if: always()
+        run: docker rm -f minio || true
