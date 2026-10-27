@@ -50,6 +50,23 @@ Switching things back:
 - **CircleCI:** in `.circleci/config.yml` replace `circleci-switch` with `test` in the branch filters.
 - **More branches in Actions:** add them to `on.push.branches` in the two workflows.
 
+### Self-hosted runner
+
+GitHub-hosted runners need Actions minutes/billing; a self-hosted runner on your own machine does not. Both
+workflows pick their runner from the repo variable `CI_RUNS_ON` (unset = `ubuntu-latest`), so no code change is
+needed to switch.
+
+1. On a Linux x64 machine with Docker (the user must be in the `docker` group): GitHub -> repo *Settings -> Actions ->
+   Runners -> New self-hosted runner*, copy the registration token (valid 1 hour).
+2. `scripts/setup-self-hosted-runner.sh <token>` — downloads the runner, registers it and installs it as a service.
+3. *Settings -> Secrets and variables -> Actions -> Variables*: add `CI_RUNS_ON` = `["self-hosted","linux"]`.
+4. Run *Actions -> Backend CI / Flutter CI -> Run workflow* to check it. To go back to GitHub-hosted, delete the variable.
+
+Notes: the runner is persistent, so caches (Gradle, pub) survive between runs and are faster; the machine must be on
+when you push to `test`, otherwise the job waits in the queue. The workflows only run on pushes to `test` and by hand,
+never on pull requests, so outside contributors cannot run code on the runner — keep it that way for a private repo
+runner (do not add `pull_request` triggers from forks).
+
 ### When GitHub Actions is not running
 
 If the workflow runs fail within seconds with no steps (billing/spending limit, a disabled workflow) nothing is

@@ -41,7 +41,9 @@ env:
 jobs:
   flutter:
     name: flutter (analyze + test, all packages)
-    runs-on: ubuntu-latest
+    # Repo variable CI_RUNS_ON switches to a self-hosted runner, e.g.
+    # ["self-hosted","linux"] (docs/ci-cd.md "Self-hosted runner"); unset = GitHub-hosted.
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 40
     steps:
       - name: Checkout
