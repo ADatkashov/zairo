@@ -71,7 +71,9 @@ needed to switch.
 4. In Ubuntu: `git clone` the repo (or just copy the script) and continue from step 2 above.
 The PC must be on, with WSL and Docker Desktop running, while CI runs.
 
-Notes: the runner is persistent, so caches (Gradle, pub) survive between runs and are faster; the machine must be on
+Notes: the runner is persistent, so caches (Gradle, pub, Flutter SDK) stay on its disk and are faster; when `CI_RUNS_ON`
+is set the workflows skip the GitHub cloud caches (they count against the 0.5 GB Actions storage quota) and failure
+artifacts are kept 3 days; the machine must be on
 when you push to `test`, otherwise the job waits in the queue. The workflows only run on pushes to `test` and by hand,
 never on pull requests, so outside contributors cannot run code on the runner — keep it that way for a private repo
 runner (do not add `pull_request` triggers from forks).
