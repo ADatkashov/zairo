@@ -78,6 +78,15 @@ when you push to `test`, otherwise the job waits in the queue. The workflows onl
 never on pull requests, so outside contributors cannot run code on the runner — keep it that way for a private repo
 runner (do not add `pull_request` triggers from forks).
 
+### APK on your phone without GitHub Actions
+
+`build-artifacts.yml` is disabled, so build locally in Ubuntu/WSL: once `scripts/setup-local-dev-wsl.sh`, then
+`scripts/setup-android-sdk-wsl.sh`; after that `scripts/build-apk-local.sh [user_app|business_admin|platform_admin]` puts
+`<app>-debug-signed.apk` in `build-apk-out/` (same `--dart-define` flags as the workflow; API URL defaults to the live
+Render backend). Open the folder from Windows with `explorer.exe "$(wslpath -w build-apk-out)"`, copy the APK to the phone
+(cable, Telegram, Drive) and install it (allow "install unknown apps"). The first build is long: Gradle downloads the Android
+platform/build-tools. These APKs are debug-signed, the same as the workflow's.
+
 ### Local checks and the pre-push hook
 
 When Actions is blocked (budget) or you want an answer before pushing: in Ubuntu/WSL run once
