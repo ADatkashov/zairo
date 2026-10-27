@@ -108,10 +108,11 @@ class PlatformBusinessApiTests {
         assertThat(overview.getBody().get("totalBookings")).isEqualTo(0);
         assertThat(overview.getBody().get("completedBookings")).isEqualTo(0);
 
-        // An owner's own login is not a platform role.
+        // An owner's own login is not a platform credential at all: EndpointAuthorizationManager treats a
+        // customer/business token on a platform endpoint as no credential (401), not "known but not allowed".
         ResponseEntity<Map> asOwner = restTemplate.exchange("/api/v1/platform/businesses/" + providerId + "/overview",
                 HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
-        assertThat(asOwner.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(asOwner.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
 
         // An unknown business is a 404, not an empty card.
         ResponseEntity<Map> unknown = restTemplate.exchange("/api/v1/platform/businesses/" + UUID.randomUUID()
