@@ -62,6 +62,15 @@ needed to switch.
 3. *Settings -> Secrets and variables -> Actions -> Variables*: add `CI_RUNS_ON` = `["self-hosted","linux"]`.
 4. Run *Actions -> Backend CI / Flutter CI -> Run workflow* to check it. To go back to GitHub-hosted, delete the variable.
 
+**On Windows:** run the runner inside WSL2, not as a native Windows runner (the workflows are bash + Linux containers).
+1. PowerShell (admin): `wsl --install -d Ubuntu`, reboot, create the Ubuntu user.
+2. Docker Desktop -> *Settings -> Resources -> WSL integration*: enable Ubuntu. Check `docker ps` works inside Ubuntu.
+3. Optional, so the runner can be a service: in Ubuntu `sudo sh -c 'printf "[boot]\nsystemd=true\n" >> /etc/wsl.conf'`, then
+   `wsl --shutdown` from PowerShell. Without systemd the script tells you to start `~/actions-runner/run.sh` by hand
+   and keep that terminal open.
+4. In Ubuntu: `git clone` the repo (or just copy the script) and continue from step 2 above.
+The PC must be on, with WSL and Docker Desktop running, while CI runs.
+
 Notes: the runner is persistent, so caches (Gradle, pub) survive between runs and are faster; the machine must be on
 when you push to `test`, otherwise the job waits in the queue. The workflows only run on pushes to `test` and by hand,
 never on pull requests, so outside contributors cannot run code on the runner — keep it that way for a private repo
