@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# pre-push: runs scripts/verify-local.sh for the parts of the repo that the pushed commits touch, so a broken build is
+# caught before it leaves the machine. Install with scripts/install-git-hooks.sh.
+#
+#   SKIP_VERIFY=1 git push      # skip once (or: git push --no-verify)
+#
+# Docs-only / scripts-only pushes run nothing. Missing tools (flutter / java) only warn: the hook must not make the
+# repo unpushable from a machine without the toolchain (see scripts/setup-local-dev-wsl.sh).
+set -uo pipefail
+
+[ "${SKIP_VERIFY:-}" = "1" ] && { echo "pre-push: SKIP_VERIFY=1, skipping checks"; exit 0; }
+
+# Prints which checks the changed files need: "flutter", "backend" (one per line).
+classify() {
+  local files="$1" out=()
+  grep -Eq '^(apps|packages)/' <<<"$files" && out+=(flutter)
+  grep -Eq '^backend/' <<<"$files" && out+=(backend)
+  printf '%s\n' "${out[@]:-}" | sed '/^$/d'
+}
+
+if [ "${1:-}" = "--classify" ]; then classify "$(cat)"; exit 0; fi
+
+root="$(git rev-parse --show-toplevel)"
+zero="0000000000000000000000000000000000000000"
+files=""
+while read -r _lref lsha _rref rsha; do
+  [ "$lsha" = "$zero" ] && continue            # branch deletion
+  if [ "$rsha" = "$zero" ]; then               # new branch: compare against the default branch
+    base="$(git merge-base "$lsha" origin/develop 2>/dev/null || git merge-base "$lsha" origin/master 2>/dev/null || true)"
+    range="${base:+$base..}$lsha"
+  else
+    range="$rsha..$lsha"
+  fi
+  files+="$(git diff --name-only "$range" 2>/dev/null)"$'\n'
+done
+
+mapfile -t checks < <(classify "$files")
+[ ${#checks[@]} -eq 0 ] && { echo "pre-push: no app/package/backend changes, nothing to verify"; exit 0; }
+
+for c in "${checks[@]}"; do
+  case "$c" in
+    flutter) command -v flutter >/dev/null || { echo "pre-push: WARNING flutter not found, skipping Flutter checks (scripts/setup-local-dev-wsl.sh)"; continue; } ;;
+    backend) command -v java >/dev/null || { echo "pre-push: WARNING java not found, skipping backend checks (scripts/setup-local-dev-wsl.sh)"; continue; } ;;
+  esac
+  echo "pre-push: verifying $c (SKIP_VERIFY=1 to skip)"
+  "$root/scripts/verify-local.sh" "$c" || { echo "pre-push: $c checks FAILED, push aborted" >&2; exit 1; }
+done

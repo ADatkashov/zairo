@@ -78,6 +78,15 @@ when you push to `test`, otherwise the job waits in the queue. The workflows onl
 never on pull requests, so outside contributors cannot run code on the runner — keep it that way for a private repo
 runner (do not add `pull_request` triggers from forks).
 
+### Local checks and the pre-push hook
+
+When Actions is blocked (budget) or you want an answer before pushing: in Ubuntu/WSL run once
+`scripts/setup-local-dev-wsl.sh` (JDK 21 + the Flutter version pinned in `flutter-ci.yml`), then
+`scripts/verify-local.sh [flutter|backend]`. `scripts/install-git-hooks.sh` (once per clone) enables a `pre-push` hook that
+runs the matching checks only for the parts a push touches (apps/packages -> Flutter, backend/ -> backend; docs/scripts
+-> nothing). Skip once with `SKIP_VERIFY=1 git push` or `--no-verify`. If flutter/java are missing the hook only warns.
+The hook's file classification is tested by `scripts/test-pre-push.sh`.
+
 ### When GitHub Actions is not running
 
 If the workflow runs fail within seconds with no steps (billing/spending limit, a disabled workflow) nothing is
