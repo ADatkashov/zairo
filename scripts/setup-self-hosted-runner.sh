@@ -36,7 +36,12 @@ tar xzf runner.tar.gz && rm runner.tar.gz
   --name "$(hostname)-zairo" \
   --labels "$LABELS"
 
-sudo ./svc.sh install
-sudo ./svc.sh start
+if [ -d /run/systemd/system ]; then
+  sudo ./svc.sh install
+  sudo ./svc.sh start
+else
+  # WSL without systemd: no service, run it in a terminal that stays open.
+  echo "No systemd (WSL?). Start the runner by hand: cd $RUNNER_DIR && ./run.sh"
+fi
 echo "Runner installed. Now set the repo variable CI_RUNS_ON to [\"self-hosted\",\"linux\"]"
 echo "(Settings -> Secrets and variables -> Actions -> Variables)."
