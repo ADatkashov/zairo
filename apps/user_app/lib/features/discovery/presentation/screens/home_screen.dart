@@ -981,6 +981,9 @@ class _QuickChips extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
+      // Runs to the screen edge, like the categories: a chip cut at the page
+      // padding looks broken, one that bleeds off the edge says "scroll".
+      clipBehavior: Clip.none,
       child: Row(
         children: [
           FactoryChip(
@@ -1061,7 +1064,7 @@ class _PopularServicesSection extends StatelessWidget {
           const SizedBox(height: FactorySpacing.space3),
           SizedBox(
             // Title (two lines), price and business count, with room for larger system text.
-            height: 124 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0),
+            height: 112 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0),
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               clipBehavior: Clip.none,
