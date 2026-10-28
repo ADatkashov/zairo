@@ -914,6 +914,68 @@ void main() {
     expect(find.bySemanticsLabel('New booking'), findsOneWidget);
   });
 
+  testWidgets('FactoryBottomNavigation keeps the centre action centred with three tabs (1 + action + 2)', (tester) async {
+    tester.view.physicalSize = const Size(390, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    int? selected;
+    await tester.pumpWidget(
+      _wrap(
+        FactoryBottomNavigation(
+          destinations: const [
+            FactoryNavDestination(icon: Icons.home_rounded, label: 'Home'),
+            FactoryNavDestination(icon: Icons.calendar_month_rounded, label: 'Bookings'),
+            FactoryNavDestination(icon: Icons.person_rounded, label: 'Profile'),
+          ],
+          selectedIndex: 0,
+          onDestinationSelected: (i) => selected = i,
+          centerAction: FactoryNavAction(icon: Icons.search_rounded, label: 'Find', visibleLabel: true, onTap: () {}),
+        ),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+
+    final centre = tester.getCenter(find.byIcon(Icons.search_rounded));
+    expect(centre.dx, closeTo(195, 1));
+    expect(tester.getCenter(find.text('Home')).dx, lessThan(centre.dx));
+    expect(tester.getCenter(find.text('Bookings')).dx, greaterThan(centre.dx));
+    expect(tester.getCenter(find.text('Profile')).dx, greaterThan(tester.getCenter(find.text('Bookings')).dx));
+
+    await tester.tap(find.text('Profile'));
+    expect(selected, 2);
+  });
+
+  testWidgets('FactoryBottomNavigation: a lone tab beside the action keeps its natural width (no half-bar capsule), also at 320 px', (
+    tester,
+  ) async {
+    for (final width in [390.0, 320.0]) {
+      tester.view.physicalSize = Size(width, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        _wrap(
+          FactoryBottomNavigation(
+            destinations: const [
+              FactoryNavDestination(icon: Icons.home_rounded, label: 'Home'),
+              FactoryNavDestination(icon: Icons.calendar_month_rounded, label: 'Bookings'),
+              FactoryNavDestination(icon: Icons.person_rounded, label: 'Profile'),
+            ],
+            selectedIndex: 0,
+            onDestinationSelected: (_) {},
+            centerAction: FactoryNavAction(icon: Icons.search_rounded, label: 'Find a service', visibleLabel: true, onTap: () {}),
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull, reason: '$width px');
+
+      final capsule = find.ancestor(of: find.text('Home'), matching: find.byType(AnimatedContainer)).first;
+      expect(tester.getSize(capsule).width, lessThan(100), reason: '$width px: the selected capsule hugs its tab');
+      expect(find.text('Profile'), findsOneWidget);
+      // The label is whole, not ellipsized: it fits in its natural width.
+      expect(tester.getSize(find.text('Profile')).width, greaterThan(30), reason: '$width px');
+    }
+  });
+
   testWidgets('FactoryBottomNavigation can write the centre action\'s name under the button; the text acts too', (tester) async {
     tester.view.physicalSize = const Size(390, 800);
     tester.view.devicePixelRatio = 1.0;

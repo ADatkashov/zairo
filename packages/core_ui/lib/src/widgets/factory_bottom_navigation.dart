@@ -78,8 +78,9 @@ class FactoryBottomNavigation extends StatelessWidget {
   final ValueChanged<int> onDestinationSelected;
 
   /// Round action placed between the first and second half of
-  /// [destinations]. Tab indexes reported by [onDestinationSelected] stay
-  /// those of [destinations], the action does not shift them.
+  /// [destinations] (the first half is `length ~/ 2` tabs, so three tabs
+  /// read 1 + action + 2). Tab indexes reported by [onDestinationSelected]
+  /// stay those of [destinations], the action does not shift them.
   final FactoryNavAction? centerAction;
 
   /// Width reserved for the action between the two halves of the tabs.
@@ -98,20 +99,36 @@ class FactoryBottomNavigation extends StatelessWidget {
     final action = centerAction;
     final split = destinations.length ~/ 2;
 
-    Widget tab(int i, {required bool expand}) {
-      final item = _NavItem(
-        // Five or more tabs share ~70px each on a phone; the roomy
-        // 12px side padding left a long label ("Бизнестер") ~50px
-        // and it ellipsized to "Бизне…".
-        dense: destinations.length > 4 || action != null,
-        destination: destinations[i],
-        isSelected: i == selectedIndex,
-        onTap: () => onDestinationSelected(i),
-      );
-      // Equal shares around the action keep it exactly centred; without one,
-      // Flexible (loose) lets four short labels keep their natural width.
-      return expand ? Expanded(child: item) : Flexible(child: item);
-    }
+    Widget item(int i) => _NavItem(
+      // Five or more tabs share ~70px each on a phone; the roomy
+      // 12px side padding left a long label ("Бизнестер") ~50px
+      // and it ellipsized to "Бизне…".
+      dense: destinations.length > 4 || action != null,
+      destination: destinations[i],
+      isSelected: i == selectedIndex,
+      onTap: () => onDestinationSelected(i),
+    );
+    // Without an action, Flexible (loose) lets four short labels keep their
+    // natural width.
+    Widget tab(int i) => Flexible(child: item(i));
+    // One side of the bar around the action: the tabs at their natural width,
+    // scaled down together only when the side is too narrow (320 px, large
+    // fonts), so a label is never cut to "Профи…" and a lone tab's selected
+    // capsule is not stretched over the whole side.
+    Widget side(Iterable<int> indexes) => Expanded(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final i in indexes) ...[
+              if (i != indexes.first) const SizedBox(width: 12),
+              item(i),
+            ],
+          ],
+        ),
+      ),
+    );
 
     final bar = Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
@@ -130,19 +147,23 @@ class FactoryBottomNavigation extends StatelessWidget {
                 centerRise: FactoryBottomNavigation._actionRise - FactoryBottomNavigation._actionSize / 2,
               ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          for (var i = 0; i < destinations.length; i++) ...[
-            if (action != null && i == split)
-              SizedBox(
-                width: FactoryBottomNavigation._actionSlot,
-                child: action.visibleLabel ? _ActionLabel(label: action.label, onTap: action.onTap) : null,
-              ),
-            tab(i, expand: action != null),
-          ],
-        ],
-      ),
+      child: action == null
+          ? Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [for (var i = 0; i < destinations.length; i++) tab(i)],
+            )
+          // Two equal sides around the action slot keep the action exactly
+          // centred even when the tabs do not split evenly (1 + 2).
+          : Row(
+              children: [
+                side([for (var i = 0; i < split; i++) i]),
+                SizedBox(
+                  width: FactoryBottomNavigation._actionSlot,
+                  child: action.visibleLabel ? _ActionLabel(label: action.label, onTap: action.onTap) : null,
+                ),
+                side([for (var i = split; i < destinations.length; i++) i]),
+              ],
+            ),
     );
 
     final nav = SafeArea(

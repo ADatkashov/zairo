@@ -16,6 +16,7 @@ import 'package:zairo/features/auth/data/models/user_summary.dart';
 import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/booking/data/booking_api.dart';
 import 'package:zairo/features/booking/data/models/book_again_suggestion.dart';
+import 'package:zairo/features/booking/data/models/booking.dart';
 import 'package:zairo/features/booking/presentation/providers/booking_providers.dart';
 import 'package:zairo/features/catalog/data/catalog_api.dart';
 import 'package:zairo/features/catalog/data/models/business_type.dart';
@@ -23,6 +24,7 @@ import 'package:zairo/features/catalog/data/models/category.dart';
 import 'package:zairo/features/catalog/presentation/providers/catalog_providers.dart';
 import 'package:zairo/features/discovery/data/discovery_api.dart';
 import 'package:zairo/features/discovery/data/models/provider_search_result.dart';
+import 'package:zairo/features/discovery/data/models/service_summary.dart';
 import 'package:zairo/features/discovery/presentation/providers/discovery_providers.dart';
 import 'package:zairo/features/catalog/presentation/screens/all_categories_screen.dart';
 import 'package:zairo/features/discovery/presentation/screens/home_screen.dart';
@@ -32,7 +34,7 @@ import 'package:zairo/features/workers/data/workers_api.dart';
 import 'package:zairo/features/workers/presentation/providers/workers_providers.dart';
 import 'package:zairo/l10n/app_localizations.dart';
 
-/// Home now stacks a 4×2 launcher and a promo strip above the category row and
+/// Home now stacks the search, quick chips and a 4×2 launcher above the banners and
 /// the rails, so the default 800×600 window builds none of them. Tall window
 /// for the tests that look at those sections (not the scroll/collapse ones).
 void _useTallWindow(WidgetTester tester) {
@@ -291,48 +293,6 @@ void main() {
     expect(search.top, lessThan(844 / 4));
   });
 
-  testWidgets('the availability promo spans the page width, like the search field', (tester) async {
-    tester.view.physicalSize = const Size(390, 3000);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi([_open, _closed]))],
-        child: MaterialApp(
-          theme: factoryLightTheme(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const HomeScreen(),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    final promo = tester.getRect(find.byType(FactoryPromoCard));
-    expect(promo.width, 390 - 2 * FactorySpacing.space4);
-    expect(promo.left, FactorySpacing.space4);
-  });
-
-  testWidgets('shows the availability hero only when something is open today', (tester) async {
-    final fakeApi = _FakeDiscoveryApi([_open, _closed]);
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [discoveryApiProvider.overrideWithValue(fakeApi)],
-        child: MaterialApp(
-          theme: factoryLightTheme(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const HomeScreen(),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.textContaining('provider'), findsWidgets);
-    expect(find.textContaining('open slots today'), findsOneWidget);
-  });
-
   Widget searchRouteApp(List<Category> categories, {CatalogApi? catalogApi}) => ProviderScope(
     overrides: [
       discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi([_open])),
@@ -414,9 +374,10 @@ void main() {
     for (final label in ['Search', 'Bookings', 'My favorites', 'Messages', 'My Rewards', 'Notifications', 'Payment cards', 'Support']) {
       expect(find.text(label), findsNothing, reason: label);
     }
-    // The live "open slots today" promo is still there, after the categories; the rewards card is not (bonuses are a banner now).
-    expect(find.textContaining('open slots today'), findsOneWidget);
-    expect(tester.getTopLeft(find.textContaining('open slots today')).dy, greaterThan(cats[7].dy));
+    // The shortcuts ("Today", "Nearby", "Top rated") sit above the categories, where the old promo card used to
+    // push them down; the rewards card is not there (bonuses are a banner now).
+    expect(tester.getTopLeft(find.text('Today')).dy, lessThan(heading.dy));
+    expect(find.textContaining('open slots today'), findsNothing);
     expect(find.text('Earn rewards for every visit'), findsNothing);
   });
 
@@ -539,28 +500,6 @@ void main() {
     expect(find.text('Category 7'), findsOneWidget);
   });
 
-  testWidgets('with nothing open today there is no promo strip at all', (tester) async {
-    _useTallWindow(tester);
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi(const [])),
-          catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
-        ],
-        child: MaterialApp(
-          theme: factoryLightTheme(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const HomeScreen(),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.byType(FactoryPromoCard), findsNothing);
-    expect(find.text('Earn rewards for every visit'), findsNothing);
-  });
-
   testWidgets('a banner with a rewards link opens My Rewards when tapped', (tester) async {
     _useTallWindow(tester);
     await tester.pumpWidget(
@@ -603,83 +542,248 @@ void main() {
     expect(find.text('Rewards page'), findsOneWidget);
   });
 
-  testWidgets('live banners take over the green hero, above the search field, in place of the greeting', (tester) async {
-    _useTallWindow(tester);
-    final banners = [
-      const AdBanner(
-        id: 'b1',
-        title: 'AI & Digital Bridge',
-        subtitle: 'Watch the highlights',
-        imageUrl: 'https://cdn.example/1.jpg',
-        videoUrl: 'https://video.example/1',
-        sponsored: false,
+  Widget routedHome({
+    List<ProviderSearchResult> results = const [_open],
+    List<Category> categories = const [],
+    List<AdBanner> banners = const [],
+    double textScale = 1,
+  }) => ProviderScope(
+    overrides: [
+      discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi(results)),
+      catalogApiProvider.overrideWithValue(_FakeCatalogApi(categories)),
+      adsApiProvider.overrideWithValue(_FakeAdsApi(banners)),
+    ],
+    child: MaterialApp.router(
+      theme: factoryLightTheme(),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
+        child: child!,
       ),
-    ];
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi([_open])),
-          catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
-          adsApiProvider.overrideWithValue(_FakeAdsApi(banners)),
+      routerConfig: GoRouter(
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+          // Shows where Home sent the person, query string and all.
+          GoRoute(path: '/search', builder: (_, state) => Scaffold(body: Text('Search ${state.uri}'))),
         ],
-        child: MaterialApp(
-          theme: factoryLightTheme(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const HomeScreen(),
-        ),
       ),
-    );
+    ),
+  );
+
+  const promo = AdBanner(
+    id: 'b1',
+    title: 'AI & Digital Bridge',
+    subtitle: 'Watch the highlights',
+    imageUrl: 'https://cdn.example/1.jpg',
+    videoUrl: 'https://video.example/1',
+    sponsored: false,
+  );
+
+  testWidgets('live banners sit under search and the categories, in a card; the greeting hero stays', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(routedHome(categories: manyCategories(8), banners: const [promo]));
     await tester.pumpAndSettle();
 
     expect(find.text('AI & Digital Bridge'), findsOneWidget);
-    // Inside the hero app bar, above the search field.
-    expect(find.descendant(of: find.byType(SliverAppBar), matching: find.byType(FactoryBannerCard)), findsOneWidget);
-    final bannerBottom = tester.getBottomLeft(find.byType(FactoryBannerCard)).dy;
-    final searchTop = tester.getTopLeft(find.text('What service are you looking for?')).dy;
-    expect(bannerBottom, lessThanOrEqualTo(searchTop));
-    // The city row stays on top of the banner; the greeting steps aside.
-    expect(find.text('Almaty'), findsOneWidget);
-    expect(find.textContaining('Hi,'), findsNothing);
+    // Not in the app bar any more: the green hero is the plain greeting.
+    expect(find.descendant(of: find.byType(SliverAppBar), matching: find.byType(FactoryBannerCard)), findsNothing);
+    expect(find.textContaining('Hi,'), findsNothing); // a guest sees "Welcome"
+    expect(find.text('Welcome'), findsOneWidget);
+    // Order: search, shortcuts, categories, then the promo.
+    final search = tester.getTopLeft(find.text('What service are you looking for?')).dy;
+    final chips = tester.getTopLeft(find.text('Today')).dy;
+    final categories = tester.getTopLeft(find.text('Categories')).dy;
+    final banner = tester.getTopLeft(find.byType(FactoryBannerCard)).dy;
+    expect(search, lessThan(chips));
+    expect(chips, lessThan(categories));
+    expect(categories, lessThan(banner));
   });
 
-  testWidgets('the banner hero fades out as the bar collapses and the city bar stays', (tester) async {
-    final banners = [
-      const AdBanner(
-        id: 'b1',
-        title: 'AI & Digital Bridge',
-        subtitle: null,
-        imageUrl: 'https://cdn.example/1.jpg',
-        videoUrl: null,
-        sponsored: false,
-      ),
-    ];
+  testWidgets('the quick chips open Search already narrowed: free today, nearest, best rated', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(routedHome());
+    await tester.pumpAndSettle();
+
+    for (final (chip, target) in [
+      ('Today', '/search?available=1'),
+      ('Nearby', '/search?sort=DISTANCE'),
+      ('Top rated', '/search?sort=RATING'),
+    ]) {
+      await tester.tap(find.text(chip));
+      await tester.pumpAndSettle();
+      expect(find.text('Search $target'), findsOneWidget, reason: chip);
+
+      // Back lands on Home again, ready for the next one.
+      GoRouter.of(tester.element(find.textContaining('Search /search'))).pop();
+      await tester.pumpAndSettle();
+    }
+  });
+
+  testWidgets('the quick chips fit a 320 px phone with a large font by scrolling sideways, not by growing a row', (tester) async {
+    tester.view.physicalSize = const Size(320, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(routedHome(textScale: 2));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Today'), findsOneWidget);
+  });
+
+  testWidgets('"Popular services" lists what the most businesses offer, with the lowest price, and a tap searches for it', (tester) async {
+    _useTallWindow(tester);
+    ProviderSearchResult studio(String id, List<ServiceSummary> services) => ProviderSearchResult(
+      id: id,
+      name: 'Studio $id',
+      vertical: 'beauty',
+      status: 'ACTIVE',
+      hasOpenAvailability: true,
+      minPrice: 4000,
+      services: services,
+    );
+    ServiceSummary svc(String title, double price) =>
+        ServiceSummary(id: '$title$price', title: title, durationMinutes: 30, price: price, currency: 'KZT');
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi([_open])),
-          catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
-          adsApiProvider.overrideWithValue(_FakeAdsApi(banners)),
+      routedHome(
+        results: [
+          studio('a', [svc('Haircut', 5000), svc('Manicure', 7000)]),
+          studio('b', [svc('Haircut', 4000)]),
         ],
-        child: MaterialApp(
-          theme: factoryLightTheme(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const HomeScreen(),
-        ),
       ),
     );
     await tester.pumpAndSettle();
-    final expanded = tester.getSize(find.byType(AppBar)).height;
-    expect(tester.widget<Opacity>(find.ancestor(of: find.byType(PageView), matching: find.byType(Opacity)).first).opacity, 1.0);
 
-    await tester.drag(find.byType(CustomScrollView), const Offset(0, -600));
+    expect(find.text('Popular services'), findsOneWidget);
+    expect(find.text('2 businesses'), findsOneWidget);
+    expect(find.text('1 business'), findsOneWidget);
+    expect(find.text('from '), findsWidgets);
+    // Most offered first.
+    expect(
+      tester.getTopLeft(find.text('Haircut')).dx,
+      lessThan(tester.getTopLeft(find.text('Manicure')).dx),
+    );
+
+    await tester.tap(find.text('Haircut'));
+    await tester.pumpAndSettle();
+    expect(find.text('Search /search?q=Haircut'), findsOneWidget);
+  });
+
+  group('next booking card', () {
+    Booking booking(String id, {String status = 'CONFIRMED', Duration? in_, String? provider = 'Studio One'}) => Booking(
+      id: id,
+      userId: 'user-1',
+      serviceId: 's',
+      availabilitySlotId: 'slot',
+      status: status,
+      totalPrice: 100,
+      createdAt: DateTime.now(),
+      serviceTitle: 'Haircut',
+      providerName: provider,
+      startsAt: in_ == null ? null : DateTime.now().add(in_),
+    );
+
+    Widget homeWith(List<Booking> bookings, {bool loggedIn = true}) => ProviderScope(
+      overrides: [
+        discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi(const [_open])),
+        catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
+        if (loggedIn) authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        myBookingsProvider('user-1').overrideWith((ref) async => bookings),
+      ],
+      child: MaterialApp.router(
+        theme: factoryLightTheme(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: GoRouter(
+          routes: [
+            GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+            GoRoute(path: '/bookings', builder: (_, _) => const Scaffold(body: Text('Bookings page'))),
+          ],
+        ),
+      ),
+    );
+
+    testWidgets('shows the soonest upcoming visit under the search, and a tap opens Bookings', (tester) async {
+      _useTallWindow(tester);
+      await tester.pumpWidget(
+        homeWith([booking('later', in_: const Duration(days: 4)), booking('soon', in_: const Duration(minutes: 90))]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Your next booking'), findsOneWidget);
+      expect(find.textContaining('Haircut ·'), findsOneWidget);
+      expect(find.text('Studio One'), findsOneWidget);
+      final search = tester.getTopLeft(find.text('What service are you looking for?')).dy;
+      expect(tester.getTopLeft(find.text('Your next booking')).dy, greaterThan(search));
+
+      await tester.tap(find.text('Your next booking'));
+      await tester.pumpAndSettle();
+      expect(find.text('Bookings page'), findsOneWidget);
+    });
+
+    testWidgets('a booking still awaiting payment says so', (tester) async {
+      _useTallWindow(tester);
+      await tester.pumpWidget(homeWith([booking('a', status: 'PENDING_PAYMENT', in_: const Duration(days: 1))]));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Studio One · Awaiting payment'), findsOneWidget);
+    });
+
+    testWidgets('absent for a guest', (tester) async {
+      _useTallWindow(tester);
+      await tester.pumpWidget(homeWith([booking('a', in_: const Duration(days: 1))], loggedIn: false));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Your next booking'), findsNothing);
+    });
+
+    testWidgets('absent when nothing is coming up: only a past and an undated booking', (tester) async {
+      _useTallWindow(tester);
+      await tester.pumpWidget(homeWith([booking('past', in_: const Duration(days: -1)), booking('undated')]));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Your next booking'), findsNothing);
+    });
+
+    testWidgets('fits a 320 px phone with a large font in the dark theme, a long service and business name', (tester) async {
+      tester.view.physicalSize = const Size(320, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi(const [_open])),
+            catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
+            authControllerProvider.overrideWith(_LoggedInAuthController.new),
+            myBookingsProvider('user-1').overrideWith(
+              (ref) async => [booking('a', in_: const Duration(days: 2), provider: 'A Very Long Beauty Studio And Spa Name')],
+            ),
+          ],
+          child: MaterialApp(
+            theme: factoryDarkTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(2)),
+              child: child!,
+            ),
+            home: const HomeScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Your next booking'), findsOneWidget);
+    });
+  });
+
+  testWidgets('there is no "Popular services" block while no business lists a service', (tester) async {
+    _useTallWindow(tester);
+    await tester.pumpWidget(routedHome());
     await tester.pumpAndSettle();
 
-    expect(tester.getSize(find.byType(AppBar)).height, lessThan(expanded));
-    expect(tester.widget<Opacity>(find.ancestor(of: find.byType(PageView), matching: find.byType(Opacity)).first).opacity, 0.0);
-    expect(find.text('Almaty'), findsOneWidget);
+    expect(find.text('Popular services'), findsNothing);
   });
 
   testWidgets('tapping a banner with a video in the hero opens the player route', (tester) async {

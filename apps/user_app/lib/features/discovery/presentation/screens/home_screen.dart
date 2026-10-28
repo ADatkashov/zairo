@@ -14,10 +14,11 @@ import '../../../maps/data/geo_point.dart';
 import '../../../ads/data/models/ad_banner.dart';
 import '../../../ads/presentation/providers/ads_providers.dart';
 import '../../../ads/presentation/screens/ad_video_screen.dart';
-import '../../../ads/presentation/widgets/home_hero_banners.dart';
+import '../../../ads/presentation/widgets/home_banner_carousel.dart';
 import '../../../auth/data/models/user_summary.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../booking/data/models/book_again_suggestion.dart';
+import '../../../booking/data/models/booking.dart';
 import '../../../booking/presentation/providers/booking_providers.dart';
 import '../../../catalog/presentation/category_icon.dart';
 import '../../../catalog/presentation/providers/catalog_providers.dart';
@@ -28,13 +29,16 @@ import '../../../workers/data/models/top_worker.dart';
 import '../../../workers/presentation/providers/workers_providers.dart';
 import '../../../workers/presentation/widgets/master_avatar_card.dart';
 import '../../data/models/provider_search_result.dart';
+import '../../popular_services.dart';
+import '../../../booking/next_booking.dart';
 import '../providers/discovery_providers.dart';
 import '../widgets/provider_card.dart';
 
 /// The Home tab: curated discovery, not a search box with results glued
-/// underneath (that's the Search tab). Tapping the search field switches to
-/// Search rather than pushing a new screen, matching how the other bottom
-/// nav destinations behave.
+/// underneath (that's the Search screen). Tapping the search field, a quick
+/// chip, a category or a popular service opens Search already set up for it.
+/// Order is by what people came to do: search, shortcuts, categories first;
+/// promos and rails after.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -76,9 +80,6 @@ class HomeScreen extends ConsumerWidget {
       backgroundColor: colors.bg,
       body: resultsAsync.when(
           data: (results) {
-            final openCount = results
-                .where((r) => r.hasOpenAvailability)
-                .length;
             // "Top rated" only when there are ratings to rank by: three or more rated businesses, best first.
             // Otherwise the row is simply what is near, under a title that does not claim more than it knows.
             final rated = results
@@ -100,8 +101,6 @@ class HomeScreen extends ConsumerWidget {
                 slivers: [
                   _HomeHeroBar(
                     user: user,
-                    // Best-effort: no banners (loading, failed, none live) is the plain hero.
-                    banners: ref.watch(homeBannersProvider).value ?? const <AdBanner>[],
                     cityLabel: ref
                             .watch(userCurrentCityProvider)
                             .value
@@ -122,23 +121,21 @@ class HomeScreen extends ConsumerWidget {
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
                   const SizedBox(height: FactorySpacing.space4),
-                  _SearchEntry(onTap: () => context.go(AppRoutes.search())),
-                  // Categories first, straight under the search: the main way into
-                  // the app is "pick what you need", so it is the first thing
-                  // below the search field.
+                  _SearchEntry(onTap: () => context.push(AppRoutes.search())),
+                  // One tap to the most common narrowings, so the person does not
+                  // have to open the filter sheet to get "free today" or "closest".
+                  const SizedBox(height: FactorySpacing.space3),
+                  const _QuickChips(),
+                  // Someone with a visit coming up wants that first: when, where, in one tap.
+                  if (user != null) _NextBookingSection(userId: user.id),
+                  // Categories next: the main way into the app is "pick what you
+                  // need", so it is the first block below the search.
                   const SizedBox(height: FactorySpacing.space5),
                   const _CategoriesSection(),
-                  // Promos come after the primary action, not in front of it. Only
-                  // the live "open slots today" card is left; anything else the
-                  // platform wants to promote (bonuses, news) is a banner, run
-                  // from the admin console, not a card fixed in the app.
-                  if (openCount > 0) ...[
-                    const SizedBox(height: FactorySpacing.space5),
-                    _PromoStrip(
-                      openCount: openCount,
-                      onViewAvailable: () => context.go(AppRoutes.search()),
-                    ),
-                  ],
+                  // Promos come after the primary action, not in front of it. The
+                  // platform runs them as banners from the admin console.
+                  const _BannersSection(),
+                  _PopularServicesSection(results: results),
                   if (user != null) ...[
                     const SizedBox(height: FactorySpacing.space6),
                     _BookAgainSection(userId: user.id),
@@ -148,7 +145,7 @@ class HomeScreen extends ConsumerWidget {
                   FactorySectionHeader(
                     title: hasTopRated ? l10n.homeTopRatedTitle : l10n.homeNearbyTitle,
                     actionLabel: l10n.homeSeeAll,
-                    onActionTap: () => context.go(AppRoutes.search()),
+                    onActionTap: () => context.push(AppRoutes.search()),
                   ),
                   const SizedBox(height: FactorySpacing.space3),
                   if (topRated.isEmpty)
@@ -222,17 +219,11 @@ class HomeScreen extends ConsumerWidget {
 class _HomeHeroBar extends StatelessWidget {
   const _HomeHeroBar({
     required this.user,
-    required this.banners,
     required this.cityLabel,
     required this.greeting,
   });
 
   final UserSummary? user;
-
-  /// Live promo banners. When there are any they take the hero over (the cover
-  /// image fills it, the greeting steps aside); when there are none it is the
-  /// plain green greeting hero.
-  final List<AdBanner> banners;
   final String cityLabel;
   final String greeting;
 
@@ -241,8 +232,6 @@ class _HomeHeroBar extends StatelessWidget {
   /// search and the categories are what people come for, so they start high.
   static const _expandedHeight = 176.0;
 
-  /// Taller than the greeting hero: a banner cover needs room to read as one.
-  static const _expandedHeightWithBanners = 320.0;
   static const _sheetRadius = 24.0;
 
   /// Status bar + toolbar + sheet lip: where scrollable content starts once
@@ -261,7 +250,7 @@ class _HomeHeroBar extends StatelessWidget {
       backgroundColor: colors.primaryStrong,
       surfaceTintColor: Colors.transparent,
       toolbarHeight: _toolbarHeight,
-      expandedHeight: banners.isEmpty ? _expandedHeight : _expandedHeightWithBanners,
+      expandedHeight: _expandedHeight,
       titleSpacing: FactorySpacing.space4,
       title: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -302,7 +291,7 @@ class _HomeHeroBar extends StatelessWidget {
           ],
         ],
       ),
-      flexibleSpace: banners.isEmpty ? _greetingSpace(context) : _bannerSpace(context),
+      flexibleSpace: _greetingSpace(context),
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(_sheetRadius),
         child: Container(
@@ -370,61 +359,6 @@ class _HomeHeroBar extends StatelessWidget {
           ),
         ),
       );
-  }
-
-  /// The banner hero: the covers fill the space under the toolbar and fade out
-  /// as the bar collapses, so the pinned bar stays a plain green strip.
-  Widget _bannerSpace(BuildContext context) {
-    final colors = context.factoryColors;
-    final topPadding = MediaQuery.paddingOf(context).top;
-    final expandedExtent = topPadding + _expandedHeightWithBanners;
-    final collapsedExtent = topPadding + _toolbarHeight + _sheetRadius;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final t = ((constraints.maxHeight - collapsedExtent) / (expandedExtent - collapsedExtent)).clamp(0.0, 1.0);
-        return Stack(
-          clipBehavior: Clip.hardEdge,
-          children: [
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [colors.primaryStrong, colors.primary],
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: expandedExtent,
-              child: IgnorePointer(
-                ignoring: t < 0.3,
-                child: Opacity(
-                  opacity: t,
-                  child: HomeHeroBanners(
-                    banners: banners,
-                    topInset: topPadding + _toolbarHeight,
-                    bottomInset: _sheetRadius + FactorySpacing.space6,
-                    onOpenVideo: (banner) => context.push(
-                      AppRoutes.adVideo,
-                      extra: AdVideoArgs(url: banner.videoUrl!, title: banner.title),
-                    ),
-                    onOpenLink: (target) => switch (target) {
-                      AdLinkTarget.rewards => context.push(AppRoutes.rewards),
-                      AdLinkTarget.search => context.go(AppRoutes.search()),
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
   }
 }
 
@@ -541,7 +475,7 @@ class _CategoriesSection extends ConsumerWidget {
 
   Future<void> _openAllCategories(BuildContext context) async {
     final code = await context.push<String>(AppRoutes.categories);
-    if (code != null && context.mounted) context.go(AppRoutes.search(category: code));
+    if (code != null && context.mounted) context.push(AppRoutes.search(category: code));
   }
 
   @override
@@ -608,7 +542,7 @@ class _CategoriesSection extends ConsumerWidget {
                     dense: dense,
                     accentColor: accent?.color,
                     accentTint: accent?.tint,
-                    onTap: () => context.go(AppRoutes.search(category: code)),
+                    onTap: () => context.push(AppRoutes.search(category: code)),
                   ),
                 ),
               );
@@ -1034,26 +968,246 @@ class _RecommendedRow extends StatelessWidget {
   }
 }
 
-/// The "open slots today" promo under the launcher: a live count of nearby
-/// businesses with a free slot, which no admin-made banner can show. Shown only
-/// when there is something to show. It is the only card here, so it spans the
-/// page width like the search field above it instead of leaving a gap at the right.
-class _PromoStrip extends StatelessWidget {
-  const _PromoStrip({required this.openCount, required this.onViewAvailable});
-
-  final int openCount;
-  final VoidCallback onViewAvailable;
-
-  static const _cardHeight = 120.0;
+/// Three shortcuts under the search field: free today, closest, best rated.
+/// Each opens Search already narrowed that way, so "who can take me today" is
+/// one tap instead of search, filter sheet, toggle, apply. Scrolls sideways
+/// rather than wrapping, so a narrow phone or a large font never grows a
+/// second row.
+class _QuickChips extends StatelessWidget {
+  const _QuickChips();
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return FactoryPromoCard(
-      height: _cardHeight,
-      title: l10n.homeAvailabilityHero(openCount),
-      icon: Symbols.event_available_rounded,
-      onTap: onViewAvailable,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      // Runs to the screen edge, like the categories: a chip cut at the page
+      // padding looks broken, one that bleeds off the edge says "scroll".
+      clipBehavior: Clip.none,
+      child: Row(
+        children: [
+          FactoryChip(
+            label: l10n.homeChipToday,
+            icon: Symbols.event_available_rounded,
+            onTap: () => context.push(AppRoutes.search(availableOnly: true)),
+          ),
+          const SizedBox(width: FactorySpacing.space2),
+          FactoryChip(
+            label: l10n.homeChipNearby,
+            icon: Symbols.near_me_rounded,
+            onTap: () => context.push(AppRoutes.search(sort: DiscoverySort.distance)),
+          ),
+          const SizedBox(width: FactorySpacing.space2),
+          FactoryChip(
+            label: l10n.homeChipTopRated,
+            icon: Symbols.star_rounded,
+            iconFilled: true,
+            onTap: () => context.push(AppRoutes.search(sort: DiscoverySort.rating)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The admin-run promo banners as one card under the categories. Best-effort:
+/// nothing while loading, on error, or when none is live.
+class _BannersSection extends ConsumerWidget {
+  const _BannersSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final banners = ref.watch(homeBannersProvider).value ?? const <AdBanner>[];
+    if (banners.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: FactorySpacing.space5),
+      child: HomeBannerCarousel(
+        banners: banners,
+        onOpenVideo: (banner) => context.push(
+          AppRoutes.adVideo,
+          extra: AdVideoArgs(url: banner.videoUrl!, title: banner.title),
+        ),
+        onOpenLink: (target) => switch (target) {
+          AdLinkTarget.rewards => context.push(AppRoutes.rewards),
+          AdLinkTarget.search => context.push(AppRoutes.search()),
+        },
+      ),
+    );
+  }
+}
+
+/// "Popular services": what people book, with the lowest price, rather than
+/// only who offers it. A tap opens Search for that service. Built from what
+/// the home feed already loaded (see [popularServices] for what "popular"
+/// means today); absent while there is nothing to show.
+class _PopularServicesSection extends StatelessWidget {
+  const _PopularServicesSection({required this.results});
+
+  final List<ProviderSearchResult> results;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final services = popularServices(results);
+    if (services.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: FactorySpacing.space6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          FactorySectionHeader(
+            title: l10n.homePopularServicesTitle,
+            actionLabel: l10n.homeSeeAll,
+            onActionTap: () => context.push(AppRoutes.search()),
+          ),
+          const SizedBox(height: FactorySpacing.space3),
+          SizedBox(
+            // Title (two lines), price and business count, with room for larger system text.
+            height: 112 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0),
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              itemCount: services.length,
+              separatorBuilder: (_, _) => const SizedBox(width: FactorySpacing.space3),
+              itemBuilder: (context, index) => _PopularServiceCard(
+                service: services[index],
+                onTap: () => context.push(AppRoutes.search(query: services[index].title)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PopularServiceCard extends StatelessWidget {
+  const _PopularServiceCard({required this.service, required this.onTap});
+
+  final PopularService service;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final l10n = AppLocalizations.of(context)!;
+    final textTheme = Theme.of(context).textTheme;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: FactoryRadius.mdRadius,
+        onTap: onTap,
+        child: Container(
+          width: 160,
+          padding: const EdgeInsets.all(FactorySpacing.space3),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: FactoryRadius.mdRadius,
+            border: Border.all(color: colors.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                service.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: textTheme.titleSmall?.copyWith(color: colors.text),
+              ),
+              const Spacer(),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: FactoryPriceText(
+                  amount: service.minPrice,
+                  currencySymbol: service.currency,
+                  prefix: '${l10n.homePopularServiceFrom} ',
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                l10n.homePopularServiceBusinesses(service.providerCount),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "Your next booking": the soonest upcoming visit under the search, for a
+/// logged-in customer who has one. A tap opens Bookings. Best-effort: nothing
+/// while loading, on error, or with nothing coming up.
+class _NextBookingSection extends ConsumerWidget {
+  const _NextBookingSection({required this.userId});
+
+  final String userId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final bookings = ref.watch(myBookingsProvider(userId)).value ?? const <Booking>[];
+    final now = DateTime.now();
+    final next = nextBooking(bookings, now);
+    if (next == null) return const SizedBox.shrink();
+
+    final when = slotLabel(l10n, locale, now, next.startsAt!.toLocal());
+    final details = [
+      if (next.providerName != null) next.providerName!,
+      if (next.status == 'PENDING_PAYMENT') l10n.bookingStatusPendingPayment,
+    ].join(' · ');
+    return Padding(
+      padding: const EdgeInsets.only(top: FactorySpacing.space4),
+      child: FactoryCard(
+        onTap: () => context.go(AppRoutes.bookings),
+        padding: const EdgeInsets.all(FactorySpacing.space3),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(color: colors.primaryTint, borderRadius: FactoryRadius.mdRadius),
+              child: Icon(Symbols.calendar_month_rounded, color: colors.primary),
+            ),
+            const SizedBox(width: FactorySpacing.space3),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.homeNextBookingTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                  ),
+                  Text(
+                    next.serviceTitle == null ? when : '${next.serviceTitle} · $when',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.titleSmall?.copyWith(color: colors.text),
+                  ),
+                  if (details.isNotEmpty)
+                    Text(
+                      details,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                    ),
+                ],
+              ),
+            ),
+            Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
+          ],
+        ),
+      ),
     );
   }
 }

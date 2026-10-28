@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:zairo/features/ads/data/models/ad_banner.dart';
-import 'package:zairo/features/ads/presentation/widgets/home_hero_banners.dart';
+import 'package:zairo/features/ads/presentation/widgets/home_banner_carousel.dart';
 import 'package:zairo/l10n/app_localizations.dart';
 
 const _video = AdBanner(
@@ -35,14 +35,12 @@ Future<void> _pump(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        body: SizedBox(
-          height: 320,
-          child: HomeHeroBanners(
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: HomeBannerCarousel(
             banners: banners,
             onOpenVideo: onOpenVideo ?? (_) {},
             onOpenLink: onOpenLink ?? (_) {},
-            topInset: 96,
-            bottomInset: 48,
           ),
         ),
       ),
@@ -52,21 +50,21 @@ Future<void> _pump(
 }
 
 void main() {
-  testWidgets('fills its box edge to edge, with square corners', (tester) async {
+  testWidgets('is a rounded card of a fixed height inside the page padding, not a full-bleed hero', (tester) async {
     await _pump(tester, const [_video]);
 
-    expect(tester.getSize(find.byType(FactoryBannerCard)), const Size(800, 320));
+    expect(tester.getSize(find.byType(FactoryBannerCard)).height, HomeBannerCarousel.height);
+    expect(tester.getSize(find.byType(FactoryBannerCard)).width, 800 - 32);
     final clip = tester.widget<ClipRRect>(find.descendant(of: find.byType(FactoryBannerCard), matching: find.byType(ClipRRect)));
-    expect(clip.borderRadius, BorderRadius.zero);
+    expect(clip.borderRadius, isNot(BorderRadius.zero));
   });
 
-  testWidgets('shows title, subtitle and the play badge, clear of the toolbar', (tester) async {
+  testWidgets('shows title, subtitle and the play badge', (tester) async {
     await _pump(tester, const [_video]);
 
     expect(find.text('AI & Digital Bridge'), findsOneWidget);
     expect(find.text('Watch the highlights'), findsOneWidget);
-    // The badge starts below the toolbar inset (96), not under it.
-    expect(tester.getTopLeft(find.byIcon(Symbols.play_arrow_rounded)).dy, greaterThanOrEqualTo(96));
+    expect(find.byIcon(Symbols.play_arrow_rounded), findsOneWidget);
   });
 
   testWidgets('swiping shows the next banner; only a sponsored one carries the Ad label', (tester) async {

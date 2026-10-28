@@ -75,7 +75,7 @@ class _MyRewardsList extends ConsumerWidget {
                       title: l10n.myRewardsEmptyTitle,
                       message: l10n.myRewardsEmptyMessage,
                       actionLabel: l10n.bookingsFindServiceButton,
-                      onAction: () => context.go(AppRoutes.search()),
+                      onAction: () => context.push(AppRoutes.search()),
                     ),
                   ),
                 ),
