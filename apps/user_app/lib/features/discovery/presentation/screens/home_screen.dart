@@ -29,6 +29,7 @@ import '../../../workers/data/models/top_worker.dart';
 import '../../../workers/presentation/providers/workers_providers.dart';
 import '../../../workers/presentation/widgets/master_avatar_card.dart';
 import '../../data/models/provider_search_result.dart';
+import '../../data/models/recommended_provider.dart';
 import '../../popular_services.dart';
 import '../../../booking/next_booking.dart';
 import '../providers/discovery_providers.dart';
@@ -187,7 +188,7 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   const _TopMastersSection(),
                   const SizedBox(height: FactorySpacing.space6),
-                  _RecommendedSection(results: results, excluding: topRated),
+                  _RecommendedSection(results: results, excluding: topRated, userId: user?.id),
                       ]),
                     ),
                   ),
@@ -830,36 +831,53 @@ class _BookAgainCard extends StatelessWidget {
 /// beyond that exists yet (no purchase-history/collaborative-filtering
 /// signal to draw on) — a provider with no reviews yet never appears here,
 /// same "absent, not zero" reasoning as everywhere else rating is shown.
-class _RecommendedSection extends StatelessWidget {
-  const _RecommendedSection({required this.results, required this.excluding});
+class _RecommendedSection extends ConsumerWidget {
+  const _RecommendedSection({required this.results, required this.excluding, required this.userId});
 
   final List<ProviderSearchResult> results;
   final List<ProviderSearchResult> excluding;
 
+  /// The logged-in customer, whose own history can personalize the list; null for a guest.
+  final String? userId;
+
   static const _maxCount = 5;
 
+  /// [results] in the order of [picks] (the server's personal ranking); a pick the loaded results do not hold is
+  /// skipped.
+  static List<ProviderSearchResult> personal(List<RecommendedProvider> picks, List<ProviderSearchResult> results) {
+    final byId = {for (final r in results) r.id: r};
+    return [for (final pick in picks) ?byId[pick.providerId]];
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final excludedIds = excluding.map((r) => r.id).toSet();
-    final recommended =
-        results
-            .where(
-              (r) => r.averageRating != null && !excludedIds.contains(r.id),
-            )
-            .toList()
-          ..sort((a, b) => b.averageRating!.compareTo(a.averageRating!));
-    if (recommended.isEmpty) return const SizedBox.shrink();
+    final picks = userId == null
+        ? const <RecommendedProvider>[]
+        : ref.watch(recommendedProvidersProvider(userId!)).value ?? const <RecommendedProvider>[];
+    final personalized = personal(picks, results);
+
+    final List<ProviderSearchResult> shown;
+    if (personalized.isNotEmpty) {
+      shown = personalized;
+    } else {
+      final excludedIds = excluding.map((r) => r.id).toSet();
+      shown =
+          results.where((r) => r.averageRating != null && !excludedIds.contains(r.id)).toList()
+            ..sort((a, b) => b.averageRating!.compareTo(a.averageRating!));
+    }
+    if (shown.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          l10n.homeRecommendedTitle,
+          // Only claims "for you" when it really is learned from their history.
+          personalized.isNotEmpty ? l10n.homeRecommendedForYouTitle : l10n.homeRecommendedTitle,
           style: Theme.of(context).textTheme.titleSmall,
         ),
         const SizedBox(height: FactorySpacing.space3),
-        for (final result in recommended.take(_maxCount))
+        for (final result in shown.take(_maxCount))
           Padding(
             padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
             child: _RecommendedRow(
@@ -1037,18 +1055,20 @@ class _BannersSection extends ConsumerWidget {
 }
 
 /// "Popular services": what people book, with the lowest price, rather than
-/// only who offers it. A tap opens Search for that service. Built from what
-/// the home feed already loaded (see [popularServices] for what "popular"
-/// means today); absent while there is nothing to show.
-class _PopularServicesSection extends StatelessWidget {
+/// only who offers it. A tap opens Search for that service. The server's
+/// most-booked list when it has one, else built from what the home feed already
+/// loaded (see [popularServices]); absent while there is nothing to show.
+class _PopularServicesSection extends ConsumerWidget {
   const _PopularServicesSection({required this.results});
 
   final List<ProviderSearchResult> results;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final services = popularServices(results);
+    // What customers really booked, when the server has that; otherwise what the most businesses nearby offer.
+    final booked = ref.watch(popularServicesProvider).value ?? const <PopularService>[];
+    final services = booked.isNotEmpty ? booked : popularServices(results);
     if (services.isEmpty) return const SizedBox.shrink();
 
     return Padding(

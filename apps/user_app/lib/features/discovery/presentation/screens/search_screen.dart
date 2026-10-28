@@ -264,14 +264,20 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Flexible(
+                              // The count gives way (it is the less important of the two); the sort the person
+                              // is about to tap keeps its natural width, capped so a huge font cannot overflow.
+                              Expanded(
                                 child: Text(
                                   l10n.searchResultsCount(results.length),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: Theme.of(context).textTheme.bodySmall
                                       ?.copyWith(color: colors.textTertiary),
                                 ),
                               ),
-                              Flexible(
+                              const SizedBox(width: FactorySpacing.space2),
+                              ConstrainedBox(
+                                constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.6),
                                 child: _SortMenuButton(
                                   value: query.sort,
                                   onChanged: (sort) => setState(
@@ -446,23 +452,30 @@ class _SortMenuButton extends StatelessWidget {
     return PopupMenuButton<DiscoverySort>(
       initialValue: value,
       onSelected: onChanged,
+      // The full phrase for screen readers and long-press; the button itself only has room for the name.
+      tooltip: l10n.searchSortButtonLabel(_sortLabel(l10n, value)),
       itemBuilder: (context) => [
         for (final sort in DiscoverySort.values)
           PopupMenuItem(value: sort, child: Text(_sortLabel(l10n, sort))),
       ],
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(
-            child: Text(
-              l10n.searchSortButtonLabel(_sortLabel(l10n, value)),
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelMedium
-                  ?.copyWith(color: colors.primary),
+      child: ExcludeSemantics(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Symbols.swap_vert_rounded, size: 16, color: colors.primary),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                _sortLabel(l10n, value),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelMedium
+                    ?.copyWith(color: colors.primary),
+              ),
             ),
-          ),
-          Icon(Symbols.expand_more_rounded, size: 18, color: colors.primary),
-        ],
+            Icon(Symbols.expand_more_rounded, size: 18, color: colors.primary),
+          ],
+        ),
       ),
     );
   }
