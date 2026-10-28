@@ -365,6 +365,8 @@
 
   "homeNextBookingTitle": "Your next booking",
   "@homeNextBookingTitle": {"description": "Caption on Home's card for the soonest upcoming booking."},
+  "homeRecommendedForYouTitle": "Picked for you",
+  "@homeRecommendedForYouTitle": {"description": "Heading of Home's recommendations when they are learned from the customer's own bookings."},
   "homeChipToday": "Today",
   "@homeChipToday": {"description": "Home quick chip: opens Search for businesses with a free slot today."},
   "homeChipNearby": "Nearby",

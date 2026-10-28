@@ -37,4 +37,22 @@ void main() {
     expect(sent[0].queryParameters, {'city': 'almaty', 'limit': 5});
     expect(sent[1].queryParameters, {'limit': 8}, reason: 'no city, default limit');
   });
+
+  test('recommendations are asked for the user, the city and a limit, and read in the order given', () async {
+    final http = FakeHttp()
+      ..reply('GET', '/users/u1/recommendations', <Object>[
+        {'providerId': 'p2', 'vertical': 'beauty'},
+        {'providerId': 'p1', 'vertical': 'beauty'},
+      ]);
+    final api = DiscoveryApi(http.client());
+
+    final result = await api.recommendations('u1', cityCode: 'almaty', limit: 5);
+    await api.recommendations('u1');
+
+    expect(result.map((r) => r.providerId), ['p2', 'p1']);
+    expect(result.first.vertical, 'beauty');
+    final sent = http.calls('GET', '/users/u1/recommendations');
+    expect(sent[0].queryParameters, {'city': 'almaty', 'limit': 5});
+    expect(sent[1].queryParameters, {'limit': 10}, reason: 'no city, default limit');
+  });
 }

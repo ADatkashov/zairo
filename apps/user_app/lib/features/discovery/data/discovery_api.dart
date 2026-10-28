@@ -2,6 +2,7 @@ import 'package:core_network/core_network.dart';
 
 import '../popular_services.dart';
 import 'models/provider_search_result.dart';
+import 'models/recommended_provider.dart';
 
 /// Not marked final/sealed on purpose: tests substitute a subclass that
 /// overrides [searchProviders] instead of hitting the network — see
@@ -64,6 +65,21 @@ class DiscoveryApi {
     );
     return (response.data as List<dynamic>)
         .map((e) => PopularService.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Businesses recommended for [userId], learned from their own bookings (GET /users/{id}/recommendations), in
+  /// display order. Empty without booking history.
+  Future<List<RecommendedProvider>> recommendations(String userId, {String? cityCode, int limit = 10}) async {
+    final response = await _dioClient.get(
+      '/users/$userId/recommendations',
+      queryParameters: {
+        if (cityCode != null && cityCode.isNotEmpty) 'city': cityCode,
+        'limit': limit,
+      },
+    );
+    return (response.data as List<dynamic>)
+        .map((e) => RecommendedProvider.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 }
