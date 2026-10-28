@@ -1154,11 +1154,13 @@ void main() {
       expect(find.byIcon(Symbols.arrow_back_rounded), findsNothing);
     });
 
-    testWidgets('autofocus puts the keyboard on the search field, otherwise it stays down', (tester) async {
+    testWidgets('autofocus puts the keyboard on the search field', (tester) async {
       await tester.pumpWidget(host(pushed: false, autofocus: true));
       await tester.pumpAndSettle();
       expect(tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus, isTrue);
+    });
 
+    testWidgets('without autofocus the keyboard stays down', (tester) async {
       await tester.pumpWidget(host(pushed: false));
       await tester.pumpAndSettle();
       expect(tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus, isFalse);

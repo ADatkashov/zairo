@@ -129,6 +129,7 @@
   "homeAvailabilityHero": "{count, plural, other{Сізге жақын жерде {count} провайдерде бүгін бос уақыт бар}}",  "homeGreeting": "Сәлем, {name}",
   "homeGreetingGuest": "Қош келдіңіз",
   "homeLocationUnknown": "Сіздің орналасқан жеріңіз",
+  "homeNextBookingTitle": "Жақын арадағы жазылуыңыз",
   "homeChipToday": "Бүгін",
   "homeChipNearby": "Жақын",
   "homeChipTopRated": "Үздік рейтинг",

@@ -363,6 +363,8 @@
   "homeLocationUnknown": "Your location",
   "@homeLocationUnknown": {"description": "Home screen location label fallback when no location label is available."},
 
+  "homeNextBookingTitle": "Your next booking",
+  "@homeNextBookingTitle": {"description": "Caption on Home's card for the soonest upcoming booking."},
   "homeChipToday": "Today",
   "@homeChipToday": {"description": "Home quick chip: opens Search for businesses with a free slot today."},
   "homeChipNearby": "Nearby",
