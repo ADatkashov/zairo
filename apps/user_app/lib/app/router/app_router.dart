@@ -17,6 +17,7 @@ import '../../features/ads/presentation/screens/ad_video_screen.dart';
 import '../../features/city/presentation/widgets/city_onboarding_gate.dart';
 import '../../features/onboarding/presentation/screens/welcome_screen.dart';
 import '../../features/discovery/data/models/provider_search_result.dart';
+import '../../features/discovery/presentation/providers/discovery_providers.dart' show DiscoverySort;
 import '../../features/discovery/presentation/screens/home_screen.dart';
 import '../../features/discovery/presentation/screens/search_screen.dart';
 import '../../features/discovery/presentation/screens/service_compare_screen.dart';
@@ -280,6 +281,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           initialVertical: state.uri.queryParameters['category'],
           initialQuery: state.uri.queryParameters['q'],
           autofocus: state.uri.queryParameters['focus'] == '1',
+          initialAvailableOnly: state.uri.queryParameters['available'] == '1',
+          initialSort: DiscoverySort.values
+              .where((sort) => sort.wireValue == state.uri.queryParameters['sort'])
+              .firstOrNull,
         ),
       ),
       StatefulShellRoute.indexedStack(

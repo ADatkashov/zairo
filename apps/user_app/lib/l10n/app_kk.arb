@@ -129,6 +129,13 @@
   "homeAvailabilityHero": "{count, plural, other{Сізге жақын жерде {count} провайдерде бүгін бос уақыт бар}}",  "homeGreeting": "Сәлем, {name}",
   "homeGreetingGuest": "Қош келдіңіз",
   "homeLocationUnknown": "Сіздің орналасқан жеріңіз",
+  "homeChipToday": "Бүгін",
+  "homeChipNearby": "Жақын",
+  "homeChipTopRated": "Үздік рейтинг",
+  "homePopularServicesTitle": "Танымал қызметтер",
+  "homePopularServiceFrom": "бастап",
+  "homePopularServiceBusinesses": "{count, plural, other{{count} мекеме}}",
+
   "homeSeeAll": "Барлығын көру",
   "homeCategoriesTitle": "Санаттар",
   "homeCategoriesAll": "Барлығы",

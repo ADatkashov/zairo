@@ -129,6 +129,13 @@
   "homeAvailabilityHero": "{count, plural, one{Рядом с вами {count} провайдер со свободными окнами сегодня} few{Рядом с вами {count} провайдера со свободными окнами сегодня} many{Рядом с вами {count} провайдеров со свободными окнами сегодня} other{Рядом с вами {count} провайдера со свободными окнами сегодня}}",  "homeGreeting": "Привет, {name}",
   "homeGreetingGuest": "Добро пожаловать",
   "homeLocationUnknown": "Ваше местоположение",
+  "homeChipToday": "Сегодня",
+  "homeChipNearby": "Рядом",
+  "homeChipTopRated": "Топ рейтинг",
+  "homePopularServicesTitle": "Популярные услуги",
+  "homePopularServiceFrom": "от",
+  "homePopularServiceBusinesses": "{count, plural, one{{count} заведение} few{{count} заведения} many{{count} заведений} other{{count} заведения}}",
+
   "homeSeeAll": "Смотреть все",
   "homeCategoriesTitle": "Категории",
   "homeCategoriesAll": "Все",

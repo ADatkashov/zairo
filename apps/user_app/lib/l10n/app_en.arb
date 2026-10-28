@@ -363,6 +363,24 @@
   "homeLocationUnknown": "Your location",
   "@homeLocationUnknown": {"description": "Home screen location label fallback when no location label is available."},
 
+  "homeChipToday": "Today",
+  "@homeChipToday": {"description": "Home quick chip: opens Search for businesses with a free slot today."},
+  "homeChipNearby": "Nearby",
+  "@homeChipNearby": {"description": "Home quick chip: opens Search sorted by distance."},
+  "homeChipTopRated": "Top rated",
+  "@homeChipTopRated": {"description": "Home quick chip: opens Search sorted by rating."},
+  "homePopularServicesTitle": "Popular services",
+  "@homePopularServicesTitle": {"description": "Heading of Home's rail of services most businesses nearby offer."},
+  "homePopularServiceFrom": "from",
+  "@homePopularServiceFrom": {"description": "Prefix before the lowest price on a popular-service card (\"from 5 000 ₸\")."},
+  "homePopularServiceBusinesses": "{count, plural, one{{count} business} other{{count} businesses}}",
+  "@homePopularServiceBusinesses": {
+    "description": "How many businesses offer a popular service, on its Home card.",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
   "homeSeeAll": "See all",
   "@homeSeeAll": {"description": "Home screen section header action that opens Search."},
   "homeCategoriesTitle": "Categories",

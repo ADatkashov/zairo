@@ -1,3 +1,5 @@
+import '../../features/discovery/presentation/providers/discovery_providers.dart' show DiscoverySort;
+
 /// Every screen the app opens by URL. Use these instead of string literals:
 /// `context.push(AppRoutes.provider(id), extra: result)`.
 ///
@@ -14,12 +16,21 @@ abstract final class AppRoutes {
   /// Search: a full-screen route above the tab shell (open it with
   /// `context.push`, so back returns to where the person was), optionally
   /// pre-filtered (`/search?category=beauty&q=…`). [focus] opens it with the
-  /// keyboard up, for "I know what I want, let me type".
-  static String search({String? category, String? query, bool focus = false}) {
+  /// keyboard up, for "I know what I want, let me type"; [availableOnly] and
+  /// [sort] open it already narrowed (Home's "today" / "nearby" / "top rated").
+  static String search({
+    String? category,
+    String? query,
+    bool focus = false,
+    bool availableOnly = false,
+    DiscoverySort? sort,
+  }) {
     final params = <String, String>{
       if (category != null && category.isNotEmpty) 'category': category,
       if (query != null && query.isNotEmpty) 'q': query,
       if (focus) 'focus': '1',
+      if (availableOnly) 'available': '1',
+      if (sort != null) 'sort': sort.wireValue,
     };
     return Uri(
       path: '/search',
