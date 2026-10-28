@@ -16,6 +16,7 @@ import 'package:zairo/features/auth/data/models/user_summary.dart';
 import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/booking/data/booking_api.dart';
 import 'package:zairo/features/booking/data/models/book_again_suggestion.dart';
+import 'package:zairo/features/booking/data/models/booking.dart';
 import 'package:zairo/features/booking/presentation/providers/booking_providers.dart';
 import 'package:zairo/features/catalog/data/catalog_api.dart';
 import 'package:zairo/features/catalog/data/models/business_type.dart';
@@ -666,6 +667,115 @@ void main() {
     await tester.tap(find.text('Haircut'));
     await tester.pumpAndSettle();
     expect(find.text('Search /search?q=Haircut'), findsOneWidget);
+  });
+
+  group('next booking card', () {
+    Booking booking(String id, {String status = 'CONFIRMED', Duration? in_, String? provider = 'Studio One'}) => Booking(
+      id: id,
+      userId: 'user-1',
+      serviceId: 's',
+      availabilitySlotId: 'slot',
+      status: status,
+      totalPrice: 100,
+      createdAt: DateTime.now(),
+      serviceTitle: 'Haircut',
+      providerName: provider,
+      startsAt: in_ == null ? null : DateTime.now().add(in_),
+    );
+
+    Widget homeWith(List<Booking> bookings, {bool loggedIn = true}) => ProviderScope(
+      overrides: [
+        discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi(const [_open])),
+        catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
+        if (loggedIn) authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        myBookingsProvider('user-1').overrideWith((ref) async => bookings),
+      ],
+      child: MaterialApp.router(
+        theme: factoryLightTheme(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: GoRouter(
+          routes: [
+            GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+            GoRoute(path: '/bookings', builder: (_, _) => const Scaffold(body: Text('Bookings page'))),
+          ],
+        ),
+      ),
+    );
+
+    testWidgets('shows the soonest upcoming visit under the search, and a tap opens Bookings', (tester) async {
+      _useTallWindow(tester);
+      await tester.pumpWidget(
+        homeWith([booking('later', in_: const Duration(days: 4)), booking('soon', in_: const Duration(minutes: 90))]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Your next booking'), findsOneWidget);
+      expect(find.textContaining('Haircut ·'), findsOneWidget);
+      expect(find.text('Studio One'), findsOneWidget);
+      final search = tester.getTopLeft(find.text('What service are you looking for?')).dy;
+      expect(tester.getTopLeft(find.text('Your next booking')).dy, greaterThan(search));
+
+      await tester.tap(find.text('Your next booking'));
+      await tester.pumpAndSettle();
+      expect(find.text('Bookings page'), findsOneWidget);
+    });
+
+    testWidgets('a booking still awaiting payment says so', (tester) async {
+      _useTallWindow(tester);
+      await tester.pumpWidget(homeWith([booking('a', status: 'PENDING_PAYMENT', in_: const Duration(days: 1))]));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Studio One · Awaiting payment'), findsOneWidget);
+    });
+
+    testWidgets('absent for a guest', (tester) async {
+      _useTallWindow(tester);
+      await tester.pumpWidget(homeWith([booking('a', in_: const Duration(days: 1))], loggedIn: false));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Your next booking'), findsNothing);
+    });
+
+    testWidgets('absent when nothing is coming up: only a past and an undated booking', (tester) async {
+      _useTallWindow(tester);
+      await tester.pumpWidget(homeWith([booking('past', in_: const Duration(days: -1)), booking('undated')]));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Your next booking'), findsNothing);
+    });
+
+    testWidgets('fits a 320 px phone with a large font in the dark theme, a long service and business name', (tester) async {
+      tester.view.physicalSize = const Size(320, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi(const [_open])),
+            catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
+            authControllerProvider.overrideWith(_LoggedInAuthController.new),
+            myBookingsProvider('user-1').overrideWith(
+              (ref) async => [booking('a', in_: const Duration(days: 2), provider: 'A Very Long Beauty Studio And Spa Name')],
+            ),
+          ],
+          child: MaterialApp(
+            theme: factoryDarkTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(2)),
+              child: child!,
+            ),
+            home: const HomeScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Your next booking'), findsOneWidget);
+    });
   });
 
   testWidgets('there is no "Popular services" block while no business lists a service', (tester) async {

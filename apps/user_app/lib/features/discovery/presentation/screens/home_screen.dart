@@ -18,6 +18,7 @@ import '../../../ads/presentation/widgets/home_banner_carousel.dart';
 import '../../../auth/data/models/user_summary.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../booking/data/models/book_again_suggestion.dart';
+import '../../../booking/data/models/booking.dart';
 import '../../../booking/presentation/providers/booking_providers.dart';
 import '../../../catalog/presentation/category_icon.dart';
 import '../../../catalog/presentation/providers/catalog_providers.dart';
@@ -29,6 +30,7 @@ import '../../../workers/presentation/providers/workers_providers.dart';
 import '../../../workers/presentation/widgets/master_avatar_card.dart';
 import '../../data/models/provider_search_result.dart';
 import '../../popular_services.dart';
+import '../../../booking/next_booking.dart';
 import '../providers/discovery_providers.dart';
 import '../widgets/provider_card.dart';
 
@@ -124,6 +126,8 @@ class HomeScreen extends ConsumerWidget {
                   // have to open the filter sheet to get "free today" or "closest".
                   const SizedBox(height: FactorySpacing.space3),
                   const _QuickChips(),
+                  // Someone with a visit coming up wants that first: when, where, in one tap.
+                  if (user != null) _NextBookingSection(userId: user.id),
                   // Categories next: the main way into the app is "pick what you
                   // need", so it is the first block below the search.
                   const SizedBox(height: FactorySpacing.space5),
@@ -1127,6 +1131,78 @@ class _PopularServiceCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "Your next booking": the soonest upcoming visit under the search, for a
+/// logged-in customer who has one. A tap opens Bookings. Best-effort: nothing
+/// while loading, on error, or with nothing coming up.
+class _NextBookingSection extends ConsumerWidget {
+  const _NextBookingSection({required this.userId});
+
+  final String userId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final bookings = ref.watch(myBookingsProvider(userId)).value ?? const <Booking>[];
+    final now = DateTime.now();
+    final next = nextBooking(bookings, now);
+    if (next == null) return const SizedBox.shrink();
+
+    final when = slotLabel(l10n, locale, now, next.startsAt!.toLocal());
+    final details = [
+      if (next.providerName != null) next.providerName!,
+      if (next.status == 'PENDING_PAYMENT') l10n.bookingStatusPendingPayment,
+    ].join(' · ');
+    return Padding(
+      padding: const EdgeInsets.only(top: FactorySpacing.space4),
+      child: FactoryCard(
+        onTap: () => context.go(AppRoutes.bookings),
+        padding: const EdgeInsets.all(FactorySpacing.space3),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(color: colors.primaryTint, borderRadius: FactoryRadius.mdRadius),
+              child: Icon(Symbols.calendar_month_rounded, color: colors.primary),
+            ),
+            const SizedBox(width: FactorySpacing.space3),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.homeNextBookingTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                  ),
+                  Text(
+                    next.serviceTitle == null ? when : '${next.serviceTitle} · $when',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.titleSmall?.copyWith(color: colors.text),
+                  ),
+                  if (details.isNotEmpty)
+                    Text(
+                      details,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                    ),
+                ],
+              ),
+            ),
+            Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
+          ],
         ),
       ),
     );
