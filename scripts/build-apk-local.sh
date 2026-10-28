@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds installable APKs on this machine — the replacement for build-artifacts.yml (disabled) while GitHub Actions is
-# unavailable. Same flags as that workflow. The APK is debug-signed (no release keystore yet): fine to install on your
-# own phone, not for a store.
+# unavailable. Same flags as that workflow. If apps/<app>/android/key.properties exists (scripts/setup-release-signing.sh)
+# the APK is release-signed (<app>-release-signed.apk); otherwise debug-signed (<app>-debug-signed.apk).
 #
 #   scripts/build-apk-local.sh                    # user_app and business_admin
 #   scripts/build-apk-local.sh user_app           # one app (user_app | business_admin | platform_admin)
@@ -31,8 +31,9 @@ for app in "${apps[@]}"; do
       --dart-define=TWOGIS_API_KEY="${TWOGIS_API_KEY:-}" \
       --dart-define=API_BASE_URL="$API_BASE_URL"
   )
-  cp "$ROOT/apps/$app/build/app/outputs/flutter-apk/app-release.apk" "$OUT_DIR/$app-debug-signed.apk"
-  echo "-> $OUT_DIR/$app-debug-signed.apk"
+  if [ -f "$ROOT/apps/$app/android/key.properties" ]; then kind=release-signed; else kind=debug-signed; fi
+  cp "$ROOT/apps/$app/build/app/outputs/flutter-apk/app-release.apk" "$OUT_DIR/$app-$kind.apk"
+  echo "-> $OUT_DIR/$app-$kind.apk"
 done
 echo
 echo "Done. From Windows open: \\\\wsl\$\\Ubuntu${OUT_DIR}   (or run: explorer.exe \"\$(wslpath -w '$OUT_DIR')\")"

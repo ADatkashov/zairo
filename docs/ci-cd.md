@@ -85,7 +85,10 @@ runner (do not add `pull_request` triggers from forks).
 `<app>-debug-signed.apk` in `build-apk-out/` (same `--dart-define` flags as the workflow; API URL defaults to the live
 Render backend). Open the folder from Windows with `explorer.exe "$(wslpath -w build-apk-out)"`, copy the APK to the phone
 (cable, Telegram, Drive) and install it (allow "install unknown apps"). The first build is long: Gradle downloads the Android
-platform/build-tools. These APKs are debug-signed, the same as the workflow's.
+platform/build-tools. Without a keystore the APKs are debug-signed (like the workflow's). For release-signed ones run
+`scripts/setup-release-signing.sh` once (creates the keystore in `~/.zairo-signing/` and each app's gitignored
+`android/key.properties`; **back that folder up**), then build as above: the output is `<app>-release-signed.apk`.
+A phone that has the debug-signed build must uninstall it first (different signature).
 
 ### Local checks and the pre-push hook
 
