@@ -32,7 +32,19 @@ List<String> _popularSearches(AppLocalizations l10n) => [
 /// Search — GET /api/v1/search/providers. A full-screen route above the tab
 /// shell, opened by the bottom bar's "Find a service" action.
 class SearchScreen extends ConsumerStatefulWidget {
-  const SearchScreen({super.key, this.initialVertical, this.initialQuery, this.autofocus = false});
+  const SearchScreen({
+    super.key,
+    this.initialVertical,
+    this.initialQuery,
+    this.initialAvailableOnly = false,
+    this.initialSort,
+    this.autofocus = false,
+  });
+
+  /// Open already narrowed to businesses with a free slot / in a given order
+  /// (Home's quick chips).
+  final bool initialAvailableOnly;
+  final DiscoverySort? initialSort;
 
   /// Open with the keyboard up (the bottom bar's action), instead of on the results.
   final bool autofocus;
@@ -53,6 +65,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   late DiscoveryQuery _query = DiscoveryQuery(
     vertical: widget.initialVertical,
     query: widget.initialQuery,
+    availableOnly: widget.initialAvailableOnly,
+    sort: widget.initialSort ?? DiscoverySort.recommended,
   );
 
   /// A new category/query for the same route (a link opened while Search is
