@@ -89,6 +89,8 @@ platform/build-tools. Without a keystore the APKs are debug-signed (like the wor
 `scripts/setup-release-signing.sh` once (creates the keystore in `~/.zairo-signing/` and each app's gitignored
 `android/key.properties`; **back that folder up**), then build as above: the output is `<app>-release-signed.apk`.
 A phone that has the debug-signed build must uninstall it first (different signature).
+On WSL the script also copies the APKs to `Documents\zairo-apk` in your Windows profile (`WIN_APK_DIR=...` changes the
+folder, `WIN_COPY=0` turns it off).
 
 ### Local checks and the pre-push hook
 
