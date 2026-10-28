@@ -1109,4 +1109,61 @@ void main() {
       expect(api.lastSort, 'DISTANCE');
     },
   );
+
+  group('as a full-screen route', () {
+    Widget host({required bool pushed, bool autofocus = false}) => ProviderScope(
+      overrides: [
+        discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi(const [])),
+        secureStorageServiceProvider.overrideWithValue(_FakeSecureStorageService()),
+      ],
+      child: MaterialApp(
+        theme: factoryLightTheme(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: pushed
+            ? Builder(
+                builder: (context) => Scaffold(
+                  body: TextButton(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(builder: (_) => SearchScreen(autofocus: autofocus)),
+                    ),
+                    child: const Text('Open search'),
+                  ),
+                ),
+              )
+            : SearchScreen(autofocus: autofocus),
+      ),
+    );
+
+    testWidgets('has a back button that returns to the previous screen', (tester) async {
+      await tester.pumpWidget(host(pushed: true));
+      await tester.tap(find.text('Open search'));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Symbols.arrow_back_rounded), findsOneWidget);
+      await tester.tap(find.byIcon(Symbols.arrow_back_rounded));
+      await tester.pumpAndSettle();
+      expect(find.byType(SearchScreen), findsNothing);
+      expect(find.text('Open search'), findsOneWidget);
+    });
+
+    testWidgets('has no back button when there is nothing to go back to', (tester) async {
+      await tester.pumpWidget(host(pushed: false));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Symbols.arrow_back_rounded), findsNothing);
+    });
+
+    testWidgets('autofocus puts the keyboard on the search field', (tester) async {
+      await tester.pumpWidget(host(pushed: false, autofocus: true));
+      await tester.pumpAndSettle();
+      expect(tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus, isTrue);
+    });
+
+    testWidgets('without autofocus the keyboard stays down', (tester) async {
+      await tester.pumpWidget(host(pushed: false));
+      await tester.pumpAndSettle();
+      expect(tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus, isFalse);
+    });
+  });
 }

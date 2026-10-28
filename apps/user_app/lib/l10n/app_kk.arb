@@ -2,7 +2,6 @@
   "@@locale": "kk",
 
   "navHome": "Басты бет",
-  "navSearch": "Іздеу",
   "navProfile": "Профиль",
   "navBookings": "Брондар",
 
@@ -130,6 +129,14 @@
   "homeAvailabilityHero": "{count, plural, other{Сізге жақын жерде {count} провайдерде бүгін бос уақыт бар}}",  "homeGreeting": "Сәлем, {name}",
   "homeGreetingGuest": "Қош келдіңіз",
   "homeLocationUnknown": "Сіздің орналасқан жеріңіз",
+  "homeNextBookingTitle": "Жақын арадағы жазылуыңыз",
+  "homeChipToday": "Бүгін",
+  "homeChipNearby": "Жақын",
+  "homeChipTopRated": "Үздік рейтинг",
+  "homePopularServicesTitle": "Танымал қызметтер",
+  "homePopularServiceFrom": "бастап",
+  "homePopularServiceBusinesses": "{count, plural, other{{count} мекеме}}",
+
   "homeSeeAll": "Барлығын көру",
   "homeCategoriesTitle": "Санаттар",
   "homeCategoriesAll": "Барлығы",
@@ -705,7 +712,8 @@
   "reviewsNoMatchMessage": "Басқа бағаны таңдаңыз немесе барлық пікірді көрсетіңіз.",
   "reviewsResetFilters": "Барлығын көрсету",
 
-  "navNewBooking": "Жаңа жазылу",
+
+  "navFindService": "Қызмет табу",
 
   "bookingStepService": "Қызмет",
   "bookingStepTime": "Уақыт",
