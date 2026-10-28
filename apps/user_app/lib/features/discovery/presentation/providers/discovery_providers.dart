@@ -6,6 +6,7 @@ import '../../../city/presentation/providers/city_providers.dart';
 import '../../../maps/data/geo_point.dart';
 import '../../../maps/presentation/providers/maps_providers.dart';
 import '../../data/discovery_api.dart';
+import '../../popular_services.dart';
 import '../../data/models/provider_search_result.dart';
 
 final discoveryApiProvider = Provider<DiscoveryApi>((ref) {
@@ -185,4 +186,16 @@ final searchResultsProvider = FutureProvider.autoDispose
     availableOnly: params.availableOnly,
     sort: params.sort.wireValue,
   );
+});
+
+/// The most booked services in the person's city, from the server. Best-effort like the rest of Home's extras: a
+/// failure (offline, an older backend without the endpoint) is the same as "nothing yet", and Home then falls back to
+/// what the loaded search results offer.
+final popularServicesProvider = FutureProvider.autoDispose<List<PopularService>>((ref) async {
+  try {
+    final city = await ref.watch(userCurrentCityProvider.future).then<City?>((c) => c, onError: (_) => null);
+    return await ref.watch(discoveryApiProvider).popularServices(cityCode: city?.code);
+  } catch (_) {
+    return const <PopularService>[];
+  }
 });

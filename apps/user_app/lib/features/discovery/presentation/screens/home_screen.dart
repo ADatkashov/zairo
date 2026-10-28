@@ -1037,18 +1037,20 @@ class _BannersSection extends ConsumerWidget {
 }
 
 /// "Popular services": what people book, with the lowest price, rather than
-/// only who offers it. A tap opens Search for that service. Built from what
-/// the home feed already loaded (see [popularServices] for what "popular"
-/// means today); absent while there is nothing to show.
-class _PopularServicesSection extends StatelessWidget {
+/// only who offers it. A tap opens Search for that service. The server's
+/// most-booked list when it has one, else built from what the home feed already
+/// loaded (see [popularServices]); absent while there is nothing to show.
+class _PopularServicesSection extends ConsumerWidget {
   const _PopularServicesSection({required this.results});
 
   final List<ProviderSearchResult> results;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final services = popularServices(results);
+    // What customers really booked, when the server has that; otherwise what the most businesses nearby offer.
+    final booked = ref.watch(popularServicesProvider).value ?? const <PopularService>[];
+    final services = booked.isNotEmpty ? booked : popularServices(results);
     if (services.isEmpty) return const SizedBox.shrink();
 
     return Padding(

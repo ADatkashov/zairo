@@ -25,6 +25,7 @@ import 'package:zairo/features/catalog/presentation/providers/catalog_providers.
 import 'package:zairo/features/discovery/data/discovery_api.dart';
 import 'package:zairo/features/discovery/data/models/provider_search_result.dart';
 import 'package:zairo/features/discovery/data/models/service_summary.dart';
+import 'package:zairo/features/discovery/popular_services.dart';
 import 'package:zairo/features/discovery/presentation/providers/discovery_providers.dart';
 import 'package:zairo/features/catalog/presentation/screens/all_categories_screen.dart';
 import 'package:zairo/features/discovery/presentation/screens/home_screen.dart';
@@ -51,10 +52,20 @@ bool _isOnScreen(WidgetTester tester, Finder finder) {
 }
 
 class _FakeDiscoveryApi extends DiscoveryApi {
-  _FakeDiscoveryApi(this._results) : super(DioClient(Dio()));
+  _FakeDiscoveryApi(this._results, {this.popular = const []}) : super(DioClient(Dio()));
 
   final List<ProviderSearchResult> _results;
+
+  /// What the backend's most-booked list returns; empty is a young platform, throwing is offline.
+  final List<PopularService> popular;
+  bool popularFails = false;
   String? lastVertical;
+
+  @override
+  Future<List<PopularService>> popularServices({String? cityCode, int limit = 8}) async {
+    if (popularFails) throw Exception('offline');
+    return popular;
+  }
 
   @override
   Future<List<ProviderSearchResult>> searchProviders({
@@ -776,6 +787,57 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('Your next booking'), findsOneWidget);
     });
+  });
+
+  testWidgets('"Popular services" prefers what the server says was booked most, over what the feed offers', (tester) async {
+    _useTallWindow(tester);
+    final feed = ProviderSearchResult(
+      id: 'p1', name: 'Studio', vertical: 'beauty', status: 'ACTIVE', hasOpenAvailability: true, minPrice: 4000,
+      services: [ServiceSummary(id: 's', title: 'Feed Only Service', durationMinutes: 30, price: 4000, currency: 'KZT')],
+    );
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi([feed], popular: const [
+          PopularService(title: 'Most Booked Service', minPrice: 2500, currency: 'KZT', providerCount: 4, bookings: 120),
+        ])),
+        catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
+      ],
+      child: MaterialApp(
+        theme: factoryLightTheme(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const HomeScreen(),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Most Booked Service'), findsOneWidget);
+    expect(find.text('4 businesses'), findsOneWidget);
+    expect(find.text('Feed Only Service'), findsNothing);
+  });
+
+  testWidgets('"Popular services" falls back to the feed when the server list fails', (tester) async {
+    _useTallWindow(tester);
+    final feed = ProviderSearchResult(
+      id: 'p1', name: 'Studio', vertical: 'beauty', status: 'ACTIVE', hasOpenAvailability: true, minPrice: 4000,
+      services: [ServiceSummary(id: 's', title: 'Feed Only Service', durationMinutes: 30, price: 4000, currency: 'KZT')],
+    );
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi([feed])..popularFails = true),
+        catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
+      ],
+      child: MaterialApp(
+        theme: factoryLightTheme(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const HomeScreen(),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Popular services'), findsOneWidget);
+    expect(find.text('Feed Only Service'), findsOneWidget);
   });
 
   testWidgets('there is no "Popular services" block while no business lists a service', (tester) async {
