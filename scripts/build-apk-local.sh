@@ -7,6 +7,8 @@
 #   scripts/build-apk-local.sh user_app           # one app (user_app | business_admin | platform_admin)
 #
 # Optional env: API_BASE_URL (default: the live Render backend), MAPS_API_KEY, TWOGIS_API_KEY, OUT_DIR.
+# On WSL the finished APKs are also copied to the Windows Documents\zairo-apk folder (WIN_APK_DIR overrides the folder,
+# WIN_COPY=0 turns it off).
 # Needs scripts/setup-local-dev-wsl.sh + scripts/setup-android-sdk-wsl.sh.
 set -euo pipefail
 
@@ -35,5 +37,19 @@ for app in "${apps[@]}"; do
   cp "$ROOT/apps/$app/build/app/outputs/flutter-apk/app-release.apk" "$OUT_DIR/$app-$kind.apk"
   echo "-> $OUT_DIR/$app-$kind.apk"
 done
+# WSL: also drop the APKs into the Windows user's Documents so they are one click from Explorer / the phone transfer.
+win_dir="${WIN_APK_DIR:-}"
+if [ -z "$win_dir" ] && [ "${WIN_COPY:-1}" != "0" ] && grep -qi microsoft /proc/version 2>/dev/null; then
+  profile="$(cd /mnt/c 2>/dev/null && cmd.exe /c "echo %USERPROFILE%" 2>/dev/null | tr -d '\r' || true)"
+  [ -n "$profile" ] && win_dir="$(wslpath -u "$profile")/Documents/zairo-apk"
+fi
+if [ -n "$win_dir" ] && [ "${WIN_COPY:-1}" != "0" ]; then
+  mkdir -p "$win_dir"
+  for app in "${apps[@]}"; do
+    cp -f "$OUT_DIR/$app"-*.apk "$win_dir/" 2>/dev/null || true
+  done
+  echo "Copied to Windows: $(wslpath -w "$win_dir" 2>/dev/null || echo "$win_dir")"
+fi
+
 echo
 echo "Done. From Windows open: \\\\wsl\$\\Ubuntu${OUT_DIR}   (or run: explorer.exe \"\$(wslpath -w '$OUT_DIR')\")"
