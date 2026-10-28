@@ -2,7 +2,6 @@
   "@@locale": "kk",
 
   "navHome": "Басты бет",
-  "navSearch": "Іздеу",
   "navProfile": "Профиль",
   "navBookings": "Брондар",
 
@@ -705,7 +704,8 @@
   "reviewsNoMatchMessage": "Басқа бағаны таңдаңыз немесе барлық пікірді көрсетіңіз.",
   "reviewsResetFilters": "Барлығын көрсету",
 
-  "navNewBooking": "Жаңа жазылу",
+
+  "navFindService": "Қызмет табу",
 
   "bookingStepService": "Қызмет",
   "bookingStepTime": "Уақыт",

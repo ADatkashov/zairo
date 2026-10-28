@@ -11,11 +11,15 @@ abstract final class AppRoutes {
   /// The three-page welcome shown once on the very first launch.
   static const welcome = '/welcome';
 
-  /// The Search tab, optionally pre-filtered (`/search?category=beauty&q=…`).
-  static String search({String? category, String? query}) {
+  /// Search: a full-screen route above the tab shell (open it with
+  /// `context.push`, so back returns to where the person was), optionally
+  /// pre-filtered (`/search?category=beauty&q=…`). [focus] opens it with the
+  /// keyboard up, for "I know what I want, let me type".
+  static String search({String? category, String? query, bool focus = false}) {
     final params = <String, String>{
       if (category != null && category.isNotEmpty) 'category': category,
       if (query != null && query.isNotEmpty) 'q': query,
+      if (focus) 'focus': '1',
     };
     return Uri(
       path: '/search',

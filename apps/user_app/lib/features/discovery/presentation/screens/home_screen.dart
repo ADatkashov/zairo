@@ -122,7 +122,7 @@ class HomeScreen extends ConsumerWidget {
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
                   const SizedBox(height: FactorySpacing.space4),
-                  _SearchEntry(onTap: () => context.go(AppRoutes.search())),
+                  _SearchEntry(onTap: () => context.push(AppRoutes.search())),
                   // Categories first, straight under the search: the main way into
                   // the app is "pick what you need", so it is the first thing
                   // below the search field.
@@ -136,7 +136,7 @@ class HomeScreen extends ConsumerWidget {
                     const SizedBox(height: FactorySpacing.space5),
                     _PromoStrip(
                       openCount: openCount,
-                      onViewAvailable: () => context.go(AppRoutes.search()),
+                      onViewAvailable: () => context.push(AppRoutes.search()),
                     ),
                   ],
                   if (user != null) ...[
@@ -148,7 +148,7 @@ class HomeScreen extends ConsumerWidget {
                   FactorySectionHeader(
                     title: hasTopRated ? l10n.homeTopRatedTitle : l10n.homeNearbyTitle,
                     actionLabel: l10n.homeSeeAll,
-                    onActionTap: () => context.go(AppRoutes.search()),
+                    onActionTap: () => context.push(AppRoutes.search()),
                   ),
                   const SizedBox(height: FactorySpacing.space3),
                   if (topRated.isEmpty)
@@ -415,7 +415,7 @@ class _HomeHeroBar extends StatelessWidget {
                     ),
                     onOpenLink: (target) => switch (target) {
                       AdLinkTarget.rewards => context.push(AppRoutes.rewards),
-                      AdLinkTarget.search => context.go(AppRoutes.search()),
+                      AdLinkTarget.search => context.push(AppRoutes.search()),
                     },
                   ),
                 ),
@@ -541,7 +541,7 @@ class _CategoriesSection extends ConsumerWidget {
 
   Future<void> _openAllCategories(BuildContext context) async {
     final code = await context.push<String>(AppRoutes.categories);
-    if (code != null && context.mounted) context.go(AppRoutes.search(category: code));
+    if (code != null && context.mounted) context.push(AppRoutes.search(category: code));
   }
 
   @override
@@ -608,7 +608,7 @@ class _CategoriesSection extends ConsumerWidget {
                     dense: dense,
                     accentColor: accent?.color,
                     accentTint: accent?.tint,
-                    onTap: () => context.go(AppRoutes.search(category: code)),
+                    onTap: () => context.push(AppRoutes.search(category: code)),
                   ),
                 ),
               );

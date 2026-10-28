@@ -44,19 +44,15 @@ import 'route_screens.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 final homeNavigatorKey = GlobalKey<NavigatorState>();
-final searchNavigatorKey = GlobalKey<NavigatorState>();
 final bookingsNavigatorKey = GlobalKey<NavigatorState>();
 final profileNavigatorKey = GlobalKey<NavigatorState>();
 
-/// Tab set is Home/Search/Bookings/Profile — 4, not the original Factory
-/// Design System v0.2 artifact's 5 (Home/Search/Bookings/Favorites/
-/// Profile). Favorites earned its own tab in that spec but turned out to
-/// be reached far less often than the other four; it's now a normal push
-/// from Profile (see ProfileScreen's favorites stat tile) instead of
-/// permanent bottom-nav real estate, with the ♥ on every provider card
-/// (see FavoriteButton) covering the actual "save this" moment. Settings
-/// is the same story — reachable from Profile's AppBar action, never its
-/// own tab.
+/// Tab set is Home/Bookings/Profile, with "Find a service" as the round action
+/// in the middle of the bar (see MainWrapper). Search is not a tab: it is a
+/// full-screen route above the shell (`/search`), opened by that action and by
+/// every "see all" / category tap, so back always returns to where the person
+/// started. Favorites is a push from Home's heart and Profile, Settings from
+/// Profile's AppBar action; neither is a tab.
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: rootNavigatorKey,
@@ -277,6 +273,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+      GoRoute(
+        path: '/search',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => SearchScreen(
+          initialVertical: state.uri.queryParameters['category'],
+          initialQuery: state.uri.queryParameters['q'],
+          autofocus: state.uri.queryParameters['focus'] == '1',
+        ),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return MainWrapper(navigationShell: navigationShell);
@@ -295,27 +300,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
-            navigatorKey: searchNavigatorKey,
-            routes: [
-              GoRoute(
-                path: '/search',
-                builder: (context, state) => ScrollToTopOnTabReselect(
-                  tabIndex: 1,
-                  child: SearchScreen(
-                    initialVertical: state.uri.queryParameters['category'],
-                    initialQuery: state.uri.queryParameters['q'],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
             navigatorKey: bookingsNavigatorKey,
             routes: [
               GoRoute(
                 path: '/bookings',
                 builder: (context, state) => const ScrollToTopOnTabReselect(
-                  tabIndex: 2,
+                  tabIndex: 1,
                   child: MyBookingsScreen(),
                 ),
               ),
@@ -327,7 +317,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/profile',
                 builder: (context, state) => const ScrollToTopOnTabReselect(
-                  tabIndex: 3,
+                  tabIndex: 2,
                   child: ProfileScreen(),
                 ),
               ),

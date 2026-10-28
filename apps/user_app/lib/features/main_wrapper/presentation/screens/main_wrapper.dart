@@ -26,7 +26,7 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
     final l10n = AppLocalizations.of(context)!;
     final newMessages = ref.watch(newMessagesCountProvider);
 
-    // Android back from the root of Bookings/Search/Profile goes to Home
+    // Android back from the root of Bookings/Profile goes to Home
     // first and only exits the app from Home. Pushed screens inside a tab
     // are unaffected: the tab's own navigator pops them before this scope
     // is ever asked.
@@ -49,33 +49,21 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
               initialLocation: index == navigationShell.currentIndex,
             );
           },
-          // "+" is the app's main job — a new booking — in one tap: pick a
-          // category, land in Search filtered to it. Named under the button,
-          // since a bare "+" doesn't say what it adds. Messages and favourites
-          // are one tap away elsewhere (Profile, Home's heart). An action,
-          // not a tab, so the tab indexes below are unchanged.
+          // The app's main job in one tap: "Find a service" opens Search with
+          // the keyboard up (recent and popular queries, categories and results
+          // are all on that screen). Named under the button, since a bare icon
+          // doesn't say what it does. An action, not a tab, so the tab indexes
+          // below (Home 0, Bookings 1, Profile 2) are not shifted by it.
           centerAction: FactoryNavAction(
-            icon: Symbols.add_rounded,
-            label: l10n.navNewBooking,
+            icon: Symbols.search_rounded,
+            label: l10n.navFindService,
             visibleLabel: true,
-            onTap: () async {
-              final code = await context.push<String>(AppRoutes.categories);
-              if (code != null && context.mounted) {
-                context.go(AppRoutes.search(category: code));
-              }
-            },
+            onTap: () => context.push(AppRoutes.search(focus: true)),
           ),
-          // Icon names match BottomNav.dc.html's own `icon` field verbatim
-          // (home/search/calendar_month/person) — "Записи" uses
-          // calendar_month in the design board, not event_note.
           destinations: [
             FactoryNavDestination(
               icon: Symbols.home_rounded,
               label: l10n.navHome,
-            ),
-            FactoryNavDestination(
-              icon: Symbols.search_rounded,
-              label: l10n.navSearch,
             ),
             FactoryNavDestination(
               icon: Symbols.calendar_month_rounded,

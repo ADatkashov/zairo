@@ -4,8 +4,6 @@
   "navHome": "Home",
   "@navHome": {"description": "Bottom navigation label for the Home tab."},
 
-  "navSearch": "Search",
-  "@navSearch": {"description": "Bottom navigation label for the Search tab."},
 
   "navProfile": "Profile",
   "@navProfile": {"description": "Bottom navigation label for the Profile tab."},
@@ -1972,8 +1970,9 @@
   "reviewsResetFilters": "Show all",
   "@reviewsResetFilters": {"description": "Reviews screen filter/sort/empty text."},
 
-  "navNewBooking": "New booking",
-  "@navNewBooking": {"description": "Screen-reader label of the round + button in the middle of the bottom bar; opens the category picker to start a booking."},
+
+  "navFindService": "Find a service",
+  "@navFindService": {"description": "Label of the round button in the middle of the bottom bar (screen readers and the text under it); opens Search with the keyboard up."},
 
   "bookingStepService": "Service",
   "@bookingStepService": {"description": "Step label in the booking progress bar: choose a service."},
