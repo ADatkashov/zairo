@@ -130,6 +130,7 @@
   "homeGreetingGuest": "Добро пожаловать",
   "homeLocationUnknown": "Ваше местоположение",
   "homeNextBookingTitle": "Ваша ближайшая запись",
+  "homeRecommendedForYouTitle": "Подобрано для вас",
   "homeChipToday": "Сегодня",
   "homeChipNearby": "Рядом",
   "homeChipTopRated": "Топ рейтинг",

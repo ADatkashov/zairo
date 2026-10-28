@@ -80,6 +80,7 @@ class EndpointAuthPolicyTests {
             "GET /api/v1/providers/{providerId}/staff",
             "GET /api/v1/providers/{providerId}/workers/{workerId}/availability",
             "GET /api/v1/providers/{providerId}/workforce-settings",
+            "GET /api/v1/search/popular-services",
             "GET /api/v1/search/providers",
             "GET /api/v1/services/{id}",
             "GET /api/v1/staff/{staffId}",

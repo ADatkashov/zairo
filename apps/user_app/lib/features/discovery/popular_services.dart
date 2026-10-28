@@ -7,7 +7,18 @@ class PopularService {
     required this.minPrice,
     required this.currency,
     required this.providerCount,
+    this.bookings = 0,
   });
+
+  /// Mirrors the backend's `PopularServicesDtos.PopularService`
+  /// (GET /api/v1/search/popular-services).
+  factory PopularService.fromJson(Map<String, dynamic> json) => PopularService(
+    title: json['title'] as String,
+    minPrice: (json['minPrice'] as num).toDouble(),
+    currency: json['currency'] as String,
+    providerCount: (json['providerCount'] as num).toInt(),
+    bookings: (json['bookings'] as num?)?.toInt() ?? 0,
+  );
 
   /// As the first business spelled it ("Haircut", "Манікюр").
   final String title;
@@ -18,14 +29,18 @@ class PopularService {
 
   /// How many businesses offer it.
   final int providerCount;
+
+  /// Bookings it got in the server's window; 0 when the list was worked out on the device from search results.
+  final int bookings;
 }
 
 /// The services most offered across [results], most businesses first.
 ///
-/// There is no booking-count signal on the client yet (a "most booked in your
-/// city" endpoint is a later, backend step), so "popular" here means what the
-/// most businesses nearby offer; ties go to the service of the better-rated
-/// business. Services are matched by title, ignoring case and spacing.
+/// The fallback for when the server has no booking-based list yet (GET
+/// /search/popular-services is empty on a young platform): "popular" then
+/// means what the most businesses nearby offer; ties go to the service of the
+/// better-rated business. Services are matched by title, ignoring case and
+/// spacing.
 List<PopularService> popularServices(List<ProviderSearchResult> results, {int limit = 8}) {
   final byTitle = <String, _Tally>{};
   for (final result in results) {

@@ -3,6 +3,7 @@ import 'package:core_storage/core_storage.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -1164,6 +1165,68 @@ void main() {
       await tester.pumpWidget(host(pushed: false));
       await tester.pumpAndSettle();
       expect(tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus, isFalse);
+    });
+  });
+
+  group('the result count and the sort button share one line', () {
+    ProviderSearchResult provider(int i) => ProviderSearchResult(
+      id: 'p$i', name: 'Studio $i', vertical: 'beauty', status: 'ACTIVE', hasOpenAvailability: true, services: const [],
+    );
+
+    Future<void> pumpSearch(WidgetTester tester, {required Locale locale, required Size size, double textScale = 1}) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi([for (var i = 0; i < 6; i++) provider(i)])),
+            secureStorageServiceProvider.overrideWithValue(_FakeSecureStorageService()),
+          ],
+          child: MaterialApp(
+            theme: factoryLightTheme(),
+            locale: locale,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
+              child: child!,
+            ),
+            home: const SearchScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // Results show once something is typed or filtered; "available" is the cheapest way here.
+    }
+
+    bool cutOff(WidgetTester tester, Finder finder) =>
+        tester.renderObject<RenderParagraph>(finder).didExceedMaxLines;
+
+    testWidgets('the current sort is read whole in Russian on a 390 px phone', (tester) async {
+      await pumpSearch(tester, locale: const Locale('ru'), size: const Size(390, 844));
+      await tester.enterText(find.byType(EditableText), 'Studio');
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pumpAndSettle();
+
+      final sort = find.textContaining('Рекомендуемые');
+      expect(sort, findsOneWidget);
+      expect(cutOff(tester, sort), isFalse, reason: 'not "Рекоме…"');
+      expect(tester.getSize(sort).height, lessThan(24), reason: 'one line');
+      // The full phrase is still there for screen readers and long-press.
+      expect(find.byTooltip('Сортировка: Рекомендуемые'), findsOneWidget);
+    });
+
+    testWidgets('at 320 px (and a large font) the row still fits: the count gives way', (tester) async {
+      await pumpSearch(tester, locale: const Locale('ru'), size: const Size(320, 640), textScale: 1.6);
+      await tester.enterText(find.byType(EditableText), 'Studio');
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pumpAndSettle();
+
+      // No overflow stripe: the count is what is shortened. (The test font is far wider than the real one, so
+      // "is the sort whole" is only checked at 390 px above.)
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('Рекомендуемые'), findsOneWidget);
     });
   });
 }
