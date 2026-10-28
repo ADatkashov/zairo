@@ -29,9 +29,13 @@ List<String> _popularSearches(AppLocalizations l10n) => [
   l10n.searchPopularQueryHomeCleaning,
 ];
 
-/// The Search tab — GET /api/v1/search/providers.
+/// Search — GET /api/v1/search/providers. A full-screen route above the tab
+/// shell, opened by the bottom bar's "Find a service" action.
 class SearchScreen extends ConsumerStatefulWidget {
-  const SearchScreen({super.key, this.initialVertical, this.initialQuery});
+  const SearchScreen({super.key, this.initialVertical, this.initialQuery, this.autofocus = false});
+
+  /// Open with the keyboard up (the bottom bar's action), instead of on the results.
+  final bool autofocus;
 
   /// Category / text carried in from Home (`/search?category=…&q=…`), so
   /// "see all" and the search entry keep what the user had just picked.
@@ -51,8 +55,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     query: widget.initialQuery,
   );
 
-  /// The tab lives in an IndexedStack, so this State outlives navigations
-  /// back to `/search`: a new category/query from Home arrives here.
+  /// A new category/query for the same route (a link opened while Search is
+  /// already showing) arrives here.
   @override
   void didUpdateWidget(SearchScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -143,7 +147,20 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             children: [
               Padding(
                 padding: const EdgeInsets.all(FactorySpacing.space4),
-                child: FactorySearchField(
+                child: Row(
+                  children: [
+                    if (Navigator.of(context).canPop())
+                      Padding(
+                        padding: const EdgeInsets.only(right: FactorySpacing.space2),
+                        child: IconButton(
+                          icon: const Icon(Symbols.arrow_back_rounded),
+                          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                          onPressed: () => Navigator.of(context).maybePop(),
+                        ),
+                      ),
+                    Expanded(
+                      child: FactorySearchField(
+                  autofocus: widget.autofocus,
                   controller: _searchController,
                   hint: l10n.searchHint,
                   onChanged: _onTyping,
@@ -166,6 +183,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       setState(() => _query = updated);
                     }
                   },
+                      ),
+                    ),
+                  ],
                 ),
               ),
               if (query.hasActiveFilters)

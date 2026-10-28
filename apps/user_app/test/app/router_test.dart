@@ -12,6 +12,7 @@ import 'package:zairo/features/catalog/presentation/providers/catalog_providers.
 import 'package:zairo/features/discovery/data/discovery_api.dart';
 import 'package:zairo/features/discovery/data/models/provider_search_result.dart';
 import 'package:zairo/features/discovery/presentation/providers/discovery_providers.dart';
+import 'package:zairo/features/discovery/presentation/screens/search_screen.dart';
 
 class _EmptyDiscoveryApi extends DiscoveryApi {
   _EmptyDiscoveryApi() : super(DioClient(Dio()));
@@ -98,33 +99,67 @@ void main() {
     expect(find.text('Home'), findsWidgets);
   });
 
-  testWidgets('the "+" says what it does and starts a new booking in one tap (no menu in between)', (tester) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          networkConfigProvider.overrideWithValue(appNetworkConfig),
-          discoveryApiProvider.overrideWithValue(_EmptyDiscoveryApi()),
-          categoriesProvider.overrideWith((ref) async => const []),
-        ],
-        child: const ZairoApp(),
-      ),
-    );
+  Widget app() => ProviderScope(
+    overrides: [
+      networkConfigProvider.overrideWithValue(appNetworkConfig),
+      discoveryApiProvider.overrideWithValue(_EmptyDiscoveryApi()),
+      categoriesProvider.overrideWith((ref) async => const []),
+    ],
+    child: const ZairoApp(),
+  );
+
+  testWidgets('the bar is Home, Find a service in the middle, Bookings, Profile: no Search tab', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(app());
     await tester.pumpAndSettle();
 
-    // The name is written in the bar, under the button.
-    final label = find.descendant(of: find.byType(FactoryBottomNavigation), matching: find.text('New booking'));
-    expect(label, findsOneWidget);
+    Finder inBar(String text) => find.descendant(of: find.byType(FactoryBottomNavigation), matching: find.text(text));
+    expect(inBar('Home'), findsOneWidget);
+    expect(inBar('Bookings'), findsOneWidget);
+    expect(inBar('Profile'), findsOneWidget);
+    expect(inBar('Find a service'), findsOneWidget);
+    expect(inBar('Search'), findsNothing);
 
-    // One tap: straight to choosing a category, not a fan of shortcuts first.
+    // Home, then the action, then Bookings and Profile, left to right; the action is centred.
+    final home = tester.getCenter(inBar('Home')).dx;
+    final find_ = tester.getCenter(inBar('Find a service')).dx;
+    expect(home, lessThan(find_));
+    expect(find_, lessThan(tester.getCenter(inBar('Bookings')).dx));
+    expect(tester.getCenter(inBar('Bookings')).dx, lessThan(tester.getCenter(inBar('Profile')).dx));
+    expect(find_, closeTo(195, 1));
+  });
+
+  testWidgets('"Find a service" opens Search with the keyboard up in one tap, full screen, and back returns Home', (tester) async {
+    await tester.pumpWidget(app());
+    await tester.pumpAndSettle();
+
+    final label = find.descendant(of: find.byType(FactoryBottomNavigation), matching: find.text('Find a service'));
     await tester.tap(label);
     await tester.pumpAndSettle();
-    expect(find.text('All categories'), findsOneWidget);
-    expect(find.text('My favorites'), findsNothing);
+
+    expect(find.byType(SearchScreen), findsOneWidget);
+    // Full screen: the tab bar is not drawn over Search.
+    expect(find.byType(FactoryBottomNavigation), findsNothing);
+    // Ready to type: the field has focus.
+    final field = tester.widget<EditableText>(find.descendant(of: find.byType(SearchScreen), matching: find.byType(EditableText)));
+    expect(field.focusNode.hasFocus, isTrue);
 
     // Back is where the person started.
     ProviderScope.containerOf(tester.element(find.byType(ZairoApp))).read(routerProvider).pop();
     await tester.pumpAndSettle();
-    expect(find.text('All categories'), findsNothing);
+    expect(find.byType(SearchScreen), findsNothing);
     expect(label, findsOneWidget);
+  });
+
+  testWidgets('Search opened from a category link does not grab the keyboard', (tester) async {
+    await tester.pumpWidget(app());
+    await tester.pumpAndSettle();
+    ProviderScope.containerOf(tester.element(find.byType(ZairoApp))).read(routerProvider).push(AppRoutes.search(category: 'beauty'));
+    await tester.pumpAndSettle();
+
+    final field = tester.widget<EditableText>(find.descendant(of: find.byType(SearchScreen), matching: find.byType(EditableText)));
+    expect(field.focusNode.hasFocus, isFalse);
   });
 }

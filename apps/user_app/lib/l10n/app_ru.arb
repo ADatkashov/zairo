@@ -2,7 +2,6 @@
   "@@locale": "ru",
 
   "navHome": "Главная",
-  "navSearch": "Поиск",
   "navProfile": "Профиль",
   "navBookings": "Брони",
 
@@ -705,7 +704,8 @@
   "reviewsNoMatchMessage": "Выберите другую оценку или покажите все отзывы.",
   "reviewsResetFilters": "Показать все",
 
-  "navNewBooking": "Новая запись",
+
+  "navFindService": "Найти услугу",
 
   "bookingStepService": "Услуга",
   "bookingStepTime": "Время",

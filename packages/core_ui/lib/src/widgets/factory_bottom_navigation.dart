@@ -78,8 +78,9 @@ class FactoryBottomNavigation extends StatelessWidget {
   final ValueChanged<int> onDestinationSelected;
 
   /// Round action placed between the first and second half of
-  /// [destinations]. Tab indexes reported by [onDestinationSelected] stay
-  /// those of [destinations], the action does not shift them.
+  /// [destinations] (the first half is `length ~/ 2` tabs, so three tabs
+  /// read 1 + action + 2). Tab indexes reported by [onDestinationSelected]
+  /// stay those of [destinations], the action does not shift them.
   final FactoryNavAction? centerAction;
 
   /// Width reserved for the action between the two halves of the tabs.
@@ -130,19 +131,25 @@ class FactoryBottomNavigation extends StatelessWidget {
                 centerRise: FactoryBottomNavigation._actionRise - FactoryBottomNavigation._actionSize / 2,
               ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          for (var i = 0; i < destinations.length; i++) ...[
-            if (action != null && i == split)
-              SizedBox(
-                width: FactoryBottomNavigation._actionSlot,
-                child: action.visibleLabel ? _ActionLabel(label: action.label, onTap: action.onTap) : null,
-              ),
-            tab(i, expand: action != null),
-          ],
-        ],
-      ),
+      child: action == null
+          ? Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [for (var i = 0; i < destinations.length; i++) tab(i, expand: false)],
+            )
+          // Two equal halves around the action slot keep the action exactly
+          // centred even when the tabs do not split evenly (1 + 2).
+          : Row(
+              children: [
+                Expanded(child: Row(children: [for (var i = 0; i < split; i++) tab(i, expand: true)])),
+                SizedBox(
+                  width: FactoryBottomNavigation._actionSlot,
+                  child: action.visibleLabel ? _ActionLabel(label: action.label, onTap: action.onTap) : null,
+                ),
+                Expanded(
+                  child: Row(children: [for (var i = split; i < destinations.length; i++) tab(i, expand: true)]),
+                ),
+              ],
+            ),
     );
 
     final nav = SafeArea(

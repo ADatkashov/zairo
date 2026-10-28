@@ -914,6 +914,37 @@ void main() {
     expect(find.bySemanticsLabel('New booking'), findsOneWidget);
   });
 
+  testWidgets('FactoryBottomNavigation keeps the centre action centred with three tabs (1 + action + 2)', (tester) async {
+    tester.view.physicalSize = const Size(390, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    int? selected;
+    await tester.pumpWidget(
+      _wrap(
+        FactoryBottomNavigation(
+          destinations: const [
+            FactoryNavDestination(icon: Icons.home_rounded, label: 'Home'),
+            FactoryNavDestination(icon: Icons.calendar_month_rounded, label: 'Bookings'),
+            FactoryNavDestination(icon: Icons.person_rounded, label: 'Profile'),
+          ],
+          selectedIndex: 0,
+          onDestinationSelected: (i) => selected = i,
+          centerAction: FactoryNavAction(icon: Icons.search_rounded, label: 'Find', visibleLabel: true, onTap: () {}),
+        ),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+
+    final centre = tester.getCenter(find.byIcon(Icons.search_rounded));
+    expect(centre.dx, closeTo(195, 1));
+    expect(tester.getCenter(find.text('Home')).dx, lessThan(centre.dx));
+    expect(tester.getCenter(find.text('Bookings')).dx, greaterThan(centre.dx));
+    expect(tester.getCenter(find.text('Profile')).dx, greaterThan(tester.getCenter(find.text('Bookings')).dx));
+
+    await tester.tap(find.text('Profile'));
+    expect(selected, 2);
+  });
+
   testWidgets('FactoryBottomNavigation can write the centre action\'s name under the button; the text acts too', (tester) async {
     tester.view.physicalSize = const Size(390, 800);
     tester.view.devicePixelRatio = 1.0;
