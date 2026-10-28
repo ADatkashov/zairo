@@ -1,5 +1,6 @@
 import 'package:core_network/core_network.dart';
 
+import '../popular_services.dart';
 import 'models/provider_search_result.dart';
 
 /// Not marked final/sealed on purpose: tests substitute a subclass that
@@ -48,6 +49,21 @@ class DiscoveryApi {
     final data = response.data as List<dynamic>;
     return data
         .map((e) => ProviderSearchResult.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// The services customers booked most lately (GET /search/popular-services), most booked first; empty while the
+  /// platform has no bookings yet.
+  Future<List<PopularService>> popularServices({String? cityCode, int limit = 8}) async {
+    final response = await _dioClient.get(
+      '/search/popular-services',
+      queryParameters: {
+        if (cityCode != null && cityCode.isNotEmpty) 'city': cityCode,
+        'limit': limit,
+      },
+    );
+    return (response.data as List<dynamic>)
+        .map((e) => PopularService.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 }
