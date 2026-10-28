@@ -24,6 +24,7 @@ import 'package:zairo/features/catalog/data/models/category.dart';
 import 'package:zairo/features/catalog/presentation/providers/catalog_providers.dart';
 import 'package:zairo/features/discovery/data/discovery_api.dart';
 import 'package:zairo/features/discovery/data/models/provider_search_result.dart';
+import 'package:zairo/features/discovery/data/models/recommended_provider.dart';
 import 'package:zairo/features/discovery/data/models/service_summary.dart';
 import 'package:zairo/features/discovery/popular_services.dart';
 import 'package:zairo/features/discovery/presentation/providers/discovery_providers.dart';
@@ -59,7 +60,14 @@ class _FakeDiscoveryApi extends DiscoveryApi {
   /// What the backend's most-booked list returns; empty is a young platform, throwing is offline.
   final List<PopularService> popular;
   bool popularFails = false;
+
+  /// The server's personal recommendations; empty is "no history yet".
+  List<RecommendedProvider> recommended = const [];
   String? lastVertical;
+
+  @override
+  Future<List<RecommendedProvider>> recommendations(String userId, {String? cityCode, int limit = 10}) async =>
+      recommended;
 
   @override
   Future<List<PopularService>> popularServices({String? cityCode, int limit = 8}) async {
@@ -838,6 +846,77 @@ void main() {
 
     expect(find.text('Popular services'), findsOneWidget);
     expect(find.text('Feed Only Service'), findsOneWidget);
+  });
+
+  group('recommendations', () {
+    ProviderSearchResult studio(String id, double rating) => ProviderSearchResult(
+      id: id, name: 'Studio $id', vertical: 'beauty', status: 'ACTIVE', hasOpenAvailability: true, minPrice: 4000,
+      services: const [], averageRating: rating, reviewCount: 10,
+    );
+
+    Future<void> pumpHome(WidgetTester tester, _FakeDiscoveryApi api, {bool loggedIn = true}) async {
+      _useTallWindow(tester);
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          discoveryApiProvider.overrideWithValue(api),
+          catalogApiProvider.overrideWithValue(_FakeCatalogApi(const [])),
+          if (loggedIn) authControllerProvider.overrideWith(_LoggedInAuthController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const HomeScreen(),
+        ),
+      ));
+      await tester.pumpAndSettle();
+    }
+
+    /// The business names below [header], top to bottom (the same names also appear in the rail above it).
+    List<String> namesBelow(WidgetTester tester, String header, List<String> names) {
+      final top = tester.getTopLeft(find.text(header)).dy;
+      final found = <(double, String)>[];
+      for (final name in names) {
+        for (final element in find.text(name).evaluate()) {
+          final y = tester.getTopLeft(find.byWidget(element.widget)).dy;
+          if (y > top) found.add((y, name));
+        }
+      }
+      found.sort((a, b) => a.$1.compareTo(b.$1));
+      return [for (final f in found) f.$2];
+    }
+
+    final all = [studio('A', 4.9), studio('B', 4.7), studio('C', 4.8), studio('D', 4.1), studio('E', 4.0)];
+    const names = ['Studio A', 'Studio B', 'Studio C', 'Studio D', 'Studio E'];
+
+    testWidgets('the server\'s personal picks lead, in its order, under "Picked for you"', (tester) async {
+      final api = _FakeDiscoveryApi(all)
+        ..recommended = const [
+          RecommendedProvider(providerId: 'E', vertical: 'beauty'),
+          RecommendedProvider(providerId: 'unknown-to-this-feed', vertical: 'beauty'),
+          RecommendedProvider(providerId: 'B', vertical: 'beauty'),
+        ];
+      await pumpHome(tester, api);
+
+      expect(find.text('Picked for you'), findsOneWidget);
+      expect(find.text('Recommended for you'), findsNothing);
+      expect(namesBelow(tester, 'Picked for you', names), ['Studio E', 'Studio B']);
+    });
+
+    testWidgets('with no picks it is the generic best-rated list, and does not say "for you"', (tester) async {
+      // More than the top-rated rail holds (8), so there is something left for the generic list.
+      await pumpHome(tester, _FakeDiscoveryApi([for (var i = 0; i < 12; i++) studio('S$i', 4.9 - i * 0.05)]));
+
+      expect(find.text('Picked for you'), findsNothing);
+      expect(find.text('Recommended for you'), findsOneWidget);
+    });
+
+    testWidgets('a guest never gets personal picks', (tester) async {
+      final api = _FakeDiscoveryApi(all)..recommended = const [RecommendedProvider(providerId: 'E', vertical: 'beauty')];
+      await pumpHome(tester, api, loggedIn: false);
+
+      expect(find.text('Picked for you'), findsNothing);
+    });
   });
 
   testWidgets('there is no "Popular services" block while no business lists a service', (tester) async {

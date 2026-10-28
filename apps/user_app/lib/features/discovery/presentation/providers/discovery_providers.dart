@@ -8,6 +8,7 @@ import '../../../maps/presentation/providers/maps_providers.dart';
 import '../../data/discovery_api.dart';
 import '../../popular_services.dart';
 import '../../data/models/provider_search_result.dart';
+import '../../data/models/recommended_provider.dart';
 
 final discoveryApiProvider = Provider<DiscoveryApi>((ref) {
   return DiscoveryApi(ref.watch(dioClientProvider));
@@ -197,5 +198,20 @@ final popularServicesProvider = FutureProvider.autoDispose<List<PopularService>>
     return await ref.watch(discoveryApiProvider).popularServices(cityCode: city?.code);
   } catch (_) {
     return const <PopularService>[];
+  }
+});
+
+/// Businesses recommended for this customer from their own bookings, in display order. Best-effort like the other
+/// Home extras: a failure, an older backend or no history is the same as "nothing yet", and Home then shows its
+/// generic best-rated list.
+final recommendedProvidersProvider = FutureProvider.autoDispose.family<List<RecommendedProvider>, String>((
+  ref,
+  userId,
+) async {
+  try {
+    final city = await ref.watch(userCurrentCityProvider.future).then<City?>((c) => c, onError: (_) => null);
+    return await ref.watch(discoveryApiProvider).recommendations(userId, cityCode: city?.code);
+  } catch (_) {
+    return const <RecommendedProvider>[];
   }
 });
