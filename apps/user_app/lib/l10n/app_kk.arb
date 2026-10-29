@@ -131,6 +131,8 @@
   "homeLocationUnknown": "Сіздің орналасқан жеріңіз",
   "homeNextBookingTitle": "Жақын арадағы жазылуыңыз",
   "homeRecommendedForYouTitle": "Сізге таңдалды",
+  "homeTopServicesTitle": "Үздік қызметтер",
+  "homeCategoriesMore": "Тағы",
   "homeChipToday": "Бүгін",
   "homeChipNearby": "Жақын",
   "homeChipTopRated": "Үздік рейтинг",
@@ -714,6 +716,14 @@
   "reviewsResetFilters": "Барлығын көрсету",
 
 
+  "navSearch": "Іздеу",
+  "navQuickActions": "Жылдам әрекеттер",
+  "quickFindSubtitle": "Атауы немесе санаты бойынша",
+  "quickTodayTitle": "Бүгін бос",
+  "quickTodaySubtitle": "Бүгінге жазылуға болатын жерлер",
+  "quickNearbyTitle": "Маған жақын",
+  "quickNearbySubtitle": "Алдымен ең жақындары",
+  "quickBookAgainSubtitle": "{service} · {business}",
   "navFindService": "Қызмет табу",
 
   "bookingStepService": "Қызмет",

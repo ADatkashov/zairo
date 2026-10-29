@@ -77,7 +77,7 @@ class _ConversationsList extends ConsumerWidget {
                       title: l10n.conversationsEmptyTitle,
                       message: l10n.conversationsEmptyMessage,
                       actionLabel: l10n.conversationsFindBusinessButton,
-                      onAction: () => context.push(AppRoutes.search()),
+                      onAction: () => context.go(AppRoutes.search()),
                     ),
                   ),
                 ),

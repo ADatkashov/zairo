@@ -265,15 +265,7 @@ class _NotificationTile extends ConsumerWidget {
                 ref.invalidate(myNotificationsProvider(userId));
                 ref.invalidate(unreadNotificationsCountProvider(userId));
               }
-              if (destination != null) {
-                // Search is a full-screen route above the tabs: push it so back
-                // returns here; the tab destinations replace this screen.
-                if (destination.startsWith('/search')) {
-                  router?.push(destination);
-                } else {
-                  router?.go(destination);
-                }
-              }
+              if (destination != null) router?.go(destination);
             },
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

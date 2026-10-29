@@ -1112,7 +1112,7 @@ void main() {
   );
 
   group('as a full-screen route', () {
-    Widget host({required bool pushed, bool autofocus = false}) => ProviderScope(
+    Widget host({required bool pushed, String? focusRequest}) => ProviderScope(
       overrides: [
         discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi(const [])),
         secureStorageServiceProvider.overrideWithValue(_FakeSecureStorageService()),
@@ -1126,13 +1126,13 @@ void main() {
                 builder: (context) => Scaffold(
                   body: TextButton(
                     onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(builder: (_) => SearchScreen(autofocus: autofocus)),
+                      MaterialPageRoute<void>(builder: (_) => SearchScreen(focusRequest: focusRequest)),
                     ),
                     child: const Text('Open search'),
                   ),
                 ),
               )
-            : SearchScreen(autofocus: autofocus),
+            : SearchScreen(focusRequest: focusRequest),
       ),
     );
 
@@ -1155,13 +1155,13 @@ void main() {
       expect(find.byIcon(Symbols.arrow_back_rounded), findsNothing);
     });
 
-    testWidgets('autofocus puts the keyboard on the search field', (tester) async {
-      await tester.pumpWidget(host(pushed: false, autofocus: true));
+    testWidgets('a focus request puts the keyboard on the search field', (tester) async {
+      await tester.pumpWidget(host(pushed: false, focusRequest: 'r1'));
       await tester.pumpAndSettle();
       expect(tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus, isTrue);
     });
 
-    testWidgets('without autofocus the keyboard stays down', (tester) async {
+    testWidgets('without a focus request the keyboard stays down', (tester) async {
       await tester.pumpWidget(host(pushed: false));
       await tester.pumpAndSettle();
       expect(tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus, isFalse);
@@ -1227,6 +1227,34 @@ void main() {
       // "is the sort whole" is only checked at 390 px above.)
       expect(tester.takeException(), isNull);
       expect(find.textContaining('Рекомендуемые'), findsOneWidget);
+    });
+  });
+
+  group('the tab keeps its state, so a new way in must reset the filters', () {
+    testWidgets('a changed "free today" / sort request updates the query; leaving them off clears it', (tester) async {
+      final api = _RecordingDiscoveryApi();
+      Widget screen({bool available = false, DiscoverySort? sort}) => ProviderScope(
+        overrides: [
+          discoveryApiProvider.overrideWithValue(api),
+          secureStorageServiceProvider.overrideWithValue(_FakeSecureStorageService()),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: SearchScreen(initialAvailableOnly: available, initialSort: sort),
+        ),
+      );
+
+      await tester.pumpWidget(screen(available: true, sort: DiscoverySort.distance));
+      await tester.pumpAndSettle();
+      expect(api.lastSort, 'DISTANCE');
+      expect(api.lastAvailableOnly, isTrue);
+
+      await tester.pumpWidget(screen());
+      await tester.pumpAndSettle();
+      expect(api.lastSort, 'RECOMMENDED');
+      expect(api.lastAvailableOnly, isFalse);
     });
   });
 }

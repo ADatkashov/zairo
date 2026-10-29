@@ -13,6 +13,7 @@ class HomeBannerCarousel extends StatefulWidget {
     required this.banners,
     required this.onOpenVideo,
     required this.onOpenLink,
+    this.height = defaultHeight,
   });
 
   final List<AdBanner> banners;
@@ -25,7 +26,9 @@ class HomeBannerCarousel extends StatefulWidget {
 
   /// Tall enough for a title and subtitle on the cover, short enough that the
   /// next section starts on the same screen.
-  static const height = 148.0;
+  static const defaultHeight = 148.0;
+
+  final double height;
 
   @override
   State<HomeBannerCarousel> createState() => _HomeBannerCarouselState();
@@ -50,7 +53,8 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          height: HomeBannerCarousel.height,
+          // Grows with the system font (up to 1.5x) so the title and subtitle on the cover are never cut.
+          height: widget.height * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.5),
           child: PageView.builder(
             controller: _controller,
             itemCount: banners.length,

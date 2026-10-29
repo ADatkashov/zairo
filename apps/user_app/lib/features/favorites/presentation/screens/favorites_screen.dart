@@ -125,7 +125,7 @@ class _FavoritesList extends ConsumerWidget {
                       title: l10n.favoritesEmptyTitle,
                       message: l10n.favoritesEmptyMessage,
                       actionLabel: l10n.favoritesBrowseButton,
-                      onAction: () => context.push(AppRoutes.search()),
+                      onAction: () => context.go(AppRoutes.search()),
                     ),
                   ),
                 ),
