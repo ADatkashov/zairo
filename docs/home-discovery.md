@@ -74,15 +74,20 @@ service opens Search for that title.
   rail). Hidden, not deleted, and still covered by tests (`home_screen_test.dart` runs it), so it can come back by
   changing the default.
 
-The bottom bar is Home, Search, a round "+", Bookings, Profile. The "+" opens a sheet of the few actions that get a
-person to a booking faster than the tabs do:
+The bottom bar is Home, Search, a round "+", Bookings, Profile. The "+" turns into a "×" and fans out three round
+buttons above the bar over a dimmed page (`FactoryNavAction.quickActions`; Back or a tap outside closes it). Exactly
+three, because a fourth would overlap its own labels. They are the things that get a person to a booking faster than
+the tabs do (`quickActionsFor` in `features/main_wrapper/presentation/quick_actions.dart`):
 
-| Action | Where it goes |
+| Button | Where it goes |
 |---|---|
-| Find a service | Search tab with the keyboard up |
-| Book again (only with a past visit) | the booking steps of the last completed service, only a time left to pick |
+| Find a service (top, middle) | Search tab with the keyboard up |
 | Free today | Search tab, narrowed to businesses with a free slot today |
-| Near me | Search tab, nearest first |
+| Book again, with a past visit | the booking steps of the last completed service, only a time left to pick |
+| Near me, instead of Book again without history | Search tab, nearest first |
+
+A sheet with one titled row per action (`QuickActionsSheet`) is kept as an alternative that is not wired in; it can
+carry a fourth action if that is ever needed.
 
 Messages and favourites are deliberately not there: they are not booking actions and are one tap away (the heart in
 Home's header, Messages in Profile with its badge). Each way into the Search tab sets its filters afresh, because the

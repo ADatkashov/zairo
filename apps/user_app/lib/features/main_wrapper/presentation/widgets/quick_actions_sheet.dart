@@ -6,10 +6,8 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../app/router/app_routes.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../../booking/data/models/book_again_suggestion.dart';
-import '../../../booking/presentation/providers/booking_providers.dart';
 import '../../../discovery/presentation/providers/discovery_providers.dart';
+import '../quick_actions.dart';
 
 /// What the round "+" opens: the few things people do most, each a single tap to
 /// the right place. Not a menu of the app's sections (those are the tabs): every row
@@ -24,17 +22,6 @@ Future<void> showQuickActionsSheet(BuildContext context) {
 class QuickActionsSheet extends ConsumerWidget {
   const QuickActionsSheet({super.key});
 
-  /// The customer's most recent completed visit, to repeat; null for a guest or without history. Best-effort: a
-  /// failure is the same as "none", the row just is not shown.
-  BookAgainSuggestion? _lastVisit(WidgetRef ref) {
-    final user = ref.watch(authControllerProvider).value;
-    if (user == null) return null;
-    final suggestions =
-        ref.watch(bookAgainSuggestionsProvider(user.id)).value ??
-        const <BookAgainSuggestion>[];
-    return suggestions.isEmpty ? null : suggestions.first;
-  }
-
   /// Closes the sheet, then goes: the router is taken first, the sheet's own context is gone afterwards.
   void _go(BuildContext context, void Function(GoRouter router) navigate) {
     final router = GoRouter.of(context);
@@ -45,7 +32,7 @@ class QuickActionsSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final lastVisit = _lastVisit(ref);
+    final lastVisit = lastVisitOf(ref);
     return Padding(
       // The sheet gives its content the full width; the rows breathe at the sides like the rest of the app.
       padding: const EdgeInsets.fromLTRB(
