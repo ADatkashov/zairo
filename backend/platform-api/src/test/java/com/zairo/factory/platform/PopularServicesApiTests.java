@@ -88,6 +88,7 @@ class PopularServicesApiTests {
         assertThat(((Number) waxingRow.get("providerCount")).intValue()).isEqualTo(2);
         assertThat(new BigDecimal(waxingRow.get("minPrice").toString())).isEqualByComparingTo("20.00");
         assertThat(waxingRow.get("currency")).isEqualTo("USD");
+        assertThat(waxingRow.get("vertical")).isEqualTo("beauty");
 
         Map<String, Object> rareRow = byTitleIgnoringCase(popular, rare);
         assertThat(rareRow).isNotNull();

@@ -13,11 +13,12 @@ abstract final class AppRoutes {
   /// The three-page welcome shown once on the very first launch.
   static const welcome = '/welcome';
 
-  /// Search: a full-screen route above the tab shell (open it with
-  /// `context.push`, so back returns to where the person was), optionally
-  /// pre-filtered (`/search?category=beauty&q=…`). [focus] opens it with the
-  /// keyboard up, for "I know what I want, let me type"; [availableOnly] and
-  /// [sort] open it already narrowed (Home's "today" / "nearby" / "top rated").
+  /// The Search tab (open it with `context.go`), optionally pre-filtered
+  /// (`/search?category=beauty&q=…`). [focus] opens it with the keyboard up, for
+  /// "I know what I want, let me type": each call carries a fresh request id, so
+  /// asking again while Search is already showing still raises the keyboard.
+  /// [availableOnly] and [sort] open it already narrowed ("free today",
+  /// "nearby", "top rated").
   static String search({
     String? category,
     String? query,
@@ -28,7 +29,7 @@ abstract final class AppRoutes {
     final params = <String, String>{
       if (category != null && category.isNotEmpty) 'category': category,
       if (query != null && query.isNotEmpty) 'q': query,
-      if (focus) 'focus': '1',
+      if (focus) 'focus': '${DateTime.now().microsecondsSinceEpoch}',
       if (availableOnly) 'available': '1',
       if (sort != null) 'sort': sort.wireValue,
     };
@@ -47,6 +48,9 @@ abstract final class AppRoutes {
       _withName('/compare/$catalogServiceId', serviceName);
 
   static const bookings = '/bookings';
+
+  /// The Profile tab.
+  static const profile = '/profile';
 
   /// A Home banner's video. Needs an `AdVideoArgs` as `extra`; without one
   /// (a refresh or a hand-typed link) there is nothing to play, so it falls

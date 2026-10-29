@@ -16,7 +16,7 @@ class PopularServicesRankerTest {
     private static final UUID C = UUID.randomUUID();
 
     private static Candidate offer(String title, UUID provider, String price, long bookings) {
-        return new Candidate(title, provider, new BigDecimal(price), "KZT", bookings);
+        return new Candidate(title, provider, "beauty", new BigDecimal(price), "KZT", bookings);
     }
 
     @Test
@@ -60,7 +60,8 @@ class PopularServicesRankerTest {
     void servicesWithNoBookingsBlankTitleOrNoPriceAreNotPopular() {
         List<PopularService> result = PopularServicesRanker.rank(List.of(
                 offer("Unbooked", A, "1000", 0), offer("  ", A, "1000", 5),
-                new Candidate("No price", A, null, "KZT", 5), new Candidate(null, A, BigDecimal.ONE, "KZT", 5)), 8);
+                new Candidate("No price", A, "beauty", null, "KZT", 5),
+                new Candidate(null, A, "beauty", BigDecimal.ONE, "KZT", 5)), 8);
 
         assertThat(result).isEmpty();
     }
@@ -68,10 +69,19 @@ class PopularServicesRankerTest {
     @Test
     void differentCurrenciesAreDifferentServices() {
         List<PopularService> result = PopularServicesRanker.rank(List.of(
-                new Candidate("Haircut", A, new BigDecimal("5000"), "KZT", 3),
-                new Candidate("Haircut", B, new BigDecimal("12"), "USD", 2)), 8);
+                new Candidate("Haircut", A, "beauty", new BigDecimal("5000"), "KZT", 3),
+                new Candidate("Haircut", B, "beauty", new BigDecimal("12"), "USD", 2)), 8);
 
         assertThat(result).extracting(PopularService::currency).containsExactly("KZT", "USD");
+    }
+
+    @Test
+    void theCategoryIsThatOfTheMostBookedOffering() {
+        List<PopularService> result = PopularServicesRanker.rank(List.of(
+                new Candidate("Cleaning", A, "beauty", new BigDecimal("10"), "KZT", 2),
+                new Candidate("cleaning", B, "cleaning", new BigDecimal("12"), "KZT", 9)), 8);
+
+        assertThat(result.get(0).vertical()).isEqualTo("cleaning");
     }
 
     @Test

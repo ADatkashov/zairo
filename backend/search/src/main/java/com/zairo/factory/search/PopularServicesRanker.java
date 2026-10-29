@@ -22,7 +22,7 @@ final class PopularServicesRanker {
     }
 
     /** One offering with the bookings it got. */
-    record Candidate(String title, UUID providerId, BigDecimal price, String currency, long bookings) {
+    record Candidate(String title, UUID providerId, String vertical, BigDecimal price, String currency, long bookings) {
     }
 
     /**
@@ -46,6 +46,7 @@ final class PopularServicesRanker {
             if (c.bookings() > tally.topOfferingBookings) {
                 tally.topOfferingBookings = c.bookings();
                 tally.title = c.title().trim();
+                tally.vertical = c.vertical();
             }
         }
         return byKey.values().stream()
@@ -53,12 +54,13 @@ final class PopularServicesRanker {
                         .thenComparing(Comparator.comparingInt((Tally t) -> t.providers.size()).reversed())
                         .thenComparing(t -> t.title))
                 .limit(Math.max(limit, 0))
-                .map(t -> new PopularService(t.title, t.bookings, t.providers.size(), t.minPrice, t.currency))
+                .map(t -> new PopularService(t.title, t.bookings, t.providers.size(), t.minPrice, t.currency, t.vertical))
                 .toList();
     }
 
     private static final class Tally {
         String title;
+        String vertical;
         final String currency;
         long bookings;
         long topOfferingBookings;

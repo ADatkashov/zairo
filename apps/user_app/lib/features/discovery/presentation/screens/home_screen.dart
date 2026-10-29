@@ -35,13 +35,25 @@ import '../../../booking/next_booking.dart';
 import '../providers/discovery_providers.dart';
 import '../widgets/provider_card.dart';
 
+/// Which Home to draw. [reference] is the clean layout; [classic] is the previous one (green hero, quick chips, 4x2
+/// category grid, popular-services rail), kept as it was so it can come back without being rewritten.
+enum HomeLayout {
+  /// Greeting and city, search, the banner, one row of categories, "Top services" as a list; the personal and
+  /// discovery rails (book again, my masters, nearby, best masters, recommended) follow below the first screen.
+  reference,
+
+  /// The layout before the reference redesign.
+  classic,
+}
+
 /// The Home tab: curated discovery, not a search box with results glued
-/// underneath (that's the Search screen). Tapping the search field, a quick
-/// chip, a category or a popular service opens Search already set up for it.
-/// Order is by what people came to do: search, shortcuts, categories first;
-/// promos and rails after.
+/// underneath (that's the Search tab). Tapping the search field, a category or
+/// a top service opens Search already set up for it. Order is by what people
+/// came to do: search, then where to go next; rails after.
 class HomeScreen extends ConsumerWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.layout = HomeLayout.reference});
+
+  final HomeLayout layout;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -92,52 +104,9 @@ class HomeScreen extends ConsumerWidget {
               });
             final hasTopRated = rated.length >= 3;
             final topRated = (hasTopRated ? rated : results).take(8).toList();
-            return RefreshIndicator(
-              // The pinned hero bar owns the top inset (see [_HomeHeroBar]), so
-              // the spinner is nudged below it instead of hiding under it.
-              edgeOffset: _HomeHeroBar.collapsedHeight(context),
-              onRefresh: () => ref.refresh(searchResultsProvider(query).future),
-              child: CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  _HomeHeroBar(
-                    user: user,
-                    cityLabel: ref
-                            .watch(userCurrentCityProvider)
-                            .value
-                            ?.nameFor(Localizations.localeOf(context).languageCode) ??
-                        locationAsync.value?.label ??
-                        l10n.homeLocationUnknown,
-                    greeting: user != null
-                        ? l10n.homeGreeting(user.displayName)
-                        : l10n.homeGreetingGuest,
-                  ),
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                      FactorySpacing.space4,
-                      0,
-                      FactorySpacing.space4,
-                      FactorySpacing.space4,
-                    ),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                  const SizedBox(height: FactorySpacing.space4),
-                  _SearchEntry(onTap: () => context.push(AppRoutes.search())),
-                  // One tap to the most common narrowings, so the person does not
-                  // have to open the filter sheet to get "free today" or "closest".
-                  const SizedBox(height: FactorySpacing.space3),
-                  const _QuickChips(),
-                  // Someone with a visit coming up wants that first: when, where, in one tap.
-                  if (user != null) _NextBookingSection(userId: user.id),
-                  // Categories next: the main way into the app is "pick what you
-                  // need", so it is the first block below the search.
-                  const SizedBox(height: FactorySpacing.space5),
-                  const _CategoriesSection(),
-                  // Promos come after the primary action, not in front of it. The
-                  // platform runs them as banners from the admin console.
-                  const _BannersSection(),
-                  _PopularServicesSection(results: results),
-                  if (user != null) ...[
+            // The rails under the first screen: personal first (book again, my masters), then what is near and who is best.
+            final lower = <Widget>[
+              if (user != null) ...[
                     const SizedBox(height: FactorySpacing.space6),
                     _BookAgainSection(userId: user.id),
                     _MyMastersSection(userId: user.id),
@@ -146,7 +115,7 @@ class HomeScreen extends ConsumerWidget {
                   FactorySectionHeader(
                     title: hasTopRated ? l10n.homeTopRatedTitle : l10n.homeNearbyTitle,
                     actionLabel: l10n.homeSeeAll,
-                    onActionTap: () => context.push(AppRoutes.search()),
+                    onActionTap: () => context.go(AppRoutes.search()),
                   ),
                   const SizedBox(height: FactorySpacing.space3),
                   if (topRated.isEmpty)
@@ -189,6 +158,79 @@ class HomeScreen extends ConsumerWidget {
                   const _TopMastersSection(),
                   const SizedBox(height: FactorySpacing.space6),
                   _RecommendedSection(results: results, excluding: topRated, userId: user?.id),
+            ];
+            final cityLabel = ref
+                    .watch(userCurrentCityProvider)
+                    .value
+                    ?.nameFor(Localizations.localeOf(context).languageCode) ??
+                locationAsync.value?.label ??
+                l10n.homeLocationUnknown;
+            final greeting = user != null ? l10n.homeGreeting(user.displayName) : l10n.homeGreetingGuest;
+            if (layout == HomeLayout.reference) {
+              return RefreshIndicator(
+                onRefresh: () => ref.refresh(searchResultsProvider(query).future),
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverSafeArea(
+                      sliver: SliverPadding(
+                        padding: const EdgeInsets.all(FactorySpacing.space4),
+                        sliver: SliverList(
+                          delegate: SliverChildListDelegate([
+                            _ReferenceHeader(user: user, cityLabel: cityLabel, greeting: greeting),
+                            const SizedBox(height: FactorySpacing.space4),
+                            _SearchEntry(onTap: () => context.go(AppRoutes.search())),
+                            // Someone with a visit coming up wants that first: when, where, in one tap.
+                            if (user != null) _NextBookingSection(userId: user.id),
+                            // The platform's promo sits where the reference has its hero card, right under the search.
+                            const _BannersSection(top: FactorySpacing.space4, height: 128),
+                            const SizedBox(height: FactorySpacing.space5),
+                            const _CategoriesRow(),
+                            _TopServicesSection(results: results),
+                            ...lower,
+                          ]),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+            return RefreshIndicator(
+              // The pinned hero bar owns the top inset (see [_HomeHeroBar]), so
+              // the spinner is nudged below it instead of hiding under it.
+              edgeOffset: _HomeHeroBar.collapsedHeight(context),
+              onRefresh: () => ref.refresh(searchResultsProvider(query).future),
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  _HomeHeroBar(user: user, cityLabel: cityLabel, greeting: greeting),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      FactorySpacing.space4,
+                      0,
+                      FactorySpacing.space4,
+                      FactorySpacing.space4,
+                    ),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                  const SizedBox(height: FactorySpacing.space4),
+                  _SearchEntry(onTap: () => context.go(AppRoutes.search())),
+                  // One tap to the most common narrowings, so the person does not
+                  // have to open the filter sheet to get "free today" or "closest".
+                  const SizedBox(height: FactorySpacing.space3),
+                  const _QuickChips(),
+                  // Someone with a visit coming up wants that first: when, where, in one tap.
+                  if (user != null) _NextBookingSection(userId: user.id),
+                  // Categories next: the main way into the app is "pick what you
+                  // need", so it is the first block below the search.
+                  const SizedBox(height: FactorySpacing.space5),
+                  const _CategoriesSection(),
+                  // Promos come after the primary action, not in front of it. The
+                  // platform runs them as banners from the admin console.
+                  const _BannersSection(),
+                  _PopularServicesSection(results: results),
+                  ...lower,
                       ]),
                     ),
                   ),
@@ -476,7 +518,7 @@ class _CategoriesSection extends ConsumerWidget {
 
   Future<void> _openAllCategories(BuildContext context) async {
     final code = await context.push<String>(AppRoutes.categories);
-    if (code != null && context.mounted) context.push(AppRoutes.search(category: code));
+    if (code != null && context.mounted) context.go(AppRoutes.search(category: code));
   }
 
   @override
@@ -543,7 +585,7 @@ class _CategoriesSection extends ConsumerWidget {
                     dense: dense,
                     accentColor: accent?.color,
                     accentTint: accent?.tint,
-                    onTap: () => context.push(AppRoutes.search(category: code)),
+                    onTap: () => context.go(AppRoutes.search(category: code)),
                   ),
                 ),
               );
@@ -1007,20 +1049,20 @@ class _QuickChips extends StatelessWidget {
           FactoryChip(
             label: l10n.homeChipToday,
             icon: Symbols.event_available_rounded,
-            onTap: () => context.push(AppRoutes.search(availableOnly: true)),
+            onTap: () => context.go(AppRoutes.search(availableOnly: true)),
           ),
           const SizedBox(width: FactorySpacing.space2),
           FactoryChip(
             label: l10n.homeChipNearby,
             icon: Symbols.near_me_rounded,
-            onTap: () => context.push(AppRoutes.search(sort: DiscoverySort.distance)),
+            onTap: () => context.go(AppRoutes.search(sort: DiscoverySort.distance)),
           ),
           const SizedBox(width: FactorySpacing.space2),
           FactoryChip(
             label: l10n.homeChipTopRated,
             icon: Symbols.star_rounded,
             iconFilled: true,
-            onTap: () => context.push(AppRoutes.search(sort: DiscoverySort.rating)),
+            onTap: () => context.go(AppRoutes.search(sort: DiscoverySort.rating)),
           ),
         ],
       ),
@@ -1031,15 +1073,19 @@ class _QuickChips extends StatelessWidget {
 /// The admin-run promo banners as one card under the categories. Best-effort:
 /// nothing while loading, on error, or when none is live.
 class _BannersSection extends ConsumerWidget {
-  const _BannersSection();
+  const _BannersSection({this.top = FactorySpacing.space5, this.height = HomeBannerCarousel.defaultHeight});
+
+  final double top;
+  final double height;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final banners = ref.watch(homeBannersProvider).value ?? const <AdBanner>[];
     if (banners.isEmpty) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.only(top: FactorySpacing.space5),
+      padding: EdgeInsets.only(top: top),
       child: HomeBannerCarousel(
+        height: height,
         banners: banners,
         onOpenVideo: (banner) => context.push(
           AppRoutes.adVideo,
@@ -1047,7 +1093,7 @@ class _BannersSection extends ConsumerWidget {
         ),
         onOpenLink: (target) => switch (target) {
           AdLinkTarget.rewards => context.push(AppRoutes.rewards),
-          AdLinkTarget.search => context.push(AppRoutes.search()),
+          AdLinkTarget.search => context.go(AppRoutes.search()),
         },
       ),
     );
@@ -1079,7 +1125,7 @@ class _PopularServicesSection extends ConsumerWidget {
           FactorySectionHeader(
             title: l10n.homePopularServicesTitle,
             actionLabel: l10n.homeSeeAll,
-            onActionTap: () => context.push(AppRoutes.search()),
+            onActionTap: () => context.go(AppRoutes.search()),
           ),
           const SizedBox(height: FactorySpacing.space3),
           SizedBox(
@@ -1092,7 +1138,7 @@ class _PopularServicesSection extends ConsumerWidget {
               separatorBuilder: (_, _) => const SizedBox(width: FactorySpacing.space3),
               itemBuilder: (context, index) => _PopularServiceCard(
                 service: services[index],
-                onTap: () => context.push(AppRoutes.search(query: services[index].title)),
+                onTap: () => context.go(AppRoutes.search(query: services[index].title)),
               ),
             ),
           ),
@@ -1221,6 +1267,309 @@ class _NextBookingSection extends ConsumerWidget {
                       overflow: TextOverflow.ellipsis,
                       style: textTheme.bodySmall?.copyWith(color: colors.textSecondary),
                     ),
+                ],
+              ),
+            ),
+            Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The reference Home's top row: who is looking and where (the city is how a person tells the app where to find
+/// services, so it is one tap away), then favourites and notifications. The avatar opens Profile.
+class _ReferenceHeader extends StatelessWidget {
+  const _ReferenceHeader({required this.user, required this.cityLabel, required this.greeting});
+
+  final UserSummary? user;
+  final String cityLabel;
+  final String greeting;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    final user = this.user;
+    return Row(
+      children: [
+        GestureDetector(
+          onTap: () => context.go(AppRoutes.profile),
+          child: FactoryAvatar(
+            initials: user != null ? initialsFor(user.displayName) : '?',
+            image: user?.avatarUrl != null ? NetworkImage(user!.avatarUrl!) : null,
+          ),
+        ),
+        const SizedBox(width: FactorySpacing.space3),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                greeting,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: textTheme.titleMedium?.copyWith(color: colors.text, fontWeight: FontWeight.w700),
+              ),
+              InkWell(
+                onTap: () => context.push('/city-selection'),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Symbols.location_on_rounded, size: 14, color: colors.primary),
+                      const SizedBox(width: 2),
+                      Flexible(
+                        child: Text(
+                          cityLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                        ),
+                      ),
+                      Icon(Symbols.keyboard_arrow_down_rounded, size: 16, color: colors.textSecondary),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const _FavoritesButton(),
+        if (user != null) ...[
+          const SizedBox(width: FactorySpacing.space2),
+          const NotificationBellButton(),
+        ],
+      ],
+    );
+  }
+}
+
+/// One row of categories, like the reference: the first four of the catalog (its own admin-curated order) and "More"
+/// for the rest. A launcher, not a filter: a tap opens Search already narrowed to that category.
+class _CategoriesRow extends ConsumerWidget {
+  const _CategoriesRow();
+
+  /// Four categories and "More" fit five across on a normal phone; on a narrow one or with a large font the labels
+  /// would break mid-word, so it is three and "More".
+  static const _roomy = 4;
+  static const _tight = 3;
+  static const _gap = FactorySpacing.space2;
+
+  Future<void> _openAll(BuildContext context) async {
+    final code = await context.push<String>(AppRoutes.categories);
+    if (code != null && context.mounted) context.go(AppRoutes.search(category: code));
+  }
+
+  // Same height rule as the grid's tiles: the chrome plus up to two label lines at the user's text scale.
+  static double _tileHeightFor(BuildContext context) =>
+      72 + 2 * MediaQuery.textScalerOf(context).scale(13 * 1.2) + 4;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final categoriesAsync = ref.watch(categoriesProvider);
+    final languageCode = Localizations.localeOf(context).languageCode;
+    final tileHeight = _tileHeightFor(context);
+    final largeText = MediaQuery.textScalerOf(context).scale(1) > 1.3;
+
+    // Best-effort: skeletons while the catalog loads; on error no row (the heading's link still works).
+    if (categoriesAsync.hasError) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FactorySectionHeader(
+          title: l10n.homeCategoriesTitle,
+          actionLabel: l10n.homeCategoriesAll,
+          onActionTap: () => _openAll(context),
+        ),
+        const SizedBox(height: FactorySpacing.space3),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final shown = constraints.maxWidth < 340 || largeText ? _tight : _roomy;
+            final cells = categoriesAsync.when(
+              data: (categories) => [for (final c in categories.take(shown)) (c.code, c.nameFor(languageCode))],
+              loading: () => [for (var i = 0; i < shown; i++) null],
+              error: (error, stackTrace) => const <(String, String)?>[],
+            );
+            final cell = (constraints.maxWidth - _gap * shown) / (shown + 1);
+            final dense = cell < 76;
+            Widget wrap(Widget child) => SizedBox(
+              width: cell,
+              height: tileHeight,
+              // The label may use the gap beside its cell: a long word ("Образование") would break mid-word otherwise.
+              child: OverflowBox(
+                alignment: Alignment.topCenter,
+                maxWidth: cell + _gap,
+                maxHeight: tileHeight,
+                child: child,
+              ),
+            );
+            Widget tile((String, String)? entry) {
+              if (entry == null) {
+                return SizedBox(
+                  width: cell,
+                  child: FactorySkeleton(
+                    width: cell,
+                    height: tileHeight,
+                    borderRadius: const BorderRadius.all(Radius.circular(12)),
+                  ),
+                );
+              }
+              final (code, label) = entry;
+              final accent = colorForCategory(context, code);
+              return wrap(
+                FactoryCategoryTile(
+                  icon: iconForCategory(code),
+                  label: label,
+                  labelMaxWidth: cell + _gap,
+                  dense: dense,
+                  accentColor: accent?.color,
+                  accentTint: accent?.tint,
+                  onTap: () => context.go(AppRoutes.search(category: code)),
+                ),
+              );
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final entry in cells) ...[tile(entry), const SizedBox(width: _gap)],
+                if (categoriesAsync.hasValue)
+                  wrap(
+                    FactoryCategoryTile(
+                      icon: Symbols.more_horiz_rounded,
+                      label: l10n.homeCategoriesMore,
+                      labelMaxWidth: cell + _gap,
+                      dense: dense,
+                      onTap: () => _openAll(context),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+/// "Top services" as a short list, like the reference: what people book most, the lowest price and how many
+/// businesses offer it; a tap searches for that service. The server's most-booked list when it has one, else what
+/// the loaded search results offer (see [popularServices]); absent while there is nothing to show.
+class _TopServicesSection extends ConsumerWidget {
+  const _TopServicesSection({required this.results});
+
+  final List<ProviderSearchResult> results;
+
+  static const _count = 3;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final booked = ref.watch(popularServicesProvider).value ?? const <PopularService>[];
+    final services = (booked.isNotEmpty ? booked : popularServices(results)).take(_count).toList();
+    if (services.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: FactorySpacing.space5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          FactorySectionHeader(
+            title: l10n.homeTopServicesTitle,
+            actionLabel: l10n.homeSeeAll,
+            onActionTap: () => context.go(AppRoutes.search()),
+          ),
+          const SizedBox(height: FactorySpacing.space2),
+          Container(
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: FactoryRadius.lgRadius,
+              border: Border.all(color: colors.border),
+            ),
+            child: Column(
+              children: [
+                for (var i = 0; i < services.length; i++) ...[
+                  if (i > 0) Divider(height: 1, color: colors.border),
+                  _TopServiceRow(
+                    service: services[i],
+                    onTap: () => context.go(AppRoutes.search(query: services[i].title)),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TopServiceRow extends StatelessWidget {
+  const _TopServiceRow({required this.service, required this.onTap});
+
+  final PopularService service;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final l10n = AppLocalizations.of(context)!;
+    final textTheme = Theme.of(context).textTheme;
+    final vertical = service.vertical;
+    final accent = vertical == null ? null : colorForCategory(context, vertical);
+    return InkWell(
+      borderRadius: FactoryRadius.lgRadius,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(FactorySpacing.space3),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: accent?.tint ?? colors.primaryTint,
+                borderRadius: FactoryRadius.mdRadius,
+              ),
+              child: Icon(
+                vertical == null ? Symbols.sell_rounded : iconForCategory(vertical),
+                size: 22,
+                color: accent?.color ?? colors.primary,
+              ),
+            ),
+            const SizedBox(width: FactorySpacing.space3),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    service.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.titleSmall?.copyWith(color: colors.text),
+                  ),
+                  const SizedBox(height: 2),
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      FactoryPriceText(
+                        amount: service.minPrice,
+                        currencySymbol: service.currency,
+                        prefix: '${l10n.homePopularServiceFrom} ',
+                        fontSize: 12,
+                      ),
+                      Text(
+                        ' · ${l10n.homePopularServiceBusinesses(service.providerCount)}',
+                        style: textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),

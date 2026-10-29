@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import '../../../../app/router/app_routes.dart';
 import '../../../../app/router/tab_reselect.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../messaging/presentation/providers/message_seen_provider.dart';
+import '../widgets/quick_actions_sheet.dart';
 
 class MainWrapper extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -26,7 +26,7 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
     final l10n = AppLocalizations.of(context)!;
     final newMessages = ref.watch(newMessagesCountProvider);
 
-    // Android back from the root of Bookings/Profile goes to Home
+    // Android back from the root of Search/Bookings/Profile goes to Home
     // first and only exits the app from Home. Pushed screens inside a tab
     // are unaffected: the tab's own navigator pops them before this scope
     // is ever asked.
@@ -49,21 +49,26 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
               initialLocation: index == navigationShell.currentIndex,
             );
           },
-          // The app's main job in one tap: "Find a service" opens Search with
-          // the keyboard up (recent and popular queries, categories and results
-          // are all on that screen). Named under the button, since a bare icon
-          // doesn't say what it does. An action, not a tab, so the tab indexes
-          // below (Home 0, Bookings 1, Profile 2) are not shifted by it.
+          // The round "+" opens the few quick actions (find a service with the
+          // keyboard up, book the last visit again, free today, nearby). An
+          // action, not a tab, so the tab indexes below are not shifted by it;
+          // it is named for screen readers, the bar itself shows only the icon.
           centerAction: FactoryNavAction(
-            icon: Symbols.search_rounded,
-            label: l10n.navFindService,
-            visibleLabel: true,
-            onTap: () => context.push(AppRoutes.search(focus: true)),
+            icon: Symbols.add_rounded,
+            label: l10n.navQuickActions,
+            onTap: () => showQuickActionsSheet(context),
           ),
+          // Icon names match BottomNav.dc.html's own `icon` field verbatim
+          // (home/search/calendar_month/person) — "Записи" uses
+          // calendar_month in the design board, not event_note.
           destinations: [
             FactoryNavDestination(
               icon: Symbols.home_rounded,
               label: l10n.navHome,
+            ),
+            FactoryNavDestination(
+              icon: Symbols.search_rounded,
+              label: l10n.navSearch,
             ),
             FactoryNavDestination(
               icon: Symbols.calendar_month_rounded,
