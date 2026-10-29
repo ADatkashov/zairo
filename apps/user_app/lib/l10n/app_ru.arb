@@ -131,6 +131,8 @@
   "homeLocationUnknown": "Ваше местоположение",
   "homeNextBookingTitle": "Ваша ближайшая запись",
   "homeRecommendedForYouTitle": "Подобрано для вас",
+  "homeTopServicesTitle": "Топ услуги",
+  "homeCategoriesMore": "Ещё",
   "homeChipToday": "Сегодня",
   "homeChipNearby": "Рядом",
   "homeChipTopRated": "Топ рейтинг",
@@ -714,6 +716,14 @@
   "reviewsResetFilters": "Показать все",
 
 
+  "navSearch": "Поиск",
+  "navQuickActions": "Быстрые действия",
+  "quickFindSubtitle": "По названию или категории",
+  "quickTodayTitle": "Свободно сегодня",
+  "quickTodaySubtitle": "Где можно записаться на сегодня",
+  "quickNearbyTitle": "Рядом со мной",
+  "quickNearbySubtitle": "Сначала ближайшие",
+  "quickBookAgainSubtitle": "{service} · {business}",
   "navFindService": "Найти услугу",
 
   "bookingStepService": "Услуга",

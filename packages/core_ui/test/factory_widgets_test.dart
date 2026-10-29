@@ -1020,6 +1020,129 @@ void main() {
     expect(actionTaps, 2);
   });
 
+  testWidgets('FactoryBottomNavigation centre action with quick actions opens a fan, picks one and closes', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    final picked = <String>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: factoryLightTheme(),
+        home: Scaffold(
+          bottomNavigationBar: FactoryBottomNavigation(
+            destinations: const [
+              FactoryNavDestination(icon: Icons.home_rounded, label: 'Home'),
+              FactoryNavDestination(icon: Icons.person_rounded, label: 'Profile'),
+            ],
+            selectedIndex: 0,
+            onDestinationSelected: (_) {},
+            centerAction: FactoryNavAction(
+              icon: Icons.add_rounded,
+              label: 'Quick actions',
+              quickActions: [
+                FactoryNavQuickAction(icon: Icons.event_available_rounded, label: 'Book', onTap: () => picked.add('book')),
+                FactoryNavQuickAction(icon: Icons.chat_bubble_rounded, label: 'Messages', onTap: () => picked.add('msg')),
+                FactoryNavQuickAction(icon: Icons.favorite_rounded, label: 'Favorites', onTap: () => picked.add('fav')),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Messages'), findsNothing, reason: 'closed by default');
+
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('Book'), findsOneWidget);
+    expect(find.text('Messages'), findsOneWidget);
+    expect(find.text('Favorites'), findsOneWidget);
+    // Fanned out left-to-right above the button.
+    expect(tester.getCenter(find.text('Book')).dx, lessThan(tester.getCenter(find.text('Messages')).dx));
+    expect(tester.getCenter(find.text('Favorites')).dx, greaterThan(tester.getCenter(find.text('Messages')).dx));
+    // While open the dimmed page hides the real button, so a copy is drawn on top.
+    expect(find.byIcon(Icons.add_rounded), findsNWidgets(2));
+    expect(
+      tester.getCenter(find.text('Messages')).dy,
+      lessThan(tester.getCenter(find.byIcon(Icons.add_rounded).last).dy),
+    );
+
+    await tester.tap(find.text('Messages'));
+    await tester.pumpAndSettle();
+    expect(picked, ['msg']);
+    expect(find.text('Messages'), findsNothing, reason: 'the fan closes after a pick');
+
+    // Re-open, then dismiss by tapping the dimmed page.
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(20, 100));
+    await tester.pumpAndSettle();
+    expect(find.text('Favorites'), findsNothing);
+    expect(picked, ['msg']);
+  });
+
+  testWidgets('system Back closes an open fan first and only then leaves the screen', (tester) async {
+    tester.view.physicalSize = const Size(390, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    final openStates = <bool>[];
+    final navigatorKey = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navigatorKey,
+        theme: factoryLightTheme(),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => Scaffold(
+                    body: const Text('second page'),
+                    bottomNavigationBar: FactoryBottomNavigation(
+                      destinations: const [
+                        FactoryNavDestination(icon: Icons.home_rounded, label: 'Home'),
+                        FactoryNavDestination(icon: Icons.person_rounded, label: 'Profile'),
+                      ],
+                      selectedIndex: 0,
+                      onDestinationSelected: (_) {},
+                      onFanOpenChanged: openStates.add,
+                      centerAction: FactoryNavAction(
+                        icon: Icons.add_rounded,
+                        label: 'Quick actions',
+                        quickActions: [FactoryNavQuickAction(icon: Icons.chat_bubble_rounded, label: 'Messages', onTap: () {})],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text('Messages'), findsOneWidget);
+    expect(openStates, [true]);
+
+    // First Back: the fan closes, the page stays.
+    await navigatorKey.currentState!.maybePop();
+    await tester.pumpAndSettle();
+    expect(find.text('Messages'), findsNothing);
+    expect(find.text('second page'), findsOneWidget);
+    expect(openStates, [true, false]);
+
+    // Second Back: leaves the page as usual.
+    await navigatorKey.currentState!.maybePop();
+    await tester.pumpAndSettle();
+    expect(find.text('second page'), findsNothing);
+  });
+
   testWidgets('FactoryBottomNavigation draws a count badge only when there is something to count', (
     tester,
   ) async {

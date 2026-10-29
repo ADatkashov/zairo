@@ -29,8 +29,7 @@ List<String> _popularSearches(AppLocalizations l10n) => [
   l10n.searchPopularQueryHomeCleaning,
 ];
 
-/// Search — GET /api/v1/search/providers. A full-screen route above the tab
-/// shell, opened by the bottom bar's "Find a service" action.
+/// The Search tab — GET /api/v1/search/providers.
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({
     super.key,
@@ -38,7 +37,7 @@ class SearchScreen extends ConsumerStatefulWidget {
     this.initialQuery,
     this.initialAvailableOnly = false,
     this.initialSort,
-    this.autofocus = false,
+    this.focusRequest,
   });
 
   /// Open already narrowed to businesses with a free slot / in a given order
@@ -46,8 +45,9 @@ class SearchScreen extends ConsumerStatefulWidget {
   final bool initialAvailableOnly;
   final DiscoverySort? initialSort;
 
-  /// Open with the keyboard up (the bottom bar's action), instead of on the results.
-  final bool autofocus;
+  /// Raise the keyboard on the search field. Any non-null value asks for it, and a *different* value asks again
+  /// (the route carries a fresh id each time), so "Find a service" works from the tab too.
+  final String? focusRequest;
 
   /// Category / text carried in from Home (`/search?category=…&q=…`), so
   /// "see all" and the search entry keep what the user had just picked.
@@ -69,8 +69,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     sort: widget.initialSort ?? DiscoverySort.recommended,
   );
 
-  /// A new category/query for the same route (a link opened while Search is
-  /// already showing) arrives here.
+  /// The tab lives in an IndexedStack, so this State outlives navigations
+  /// back to `/search`: a new category/query/filter from Home arrives here.
   @override
   void didUpdateWidget(SearchScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -79,6 +79,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         () => _query = widget.initialVertical == null
             ? _query.copyWith(clearVertical: true)
             : _query.copyWith(vertical: widget.initialVertical),
+      );
+    }
+    if (widget.initialAvailableOnly != oldWidget.initialAvailableOnly || widget.initialSort != oldWidget.initialSort) {
+      setState(
+        () => _query = _query.copyWith(
+          availableOnly: widget.initialAvailableOnly,
+          sort: widget.initialSort ?? DiscoverySort.recommended,
+        ),
       );
     }
     if (widget.initialQuery != oldWidget.initialQuery) {
@@ -174,7 +182,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       ),
                     Expanded(
                       child: FactorySearchField(
-                  autofocus: widget.autofocus,
+                  key: ValueKey(widget.focusRequest),
+                  autofocus: widget.focusRequest != null,
                   controller: _searchController,
                   hint: l10n.searchHint,
                   onChanged: _onTyping,

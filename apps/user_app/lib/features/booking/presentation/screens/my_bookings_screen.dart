@@ -134,7 +134,7 @@ class _BookingsListState extends ConsumerState<_BookingsList> {
                       title: l10n.bookingsEmptyTitle,
                       message: l10n.bookingsEmptyMessage,
                       actionLabel: l10n.bookingsFindServiceButton,
-                      onAction: () => context.push(AppRoutes.search()),
+                      onAction: () => context.go(AppRoutes.search()),
                     ),
                   ),
                 ),
@@ -197,7 +197,7 @@ class _BookingsListState extends ConsumerState<_BookingsList> {
                               actionLabel: _tab == _BookingsTab.upcoming
                                   ? l10n.bookingsFindServiceButton
                                   : null,
-                              onAction: () => context.push(AppRoutes.search()),
+                              onAction: () => context.go(AppRoutes.search()),
                             ),
                           ),
                         ],

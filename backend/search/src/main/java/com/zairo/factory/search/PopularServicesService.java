@@ -13,7 +13,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -54,14 +53,15 @@ public class PopularServicesService {
         Map<UUID, ServiceOffering> offerings = serviceOfferingRepository.findAllById(bookingsByService.keySet())
                 .stream().filter(ServiceOffering::isActive)
                 .collect(Collectors.toMap(ServiceOffering::getId, Function.identity()));
-        Set<UUID> activeProviders = providerRepository
+        Map<UUID, Provider> activeProviders = providerRepository
                 .findAllById(offerings.values().stream().map(ServiceOffering::getProviderId).distinct().toList())
-                .stream().filter(p -> p.getStatus() == ProviderStatus.ACTIVE).map(Provider::getId)
-                .collect(Collectors.toSet());
+                .stream().filter(p -> p.getStatus() == ProviderStatus.ACTIVE)
+                .collect(Collectors.toMap(Provider::getId, Function.identity()));
 
         List<Candidate> candidates = offerings.values().stream()
-                .filter(o -> activeProviders.contains(o.getProviderId()))
-                .map(o -> new Candidate(o.getTitle(), o.getProviderId(), o.getPrice(), o.getCurrency(),
+                .filter(o -> activeProviders.containsKey(o.getProviderId()))
+                .map(o -> new Candidate(o.getTitle(), o.getProviderId(),
+                        activeProviders.get(o.getProviderId()).getVertical(), o.getPrice(), o.getCurrency(),
                         bookingsByService.get(o.getId())))
                 .toList();
         int size = limit == null ? DEFAULT_LIMIT : Math.min(Math.max(limit, 1), MAX_LIMIT);
