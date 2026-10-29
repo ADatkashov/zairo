@@ -367,6 +367,10 @@
   "@homeNextBookingTitle": {"description": "Caption on Home's card for the soonest upcoming booking."},
   "homeRecommendedForYouTitle": "Picked for you",
   "@homeRecommendedForYouTitle": {"description": "Heading of Home's recommendations when they are learned from the customer's own bookings."},
+  "homeTopServicesTitle": "Top services",
+  "@homeTopServicesTitle": {"description": "Heading of Home's short list of the most booked services."},
+  "homeCategoriesMore": "More",
+  "@homeCategoriesMore": {"description": "Last tile of Home's category row: opens the full category list."},
   "homeChipToday": "Today",
   "@homeChipToday": {"description": "Home quick chip: opens Search for businesses with a free slot today."},
   "homeChipNearby": "Nearby",
@@ -1993,8 +1997,30 @@
   "@reviewsResetFilters": {"description": "Reviews screen filter/sort/empty text."},
 
 
+  "navSearch": "Search",
+  "@navSearch": {"description": "Bottom navigation label for the Search tab."},
+  "navQuickActions": "Quick actions",
+  "@navQuickActions": {"description": "Label of the round + button in the middle of the bottom bar, and the heading of the sheet it opens."},
+  "quickFindSubtitle": "By name or category",
+  "@quickFindSubtitle": {"description": "Quick action row: opens Search with the keyboard up."},
+  "quickTodayTitle": "Free today",
+  "@quickTodayTitle": {"description": "Quick action row: Search narrowed to businesses with a free slot today."},
+  "quickTodaySubtitle": "Places you can book for today",
+  "@quickTodaySubtitle": {"description": "Subtitle of the free-today quick action."},
+  "quickNearbyTitle": "Near me",
+  "@quickNearbyTitle": {"description": "Quick action row: Search sorted by distance."},
+  "quickNearbySubtitle": "Closest places first",
+  "@quickNearbySubtitle": {"description": "Subtitle of the near-me quick action."},
+  "quickBookAgainSubtitle": "{service} · {business}",
+  "@quickBookAgainSubtitle": {
+    "description": "Quick action row that books the last completed visit again: what and where.",
+    "placeholders": {
+      "service": {"type": "String"},
+      "business": {"type": "String"}
+    }
+  },
   "navFindService": "Find a service",
-  "@navFindService": {"description": "Label of the round button in the middle of the bottom bar (screen readers and the text under it); opens Search with the keyboard up."},
+  "@navFindService": {"description": "The first row of the quick-actions sheet: opens Search with the keyboard up."},
 
   "bookingStepService": "Service",
   "@bookingStepService": {"description": "Step label in the booking progress bar: choose a service."},

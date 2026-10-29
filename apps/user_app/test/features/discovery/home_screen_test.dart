@@ -204,7 +204,7 @@ void main() {
           theme: factoryLightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const HomeScreen(),
+          home: const HomeScreen(layout: HomeLayout.classic),
         ),
       ),
     );
@@ -245,7 +245,7 @@ void main() {
           theme: factoryLightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const HomeScreen(),
+          home: const HomeScreen(layout: HomeLayout.classic),
         ),
       ),
     );
@@ -269,7 +269,7 @@ void main() {
           theme: factoryLightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const HomeScreen(),
+          home: const HomeScreen(layout: HomeLayout.classic),
         ),
       ),
     );
@@ -300,7 +300,7 @@ void main() {
           theme: factoryLightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const HomeScreen(),
+          home: const HomeScreen(layout: HomeLayout.classic),
         ),
       ),
     );
@@ -323,7 +323,7 @@ void main() {
       supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: GoRouter(
         routes: [
-          GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+          GoRoute(path: '/', builder: (_, _) => const HomeScreen(layout: HomeLayout.classic)),
           GoRoute(
             path: '/search',
             builder: (_, state) => Scaffold(body: Text('Search page ${state.uri.queryParameters['category']}')),
@@ -546,7 +546,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           routerConfig: GoRouter(
             routes: [
-              GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+              GoRoute(path: '/', builder: (_, _) => const HomeScreen(layout: HomeLayout.classic)),
               GoRoute(path: '/rewards', builder: (_, _) => const Scaffold(body: Text('Rewards page'))),
             ],
           ),
@@ -566,14 +566,19 @@ void main() {
     List<Category> categories = const [],
     List<AdBanner> banners = const [],
     double textScale = 1,
+    HomeLayout layout = HomeLayout.classic,
+    _FakeDiscoveryApi? api,
+    bool loggedIn = false,
+    ThemeData? theme,
   }) => ProviderScope(
     overrides: [
-      discoveryApiProvider.overrideWithValue(_FakeDiscoveryApi(results)),
+      discoveryApiProvider.overrideWithValue(api ?? _FakeDiscoveryApi(results)),
       catalogApiProvider.overrideWithValue(_FakeCatalogApi(categories)),
       adsApiProvider.overrideWithValue(_FakeAdsApi(banners)),
+      if (loggedIn) authControllerProvider.overrideWith(_LoggedInAuthController.new),
     ],
     child: MaterialApp.router(
-      theme: factoryLightTheme(),
+      theme: theme ?? factoryLightTheme(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) => MediaQuery(
@@ -582,9 +587,18 @@ void main() {
       ),
       routerConfig: GoRouter(
         routes: [
-          GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+          GoRoute(path: '/', builder: (_, _) => HomeScreen(layout: layout)),
           // Shows where Home sent the person, query string and all.
           GoRoute(path: '/search', builder: (_, state) => Scaffold(body: Text('Search ${state.uri}'))),
+          GoRoute(path: '/profile', builder: (_, _) => const Scaffold(body: Text('Profile page'))),
+          GoRoute(path: '/bookings', builder: (_, _) => const Scaffold(body: Text('Bookings page'))),
+          // Stands in for AllCategoriesScreen: "picks" category-9.
+          GoRoute(
+            path: '/categories',
+            builder: (context, _) => Scaffold(
+              body: TextButton(onPressed: () => context.pop('category-9'), child: const Text('Pick nine')),
+            ),
+          ),
         ],
       ),
     ),
@@ -633,8 +647,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Search $target'), findsOneWidget, reason: chip);
 
-      // Back lands on Home again, ready for the next one.
-      GoRouter.of(tester.element(find.textContaining('Search /search'))).pop();
+      // Back to Home for the next chip (Search is a tab: Home is reached by going there).
+      GoRouter.of(tester.element(find.textContaining('Search /search'))).go('/');
       await tester.pumpAndSettle();
     }
   });
@@ -715,7 +729,7 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         routerConfig: GoRouter(
           routes: [
-            GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+            GoRoute(path: '/', builder: (_, _) => const HomeScreen(layout: HomeLayout.classic)),
             GoRoute(path: '/bookings', builder: (_, _) => const Scaffold(body: Text('Bookings page'))),
           ],
         ),
@@ -786,7 +800,7 @@ void main() {
               data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(2)),
               child: child!,
             ),
-            home: const HomeScreen(),
+            home: const HomeScreen(layout: HomeLayout.classic),
           ),
         ),
       );
@@ -814,7 +828,7 @@ void main() {
         theme: factoryLightTheme(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const HomeScreen(),
+        home: const HomeScreen(layout: HomeLayout.classic),
       ),
     ));
     await tester.pumpAndSettle();
@@ -839,7 +853,7 @@ void main() {
         theme: factoryLightTheme(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const HomeScreen(),
+        home: const HomeScreen(layout: HomeLayout.classic),
       ),
     ));
     await tester.pumpAndSettle();
@@ -866,7 +880,7 @@ void main() {
           theme: factoryLightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const HomeScreen(),
+          home: const HomeScreen(layout: HomeLayout.classic),
         ),
       ));
       await tester.pumpAndSettle();
@@ -919,6 +933,167 @@ void main() {
     });
   });
 
+  group('reference layout (the default)', () {
+    const ref = HomeLayout.reference;
+
+    ProviderSearchResult studio(String id, double rating, List<ServiceSummary> services) => ProviderSearchResult(
+      id: id, name: 'Studio $id', vertical: 'beauty', status: 'ACTIVE', hasOpenAvailability: true, minPrice: 4000,
+      services: services, averageRating: rating, reviewCount: 10,
+    );
+    ServiceSummary svc(String title, double price) =>
+        ServiceSummary(id: '$title$price', title: title, durationMinutes: 30, price: price, currency: 'KZT');
+
+    testWidgets('is the default, clean first screen: header, search, banner, categories, top services', (tester) async {
+      _useTallWindow(tester);
+      await tester.pumpWidget(
+        routedHome(
+          layout: ref,
+          loggedIn: true,
+          categories: manyCategories(8),
+          banners: const [promo],
+          results: [studio('A', 4.9, [svc('Haircut', 5000), svc('Manicure', 3500), svc('Massage', 7000), svc('Waxing', 2500)])],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The clean header: name and city, favourites and notifications; no green hero, no shortcut chips, no 4x2 grid.
+      expect(find.text('Hi, Aigerim K.'), findsOneWidget);
+      expect(find.text('Almaty'), findsOneWidget);
+      expect(find.byType(SliverAppBar), findsNothing);
+      expect(find.text('Today'), findsNothing);
+      expect(find.text('Popular services'), findsNothing);
+
+      // Order, top to bottom.
+      double y(Finder f) => tester.getTopLeft(f).dy;
+      final order = [
+        y(find.text('Hi, Aigerim K.')),
+        y(find.text('What service are you looking for?')),
+        y(find.byType(FactoryBannerCard)),
+        y(find.text('Categories')),
+        y(find.text('Top services')),
+        y(find.text('Near you')),
+      ];
+      expect(order, orderedEquals([...order]..sort()));
+    });
+
+    testWidgets('the categories are one row: the first four and "More", which opens the full list', (tester) async {
+      _useTallWindow(tester);
+      await tester.pumpWidget(routedHome(layout: ref, categories: manyCategories(10)));
+      await tester.pumpAndSettle();
+
+      for (final n in [1, 2, 3, 4]) {
+        expect(find.text('Category $n'), findsOneWidget);
+      }
+      expect(find.text('Category 5'), findsNothing);
+      expect(find.text('More'), findsOneWidget);
+      expect(tester.getTopLeft(find.text('Category 1')).dy, closeTo(tester.getTopLeft(find.text('More')).dy, 8), reason: 'one row');
+
+      await tester.tap(find.text('More'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Pick nine'));
+      await tester.pumpAndSettle();
+      expect(find.text('Search /search?category=category-9'), findsOneWidget, reason: 'picked in the full list');
+    });
+
+    testWidgets('a category tile opens Search narrowed to it', (tester) async {
+      _useTallWindow(tester);
+      await tester.pumpWidget(routedHome(layout: ref, categories: manyCategories(10)));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Category 2'));
+      await tester.pumpAndSettle();
+      expect(find.text('Search /search?category=category-2'), findsOneWidget);
+    });
+
+    testWidgets('top services: at most three rows with the lowest price and the businesses offering it; a tap searches', (tester) async {
+      _useTallWindow(tester);
+      await tester.pumpWidget(
+        routedHome(
+          layout: ref,
+          results: [
+            studio('A', 4.9, [svc('Haircut', 5000), svc('Manicure', 3500), svc('Massage', 7000), svc('Waxing', 2500)]),
+            studio('B', 4.5, [svc('Haircut', 4000)]),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Top services'), findsOneWidget);
+      expect(find.text('Haircut'), findsOneWidget);
+      expect(find.text(' · 2 businesses'), findsOneWidget);
+      // Three rows, not four: the first screen stays short.
+      expect([for (final t in ['Haircut', 'Manicure', 'Massage', 'Waxing']) find.text(t).evaluate().length].fold<int>(0, (a, b) => a + b), 3);
+
+      await tester.tap(find.text('Haircut'));
+      await tester.pumpAndSettle();
+      expect(find.text('Search /search?q=Haircut'), findsOneWidget);
+    });
+
+    testWidgets('top services come from what was really booked when the server has it', (tester) async {
+      _useTallWindow(tester);
+      final api = _FakeDiscoveryApi(
+        [studio('A', 4.9, [svc('Feed Only', 1000)])],
+        popular: const [PopularService(title: 'Most Booked', minPrice: 2500, currency: 'KZT', providerCount: 4, bookings: 99, vertical: 'cleaning')],
+      );
+      await tester.pumpWidget(routedHome(layout: ref, api: api));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Most Booked'), findsOneWidget);
+      expect(find.text('Feed Only'), findsNothing);
+    });
+
+    testWidgets('the avatar opens Profile, the heart opens Favorites', (tester) async {
+      _useTallWindow(tester);
+      await tester.pumpWidget(routedHome(layout: ref, loggedIn: true));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(FactoryAvatar));
+      await tester.pumpAndSettle();
+      expect(find.text('Profile page'), findsOneWidget);
+    });
+
+    testWidgets('the next booking and the rails (nearby, recommended) stay, below the first screen', (tester) async {
+      _useTallWindow(tester);
+      await tester.pumpWidget(
+        routedHome(layout: ref, results: [for (var i = 0; i < 12; i++) studio('S$i', 4.9 - i * 0.05, [svc('Haircut', 5000)])]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Top rated near you'), findsOneWidget);
+      expect(find.text('Recommended for you'), findsOneWidget);
+    });
+
+    testWidgets('fits a 320 px phone with a large font in the dark theme', (tester) async {
+      tester.view.physicalSize = const Size(320, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        routedHome(
+          layout: ref,
+          loggedIn: true,
+          textScale: 2,
+          theme: factoryDarkTheme(),
+          categories: manyCategories(10),
+          banners: const [promo],
+          results: [studio('A', 4.9, [svc('A very long service name for a haircut', 5000)])],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Categories'), findsOneWidget);
+    });
+
+    testWidgets('empty city: no top services, and the empty state shows instead of rails', (tester) async {
+      _useTallWindow(tester);
+      await tester.pumpWidget(routedHome(layout: ref, results: const []));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Top services'), findsNothing);
+      expect(find.text('What service are you looking for?'), findsOneWidget);
+    });
+  });
+
   testWidgets('there is no "Popular services" block while no business lists a service', (tester) async {
     _useTallWindow(tester);
     await tester.pumpWidget(routedHome());
@@ -952,7 +1127,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           routerConfig: GoRouter(
             routes: [
-              GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+              GoRoute(path: '/', builder: (_, _) => const HomeScreen(layout: HomeLayout.classic)),
               GoRoute(
                 path: '/ad-video',
                 builder: (_, state) {
@@ -987,7 +1162,7 @@ void main() {
           theme: factoryLightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const HomeScreen(),
+          home: const HomeScreen(layout: HomeLayout.classic),
         ),
       ),
     );
@@ -1010,7 +1185,7 @@ void main() {
           theme: factoryLightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const HomeScreen(),
+          home: const HomeScreen(layout: HomeLayout.classic),
         ),
       ),
     );
@@ -1055,7 +1230,7 @@ void main() {
           theme: factoryLightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const HomeScreen(),
+          home: const HomeScreen(layout: HomeLayout.classic),
         ),
       ),
     );
@@ -1104,7 +1279,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           routerConfig: GoRouter(
             routes: [
-              GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+              GoRoute(path: '/', builder: (_, _) => const HomeScreen(layout: HomeLayout.classic)),
               GoRoute(
                 path: '/categories',
                 builder: (_, _) => const AllCategoriesScreen(),
@@ -1181,7 +1356,7 @@ void main() {
           theme: factoryLightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const HomeScreen(),
+          home: const HomeScreen(layout: HomeLayout.classic),
         ),
       ),
     );
@@ -1222,7 +1397,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           routerConfig: GoRouter(
             routes: [
-              GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+              GoRoute(path: '/', builder: (_, _) => const HomeScreen(layout: HomeLayout.classic)),
               GoRoute(
                 path: '/provider/:id',
                 builder: (_, state) => Scaffold(body: Text('Provider ${state.uri}')),
@@ -1274,7 +1449,7 @@ void main() {
             data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(2)),
             child: child!,
           ),
-          home: const HomeScreen(),
+          home: const HomeScreen(layout: HomeLayout.classic),
         ),
       ),
     );
@@ -1301,7 +1476,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           routerConfig: GoRouter(
             routes: [
-              GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+              GoRoute(path: '/', builder: (_, _) => const HomeScreen(layout: HomeLayout.classic)),
               GoRoute(
                 path: '/favorites',
                 builder: (_, _) => const Scaffold(body: Text('Favorites page')),
@@ -1331,7 +1506,7 @@ void main() {
       supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: GoRouter(
         routes: [
-          GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+          GoRoute(path: '/', builder: (_, _) => const HomeScreen(layout: HomeLayout.classic)),
           GoRoute(
             path: '/worker/:id',
             builder: (_, state) => Scaffold(body: Text('Worker page ${state.pathParameters['id']}')),
@@ -1372,7 +1547,7 @@ void main() {
       supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: GoRouter(
         routes: [
-          GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+          GoRoute(path: '/', builder: (_, _) => const HomeScreen(layout: HomeLayout.classic)),
           GoRoute(
             path: '/worker/:id',
             builder: (_, state) => Scaffold(body: Text('Worker page ${state.pathParameters['id']}')),
@@ -1439,7 +1614,7 @@ void main() {
             data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(2)),
             child: child!,
           ),
-          home: const HomeScreen(),
+          home: const HomeScreen(layout: HomeLayout.classic),
         ),
       ),
     );

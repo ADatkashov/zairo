@@ -53,7 +53,7 @@ void main() {
   testWidgets('is a rounded card of a fixed height inside the page padding, not a full-bleed hero', (tester) async {
     await _pump(tester, const [_video]);
 
-    expect(tester.getSize(find.byType(FactoryBannerCard)).height, HomeBannerCarousel.height);
+    expect(tester.getSize(find.byType(FactoryBannerCard)).height, HomeBannerCarousel.defaultHeight);
     expect(tester.getSize(find.byType(FactoryBannerCard)).width, 800 - 32);
     final clip = tester.widget<ClipRRect>(find.descendant(of: find.byType(FactoryBannerCard), matching: find.byType(ClipRRect)));
     expect(clip.borderRadius, isNot(BorderRadius.zero));
@@ -165,5 +165,26 @@ void main() {
     expect(of(null).link, isNull);
     expect(AdBanner.fromJson({'id': 'x', 'title': 't', 'imageUrl': 'https://c/x.jpg', 'linkTarget': 'SEARCH'}).link,
         AdLinkTarget.search);
+  });
+
+  testWidgets('grows with a large system font (to 1.5x) so the cover text fits', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: factoryLightTheme(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(2)),
+          child: child!,
+        ),
+        home: Scaffold(
+          body: HomeBannerCarousel(banners: const [_video], onOpenVideo: (_) {}, onOpenLink: (_) {}, height: 128),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(tester.getSize(find.byType(FactoryBannerCard)).height, 128 * 1.5);
   });
 }

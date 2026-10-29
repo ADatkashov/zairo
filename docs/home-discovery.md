@@ -11,7 +11,7 @@ regenerate the local Postman collection from it with `scripts/sync-postman.sh`. 
 
 | Endpoint | Auth | Returns |
 |---|---|---|
-| `GET /api/v1/search/popular-services?city=&limit=` | public | The services customers booked most lately: `title`, `bookings`, `providerCount`, `minPrice`, `currency`. `limit` 1-20, default 8. |
+| `GET /api/v1/search/popular-services?city=&limit=` | public | The services customers booked most lately: `title`, `bookings`, `providerCount`, `minPrice`, `currency`, `vertical` (the category of the most booked offering, for an icon). `limit` 1-20, default 8. |
 | `GET /api/v1/users/{userId}/recommendations?city=&limit=` | the user themself (403 otherwise) | Businesses to show this customer: `providerId`, `vertical`, in display order. `limit` 1-30, default 10. |
 | `GET /api/v1/users/{userId}/book-again` | the user themself | Existing. Services they completed, to repeat. |
 
@@ -61,3 +61,29 @@ service opens Search for that title.
 - End to end on a real Postgres: `PopularServicesApiTests`, `RecommendationsApiTests`; `EndpointAuthPolicyTests` lists
   `GET /api/v1/search/popular-services` as intentionally public.
 - App: `discovery_api_test`, `popular_services_test`, `home_screen_test`.
+
+## Home layouts and the "+" quick actions
+
+`HomeScreen(layout: ...)` has two layouts, both in code:
+
+- `HomeLayout.reference` (default): the clean reference layout. Greeting and city (the avatar opens Profile), search,
+  the next booking if there is one, the promo banner right under the search, one row of categories (the first four and
+  "More", three on a narrow phone or with a large font), "Top services" as a three-row list, then the personal and
+  discovery rails (book again, my masters, top rated/nearby, best masters, recommended).
+- `HomeLayout.classic`: the layout before the redesign (green hero, quick chips, 4x2 category grid, popular-services
+  rail). Hidden, not deleted, and still covered by tests (`home_screen_test.dart` runs it), so it can come back by
+  changing the default.
+
+The bottom bar is Home, Search, a round "+", Bookings, Profile. The "+" opens a sheet of the few actions that get a
+person to a booking faster than the tabs do:
+
+| Action | Where it goes |
+|---|---|
+| Find a service | Search tab with the keyboard up |
+| Book again (only with a past visit) | the booking steps of the last completed service, only a time left to pick |
+| Free today | Search tab, narrowed to businesses with a free slot today |
+| Near me | Search tab, nearest first |
+
+Messages and favourites are deliberately not there: they are not booking actions and are one tap away (the heart in
+Home's header, Messages in Profile with its badge). Each way into the Search tab sets its filters afresh, because the
+tab keeps its state.

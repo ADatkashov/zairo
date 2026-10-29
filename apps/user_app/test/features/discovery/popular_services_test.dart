@@ -66,12 +66,20 @@ void main() {
 
   test('reads the backend\'s row; bookings is optional (an older backend)', () {
     final full = PopularService.fromJson({
-      'title': 'Manicure', 'bookings': 9, 'providerCount': 3, 'minPrice': 3500, 'currency': 'KZT',
+      'title': 'Manicure', 'bookings': 9, 'providerCount': 3, 'minPrice': 3500, 'currency': 'KZT', 'vertical': 'beauty',
     });
+    expect(full.vertical, 'beauty');
     expect((full.title, full.bookings, full.providerCount, full.minPrice, full.currency), ('Manicure', 9, 3, 3500.0, 'KZT'));
 
     final old = PopularService.fromJson({'title': 'Manicure', 'providerCount': 3, 'minPrice': 3500.5, 'currency': 'KZT'});
     expect(old.bookings, 0);
+    expect(old.vertical, isNull);
     expect(old.minPrice, 3500.5);
+  });
+
+  test('the list worked out on the device carries the category of the business, for an icon', () {
+    final result = popularServices([_provider('a', [_svc('Haircut', 5000)])]);
+
+    expect(result.single.vertical, 'beauty');
   });
 }

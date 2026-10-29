@@ -45,15 +45,13 @@ import 'route_screens.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 final homeNavigatorKey = GlobalKey<NavigatorState>();
+final searchNavigatorKey = GlobalKey<NavigatorState>();
 final bookingsNavigatorKey = GlobalKey<NavigatorState>();
 final profileNavigatorKey = GlobalKey<NavigatorState>();
 
-/// Tab set is Home/Bookings/Profile, with "Find a service" as the round action
-/// in the middle of the bar (see MainWrapper). Search is not a tab: it is a
-/// full-screen route above the shell (`/search`), opened by that action and by
-/// every "see all" / category tap, so back always returns to where the person
-/// started. Favorites is a push from Home's heart and Profile, Settings from
-/// Profile's AppBar action; neither is a tab.
+/// Tab set is Home/Search/Bookings/Profile, with the round "+" (quick actions)
+/// in the middle of the bar (see MainWrapper). Favorites is a push from Home's
+/// heart and Profile, Settings from Profile's AppBar action; neither is a tab.
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: rootNavigatorKey,
@@ -274,19 +272,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-      GoRoute(
-        path: '/search',
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => SearchScreen(
-          initialVertical: state.uri.queryParameters['category'],
-          initialQuery: state.uri.queryParameters['q'],
-          autofocus: state.uri.queryParameters['focus'] == '1',
-          initialAvailableOnly: state.uri.queryParameters['available'] == '1',
-          initialSort: DiscoverySort.values
-              .where((sort) => sort.wireValue == state.uri.queryParameters['sort'])
-              .firstOrNull,
-        ),
-      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return MainWrapper(navigationShell: navigationShell);
@@ -305,12 +290,32 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
+            navigatorKey: searchNavigatorKey,
+            routes: [
+              GoRoute(
+                path: '/search',
+                builder: (context, state) => ScrollToTopOnTabReselect(
+                  tabIndex: 1,
+                  child: SearchScreen(
+                    initialVertical: state.uri.queryParameters['category'],
+                    initialQuery: state.uri.queryParameters['q'],
+                    initialAvailableOnly: state.uri.queryParameters['available'] == '1',
+                    initialSort: DiscoverySort.values
+                        .where((sort) => sort.wireValue == state.uri.queryParameters['sort'])
+                        .firstOrNull,
+                    focusRequest: state.uri.queryParameters['focus'],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
             navigatorKey: bookingsNavigatorKey,
             routes: [
               GoRoute(
                 path: '/bookings',
                 builder: (context, state) => const ScrollToTopOnTabReselect(
-                  tabIndex: 1,
+                  tabIndex: 2,
                   child: MyBookingsScreen(),
                 ),
               ),
@@ -322,7 +327,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/profile',
                 builder: (context, state) => const ScrollToTopOnTabReselect(
-                  tabIndex: 2,
+                  tabIndex: 3,
                   child: ProfileScreen(),
                 ),
               ),
