@@ -136,14 +136,13 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('the "+" opens quick actions; "Find a service" lands on the Search tab with the keyboard up', (tester) async {
+  testWidgets('the "+" fans out three quick actions and turns into a "×"; "Find a service" lands on the Search tab with the keyboard up', (tester) async {
     await tester.pumpWidget(app());
     await tester.pumpAndSettle();
 
     await tester.tap(find.byIcon(Symbols.add_rounded));
     await tester.pumpAndSettle();
-    expect(find.text('Quick actions'), findsOneWidget);
-    // Only what gets a person to a booking faster than the tabs do. No history and no login: no "Book again".
+    // The three, each labelled under its round button. No history and no login: Near me, not "Book again".
     for (final row in ['Find a service', 'Free today', 'Near me']) {
       expect(find.text(row), findsOneWidget, reason: row);
     }
@@ -152,7 +151,7 @@ void main() {
     await tester.tap(find.text('Find a service'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Quick actions'), findsNothing, reason: 'the sheet closed');
+    expect(find.text('Free today'), findsNothing, reason: 'the fan closed');
     expect(find.byType(SearchScreen), findsOneWidget);
     // Search is a tab: the bar stays.
     expect(find.byType(FactoryBottomNavigation), findsOneWidget);

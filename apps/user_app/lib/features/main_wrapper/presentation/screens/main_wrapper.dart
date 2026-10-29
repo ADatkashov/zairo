@@ -7,7 +7,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../../../app/router/tab_reselect.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../messaging/presentation/providers/message_seen_provider.dart';
-import '../widgets/quick_actions_sheet.dart';
+import '../quick_actions.dart';
 
 class MainWrapper extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -19,6 +19,10 @@ class MainWrapper extends ConsumerStatefulWidget {
 }
 
 class _MainWrapperState extends ConsumerState<MainWrapper> {
+  /// The "+" fan is open. The bar closes it on Back by itself, so this
+  /// wrapper must not also jump to Home for that same Back press.
+  bool _fanOpen = false;
+
   StatefulNavigationShell get navigationShell => widget.navigationShell;
 
   @override
@@ -33,11 +37,12 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
     return PopScope(
       canPop: navigationShell.currentIndex == 0,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) navigationShell.goBranch(0);
+        if (!didPop && !_fanOpen) navigationShell.goBranch(0);
       },
       child: Scaffold(
         body: navigationShell,
         bottomNavigationBar: FactoryBottomNavigation(
+          onFanOpenChanged: (open) => _fanOpen = open,
           selectedIndex: navigationShell.currentIndex,
           onDestinationSelected: (index) {
             // Tapping the tab you are on: back to its root *and* to the top.
@@ -49,14 +54,14 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
               initialLocation: index == navigationShell.currentIndex,
             );
           },
-          // The round "+" opens the few quick actions (find a service with the
-          // keyboard up, book the last visit again, free today, nearby). An
-          // action, not a tab, so the tab indexes below are not shifted by it;
-          // it is named for screen readers, the bar itself shows only the icon.
+          // The round "+" fans out three quick actions (find a service with the
+          // keyboard up, free today, book the last visit again), the "+" turning
+          // into a "×". An action, not a tab, so the tab indexes below are not
+          // shifted by it; the bar shows only the icon, screen readers get the name.
           centerAction: FactoryNavAction(
             icon: Symbols.add_rounded,
             label: l10n.navQuickActions,
-            onTap: () => showQuickActionsSheet(context),
+            quickActions: quickActionsFor(context, l10n, lastVisitOf(ref)),
           ),
           // Icon names match BottomNav.dc.html's own `icon` field verbatim
           // (home/search/calendar_month/person) — "Записи" uses
