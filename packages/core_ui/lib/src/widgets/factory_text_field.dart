@@ -85,12 +85,26 @@ class _FactoryTextFieldState extends State<FactoryTextField> {
     // suffixIcon.
     final suffix = w.suffixIcon ??
         (w.obscureText
-            ? IconButton(
+            ? Padding(
+                padding: const EdgeInsetsDirectional.only(end: 6),
+                child: IconButton(
+                // A compact button: the default 48 px circle was as tall as the field and
+                // stuck out of its right edge.
+                iconSize: 20,
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+                style: IconButton.styleFrom(
+                  fixedSize: const Size(36, 36),
+                  minimumSize: const Size(36, 36),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
                 icon: Icon(_revealed ? Icons.visibility_off : Icons.visibility),
                 tooltip: _revealed
                     ? FactoryStrings.of(context).hidePassword
                     : FactoryStrings.of(context).showPassword,
                 onPressed: () => setState(() => _revealed = !_revealed),
+              ),
               )
             : null);
     return TextFormField(
@@ -114,6 +128,8 @@ class _FactoryTextFieldState extends State<FactoryTextField> {
         errorText: w.errorText,
         prefixIcon: w.prefixIcon,
         suffixIcon: suffix,
+        // The field's own minimum for a suffix is 48 px, which is what made the eye taller than the field.
+        suffixIconConstraints: w.suffixIcon == null && w.obscureText ? const BoxConstraints(minWidth: 46, minHeight: 36) : null,
       ),
     );
   }

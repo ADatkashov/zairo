@@ -4,8 +4,6 @@
   "navHome": "Home",
   "@navHome": {"description": "Bottom navigation label for the Home tab."},
 
-  "navSearch": "Search",
-  "@navSearch": {"description": "Bottom navigation label for the Search tab."},
 
   "navProfile": "Profile",
   "@navProfile": {"description": "Bottom navigation label for the Profile tab."},
@@ -365,6 +363,32 @@
   "homeLocationUnknown": "Your location",
   "@homeLocationUnknown": {"description": "Home screen location label fallback when no location label is available."},
 
+  "homeNextBookingTitle": "Your next booking",
+  "@homeNextBookingTitle": {"description": "Caption on Home's card for the soonest upcoming booking."},
+  "homeRecommendedForYouTitle": "Picked for you",
+  "@homeRecommendedForYouTitle": {"description": "Heading of Home's recommendations when they are learned from the customer's own bookings."},
+  "homeTopServicesTitle": "Top services",
+  "@homeTopServicesTitle": {"description": "Heading of Home's short list of the most booked services."},
+  "homeCategoriesMore": "More",
+  "@homeCategoriesMore": {"description": "Last tile of Home's category row: opens the full category list."},
+  "homeChipToday": "Today",
+  "@homeChipToday": {"description": "Home quick chip: opens Search for businesses with a free slot today."},
+  "homeChipNearby": "Nearby",
+  "@homeChipNearby": {"description": "Home quick chip: opens Search sorted by distance."},
+  "homeChipTopRated": "Top rated",
+  "@homeChipTopRated": {"description": "Home quick chip: opens Search sorted by rating."},
+  "homePopularServicesTitle": "Popular services",
+  "@homePopularServicesTitle": {"description": "Heading of Home's rail of services most businesses nearby offer."},
+  "homePopularServiceFrom": "from",
+  "@homePopularServiceFrom": {"description": "Prefix before the lowest price on a popular-service card (\"from 5 000 ₸\")."},
+  "homePopularServiceBusinesses": "{count, plural, one{{count} business} other{{count} businesses}}",
+  "@homePopularServiceBusinesses": {
+    "description": "How many businesses offer a popular service, on its Home card.",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
   "homeSeeAll": "See all",
   "@homeSeeAll": {"description": "Home screen section header action that opens Search."},
   "homeCategoriesTitle": "Categories",
@@ -498,12 +522,6 @@
   "searchFilterPriceRangeLabel": "Price range",
   "@searchFilterPriceRangeLabel": {"description": "Search filters dialog section label for the min/max price fields."},
 
-  "searchFilterPriceMinHint": "Min",
-  "@searchFilterPriceMinHint": {"description": "Search filters dialog minimum price field hint."},
-
-  "searchFilterPriceMaxHint": "Max",
-  "@searchFilterPriceMaxHint": {"description": "Search filters dialog maximum price field hint."},
-
   "searchFilterAvailableOnlyLabel": "Available today only",
   "@searchFilterAvailableOnlyLabel": {"description": "Search filters dialog switch label."},
 
@@ -529,11 +547,32 @@
     }
   },
 
+  "searchFilterPriceMinHint": "From",
+  "@searchFilterPriceMinHint": {"description": "Label of the lower-bound price box in the search filters sheet."},
+
+  "searchFilterPriceMaxHint": "To",
+  "@searchFilterPriceMaxHint": {"description": "Label of the upper-bound price box in the search filters sheet."},
+
+  "searchFilterPriceRangeValue": "{from} – {to}",
+  "@searchFilterPriceRangeValue": {
+    "description": "Current selection above the price range slider in the search filters sheet, e.g. \"2 000 ₸ – 15 000 ₸\".",
+    "placeholders": {"from": {"type": "String"}, "to": {"type": "String"}}
+  },
+
   "searchFilterClearButton": "Clear",
   "@searchFilterClearButton": {"description": "Search filters dialog button that resets all filters."},
 
   "searchFilterApplyButton": "Apply",
   "@searchFilterApplyButton": {"description": "Search filters dialog button that applies the chosen filters."},
+
+  "searchFilterShowResults": "{count, plural, one{Show {count} option} other{Show {count} options}}",
+  "@searchFilterShowResults": {
+    "description": "Primary button of the search filters sheet: applies the filters and says how many providers they match.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+
+  "searchFilterCloseTooltip": "Close filters",
+  "@searchFilterCloseTooltip": {"description": "Tooltip/semantic label of the close (X) button in the search filters sheet; closes it without applying."},
 
   "searchRecentTitle": "Recent searches",
   "@searchRecentTitle": {"description": "Search screen section header for the user's own recent search queries, shown before the first search of the session."},
@@ -732,10 +771,10 @@
   "profileLogOut": "Log out",
   "@profileLogOut": {"description": "Profile screen's logged-in log-out button."},
 
-  "mapPlaceholderTitle": "Map view placeholder",
+  "mapPlaceholderTitle": "Map preview isn't available yet",
   "@mapPlaceholderTitle": {"description": "Mock map screen's placeholder heading."},
 
-  "mapPlaceholderMessage": "Real map rendering (2GIS, with Google Maps as an alternative) is wired in once a map API key is configured.",
+  "mapPlaceholderMessage": "For now, open the place in 2GIS with the button below.",
   "@mapPlaceholderMessage": {"description": "Mock map screen's explanatory placeholder text."},
 
   "masterPortfolioTitle": "{masterName} — Portfolio",
@@ -749,7 +788,7 @@
   "portfolioEmptyTitle": "No photos yet",
   "@portfolioEmptyTitle": {"description": "Master portfolio screen empty state title."},
 
-  "portfolioEmptyMessage": "No portfolio photos yet.",
+  "portfolioEmptyMessage": "This master hasn't added any work yet. Check back soon.",
   "@portfolioEmptyMessage": {"description": "Master portfolio screen empty state."},
 
   "portfolioPhotoSemanticLabel": "Portfolio photo",
@@ -955,6 +994,12 @@
 
   "paymentStatusFailed": "Failed",
   "@paymentStatusFailed": {"description": "Payment status badge label for FAILED."},
+
+  "loyaltyBusinessLoggedOutPrompt": "Log in to see your points and rewards at this business",
+  "@loyaltyBusinessLoggedOutPrompt": {"description": "Shown instead of one business's rewards screen when nobody is logged in."},
+
+  "chatLoggedOutPrompt": "Log in to message this business",
+  "@chatLoggedOutPrompt": {"description": "Shown instead of a chat with a business when nobody is logged in."},
 
   "bookingsLoggedOutPrompt": "Log in to see your bookings",
   "@bookingsLoggedOutPrompt": {"description": "Shown on the Bookings tab when reached while logged out."},
@@ -1165,12 +1210,11 @@
     }
   },
 
-  "loyaltyRewardDiscountFixed": "{amount} {currency} off",
+  "loyaltyRewardDiscountFixed": "{amount} off",
   "@loyaltyRewardDiscountFixed": {
     "description": "Reward card's FIXED_DISCOUNT summary line.",
     "placeholders": {
-      "amount": {"type": "String"},
-      "currency": {"type": "String"}
+      "amount": {"type": "String"}
     }
   },
 
@@ -1657,6 +1701,24 @@
   "@bookingsTabEmptyCompleted": {"description": "Empty 'Completed' tab of My bookings."},
   "bookingsTabEmptyCancelled": "If you cancel a booking, it will be listed here.",
   "@bookingsTabEmptyCancelled": {"description": "Empty 'Cancelled' tab of My bookings."},
+  "profileStatUpcoming": "Upcoming",
+  "@profileStatUpcoming": {"description": "Profile stat strip: label under the number of upcoming bookings."},
+
+  "profileStatFavorites": "Favorites",
+  "@profileStatFavorites": {"description": "Profile stat strip: label under the number of favorite providers."},
+
+  "profileStatPoints": "Points",
+  "@profileStatPoints": {"description": "Profile stat strip: label under the total reward points."},
+
+  "profilePersonalData": "Personal details",
+  "@profilePersonalData": {"description": "Profile row that opens the edit-profile screen."},
+
+  "profilePersonalSubtitle": "Name, birthday, gender",
+  "@profilePersonalSubtitle": {"description": "Hint under the personal details row."},
+
+  "profileSettingsSubtitle": "Language, theme, security",
+  "@profileSettingsSubtitle": {"description": "Hint under the Settings row of the profile."},
+
   "profileSectionActivity": "My activity",
   "@profileSectionActivity": {"description": "Profile list group header: favorites, messages, rewards, coupons, vehicles."},
   "profileSectionHelp": "Help",
@@ -1832,7 +1894,7 @@
   "@paymentCardsTitle": {"description": "paymentCardsTitle"},
   "paymentCardsIntro": "Pay faster with a saved card. We keep only the card's brand and its last four digits.",
   "@paymentCardsIntro": {"description": "paymentCardsIntro"},
-  "paymentCardsEmpty": "No saved cards yet.",
+  "paymentCardsEmpty": "No saved cards yet",
   "@paymentCardsEmpty": {"description": "paymentCardsEmpty"},
   "paymentCardsSaveSwitch": "Save my card at my next payment",
   "@paymentCardsSaveSwitch": {"description": "paymentCardsSaveSwitch"},
@@ -1934,8 +1996,31 @@
   "reviewsResetFilters": "Show all",
   "@reviewsResetFilters": {"description": "Reviews screen filter/sort/empty text."},
 
-  "navNewBooking": "New booking",
-  "@navNewBooking": {"description": "Screen-reader label of the round + button in the middle of the bottom bar; opens the category picker to start a booking."},
+
+  "navSearch": "Search",
+  "@navSearch": {"description": "Bottom navigation label for the Search tab."},
+  "navQuickActions": "Quick actions",
+  "@navQuickActions": {"description": "Label of the round + button in the middle of the bottom bar, and the heading of the sheet it opens."},
+  "quickFindSubtitle": "By name or category",
+  "@quickFindSubtitle": {"description": "Quick action row: opens Search with the keyboard up."},
+  "quickTodayTitle": "Free today",
+  "@quickTodayTitle": {"description": "Quick action row: Search narrowed to businesses with a free slot today."},
+  "quickTodaySubtitle": "Places you can book for today",
+  "@quickTodaySubtitle": {"description": "Subtitle of the free-today quick action."},
+  "quickNearbyTitle": "Near me",
+  "@quickNearbyTitle": {"description": "Quick action row: Search sorted by distance."},
+  "quickNearbySubtitle": "Closest places first",
+  "@quickNearbySubtitle": {"description": "Subtitle of the near-me quick action."},
+  "quickBookAgainSubtitle": "{service} · {business}",
+  "@quickBookAgainSubtitle": {
+    "description": "Quick action row that books the last completed visit again: what and where.",
+    "placeholders": {
+      "service": {"type": "String"},
+      "business": {"type": "String"}
+    }
+  },
+  "navFindService": "Find a service",
+  "@navFindService": {"description": "The first row of the quick-actions sheet: opens Search with the keyboard up."},
 
   "bookingStepService": "Service",
   "@bookingStepService": {"description": "Step label in the booking progress bar: choose a service."},
@@ -2032,5 +2117,53 @@
   "bookingSpecialistAnyHint": "Not chosen — we'll assign whoever is free",
   "@bookingSpecialistAnyHint": {"description": "Booking: caption under the person strip when nobody is picked (any free person is assigned)."},
   "bookingSpecialistChosenHint": "Tap again to let us choose",
-  "@bookingSpecialistChosenHint": {"description": "Booking: caption under the person strip when someone is picked."}
+  "@bookingSpecialistChosenHint": {"description": "Booking: caption under the person strip when someone is picked."},
+  "notifBookingConfirmedTitle": "Booking confirmed",
+  "@notifBookingConfirmedTitle": {"description": "Notification title: a booking was confirmed."},
+  "notifBookingConfirmedBody": "We'll see you there!",
+  "@notifBookingConfirmedBody": {"description": "Notification text under the booking details."},
+  "notifBookingCancelledTitle": "Booking cancelled",
+  "@notifBookingCancelledTitle": {"description": "Notification title: a booking was cancelled."},
+  "notifBookingCancelledBody": "This booking has been cancelled.",
+  "@notifBookingCancelledBody": {"description": "Notification text for a cancelled booking."},
+  "notifReminderSoonTitle": "Your visit is in about 2 hours",
+  "@notifReminderSoonTitle": {"description": "Reminder title, 2 hours before."},
+  "notifReminderSoonBody": "See you soon!",
+  "@notifReminderSoonBody": {"description": "Reminder text, 2 hours before."},
+  "notifReminderDayTitle": "Your visit is coming up",
+  "@notifReminderDayTitle": {"description": "Reminder title, the day before."},
+  "notifReminderDayBody": "Need another time? Open the booking and tap Reschedule.",
+  "@notifReminderDayBody": {"description": "Reminder text, the day before."},
+  "notifBookingMovedTitle": "Your appointment was moved",
+  "@notifBookingMovedTitle": {"description": "Notification title: appointment time changed."},
+  "notifBookingMovedBody": "It has a new time — check the details.",
+  "@notifBookingMovedBody": {"description": "Notification text: appointment time changed."},
+  "notifRefundTitle": "Refund processed",
+  "@notifRefundTitle": {"description": "Notification title: refund."},
+  "notifRefundBody": "Your money is on its way back to you.",
+  "@notifRefundBody": {"description": "Notification text: refund."},
+  "notifChangeRequestedTitle": "Please choose how to proceed",
+  "@notifChangeRequestedTitle": {"description": "Notification title: the specialist can't make it."},
+  "notifChangeRequestedBody": "Your specialist can't make this appointment. Open the booking to pick a colleague at the same time, another time, or cancel with a full refund.",
+  "@notifChangeRequestedBody": {"description": "Notification text: the specialist can't make it."},
+  "notifWorkerChangedTitle": "Your specialist has changed",
+  "@notifWorkerChangedTitle": {"description": "Notification title: specialist replaced."},
+  "notifWorkerChangedBody": "The time is the same. Open the booking to see who will see you.",
+  "@notifWorkerChangedBody": {"description": "Notification text: specialist replaced."},
+  "searchActivePriceFrom": "From {amount}",
+  "@searchActivePriceFrom": {"description": "Active-filter chip: minimum price only.", "placeholders": {"amount": {"type": "String"}}},
+  "searchActivePriceTo": "Up to {amount}",
+  "@searchActivePriceTo": {"description": "Active-filter chip: maximum price only.", "placeholders": {"amount": {"type": "String"}}},
+  "searchActiveFilterRemove": "Remove filter: {filter}",
+  "@searchActiveFilterRemove": {"description": "Screen-reader label of an active-filter chip; tapping removes the filter.", "placeholders": {"filter": {"type": "String"}}},
+  "searchFilterCategoryMore": "More",
+  "@searchFilterCategoryMore": {"description": "Search filters sheet: chip that reveals the remaining categories."},
+  "loginMethodPhone": "Phone",
+  "@loginMethodPhone": {"description": "Short caption under the phone sign-in circle on the login screen."},
+  "securityLinkedLabel": "Linked",
+  "@securityLinkedLabel": {"description": "Security screen: subtitle of a sign-in method that is already linked."},
+  "paymentCardsEmptyHint": "Your card is saved the next time you pay online, as long as the switch above is on.",
+  "@paymentCardsEmptyHint": {"description": "Saved cards: how a card gets saved when there are none."},
+  "homeNearbyTitle": "Near you",
+  "@homeNearbyTitle": {"description": "Home section header for the provider rail when there are too few ratings to call it top rated."}
 }

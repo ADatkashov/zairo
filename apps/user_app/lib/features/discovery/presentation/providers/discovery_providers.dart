@@ -6,7 +6,9 @@ import '../../../city/presentation/providers/city_providers.dart';
 import '../../../maps/data/geo_point.dart';
 import '../../../maps/presentation/providers/maps_providers.dart';
 import '../../data/discovery_api.dart';
+import '../../popular_services.dart';
 import '../../data/models/provider_search_result.dart';
+import '../../data/models/recommended_provider.dart';
 
 final discoveryApiProvider = Provider<DiscoveryApi>((ref) {
   return DiscoveryApi(ref.watch(dioClientProvider));
@@ -109,6 +111,44 @@ class DiscoveryQuery {
   );
 }
 
+/// The price scale the filter's range slider runs over: the cheapest and the
+/// dearest provider in a search, rounded outwards to a [step] that suits the
+/// spread. Prices here are the providers' `minPrice` — the very number the
+/// backend's `minPrice`/`maxPrice` filter compares against — so the ends of
+/// the slider are always reachable and never exclude a provider on their own.
+class PriceBounds {
+  final double min;
+  final double max;
+  final double step;
+  final String? currency;
+
+  const PriceBounds({required this.min, required this.max, required this.step, this.currency});
+
+  /// null when there is nothing to choose between (no priced provider, or all
+  /// of them cost the same).
+  static PriceBounds? fromResults(List<ProviderSearchResult> results) {
+    final prices = [for (final r in results) if (r.minPrice != null) r.minPrice!];
+    if (prices.isEmpty) return null;
+    final lowest = prices.reduce((a, b) => a < b ? a : b);
+    final highest = prices.reduce((a, b) => a > b ? a : b);
+    final span = highest - lowest;
+    final step = span >= 50000 ? 1000.0 : span >= 5000 ? 500.0 : span >= 500 ? 50.0 : span >= 50 ? 5.0 : 1.0;
+    final min = (lowest / step).floor() * step;
+    final max = (highest / step).ceil() * step;
+    if (max <= min) return null;
+    String? currency;
+    for (final r in results) {
+      if (r.services.isNotEmpty) {
+        currency = r.services.first.currency;
+        break;
+      }
+    }
+    return PriceBounds(min: min, max: max, step: step, currency: currency);
+  }
+
+  int get divisions => ((max - min) / step).round();
+}
+
 /// One catalog service's providers, for the Service Compare screen — a
 /// separate small provider rather than folding catalogServiceId into
 /// [DiscoveryQuery] (whose every other field is customer-typed filters, not
@@ -147,4 +187,31 @@ final searchResultsProvider = FutureProvider.autoDispose
     availableOnly: params.availableOnly,
     sort: params.sort.wireValue,
   );
+});
+
+/// The most booked services in the person's city, from the server. Best-effort like the rest of Home's extras: a
+/// failure (offline, an older backend without the endpoint) is the same as "nothing yet", and Home then falls back to
+/// what the loaded search results offer.
+final popularServicesProvider = FutureProvider.autoDispose<List<PopularService>>((ref) async {
+  try {
+    final city = await ref.watch(userCurrentCityProvider.future).then<City?>((c) => c, onError: (_) => null);
+    return await ref.watch(discoveryApiProvider).popularServices(cityCode: city?.code);
+  } catch (_) {
+    return const <PopularService>[];
+  }
+});
+
+/// Businesses recommended for this customer from their own bookings, in display order. Best-effort like the other
+/// Home extras: a failure, an older backend or no history is the same as "nothing yet", and Home then shows its
+/// generic best-rated list.
+final recommendedProvidersProvider = FutureProvider.autoDispose.family<List<RecommendedProvider>, String>((
+  ref,
+  userId,
+) async {
+  try {
+    final city = await ref.watch(userCurrentCityProvider.future).then<City?>((c) => c, onError: (_) => null);
+    return await ref.watch(discoveryApiProvider).recommendations(userId, cityCode: city?.code);
+  } catch (_) {
+    return const <RecommendedProvider>[];
+  }
 });

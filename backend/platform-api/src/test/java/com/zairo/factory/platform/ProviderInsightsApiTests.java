@@ -139,6 +139,29 @@ class ProviderInsightsApiTests {
     }
 
     @Test
+    void aVisitPaidAtTheVenueCountsAsRevenueOnceItIsCompleted() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "dash-venue-owner-" + runId + "@example.com");
+        UUID providerId = createPayAtVenueProvider(owner, "Cash Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Haircut " + runId, new BigDecimal("40.00"));
+
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        Registered customer = TestAuth.registerCustomer(restTemplate, "dash-venue-cust-" + runId + "@example.com");
+        UUID slot = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+        UUID bookingId = book(customer, serviceId, slot, new BigDecimal("40.00"));
+        // No online payment at all: the customer pays at the venue.
+        restTemplate.exchange("/api/v1/bookings/" + bookingId + "/complete", HttpMethod.POST,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
+
+        Map<?, ?> metrics = restTemplate.exchange("/api/v1/providers/" + providerId + "/dashboard", HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class).getBody();
+        assertThat(metrics.get("completedBookings")).isEqualTo(1);
+        assertThat(((Number) metrics.get("totalRevenue")).doubleValue()).isEqualTo(40.00);
+        assertThat(((Number) metrics.get("averageCheck")).doubleValue()).isEqualTo(40.00);
+        assertThat(metrics.get("currency")).isEqualTo("USD");
+    }
+
+    @Test
     void onlyTheOwnerCanReadDashboardMetricsAndAFreshProviderIsAllZero() {
         String runId = UUID.randomUUID().toString();
         Registered owner = TestAuth.registerOwner(restTemplate, "dash-owner2-" + runId + "@example.com");
@@ -189,6 +212,15 @@ class ProviderInsightsApiTests {
         var request = new CreateAvailabilitySlotRequest(startsAt, endsAt);
         ResponseEntity<Map> response = restTemplate.exchange(
                 "/api/v1/providers/" + providerId + "/availability-slots", HttpMethod.POST,
+                new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        return UUID.fromString(response.getBody().get("id").toString());
+    }
+
+    /** A business that takes no online payment: its bookings are confirmed at once and paid at the venue. */
+    private UUID createPayAtVenueProvider(Registered owner, String name) {
+        var request = new CreateProviderRequest(owner.userId(), name, "beauty");
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
                 new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         return UUID.fromString(response.getBody().get("id").toString());

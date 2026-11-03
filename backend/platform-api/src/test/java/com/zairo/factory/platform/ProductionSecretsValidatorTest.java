@@ -21,7 +21,7 @@ class ProductionSecretsValidatorTest {
         ProductionSecretsValidator validator = new ProductionSecretsValidator(env,
                 ProductionSecretsValidator.DEV_JWT_SECRET, ProductionSecretsValidator.DEV_PLATFORM_ADMIN_JWT_SECRET,
                 ProductionSecretsValidator.DEV_DB_PASSWORD, ProductionSecretsValidator.DEV_STORAGE_SECRET_KEY, "",
-                "", "", "", "", "", "");
+                "", "", "", "", "", "", true, true);
 
         assertThatCode(validator::run).doesNotThrowAnyException();
     }
@@ -32,7 +32,7 @@ class ProductionSecretsValidatorTest {
         env.setActiveProfiles("prod");
         ProductionSecretsValidator validator = new ProductionSecretsValidator(env,
                 ProductionSecretsValidator.DEV_JWT_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET,
-                REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET, "", "");
+                REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET, "", "", true, true);
 
         assertThatThrownBy(validator::run).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("JWT_SECRET").hasMessageContaining("dev-default");
@@ -43,7 +43,7 @@ class ProductionSecretsValidatorTest {
         MockEnvironment env = new MockEnvironment();
         env.setActiveProfiles("prod");
         ProductionSecretsValidator validator = new ProductionSecretsValidator(env, "", REAL_SECRET, REAL_SECRET,
-                REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET, "", "");
+                REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET, "", "", true, true);
 
         assertThatThrownBy(validator::run).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("JWT_SECRET").hasMessageContaining("not set");
@@ -56,7 +56,7 @@ class ProductionSecretsValidatorTest {
         ProductionSecretsValidator validator = new ProductionSecretsValidator(env,
                 ProductionSecretsValidator.DEV_JWT_SECRET, ProductionSecretsValidator.DEV_PLATFORM_ADMIN_JWT_SECRET,
                 ProductionSecretsValidator.DEV_DB_PASSWORD, ProductionSecretsValidator.DEV_STORAGE_SECRET_KEY, "",
-                "", "", "", "", "", "");
+                "", "", "", "", "", "", true, true);
 
         assertThatThrownBy(validator::run).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("JWT_SECRET").hasMessageContaining("PLATFORM_ADMIN_JWT_SECRET")
@@ -72,7 +72,7 @@ class ProductionSecretsValidatorTest {
         env.setActiveProfiles("prod");
         ProductionSecretsValidator validator = new ProductionSecretsValidator(env, REAL_SECRET, REAL_SECRET,
                 REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET,
-                "", "");
+                "", "", true, true);
 
         assertThatCode(validator::run).doesNotThrowAnyException();
     }
@@ -82,7 +82,7 @@ class ProductionSecretsValidatorTest {
         MockEnvironment env = new MockEnvironment();
         env.setActiveProfiles("prod");
         ProductionSecretsValidator validator = new ProductionSecretsValidator(env, REAL_SECRET, REAL_SECRET,
-                REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET, "", "", "", "", "");
+                REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET, "", "", "", "", "", true, true);
 
         assertThatThrownBy(validator::run).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("TWILIO_ACCOUNT_SID");
@@ -94,7 +94,7 @@ class ProductionSecretsValidatorTest {
         env.setActiveProfiles("prod");
         ProductionSecretsValidator validator = new ProductionSecretsValidator(env, REAL_SECRET, REAL_SECRET,
                 REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET, "",
-                REAL_SECRET, "");
+                REAL_SECRET, "", true, true);
 
         assertThatCode(validator::run).doesNotThrowAnyException();
     }
@@ -104,7 +104,7 @@ class ProductionSecretsValidatorTest {
         MockEnvironment env = new MockEnvironment();
         env.setActiveProfiles("prod");
         ProductionSecretsValidator validator = new ProductionSecretsValidator(env, REAL_SECRET, REAL_SECRET,
-                REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET, "", "", "", "", "123456");
+                REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET, "", "", "", "", "123456", true, true);
 
         assertThatCode(validator::run).doesNotThrowAnyException();
     }
@@ -115,9 +115,31 @@ class ProductionSecretsValidatorTest {
         env.setActiveProfiles("prod");
         ProductionSecretsValidator validator = new ProductionSecretsValidator(env,
                 ProductionSecretsValidator.DEV_JWT_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET, REAL_SECRET,
-                REAL_SECRET, "", "", "", "", "123456");
+                REAL_SECRET, "", "", "", "", "123456", true, true);
 
         assertThatThrownBy(validator::run).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("JWT_SECRET");
+    }
+
+    @Test
+    void aProviderSwitchedOffNeedsNoClientIds() {
+        MockEnvironment env = new MockEnvironment();
+        env.setActiveProfiles("prod");
+        // Google and Apple client ids blank, but both providers switched off (the Kazakhstan deployment).
+        ProductionSecretsValidator validator = new ProductionSecretsValidator(env, REAL_SECRET, REAL_SECRET,
+                REAL_SECRET, REAL_SECRET, "", "", REAL_SECRET, REAL_SECRET, REAL_SECRET, "", "", false, false);
+
+        assertThatCode(validator::run).doesNotThrowAnyException();
+    }
+
+    @Test
+    void aProviderSwitchedOnStillNeedsItsClientIds() {
+        MockEnvironment env = new MockEnvironment();
+        env.setActiveProfiles("prod");
+        ProductionSecretsValidator validator = new ProductionSecretsValidator(env, REAL_SECRET, REAL_SECRET,
+                REAL_SECRET, REAL_SECRET, "", "", REAL_SECRET, REAL_SECRET, REAL_SECRET, "", "", true, false);
+
+        assertThatThrownBy(validator::run).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("GOOGLE_OAUTH_CLIENT_IDS").hasMessageNotContaining("APPLE_CLIENT_IDS");
     }
 }

@@ -73,16 +73,21 @@ class GoogleIdTokenVerifierAdapter implements GoogleIdTokenVerifierPort {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final List<String> audiences;
     private final String tokenInfoUrl;
+    private final boolean enabled;
 
     GoogleIdTokenVerifierAdapter(@Value("${app.oauth.google.client-ids:}") String clientIdsCsv,
-            @Value("${app.oauth.google.tokeninfo-url:https://oauth2.googleapis.com/tokeninfo}") String tokenInfoUrl) {
+            @Value("${app.oauth.google.tokeninfo-url:https://oauth2.googleapis.com/tokeninfo}") String tokenInfoUrl,
+            @Value("${app.oauth.google.enabled:true}") boolean enabled) {
+        this.enabled = enabled;
         this.audiences = Arrays.stream(clientIdsCsv.split(",")).map(String::trim).filter(id -> !id.isEmpty()).toList();
         this.tokenInfoUrl = tokenInfoUrl;
     }
 
     @Override
     public Optional<VerifiedIdentity> verify(String idToken) {
-        if (idToken == null || idToken.isBlank()) {
+        // Switched off (app.oauth.google.enabled=false): no token is ever accepted, and Google is not contacted.
+        // Fails closed, so a blank client-id list can never fall back to "accept any audience".
+        if (!enabled || idToken == null || idToken.isBlank()) {
             return Optional.empty();
         }
         try {

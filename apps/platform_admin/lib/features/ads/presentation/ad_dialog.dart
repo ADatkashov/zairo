@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/media/pick_image.dart';
 import '../../../core/network/error_text.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../cities/data/city.dart';
+import '../../auth/data/auth_api.dart';
 import '../../cities/data/city_api.dart';
 import '../data/ad_api.dart';
 import '../data/ad_banner.dart';
@@ -46,9 +48,28 @@ class _AdDialogState extends ConsumerState<AdDialog> {
       : _dayOf(DateTime.now().add(const Duration(days: 7)));
   bool _publish = false;
   bool _isSubmitting = false;
+  bool _isUploading = false;
   String? _error;
 
   bool get _isEdit => widget.banner != null;
+
+  /// Picks a picture on the device, uploads it and puts its link in the field: no hosting the image
+  /// somewhere else first and pasting its address.
+  Future<void> _uploadImage() async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _isUploading = true);
+    try {
+      final picked = await ref.read(pickImageProvider)();
+      if (picked == null || !mounted) return;
+      final url = await ref.read(authApiProvider).uploadImage(picked.bytes, picked.name);
+      if (!mounted) return;
+      setState(() => _imageUrl.text = url);
+    } catch (error) {
+      if (mounted) setState(() => _error = describeError(l10n, error));
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
+  }
 
   static DateTime _dayOf(DateTime value) => DateTime(value.year, value.month, value.day);
 
@@ -113,6 +134,16 @@ class _AdDialogState extends ConsumerState<AdDialog> {
                   keyboardType: TextInputType.url,
                   textInputAction: TextInputAction.next,
                   validator: (v) => isHttpsUrl(v) ? null : l10n.adUrlInvalid,
+                ),
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: FactoryButton(
+                    label: l10n.adUploadImage,
+                    icon: Icons.upload_rounded,
+                    variant: FactoryButtonVariant.text,
+                    isLoading: _isUploading,
+                    onPressed: _isSubmitting || _isUploading ? null : _uploadImage,
+                  ),
                 ),
                 gap,
                 FactoryTextField(

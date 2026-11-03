@@ -13,6 +13,9 @@ dependencies {
     // history/dashboard) needs auth's real identity and providers' real
     // ownership data.
     implementation(project(":providers"))
+
+    // The moderator-facing business overview sits under /api/v1/platform and uses the Control Center's role check.
+    implementation(project(":platform-admin"))
     implementation(project(":auth"))
 
     // Reading bookings/payments for this provider, and a booked service's
@@ -44,4 +47,12 @@ dependencies {
 
     // The weekly report quotes the week's average rating.
     implementation(project(":reviews"))
+
+    // The backup file names the person (master) of each booking.
+    implementation(project(":staff"))
+
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.assertj:assertj-core")
+    testImplementation("org.mockito:mockito-core")
 }

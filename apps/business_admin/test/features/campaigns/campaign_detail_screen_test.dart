@@ -75,10 +75,16 @@ void main() {
     expect(find.text(campaignStatusLabel(en, CampaignStatus.active)), findsOneWidget);
     expect(find.text(campaignTriggerReasonLabel(en, CampaignTriggerReason.bookingCancelled)), findsOneWidget);
     expect(find.text('Aigerim'), findsOneWidget);
-    expect(find.text('NOTIFYING'), findsOneWidget);
     expect(find.text(en.campaignDetailEmployeeLabel), findsOneWidget);
     expect(find.text(en.campaignDetailSlotLabel), findsOneWidget);
     expect(find.text(en.campaignDetailCompletedLabel), findsOneWidget);
+  });
+
+  testWidgets('does not show the engine-internal status next to the owner-facing one', (tester) async {
+    await _open(tester, _backend());
+
+    expect(find.text('Engine status'), findsNothing);
+    expect(find.text('NOTIFYING'), findsNothing);
   });
 
   testWidgets('shows the progress counters', (tester) async {

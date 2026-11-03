@@ -47,3 +47,4 @@
 # (e.g. a hand-exported Postman collection) — see docs/ci-cd.md's note
 # on generating one from OpenAPI instead of hand-maintaining an export.
 docs/local/
+build-apk-out/

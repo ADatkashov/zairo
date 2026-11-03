@@ -25,8 +25,10 @@ void main() {
     );
 
     expect(find.text('Test Salon'), findsOneWidget);
-    expect(find.text('Map view placeholder'), findsOneWidget);
-    expect(find.text('43.2389, 76.8897'), findsOneWidget);
+    expect(find.text("Map preview isn't available yet"), findsOneWidget);
+    expect(find.textContaining('placeholder'), findsNothing);
+    // Raw coordinates mean nothing to a customer.
+    expect(find.text('43.2389, 76.8897'), findsNothing);
     expect(find.text('2.5 km from you'), findsOneWidget);
     expect(find.text('Open in 2GIS'), findsOneWidget);
     expect(find.text('Open in Google Maps'), findsOneWidget);

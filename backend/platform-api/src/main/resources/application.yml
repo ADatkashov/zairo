@@ -85,11 +85,16 @@ app:
       # from one of ZAIRO's own apps can carry. Blank means "accept any
       # audience", which GoogleIdTokenVerifierAdapter only allows outside
       # spring.profiles.active=prod (see ProductionSecretsValidator).
+      # GOOGLE_OAUTH_ENABLED=false switches Google sign-in off without removing the code: the verifier
+      # then rejects every token (and the prod profile no longer demands client ids).
+      enabled: ${GOOGLE_OAUTH_ENABLED:true}
       client-ids: ${GOOGLE_OAUTH_CLIENT_IDS:}
     apple:
       # Comma-separated audiences of Sign in with Apple identity tokens: the
       # iOS bundle id (and a Services ID if Android/web is added). Blank
       # means "accept any audience", which is only allowed outside prod.
+      # APPLE_OAUTH_ENABLED=false: same as Google above.
+      enabled: ${APPLE_OAUTH_ENABLED:true}
       client-ids: ${APPLE_CLIENT_IDS:}
     facebook:
       app-id: ${FACEBOOK_APP_ID:}

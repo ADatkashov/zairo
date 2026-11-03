@@ -185,6 +185,27 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             """, nativeQuery = true)
     List<LatestCompletedVisitRow> findLatestCompletedVisitPerUserAndProvider();
 
+    /**
+     * {@code search.PopularServicesService}'s signal: how many bookings each service got since {@code since}, counting
+     * only bookings that were really made and kept (CONFIRMED, COMPLETED) -- not unpaid, cancelled or no-show ones --
+     * optionally narrowed to one city. One grouped query for the whole catalogue, not one count per service.
+     */
+    @Query(value = """
+            select b.service_id as serviceId, count(*) as bookings
+            from booking b
+            where b.status in ('CONFIRMED', 'COMPLETED') and b.created_at >= :since
+              and (cast(:cityCode as text) is null or b.city_code = cast(:cityCode as text))
+            group by b.service_id
+            """, nativeQuery = true)
+    List<ServiceBookingCountRow> countBookingsPerService(@Param("since") Instant since,
+            @Param("cityCode") String cityCode);
+
+    interface ServiceBookingCountRow {
+        UUID getServiceId();
+
+        long getBookings();
+    }
+
     interface LatestCompletedVisitRow {
         UUID getBookingId();
 

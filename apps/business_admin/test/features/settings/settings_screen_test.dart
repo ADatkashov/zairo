@@ -1,4 +1,6 @@
 import 'package:business_admin/app/locale/locale_controller.dart';
+import 'package:business_admin/features/auth/data/models/user_summary.dart';
+import 'package:business_admin/features/auth/presentation/providers/auth_providers.dart';
 import 'package:business_admin/features/settings/presentation/screens/settings_screen.dart';
 import 'package:business_admin/l10n/app_localizations.dart';
 import 'package:core_storage/core_storage.dart';
@@ -47,7 +49,62 @@ class _TestApp extends ConsumerWidget {
   }
 }
 
+class _SignedInController extends AuthController {
+  bool loggedOut = false;
+
+  @override
+  Future<UserSummary?> build() async =>
+      const UserSummary(id: 'owner-1', email: 'owner@example.com', displayName: 'Jamie Owner', role: 'PROVIDER_OWNER');
+
+  @override
+  Future<void> logout() async {
+    loggedOut = true;
+    state = const AsyncValue.data(null);
+  }
+}
+
 void main() {
+  testWidgets('signed in, Settings has Log out: it asks first, and Stay keeps the session', (tester) async {
+    final controller = _SignedInController();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          secureStorageServiceProvider.overrideWithValue(_InMemorySecureStorageService()),
+          authControllerProvider.overrideWith(() => controller),
+        ],
+        child: const _TestApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Log out'));
+    await tester.tap(find.text('Log out'));
+    await tester.pumpAndSettle();
+    expect(find.text('Stay signed in'), findsOneWidget);
+
+    await tester.tap(find.text('Stay signed in'));
+    await tester.pumpAndSettle();
+    expect(controller.loggedOut, isFalse);
+
+    await tester.tap(find.text('Log out'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FactoryButton, 'Log out'));
+    await tester.pumpAndSettle();
+    expect(controller.loggedOut, isTrue);
+  });
+
+  testWidgets('signed out, Settings has no Log out', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [secureStorageServiceProvider.overrideWithValue(_InMemorySecureStorageService())],
+        child: const _TestApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Log out'), findsNothing);
+  });
+
   testWidgets('hides the Subscription row while signed out', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
