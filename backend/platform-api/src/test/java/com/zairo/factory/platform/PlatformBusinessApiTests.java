@@ -83,4 +83,41 @@ class PlatformBusinessApiTests {
             assertThat(entry.get("targetId")).isEqualTo(providerId.toString());
         });
     }
+
+    @Test
+    void overviewGivesTheModeratorTheOwnerAndTheBusinessSizeAndIsPlatformOnly() {
+        String runId = UUID.randomUUID().toString();
+        var owner = TestAuth.registerOwner(restTemplate, "overview-owner-" + runId + "@example.com");
+        var createRequest = new CreateProviderRequest(owner.userId(), "Overview Salon " + runId, "beauty");
+        ResponseEntity<Map> createResponse = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
+                new HttpEntity<>(createRequest, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        UUID providerId = UUID.fromString((String) createResponse.getBody().get("id"));
+        restTemplate.exchange("/api/v1/providers/" + providerId + "/services", HttpMethod.POST,
+                new HttpEntity<>(Map.of("title", "Haircut", "durationMinutes", 30, "price", 40, "currency", "USD"),
+                        TestAuth.authHeaders(owner.accessToken())),
+                Map.class);
+
+        var support = TestPlatformAuth.registerPlatformAdmin(restTemplate, platformAdminAccountRepository,
+                "overview-support-" + runId + "@factory.internal", PlatformRole.PLATFORM_SUPPORT);
+
+        ResponseEntity<Map> overview = restTemplate.exchange("/api/v1/platform/businesses/" + providerId + "/overview",
+                HttpMethod.GET, new HttpEntity<>(null, TestPlatformAuth.authHeaders(support.accessToken())), Map.class);
+        assertThat(overview.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(overview.getBody().get("ownerEmail")).isEqualTo("overview-owner-" + runId + "@example.com");
+        assertThat(overview.getBody().get("servicesCount")).isEqualTo(1);
+        assertThat(overview.getBody().get("totalBookings")).isEqualTo(0);
+        assertThat(overview.getBody().get("completedBookings")).isEqualTo(0);
+
+        // An owner's own login is not a platform credential at all: EndpointAuthorizationManager treats a
+        // customer/business token on a platform endpoint as no credential (401), not "known but not allowed".
+        ResponseEntity<Map> asOwner = restTemplate.exchange("/api/v1/platform/businesses/" + providerId + "/overview",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(asOwner.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        // An unknown business is a 404, not an empty card.
+        ResponseEntity<Map> unknown = restTemplate.exchange("/api/v1/platform/businesses/" + UUID.randomUUID()
+                + "/overview", HttpMethod.GET,
+                new HttpEntity<>(null, TestPlatformAuth.authHeaders(support.accessToken())), Map.class);
+        assertThat(unknown.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
 }

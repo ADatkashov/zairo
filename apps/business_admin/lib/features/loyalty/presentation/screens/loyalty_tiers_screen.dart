@@ -84,7 +84,10 @@ class _TiersFormState extends ConsumerState<_TiersForm> {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
 
-    return ListView(
+    // A form is a column, not a 1500 px stretch of fields.
+    return FactoryPageWidth(
+      maxWidth: 720,
+      child: ListView(
       padding: const EdgeInsets.all(FactorySpacing.space4),
       children: [
         Text(
@@ -100,6 +103,8 @@ class _TiersFormState extends ConsumerState<_TiersForm> {
               title: l10n.loyaltyTiersEmpty,
               message: '',
               compact: true,
+              actionLabel: l10n.loyaltyTierAddButton,
+              onAction: () => setState(() => _drafts.add(_TierDraft())),
             ),
           )
         else
@@ -114,24 +119,30 @@ class _TiersFormState extends ConsumerState<_TiersForm> {
             ),
             const SizedBox(height: FactorySpacing.space3),
           ],
-        FactoryButton(
-          label: l10n.loyaltyTierAddButton,
-          variant: FactoryButtonVariant.secondary,
-          icon: Icons.add,
-          onPressed: _isSubmitting ? null : () => setState(() => _drafts.add(_TierDraft())),
-        ),
+        if (_drafts.isNotEmpty)
+          FactoryButton(
+            label: l10n.loyaltyTierAddButton,
+            variant: FactoryButtonVariant.secondary,
+            icon: Icons.add,
+            onPressed: _isSubmitting ? null : () => setState(() => _drafts.add(_TierDraft())),
+          ),
         if (_error != null) ...[
           const SizedBox(height: FactorySpacing.space3),
           Text(_error!, style: TextStyle(color: colors.error)),
         ],
-        const SizedBox(height: FactorySpacing.space5),
-        FactoryButton(
-          label: l10n.saveButton,
-          expand: true,
-          isLoading: _isSubmitting,
-          onPressed: _isSubmitting ? null : _submit,
-        ),
+        // Nothing to save while there is nothing and there was nothing; after removing the last
+        // row Save stays, because that is how an emptied list is stored.
+        if (_drafts.isNotEmpty || widget.initial.isNotEmpty) ...[
+          const SizedBox(height: FactorySpacing.space5),
+          FactoryButton(
+            label: l10n.saveButton,
+            expand: true,
+            isLoading: _isSubmitting,
+            onPressed: _isSubmitting ? null : _submit,
+          ),
+        ],
       ],
+    ),
     );
   }
 

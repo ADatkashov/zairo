@@ -32,6 +32,28 @@ void main() {
       expect(find.text('Refunded'), findsNothing);
     });
 
+    testWidgets('a slice with onTap is a link in the legend; the others stay plain text', (tester) async {
+      final tapped = <String>[];
+      await tester.pumpWidget(
+        _wrap(
+          FactoryDonutChart(
+            centerLabel: '9',
+            segments: [
+              FactoryChartSegment(label: 'Awaiting approval', value: 3, valueLabel: '3', onTap: () => tapped.add('pending')),
+              const FactoryChartSegment(label: 'Active', value: 6, valueLabel: '6'),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget, reason: 'only the link carries a chevron');
+      await tester.tap(find.text('Awaiting approval'));
+      await tester.tap(find.text('Active'));
+      expect(tapped, ['pending']);
+      // A finger-sized target, not the hairline height of plain text.
+      expect(tester.getSize(find.ancestor(of: find.text('Awaiting approval'), matching: find.byType(ConstrainedBox)).first).height, greaterThanOrEqualTo(36));
+    });
+
     testWidgets('with nothing to draw it still renders an empty track', (tester) async {
       await tester.pumpWidget(_wrap(const FactoryDonutChart(centerLabel: '0', segments: [])));
 

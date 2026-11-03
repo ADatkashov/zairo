@@ -285,6 +285,17 @@ void main() {
     expect(cardTaps, 1);
   });
 
+  testWidgets('the Book button on a provider card is the filled brand-colour button, not a pale one', (tester) async {
+    await tester.pumpWidget(
+      _wrap(SizedBox(width: 168, child: FactoryProviderCard(title: 'Studio', actionLabel: 'Book', onAction: () {}))),
+    );
+
+    // Primary leaves the colours to the theme; the tonal variant would have set its own pale tint.
+    final fill = tester.widget<Material>(find.descendant(of: find.byType(FilledButton), matching: find.byType(Material)).first);
+    expect(fill.color, FactoryColors.light.primary);
+    expect(fill.color, isNot(FactoryColors.light.primaryTint));
+  });
+
   testWidgets('FactoryProviderCard has no button unless it is given both a label and an action', (tester) async {
     await tester.pumpWidget(_wrap(const SizedBox(width: 168, child: FactoryProviderCard(title: 'Studio', actionLabel: 'Book'))));
     expect(find.byType(FilledButton), findsNothing);
@@ -903,6 +914,112 @@ void main() {
     expect(find.bySemanticsLabel('New booking'), findsOneWidget);
   });
 
+  testWidgets('FactoryBottomNavigation keeps the centre action centred with three tabs (1 + action + 2)', (tester) async {
+    tester.view.physicalSize = const Size(390, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    int? selected;
+    await tester.pumpWidget(
+      _wrap(
+        FactoryBottomNavigation(
+          destinations: const [
+            FactoryNavDestination(icon: Icons.home_rounded, label: 'Home'),
+            FactoryNavDestination(icon: Icons.calendar_month_rounded, label: 'Bookings'),
+            FactoryNavDestination(icon: Icons.person_rounded, label: 'Profile'),
+          ],
+          selectedIndex: 0,
+          onDestinationSelected: (i) => selected = i,
+          centerAction: FactoryNavAction(icon: Icons.search_rounded, label: 'Find', visibleLabel: true, onTap: () {}),
+        ),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+
+    final centre = tester.getCenter(find.byIcon(Icons.search_rounded));
+    expect(centre.dx, closeTo(195, 1));
+    expect(tester.getCenter(find.text('Home')).dx, lessThan(centre.dx));
+    expect(tester.getCenter(find.text('Bookings')).dx, greaterThan(centre.dx));
+    expect(tester.getCenter(find.text('Profile')).dx, greaterThan(tester.getCenter(find.text('Bookings')).dx));
+
+    await tester.tap(find.text('Profile'));
+    expect(selected, 2);
+  });
+
+  testWidgets('FactoryBottomNavigation: a lone tab beside the action keeps its natural width (no half-bar capsule), also at 320 px', (
+    tester,
+  ) async {
+    for (final width in [390.0, 320.0]) {
+      tester.view.physicalSize = Size(width, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        _wrap(
+          FactoryBottomNavigation(
+            destinations: const [
+              FactoryNavDestination(icon: Icons.home_rounded, label: 'Home'),
+              FactoryNavDestination(icon: Icons.calendar_month_rounded, label: 'Bookings'),
+              FactoryNavDestination(icon: Icons.person_rounded, label: 'Profile'),
+            ],
+            selectedIndex: 0,
+            onDestinationSelected: (_) {},
+            centerAction: FactoryNavAction(icon: Icons.search_rounded, label: 'Find a service', visibleLabel: true, onTap: () {}),
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull, reason: '$width px');
+
+      final capsule = find.ancestor(of: find.text('Home'), matching: find.byType(AnimatedContainer)).first;
+      expect(tester.getSize(capsule).width, lessThan(100), reason: '$width px: the selected capsule hugs its tab');
+      expect(find.text('Profile'), findsOneWidget);
+      // The label is whole, not ellipsized: it fits in its natural width.
+      expect(tester.getSize(find.text('Profile')).width, greaterThan(30), reason: '$width px');
+    }
+  });
+
+  testWidgets('FactoryBottomNavigation can write the centre action\'s name under the button; the text acts too', (tester) async {
+    tester.view.physicalSize = const Size(390, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    var actionTaps = 0;
+    Widget bar({required bool visibleLabel}) => _wrap(
+      FactoryBottomNavigation(
+        destinations: const [
+          FactoryNavDestination(icon: Icons.home_rounded, label: 'Home'),
+          FactoryNavDestination(icon: Icons.search_rounded, label: 'Search'),
+          FactoryNavDestination(icon: Icons.calendar_month_rounded, label: 'Bookings'),
+          FactoryNavDestination(icon: Icons.person_rounded, label: 'Profile'),
+        ],
+        selectedIndex: 0,
+        onDestinationSelected: (_) {},
+        centerAction: FactoryNavAction(
+          icon: Icons.add_rounded,
+          label: 'New booking',
+          visibleLabel: visibleLabel,
+          onTap: () => actionTaps++,
+        ),
+      ),
+    );
+
+    // Off by default: the name is only for screen readers.
+    await tester.pumpWidget(bar(visibleLabel: false));
+    expect(find.text('New booking'), findsNothing);
+    expect(find.bySemanticsLabel('New booking'), findsOneWidget);
+
+    await tester.pumpWidget(bar(visibleLabel: true));
+    expect(tester.takeException(), isNull);
+    expect(find.text('New booking'), findsOneWidget);
+    // On the same line as the tab labels and centred under the button, so it reads as part of the bar.
+    expect(tester.getCenter(find.text('New booking')).dy, closeTo(tester.getCenter(find.text('Search')).dy, 1));
+    expect(tester.getCenter(find.text('New booking')).dx, closeTo(195, 1));
+    // Still announced once, not twice.
+    expect(find.bySemanticsLabel('New booking'), findsOneWidget);
+
+    await tester.tap(find.text('New booking'));
+    expect(actionTaps, 1);
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    expect(actionTaps, 2);
+  });
+
   testWidgets('FactoryBottomNavigation centre action with quick actions opens a fan, picks one and closes', (
     tester,
   ) async {
@@ -1230,6 +1347,51 @@ void main() {
     expect(find.byType(FactoryBottomSheet), findsOneWidget);
   });
 
+  testWidgets('showFactoryBottomSheet with scrollable: false gives the content a bounded height to scroll in', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: factoryLightTheme(),
+        home: Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () => showFactoryBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              scrollable: false,
+              builder: (context) => ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 300),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Header'),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Column(children: [for (var i = 0; i < 40; i++) Text('Row $i')]),
+                      ),
+                    ),
+                    const Text('Pinned action'),
+                  ],
+                ),
+              ),
+            ),
+            child: const Text('Open'),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    // The handle + content aren't wrapped in a second scroll view, so the
+    // header and the pinned action both stay visible beside the long body.
+    expect(find.text('Header'), findsOneWidget);
+    expect(find.text('Pinned action'), findsOneWidget);
+    expect(find.byType(SingleChildScrollView), findsOneWidget);
+  });
+
   group('currency display', () {
     Future<void> pumpPrice(WidgetTester tester, Widget price) => tester.pumpWidget(
           MaterialApp(theme: factoryLightTheme(), home: Scaffold(body: price)),
@@ -1444,5 +1606,35 @@ void narrowPhoneTests() {
       // 60 wide label, no 4px side padding: the tile is exactly as wide as its cell.
       expect(tester.getSize(find.byType(FactoryCategoryTile)).width, 60);
     });
+  });
+
+  testWidgets('a stat tile shows zero in grey and a real count in the normal text colour', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: factoryLightTheme(),
+        home: const Scaffold(
+          body: Row(children: [FactoryStatTile(value: '0', label: 'Booked'), FactoryStatTile(value: '7', label: 'Viewed')]),
+        ),
+      ),
+    );
+    final zero = tester.widget<Text>(find.text('0'));
+    final seven = tester.widget<Text>(find.text('7'));
+    expect(zero.style?.color, FactoryColors.light.textTertiary);
+    expect(seven.style?.color, isNot(FactoryColors.light.textTertiary));
+  });
+
+  testWidgets('the show/hide eye of a password field fits inside the field, with room around it', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: factoryLightTheme(),
+        home: const Scaffold(body: Padding(padding: EdgeInsets.all(16), child: FactoryTextField(label: 'Password', obscureText: true))),
+      ),
+    );
+    final field = tester.getRect(find.byType(TextField));
+    final eye = tester.getRect(find.byType(IconButton));
+    expect(eye.height, lessThanOrEqualTo(field.height - 12), reason: 'not taller than the field');
+    expect(eye.right, lessThanOrEqualTo(field.right - 4), reason: 'not past its edge');
+    expect(eye.top, greaterThan(field.top));
+    expect(eye.bottom, lessThan(field.bottom));
   });
 }

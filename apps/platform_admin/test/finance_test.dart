@@ -2,6 +2,7 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:platform_admin/app/routes.dart';
+import 'package:platform_admin/features/finance/data/commission_models.dart';
 
 import 'support/fake_backend.dart';
 import 'support/harness.dart';
@@ -124,8 +125,8 @@ group('commission', () {
     backend.on('PUT', '/platform/commission/categories/c-auto', (_) => FakeReply(commissionJson()));
     await pumpConsole(tester, backend: backend, location: '${ConsoleRoutes.finance}?tab=commission');
 
-    // Auto is the second card; its "Change" button is the last one.
-    await tester.tap(find.widgetWithText(FilledButton, 'Change').last);
+    // Auto is the second row; its edit button is the last "Change" tooltip.
+    await tester.tap(find.byTooltip('Change').last);
     await tester.pumpAndSettle();
     await tester.enterText(find.widgetWithText(TextFormField, 'Percent (%)'), '7,5');
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));
@@ -133,6 +134,24 @@ group('commission', () {
 
     expect((backend.calls('PUT', '/platform/commission/categories/c-auto').single.data as Map)['ratePercent'], 7.5);
     expect(find.text('Commission updated'), findsOneWidget);
+  });
+
+  testWidgets('a category row keeps its percentage clear of the edit button', (tester) async {
+    await pumpConsole(tester, backend: defaultBackend(), location: '${ConsoleRoutes.finance}?tab=commission');
+
+    final percent = tester.getRect(find.text('8%'));
+    final pencil = tester.getRect(find.byTooltip('Change').first);
+    expect(pencil.left - percent.right, greaterThanOrEqualTo(8));
+  });
+
+  testWidgets('tapping a category row itself opens the editor, not only its pencil', (tester) async {
+    final backend = defaultBackend();
+    await pumpConsole(tester, backend: backend, location: '${ConsoleRoutes.finance}?tab=commission');
+
+    await tester.tap(find.text('Auto'));
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(TextFormField, 'Percent (%)'), findsOneWidget);
   });
 
   testWidgets('an out-of-range percent is rejected before anything is sent', (tester) async {
@@ -167,7 +186,90 @@ group('commission', () {
     );
     expect(find.text('Beauty'), findsOneWidget);
     expect(find.text('Change'), findsNothing);
+    expect(find.byTooltip('Change'), findsNothing);
     expect(find.text('Use default'), findsNothing);
+  });
+});
+
+group('subscription price', () {
+  const location = '${ConsoleRoutes.finance}?tab=subscription';
+
+  testWidgets('on a phone no tab name is cut off: the tab bar scrolls', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pumpConsole(tester, backend: defaultBackend(), location: ConsoleRoutes.finance);
+
+    expect(tester.widget<TabBar>(find.byType(TabBar)).isScrollable, isTrue);
+    await tester.tap(find.text('Subscription'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('subscriptionPrice')), findsOneWidget);
+  });
+
+  testWidgets('shows what PRO costs per month, in tenge', (tester) async {
+    await pumpConsole(tester, backend: defaultBackend(), location: location);
+
+    expect(find.text('PRO subscription price'), findsOneWidget);
+    expect(tester.widget<Text>(find.byKey(const Key('subscriptionPrice'))).data, contains('14'));
+    expect(tester.widget<Text>(find.byKey(const Key('subscriptionPrice'))).data, contains('/ month'));
+    expect(find.textContaining('still charged in'), findsNothing);
+  });
+
+  testWidgets('an admin sets the price; it is sent in tenge', (tester) async {
+    final backend = defaultBackend();
+    backend.on('PUT', '/platform/subscription-price', (_) => const FakeReply({'monthlyPrice': 9900, 'currency': 'KZT'}));
+    await pumpConsole(tester, backend: backend, location: location);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Change'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextFormField, 'Price per month (₸)'), '9 900');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+
+    final body = backend.calls('PUT', '/platform/subscription-price').single.data as Map;
+    expect(body['monthlyPrice'], 9900);
+    expect(body['currency'], 'KZT');
+    expect(find.text('Price updated'), findsOneWidget);
+  });
+
+  testWidgets('nonsense is refused before anything is sent', (tester) async {
+    final backend = defaultBackend();
+    await pumpConsole(tester, backend: backend, location: location);
+
+    for (final bad in ['0', '-5', 'abc', '10.999']) {
+      await tester.tap(find.widgetWithText(FilledButton, 'Change'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextFormField, 'Price per month (₸)'), bad);
+      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.pumpAndSettle();
+    }
+
+    expect(backend.calls('PUT', '/platform/subscription-price'), isEmpty);
+    expect(find.textContaining('above 0'), findsWidgets);
+  });
+
+  testWidgets('support can read the price but not change it', (tester) async {
+    await pumpConsole(tester, backend: defaultBackend(role: 'PLATFORM_SUPPORT'), location: location);
+
+    expect(find.byKey(const Key('subscriptionPrice')), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Change'), findsNothing);
+  });
+
+  testWidgets('while PRO is still charged in dollars it says so', (tester) async {
+    final backend = defaultBackend();
+    backend.reply('GET', '/platform/subscription-price', {'monthlyPrice': 29, 'currency': 'USD'});
+    await pumpConsole(tester, backend: backend, location: location);
+
+    expect(find.textContaining('still charged in USD'), findsOneWidget);
+  });
+
+  test('parsePriceInput accepts spaces and commas, refuses zero, negatives and three decimals', () {
+    expect(parsePriceInput('14 900'), 14900);
+    expect(parsePriceInput('14900,50'), 14900.5);
+    expect(parsePriceInput('0'), isNull);
+    expect(parsePriceInput('-1'), isNull);
+    expect(parsePriceInput('1.005'), isNull);
+    expect(parsePriceInput('x'), isNull);
   });
 });
 }

@@ -45,6 +45,12 @@ Future<void> _open(WidgetTester tester, FakeHttp http) async {
   useTallScreen(tester, size: const Size(800, 4000));
   await tester.pumpWidget(appOn(http, const AutomationCenterScreen(ownerUserId: 'o1')));
   await tester.pumpAndSettle();
+  // The numeric fields sit under "Advanced settings" (collapsed); open it when there is one.
+  final advanced = find.text(en.automationAdvancedTitle);
+  if (advanced.evaluate().isNotEmpty) {
+    await tester.tap(advanced);
+    await tester.pumpAndSettle();
+  }
 }
 
 Finder _field(String label) => find.widgetWithText(TextField, '$label (${en.loyaltySettingsOptionalSuffix})');
@@ -141,6 +147,46 @@ void main() {
       expect(on(en.automationSmartFillEnableTitle), isTrue);
       expect(on(en.automationRebookEnableTitle), isTrue);
       expect(on(en.automationReactivationEnableTitle), isFalse);
+    });
+
+    testWidgets('a pace is one tap: it fills the numbers, the hint changes, and saving sends them', (tester) async {
+      final http = _backend(settings: {..._settings, 'rebookMinVisitsToEstablishInterval': null, 'rebookMinIntervalDays': null,
+        'rebookMaxIntervalDays': null, 'rebookFollowUpWindowDays': null, 'reactivationScanMinInactivityDays': null,
+        'reactivationIntervalMultiplier': null, 'reactivationAbsoluteMaxInactivityDays': null,
+        'reactivationFollowUpWindowDays': null, 'allowedHoursStart': null, 'allowedHoursEnd': null, 'cooldownDaysBetweenOffers': null});
+      await _open(tester, http);
+      // All empty = the platform defaults = "Standard".
+      expect(find.text(en.automationPresetStandardHint), findsOneWidget);
+
+      await tester.tap(find.text(en.automationPresetCareful));
+      await tester.pumpAndSettle();
+      expect(find.text(en.automationPresetCarefulHint), findsOneWidget);
+      expect(tester.widget<TextField>(_field(en.automationCooldownLabel)).controller!.text, '14');
+
+      await _saveForm(tester);
+      expect(_sent(http)['cooldownDaysBetweenOffers'], 14);
+      expect(_sent(http)['rebookMinVisitsToEstablishInterval'], 3);
+      expect(_sent(http)['allowedHoursStart'], 10);
+
+      await tester.tap(find.text(en.automationPresetStandard));
+      await tester.pumpAndSettle();
+      await _saveForm(tester);
+      expect(_sent(http)['cooldownDaysBetweenOffers'], isNull);
+      expect(_sent(http)['allowedHoursStart'], isNull);
+    });
+
+    testWidgets('editing a number by hand leaves no pace highlighted and says so', (tester) async {
+      final http = _backend(settings: {..._settings, 'rebookMinVisitsToEstablishInterval': null, 'rebookMinIntervalDays': null,
+        'rebookMaxIntervalDays': null, 'rebookFollowUpWindowDays': null, 'reactivationScanMinInactivityDays': null,
+        'reactivationIntervalMultiplier': null, 'reactivationAbsoluteMaxInactivityDays': null,
+        'reactivationFollowUpWindowDays': null, 'allowedHoursStart': null, 'allowedHoursEnd': null, 'cooldownDaysBetweenOffers': null});
+      await _open(tester, http);
+
+      await tester.enterText(_field(en.automationCooldownLabel), '9');
+      await tester.pumpAndSettle();
+
+      expect(find.text(en.automationPresetCustomHint), findsOneWidget);
+      expect(find.text(en.automationPresetStandardHint), findsNothing);
     });
 
     testWidgets('empty settings leave every field blank', (tester) async {

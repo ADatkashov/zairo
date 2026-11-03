@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import '../features/auth/presentation/providers/auth_providers.dart';
 import '../features/messaging/presentation/providers/message_seen_provider.dart';
 import '../l10n/app_localizations.dart';
-import 'admin_routes.dart';
 import 'admin_shell.dart';
 
 /// Tracks how many full screens are pushed on top of one branch's root, so the
@@ -122,10 +121,12 @@ class OwnerShell extends ConsumerWidget {
 
     // Back from any other area returns to the Dashboard first; only from the
     // Dashboard does it leave the app.
-    return FactoryFanBackScope(
+    return PopScope(
       canPop: current == 0,
-      onBack: () => navigationShell.goBranch(0),
-      builder: (context, setFanOpen) => Scaffold(
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) navigationShell.goBranch(0);
+      },
+      child: Scaffold(
         body: navigationShell,
         bottomNavigationBar: ValueListenableBuilder<int>(
           valueListenable: depthObservers[current].depth,
@@ -133,31 +134,7 @@ class OwnerShell extends ConsumerWidget {
             if (depth > 0) return const SizedBox.shrink();
             return FactoryBottomNavigation(
               selectedIndex: selectedTab,
-              onFanOpenChanged: setFanOpen,
               onDestinationSelected: (tab) => _goBranch(_phoneTabBranches[tab]),
-              // "+": shortcuts to the areas that no longer have a tab of
-              // their own (they are also listed under "More").
-              centerAction: FactoryNavAction(
-                icon: Icons.add_rounded,
-                label: l10n.navQuickActions,
-                quickActions: [
-                  FactoryNavQuickAction(
-                    icon: Icons.loyalty_rounded,
-                    label: l10n.loyaltyNavLabel,
-                    onTap: () => _goBranch(adminBranchPaths.indexOf(AdminRoutes.loyalty)),
-                  ),
-                  FactoryNavQuickAction(
-                    icon: Icons.bolt_rounded,
-                    label: l10n.automationCenterNavLabel,
-                    onTap: () => _goBranch(adminBranchPaths.indexOf(AdminRoutes.automation)),
-                  ),
-                  FactoryNavQuickAction(
-                    icon: Icons.receipt_long_rounded,
-                    label: l10n.billingScreenTitle,
-                    onTap: () => _goBranch(adminBranchPaths.indexOf(AdminRoutes.billing)),
-                  ),
-                ],
-              ),
               destinations: [
                 FactoryNavDestination(icon: Icons.dashboard_rounded, label: l10n.navDashboard),
                 FactoryNavDestination(icon: Icons.forum_rounded, label: l10n.messagingNavLabel, badgeCount: newMessages),

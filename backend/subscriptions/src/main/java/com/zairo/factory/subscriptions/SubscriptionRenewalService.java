@@ -60,14 +60,14 @@ public class SubscriptionRenewalService {
     private final PaymentProviderName providerName;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
-    private final String defaultCurrency;
+    private final SubscriptionPricing pricing;
     private final TransactionTemplate transactionTemplate;
 
     public SubscriptionRenewalService(SubscriptionRepository subscriptionRepository,
             SubscriptionChargeRepository subscriptionChargeRepository, PaymentProvider paymentProvider,
             SubscriptionPaymentMethodService paymentMethodService,
             @Value("${payment.provider:mock}") String providerName, ApplicationEventPublisher eventPublisher,
-            Clock clock, @Value("${app.platform.default-currency:USD}") String defaultCurrency,
+            Clock clock, SubscriptionPricing pricing,
             PlatformTransactionManager transactionManager,
             @Value("${payment.return.success-url:}") String successUrl,
             @Value("${payment.return.failure-url:}") String failureUrl) {
@@ -80,7 +80,7 @@ public class SubscriptionRenewalService {
         this.providerName = PaymentProviderName.valueOf(providerName.toUpperCase());
         this.eventPublisher = eventPublisher;
         this.clock = clock;
-        this.defaultCurrency = defaultCurrency;
+        this.pricing = pricing;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
@@ -182,9 +182,9 @@ public class SubscriptionRenewalService {
                     subscriptionChargeRepository.save(pending);
                 });
 
-        SubscriptionPlan plan = subscription.getPlan();
+        SubscriptionPricing.Price price = pricing.pro();
         SubscriptionCharge charge = subscriptionChargeRepository.save(new SubscriptionCharge(UUID.randomUUID(),
-                subscription.getId(), plan.monthlyPrice, defaultCurrency, providerName, null, now,
+                subscription.getId(), price.amount(), price.currency(), providerName, null, now,
                 SubscriptionChargePurpose.RENEWAL));
         PaymentProvider.PaymentInitiation initiation;
         try {
@@ -295,12 +295,13 @@ public class SubscriptionRenewalService {
             return;
         }
 
+        SubscriptionPricing.Price price = pricing.pro();
         SubscriptionCharge charge = subscriptionChargeRepository
                 .findFirstBySubscriptionIdAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(subscription.getId(),
                         subscription.getCurrentPeriodStart())
                 .filter(existing -> existing.getStatus() == SubscriptionChargeStatus.FAILED)
                 .orElseGet(() -> subscriptionChargeRepository.save(new SubscriptionCharge(UUID.randomUUID(),
-                        subscription.getId(), plan.monthlyPrice, defaultCurrency, providerName, recurringProfileId,
+                        subscription.getId(), price.amount(), price.currency(), providerName, recurringProfileId,
                         now, SubscriptionChargePurpose.RENEWAL)));
 
         PaymentProvider.ChargeResult result;

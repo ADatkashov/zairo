@@ -26,7 +26,14 @@ class FactoryStatTile extends StatelessWidget {
           Icon(icon, size: 20, color: colors.primary),
           const SizedBox(height: FactorySpacing.space1),
         ],
-        Text(value, style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+        // A zero is an absence: it reads grey, not as strong as a real count.
+        Text(
+          value,
+          style: textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: value == '0' ? colors.textTertiary : null,
+          ),
+        ),
         const SizedBox(height: 2),
         Text(label, style: textTheme.labelMedium?.copyWith(color: colors.textSecondary)),
       ],

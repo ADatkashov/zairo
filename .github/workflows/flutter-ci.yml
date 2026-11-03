@@ -41,7 +41,9 @@ env:
 jobs:
   flutter:
     name: flutter (analyze + test, all packages)
-    runs-on: ubuntu-latest
+    # Repo variable CI_RUNS_ON switches to a self-hosted runner, e.g.
+    # ["self-hosted","linux"] (docs/ci-cd.md "Self-hosted runner"); unset = GitHub-hosted.
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 40
     steps:
       - name: Checkout
@@ -52,9 +54,12 @@ jobs:
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
-          cache: true
+          # GitHub-hosted only: a self-hosted runner keeps the SDK on disk and
+          # cloud caches would count against the Actions storage quota.
+          cache: ${{ vars.CI_RUNS_ON == '' }}
 
       - name: Cache pub packages
+        if: vars.CI_RUNS_ON == ''
         uses: actions/cache@v6
         with:
           path: ~/.pub-cache

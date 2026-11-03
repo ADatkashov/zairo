@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import '../../../../app/router/app_routes.dart';
 import '../../../../app/router/tab_reselect.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../messaging/presentation/providers/message_seen_provider.dart';
+import '../quick_actions.dart';
 
 class MainWrapper extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -30,7 +30,7 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
     final l10n = AppLocalizations.of(context)!;
     final newMessages = ref.watch(newMessagesCountProvider);
 
-    // Android back from the root of Bookings/Search/Profile goes to Home
+    // Android back from the root of Search/Bookings/Profile goes to Home
     // first and only exits the app from Home. Pushed screens inside a tab
     // are unaffected: the tab's own navigator pops them before this scope
     // is ever asked.
@@ -54,35 +54,14 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
               initialLocation: index == navigationShell.currentIndex,
             );
           },
-          // "+" fans out shortcuts that otherwise take two or three taps:
-          // start a booking (pick a category, land in Search filtered to it),
-          // messages and favorites (both live under Profile). An action, not
-          // a tab, so the tab indexes below are unchanged.
+          // The round "+" fans out three quick actions (find a service with the
+          // keyboard up, free today, book the last visit again), the "+" turning
+          // into a "×". An action, not a tab, so the tab indexes below are not
+          // shifted by it; the bar shows only the icon, screen readers get the name.
           centerAction: FactoryNavAction(
             icon: Symbols.add_rounded,
-            label: l10n.navNewBooking,
-            quickActions: [
-              FactoryNavQuickAction(
-                icon: Symbols.event_available_rounded,
-                label: l10n.navNewBooking,
-                onTap: () async {
-                  final code = await context.push<String>(AppRoutes.categories);
-                  if (code != null && context.mounted) {
-                    context.go(AppRoutes.search(category: code));
-                  }
-                },
-              ),
-              FactoryNavQuickAction(
-                icon: Symbols.chat_bubble_rounded,
-                label: l10n.messagesTitle,
-                onTap: () => context.push(AppRoutes.messages),
-              ),
-              FactoryNavQuickAction(
-                icon: Symbols.favorite_rounded,
-                label: l10n.myFavoritesTitle,
-                onTap: () => context.push(AppRoutes.favorites),
-              ),
-            ],
+            label: l10n.navQuickActions,
+            quickActions: quickActionsFor(context, l10n, lastVisitOf(ref)),
           ),
           // Icon names match BottomNav.dc.html's own `icon` field verbatim
           // (home/search/calendar_month/person) — "Записи" uses

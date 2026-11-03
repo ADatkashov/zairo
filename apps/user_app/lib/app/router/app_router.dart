@@ -17,6 +17,7 @@ import '../../features/ads/presentation/screens/ad_video_screen.dart';
 import '../../features/city/presentation/widgets/city_onboarding_gate.dart';
 import '../../features/onboarding/presentation/screens/welcome_screen.dart';
 import '../../features/discovery/data/models/provider_search_result.dart';
+import '../../features/discovery/presentation/providers/discovery_providers.dart' show DiscoverySort;
 import '../../features/discovery/presentation/screens/home_screen.dart';
 import '../../features/discovery/presentation/screens/search_screen.dart';
 import '../../features/discovery/presentation/screens/service_compare_screen.dart';
@@ -48,15 +49,9 @@ final searchNavigatorKey = GlobalKey<NavigatorState>();
 final bookingsNavigatorKey = GlobalKey<NavigatorState>();
 final profileNavigatorKey = GlobalKey<NavigatorState>();
 
-/// Tab set is Home/Search/Bookings/Profile — 4, not the original Factory
-/// Design System v0.2 artifact's 5 (Home/Search/Bookings/Favorites/
-/// Profile). Favorites earned its own tab in that spec but turned out to
-/// be reached far less often than the other four; it's now a normal push
-/// from Profile (see ProfileScreen's favorites stat tile) instead of
-/// permanent bottom-nav real estate, with the ♥ on every provider card
-/// (see FavoriteButton) covering the actual "save this" moment. Settings
-/// is the same story — reachable from Profile's AppBar action, never its
-/// own tab.
+/// Tab set is Home/Search/Bookings/Profile, with the round "+" (quick actions)
+/// in the middle of the bar (see MainWrapper). Favorites is a push from Home's
+/// heart and Profile, Settings from Profile's AppBar action; neither is a tab.
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: rootNavigatorKey,
@@ -304,6 +299,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                   child: SearchScreen(
                     initialVertical: state.uri.queryParameters['category'],
                     initialQuery: state.uri.queryParameters['q'],
+                    initialAvailableOnly: state.uri.queryParameters['available'] == '1',
+                    initialSort: DiscoverySort.values
+                        .where((sort) => sort.wireValue == state.uri.queryParameters['sort'])
+                        .firstOrNull,
+                    focusRequest: state.uri.queryParameters['focus'],
                   ),
                 ),
               ),

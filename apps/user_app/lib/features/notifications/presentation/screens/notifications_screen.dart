@@ -9,8 +9,11 @@ import '../../../../core/formatting/month_day_time.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/widgets/logged_out_gate.dart';
+import '../../../booking/data/models/booking.dart';
+import '../../../booking/presentation/providers/booking_providers.dart';
 import '../../data/models/app_notification.dart';
 import '../../notification_destination.dart';
+import '../../notification_text.dart';
 import '../providers/notifications_providers.dart';
 
 /// Pushed from Home's bell icon — resolves the current user itself via
@@ -57,6 +60,13 @@ class _NotificationsList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final notificationsAsync = ref.watch(myNotificationsProvider(userId));
+    // Only to say *which* booking a notification is about; until (or unless)
+    // it loads the notification simply omits those details.
+    final bookings = {
+      for (final b
+          in ref.watch(myBookingsProvider(userId)).value ?? const <Booking>[])
+        b.id: b,
+    };
 
     return notificationsAsync.when(
       data: (notifications) {
@@ -114,7 +124,12 @@ class _NotificationsList extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(
                     horizontal: FactorySpacing.space4,
                   ),
-                  children: _withDayHeadings(context, notifications, userId),
+                  children: _withDayHeadings(
+                    context,
+                    notifications,
+                    userId,
+                    bookings,
+                  ),
                 ),
               ),
             ),
@@ -142,6 +157,7 @@ List<Widget> _withDayHeadings(
   BuildContext context,
   List<AppNotification> notifications,
   String userId,
+  Map<String, Booking> bookings,
 ) {
   final l10n = AppLocalizations.of(context)!;
   final locale = Localizations.localeOf(context).toString();
@@ -166,7 +182,11 @@ List<Widget> _withDayHeadings(
     children.add(
       Padding(
         padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
-        child: _NotificationTile(notification: notification, userId: userId),
+        child: _NotificationTile(
+          notification: notification,
+          userId: userId,
+          booking: bookings[notificationBookingId(notification)],
+        ),
       ),
     );
   }
@@ -199,14 +219,21 @@ class _DayHeading extends StatelessWidget {
 }
 
 class _NotificationTile extends ConsumerWidget {
-  const _NotificationTile({required this.notification, required this.userId});
+  const _NotificationTile({
+    required this.notification,
+    required this.userId,
+    this.booking,
+  });
 
   final AppNotification notification;
   final String userId;
+  final Booking? booking;
 
   IconData get _icon => switch (notification.type) {
     'BOOKING_CONFIRMED' => Symbols.event_available_rounded,
     'BOOKING_CANCELLED' => Symbols.event_busy_rounded,
+    'BOOKING_MOVED' => Symbols.event_repeat_rounded,
+    'CHANGE_REQUESTED' || 'WORKER_CHANGED' => Symbols.person_alert_rounded,
     'BOOKING_REMINDER' => Symbols.notifications_active_rounded,
     'PAYMENT_REFUNDED' => Symbols.currency_exchange_rounded,
     'WAITLIST_SLOT_OPENED' => Symbols.event_available_rounded,
@@ -220,6 +247,7 @@ class _NotificationTile extends ConsumerWidget {
     final textTheme = Theme.of(context).textTheme;
 
     final destination = notificationDestination(notification.type);
+    final text = presentNotification(l10n, notification, booking: booking);
 
     return FactoryCard(
       onTap: notification.read && destination == null
@@ -261,7 +289,7 @@ class _NotificationTile extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  notification.title,
+                  text.title,
                   style: textTheme.bodyMedium?.copyWith(
                     fontWeight: notification.read
                         ? FontWeight.w400
@@ -270,7 +298,7 @@ class _NotificationTile extends ConsumerWidget {
                 ),
                 const SizedBox(height: FactorySpacing.space1),
                 Text(
-                  notification.body,
+                  text.body,
                   style: textTheme.bodySmall?.copyWith(
                     color: colors.textSecondary,
                   ),

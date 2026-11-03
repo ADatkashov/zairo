@@ -424,5 +424,27 @@
   "businessesCopyCsv": "Скопировать список как CSV",
   "businessesCsvCopied": "{count, plural, one{Скопирован {count} бизнес в формате CSV} few{Скопировано {count} бизнеса в формате CSV} many{Скопировано {count} бизнесов в формате CSV} other{Скопировано {count} бизнеса в формате CSV}}",
   "reviewsCopyCsv": "Скопировать список как CSV",
-  "reviewsCsvCopied": "{count, plural, one{Скопирован {count} отзыв в формате CSV} few{Скопировано {count} отзыва в формате CSV} many{Скопировано {count} отзывов в формате CSV} other{Скопировано {count} отзыва в формате CSV}}"
+  "reviewsCsvCopied": "{count, plural, one{Скопирован {count} отзыв в формате CSV} few{Скопировано {count} отзыва в формате CSV} many{Скопировано {count} отзывов в формате CSV} other{Скопировано {count} отзыва в формате CSV}}",
+  "detailOwner": "Владелец",
+  "detailContact": "Контакт",
+  "detailServices": "Услуги",
+  "detailBookings": "Записи",
+  "detailTechnicalIds": "Технические ID",
+  "detailBookingsValue": "{total} всего · {completed} завершено",
+  "adUploadImage": "Загрузить с устройства",
+  "financeSubscription": "Подписка",
+  "subscriptionPriceTitle": "Цена подписки PRO",
+  "subscriptionPerMonth": "/ месяц",
+  "subscriptionPriceHelp": "Сколько владельцы платят за PRO в месяц. Новая цена действует для следующих списаний, прошлые не меняются.",
+  "subscriptionPriceEditMessage": "Новая цена в месяц, в тенге (₸).",
+  "subscriptionPriceField": "Цена в месяц (₸)",
+  "subscriptionPriceInvalid": "Введите сумму больше 0, не более двух знаков после запятой.",
+  "subscriptionPriceSaved": "Цена обновлена",
+  "subscriptionNotTenge": "PRO сейчас списывается в {currency}, а не в тенге. Задайте цену, чтобы перейти на тенге.",
+
+  "dashVsPrevious7": "к предыдущим 7 дням",
+  "dashBookingsPeriods": "Сегодня {today} · За неделю {week} · За месяц {month}",
+  "dashSubscriptionStates": "Активны {active} · Просрочены {pastDue} · Отменены {cancelled}",
+  "dashTotalCount": "Всего: {count}",
+  "dashOther": "Другое"
 }

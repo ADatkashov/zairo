@@ -33,7 +33,9 @@ permissions:
 jobs:
   backend:
     name: backend (build + test)
-    runs-on: ubuntu-latest
+    # Repo variable CI_RUNS_ON switches to a self-hosted runner, e.g.
+    # ["self-hosted","linux"] (docs/ci-cd.md "Self-hosted runner"); unset = GitHub-hosted.
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     # A hung Testcontainers/Gradle run must not burn minutes for hours.
     timeout-minutes: 30
     steps:
@@ -53,6 +55,10 @@ jobs:
       # published values.
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
+        with:
+          # Self-hosted runner keeps ~/.gradle on disk; skip the cloud cache
+          # (it counts against the Actions storage quota).
+          cache-disabled: ${{ vars.CI_RUNS_ON != '' }}
 
       # Same image, port mapping, and dev-only credentials as
       # infrastructure/docker-compose.yml's minio service — StorageApiTests
@@ -64,6 +70,8 @@ jobs:
       # block has no field for.
       - name: Start MinIO
         run: |
+          # A self-hosted runner is persistent: drop a leftover container from a cancelled run.
+          docker rm -f minio >/dev/null 2>&1 || true
           docker run -d --name minio \
             -p 9000:9000 -p 9001:9001 \
             -e MINIO_ROOT_USER=app_factory \
@@ -100,5 +108,9 @@ jobs:
         with:
           name: backend-test-reports
           path: backend/**/build/reports/tests/**
-          retention-days: 14
+          retention-days: 3
           if-no-files-found: ignore
+
+      - name: Stop MinIO
+        if: always()
+        run: docker rm -f minio || true

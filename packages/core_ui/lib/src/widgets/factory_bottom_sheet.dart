@@ -9,13 +9,38 @@ import '../theme/factory_spacing.dart';
 /// `bottomSheetTheme` — this only adds the parts a stock `showModalBottomSheet`
 /// leaves to the caller.
 class FactoryBottomSheet extends StatelessWidget {
-  const FactoryBottomSheet({super.key, required this.child});
+  const FactoryBottomSheet({super.key, required this.child, this.scrollable = true});
 
   final Widget child;
+
+  /// Whether the handle + [child] scroll together (the default). A sheet that
+  /// pins its own header/actions around an inner scroll region passes false
+  /// and gets a bounded height from the sheet instead — see [child]'s
+  /// `Flexible` in the filter sheet.
+  final bool scrollable;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.factoryColors;
+
+    final content = Padding(
+      padding: const EdgeInsets.only(top: FactorySpacing.space2),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: colors.borderStrong,
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          const SizedBox(height: FactorySpacing.space3),
+          scrollable ? child : Flexible(child: child),
+        ],
+      ),
+    );
 
     return SafeArea(
       top: false,
@@ -25,27 +50,8 @@ class FactoryBottomSheet extends StatelessWidget {
       // scrolling, overflowing instead once content exceeds the sheet's
       // available height. Content that needs its own internal scrolling
       // (a long list) should size itself explicitly rather than relying on
-      // this one.
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.only(top: FactorySpacing.space2),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colors.borderStrong,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-              const SizedBox(height: FactorySpacing.space3),
-              child,
-            ],
-          ),
-        ),
-      ),
+      // this one — or opt out with [scrollable] = false.
+      child: scrollable ? SingleChildScrollView(child: content) : content,
     );
   }
 }
@@ -57,10 +63,14 @@ Future<T?> showFactoryBottomSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
   bool isScrollControlled = false,
+  bool scrollable = true,
 }) {
   return showModalBottomSheet<T>(
     context: context,
     isScrollControlled: isScrollControlled,
-    builder: (context) => FactoryBottomSheet(child: Builder(builder: builder)),
+    builder: (context) => FactoryBottomSheet(
+      scrollable: scrollable,
+      child: Builder(builder: builder),
+    ),
   );
 }

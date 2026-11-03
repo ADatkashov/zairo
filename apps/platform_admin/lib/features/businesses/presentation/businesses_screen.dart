@@ -487,6 +487,7 @@ class _BusinessDetails extends ConsumerWidget {
     // Read from the live list so the sheet reflects an approve / suspend.
     final business = ref.watch(businessesProvider).value?.where((b) => b.id == businessId).firstOrNull;
     if (business == null) return const SizedBox(height: 200, child: Center(child: CircularProgressIndicator()));
+    final overview = ref.watch(businessOverviewProvider(businessId)).value;
     final payouts =
         ref.watch(payoutsProvider(null)).value?.where((p) => p.providerId == businessId).toList() ?? const [];
 
@@ -538,8 +539,27 @@ class _BusinessDetails extends ConsumerWidget {
               l10n.detailLocation,
               '${business.latitude!.toStringAsFixed(5)}, ${business.longitude!.toStringAsFixed(5)}',
             ),
-          row(l10n.detailOwnerId, business.ownerUserId),
-          row(l10n.detailBusinessId, business.id),
+          if (overview != null) ...[
+            if (overview.ownerName != null) row(l10n.detailOwner, overview.ownerName!),
+            if (overview.ownerEmail != null || overview.ownerPhone != null)
+              row(l10n.detailContact, [overview.ownerEmail, overview.ownerPhone].whereType<String>().join(' · ')),
+            row(l10n.detailServices, '${overview.servicesCount}'),
+            row(l10n.detailBookings, l10n.detailBookingsValue(overview.totalBookings, overview.completedBookings)),
+          ],
+          // Codes for support tickets and logs, out of the way until asked for.
+          Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: EdgeInsets.zero,
+              dense: true,
+              title: Text(l10n.detailTechnicalIds, style: textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
+              children: [
+                row(l10n.detailOwnerId, business.ownerUserId),
+                row(l10n.detailBusinessId, business.id),
+              ],
+            ),
+          ),
           const SizedBox(height: FactorySpacing.space4),
           FactorySectionHeader(title: l10n.detailPayouts),
           const SizedBox(height: FactorySpacing.space2),

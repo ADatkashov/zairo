@@ -50,6 +50,57 @@ Switching things back:
 - **CircleCI:** in `.circleci/config.yml` replace `circleci-switch` with `test` in the branch filters.
 - **More branches in Actions:** add them to `on.push.branches` in the two workflows.
 
+### Self-hosted runner
+
+GitHub-hosted runners need Actions minutes/billing; a self-hosted runner on your own machine does not. Both
+workflows pick their runner from the repo variable `CI_RUNS_ON` (unset = `ubuntu-latest`), so no code change is
+needed to switch.
+
+1. On a Linux x64 machine with Docker (the user must be in the `docker` group): GitHub -> repo *Settings -> Actions ->
+   Runners -> New self-hosted runner*, copy the registration token (valid 1 hour).
+2. `scripts/setup-self-hosted-runner.sh <token>` — downloads the runner, registers it and installs it as a service.
+3. *Settings -> Secrets and variables -> Actions -> Variables*: add `CI_RUNS_ON` = `["self-hosted","linux"]`.
+4. Run *Actions -> Backend CI / Flutter CI -> Run workflow* to check it. To go back to GitHub-hosted, delete the variable.
+
+**On Windows:** run the runner inside WSL2, not as a native Windows runner (the workflows are bash + Linux containers).
+1. PowerShell (admin): `wsl --install -d Ubuntu`, reboot, create the Ubuntu user.
+2. Docker Desktop -> *Settings -> Resources -> WSL integration*: enable Ubuntu. Check `docker ps` works inside Ubuntu.
+3. Optional, so the runner can be a service: in Ubuntu `sudo sh -c 'printf "[boot]\nsystemd=true\n" >> /etc/wsl.conf'`, then
+   `wsl --shutdown` from PowerShell. Without systemd the script tells you to start `~/actions-runner/run.sh` by hand
+   and keep that terminal open.
+4. In Ubuntu: `git clone` the repo (or just copy the script) and continue from step 2 above.
+The PC must be on, with WSL and Docker Desktop running, while CI runs.
+
+Notes: the runner is persistent, so caches (Gradle, pub, Flutter SDK) stay on its disk and are faster; when `CI_RUNS_ON`
+is set the workflows skip the GitHub cloud caches (they count against the 0.5 GB Actions storage quota) and failure
+artifacts are kept 3 days; the machine must be on
+when you push to `test`, otherwise the job waits in the queue. The workflows only run on pushes to `test` and by hand,
+never on pull requests, so outside contributors cannot run code on the runner — keep it that way for a private repo
+runner (do not add `pull_request` triggers from forks).
+
+### APK on your phone without GitHub Actions
+
+`build-artifacts.yml` is disabled, so build locally in Ubuntu/WSL: once `scripts/setup-local-dev-wsl.sh`, then
+`scripts/setup-android-sdk-wsl.sh`; after that `scripts/build-apk-local.sh [user_app|business_admin|platform_admin]` puts
+`<app>-debug-signed.apk` in `build-apk-out/` (same `--dart-define` flags as the workflow; API URL defaults to the live
+Render backend). Open the folder from Windows with `explorer.exe "$(wslpath -w build-apk-out)"`, copy the APK to the phone
+(cable, Telegram, Drive) and install it (allow "install unknown apps"). The first build is long: Gradle downloads the Android
+platform/build-tools. Without a keystore the APKs are debug-signed (like the workflow's). For release-signed ones run
+`scripts/setup-release-signing.sh` once (creates the keystore in `~/.zairo-signing/` and each app's gitignored
+`android/key.properties`; **back that folder up**), then build as above: the output is `<app>-release-signed.apk`.
+A phone that has the debug-signed build must uninstall it first (different signature).
+On WSL the script also copies the APKs to `Documents\zairo-apk` in your Windows profile (`WIN_APK_DIR=...` changes the
+folder, `WIN_COPY=0` turns it off).
+
+### Local checks and the pre-push hook
+
+When Actions is blocked (budget) or you want an answer before pushing: in Ubuntu/WSL run once
+`scripts/setup-local-dev-wsl.sh` (JDK 21 + the Flutter version pinned in `flutter-ci.yml`), then
+`scripts/verify-local.sh [flutter|backend]`. `scripts/install-git-hooks.sh` (once per clone) enables a `pre-push` hook that
+runs the matching checks only for the parts a push touches (apps/packages -> Flutter, backend/ -> backend; docs/scripts
+-> nothing). Skip once with `SKIP_VERIFY=1 git push` or `--no-verify`. If flutter/java are missing the hook only warns.
+The hook's file classification is tested by `scripts/test-pre-push.sh`.
+
 ### When GitHub Actions is not running
 
 If the workflow runs fail within seconds with no steps (billing/spending limit, a disabled workflow) nothing is
@@ -500,6 +551,8 @@ whenever the API changes and you want a fresh import for manual
 testing in Postman.
 
 ## 12. Running the backend in the cloud (no local machine required)
+
+> **Production in Kazakhstan** (all data stored on one VPS in KZ, no foreign storage): see `deploy/kz/README.md`. The section below describes the free test setup (Neon + R2 + Render), which keeps data abroad and is not suitable for real users.
 
 **Current status: deployed and live.** The setup below is running for
 real at `https://zairo-backend.onrender.com` (Neon + Cloudflare R2 +

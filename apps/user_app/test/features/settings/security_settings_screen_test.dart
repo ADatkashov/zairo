@@ -1,6 +1,7 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zairo/features/auth/data/apple_sign_in_service.dart';
 import 'package:zairo/features/auth/data/google_sign_in_service.dart';
@@ -96,6 +97,7 @@ Future<void> _pump(
   String? googleToken = 'google-token',
   bool appleAvailable = false,
   String? appleToken = 'apple-token',
+  List<Override> extraOverrides = const [],
 }) async {
   tester.view.physicalSize = const Size(800, 1600);
   tester.view.devicePixelRatio = 1;
@@ -107,6 +109,7 @@ Future<void> _pump(
         authControllerProvider.overrideWith(() => auth),
         googleSignInServiceProvider.overrideWithValue(_Google(googleToken)),
         appleSignInServiceProvider.overrideWithValue(_Apple(available: appleAvailable, token: appleToken)),
+        ...extraOverrides,
       ],
       child: MaterialApp(
         theme: factoryLightTheme(),
@@ -120,6 +123,21 @@ Future<void> _pump(
 }
 
 void main() {
+  testWidgets('with Google and Apple switched off their rows are not offered for linking', (tester) async {
+    await _pump(
+      tester,
+      _FakeAuth(),
+      appleAvailable: true,
+      extraOverrides: [
+        googleSignInEnabledProvider.overrideWithValue(false),
+        appleSignInEnabledProvider.overrideWithValue(false),
+      ],
+    );
+
+    expect(find.text('Continue with Google'), findsNothing);
+    expect(find.byIcon(Icons.apple), findsNothing);
+  });
+
   testWidgets('without biometrics on the device it says so instead of a dead switch', (tester) async {
     await _pump(tester, _FakeAuth(biometricAvailable: false));
 
@@ -161,6 +179,12 @@ void main() {
     expect(find.byIcon(Icons.check_circle), findsNWidgets(2));
     // Only Apple is left to link.
     expect(find.byType(TextButton), findsOneWidget);
+    // Rows are named by the provider, not by the login button's wording, and linked ones say so.
+    expect(find.text('Google'), findsOneWidget);
+    expect(find.text('Apple'), findsOneWidget);
+    expect(find.text('Phone'), findsOneWidget);
+    expect(find.text('Linked'), findsNWidgets(2));
+    expect(find.text('Continue with Google'), findsNothing);
   });
 
   testWidgets('the Apple row only exists where Apple sign-in does', (tester) async {

@@ -55,7 +55,15 @@ class DefaultAppleSignInService implements AppleSignInService {
 
 final appleSignInServiceProvider = Provider<AppleSignInService>((ref) => DefaultAppleSignInService());
 
+/// Whether Apple sign-in is switched on for this build
+/// (`--dart-define=APPLE_SIGN_IN_ENABLED=false` hides it; see
+/// [googleSignInEnabledProvider] for why).
+final appleSignInEnabledProvider = Provider<bool>(
+  (ref) => const bool.fromEnvironment('APPLE_SIGN_IN_ENABLED', defaultValue: true),
+);
+
 /// Whether to show the Apple button on this device.
 final appleSignInAvailableProvider = FutureProvider<bool>((ref) {
+  if (!ref.watch(appleSignInEnabledProvider)) return false;
   return ref.watch(appleSignInServiceProvider).isAvailable();
 });

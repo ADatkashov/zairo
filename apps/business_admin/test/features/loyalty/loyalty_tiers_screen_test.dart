@@ -48,6 +48,14 @@ void main() {
 
     expect(find.text(en.loyaltyTiersEmpty), findsOneWidget);
     expect(find.widgetWithText(FactoryButton, en.loyaltyTierAddButton), findsOneWidget);
+    // Nothing to save yet: no Save button under an empty list.
+    expect(find.widgetWithText(FactoryButton, en.saveButton), findsNothing);
+
+    await tester.tap(find.widgetWithText(FactoryButton, en.loyaltyTierAddButton));
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(FactoryButton, en.saveButton), findsOneWidget);
+    expect(find.text(en.loyaltyTiersEmpty), findsNothing);
   });
 
   testWidgets('tiers that fail to load show an error and retrying loads them', (tester) async {

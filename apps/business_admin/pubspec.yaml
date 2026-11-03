@@ -41,6 +41,8 @@ dependencies:
   # Local biometric unlock (fingerprint / Face ID) gating the stored refresh token
   # on app restart — same as the consumer app; nothing biometric reaches the backend.
   local_auth: ^3.0.2
+  share_plus: ^13.3.1
+  excel: ^4.0.6
 
 dev_dependencies:
   flutter_test:
