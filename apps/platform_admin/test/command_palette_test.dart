@@ -19,7 +19,8 @@ void main() {
     await tester.tap(find.text('Zen Spa').last);
     await tester.pumpAndSettle();
 
-    expect(find.text('Owner ID'), findsOneWidget);
+    // The business card is open (its status badge and payouts section are there).
+    expect(find.text('Technical IDs'), findsOneWidget);
   });
 
   testWidgets('quick search jumps to an area and says so when nothing matches', (tester) async {

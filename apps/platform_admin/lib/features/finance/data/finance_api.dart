@@ -50,6 +50,19 @@ class FinanceApi {
     return CommissionSettings.fromJson(response.data as Map<String, dynamic>);
   }
 
+  Future<SubscriptionPrice> subscriptionPrice() async {
+    final response = await _dio.get('/platform/subscription-price');
+    return SubscriptionPrice.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<SubscriptionPrice> setSubscriptionPrice(num monthlyPrice, String currency) async {
+    final response = await _dio.put(
+      '/platform/subscription-price',
+      data: {'monthlyPrice': monthlyPrice, 'currency': currency},
+    );
+    return SubscriptionPrice.fromJson(response.data as Map<String, dynamic>);
+  }
+
   Future<CommissionSettings> setDefaultCommission(num percent) async {
     final response = await _dio.put('/platform/commission/default', data: {'ratePercent': percent});
     return CommissionSettings.fromJson(response.data as Map<String, dynamic>);
@@ -88,4 +101,8 @@ final refundRequestsProvider = FutureProvider.autoDispose.family<List<RefundRequ
 
 final commissionProvider = FutureProvider.autoDispose<CommissionSettings>(
   (ref) => ref.watch(financeApiProvider).commission(),
+);
+
+final subscriptionPriceProvider = FutureProvider.autoDispose<SubscriptionPrice>(
+  (ref) => ref.watch(financeApiProvider).subscriptionPrice(),
 );

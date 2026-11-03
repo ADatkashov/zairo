@@ -6,11 +6,21 @@ name: Flutter CI
 # path: dependencies via plain `flutter pub get` (see README.md's
 # "Flutter workspace" section) — melos is a convenience for local dev,
 # not required for CI, so it's deliberately not installed here.
+#
+# MINUTES: private repo, 2000 free minutes a month. One job (the SDK is set up
+# once, not seven times), only on a push to `test` or by hand, and not for
+# changes that touch no code. See
+# docs/ci-cd.md "Actions minutes".
 on:
-  pull_request:
-    branches: [develop, test, master]
   push:
-    branches: [develop, test, master]
+    branches: [test]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "scripts/**"
+      - ".circleci/**"
+      - ".github/dependabot.yml"
+  workflow_dispatch:
 
 # Cancel a stale run on the same branch/PR when new commits land.
 concurrency:
@@ -30,19 +40,11 @@ env:
 
 jobs:
   flutter:
-    name: flutter (${{ matrix.package }})
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        package:
-          - apps/user_app
-          - apps/business_admin
-          - apps/platform_admin
-          - packages/core_network
-          - packages/core_region
-          - packages/core_storage
-          - packages/core_ui
+    name: flutter (analyze + test, all packages)
+    # Repo variable CI_RUNS_ON switches to a self-hosted runner, e.g.
+    # ["self-hosted","linux"] (docs/ci-cd.md "Self-hosted runner"); unset = GitHub-hosted.
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
+    timeout-minutes: 40
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -52,11 +54,12 @@ jobs:
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
-          cache: true
+          # GitHub-hosted only: a self-hosted runner keeps the SDK on disk and
+          # cloud caches would count against the Actions storage quota.
+          cache: ${{ vars.CI_RUNS_ON == '' }}
 
-      # pubspec.lock is committed for every package in this workspace,
-      # so the hash is a reliable, reproducible cache key.
       - name: Cache pub packages
+        if: vars.CI_RUNS_ON == ''
         uses: actions/cache@v6
         with:
           path: ~/.pub-cache
@@ -64,49 +67,29 @@ jobs:
           restore-keys: |
             pub-${{ runner.os }}-
 
-      - name: flutter pub get
-        working-directory: ${{ matrix.package }}
-        run: flutter pub get
-
-      - name: flutter analyze
-        working-directory: ${{ matrix.package }}
-        run: flutter analyze
-
-      # Non-blocking on purpose: a from-scratch `dart format` pass across
-      # the whole workspace currently reformats 115/191 files (nothing to
-      # do with correctness — no shared formatting habit was ever
-      # enforced). Failing every PR on pre-existing drift isn't a useful
-      # gate. This step still surfaces the diff in the log so it isn't
-      # invisible. See docs/ci-cd.md for the plan to turn this into a
-      # real gate once a one-time repo-wide `dart format .` PR lands.
-      - name: dart format (report only, non-blocking)
-        working-directory: ${{ matrix.package }}
-        continue-on-error: true
-        run: dart format --output=none --set-exit-if-changed .
-
-      # packages/core_network and packages/core_storage each have an empty
-      # test/ directory — no *_test.dart files, so nothing is tracked by
-      # git there at all (git doesn't track empty directories). A bare
-      # `flutter test` errors on "Test directory not found" for those two
-      # rather than reporting "0 tests", so this checks first and skips
-      # with a loud warning instead of failing the whole job — same
-      # tolerance melos.yaml's own `--dir-exists=test` gives this locally,
-      # but checked more precisely (actual test files, not just directory
-      # presence, since that directory existing-but-empty is exactly what
-      # caused the confusion here). The warning is intentional: this
-      # should stay visible, not silently green, until it's addressed.
-      - name: Check for test files
-        id: has_tests
-        working-directory: ${{ matrix.package }}
+      # Every package is checked even if an earlier one fails, so one run shows
+      # all the problems (a second run costs minutes). The format check is gone:
+      # it was report-only and cost a step per package.
+      - name: Analyze and test every package
         run: |
-          if find test -name '*_test.dart' -type f 2>/dev/null | grep -q .; then
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::${{ matrix.package }} has no *_test.dart files — flutter test skipped, zero test coverage for this package."
+          failed=()
+          for pkg in apps/user_app apps/business_admin apps/platform_admin \
+                     packages/core_network packages/core_region packages/core_storage packages/core_ui; do
+            echo "::group::$pkg"
+            (
+              cd "$pkg"
+              flutter pub get
+              flutter analyze
+              # core_network / core_storage have no tests; a bare `flutter test` would fail there.
+              if find test -name '*_test.dart' -type f 2>/dev/null | grep -q .; then
+                flutter test
+              else
+                echo "::warning::$pkg has no *_test.dart files, flutter test skipped"
+              fi
+            ) || failed+=("$pkg")
+            echo "::endgroup::"
+          done
+          if [ ${#failed[@]} -gt 0 ]; then
+            echo "::error::Failed: ${failed[*]}"
+            exit 1
           fi
-
-      - name: flutter test
-        if: steps.has_tests.outputs.found == 'true'
-        working-directory: ${{ matrix.package }}
-        run: flutter test

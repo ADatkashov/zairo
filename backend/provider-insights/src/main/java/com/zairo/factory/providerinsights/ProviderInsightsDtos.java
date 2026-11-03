@@ -39,12 +39,12 @@ public final class ProviderInsightsDtos {
             double cancellationRate,
             @Schema(description = "Distinct customers who have ever booked with this provider.", example = "18")
             long totalCustomers,
-            @Schema(description = "Sum of SUCCEEDED payments across this provider's bookings.", example = "2400.00")
+            @Schema(description = "Value of this provider's COMPLETED bookings, however they were paid (online or at the venue).", example = "2400.00")
             BigDecimal totalRevenue,
-            @Schema(description = "totalRevenue divided by the number of SUCCEEDED payments — null if there are none yet.",
+            @Schema(description = "totalRevenue divided by the number of COMPLETED bookings — null if there are none yet.",
                     example = "80.00")
             BigDecimal averageCheck,
-            @Schema(example = "USD", description = "Null if this provider has no SUCCEEDED payments yet.")
+            @Schema(example = "USD", description = "Null if this provider has no COMPLETED bookings yet.")
             String currency,
             @Schema(description = "This provider's services ranked by booking count, most-booked first, capped at 5.")
             List<TopService> topServices) {
@@ -54,5 +54,20 @@ public final class ProviderInsightsDtos {
                 @Schema(example = "Haircut") String title,
                 @Schema(example = "12") long bookingCount) {
         }
+    }
+
+    /**
+     * What a moderator needs to decide about a business without opening it in another tool: who runs it, how to reach
+     * them, and whether it is real (services listed, bookings taken).
+     */
+    public record PlatformBusinessOverview(
+            UUID providerId,
+            @Schema(description = "The owner's display name — null if they have not set one.", example = "Aigerim S.")
+            String ownerName,
+            @Schema(description = "The owner's e-mail — null for a phone-only account.") String ownerEmail,
+            @Schema(description = "The owner's phone — null for an e-mail account.") String ownerPhone,
+            @Schema(description = "Services the business has listed (active or not).", example = "6") long servicesCount,
+            @Schema(example = "42") long totalBookings,
+            @Schema(example = "30") long completedBookings) {
     }
 }

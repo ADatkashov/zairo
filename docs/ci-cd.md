@@ -10,17 +10,96 @@ module).
 
 ## 1. What GitHub Actions does here today
 
-It validates every pull request and every push to `develop`, `test`, or
-`master` (this repo's branch chain — see `CLAUDE.md`): Flutter analyze +
-test for all six Flutter packages, and Gradle build + test for the whole
-backend. On top of that, pushes to those same three branches also
-assemble installable artifacts (Android APKs, the backend's bootJar) and
-attach them to the workflow run.
+Since 2026-10 it is deliberately **narrow** (the repo is private: 2000 free minutes a month, see
+"Actions minutes" below): Flutter analyze + test for all seven packages and the Gradle build + test of the
+backend run **only on a push to `test`** (what you get when you merge develop -> test), or when started by hand
+(*Actions -> run workflow*). Nothing runs on pull requests, on `develop` or on `master`.
 
-GitHub Actions itself still does **not** deploy anything or touch any of
-`test`/`staging`/`production` as real environments — those don't exist as
-CI targets yet. §12 covers a real (manually set up, not CI-triggered)
-cloud deployment of the backend that now exists alongside this.
+GitHub Actions itself still does **not** deploy anything. The artifact workflows are kept as `*.yml.disabled`.
+
+## Actions minutes
+
+What was checked before anything was switched on (2026-10-19):
+
+- The repo is **private**, so Actions bills against the plan's 2000 free minutes a month (Linux x1).
+- Until now the workflows ran on every PR and every push to develop/test/master, and Dependabot (weekly, up to
+  ~20 PRs) added a CI run per PR plus its own Dependabot-update jobs. The last runs (to 2026-09-29) failed in 3-6
+  seconds with no steps: the account was blocked by billing, so they used no minutes, but the moment the block
+  is lifted all of that would have started to burn them.
+
+What is done so the quota is not spent:
+
+| Measure | Effect |
+|---|---|
+| Triggers cut to `push: [test]` + manual `workflow_dispatch` | No run on PRs (a PR into `test` plus its merge push would count twice), none for develop/master |
+| `paths-ignore`: `*.md`, `docs/`, `scripts/`, `.circleci/` | A docs-only merge costs 0 minutes |
+| Flutter: one job instead of a 7-package matrix | The SDK is set up once, not 7 times; every job is rounded up to a whole minute |
+| Removed the report-only `dart format` step | One step less per package |
+| `timeout-minutes` (backend 30, flutter 40) | A hung run cannot burn minutes for hours |
+| `concurrency` with `cancel-in-progress` | A newer push cancels a run still going |
+| Dependabot switched off (`dependabot.yml.disabled`) | No update jobs, no PR-triggered CI |
+| CircleCI switched off (kept) | No second CI running in parallel |
+
+Rough budget (an estimate, not measured: backend ~15-20 min, Flutter ~10-15 min): about 30 minutes per push to
+`test`, i.e. roughly 60 runs a month. Watch the real figure in *Settings -> Billing -> Usage* after the first
+runs. Also set a spending limit of $0 there so that nothing is ever charged past the free minutes.
+
+Switching things back:
+
+- **Dependabot:** rename `.github/dependabot.yml.disabled` to `dependabot.yml`.
+- **CircleCI:** in `.circleci/config.yml` replace `circleci-switch` with `test` in the branch filters.
+- **More branches in Actions:** add them to `on.push.branches` in the two workflows.
+
+### Self-hosted runner
+
+GitHub-hosted runners need Actions minutes/billing; a self-hosted runner on your own machine does not. Both
+workflows pick their runner from the repo variable `CI_RUNS_ON` (unset = `ubuntu-latest`), so no code change is
+needed to switch.
+
+1. On a Linux x64 machine with Docker (the user must be in the `docker` group): GitHub -> repo *Settings -> Actions ->
+   Runners -> New self-hosted runner*, copy the registration token (valid 1 hour).
+2. `scripts/setup-self-hosted-runner.sh <token>` — downloads the runner, registers it and installs it as a service.
+3. *Settings -> Secrets and variables -> Actions -> Variables*: add `CI_RUNS_ON` = `["self-hosted","linux"]`.
+4. Run *Actions -> Backend CI / Flutter CI -> Run workflow* to check it. To go back to GitHub-hosted, delete the variable.
+
+**On Windows:** run the runner inside WSL2, not as a native Windows runner (the workflows are bash + Linux containers).
+1. PowerShell (admin): `wsl --install -d Ubuntu`, reboot, create the Ubuntu user.
+2. Docker Desktop -> *Settings -> Resources -> WSL integration*: enable Ubuntu. Check `docker ps` works inside Ubuntu.
+3. Optional, so the runner can be a service: in Ubuntu `sudo sh -c 'printf "[boot]\nsystemd=true\n" >> /etc/wsl.conf'`, then
+   `wsl --shutdown` from PowerShell. Without systemd the script tells you to start `~/actions-runner/run.sh` by hand
+   and keep that terminal open.
+4. In Ubuntu: `git clone` the repo (or just copy the script) and continue from step 2 above.
+The PC must be on, with WSL and Docker Desktop running, while CI runs.
+
+Notes: the runner is persistent, so caches (Gradle, pub, Flutter SDK) stay on its disk and are faster; when `CI_RUNS_ON`
+is set the workflows skip the GitHub cloud caches (they count against the 0.5 GB Actions storage quota) and failure
+artifacts are kept 3 days; the machine must be on
+when you push to `test`, otherwise the job waits in the queue. The workflows only run on pushes to `test` and by hand,
+never on pull requests, so outside contributors cannot run code on the runner — keep it that way for a private repo
+runner (do not add `pull_request` triggers from forks).
+
+### APK on your phone without GitHub Actions
+
+`build-artifacts.yml` is disabled, so build locally in Ubuntu/WSL: once `scripts/setup-local-dev-wsl.sh`, then
+`scripts/setup-android-sdk-wsl.sh`; after that `scripts/build-apk-local.sh [user_app|business_admin|platform_admin]` puts
+`<app>-debug-signed.apk` in `build-apk-out/` (same `--dart-define` flags as the workflow; API URL defaults to the live
+Render backend). Open the folder from Windows with `explorer.exe "$(wslpath -w build-apk-out)"`, copy the APK to the phone
+(cable, Telegram, Drive) and install it (allow "install unknown apps"). The first build is long: Gradle downloads the Android
+platform/build-tools. Without a keystore the APKs are debug-signed (like the workflow's). For release-signed ones run
+`scripts/setup-release-signing.sh` once (creates the keystore in `~/.zairo-signing/` and each app's gitignored
+`android/key.properties`; **back that folder up**), then build as above: the output is `<app>-release-signed.apk`.
+A phone that has the debug-signed build must uninstall it first (different signature).
+On WSL the script also copies the APKs to `Documents\zairo-apk` in your Windows profile (`WIN_APK_DIR=...` changes the
+folder, `WIN_COPY=0` turns it off).
+
+### Local checks and the pre-push hook
+
+When Actions is blocked (budget) or you want an answer before pushing: in Ubuntu/WSL run once
+`scripts/setup-local-dev-wsl.sh` (JDK 21 + the Flutter version pinned in `flutter-ci.yml`), then
+`scripts/verify-local.sh [flutter|backend]`. `scripts/install-git-hooks.sh` (once per clone) enables a `pre-push` hook that
+runs the matching checks only for the parts a push touches (apps/packages -> Flutter, backend/ -> backend; docs/scripts
+-> nothing). Skip once with `SKIP_VERIFY=1 git push` or `--no-verify`. If flutter/java are missing the hook only warns.
+The hook's file classification is tested by `scripts/test-pre-push.sh`.
 
 ### When GitHub Actions is not running
 
@@ -472,6 +551,8 @@ whenever the API changes and you want a fresh import for manual
 testing in Postman.
 
 ## 12. Running the backend in the cloud (no local machine required)
+
+> **Production in Kazakhstan** (all data stored on one VPS in KZ, no foreign storage): see `deploy/kz/README.md`. The section below describes the free test setup (Neon + R2 + Render), which keeps data abroad and is not suitable for real users.
 
 **Current status: deployed and live.** The setup below is running for
 real at `https://zairo-backend.onrender.com` (Neon + Cloudflare R2 +

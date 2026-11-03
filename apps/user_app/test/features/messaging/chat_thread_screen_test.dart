@@ -53,7 +53,36 @@ class _LoggedInAuthController extends AuthController {
   }
 }
 
+class _LoggedOutAuthController extends AuthController {
+  @override
+  Future<UserSummary?> build() async => null;
+}
+
 void main() {
+  testWidgets('a guest is invited to log in: no error, no message box', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          messagingApiProvider.overrideWithValue(_FakeMessagingApi([])),
+          authControllerProvider.overrideWith(_LoggedOutAuthController.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const ChatThreadScreen(providerId: 'provider-1', providerName: 'Glow Salon'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Glow Salon'), findsOneWidget);
+    expect(find.text('Log in to message this business'), findsOneWidget);
+    expect(find.text('Log in'), findsOneWidget);
+    expect(find.text('Try again'), findsNothing);
+    expect(find.byType(TextField), findsNothing);
+  });
+
   testWidgets('shows an empty state with no messages yet', (tester) async {
     await tester.pumpWidget(
       ProviderScope(

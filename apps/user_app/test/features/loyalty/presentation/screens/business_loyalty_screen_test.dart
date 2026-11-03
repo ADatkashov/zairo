@@ -4,6 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zairo/features/auth/data/models/user_summary.dart';
+import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/loyalty/data/api/loyalty_api.dart';
 import 'package:zairo/features/loyalty/data/loyalty_exception.dart';
 import 'package:zairo/features/loyalty/data/models/loyalty.dart';
@@ -56,6 +58,17 @@ LoyaltyReward _reward(
   affordable: affordable,
 );
 
+class _LoggedInAuthController extends AuthController {
+  @override
+  Future<UserSummary?> build() async =>
+      const UserSummary(id: 'user-1', email: 'a@example.com', displayName: 'A', role: 'CUSTOMER');
+}
+
+class _LoggedOutAuthController extends AuthController {
+  @override
+  Future<UserSummary?> build() async => null;
+}
+
 class _FakeApi extends LoyaltyApi {
   _FakeApi({required this.detail, this.rewardList = const [], this.rewardsFail = false}) : super(DioClient(Dio()));
 
@@ -64,9 +77,13 @@ class _FakeApi extends LoyaltyApi {
   final bool rewardsFail;
   Object? redeemError;
   final List<String> redeemed = [];
+  int detailRequests = 0;
 
   @override
-  Future<LoyaltyBusinessDetail> businessLoyalty(String providerId) async => detail;
+  Future<LoyaltyBusinessDetail> businessLoyalty(String providerId) async {
+    detailRequests++;
+    return detail;
+  }
 
   @override
   Future<List<LoyaltyReward>> rewards(String providerId) async {
@@ -92,14 +109,17 @@ class _FakeApi extends LoyaltyApi {
   }
 }
 
-Future<void> _pump(WidgetTester tester, LoyaltyApi api, {String? name = 'Glow Salon'}) async {
+Future<void> _pump(WidgetTester tester, LoyaltyApi api, {String? name = 'Glow Salon', bool loggedIn = true}) async {
   tester.view.physicalSize = const Size(800, 3200);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
     ProviderScope(
       retry: (_, _) => null,
-      overrides: [loyaltyApiProvider.overrideWithValue(api)],
+      overrides: [
+        loyaltyApiProvider.overrideWithValue(api),
+        authControllerProvider.overrideWith(loggedIn ? _LoggedInAuthController.new : _LoggedOutAuthController.new),
+      ],
       child: MaterialApp(
         theme: factoryLightTheme(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -112,6 +132,17 @@ Future<void> _pump(WidgetTester tester, LoyaltyApi api, {String? name = 'Glow Sa
 }
 
 void main() {
+  testWidgets('a guest is invited to log in, with no error and no request for points', (tester) async {
+    final api = _FakeApi(detail: _detail());
+    await _pump(tester, api, loggedIn: false);
+
+    expect(find.text('Glow Salon'), findsOneWidget);
+    expect(find.text('Log in to see your points and rewards at this business'), findsOneWidget);
+    expect(find.text('Log in'), findsOneWidget);
+    expect(find.text('Try again'), findsNothing);
+    expect(api.detailRequests, 0);
+  });
+
   testWidgets('shows the balance, tier, ways to earn, the next milestone and expiring points', (tester) async {
     await _pump(
       tester,
@@ -171,7 +202,7 @@ void main() {
       ),
     );
 
-    expect(find.text('500 KZT off'), findsOneWidget);
+    expect(find.text('500 ₸ off'), findsOneWidget);
     expect(find.text('10% off'), findsOneWidget);
     expect(find.text('7.5% off'), findsOneWidget);
     expect(find.text('Free service'), findsOneWidget);

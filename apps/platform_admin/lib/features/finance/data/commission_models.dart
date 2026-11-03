@@ -77,3 +77,25 @@ num? parsePercentInput(String input) {
   final value = num.parse(text);
   return value >= 0 && value <= 100 ? value : null;
 }
+
+/// Mirrors `GET /platform/subscription-price`: what PRO costs per month.
+class SubscriptionPrice {
+  final num monthlyPrice;
+  final String currency;
+
+  const SubscriptionPrice({required this.monthlyPrice, required this.currency});
+
+  factory SubscriptionPrice.fromJson(Map<String, dynamic> json) => SubscriptionPrice(
+    monthlyPrice: _percent(json['monthlyPrice']),
+    currency: json['currency'] as String,
+  );
+}
+
+/// A positive amount typed by a person ("14 900", "14900,50"); null when it is not one.
+num? parsePriceInput(String input) {
+  final cleaned = input.replaceAll(RegExp(r'[\s\u00A0]'), '').replaceAll(',', '.');
+  final value = num.tryParse(cleaned);
+  if (value == null || value <= 0 || value > 9999999999) return null;
+  // At most two decimals, like the money columns.
+  return (value * 100).roundToDouble() / 100 == value ? value : null;
+}

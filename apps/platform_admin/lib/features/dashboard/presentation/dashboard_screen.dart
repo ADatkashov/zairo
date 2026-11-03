@@ -13,9 +13,11 @@ import '../data/dashboard_api.dart';
 import '../data/dashboard_metrics.dart';
 import '../data/dashboard_trends.dart';
 
-/// The landing page: first what needs a person today (businesses waiting for
-/// approval, refunds that failed, payouts waiting to be paid), then the
-/// numbers — businesses, bookings, payments, revenue, users, subscriptions.
+/// The landing page, in the order of a glance: first what needs a person today
+/// (businesses waiting for approval, refunds that failed, payouts waiting to be
+/// paid), then four headline numbers (revenue, commission, bookings with their
+/// trend, users), then how businesses, bookings, payments and subscriptions
+/// break down. Every figure that has a list behind it opens that list.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -56,79 +58,10 @@ class DashboardScreen extends ConsumerWidget {
                 Text(l10n.dashboardGreeting(name.split(' ').first), style: Theme.of(context).textTheme.headlineSmall),
                 const SizedBox(height: FactorySpacing.space4),
                 _Attention(metrics: m, payableCount: payable.value?.length ?? 0),
-                const SizedBox(height: FactorySpacing.space5),
-                _Section(
-                  title: l10n.dashSectionBusinesses,
-                  actionLabel: l10n.dashOpen,
-                  onAction: () => context.go(ConsoleRoutes.businesses),
-                  tiles: [
-                    _Stat(l10n.dashTotal, m.businessesTotal, path: ConsoleRoutes.businesses),
-                    _Stat(l10n.statusActive, m.businessesActive, path: '${ConsoleRoutes.businesses}?status=ACTIVE'),
-                    _Stat(
-                      l10n.businessPending,
-                      m.businessesPending,
-                      warn: m.businessesPending > 0,
-                      path: '${ConsoleRoutes.businesses}?status=PENDING',
-                    ),
-                    _Stat(
-                      l10n.businessSuspended,
-                      m.businessesBlocked,
-                      path: '${ConsoleRoutes.businesses}?status=SUSPENDED',
-                    ),
-                  ],
-                ),
-                _Section(
-                  title: l10n.dashSectionBookings,
-                  tiles: [
-                    if (trends.bookingsCreated.length >= 2)
-                      _Trend(
-                        l10n.dashBookingsLastDays(trends.bookingsCreated.length),
-                        trends.bookingsTotal.round(),
-                        trends.bookingsCreated,
-                      ),
-                    _Stat(l10n.dashToday, m.bookingsToday),
-                    _Stat(l10n.dashThisWeek, m.bookingsWeek),
-                    _Stat(l10n.dashThisMonth, m.bookingsMonth),
-                    _Stat(l10n.dashCompleted, m.bookingsCompleted),
-                    _Stat(l10n.dashCancelled, m.bookingsCancelled),
-                  ],
-                ),
-                _Section(
-                  title: l10n.dashSectionRevenue,
-                  subtitle: l10n.dashRevenueNote,
-                  tiles: [
-                    _Money(l10n.dashSubscriptionRevenue, m.mrr, m.currency),
-                    _Money(l10n.dashCommission, m.platformCommission, m.commissionCurrency),
-                  ],
-                ),
-                _Section(
-                  title: l10n.dashSectionPayments,
-                  actionLabel: l10n.navFinance,
-                  onAction: () => context.go(ConsoleRoutes.finance),
-                  tiles: [
-                    _Stat(l10n.paymentSucceeded, m.paymentsSucceeded),
-                    _Stat(l10n.paymentPending, m.paymentsPending),
-                    _Stat(l10n.paymentFailed, m.paymentsFailed, warn: m.paymentsFailed > 0),
-                    _Stat(l10n.paymentRefunded, m.paymentsRefunded),
-                    _Stat(
-                      l10n.paymentRefundFailed,
-                      m.paymentsRefundFailed,
-                      warn: m.paymentsRefundFailed > 0,
-                      path: '${ConsoleRoutes.finance}?tab=refunds',
-                    ),
-                  ],
-                ),
-                _Section(
-                  title: l10n.dashSectionSubscriptions,
-                  tiles: [
-                    _Stat(l10n.dashPlanFree, m.subsFree),
-                    _Stat(l10n.dashPlanPro, m.subsPro),
-                    _Stat(l10n.statusActive, m.subsActive),
-                    _Stat(l10n.dashPastDue, m.subsPastDue, warn: m.subsPastDue > 0),
-                    _Stat(l10n.dashCancelled, m.subsCancelled),
-                  ],
-                ),
-                _Section(title: l10n.dashSectionUsers, tiles: [_Stat(l10n.dashTotal, m.users)]),
+                const SizedBox(height: FactorySpacing.space4),
+                _Headline(metrics: m, trends: trends),
+                const SizedBox(height: FactorySpacing.space4),
+                _Breakdowns(metrics: m),
               ],
             ),
           ),
@@ -138,6 +71,9 @@ class DashboardScreen extends ConsumerWidget {
   }
 }
 
+/// Everything that waits on a person, most urgent first, as one red panel whose
+/// rows each open the place where it is dealt with. With nothing waiting, a
+/// calm one-liner says so.
 class _Attention extends StatelessWidget {
   const _Attention({required this.metrics, required this.payableCount});
 
@@ -147,162 +83,254 @@ class _Attention extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final items = <_AttentionItem>[
+    void open(String path) => context.go(path);
+    final items = <FactoryAlertItem>[
       if (metrics.businessesPending > 0)
-        _AttentionItem(
+        FactoryAlertItem(
           icon: Icons.pending_actions_rounded,
-          text: l10n.attentionPendingBusinesses(metrics.businessesPending),
-          action: l10n.attentionReview,
-          path: '${ConsoleRoutes.businesses}?status=PENDING',
+          label: l10n.attentionPendingBusinesses(metrics.businessesPending),
+          actionLabel: l10n.attentionReview,
+          onTap: () => open('${ConsoleRoutes.businesses}?status=PENDING'),
         ),
       if (metrics.reviewsReported > 0)
-        _AttentionItem(
+        FactoryAlertItem(
           icon: Icons.rate_review_outlined,
-          text: l10n.attentionReportedReviews(metrics.reviewsReported),
-          action: l10n.attentionReview,
-          path: ConsoleRoutes.reviews,
+          label: l10n.attentionReportedReviews(metrics.reviewsReported),
+          actionLabel: l10n.attentionReview,
+          onTap: () => open(ConsoleRoutes.reviews),
         ),
       if (metrics.paymentsRefundFailed > 0)
-        _AttentionItem(
+        FactoryAlertItem(
           icon: Icons.error_outline_rounded,
-          text: l10n.attentionFailedRefunds(metrics.paymentsRefundFailed),
-          action: l10n.attentionReview,
-          path: '${ConsoleRoutes.finance}?tab=refunds',
+          label: l10n.attentionFailedRefunds(metrics.paymentsRefundFailed),
+          actionLabel: l10n.attentionReview,
+          onTap: () => open('${ConsoleRoutes.finance}?tab=refunds'),
         ),
       if (payableCount > 0)
-        _AttentionItem(
+        FactoryAlertItem(
           icon: Icons.payments_outlined,
-          text: l10n.attentionPayablePayouts(payableCount),
-          action: l10n.attentionReview,
-          path: ConsoleRoutes.finance,
+          label: l10n.attentionPayablePayouts(payableCount),
+          actionLabel: l10n.attentionReview,
+          onTap: () => open(ConsoleRoutes.finance),
         ),
     ];
+    if (items.isEmpty) return FactoryAlertPanel.allClear(title: l10n.attentionAllClear);
+    return FactoryAlertPanel(title: l10n.attentionTitle, count: items.length, items: items);
+  }
+}
+
+/// Four numbers that say how the platform is doing: money in from subscriptions
+/// and from commission, bookings over the last two weeks (with the trend line and
+/// the change against the week before), and how many people use it.
+class _Headline extends StatelessWidget {
+  const _Headline({required this.metrics, required this.trends});
+
+  final DashboardMetrics metrics;
+  final DashboardTrends trends;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
-    if (items.isEmpty) {
-      return FactoryCard(
-        child: Row(
-          children: [
-            Icon(Icons.check_circle_outline_rounded, color: colors.success),
-            const SizedBox(width: FactorySpacing.space3),
-            Expanded(child: Text(l10n.attentionAllClear)),
-          ],
-        ),
-      );
-    }
+    final locale = Localizations.localeOf(context).toString();
+    final m = metrics;
+    String money(num amount, String? currency) => currency == null ? '—' : formatMoney(locale, amount, currency);
+
+    final hasTrend = trends.bookingsCreated.length >= 2;
+    final change = trends.bookingsWeekChange;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        FactorySectionHeader(title: l10n.attentionTitle),
-        const SizedBox(height: FactorySpacing.space2),
-        for (final item in items)
-          Padding(
-            padding: const EdgeInsets.only(bottom: FactorySpacing.space2),
-            child: FactoryCard(
-              padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4, vertical: FactorySpacing.space2),
-              child: Row(
-                children: [
-                  Icon(item.icon, color: colors.error),
-                  const SizedBox(width: FactorySpacing.space3),
-                  Expanded(child: Text(item.text, style: Theme.of(context).textTheme.bodyMedium)),
-                  TextButton(onPressed: () => context.go(item.path), child: Text(item.action)),
-                ],
-              ),
+        FactoryMetricGrid(
+          minTileWidth: 160,
+          maxColumns: 4,
+          equalHeight: true,
+          children: [
+            FactoryKpiCard(
+              label: l10n.dashSubscriptionRevenue,
+              value: money(m.mrr, m.currency),
+              caption: l10n.dashSectionRevenue,
+              icon: Icons.workspace_premium_rounded,
+              accent: colors.primary,
             ),
-          ),
+            FactoryKpiCard(
+              label: l10n.dashCommission,
+              value: money(m.platformCommission, m.commissionCurrency),
+              caption: l10n.dashSectionRevenue,
+              icon: Icons.percent_rounded,
+              accent: colors.mint,
+            ),
+            FactoryKpiCard(
+              label: hasTrend ? l10n.dashBookingsLastDays(trends.bookingsCreated.length) : l10n.dashThisWeek,
+              value: formatCount(locale, hasTrend ? trends.bookingsTotal.round() : m.bookingsWeek),
+              icon: Icons.event_available_rounded,
+              accent: colors.coral,
+              delta: change,
+              caption: change == null ? null : l10n.dashVsPrevious7,
+              trend: hasTrend ? trends.bookingsCreated : null,
+              trendLabel: hasTrend ? l10n.dashBookingsLastDays(trends.bookingsCreated.length) : null,
+            ),
+            FactoryKpiCard(
+              label: l10n.dashSectionUsers,
+              value: formatCount(locale, m.users),
+              icon: Icons.people_alt_rounded,
+              accent: colors.lavender,
+            ),
+          ],
+        ),
+        const SizedBox(height: FactorySpacing.space2),
+        Text(
+          l10n.dashRevenueNote,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+        ),
       ],
     );
   }
 }
 
-class _AttentionItem {
-  const _AttentionItem({required this.icon, required this.text, required this.action, required this.path});
+/// How the platform splits: businesses by status, bookings by outcome, payments
+/// by state, subscriptions by plan. Each is a ring with a legend whose rows that
+/// have a list behind them open it, filtered the same way (a tap on "Awaiting
+/// approval 3" lists exactly those three).
+class _Breakdowns extends StatelessWidget {
+  const _Breakdowns({required this.metrics});
 
-  final IconData icon;
-  final String text;
-  final String action;
-  final String path;
+  final DashboardMetrics metrics;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final locale = Localizations.localeOf(context).toString();
+    final m = metrics;
+    String n(num value) => formatCount(locale, value);
+    void open(String path) => context.go(path);
+
+    FactoryChartSegment seg(String label, int value, Color color, {String? path}) => FactoryChartSegment(
+      label: label,
+      value: value.toDouble(),
+      valueLabel: n(value),
+      color: color,
+      onTap: path == null ? null : () => open(path),
+    );
+
+    // Businesses in a state the dashboard has no name for (archived, rejected) still count in the total.
+    final named = m.businessesActive + m.businessesPending + m.businessesBlocked;
+    final otherBusinesses = (m.businessesTotal - named).clamp(0, m.businessesTotal);
+
+    return FactoryMetricGrid(
+      minTileWidth: 330,
+      maxColumns: 2,
+      equalHeight: true,
+      children: [
+        _BreakdownCard(
+          title: l10n.dashSectionBusinesses,
+          subtitle: l10n.dashTotalCount(n(m.businessesTotal)),
+          actionLabel: l10n.dashOpen,
+          onAction: () => open(ConsoleRoutes.businesses),
+          centerLabel: n(m.businessesTotal),
+          segments: [
+            seg(l10n.statusActive, m.businessesActive, colors.success, path: '${ConsoleRoutes.businesses}?status=ACTIVE'),
+            seg(l10n.businessPending, m.businessesPending, colors.warning, path: '${ConsoleRoutes.businesses}?status=PENDING'),
+            seg(l10n.businessSuspended, m.businessesBlocked, colors.error, path: '${ConsoleRoutes.businesses}?status=SUSPENDED'),
+            seg(l10n.dashOther, otherBusinesses, colors.textTertiary),
+          ],
+        ),
+        _BreakdownCard(
+          title: l10n.dashSectionBookings,
+          subtitle: l10n.dashBookingsPeriods(n(m.bookingsToday), n(m.bookingsWeek), n(m.bookingsMonth)),
+          centerLabel: n(m.bookingsCompleted + m.bookingsCancelled),
+          segments: [
+            seg(l10n.dashCompleted, m.bookingsCompleted, colors.success),
+            seg(l10n.dashCancelled, m.bookingsCancelled, colors.error),
+          ],
+        ),
+        _BreakdownCard(
+          title: l10n.dashSectionPayments,
+          actionLabel: l10n.navFinance,
+          onAction: () => open(ConsoleRoutes.finance),
+          centerLabel: n(m.paymentsSucceeded + m.paymentsPending + m.paymentsFailed + m.paymentsRefunded + m.paymentsRefundFailed),
+          segments: [
+            seg(l10n.paymentSucceeded, m.paymentsSucceeded, colors.success),
+            seg(l10n.paymentPending, m.paymentsPending, colors.warning),
+            seg(l10n.paymentFailed, m.paymentsFailed, colors.error),
+            seg(l10n.paymentRefunded, m.paymentsRefunded, colors.info),
+            seg(l10n.paymentRefundFailed, m.paymentsRefundFailed, colors.coral, path: '${ConsoleRoutes.finance}?tab=refunds'),
+          ],
+        ),
+        _BreakdownCard(
+          title: l10n.dashSectionSubscriptions,
+          subtitle: l10n.dashSubscriptionStates(n(m.subsActive), n(m.subsPastDue), n(m.subsCancelled)),
+          centerLabel: n(m.subsFree + m.subsPro),
+          segments: [
+            seg(l10n.dashPlanPro, m.subsPro, colors.primary),
+            seg(l10n.dashPlanFree, m.subsFree, colors.lavender),
+          ],
+        ),
+      ],
+    );
+  }
 }
 
-abstract class _Tile {
-  const _Tile(this.label);
-  final String label;
-  String value(String locale);
-  bool get warn => false;
-  List<double>? get trend => null;
-
-  /// Where tapping the tile goes — the list behind the number — or null.
-  String? get path => null;
-}
-
-class _Stat extends _Tile {
-  const _Stat(super.label, this.count, {this.warn = false, this.path});
-  final int count;
-  @override
-  final bool warn;
-  @override
-  final String? path;
-  @override
-  String value(String locale) => formatCount(locale, count);
-}
-
-/// A count over a recent window, drawn with its daily trend line.
-class _Trend extends _Tile {
-  const _Trend(super.label, this.count, this.values);
-  final int count;
-  final List<double> values;
-  @override
-  List<double> get trend => values;
-  @override
-  String value(String locale) => formatCount(locale, count);
-}
-
-class _Money extends _Tile {
-  const _Money(super.label, this.amount, this.currency);
-  final num amount;
-  final String? currency;
-  @override
-  String value(String locale) => currency == null ? '—' : formatMoney(locale, amount, currency);
-}
-
-class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.tiles, this.subtitle, this.actionLabel, this.onAction});
+/// One ring with its title, an optional one-line summary and an optional link to
+/// the area behind it. Holds no LayoutBuilder (the grid equalises card heights),
+/// so it picks its ring size and legend position from the screen instead of from
+/// its own width: smaller on a phone, legend under the ring at a large font.
+class _BreakdownCard extends StatelessWidget {
+  const _BreakdownCard({
+    required this.title,
+    required this.centerLabel,
+    required this.segments,
+    this.subtitle,
+    this.actionLabel,
+    this.onAction,
+  });
 
   final String title;
   final String? subtitle;
   final String? actionLabel;
   final VoidCallback? onAction;
-  final List<_Tile> tiles;
+  final String centerLabel;
+  final List<FactoryChartSegment> segments;
 
   @override
   Widget build(BuildContext context) {
-    final locale = Localizations.localeOf(context).toString();
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: FactorySpacing.space5),
+    final phone = MediaQuery.sizeOf(context).width < 480;
+    final bigFont = MediaQuery.textScalerOf(context).scale(16) > 22;
+
+    return FactoryCard(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          FactorySectionHeader(title: title, actionLabel: actionLabel, onActionTap: onAction),
+          // Not FactorySectionHeader: it measures itself with a LayoutBuilder, which the grid's
+          // equal-height rows cannot contain.
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.titleSmall?.copyWith(color: colors.text, fontWeight: FontWeight.w700),
+                ),
+              ),
+              if (actionLabel != null && onAction != null) TextButton(onPressed: onAction, child: Text(actionLabel!)),
+            ],
+          ),
           if (subtitle != null)
             Padding(
               padding: const EdgeInsets.only(top: 2),
               child: Text(subtitle!, style: textTheme.bodySmall?.copyWith(color: colors.textTertiary)),
             ),
-          const SizedBox(height: FactorySpacing.space2),
-          AdaptiveGrid(
-            minTileWidth: 150,
-            maxColumns: 5,
-            children: [
-              for (final tile in tiles)
-                FactoryKpiCard(
-                  label: tile.label,
-                  value: tile.value(locale),
-                  warn: tile.warn,
-                  trend: tile.trend,
-                  onTap: tile.path == null ? null : () => context.go(tile.path!),
-                ),
-            ],
+          const SizedBox(height: FactorySpacing.space3),
+          FactoryDonutChart(
+            size: phone ? 104 : 132,
+            stacked: bigFont,
+            centerLabel: centerLabel,
+            segments: segments,
+            semanticLabel: title,
           ),
         ],
       ),

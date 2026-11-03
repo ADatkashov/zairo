@@ -1187,7 +1187,7 @@ void main() {
 
   testWidgets('opened from a "Book" button it starts at the booking steps, not at the top', (tester) async {
     // A short phone, so the page is longer than the screen and can scroll.
-    tester.view.physicalSize = const Size(390, 600);
+    tester.view.physicalSize = const Size(390, 480);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
     const provider = ProviderSearchResult(
@@ -1488,6 +1488,35 @@ void main() {
       expect(style.fontSize, greaterThanOrEqualTo(14));
       expect(style.fontWeight, FontWeight.w600);
       expect(style.color, FactoryColors.light.text);
+    });
+
+    testWidgets('a business without a cover photo gets a short header, so the services start higher', (tester) async {
+      await pump(tester, salon([haircut, colour]));
+
+      final hero = find.ancestor(of: find.byIcon(Symbols.content_cut_rounded), matching: find.byType(SizedBox)).first;
+      expect(tester.getSize(hero).height, 120);
+    });
+
+    testWidgets('tapping the hint brings the step it asks for into view', (tester) async {
+      await pump(tester, salon([haircut, colour]));
+      final card = find.widgetWithText(FactoryServiceCard, 'Haircut');
+
+      await tester.tap(find.byKey(const Key('bookingNextStepHint')));
+      await tester.pumpAndSettle();
+      // Visible on screen now, and still nothing is picked.
+      final screenHeight = tester.view.physicalSize.height / tester.view.devicePixelRatio;
+      expect(tester.getRect(card).top, lessThan(screenHeight));
+      expect(tester.getRect(card).bottom, greaterThan(0));
+      expect(hint(tester), 'Choose a service');
+
+      await tapVisible(tester, card);
+      await tester.pumpAndSettle();
+      expect(hint(tester), 'Choose a time');
+      await tester.tap(find.byKey(const Key('bookingNextStepHint')));
+      await tester.pumpAndSettle();
+      // The times section is what the hint now leads to.
+      expect(find.text('10:00'), findsWidgets);
+      expect(tester.getRect(find.text('10:00').first).top, lessThan(screenHeight));
     });
 
     testWidgets('one service is already picked, so the first thing asked is the time', (tester) async {

@@ -50,12 +50,19 @@ class FactoryNavAction {
     required this.label,
     this.onTap,
     this.quickActions = const [],
+    this.visibleLabel = false,
   }) : assert(onTap != null || quickActions.length > 0, 'an action needs an onTap or quick actions');
 
   final IconData icon;
 
-  /// Read by screen readers; the button itself shows no text.
+  /// Read by screen readers. The button itself shows no text unless
+  /// [visibleLabel] is set.
   final String label;
+
+  /// Also write [label] in the bar, under the round button and level with the
+  /// tab labels — an icon alone does not say what a raised "+" will do. Tapping
+  /// the text does the same as tapping the button.
+  final bool visibleLabel;
   final VoidCallback? onTap;
   final List<FactoryNavQuickAction> quickActions;
 }
@@ -172,20 +179,36 @@ class _FactoryBottomNavigationState extends State<FactoryBottomNavigation> with 
     final destinations = widget.destinations;
     final split = destinations.length ~/ 2;
 
-    Widget tab(int i, {required bool expand}) {
-      final item = _NavItem(
-        // Five or more tabs share ~70px each on a phone; the roomy
-        // 12px side padding left a long label ("Бизнестер") ~50px
-        // and it ellipsized to "Бизне…".
-        dense: destinations.length > 4 || action != null,
-        destination: destinations[i],
-        isSelected: i == widget.selectedIndex,
-        onTap: () => widget.onDestinationSelected(i),
-      );
-      // Equal shares around the action keep it exactly centred; without one,
-      // Flexible (loose) lets four short labels keep their natural width.
-      return expand ? Expanded(child: item) : Flexible(child: item);
-    }
+    Widget item(int i) => _NavItem(
+      // Five or more tabs share ~70px each on a phone; the roomy
+      // 12px side padding left a long label ("Бизнестер") ~50px
+      // and it ellipsized to "Бизне…".
+      dense: destinations.length > 4 || action != null,
+      destination: destinations[i],
+      isSelected: i == widget.selectedIndex,
+      onTap: () => widget.onDestinationSelected(i),
+    );
+    // Without an action, Flexible (loose) lets four short labels keep their
+    // natural width.
+    Widget tab(int i) => Flexible(child: item(i));
+    // One side of the bar around the action: the tabs at their natural width,
+    // scaled down together only when the side is too narrow (320 px, large
+    // fonts), so a label is never cut to "Профи…" and a lone tab's selected
+    // capsule is not stretched over the whole side.
+    Widget side(Iterable<int> indexes) => Expanded(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final i in indexes) ...[
+              if (i != indexes.first) const SizedBox(width: 12),
+              item(i),
+            ],
+          ],
+        ),
+      ),
+    );
 
     final bar = Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
@@ -204,15 +227,23 @@ class _FactoryBottomNavigationState extends State<FactoryBottomNavigation> with 
                 centerRise: FactoryBottomNavigation._actionRise - FactoryBottomNavigation._actionSize / 2,
               ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          for (var i = 0; i < destinations.length; i++) ...[
-            if (action != null && i == split) const SizedBox(width: FactoryBottomNavigation._actionSlot),
-            tab(i, expand: action != null),
-          ],
-        ],
-      ),
+      child: action == null
+          ? Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [for (var i = 0; i < destinations.length; i++) tab(i)],
+            )
+          // Two equal sides around the action slot keep the action exactly
+          // centred even when the tabs do not split evenly (1 + 2).
+          : Row(
+              children: [
+                side([for (var i = 0; i < split; i++) i]),
+                SizedBox(
+                  width: FactoryBottomNavigation._actionSlot,
+                  child: action.visibleLabel ? _ActionLabel(label: action.label, onTap: () => _onAction(action)) : null,
+                ),
+                side([for (var i = split; i < destinations.length; i++) i]),
+              ],
+            ),
     );
 
     final nav = SafeArea(
@@ -298,7 +329,7 @@ class _Fan extends StatelessWidget {
 
   static const double _radius = 96;
   static const double _item = 52;
-  static const double _labelWidth = 112;
+  static const double _labelWidth = 124;
 
   @override
   Widget build(BuildContext context) {
@@ -412,6 +443,47 @@ class _Fan extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The action's name in the bar, laid out like a tab (the icon's height left
+/// empty for the round button above it) so it sits on the tab labels' line.
+class _ActionLabel extends StatelessWidget {
+  const _ActionLabel({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    return ExcludeSemantics(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 2),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 22 + 2),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontSize: 10,
+                  letterSpacing: 0,
+                  color: colors.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
         ),
       ),

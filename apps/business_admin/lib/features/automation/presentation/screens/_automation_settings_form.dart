@@ -7,6 +7,44 @@ import '../../data/automation_exception.dart';
 import '../../data/models/automation_settings.dart';
 import '../providers/automation_providers.dart';
 
+/// One-tap bundles for the tuning fields, so an owner picks "how active" instead
+/// of understanding ten numbers. [standard] is every field empty: the platform's
+/// own defaults.
+enum AutomationPreset {
+  careful,
+  standard,
+  active;
+
+  /// field -> value; absent / null means "use the platform default".
+  Map<String, num?> get fieldValues => switch (this) {
+    AutomationPreset.careful => const {
+      'rebookMinVisits': 3,
+      'rebookMinInterval': 14,
+      'rebookMaxInterval': 120,
+      'rebookFollowUp': 10,
+      'reactivationScanMin': 60,
+      'reactivationMultiplier': 2.5,
+      'reactivationAbsoluteMax': 150,
+      'cooldown': 14,
+      'hoursStart': 10,
+      'hoursEnd': 20,
+    },
+    AutomationPreset.standard => const {},
+    AutomationPreset.active => const {
+      'rebookMinVisits': 2,
+      'rebookMinInterval': 5,
+      'rebookMaxInterval': 180,
+      'rebookFollowUp': 21,
+      'reactivationScanMin': 30,
+      'reactivationMultiplier': 1.5,
+      'reactivationAbsoluteMax': 90,
+      'cooldown': 3,
+      'hoursStart': 9,
+      'hoursEnd': 21,
+    },
+  };
+}
+
 /// Every field the backend's `PUT .../automation/settings` accepts, as one
 /// full-replace form (every field is sent back on every save, per
 /// [AutomationSettings.toUpdateJson]) -- same shape as
@@ -40,6 +78,7 @@ class _AutomationSettingsFormState extends ConsumerState<AutomationSettingsForm>
   late final TextEditingController _cooldownController;
   bool _isSubmitting = false;
   String? _error;
+  AutomationPreset? _preset;
 
   @override
   void initState() {
@@ -64,7 +103,61 @@ class _AutomationSettingsFormState extends ConsumerState<AutomationSettingsForm>
     _allowedHoursEndController = TextEditingController(text: s.allowedHoursEnd?.toString() ?? '');
     _timezoneController = TextEditingController(text: s.timezone ?? '');
     _cooldownController = TextEditingController(text: s.cooldownDaysBetweenOffers?.toString() ?? '');
+    _preset = _matchingPreset();
+    for (final c in [..._fields.values, _reactivationFollowUpController]) {
+      c.addListener(_syncPreset);
+    }
   }
+
+  /// Typing in the advanced fields moves the highlighted pace to whichever matches, or to none.
+  void _syncPreset() {
+    final match = _matchingPreset();
+    if (match != _preset) setState(() => _preset = match);
+  }
+
+  Map<String, TextEditingController> get _fields => {
+    'rebookMinVisits': _rebookMinVisitsController,
+    'rebookMinInterval': _rebookMinIntervalController,
+    'rebookMaxInterval': _rebookMaxIntervalController,
+    'rebookFollowUp': _rebookFollowUpController,
+    'reactivationScanMin': _reactivationScanMinController,
+    'reactivationMultiplier': _reactivationMultiplierController,
+    'reactivationAbsoluteMax': _reactivationAbsoluteMaxController,
+    'cooldown': _cooldownController,
+    'hoursStart': _allowedHoursStartController,
+    'hoursEnd': _allowedHoursEndController,
+  };
+
+  /// The preset whose values the form currently holds, or null for custom numbers.
+  /// The reactivation follow-up window is not part of any preset and must be empty.
+  AutomationPreset? _matchingPreset() {
+    if (_reactivationFollowUpController.text.trim().isNotEmpty) return null;
+    for (final preset in AutomationPreset.values) {
+      final values = preset.fieldValues;
+      final same = _fields.entries.every((e) {
+        final expected = values[e.key];
+        final text = e.value.text.trim();
+        if (expected == null) return text.isEmpty;
+        return num.tryParse(text) == expected;
+      });
+      if (same) return preset;
+    }
+    return null;
+  }
+
+  void _applyPreset(AutomationPreset preset) {
+    final values = preset.fieldValues;
+    setState(() {
+      for (final e in _fields.entries) {
+        final v = values[e.key];
+        e.value.text = v == null ? '' : v.toString();
+      }
+      _reactivationFollowUpController.clear();
+      _preset = preset;
+      _error = null;
+    });
+  }
+
 
   @override
   void dispose() {
@@ -88,7 +181,10 @@ class _AutomationSettingsFormState extends ConsumerState<AutomationSettingsForm>
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
 
-    return ListView(
+    // A form is a column, not a 1500 px stretch of fields.
+    return FactoryPageWidth(
+      maxWidth: 720,
+      child: ListView(
       padding: const EdgeInsets.all(FactorySpacing.space4),
       children: [
         Text(
@@ -97,6 +193,37 @@ class _AutomationSettingsFormState extends ConsumerState<AutomationSettingsForm>
         ),
         const SizedBox(height: FactorySpacing.space5),
 
+        // The pace first, in one tap: three words instead of ten numbers.
+        FactorySectionHeader(title: l10n.automationPresetTitle),
+        const SizedBox(height: FactorySpacing.space2),
+        SizedBox(
+          width: double.infinity,
+          child: SegmentedButton<AutomationPreset>(
+            showSelectedIcon: false,
+            emptySelectionAllowed: true,
+            segments: [
+              ButtonSegment(value: AutomationPreset.careful, label: Text(l10n.automationPresetCareful)),
+              ButtonSegment(value: AutomationPreset.standard, label: Text(l10n.automationPresetStandard)),
+              ButtonSegment(value: AutomationPreset.active, label: Text(l10n.automationPresetActive)),
+            ],
+            selected: {?_preset},
+            onSelectionChanged: _isSubmitting ? null : (value) {
+              if (value.isNotEmpty) _applyPreset(value.first);
+            },
+          ),
+        ),
+        const SizedBox(height: FactorySpacing.space2),
+        Text(
+          switch (_preset) {
+            AutomationPreset.careful => l10n.automationPresetCarefulHint,
+            AutomationPreset.standard => l10n.automationPresetStandardHint,
+            AutomationPreset.active => l10n.automationPresetActiveHint,
+            null => l10n.automationPresetCustomHint,
+          },
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+        ),
+
+        const SizedBox(height: FactorySpacing.space5),
         FactorySectionHeader(title: l10n.automationSectionSmartFill),
         const SizedBox(height: FactorySpacing.space2),
         FactoryCard(
@@ -116,47 +243,15 @@ class _AutomationSettingsFormState extends ConsumerState<AutomationSettingsForm>
         FactorySectionHeader(title: l10n.automationSectionRebook),
         const SizedBox(height: FactorySpacing.space2),
         FactoryCard(
-          child: Column(
-            children: [
-              Material(
-                type: MaterialType.transparency,
-                child: SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l10n.automationRebookEnableTitle),
-                  subtitle: Text(l10n.automationRebookEnableSubtitle),
-                  value: _rebookEnabled,
-                  onChanged: _isSubmitting ? null : (v) => setState(() => _rebookEnabled = v),
-                ),
-              ),
-              const SizedBox(height: FactorySpacing.space3),
-              _NumberField(
-                controller: _rebookMinVisitsController,
-                enabled: !_isSubmitting,
-                optional: true,
-                label: l10n.automationRebookMinVisitsLabel,
-              ),
-              const SizedBox(height: FactorySpacing.space3),
-              _NumberField(
-                controller: _rebookMinIntervalController,
-                enabled: !_isSubmitting,
-                optional: true,
-                label: l10n.automationRebookMinIntervalLabel,
-              ),
-              const SizedBox(height: FactorySpacing.space3),
-              _NumberField(
-                controller: _rebookMaxIntervalController,
-                enabled: !_isSubmitting,
-                optional: true,
-                label: l10n.automationRebookMaxIntervalLabel,
-              ),
-              const SizedBox(height: FactorySpacing.space3),
-              _NumberField(
-                controller: _rebookFollowUpController,
-                enabled: !_isSubmitting,
-                optional: true,
-                label: l10n.automationRebookFollowUpLabel,
-              ),
-            ],
+          child: Material(
+            type: MaterialType.transparency,
+            child: SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.automationRebookEnableTitle),
+              subtitle: Text(l10n.automationRebookEnableSubtitle),
+              value: _rebookEnabled,
+              onChanged: _isSubmitting ? null : (v) => setState(() => _rebookEnabled = v),
+            ),
           ),
         ),
 
@@ -164,25 +259,41 @@ class _AutomationSettingsFormState extends ConsumerState<AutomationSettingsForm>
         FactorySectionHeader(title: l10n.automationSectionReactivation),
         const SizedBox(height: FactorySpacing.space2),
         FactoryCard(
-          child: Column(
+          child: Material(
+            type: MaterialType.transparency,
+            child: SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.automationReactivationEnableTitle),
+              subtitle: Text(l10n.automationReactivationEnableSubtitle),
+              value: _reactivationEnabled,
+              onChanged: _isSubmitting ? null : (v) => setState(() => _reactivationEnabled = v),
+            ),
+          ),
+        ),
+
+        // The numbers behind the pace, for the few who want to set them by hand.
+        const SizedBox(height: FactorySpacing.space4),
+        Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: EdgeInsets.zero,
+            title: Text(l10n.automationAdvancedTitle, style: Theme.of(context).textTheme.titleSmall),
             children: [
-              Material(
-                type: MaterialType.transparency,
-                child: SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l10n.automationReactivationEnableTitle),
-                  subtitle: Text(l10n.automationReactivationEnableSubtitle),
-                  value: _reactivationEnabled,
-                  onChanged: _isSubmitting ? null : (v) => setState(() => _reactivationEnabled = v),
-                ),
-              ),
+              const SizedBox(height: FactorySpacing.space2),
+              FactorySectionHeader(title: l10n.automationSectionRebook),
+              const SizedBox(height: FactorySpacing.space2),
+              _NumberField(controller: _rebookMinVisitsController, enabled: !_isSubmitting, optional: true, label: l10n.automationRebookMinVisitsLabel),
               const SizedBox(height: FactorySpacing.space3),
-              _NumberField(
-                controller: _reactivationScanMinController,
-                enabled: !_isSubmitting,
-                optional: true,
-                label: l10n.automationReactivationScanMinLabel,
-              ),
+              _NumberField(controller: _rebookMinIntervalController, enabled: !_isSubmitting, optional: true, label: l10n.automationRebookMinIntervalLabel),
+              const SizedBox(height: FactorySpacing.space3),
+              _NumberField(controller: _rebookMaxIntervalController, enabled: !_isSubmitting, optional: true, label: l10n.automationRebookMaxIntervalLabel),
+              const SizedBox(height: FactorySpacing.space3),
+              _NumberField(controller: _rebookFollowUpController, enabled: !_isSubmitting, optional: true, label: l10n.automationRebookFollowUpLabel),
+              const SizedBox(height: FactorySpacing.space4),
+              FactorySectionHeader(title: l10n.automationSectionReactivation),
+              const SizedBox(height: FactorySpacing.space2),
+              _NumberField(controller: _reactivationScanMinController, enabled: !_isSubmitting, optional: true, label: l10n.automationReactivationScanMinLabel),
               const SizedBox(height: FactorySpacing.space3),
               _NumberField(
                 controller: _reactivationMultiplierController,
@@ -193,29 +304,12 @@ class _AutomationSettingsFormState extends ConsumerState<AutomationSettingsForm>
                 hint: l10n.automationReactivationMultiplierHint,
               ),
               const SizedBox(height: FactorySpacing.space3),
-              _NumberField(
-                controller: _reactivationAbsoluteMaxController,
-                enabled: !_isSubmitting,
-                optional: true,
-                label: l10n.automationReactivationAbsoluteMaxLabel,
-              ),
+              _NumberField(controller: _reactivationAbsoluteMaxController, enabled: !_isSubmitting, optional: true, label: l10n.automationReactivationAbsoluteMaxLabel),
               const SizedBox(height: FactorySpacing.space3),
-              _NumberField(
-                controller: _reactivationFollowUpController,
-                enabled: !_isSubmitting,
-                optional: true,
-                label: l10n.automationReactivationFollowUpLabel,
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: FactorySpacing.space5),
-        FactorySectionHeader(title: l10n.automationSectionTiming),
-        const SizedBox(height: FactorySpacing.space2),
-        FactoryCard(
-          child: Column(
-            children: [
+              _NumberField(controller: _reactivationFollowUpController, enabled: !_isSubmitting, optional: true, label: l10n.automationReactivationFollowUpLabel),
+              const SizedBox(height: FactorySpacing.space4),
+              FactorySectionHeader(title: l10n.automationSectionTiming),
+              const SizedBox(height: FactorySpacing.space2),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -272,6 +366,7 @@ class _AutomationSettingsFormState extends ConsumerState<AutomationSettingsForm>
         ),
         const SizedBox(height: FactorySpacing.space4),
       ],
+    ),
     );
   }
 

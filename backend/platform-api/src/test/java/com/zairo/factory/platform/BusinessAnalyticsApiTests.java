@@ -134,6 +134,39 @@ class BusinessAnalyticsApiTests {
     }
 
     @Test
+    void aCompletedVisitPaidAtTheVenueIsRevenueAndAnUncompletedOneIsNot() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "ba-venue-owner-" + runId + "@example.com");
+        UUID providerId = createPayAtVenueProvider(owner, "BA Cash Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Haircut " + runId, new BigDecimal("40.00"));
+        Instant windowStart = Instant.now().minus(1, ChronoUnit.DAYS);
+        Instant windowEnd = Instant.now().plus(3, ChronoUnit.DAYS);
+
+        Registered doneCustomer = TestAuth.registerCustomer(restTemplate, "ba-venue-done-" + runId + "@example.com");
+        Instant doneStart = Instant.now().plus(1, ChronoUnit.DAYS);
+        UUID doneSlot = createSlot(owner, providerId, doneStart, doneStart.plus(30, ChronoUnit.MINUTES));
+        UUID doneBooking = bookWithPrice(doneCustomer, serviceId, doneSlot, new BigDecimal("40.00"));
+        completeBooking(owner, doneBooking);
+
+        // Booked and confirmed but not (yet) completed: nothing has been earned.
+        Registered laterCustomer = TestAuth.registerCustomer(restTemplate, "ba-venue-later-" + runId + "@example.com");
+        Instant laterStart = Instant.now().plus(2, ChronoUnit.DAYS);
+        UUID laterSlot = createSlot(owner, providerId, laterStart, laterStart.plus(30, ChronoUnit.MINUTES));
+        bookWithPrice(laterCustomer, serviceId, laterSlot, new BigDecimal("40.00"));
+
+        Map<?, ?> overview = getAnalytics(owner, providerId, "overview", windowStart, windowEnd);
+        assertThat(((Number) overview.get("totalRevenue")).doubleValue()).isEqualTo(40.00);
+        assertThat(((Number) overview.get("averageBookingValue")).doubleValue()).isEqualTo(40.00);
+        assertThat(overview.get("currency")).isEqualTo("USD");
+
+        Map<?, ?> revenue = getAnalytics(owner, providerId, "revenue", windowStart, windowEnd);
+        List<?> byService = (List<?>) revenue.get("revenueByService");
+        assertThat(byService).hasSize(1);
+        assertThat(((Number) ((Map<?, ?>) byService.get(0)).get("amount")).doubleValue()).isEqualTo(40.00);
+        assertThat(((List<?>) revenue.get("revenueByDay"))).hasSize(1);
+    }
+
+    @Test
     void bookingsAnalyticsExcludesBookingsOutsideTheRangeAndComputesRepeatBookingRate() {
         String runId = UUID.randomUUID().toString();
         Registered owner = TestAuth.registerOwner(restTemplate, "ba-bookings-owner-" + runId + "@example.com");
@@ -202,6 +235,39 @@ class BusinessAnalyticsApiTests {
                 new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
         assertThat(actionsResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat((List<?>) actionsResponse.getBody().get("actions")).isEmpty();
+    }
+
+    @Test
+    void backupGivesTheOwnerTheScheduleWithCustomerContactAndNoOneElse() {
+        String runId = UUID.randomUUID().toString();
+        Registered owner = TestAuth.registerOwner(restTemplate, "ba-backup-owner-" + runId + "@example.com");
+        Registered otherOwner = TestAuth.registerOwner(restTemplate, "ba-backup-other-" + runId + "@example.com");
+        UUID providerId = createProvider(owner, "BA Backup Salon " + runId);
+        UUID serviceId = createService(owner, providerId, "Backup facial " + runId, new BigDecimal("40.00"));
+        Registered customer = TestAuth.registerCustomer(restTemplate, "ba-backup-cust-" + runId + "@example.com");
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        UUID slotId = createSlot(owner, providerId, start, start.plus(30, ChronoUnit.MINUTES));
+        bookWithPrice(customer, serviceId, slotId, new BigDecimal("40.00"));
+
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers/" + providerId + "/backup",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        List<?> bookings = (List<?>) response.getBody().get("bookings");
+        assertThat(bookings).hasSize(1);
+        Map<?, ?> row = (Map<?, ?>) bookings.get(0);
+        assertThat(row.get("customerName")).isEqualTo("Registered Customer");
+        assertThat(row.get("customerPhone")).isEqualTo("+1000000003");
+        assertThat(row.get("serviceTitle")).isEqualTo("Backup facial " + runId);
+        assertThat((List<?>) response.getBody().get("services")).hasSize(1);
+
+        ResponseEntity<Map> forbidden = restTemplate.exchange("/api/v1/providers/" + providerId + "/backup",
+                HttpMethod.GET, new HttpEntity<>(null, TestAuth.authHeaders(otherOwner.accessToken())), Map.class);
+        assertThat(forbidden.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        ResponseEntity<Map> anonymous = restTemplate.getForEntity("/api/v1/providers/" + providerId + "/backup",
+                Map.class);
+        assertThat(anonymous.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @Test
@@ -476,4 +542,12 @@ class BusinessAnalyticsApiTests {
         return UUID.fromString(response.getBody().get("id").toString());
     }
 
+    /** A business that takes no online payment: its bookings are confirmed at once and paid at the venue. */
+    private UUID createPayAtVenueProvider(Registered owner, String name) {
+        var request = new CreateProviderRequest(owner.userId(), name, "beauty");
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/providers", HttpMethod.POST,
+                new HttpEntity<>(request, TestAuth.authHeaders(owner.accessToken())), Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        return UUID.fromString(response.getBody().get("id").toString());
+    }
 }

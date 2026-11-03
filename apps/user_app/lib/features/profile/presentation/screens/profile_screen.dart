@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../app/router/app_routes.dart';
 import '../../../../core/formatting/initials.dart';
+import '../../../booking/presentation/screens/my_bookings_screen.dart' show upcomingBookingStatuses;
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/data/models/user_summary.dart';
 import '../../../auth/presentation/auth_navigation.dart';
@@ -17,7 +18,6 @@ import '../../../messaging/presentation/providers/message_seen_provider.dart';
 import '../../../notifications/presentation/widgets/notification_bell_button.dart';
 import '../../../staff/presentation/providers/staff_cabinet_providers.dart';
 import '../../../favorites/presentation/providers/favorites_providers.dart';
-import '../../../loyalty/data/models/loyalty.dart';
 import '../../../loyalty/presentation/providers/loyalty_providers.dart';
 import '../widgets/change_avatar_dialog.dart';
 
@@ -34,11 +34,6 @@ class ProfileScreen extends ConsumerWidget {
         title: l10n.profileTitle,
         actions: [
           if (authState.value != null) const NotificationBellButton(),
-          IconButton(
-            icon: const Icon(Symbols.settings_rounded),
-            tooltip: l10n.settingsButtonTooltip,
-            onPressed: () => context.push(AppRoutes.settings),
-          ),
         ],
       ),
       body: authState.when(
@@ -58,11 +53,11 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-class _LoggedOutView extends StatelessWidget {
+class _LoggedOutView extends ConsumerWidget {
   const _LoggedOutView();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     return Center(
       // Scrolls when a large font on a small phone makes it taller than the screen.
@@ -78,10 +73,182 @@ class _LoggedOutView extends StatelessWidget {
               actionLabel: l10n.loginTitle,
               onAction: () => pushAuthScreen(context, const LoginScreen()),
             ),
-            FactoryButton(
-              label: l10n.profileCreateAccount,
-              variant: FactoryButtonVariant.text,
-              onPressed: () => pushAuthScreen(context, const RegisterScreen()),
+            // Phone-only builds: the phone form already registers, so no separate e-mail sign-up.
+            if (ref.watch(emailSignInEnabledProvider))
+              FactoryButton(
+                label: l10n.profileCreateAccount,
+                variant: FactoryButtonVariant.text,
+                onPressed: () => pushAuthScreen(context, const RegisterScreen()),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Name, e-mail and the avatar with a camera badge — on the page background,
+/// not in a coloured block, so the person is the first thing seen and the
+/// content below gets the room.
+class _ProfileHeader extends StatelessWidget {
+  const _ProfileHeader({required this.user});
+
+  final UserSummary user;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    final avatarUrl = user.avatarUrl;
+    final email = user.email;
+
+    return Column(
+      children: [
+        Semantics(
+          button: true,
+          label: l10n.changeAvatarDialogTitle,
+          child: GestureDetector(
+            onTap: () => showChangeAvatarDialog(context, hasCurrentAvatar: avatarUrl != null),
+            child: Stack(
+              children: [
+                FactoryAvatar(
+                  initials: initialsFor(user.displayName),
+                  size: FactoryAvatarSize.xl,
+                  image: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                ),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: colors.primary,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: colors.bg, width: 2),
+                    ),
+                    child: Icon(Symbols.photo_camera_rounded, size: 14, color: colors.onPrimary),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: FactorySpacing.space3),
+        Text(user.displayName, style: textTheme.headlineSmall, textAlign: TextAlign.center),
+        if (email != null) ...[
+          const SizedBox(height: FactorySpacing.space1),
+          Text(
+            email,
+            style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// A small tinted plate behind a row's icon, in the same category colours as
+/// the Home tiles — so a list of rows stays scannable. Both colours null
+/// gives the neutral plate.
+class _MenuIcon extends StatelessWidget {
+  const _MenuIcon(this.icon, {this.color, this.tint});
+
+  final IconData icon;
+  final Color? color;
+  final Color? tint;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(color: tint ?? colors.surfaceAlt, borderRadius: FactoryRadius.mdRadius),
+      child: Icon(icon, size: 18, color: color ?? colors.textSecondary),
+    );
+  }
+}
+
+/// A card of related rows with hairlines between them. No heading: three small
+/// groups read lighter than one long titled list.
+class _Group extends StatelessWidget {
+  const _Group({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => FactorySettingsGroup(dividerIndent: 60, children: children);
+}
+
+/// The three numbers people come to Profile for — bookings, favourites and
+/// reward points — big and tappable, each opening its own list.
+class _StatStrip extends StatelessWidget {
+  const _StatStrip({required this.cells});
+
+  final List<_StatCell> cells;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    return FactoryCard(
+      padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space1),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < cells.length; i++) ...[
+              if (i > 0) VerticalDivider(width: 1, thickness: 1, indent: 12, endIndent: 12, color: colors.border),
+              Expanded(child: cells[i]),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatCell extends StatelessWidget {
+  const _StatCell({required this.icon, required this.value, required this.label, required this.onTap});
+
+  final IconData icon;
+
+  /// null while it loads — shown as a dash, never as a misleading 0.
+  final String? value;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    return InkWell(
+      borderRadius: FactoryRadius.mdRadius,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space2, vertical: FactorySpacing.space3),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 20, color: colors.primary),
+            const SizedBox(height: FactorySpacing.space1),
+            // A big number must not break the cell: it shrinks before it wraps.
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(value ?? '—', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+            ),
+            const SizedBox(height: 2),
+            // One line that shrinks rather than breaking in the middle of a
+            // word (a long label in a narrow cell with a large font).
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                style: textTheme.labelMedium?.copyWith(color: colors.textSecondary),
+                maxLines: 1,
+                softWrap: false,
+              ),
             ),
           ],
         ),
@@ -90,76 +257,48 @@ class _LoggedOutView extends StatelessWidget {
   }
 }
 
-/// Brand-colour header with an ambient brass glow behind the avatar — the
-/// same deep-green block as the Home availability hero, so the person is the
-/// first thing seen and the app reads as one family. Text inside it uses
-/// `onPrimary`, which flips to near-black on the bright mint of the dark theme.
-class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({required this.child});
+/// One row of a [_Group]: icon, label (with an optional hint under it) and, on
+/// the right, an optional [trailing] widget (a badge), then a chevron when the
+/// row opens something.
+class _ProfileRow extends StatelessWidget {
+  const _ProfileRow({required this.icon, required this.label, this.subtitle, this.trailing, this.onTap});
 
-  final Widget child;
+  final Widget icon;
+  final String label;
+  final Widget? subtitle;
+  final Widget? trailing;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.factoryColors;
-    final radius = context.factoryProfileOrNull?.cardBorderRadius ?? FactoryRadius.xlRadius;
-    return Container(
-      width: double.infinity,
-      clipBehavior: Clip.antiAlias,
-      padding: const EdgeInsets.symmetric(vertical: FactorySpacing.space6, horizontal: FactorySpacing.space4),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [colors.primaryStrong, colors.primary],
-        ),
-        borderRadius: radius,
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.topCenter,
-        children: [
-          Positioned(
-            top: -90,
-            child: IgnorePointer(
-              child: Container(
-                width: 240,
-                height: 240,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [colors.accent.withValues(alpha: 0.42), colors.accent.withValues(alpha: 0)],
-                  ),
+    final textTheme = Theme.of(context).textTheme;
+
+    return InkWell(
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 52),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space3, vertical: FactorySpacing.space2),
+          child: Row(
+            children: [
+              icon,
+              const SizedBox(width: FactorySpacing.space3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label, style: textTheme.bodyLarge),
+                    ?subtitle,
+                  ],
                 ),
               ),
-            ),
+              if (trailing != null) ...[const SizedBox(width: FactorySpacing.space2), trailing!],
+              if (onTap != null) Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
+            ],
           ),
-          child,
-        ],
+        ),
       ),
-    );
-  }
-}
-
-/// A menu row's icon on a small tinted plate, in the same category colours as
-/// the Home tiles — so a long list of identical grey outlines becomes scannable.
-class _MenuIcon extends StatelessWidget {
-  const _MenuIcon(this.icon, {this.color, this.tint});
-
-  final IconData icon;
-
-  /// Icon and plate colours; both null gives the neutral plate.
-  final Color? color;
-  final Color? tint;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.factoryColors;
-    return Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(color: tint ?? colors.surfaceAlt, borderRadius: FactoryRadius.mdRadius),
-      child: Icon(icon, size: 20, color: color ?? colors.textSecondary),
     );
   }
 }
@@ -172,14 +311,20 @@ class _LoggedInView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userId = user.id;
-    final displayName = user.displayName;
-    final email = user.email;
-    final avatarUrl = user.avatarUrl;
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
     final textTheme = Theme.of(context).textTheme;
-    final bookingsCount = ref.watch(myBookingsProvider(userId)).value?.length;
+    // Upcoming only: this stat opens the bookings list on that tab, so the number matches its rows.
+    final bookingsCount = ref
+        .watch(myBookingsProvider(userId))
+        .value
+        ?.where((b) => upcomingBookingStatuses.contains(b.status))
+        .length;
     final favoritesCount = ref.watch(myFavoritesProvider(userId)).value?.length;
+    final newMessages = ref.watch(newMessagesCountProvider);
+    final loyalty = ref.watch(myLoyaltyProvider).value;
+    final points = loyalty?.fold<int>(0, (sum, b) => sum + b.pointsBalance);
+    final expiring = loyalty?.fold<int>(0, (sum, b) => sum + b.pointsExpiringSoon30d) ?? 0;
     // Only people who were added as staff somewhere get the cabinet entry.
     final staffMemberships = ref.watch(staffMembershipsProvider).value ?? const [];
     final staffPending = staffMemberships.fold<int>(0, (sum, m) => sum + m.pendingCount);
@@ -187,199 +332,135 @@ class _LoggedInView extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(FactorySpacing.space4),
       children: [
-        _ProfileHeader(
-          child: Column(
-            children: [
-              Center(
-                child: Semantics(
-                  button: true,
-                  label: l10n.changeAvatarDialogTitle,
-                  child: GestureDetector(
-                  onTap: () => showChangeAvatarDialog(context, hasCurrentAvatar: avatarUrl != null),
-                  child: Stack(
-                    children: [
-                      // A ring in onPrimary lifts the avatar off the green header.
-                      Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(color: colors.onPrimary, shape: BoxShape.circle),
-                        child: FactoryAvatar(
-                          initials: initialsFor(displayName),
-                          size: FactoryAvatarSize.xl,
-                          image: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                        ),
-                      ),
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: colors.primary,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: colors.bg, width: 2),
-                          ),
-                          child: Icon(Icons.edit, size: 14, color: colors.onPrimary),
-                        ),
-                      ),
-                    ],
-                  ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: FactorySpacing.space3),
-              Center(
-                child: Text(displayName, style: textTheme.headlineSmall?.copyWith(color: colors.onPrimary), textAlign: TextAlign.center),
-              ),
-              const SizedBox(height: FactorySpacing.space1),
-              if (email != null)
-                Center(
-                  child: Text(email, style: textTheme.bodyMedium?.copyWith(color: colors.onPrimary.withValues(alpha: 0.82))),
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: FactorySpacing.space6),
-        FactoryCard(
-          child: Row(
-            children: [
-              Expanded(
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: FactoryRadius.mdRadius,
-                    // The Bookings tab already exists; switching to it keeps the
-                    // bottom nav instead of stacking a second copy of the screen.
-                    onTap: () => context.go('/bookings'),
-                    child: FactoryStatTile(
-                      value: bookingsCount?.toString() ?? '—',
-                      label: l10n.myBookingsTitle,
-                      icon: Symbols.calendar_month_rounded,
-                    ),
-                  ),
-                ),
-              ),
-              Container(width: 1, height: 36, color: colors.border),
-              Expanded(
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: FactoryRadius.mdRadius,
-                    onTap: () => context.push(AppRoutes.favorites),
-                    child: FactoryStatTile(
-                      value: favoritesCount?.toString() ?? '—',
-                      label: l10n.myFavoritesTitle,
-                      icon: Symbols.favorite_rounded,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (staffMemberships.isNotEmpty) ...[
-          const SizedBox(height: FactorySpacing.space6),
-          FactorySelectableTile(
-            title: l10n.staffCabinetTitle,
-            leading: _MenuIcon(Symbols.work_rounded, color: colors.primary, tint: colors.primaryTint),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (staffPending > 0) ...[
-                  FactoryBadge(label: '$staffPending', variant: FactoryBadgeVariant.limited),
-                  const SizedBox(width: FactorySpacing.space2),
-                ],
-                Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
-              ],
+        _ProfileHeader(user: user),
+        const SizedBox(height: FactorySpacing.space5),
+        _StatStrip(
+          cells: [
+            _StatCell(
+              icon: Symbols.calendar_month_rounded,
+              value: bookingsCount?.toString(),
+              label: l10n.profileStatUpcoming,
+              // The Bookings tab already exists; switching to it keeps the
+              // bottom nav instead of stacking a second copy of the screen.
+              onTap: () => context.go('/bookings'),
             ),
-            onTap: () => context.push(AppRoutes.staffCabinet),
+            _StatCell(
+              icon: Symbols.favorite_rounded,
+              value: favoritesCount?.toString(),
+              label: l10n.profileStatFavorites,
+              onTap: () => context.push(AppRoutes.favorites),
+            ),
+            _StatCell(
+              icon: Symbols.redeem_rounded,
+              value: points?.toString(),
+              label: l10n.profileStatPoints,
+              onTap: () => context.push(AppRoutes.rewards),
+            ),
+          ],
+        ),
+        // Only when it matters: points about to burn.
+        if (expiring > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: FactorySpacing.space2),
+            child: InkWell(
+              borderRadius: FactoryRadius.mdRadius,
+              onTap: () => context.push(AppRoutes.rewards),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space2, vertical: FactorySpacing.space1),
+                child: Row(
+                  children: [
+                    Icon(Symbols.schedule_rounded, size: 16, color: colors.warning),
+                    const SizedBox(width: FactorySpacing.space2),
+                    Expanded(
+                      child: Text(
+                        l10n.profileRewardsExpiring(expiring),
+                        style: textTheme.bodySmall?.copyWith(color: colors.warning, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ],
-        const SizedBox(height: FactorySpacing.space6),
-        FactorySelectableTile(
-          title: l10n.editProfileButton,
-          // Nudge to fill in the birthday: it powers greetings and bonuses.
-          subtitle: user.birthDate == null
-              ? Text(l10n.editProfileBirthdayPrompt, style: textTheme.bodySmall?.copyWith(color: colors.textTertiary))
-              : null,
-          leading: _MenuIcon(Symbols.edit_rounded, color: colors.primary, tint: colors.primaryTint),
-          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
-          onTap: () => context.push(AppRoutes.editProfile),
-        ),
         const SizedBox(height: FactorySpacing.space5),
-        FactorySectionHeader(title: l10n.profileSectionActivity),
-        const SizedBox(height: FactorySpacing.space3),
-        // The stat tile above also opens Favorites, but it reads as a counter,
-        // not a button — a list row is where people look for it.
-        FactorySelectableTile(
-          title: l10n.myFavoritesTitle,
-          leading: _MenuIcon(Symbols.favorite_rounded, color: colors.coral, tint: colors.coralTint),
-          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
-          onTap: () => context.push(AppRoutes.favorites),
+        _Group(
+          children: [
+            if (staffMemberships.isNotEmpty)
+              _ProfileRow(
+                icon: _MenuIcon(Symbols.work_rounded, color: colors.primary, tint: colors.primaryTint),
+                label: l10n.staffCabinetTitle,
+                trailing: staffPending > 0
+                    ? FactoryBadge(label: '$staffPending', variant: FactoryBadgeVariant.limited)
+                    : null,
+                onTap: () => context.push(AppRoutes.staffCabinet),
+              ),
+            _ProfileRow(
+              icon: _MenuIcon(Symbols.forum_rounded, color: colors.lavender, tint: colors.lavenderTint),
+              label: l10n.messagesTitle,
+              trailing: newMessages > 0 ? FactoryBadge(label: '$newMessages', variant: FactoryBadgeVariant.error) : null,
+              onTap: () => context.push(AppRoutes.messages),
+            ),
+            _ProfileRow(
+              icon: _MenuIcon(Symbols.confirmation_number_rounded, color: colors.mint, tint: colors.mintTint),
+              label: l10n.loyaltyRedemptionsTitle,
+              onTap: () => context.push(AppRoutes.redemptions),
+            ),
+          ],
         ),
-        const SizedBox(height: FactorySpacing.space2),
-        FactorySelectableTile(
-          title: l10n.messagesTitle,
-          leading: _MenuIcon(Symbols.forum_rounded, color: colors.lavender, tint: colors.lavenderTint),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (ref.watch(newMessagesCountProvider) > 0) ...[
-                FactoryBadge(label: '${ref.watch(newMessagesCountProvider)}', variant: FactoryBadgeVariant.error),
-                const SizedBox(width: FactorySpacing.space2),
-              ],
-              Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
-            ],
-          ),
-          onTap: () => context.push(AppRoutes.messages),
+        const SizedBox(height: FactorySpacing.space4),
+        _Group(
+          children: [
+            _ProfileRow(
+              icon: _MenuIcon(Symbols.person_rounded, color: colors.primary, tint: colors.primaryTint),
+              label: l10n.profilePersonalData,
+              // Nudge to fill in the birthday: it powers greetings and bonuses.
+              subtitle: Text(
+                user.birthDate == null ? l10n.editProfileBirthdayPrompt : l10n.profilePersonalSubtitle,
+                style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+              ),
+              onTap: () => context.push(AppRoutes.editProfile),
+            ),
+            _ProfileRow(
+              icon: _MenuIcon(Symbols.credit_card_rounded, color: colors.primary, tint: colors.primaryTint),
+              label: l10n.paymentCardsTitle,
+              onTap: () => context.push(AppRoutes.paymentCards),
+            ),
+            _ProfileRow(
+              icon: _MenuIcon(Symbols.directions_car_rounded, color: colors.lavender, tint: colors.lavenderTint),
+              label: l10n.myVehiclesButton,
+              onTap: () => context.push(AppRoutes.vehicles),
+            ),
+          ],
         ),
-        const SizedBox(height: FactorySpacing.space2),
-        FactorySelectableTile(
-          title: l10n.myRewardsTitle,
-          // The one number people come back for: how many points they have, and whether any are about to burn.
-          subtitle: _rewardsSummary(ref, l10n, textTheme, colors),
-          leading: _MenuIcon(Symbols.redeem_rounded, color: colors.accentInk, tint: colors.accentTint.withValues(alpha: 0.45)),
-          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
-          onTap: () => context.push(AppRoutes.rewards),
+        const SizedBox(height: FactorySpacing.space4),
+        _Group(
+          children: [
+            _ProfileRow(
+              icon: const _MenuIcon(Symbols.settings_rounded),
+              label: l10n.settingsTitle,
+              subtitle: Text(
+                l10n.profileSettingsSubtitle,
+                style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+              ),
+              onTap: () => context.push(AppRoutes.settings),
+            ),
+            _ProfileRow(
+              icon: _MenuIcon(Symbols.support_agent_rounded, color: colors.mint, tint: colors.mintTint),
+              label: l10n.supportTitle,
+              onTap: () => context.push(AppRoutes.support),
+            ),
+          ],
         ),
-        const SizedBox(height: FactorySpacing.space2),
-        FactorySelectableTile(
-          title: l10n.loyaltyRedemptionsTitle,
-          leading: _MenuIcon(Symbols.confirmation_number_rounded, color: colors.mint, tint: colors.mintTint),
-          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
-          onTap: () => context.push(AppRoutes.redemptions),
-        ),
-        const SizedBox(height: FactorySpacing.space2),
-        FactorySelectableTile(
-          title: l10n.paymentCardsTitle,
-          leading: _MenuIcon(Symbols.credit_card_rounded, color: colors.primary, tint: colors.primaryTint),
-          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
-          onTap: () => context.push(AppRoutes.paymentCards),
-        ),
-        const SizedBox(height: FactorySpacing.space2),
-        FactorySelectableTile(
-          title: l10n.myVehiclesButton,
-          leading: _MenuIcon(Symbols.directions_car_rounded, color: colors.lavender, tint: colors.lavenderTint),
-          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
-          onTap: () => context.push(AppRoutes.vehicles),
-        ),
-        const SizedBox(height: FactorySpacing.space5),
-        FactorySectionHeader(title: l10n.profileSectionHelp),
-        const SizedBox(height: FactorySpacing.space3),
-        FactorySelectableTile(
-          title: l10n.supportTitle,
-          leading: _MenuIcon(Symbols.support_agent_rounded, color: colors.mint, tint: colors.mintTint),
-          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
-          onTap: () => context.push(AppRoutes.support),
-        ),
-        const SizedBox(height: FactorySpacing.space2),
-        FactorySelectableTile(
-          title: l10n.aboutTitle,
-          leading: _MenuIcon(Symbols.info_rounded),
-          trailing: Icon(Symbols.chevron_right_rounded, color: colors.textTertiary),
-          onTap: () => context.push(AppRoutes.about),
-        ),
-        const SizedBox(height: FactorySpacing.space6),
+        const SizedBox(height: FactorySpacing.space4),
         _LogOutButton(onPressed: () => _confirmLogOut(context, ref)),
+        // Rarely needed, so a quiet link under the main actions, not a row.
+        Center(
+          child: FactoryButton(
+            label: l10n.aboutTitle,
+            variant: FactoryButtonVariant.text,
+            onPressed: () => context.push(AppRoutes.about),
+          ),
+        ),
       ],
     );
   }
@@ -415,34 +496,6 @@ Future<void> _confirmLogOut(BuildContext context, WidgetRef ref) async {
   }
 }
 
-/// The Customer App Redesign board's tinted-pill log-out action — coral
-/// text/icon on a coral-tint fill, distinct from every other Factory
-/// button variant (which are all neutral or primary-colored), so this is
-/// its own small widget rather than a new [FactoryButtonVariant].
-/// "320 points · 2 businesses" under My rewards, plus a warning when some expire within 30 days. Nothing while it
-/// loads, on error, or before the first points — it is a hint, not worth a state of its own.
-Widget? _rewardsSummary(WidgetRef ref, AppLocalizations l10n, TextTheme textTheme, FactoryColors colors) {
-  final businesses = ref.watch(myLoyaltyProvider).value ?? const <LoyaltyBusinessSummary>[];
-  final active = businesses.where((b) => b.pointsBalance > 0).toList();
-  if (active.isEmpty) return null;
-  final points = active.fold<int>(0, (sum, b) => sum + b.pointsBalance);
-  final expiring = businesses.fold<int>(0, (sum, b) => sum + b.pointsExpiringSoon30d);
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        l10n.profileRewardsSummary(points, active.length),
-        style: textTheme.bodySmall?.copyWith(color: colors.textSecondary),
-      ),
-      if (expiring > 0)
-        Text(
-          l10n.profileRewardsExpiring(expiring),
-          style: textTheme.bodySmall?.copyWith(color: colors.warning, fontWeight: FontWeight.w700),
-        ),
-    ],
-  );
-}
-
 class _LogOutButton extends StatelessWidget {
   const _LogOutButton({required this.onPressed});
 
@@ -452,26 +505,32 @@ class _LogOutButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.factoryColors;
+    final radius = context.factoryProfileOrNull?.cardBorderRadius ?? FactoryRadius.xlRadius;
 
-    return SizedBox(
-      width: double.infinity,
-      child: Material(
-        color: colors.coralTint,
-        shape: FactoryRadius.pill,
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onPressed,
-          child: Container(
-            height: FactoryButtonHeight.md,
-            alignment: Alignment.center,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Symbols.logout_rounded, size: 18, color: colors.error),
-                const SizedBox(width: 8),
-                Text(l10n.profileLogOut, style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.error)),
-              ],
-            ),
+    // A plain card with the destructive colour on the label only, as in the
+    // reference: always at the end of the page, never louder than the content.
+    return Material(
+      color: colors.surface,
+      shape: RoundedRectangleBorder(borderRadius: radius, side: BorderSide(color: colors.border)),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onPressed,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: FactoryButtonHeight.md),
+          padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4, vertical: FactorySpacing.space2),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Symbols.logout_rounded, size: 20, color: colors.error),
+              const SizedBox(width: FactorySpacing.space2),
+              Flexible(
+                child: Text(
+                  l10n.profileLogOut,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.error),
+                ),
+              ),
+            ],
           ),
         ),
       ),

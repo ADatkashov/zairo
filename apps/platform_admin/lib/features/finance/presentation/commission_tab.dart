@@ -70,62 +70,31 @@ class CommissionTab extends ConsumerWidget {
             const SizedBox(height: FactorySpacing.space4),
             Text(l10n.commissionCategoriesTitle, style: textTheme.titleSmall?.copyWith(color: colors.text)),
             const SizedBox(height: FactorySpacing.space2),
-            for (final category in settings.categories)
-              Padding(
-                padding: const EdgeInsets.only(bottom: FactorySpacing.space3),
-                child: FactoryCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              category.displayName(language),
-                              style: textTheme.titleSmall?.copyWith(color: colors.text),
-                            ),
-                          ),
-                          Text(
-                            formatPercent(category.effectivePercent),
-                            style: FactoryTypography.mono(size: 18, weight: FontWeight.w600, color: colors.text),
-                          ),
-                        ],
+            // One card, one line per category: the percentage is the thing to edit, so it is the tap target
+            // (twenty big "Change" buttons made this a very long page).
+            FactoryCard(
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  for (var i = 0; i < settings.categories.length; i++) ...[
+                    if (i > 0) Divider(height: 1, color: colors.border),
+                    _CategoryRow(
+                      category: settings.categories[i],
+                      language: language,
+                      canEdit: canEdit,
+                      onEdit: () => _edit(
+                        context,
+                        ref,
+                        title: settings.categories[i].displayName(language),
+                        save: (percent) =>
+                            ref.read(financeApiProvider).setCategoryCommission(settings.categories[i].categoryId, percent),
                       ),
-                      const SizedBox(height: FactorySpacing.space1),
-                      Text(
-                        category.hasOverride ? l10n.commissionOwnRate : l10n.commissionFollowsDefault,
-                        style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
-                      ),
-                      if (canEdit) ...[
-                        const SizedBox(height: FactorySpacing.space3),
-                        Wrap(
-                          alignment: WrapAlignment.end,
-                          spacing: FactorySpacing.space2,
-                          runSpacing: FactorySpacing.space2,
-                          children: [
-                            if (category.hasOverride)
-                              FactoryButton(
-                                label: l10n.commissionUseDefault,
-                                variant: FactoryButtonVariant.secondary,
-                                onPressed: () => _reset(context, ref, category),
-                              ),
-                            FactoryButton(
-                              label: l10n.commissionChange,
-                              onPressed: () => _edit(
-                                context,
-                                ref,
-                                title: category.displayName(language),
-                                save: (percent) =>
-                                    ref.read(financeApiProvider).setCategoryCommission(category.categoryId, percent),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
+                      onReset: () => _reset(context, ref, settings.categories[i]),
+                    ),
+                  ],
+                ],
               ),
+            ),
           ],
         ),
       ),
@@ -180,5 +149,67 @@ class CommissionTab extends ConsumerWidget {
     } catch (error) {
       if (context.mounted) showSnack(context, describeError(l10n, error));
     }
+  }
+}
+
+class _CategoryRow extends StatelessWidget {
+  const _CategoryRow({
+    required this.category,
+    required this.language,
+    required this.canEdit,
+    required this.onEdit,
+    required this.onReset,
+  });
+
+  final CategoryCommission category;
+  final String language;
+  final bool canEdit;
+  final VoidCallback onEdit;
+  final VoidCallback onReset;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.factoryColors;
+    final textTheme = Theme.of(context).textTheme;
+    return InkWell(
+      onTap: canEdit ? onEdit : null,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space4, vertical: FactorySpacing.space2),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(category.displayName(language), style: textTheme.titleSmall?.copyWith(color: colors.text)),
+                  Text(
+                    category.hasOverride ? l10n.commissionOwnRate : l10n.commissionFollowsDefault,
+                    style: textTheme.bodySmall?.copyWith(color: colors.textTertiary),
+                  ),
+                ],
+              ),
+            ),
+            if (canEdit && category.hasOverride)
+              TextButton(onPressed: onReset, child: Text(l10n.commissionUseDefault)),
+            const SizedBox(width: FactorySpacing.space2),
+            Text(
+              formatPercent(category.effectivePercent),
+              style: FactoryTypography.mono(size: 18, weight: FontWeight.w600, color: colors.text),
+            ),
+            if (canEdit) ...[
+              const SizedBox(width: FactorySpacing.space3),
+              IconButton(
+                tooltip: l10n.commissionChange,
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                visualDensity: VisualDensity.compact,
+                style: IconButton.styleFrom(minimumSize: const Size(36, 36), fixedSize: const Size(36, 36)),
+                onPressed: onEdit,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }

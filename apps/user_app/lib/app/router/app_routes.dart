@@ -1,3 +1,5 @@
+import '../../features/discovery/presentation/providers/discovery_providers.dart' show DiscoverySort;
+
 /// Every screen the app opens by URL. Use these instead of string literals:
 /// `context.push(AppRoutes.provider(id), extra: result)`.
 ///
@@ -11,11 +13,25 @@ abstract final class AppRoutes {
   /// The three-page welcome shown once on the very first launch.
   static const welcome = '/welcome';
 
-  /// The Search tab, optionally pre-filtered (`/search?category=beauty&q=…`).
-  static String search({String? category, String? query}) {
+  /// The Search tab (open it with `context.go`), optionally pre-filtered
+  /// (`/search?category=beauty&q=…`). [focus] opens it with the keyboard up, for
+  /// "I know what I want, let me type": each call carries a fresh request id, so
+  /// asking again while Search is already showing still raises the keyboard.
+  /// [availableOnly] and [sort] open it already narrowed ("free today",
+  /// "nearby", "top rated").
+  static String search({
+    String? category,
+    String? query,
+    bool focus = false,
+    bool availableOnly = false,
+    DiscoverySort? sort,
+  }) {
     final params = <String, String>{
       if (category != null && category.isNotEmpty) 'category': category,
       if (query != null && query.isNotEmpty) 'q': query,
+      if (focus) 'focus': '${DateTime.now().microsecondsSinceEpoch}',
+      if (availableOnly) 'available': '1',
+      if (sort != null) 'sort': sort.wireValue,
     };
     return Uri(
       path: '/search',
@@ -32,6 +48,9 @@ abstract final class AppRoutes {
       _withName('/compare/$catalogServiceId', serviceName);
 
   static const bookings = '/bookings';
+
+  /// The Profile tab.
+  static const profile = '/profile';
 
   /// A Home banner's video. Needs an `AdVideoArgs` as `extra`; without one
   /// (a refresh or a hand-typed link) there is nothing to play, so it falls

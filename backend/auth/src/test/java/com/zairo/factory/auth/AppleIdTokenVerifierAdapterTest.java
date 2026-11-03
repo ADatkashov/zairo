@@ -45,7 +45,7 @@ class AppleIdTokenVerifierAdapterTest {
             exchange.close();
         });
         server.start();
-        adapter = new AppleIdTokenVerifierAdapter(BUNDLE_ID, "http://127.0.0.1:" + server.getAddress().getPort() + "/keys");
+        adapter = new AppleIdTokenVerifierAdapter(BUNDLE_ID, "http://127.0.0.1:" + server.getAddress().getPort() + "/keys", true);
     }
 
     @AfterEach
@@ -108,5 +108,13 @@ class AppleIdTokenVerifierAdapterTest {
         assertThat(adapter.verify("not-a-jwt")).isEmpty();
         assertThat(adapter.verify("")).isEmpty();
         assertThat(adapter.verify(null)).isEmpty();
+    }
+
+    @Test
+    void aSwitchedOffAdapterRejectsEvenAValidTokenAndNeverContactsApple() {
+        var off = new AppleIdTokenVerifierAdapter(BUNDLE_ID, "http://127.0.0.1:1/keys", false);
+
+        // The keys url is unreachable on purpose: a switched-off adapter must answer without any network call.
+        assertThat(off.verify(token(signingKey, "k1", ISSUER, BUNDLE_ID, 60_000, "true"))).isEmpty();
     }
 }

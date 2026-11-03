@@ -50,7 +50,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final l10n = AppLocalizations.of(context)!;
     final authState = ref.watch(authControllerProvider);
     final isLoading = authState.isLoading || _isProviderSigningIn;
+    final showGoogle = ref.watch(googleSignInEnabledProvider);
     final showApple = ref.watch(appleSignInAvailableProvider).value ?? false;
+    final emailEnabled = ref.watch(emailSignInEnabledProvider);
+    final showEmailForm = emailEnabled && _showEmailForm;
+    // Nothing but the phone form left: no "or" divider, no row of alternative buttons.
+    final hasAlternatives = emailEnabled || showGoogle || showApple;
 
     ref.listen(authControllerProvider, (previous, next) {
       if (next.hasValue && next.value != null) {
@@ -68,7 +73,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             children: [
               const FactoryAuthBrand(),
               const SizedBox(height: FactorySpacing.space4),
-              if (_showEmailForm) ...[
+              if (showEmailForm) ...[
                 FactoryTextField(
                   controller: _emailController,
                   label: l10n.emailLabel,
@@ -86,43 +91,51 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ] else
                 const PhoneLoginForm(),
-              const SizedBox(height: FactorySpacing.space5),
-              Row(
-                children: [
-                  Expanded(child: Divider(color: context.factoryColors.border)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space3),
-                    child: Text(l10n.loginOrDivider, style: Theme.of(context).textTheme.bodySmall),
-                  ),
-                  Expanded(child: Divider(color: context.factoryColors.border)),
-                ],
-              ),
-              const SizedBox(height: FactorySpacing.space4),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SocialLoginButton(
-                    tooltip: l10n.loginContinueWithGoogle,
-                    isLoading: _isProviderSigningIn,
-                    onPressed: isLoading ? null : _signInWithGoogle,
-                    child: const GoogleLogo(),
-                  ),
-                  if (showApple) ...[
-                    const SizedBox(width: FactorySpacing.space4),
-                    SocialLoginButton(
-                      tooltip: l10n.loginContinueWithApple,
-                      onPressed: isLoading ? null : _signInWithApple,
-                      child: const AppleLogo(),
+              if (hasAlternatives) ...[
+                const SizedBox(height: FactorySpacing.space5),
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: context.factoryColors.border)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: FactorySpacing.space3),
+                      child: Text(l10n.loginOrDivider, style: Theme.of(context).textTheme.bodySmall),
                     ),
+                    Expanded(child: Divider(color: context.factoryColors.border)),
                   ],
-                  const SizedBox(width: FactorySpacing.space4),
-                  SocialLoginButton(
-                    tooltip: _showEmailForm ? l10n.loginContinueWithPhone : l10n.loginContinueWithEmail,
-                    onPressed: isLoading ? null : () => setState(() => _showEmailForm = !_showEmailForm),
-                    child: Icon(_showEmailForm ? Icons.phone_outlined : Icons.mail_outline, size: 26),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: FactorySpacing.space4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (showGoogle) ...[
+                      SocialLoginButton(
+                        tooltip: l10n.loginContinueWithGoogle,
+                        caption: 'Google',
+                        isLoading: _isProviderSigningIn,
+                        onPressed: isLoading ? null : _signInWithGoogle,
+                        child: const GoogleLogo(),
+                      ),
+                      const SizedBox(width: FactorySpacing.space4),
+                    ],
+                    if (showApple) ...[
+                      SocialLoginButton(
+                        tooltip: l10n.loginContinueWithApple,
+                        caption: 'Apple',
+                        onPressed: isLoading ? null : _signInWithApple,
+                        child: const AppleLogo(),
+                      ),
+                      const SizedBox(width: FactorySpacing.space4),
+                    ],
+                    if (emailEnabled)
+                      SocialLoginButton(
+                        tooltip: showEmailForm ? l10n.loginContinueWithPhone : l10n.loginContinueWithEmail,
+                        caption: showEmailForm ? l10n.loginMethodPhone : l10n.emailLabel,
+                        onPressed: isLoading ? null : () => setState(() => _showEmailForm = !_showEmailForm),
+                        child: Icon(showEmailForm ? Icons.phone_outlined : Icons.mail_outline, size: 26),
+                      ),
+                  ],
+                ),
+              ],
               const SizedBox(height: FactorySpacing.space5),
               if (authState.hasError)
                 Padding(
@@ -132,21 +145,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     style: TextStyle(color: Theme.of(context).colorScheme.error),
                   ),
                 ),
-              if (_showEmailForm)
+              if (showEmailForm)
                 FactoryButton(
                   label: l10n.loginTitle,
                   isLoading: authState.isLoading,
                   onPressed: isLoading ? null : _submit,
                 ),
               const SizedBox(height: FactorySpacing.space2),
-              FactoryButton(
-                label: l10n.loginNoAccount,
-                variant: FactoryButtonVariant.text,
-                onPressed: isLoading
-                    ? null
-                    : () => pushAuthScreen(context, const RegisterScreen()),
-              ),
-              if (_showEmailForm)
+              // The phone form signs in and registers alike, so the e-mail registration page is only for e-mail builds.
+              if (emailEnabled)
+                FactoryButton(
+                  label: l10n.loginNoAccount,
+                  variant: FactoryButtonVariant.text,
+                  onPressed: isLoading
+                      ? null
+                      : () => pushAuthScreen(context, const RegisterScreen()),
+                ),
+              if (showEmailForm)
                 FactoryButton(
                   label: l10n.loginForgotPassword,
                   variant: FactoryButtonVariant.text,

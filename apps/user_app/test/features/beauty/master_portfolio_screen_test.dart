@@ -34,7 +34,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('No portfolio photos yet.'), findsOneWidget);
+    expect(find.text("This master hasn't added any work yet. Check back soon."), findsOneWidget);
   });
 
   testWidgets('shows portfolio item captions once loaded', (tester) async {

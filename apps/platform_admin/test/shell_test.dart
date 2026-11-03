@@ -61,27 +61,26 @@ void main() {
     expect(find.text('Almaty'), findsNothing);
   });
 
-  testWidgets('phone: the "+" fans out shortcuts; Back closes the fan first, then goes home', (tester) async {
+  testWidgets('phone: no "+" — Catalog / Cities / Activity are reached through More, and Back returns to More', (tester) async {
     await pumpConsole(tester, backend: defaultBackend(), size: const Size(390, 800));
-    await tester.tap(find.byIcon(Icons.add_rounded));
-    await tester.pumpAndSettle();
-    for (final label in ['Catalog', 'Cities', 'Activity']) {
-      expect(find.text(label), findsOneWidget, reason: label);
-    }
+    // A second, unlabelled way to the same areas was only noise.
+    expect(find.byIcon(Icons.add_rounded), findsNothing);
 
-    // Back with the fan open closes it and stays on the dashboard.
-    await tester.binding.handlePopRoute();
-    await tester.pumpAndSettle();
-    expect(find.text('Cities'), findsNothing);
-    expect(find.text('Hello, Aida'), findsOneWidget);
-
-    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.tap(find.descendant(of: find.byType(FactoryBottomNavigation), matching: find.text('More')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cities'));
     await tester.pumpAndSettle();
     expect(find.text('Almaty'), findsOneWidget);
-    // Opened from the "+": More stays highlighted, Back returns to More.
+    // Opened from More: More stays highlighted.
     expect(tester.widget<FactoryBottomNavigation>(find.byType(FactoryBottomNavigation)).selectedIndex, 3);
+
+    // Back goes to More, then to the dashboard.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Staff'), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Hello, Aida'), findsOneWidget);
   });
 
   testWidgets('staff is for admins only: not listed for a moderator, and the URL redirects home', (tester) async {
@@ -107,8 +106,8 @@ void main() {
   testWidgets('a dashboard number opens the list behind it, filtered the same way', (tester) async {
     await pumpConsole(tester, backend: defaultBackend(), size: const Size(1400, 1000), location: ConsoleRoutes.dashboard);
 
-    // The "Awaiting approval" tile of the Businesses section (not the attention banner's button).
-    await tester.tap(find.widgetWithText(FactoryKpiCard, 'Awaiting approval'));
+    // The "Awaiting approval" row of the Businesses ring (not the attention panel's row, which words it differently).
+    await tester.tap(find.text('Awaiting approval'));
     await tester.pumpAndSettle();
 
     expect(find.text('Glow Salon'), findsOneWidget);

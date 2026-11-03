@@ -9,9 +9,6 @@ import com.zairo.factory.booking.BookingStatus;
 import com.zairo.factory.customerintelligence.CustomerProviderProfile;
 import com.zairo.factory.customerintelligence.CustomerProviderProfileRepository;
 import com.zairo.factory.customerintelligence.RetentionStatus;
-import com.zairo.factory.payments.Payment;
-import com.zairo.factory.payments.PaymentRepository;
-import com.zairo.factory.payments.PaymentStatus;
 import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.ActionCenterResponse;
 import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.ActionItem;
 import com.zairo.factory.providerinsights.BusinessAnalyticsDtos.ActionItemType;
@@ -78,7 +75,6 @@ public class BusinessAnalyticsService {
 
     private final BookingRepository bookingRepository;
     private final AvailabilitySlotRepository availabilitySlotRepository;
-    private final PaymentRepository paymentRepository;
     private final ServiceOfferingRepository serviceOfferingRepository;
     private final CustomerProviderProfileRepository customerProviderProfileRepository;
     private final SmartFillCampaignRepository smartFillCampaignRepository;
@@ -88,7 +84,7 @@ public class BusinessAnalyticsService {
     private final Clock clock;
 
     public BusinessAnalyticsService(BookingRepository bookingRepository,
-            AvailabilitySlotRepository availabilitySlotRepository, PaymentRepository paymentRepository,
+            AvailabilitySlotRepository availabilitySlotRepository,
             ServiceOfferingRepository serviceOfferingRepository,
             CustomerProviderProfileRepository customerProviderProfileRepository,
             SmartFillCampaignRepository smartFillCampaignRepository,
@@ -96,7 +92,6 @@ public class BusinessAnalyticsService {
             UserRepository userRepository, Clock clock) {
         this.bookingRepository = bookingRepository;
         this.availabilitySlotRepository = availabilitySlotRepository;
-        this.paymentRepository = paymentRepository;
         this.serviceOfferingRepository = serviceOfferingRepository;
         this.customerProviderProfileRepository = customerProviderProfileRepository;
         this.smartFillCampaignRepository = smartFillCampaignRepository;
@@ -128,17 +123,16 @@ public class BusinessAnalyticsService {
         List<Booking> bookings = bookingRepository.findByProviderIdAndSlotStartsAtBetween(providerId, range.from(),
                 range.to());
         Map<UUID, AvailabilitySlot> slotById = slotById(bookings);
-        List<Payment> succeededPayments = succeededPayments(bookings);
-        Map<UUID, Payment> paymentByBookingId = succeededPayments.stream()
-                .collect(Collectors.toMap(Payment::getBookingId, p -> p));
+        // Revenue is the value of the visits that took place (COMPLETED), however they were paid: a booking paid at
+        // the venue earned money too, so counting only online payments showed "0" to owners who take cash.
+        List<Booking> paidBookings = bookings.stream().filter(b -> b.getStatus() == BookingStatus.COMPLETED)
+                .toList();
 
-        BigDecimal totalRevenue = succeededPayments.stream().map(Payment::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        String currency = succeededPayments.isEmpty() ? null : succeededPayments.get(0).getCurrency();
-        BigDecimal averageBookingValue = succeededPayments.isEmpty() ? null
-                : totalRevenue.divide(BigDecimal.valueOf(succeededPayments.size()), 2, RoundingMode.HALF_UP);
-
-        List<Booking> paidBookings = bookings.stream().filter(b -> paymentByBookingId.containsKey(b.getId())).toList();
+        BigDecimal totalRevenue = paidBookings.stream().map(Booking::getTotalPrice).reduce(BigDecimal.ZERO,
+                BigDecimal::add);
+        String currency = paidBookings.isEmpty() ? null : paidBookings.get(0).getCurrency();
+        BigDecimal averageBookingValue = paidBookings.isEmpty() ? null
+                : totalRevenue.divide(BigDecimal.valueOf(paidBookings.size()), 2, RoundingMode.HALF_UP);
 
         Map<LocalDate, BigDecimal> byDay = new TreeMap<>();
         for (Booking booking : paidBookings) {
@@ -147,7 +141,7 @@ public class BusinessAnalyticsService {
                 continue;
             }
             LocalDate date = LocalDate.ofInstant(slot.getStartsAt(), REPORTING_ZONE);
-            byDay.merge(date, paymentByBookingId.get(booking.getId()).getAmount(), BigDecimal::add);
+            byDay.merge(date, booking.getTotalPrice(), BigDecimal::add);
         }
         List<DailyAmount> revenueByDay = byDay.entrySet().stream()
                 .map(e -> new DailyAmount(e.getKey(), e.getValue())).toList();
@@ -159,7 +153,7 @@ public class BusinessAnalyticsService {
                 .collect(Collectors.groupingBy(Booking::getServiceId));
         List<ServiceRevenue> revenueByService = byService.entrySet().stream()
                 .map(e -> new ServiceRevenue(e.getKey(), serviceTitleById.get(e.getKey()),
-                        sumPayments(e.getValue(), paymentByBookingId), e.getValue().size()))
+                        sumPrices(e.getValue()), e.getValue().size()))
                 .sorted(Comparator.comparing(ServiceRevenue::amount).reversed())
                 .limit(MAX_REVENUE_BREAKDOWN_ROWS)
                 .toList();
@@ -169,7 +163,7 @@ public class BusinessAnalyticsService {
                 .filter(b -> employeeIdOf(b, slotById) != null)
                 .collect(Collectors.groupingBy(b -> employeeIdOf(b, slotById)));
         List<StaffRevenue> revenueByStaff = byStaff.entrySet().stream()
-                .map(e -> new StaffRevenue(e.getKey(), sumPayments(e.getValue(), paymentByBookingId),
+                .map(e -> new StaffRevenue(e.getKey(), sumPrices(e.getValue()),
                         e.getValue().size()))
                 .sorted(Comparator.comparing(StaffRevenue::amount).reversed())
                 .limit(MAX_REVENUE_BREAKDOWN_ROWS)
@@ -403,20 +397,13 @@ public class BusinessAnalyticsService {
                 .collect(Collectors.toMap(AvailabilitySlot::getId, s -> s));
     }
 
-    private List<Payment> succeededPayments(List<Booking> bookings) {
-        return bookings.isEmpty() ? List.of()
-                : paymentRepository.findByBookingIdInAndStatus(bookings.stream().map(Booking::getId).toList(),
-                        PaymentStatus.SUCCEEDED);
-    }
-
     private static UUID employeeIdOf(Booking booking, Map<UUID, AvailabilitySlot> slotById) {
         AvailabilitySlot slot = slotById.get(booking.getAvailabilitySlotId());
         return slot == null ? null : slot.getEmployeeId();
     }
 
-    private static BigDecimal sumPayments(List<Booking> bookings, Map<UUID, Payment> paymentByBookingId) {
-        return bookings.stream().map(b -> paymentByBookingId.get(b.getId())).filter(Objects::nonNull)
-                .map(Payment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+    private static BigDecimal sumPrices(List<Booking> bookings) {
+        return bookings.stream().map(Booking::getTotalPrice).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private static long countByStatus(List<Booking> bookings, BookingStatus status) {

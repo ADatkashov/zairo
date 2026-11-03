@@ -128,10 +128,8 @@ class LoyaltyRewardCard extends StatelessWidget {
 
   String _discountSummary(AppLocalizations l10n) => switch (reward.type) {
         LoyaltyRewardType.fixedDiscount when reward.discountAmount != null =>
-          l10n.loyaltyRewardDiscountFixed(
-            formatFactoryAmount(reward.discountAmount!),
-            reward.discountCurrency ?? '',
-          ),
+          // "500 ₸ off" like every other price, not "500 KZT off".
+          l10n.loyaltyRewardDiscountFixed(formatFactoryMoney(reward.discountAmount!, reward.discountCurrency)),
         LoyaltyRewardType.percentageDiscount when reward.discountPercentage != null =>
           l10n.loyaltyRewardDiscountPercentage(_formatPercentage(reward.discountPercentage!)),
         LoyaltyRewardType.freeService => l10n.loyaltyRewardFreeService,

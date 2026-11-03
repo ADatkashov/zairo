@@ -191,7 +191,6 @@ class _OverviewCard extends StatelessWidget {
               label: l10n.campaignDetailCompletedLabel,
               value: DateFormat.yMMMd(locale).add_Hm().format(campaign.completedAt!.toLocal()),
             ),
-          _InfoRow(label: l10n.campaignDetailRawStatusLabel, value: campaign.rawStatus),
         ],
       ),
     );
