@@ -10,73 +10,28 @@ module).
 
 ## 1. What GitHub Actions does here today
 
-Since 2026-10 it is deliberately **narrow** (the repo is private: 2000 free minutes a month, see
-"Actions minutes" below): Flutter analyze + test for all seven packages and the Gradle build + test of the
-backend run **only on a push to `test`** (what you get when you merge develop -> test), or when started by hand
-(*Actions -> run workflow*). Nothing runs on pull requests, on `develop` or on `master`.
+Since 2026-11-04 the repo is **public**, so GitHub-hosted runners are free and the earlier minute-saving limits
+are gone. Flutter analyze + test for all seven packages and the Gradle build + test of the backend run on **every
+push to `develop`, `test`, `main` and `master`** and on **every pull request**, except for changes that touch only
+docs/scripts (`paths-ignore`). They can also be started by hand (*Actions -> run workflow*).
 
 GitHub Actions itself still does **not** deploy anything. The artifact workflows are kept as `*.yml.disabled`.
 
-## Actions minutes
+Everything runs on GitHub-hosted `ubuntu-latest`. The self-hosted runner (and its `CI_RUNS_ON` variable, setup
+script and smoke workflow) was removed: on a public repo a self-hosted runner would let anyone's pull request run
+code on your own machine. Do not add one back. Pull requests from forks get a read-only token and no secrets.
 
-What was checked before anything was switched on (2026-10-19):
+Kept as protection against runaway runs: `timeout-minutes` (backend 30, flutter 40) and `concurrency` with
+`cancel-in-progress` (a newer push cancels a run still going).
 
-- The repo is **private**, so Actions bills against the plan's 2000 free minutes a month (Linux x1).
-- Until now the workflows ran on every PR and every push to develop/test/master, and Dependabot (weekly, up to
-  ~20 PRs) added a CI run per PR plus its own Dependabot-update jobs. The last runs (to 2026-09-29) failed in 3-6
-  seconds with no steps: the account was blocked by billing, so they used no minutes, but the moment the block
-  is lifted all of that would have started to burn them.
-
-What is done so the quota is not spent:
-
-| Measure | Effect |
-|---|---|
-| Triggers cut to `push: [test]` + manual `workflow_dispatch` | No run on PRs (a PR into `test` plus its merge push would count twice), none for develop/master |
-| `paths-ignore`: `*.md`, `docs/`, `scripts/`, `.circleci/` | A docs-only merge costs 0 minutes |
-| Flutter: one job instead of a 7-package matrix | The SDK is set up once, not 7 times; every job is rounded up to a whole minute |
-| Removed the report-only `dart format` step | One step less per package |
-| `timeout-minutes` (backend 30, flutter 40) | A hung run cannot burn minutes for hours |
-| `concurrency` with `cancel-in-progress` | A newer push cancels a run still going |
-| Dependabot switched off (`dependabot.yml.disabled`) | No update jobs, no PR-triggered CI |
-| CircleCI switched off (kept) | No second CI running in parallel |
-
-Rough budget (an estimate, not measured: backend ~15-20 min, Flutter ~10-15 min): about 30 minutes per push to
-`test`, i.e. roughly 60 runs a month. Watch the real figure in *Settings -> Billing -> Usage* after the first
-runs. Also set a spending limit of $0 there so that nothing is ever charged past the free minutes.
-
-Switching things back:
+Switching things back on:
 
 - **Dependabot:** rename `.github/dependabot.yml.disabled` to `dependabot.yml`.
 - **CircleCI:** in `.circleci/config.yml` replace `circleci-switch` with `test` in the branch filters.
-- **More branches in Actions:** add them to `on.push.branches` in the two workflows.
+- **Fewer branches in Actions:** edit `on.push.branches` in the two workflows.
 
-### Self-hosted runner
-
-GitHub-hosted runners need Actions minutes/billing; a self-hosted runner on your own machine does not. Both
-workflows pick their runner from the repo variable `CI_RUNS_ON` (unset = `ubuntu-latest`), so no code change is
-needed to switch.
-
-1. On a Linux x64 machine with Docker (the user must be in the `docker` group): GitHub -> repo *Settings -> Actions ->
-   Runners -> New self-hosted runner*, copy the registration token (valid 1 hour).
-2. `scripts/setup-self-hosted-runner.sh <token>` — downloads the runner, registers it and installs it as a service.
-3. *Settings -> Secrets and variables -> Actions -> Variables*: add `CI_RUNS_ON` = `["self-hosted","linux"]`.
-4. Run *Actions -> Backend CI / Flutter CI -> Run workflow* to check it. To go back to GitHub-hosted, delete the variable.
-
-**On Windows:** run the runner inside WSL2, not as a native Windows runner (the workflows are bash + Linux containers).
-1. PowerShell (admin): `wsl --install -d Ubuntu`, reboot, create the Ubuntu user.
-2. Docker Desktop -> *Settings -> Resources -> WSL integration*: enable Ubuntu. Check `docker ps` works inside Ubuntu.
-3. Optional, so the runner can be a service: in Ubuntu `sudo sh -c 'printf "[boot]\nsystemd=true\n" >> /etc/wsl.conf'`, then
-   `wsl --shutdown` from PowerShell. Without systemd the script tells you to start `~/actions-runner/run.sh` by hand
-   and keep that terminal open.
-4. In Ubuntu: `git clone` the repo (or just copy the script) and continue from step 2 above.
-The PC must be on, with WSL and Docker Desktop running, while CI runs.
-
-Notes: the runner is persistent, so caches (Gradle, pub, Flutter SDK) stay on its disk and are faster; when `CI_RUNS_ON`
-is set the workflows skip the GitHub cloud caches (they count against the 0.5 GB Actions storage quota) and failure
-artifacts are kept 3 days; the machine must be on
-when you push to `test`, otherwise the job waits in the queue. The workflows only run on pushes to `test` and by hand,
-never on pull requests, so outside contributors cannot run code on the runner — keep it that way for a private repo
-runner (do not add `pull_request` triggers from forks).
+Recommended in *Settings -> Actions -> General*: *Fork pull request workflows -> Require approval for all outside
+collaborators*.
 
 ### APK on your phone without GitHub Actions
 
@@ -113,7 +68,7 @@ spending limit) and *Settings → Actions → General* (Actions enabled for this
 
 ### `flutter-ci.yml`
 
-**Triggers:** `pull_request` and `push` on `develop`, `test`, `master`.
+**Triggers:** `pull_request` and `push` on `develop`, `test`, `main`, `master` (docs/scripts-only changes skipped), plus manual run.
 
 **What it does:** a matrix job, one run per Flutter package —
 `apps/user_app`, `apps/business_admin`, `apps/platform_admin`, `packages/core_network`,
@@ -135,8 +90,7 @@ to flip it to blocking once that's been cleaned up once.
 
 ### `backend-ci.yml`
 
-**Triggers:** same as above — `pull_request` and `push` on `develop`,
-`test`, `master`.
+**Triggers:** same as `flutter-ci.yml` above.
 
 **What it does:** one job — JDK 21 (matching
 `backend/build.gradle.kts`'s `JavaLanguageVersion.of(21)` toolchain),

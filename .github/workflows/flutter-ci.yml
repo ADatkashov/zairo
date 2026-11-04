@@ -7,13 +7,19 @@ name: Flutter CI
 # "Flutter workspace" section) — melos is a convenience for local dev,
 # not required for CI, so it's deliberately not installed here.
 #
-# MINUTES: private repo, 2000 free minutes a month. One job (the SDK is set up
-# once, not seven times), only on a push to `test` or by hand, and not for
-# changes that touch no code. See
-# docs/ci-cd.md "Actions minutes".
+# The repo is public, so GitHub-hosted runners are free. Runs on every push to
+# develop/test/main/master and on every pull request, except for changes that
+# touch no code (docs, scripts).
 on:
   push:
-    branches: [test]
+    branches: [develop, test, main, master]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "scripts/**"
+      - ".circleci/**"
+      - ".github/dependabot.yml"
+  pull_request:
     paths-ignore:
       - "**.md"
       - "docs/**"
@@ -41,9 +47,7 @@ env:
 jobs:
   flutter:
     name: flutter (analyze + test, all packages)
-    # Repo variable CI_RUNS_ON switches to a self-hosted runner, e.g.
-    # ["self-hosted","linux"] (docs/ci-cd.md "Self-hosted runner"); unset = GitHub-hosted.
-    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
+    runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
       - name: Checkout
@@ -54,12 +58,9 @@ jobs:
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
-          # GitHub-hosted only: a self-hosted runner keeps the SDK on disk and
-          # cloud caches would count against the Actions storage quota.
-          cache: ${{ vars.CI_RUNS_ON == '' }}
+          cache: true
 
       - name: Cache pub packages
-        if: vars.CI_RUNS_ON == ''
         uses: actions/cache@v6
         with:
           path: ~/.pub-cache

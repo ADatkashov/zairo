@@ -7,14 +7,20 @@ name: Backend CI
 # javadoc), so it's started manually below with the same image/creds
 # infrastructure/docker-compose.yml uses for local dev.
 #
-# MINUTES: the repo is private, so this draws on the free 2000 Actions minutes a
-# month. It therefore runs ONLY on a push to `test` (i.e. after you merge
-# develop -> test) or when started by hand. Not on pull requests (a PR into
-# `test` plus the merge push would count twice), not on develop/master, and not
-# for changes that touch no code. See docs/ci-cd.md "Actions minutes".
+# The repo is public, so GitHub-hosted runners are free. Runs on every push to
+# develop/test/main/master and on every pull request, except for changes that
+# touch no code (docs, scripts). PRs from forks get a read-only token and no
+# secrets, so this is safe to run on a public repo.
 on:
   push:
-    branches: [test]
+    branches: [develop, test, main, master]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "scripts/**"
+      - ".circleci/**"
+      - ".github/dependabot.yml"
+  pull_request:
     paths-ignore:
       - "**.md"
       - "docs/**"
@@ -33,10 +39,8 @@ permissions:
 jobs:
   backend:
     name: backend (build + test)
-    # Repo variable CI_RUNS_ON switches to a self-hosted runner, e.g.
-    # ["self-hosted","linux"] (docs/ci-cd.md "Self-hosted runner"); unset = GitHub-hosted.
-    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
-    # A hung Testcontainers/Gradle run must not burn minutes for hours.
+    runs-on: ubuntu-latest
+    # A hung Testcontainers/Gradle run must not hang for hours.
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -55,10 +59,6 @@ jobs:
       # published values.
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
-        with:
-          # Self-hosted runner keeps ~/.gradle on disk; skip the cloud cache
-          # (it counts against the Actions storage quota).
-          cache-disabled: ${{ vars.CI_RUNS_ON != '' }}
 
       # Same image, port mapping, and dev-only credentials as
       # infrastructure/docker-compose.yml's minio service — StorageApiTests
@@ -70,8 +70,6 @@ jobs:
       # block has no field for.
       - name: Start MinIO
         run: |
-          # A self-hosted runner is persistent: drop a leftover container from a cancelled run.
-          docker rm -f minio >/dev/null 2>&1 || true
           docker run -d --name minio \
             -p 9000:9000 -p 9001:9001 \
             -e MINIO_ROOT_USER=app_factory \
