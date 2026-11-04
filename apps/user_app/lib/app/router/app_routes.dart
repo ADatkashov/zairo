@@ -102,6 +102,7 @@ abstract final class AppRoutes {
   static const redemptions = '/redemptions';
   static const vehicles = '/vehicles';
   static const paymentCards = '/payment-cards';
+  static const paymentHistory = '/payment-history';
   static const support = '/support';
   static const about = '/about';
   static const settings = '/settings';

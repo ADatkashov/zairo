@@ -24,6 +24,7 @@ import '../../features/discovery/presentation/screens/service_compare_screen.dar
 import '../../features/favorites/presentation/screens/favorites_screen.dart';
 import '../../features/loyalty/presentation/screens/business_loyalty_screen.dart';
 import '../../features/loyalty/presentation/screens/my_redemptions_screen.dart';
+import '../../features/payments/presentation/screens/payment_history_screen.dart';
 import '../../features/payments/presentation/screens/saved_cards_screen.dart';
 import '../../features/loyalty/presentation/screens/my_rewards_screen.dart';
 import '../../features/main_wrapper/presentation/screens/main_wrapper.dart';
@@ -244,6 +245,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.paymentCards,
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const SavedCardsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.paymentHistory,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const PaymentHistoryScreen(),
       ),
       GoRoute(
         path: AppRoutes.support,

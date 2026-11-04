@@ -55,6 +55,12 @@ class PaymentsApi {
     }
   }
 
+  /// The customer's own payment history (money that actually moved), newest first.
+  Future<List<Payment>> listMyPayments() async {
+    final response = await _dioClient.get('/me/payments');
+    return (response.data as List<dynamic>).map((e) => Payment.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
   Future<SavedCards> getSavedCards() async {
     final response = await _dioClient.get('/me/payment-cards');
     return SavedCards.fromJson(response.data as Map<String, dynamic>);

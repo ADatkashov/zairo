@@ -92,6 +92,21 @@ public class PaymentsController {
         return toResponse(paymentsService.getPaymentForBooking(bookingId, callerId));
     }
 
+    @Operation(summary = "My payments", description = "The caller's payment history across all their bookings, "
+            + "newest first: payments that actually moved money (SUCCEEDED, REFUND_PENDING, REFUNDED, "
+            + "REFUND_FAILED). Failed or never-completed attempts are not listed. The business/commission split "
+            + "is not included. Join to bookings by `bookingId` for the service and business.")
+    @ApiResponse(responseCode = "200", description = "The caller's payments (empty list if none)")
+    @ApiResponse(responseCode = "401", ref = "Unauthorized")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/api/v1/me/payments")
+    public java.util.List<PaymentResponse> myPayments() {
+        UUID callerId = CurrentUser.requireUserId();
+        return paymentsService.listMyPayments(callerId).stream()
+                .map(payment -> PaymentResponse.from(payment, null))
+                .toList();
+    }
+
     @Operation(summary = "Refund a payment", description = "PLATFORM_ADMIN-only — same platform-admin "
             + "authorization as GET /platform/payments/failed-refunds, whose own doc comment already "
             + "describes this endpoint as the failed-refund retry path. Only a SUCCEEDED payment can be "

@@ -91,6 +91,19 @@ class PaymentsApiTests {
         assertThat(payResponse.getBody().get("amount")).isEqualTo(35.00);
         UUID paymentId = UUID.fromString(payResponse.getBody().get("id").toString());
 
+        // The customer's payment history lists it (and only the customer's: the owner has paid nothing).
+        ResponseEntity<java.util.List> history = restTemplate.exchange("/api/v1/me/payments", HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), java.util.List.class);
+        assertThat(history.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(history.getBody()).hasSize(1);
+        assertThat(((Map<?, ?>) history.getBody().get(0)).get("bookingId")).isEqualTo(bookingId.toString());
+        assertThat(((Map<?, ?>) history.getBody().get(0)).get("status")).isEqualTo("SUCCEEDED");
+        ResponseEntity<java.util.List> ownerHistory = restTemplate.exchange("/api/v1/me/payments", HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(owner.accessToken())), java.util.List.class);
+        assertThat(ownerHistory.getBody()).isEmpty();
+        assertThat(restTemplate.getForEntity("/api/v1/me/payments", Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+
         // A second payment attempt on the same booking is rejected.
         ResponseEntity<Map> duplicatePay = restTemplate.exchange("/api/v1/bookings/" + bookingId + "/payments",
                 HttpMethod.POST, new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), Map.class);
@@ -107,6 +120,11 @@ class PaymentsApiTests {
         // no request body, so there is nothing for a caller to override.
         assertThat(refundResponse.getBody().get("amount")).isEqualTo(35.00);
         assertThat(refundResponse.getBody().get("currency")).isEqualTo("USD");
+
+        // A refunded payment stays in the history, marked REFUNDED.
+        ResponseEntity<java.util.List> afterRefund = restTemplate.exchange("/api/v1/me/payments", HttpMethod.GET,
+                new HttpEntity<>(null, TestAuth.authHeaders(customer.accessToken())), java.util.List.class);
+        assertThat(((Map<?, ?>) afterRefund.getBody().get(0)).get("status")).isEqualTo("REFUNDED");
 
         // The customer is notified once the refund actually succeeds.
         assertThat(capturedEmails.sent).anySatisfy(email -> {
