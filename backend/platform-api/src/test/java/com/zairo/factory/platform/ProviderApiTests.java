@@ -228,7 +228,7 @@ class ProviderApiTests {
         assertThat(saved.getBody().get("address")).isEqualTo("Abay 10");
         assertThat(saved.getBody().get("phone")).isEqualTo("+7 701 000 00 00");
         assertThat(saved.getBody().get("description")).isEqualTo("Cosy place");
-        assertThat((java.util.Map<?, ?>) saved.getBody().get("workingHours")).containsEntry("mon", "09:00-20:00")
+        assertThat((java.util.Map<String, String>) saved.getBody().get("workingHours")).containsEntry("mon", "09:00-20:00")
                 .containsEntry("sat", "10:00-16:00").doesNotContainKey("tue");
 
         // An edit that does not mention them (an older app) keeps them.
@@ -237,7 +237,7 @@ class ProviderApiTests {
                 TestAuth.authHeaders(owner.accessToken())), java.util.Map.class);
         var kept = restTemplate.getForEntity(path, java.util.Map.class).getBody();
         assertThat(kept.get("address")).isEqualTo("Abay 10");
-        assertThat((java.util.Map<?, ?>) kept.get("workingHours")).hasSize(2);
+        assertThat((java.util.Map<String, String>) kept.get("workingHours")).hasSize(2);
 
         // Blank clears the text fields, {} clears the hours.
         restTemplate.exchange(path, HttpMethod.PUT, new HttpEntity<>(
@@ -247,7 +247,7 @@ class ProviderApiTests {
         assertThat(cleared.get("address")).isNull();
         assertThat(cleared.get("phone")).isNull();
         assertThat(cleared.get("description")).isNull();
-        assertThat((java.util.Map<?, ?>) cleared.get("workingHours")).isEmpty();
+        assertThat((java.util.Map<String, String>) cleared.get("workingHours")).isEmpty();
     }
 
     @Test
