@@ -800,7 +800,6 @@
   "providerClosedOpensToday": "Закрыто · откроется в {time}",
   "providerClosedOpensTomorrow": "Закрыто · откроется завтра в {time}",
   "providerClosedOpensOn": "Закрыто · откроется {day} в {time}",
-  "providerHoursTitle": "Часы работы",
   "providerDayClosed": "Выходной",
   "providerCallButton": "Позвонить",
   "providerDirectionsButton": "Маршрут",

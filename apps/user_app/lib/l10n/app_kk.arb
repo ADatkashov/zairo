@@ -800,7 +800,6 @@
   "providerClosedOpensToday": "Жабық · {time}-де ашылады",
   "providerClosedOpensTomorrow": "Жабық · ертең {time}-де ашылады",
   "providerClosedOpensOn": "Жабық · {day} күні {time}-де ашылады",
-  "providerHoursTitle": "Жұмыс уақыты",
   "providerDayClosed": "Демалыс",
   "providerCallButton": "Қоңырау шалу",
   "providerDirectionsButton": "Бағыт",

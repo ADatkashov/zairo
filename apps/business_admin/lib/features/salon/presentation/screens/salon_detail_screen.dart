@@ -326,7 +326,7 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
             controller: _phoneController,
             enabled: !_isSubmitting,
             keyboardType: TextInputType.phone,
-            label: l10n.phoneLabel,
+            label: l10n.businessPhoneLabel,
           ),
           const SizedBox(height: FactorySpacing.space3),
           FactoryTextField(

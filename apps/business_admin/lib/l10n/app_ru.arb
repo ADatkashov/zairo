@@ -1141,11 +1141,10 @@
   "backupYes": "Да",
   "backupNo": "Нет",
   "addressLabel": "Адрес (необязательно)",
-  "phoneLabel": "Телефон для клиентов (необязательно)",
+  "businessPhoneLabel": "Телефон для клиентов (необязательно)",
   "descriptionLabel": "О бизнесе (необязательно)",
   "workingHoursLabel": "Часы работы",
   "workingHoursDayOff": "Выходной",
   "workingHoursApplyToAll": "Как в понедельник — на все дни",
-  "workingHoursOpensTooltip": "Работаем",
   "validationWorkingHoursInvalid": "Время закрытия должно быть позже открытия."
 }

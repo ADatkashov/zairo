@@ -2174,8 +2174,6 @@
   "@providerClosedOpensTomorrow": {"description": "Provider card: closed now, opens tomorrow.", "placeholders": {"time": {"type": "String"}}},
   "providerClosedOpensOn": "Closed · opens {day} at {time}",
   "@providerClosedOpensOn": {"description": "Provider card: closed now, opens on a later weekday (short day name).", "placeholders": {"day": {"type": "String"}, "time": {"type": "String"}}},
-  "providerHoursTitle": "Working hours",
-  "@providerHoursTitle": {"description": "Provider card: weekly hours list title."},
   "providerDayClosed": "Closed",
   "@providerDayClosed": {"description": "Provider card: a weekday with no hours."},
   "providerCallButton": "Call",
