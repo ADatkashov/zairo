@@ -7,6 +7,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../app/router/app_routes.dart';
 import '../../../../core/formatting/initials.dart';
+import '../../../../core/share/share_launcher.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/formatting/vertical_label.dart';
 import '../../../auth/data/models/user_summary.dart';
@@ -270,6 +271,20 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
       appBar: FactoryAppBar(
         title: widget.provider.name,
         actions: [
+          IconButton(
+            icon: const Icon(Symbols.ios_share_rounded),
+            tooltip: l10n.shareTooltip,
+            onPressed: () => ref.read(shareLauncherProvider)(
+              providerShareText(
+                id: widget.provider.id,
+                name: widget.provider.name,
+                address: widget.provider.address,
+                latitude: widget.provider.latitude,
+                longitude: widget.provider.longitude,
+              ),
+              subject: widget.provider.name,
+            ),
+          ),
           IconButton(
             icon: const Icon(Symbols.chat_rounded),
             tooltip: l10n.messageProviderTooltip,

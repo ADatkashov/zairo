@@ -822,5 +822,7 @@
   "paymentStatusRefundFailed": "Возврат не прошёл",
   "paymentTypeDeposit": "Предоплата",
   "paymentTypeFull": "Полная оплата",
-  "paymentTypeRemaining": "Остаток"
+  "paymentTypeRemaining": "Остаток",
+  "shareTooltip": "Поделиться",
+  "shareReceiptButton": "Поделиться чеком"
 }
