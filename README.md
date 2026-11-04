@@ -44,7 +44,7 @@ melos run test
 
 ## CI
 
-Каждый PR и пуш в `develop`/`test`/`master` автоматически проверяются
+Каждый PR и пуш в `main` (и `develop`/`test`/`master`) автоматически проверяются
 GitHub Actions: `flutter analyze` + `flutter test` по каждому Flutter-
 пакету и `./gradlew build` для backend. Подробности — какие workflow'ы
 есть, что именно они проверяют, куда класть секреты и что сознательно
