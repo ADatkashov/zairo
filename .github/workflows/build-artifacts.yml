@@ -1,11 +1,9 @@
 name: Build Artifacts
 
-# Runs on every push to `main` (the working branch) and by hand
-# (Actions -> Build Artifacts -> Run workflow, pick any branch). It doesn't
-# re-validate anything (flutter-ci.yml / backend-ci.yml do that); it only
-# assembles installable/runnable outputs: debug-signed APKs of all three
-# apps plus the backend jar, attached to the run for download
-# (run page -> Artifacts, kept 14 days).
+# Runs on every push to `main` and by hand. It doesn't re-validate anything
+# (flutter-ci.yml / backend-ci.yml do that); it only builds the backend jar and
+# attaches it to the run (Artifacts, kept 14 days). Android APKs are NOT built
+# here any more: the real release-signed ones come from android-release.yml.
 #
 # Nothing here is published anywhere public, and nothing deploys.
 on:
@@ -31,76 +29,6 @@ env:
   API_BASE_URL: "https://zairo-backend.onrender.com/api/v1"
 
 jobs:
-  android-apk:
-    name: android-apk (${{ matrix.app }})
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        app: [user_app, business_admin, platform_admin]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      # AGP 9.1.0 / Kotlin 2.4.0 (apps/*/android/settings.gradle.kts) need
-      # a modern JDK to build with; 21 matches what Android Studio's
-      # bundled JBR uses for this project locally and what the backend
-      # already standardizes on.
-      - name: Set up JDK 21
-        uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: "21"
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-
-      - name: flutter pub get
-        working-directory: apps/${{ matrix.app }}
-        run: flutter pub get
-
-      # NOTE: apps/${{ matrix.app }}/android/app/build.gradle.kts points
-      # the `release` build type at `signingConfigs.getByName("debug")` —
-      # there is no release keystore in this repo yet. This APK is
-      # therefore debug-signed: fine for internal install/QA, not for
-      # any app-store submission. See docs/ci-cd.md for what a real
-      # release signing setup would need (a keystore + 3
-      # secrets.ANDROID_* values, none of which exist today).
-      #
-      # MAPS_API_KEY (secrets.MAPS_API_KEY, only relevant for user_app —
-      # business_admin has no maps feature and simply ignores it) has to
-      # reach the build twice: as a plain env var for
-      # android/app/build.gradle.kts's native manifest placeholder (see
-      # that file's own comment — it already prefers System.getenv over
-      # local.properties), and as --dart-define for
-      # maps_providers.dart's mapRendererProvider, which is what actually
-      # selects GoogleMapsRenderer over the MockMapRenderer placeholder.
-      # An unset secret leaves both empty, which is a safe default (see
-      # both call sites), not a broken build.
-      - name: flutter build apk --release
-        working-directory: apps/${{ matrix.app }}
-        env:
-          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
-          # 2GIS (preferred in-app map, MapGL JS in a WebView) — dart-define
-          # only, no native setup. Empty falls back to Google, then the mock.
-          TWOGIS_API_KEY: ${{ secrets.TWOGIS_API_KEY }}
-        run: |
-          flutter build apk --release \
-            --dart-define=MAPS_API_KEY="$MAPS_API_KEY" \
-            --dart-define=TWOGIS_API_KEY="$TWOGIS_API_KEY" \
-            --dart-define=API_BASE_URL="$API_BASE_URL"
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ matrix.app }}-apk-debug-signed
-          path: apps/${{ matrix.app }}/build/app/outputs/flutter-apk/app-release.apk
-          retention-days: 14
-
   backend-jar:
     name: backend-jar
     runs-on: ubuntu-latest

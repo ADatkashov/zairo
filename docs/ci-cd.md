@@ -35,7 +35,7 @@ collaborators*.
 
 ### APK on your phone without GitHub Actions
 
-The easy way: *Actions -> Build Artifacts -> Run workflow* (or just push to `main`), then download the APK from the run page -> **Artifacts**. To build locally in Ubuntu/WSL instead: once `scripts/setup-local-dev-wsl.sh`, then
+The easy way: *Actions -> Android Release -> Run workflow* (release-signed, needs the secrets from §10), then download the APK from the repo's **Releases** page. To build locally in Ubuntu/WSL instead: once `scripts/setup-local-dev-wsl.sh`, then
 `scripts/setup-android-sdk-wsl.sh`; after that `scripts/build-apk-local.sh [user_app|business_admin|platform_admin]` puts
 `<app>-debug-signed.apk` in `build-apk-out/` (same `--dart-define` flags as the workflow; API URL defaults to the live
 Render backend). Open the folder from Windows with `explorer.exe "$(wslpath -w build-apk-out)"`, copy the APK to the phone
@@ -130,7 +130,7 @@ did that for whatever got merged); it only builds outputs.
 
 **What it does:** two independent jobs.
 
-- `android-apk` (matrix: `user_app`, `business_admin`, `platform_admin`) — `flutter build
+- `android-apk` (REMOVED 2026-11-04: APKs now come only from `android-release.yml`, release-signed) (was: matrix `user_app`, `business_admin`, `platform_admin`) — `flutter build
   apk --release`, uploads `app-release.apk` as
   `<app>-apk-debug-signed`. That name is accurate, not decorative: both
   apps' `android/app/build.gradle.kts` point the `release` build type at
@@ -195,9 +195,6 @@ Every artifact comes from `build-artifacts.yml`, only on a push to
 `main` or by hand (never on a PR — see §3). From a
 workflow run's summary page, the **Artifacts** section lists:
 
-- `user_app-apk-debug-signed`
-- `business_admin-apk-debug-signed`
-- `platform_admin-apk-debug-signed`
 - `platform-api-bootjar`
 
 **`TWOGIS_API_KEY` secret (optional)** — 2GIS is the preferred map for
