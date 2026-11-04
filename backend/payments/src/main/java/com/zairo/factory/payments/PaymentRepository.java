@@ -14,6 +14,9 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     /** Get all payments for a booking (new: supports multiple payments per booking) */
     List<Payment> findAllByBookingId(UUID bookingId);
 
+    /** A customer's payment history: every payment on any of their bookings, newest first — see PaymentsService.listMyPayments. */
+    List<Payment> findByBookingIdInOrderByCreatedAtDesc(Collection<UUID> bookingIds);
+
     List<Payment> findByBookingIdInAndStatus(Collection<UUID> bookingIds, PaymentStatus status);
 
     /** The platform admin's failed-refund visibility list — see PaymentAdminController. */

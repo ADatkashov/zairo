@@ -426,6 +426,11 @@ class _LoggedInView extends ConsumerWidget {
               onTap: () => context.push(AppRoutes.paymentCards),
             ),
             _ProfileRow(
+              icon: _MenuIcon(Symbols.receipt_long_rounded, color: colors.primary, tint: colors.primaryTint),
+              label: l10n.paymentHistoryTitle,
+              onTap: () => context.push(AppRoutes.paymentHistory),
+            ),
+            _ProfileRow(
               icon: _MenuIcon(Symbols.directions_car_rounded, color: colors.lavender, tint: colors.lavenderTint),
               label: l10n.myVehiclesButton,
               onTap: () => context.push(AppRoutes.vehicles),

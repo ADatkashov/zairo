@@ -168,6 +168,25 @@ public class PaymentsService {
     }
 
     /**
+     * The caller's own payment history: money that actually moved (paid, being refunded, refunded, refund failed),
+     * newest first. Attempts that never charged anything (CREATED, PENDING, FAILED) are left out — they are noise
+     * in a "what did I pay" list; the booking itself still shows an unpaid state.
+     */
+    @Transactional(readOnly = true)
+    public List<Payment> listMyPayments(UUID callerId) {
+        List<UUID> bookingIds = bookingRepository.findByUserId(callerId).stream().map(Booking::getId).toList();
+        if (bookingIds.isEmpty()) {
+            return List.of();
+        }
+        return paymentRepository.findByBookingIdInOrderByCreatedAtDesc(bookingIds).stream()
+                .filter(payment -> MONEY_MOVED.contains(payment.getStatus()))
+                .toList();
+    }
+
+    private static final java.util.Set<PaymentStatus> MONEY_MOVED = java.util.EnumSet.of(PaymentStatus.SUCCEEDED,
+            PaymentStatus.REFUND_PENDING, PaymentStatus.REFUNDED, PaymentStatus.REFUND_FAILED);
+
+    /**
      * Record a payment made through a non-online method (cash, card at location, etc).
      * This is used by the business to record payments they received outside of ZAIRO.
      */

@@ -14,6 +14,11 @@ final paymentForBookingProvider = FutureProvider.autoDispose.family<Payment?, St
   return ref.watch(paymentsApiProvider).getPayment(bookingId);
 });
 
+/// The customer's payment history, newest first.
+final myPaymentsProvider = FutureProvider.autoDispose<List<Payment>>((ref) {
+  return ref.watch(paymentsApiProvider).listMyPayments();
+});
+
 /// Opens the provider's payment page in the phone's own browser (card data
 /// never touches this app). A provider so tests can see what was opened
 /// instead of reaching for a platform channel.
