@@ -44,6 +44,7 @@ import '../../data/models/payment_plan.dart';
 import '../../../../core/formatting/month_day_time.dart';
 import '../providers/booking_providers.dart';
 import '../widgets/booking_review_sheet.dart';
+import '../widgets/provider_info_section.dart';
 import '../widgets/day_slot_picker.dart';
 import 'booking_confirmation_screen.dart';
 import 'booking_payment_screen.dart';
@@ -347,6 +348,7 @@ class _ProviderDetailScreenState extends ConsumerState<ProviderDetailScreen> {
                         ),
                     ],
                   ),
+                  ProviderInfoSection(provider: widget.provider),
                   if (widget.provider.latitude != null &&
                       widget.provider.longitude != null) ...[
                     const SizedBox(height: FactorySpacing.space3),

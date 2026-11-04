@@ -42,7 +42,12 @@ public final class SearchDtos {
             Instant nextAvailableSlot,
             @Schema(description = "Null until the provider's owner sets one via PUT /providers/{id}.",
                     example = "http://localhost:8080/api/v1/uploads/a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d.jpg")
-            String coverPhotoUrl) {
+            String coverPhotoUrl,
+            @Schema(example = "Abay Ave 10, Almaty") String address,
+            @Schema(example = "+7 701 000 00 00") String phone,
+            String description,
+            @Schema(description = "Opening hours by weekday (mon..sun -> HH:mm-HH:mm); empty if not stated.")
+            java.util.Map<String, String> workingHours) {
     }
 
     /** {@code totalCount} is every match, not just what fits in this page — see SearchController's paging params. */

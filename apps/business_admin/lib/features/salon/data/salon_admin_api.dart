@@ -124,16 +124,26 @@ class SalonAdminApi {
     double? longitude,
     String? coverPhotoUrl,
     String? cityCode,
+    String? address,
+    String? phone,
+    String? description,
+    Map<String, String>? workingHours,
   }) async {
     final response = await _dioClient.put(
       '/providers/$providerId',
       // A null cityCode keeps the business's current city on the server; it cannot be cleared, only changed.
+      // Likewise address/phone/description/workingHours are left out when null (= keep); a blank string (or {} for
+      // the hours) clears them.
       data: {
         'name': name,
         'latitude': latitude,
         'longitude': longitude,
         'coverPhotoUrl': coverPhotoUrl,
         'cityCode': cityCode,
+        'address': ?address,
+        'phone': ?phone,
+        'description': ?description,
+        'workingHours': ?workingHours,
       },
     );
     return AdminProvider.fromJson(response.data as Map<String, dynamic>);

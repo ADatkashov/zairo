@@ -1,4 +1,5 @@
 import 'package:business_admin/features/billing/data/billing_exception.dart';
+import 'package:business_admin/features/salon/data/models/admin_provider.dart';
 import 'package:business_admin/features/salon/data/models/business_analytics.dart';
 import 'package:business_admin/features/salon/data/salon_admin_api.dart';
 import 'package:dio/dio.dart';
@@ -172,6 +173,36 @@ void main() {
       await api.updateProvider(providerId: 'p1', name: 'New name');
       expect(http.bodyOf('PUT', '/providers/p1'),
           {'name': 'New name', 'latitude': null, 'longitude': null, 'coverPhotoUrl': null, 'cityCode': null});
+    });
+
+    test('updateProvider sends the public profile only when given', () async {
+      http.reply('PUT', '/providers/p1', _provider);
+      await api.updateProvider(
+        providerId: 'p1',
+        name: 'N',
+        address: 'Abay 10',
+        phone: '',
+        description: 'Cosy',
+        workingHours: {'mon': '09:00-20:00'},
+      );
+      final body = http.bodyOf('PUT', '/providers/p1');
+      expect(body['address'], 'Abay 10');
+      expect(body['phone'], '');
+      expect(body['description'], 'Cosy');
+      expect(body['workingHours'], {'mon': '09:00-20:00'});
+    });
+
+    test('the provider parses its public profile', () {
+      final p = AdminProvider.fromJson({
+        ..._provider,
+        'address': 'Abay 10',
+        'phone': '+7',
+        'description': 'D',
+        'workingHours': {'tue': '10:00-11:00'},
+      });
+      expect((p.address, p.phone, p.description), ('Abay 10', '+7', 'D'));
+      expect(p.workingHours, {'tue': '10:00-11:00'});
+      expect(AdminProvider.fromJson(_provider).workingHours, isEmpty);
     });
 
     test('updateProvider sends the chosen city', () async {

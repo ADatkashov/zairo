@@ -50,7 +50,16 @@ public final class ProviderDtos {
             String coverPhotoUrl,
             @Size(max = 255) @Schema(description = "A city code from GET /cities. Omit (or leave blank) to keep the "
                     + "current one; a business without a city is listed in every city.", example = "almaty")
-            String cityCode) {
+            String cityCode,
+            @Size(max = 255) @Schema(description = "Street address. Omit to keep, blank to clear.",
+                    example = "Abay Ave 10, Almaty") String address,
+            @Size(max = 50) @Schema(description = "Public phone. Omit to keep, blank to clear.",
+                    example = "+7 701 000 00 00") String phone,
+            @Size(max = 2000) @Schema(description = "About the business. Omit to keep, blank to clear.")
+            String description,
+            @Schema(description = "Opening hours: keys mon..sun, value HH:mm-HH:mm; a missing day means closed. "
+                    + "Omit to keep, send {} to clear.", example = "{\"mon\":\"09:00-20:00\"}")
+            java.util.Map<String, String> workingHours) {
         // Convenience constructors for existing callers (tests) that predate
         // coverPhotoUrl / cityCode — same back-compat pattern as
         // CreateProviderRequest above.
@@ -60,6 +69,11 @@ public final class ProviderDtos {
 
         public UpdateProviderRequest(String name, Double latitude, Double longitude, String coverPhotoUrl) {
             this(name, latitude, longitude, coverPhotoUrl, null);
+        }
+
+        public UpdateProviderRequest(String name, Double latitude, Double longitude, String coverPhotoUrl,
+                String cityCode) {
+            this(name, latitude, longitude, coverPhotoUrl, cityCode, null, null, null, null);
         }
     }
 
@@ -96,12 +110,18 @@ public final class ProviderDtos {
                     example = "http://localhost:8080/api/v1/uploads/a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d.jpg")
             String coverPhotoUrl,
             @Schema(description = "The city code the owner picked; null until they do.", example = "almaty")
-            String cityCode) {
+            String cityCode,
+            @Schema(example = "Abay Ave 10, Almaty") String address,
+            @Schema(example = "+7 701 000 00 00") String phone,
+            String description,
+            @Schema(description = "Opening hours by weekday (mon..sun -> HH:mm-HH:mm); empty if not stated.")
+            java.util.Map<String, String> workingHours) {
         static ProviderResponse from(Provider provider) {
             return new ProviderResponse(provider.getId(), provider.getOwnerUserId(), provider.getName(),
                     provider.getVertical(), provider.getStatus(), provider.getCreatedAt(), provider.getLatitude(),
                     provider.getLongitude(), provider.getBusinessTypeId(), provider.getCoverPhotoUrl(),
-                    provider.getCityCode());
+                    provider.getCityCode(), provider.getAddress(), provider.getPhone(), provider.getDescription(),
+                    provider.getWorkingHours());
         }
     }
 }

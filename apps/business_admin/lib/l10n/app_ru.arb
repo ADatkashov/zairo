@@ -1139,5 +1139,12 @@
   "backupColDuration": "Минут",
   "backupColActive": "Активна",
   "backupYes": "Да",
-  "backupNo": "Нет"
+  "backupNo": "Нет",
+  "addressLabel": "Адрес (необязательно)",
+  "businessPhoneLabel": "Телефон для клиентов (необязательно)",
+  "descriptionLabel": "О бизнесе (необязательно)",
+  "workingHoursLabel": "Часы работы",
+  "workingHoursDayOff": "Выходной",
+  "workingHoursApplyToAll": "Как в понедельник — на все дни",
+  "validationWorkingHoursInvalid": "Время закрытия должно быть позже открытия."
 }

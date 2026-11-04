@@ -18,6 +18,12 @@ class ProviderSearchResult {
   final int? reviewCount;
   final DateTime? nextAvailableSlot;
   final String? coverPhotoUrl;
+  final String? address;
+  final String? phone;
+  final String? description;
+
+  /// Opening hours by weekday key (`mon`..`sun` -> `HH:mm-HH:mm`); a missing day is closed; empty = not stated.
+  final Map<String, String> workingHours;
 
   const ProviderSearchResult({
     required this.id,
@@ -34,6 +40,10 @@ class ProviderSearchResult {
     this.reviewCount,
     this.nextAvailableSlot,
     this.coverPhotoUrl,
+    this.address,
+    this.phone,
+    this.description,
+    this.workingHours = const {},
   });
 
   factory ProviderSearchResult.fromJson(Map<String, dynamic> json) {
@@ -64,6 +74,13 @@ class ProviderSearchResult {
           ? null
           : DateTime.parse(json['nextAvailableSlot'] as String),
       coverPhotoUrl: json['coverPhotoUrl'] as String?,
+      address: json['address'] as String?,
+      phone: json['phone'] as String?,
+      description: json['description'] as String?,
+      workingHours: {
+        for (final e in ((json['workingHours'] as Map<String, dynamic>?) ?? const <String, dynamic>{}).entries)
+          e.key: e.value as String,
+      },
     );
   }
 }
