@@ -2219,5 +2219,9 @@
   "paymentTypeFull": "Full payment",
   "@paymentTypeFull": {"description": "Payment history / receipt: paymentTypeFull."},
   "paymentTypeRemaining": "Remaining",
-  "@paymentTypeRemaining": {"description": "Payment history / receipt: paymentTypeRemaining."}
+  "@paymentTypeRemaining": {"description": "Payment history / receipt: paymentTypeRemaining."},
+  "shareTooltip": "Share",
+  "@shareTooltip": {"description": "Share action: shareTooltip."},
+  "shareReceiptButton": "Share receipt",
+  "@shareReceiptButton": {"description": "Share action: shareReceiptButton."}
 }

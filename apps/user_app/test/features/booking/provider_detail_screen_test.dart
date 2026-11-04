@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:zairo/app/router/app_routes.dart';
+import 'package:zairo/core/share/share_launcher.dart';
 import 'package:zairo/features/auth/data/models/user_summary.dart';
 import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/auto/data/auto_api.dart';
@@ -501,6 +502,46 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
     }
+  });
+
+  testWidgets('Share in the top bar sends the name, address, map link and the in-app link', (tester) async {
+    const provider = ProviderSearchResult(
+      id: 'provider-1',
+      name: 'Glow Salon',
+      vertical: 'beauty',
+      status: 'ACTIVE',
+      hasOpenAvailability: false,
+      services: [],
+      address: 'Abay 10',
+      latitude: 43.2,
+      longitude: 76.9,
+    );
+    final shared = <(String, String?)>[];
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingApiProvider.overrideWithValue(_FakeBookingApi(const [])),
+          paymentsApiProvider.overrideWithValue(_FakePaymentsApi()),
+          beautyApiProvider.overrideWithValue(_FakeBeautyApi()),
+          authControllerProvider.overrideWith(_LoggedInAuthController.new),
+          shareLauncherProvider.overrideWithValue((text, {subject}) async => shared.add((text, subject))),
+        ],
+        child: _routerApp(provider),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Share'));
+    await tester.pump();
+
+    expect(shared, hasLength(1));
+    expect(shared.single.$2, 'Glow Salon');
+    expect(shared.single.$1.split('\n'), [
+      'Glow Salon',
+      'Abay 10',
+      'https://2gis.kz/geo/76.9,43.2',
+      'zairo://app/provider/provider-1',
+    ]);
   });
 
   testWidgets('selecting a service and slot enables booking and submits the right data', (tester) async {

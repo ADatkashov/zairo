@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zairo/core/share/share_launcher.dart';
 import 'package:zairo/features/auth/data/models/user_summary.dart';
 import 'package:zairo/features/auth/presentation/providers/auth_providers.dart';
 import 'package:zairo/features/booking/data/booking_api.dart';
@@ -158,6 +159,43 @@ void main() {
     await tester.tap(find.text('Booking'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Remaining'), findsOneWidget);
+  });
+
+  testWidgets('Share receipt sends the receipt as plain text', (tester) async {
+    final shared = <(String, String?)>[];
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          paymentsApiProvider.overrideWithValue(
+            _FakePaymentsApi([_payment('abcd1234-1', 'b1', 'SUCCEEDED', type: 'DEPOSIT')]),
+          ),
+          bookingApiProvider.overrideWithValue(_FakeBookingApi([_booking])),
+          authControllerProvider.overrideWith(_LoggedIn.new),
+          shareLauncherProvider.overrideWithValue((text, {subject}) async => shared.add((text, subject))),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
+          home: const PaymentHistoryScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Haircut'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Share receipt'));
+    await tester.pump();
+
+    expect(shared, hasLength(1));
+    expect(shared.single.$2, 'Receipt');
+    final lines = shared.single.$1.split('\n');
+    expect(lines.first, 'Receipt');
+    expect(lines, contains('Service: Haircut'));
+    expect(lines, contains('Business: Glow Salon'));
+    expect(lines, contains('Payment no.: ABCD1234'));
   });
 
   testWidgets('no payments yet says so', (tester) async {

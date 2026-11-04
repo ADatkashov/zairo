@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../../core/formatting/month_day_time.dart';
+import '../../../../core/share/share_launcher.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../booking/data/models/booking.dart';
@@ -142,49 +143,84 @@ String _typeLabel(AppLocalizations l10n, String? type) => switch (type) {
   _ => '',
 };
 
+/// The receipt lines for one payment, in display order — what the sheet shows and what "Share" sends.
+List<(String, String)> receiptRows(AppLocalizations l10n, Payment payment, Booking? booking) {
+  final type = _typeLabel(l10n, payment.paymentType);
+  return [
+    if (booking?.serviceTitle != null) (l10n.paymentReceiptService, booking!.serviceTitle!),
+    if (booking?.providerName != null) (l10n.paymentReceiptBusiness, booking!.providerName!),
+    if (booking?.startsAt != null) (l10n.paymentReceiptVisit, formatMonthDayTime(l10n, booking!.startsAt!.toLocal())),
+    (l10n.paymentReceiptPaidOn, formatMonthDayTime(l10n, payment.createdAt.toLocal())),
+    (
+      l10n.paymentReceiptAmount,
+      [formatFactoryMoney(payment.amount, payment.currency), if (type.isNotEmpty) type].join(' · '),
+    ),
+    (l10n.paymentReceiptStatus, paymentStatusLabel(l10n, payment.status)),
+    (l10n.paymentReceiptNumber, payment.id.substring(0, 8).toUpperCase()),
+  ];
+}
+
+/// Plain text of the receipt for the share sheet: title, then one "label: value" line per row.
+String receiptShareText(AppLocalizations l10n, Payment payment, Booking? booking) {
+  return [
+    l10n.paymentReceiptTitle,
+    for (final (label, value) in receiptRows(l10n, payment, booking)) '$label: $value',
+  ].join('\n');
+}
+
 /// The receipt for one payment: what, where, when, how much, and the payment number to quote to support.
 Future<void> showPaymentReceipt(BuildContext context, {required Payment payment, required Booking? booking}) {
   return showFactoryBottomSheet<void>(
     context: context,
-    builder: (context) {
-      final l10n = AppLocalizations.of(context)!;
-      final textTheme = Theme.of(context).textTheme;
-      final colors = context.factoryColors;
-      final type = _typeLabel(l10n, payment.paymentType);
-      final rows = <(String, String)>[
-        if (booking?.serviceTitle != null) (l10n.paymentReceiptService, booking!.serviceTitle!),
-        if (booking?.providerName != null) (l10n.paymentReceiptBusiness, booking!.providerName!),
-        if (booking?.startsAt != null) (l10n.paymentReceiptVisit, formatMonthDayTime(l10n, booking!.startsAt!.toLocal())),
-        (l10n.paymentReceiptPaidOn, formatMonthDayTime(l10n, payment.createdAt.toLocal())),
-        (l10n.paymentReceiptAmount, [formatFactoryMoney(payment.amount, payment.currency), if (type.isNotEmpty) type].join(' · ')),
-        (l10n.paymentReceiptStatus, paymentStatusLabel(l10n, payment.status)),
-        (l10n.paymentReceiptNumber, payment.id.substring(0, 8).toUpperCase()),
-      ];
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(l10n.paymentReceiptTitle, style: textTheme.titleMedium),
-          const SizedBox(height: FactorySpacing.space3),
-          for (final (label, value) in rows)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Text(label, style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary)),
-                  ),
-                  Expanded(
-                    flex: 3,
-                    child: Text(value, textAlign: TextAlign.end, style: textTheme.bodyMedium),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      );
-    },
+    builder: (context) => _Receipt(payment: payment, booking: booking),
   );
+}
+
+class _Receipt extends ConsumerWidget {
+  const _Receipt({required this.payment, required this.booking});
+
+  final Payment payment;
+  final Booking? booking;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final textTheme = Theme.of(context).textTheme;
+    final colors = context.factoryColors;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.paymentReceiptTitle, style: textTheme.titleMedium),
+        const SizedBox(height: FactorySpacing.space3),
+        for (final (label, value) in receiptRows(l10n, payment, booking))
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Text(label, style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary)),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Text(value, textAlign: TextAlign.end, style: textTheme.bodyMedium),
+                ),
+              ],
+            ),
+          ),
+        const SizedBox(height: FactorySpacing.space3),
+        FactoryButton(
+          variant: FactoryButtonVariant.secondary,
+          icon: Symbols.ios_share_rounded,
+          label: l10n.shareReceiptButton,
+          onPressed: () => ref.read(shareLauncherProvider)(
+            receiptShareText(l10n, payment, booking),
+            subject: l10n.paymentReceiptTitle,
+          ),
+        ),
+      ],
+    );
+  }
 }

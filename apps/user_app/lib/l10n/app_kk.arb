@@ -822,5 +822,7 @@
   "paymentStatusRefundFailed": "Қайтару орындалмады",
   "paymentTypeDeposit": "Алдын ала төлем",
   "paymentTypeFull": "Толық төлем",
-  "paymentTypeRemaining": "Қалдық"
+  "paymentTypeRemaining": "Қалдық",
+  "shareTooltip": "Бөлісу",
+  "shareReceiptButton": "Чекті бөлісу"
 }
