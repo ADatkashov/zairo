@@ -231,7 +231,8 @@ public class SearchService {
         return new ProviderSearchResult(provider.getId(), provider.getName(), provider.getVertical(),
                 provider.getStatus(), hasOpenAvailability, minPrice, serviceSummaries, distanceKm,
                 provider.getLatitude(), provider.getLongitude(), rating == null ? null : rating.averageRating(),
-                rating == null ? null : rating.reviewCount(), nextAvailableSlot, provider.getCoverPhotoUrl());
+                rating == null ? null : rating.reviewCount(), nextAvailableSlot, provider.getCoverPhotoUrl(),
+                provider.getAddress(), provider.getPhone(), provider.getDescription(), provider.getWorkingHours());
     }
 
     /**

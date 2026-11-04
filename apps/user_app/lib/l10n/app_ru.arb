@@ -795,5 +795,15 @@
   "loginMethodPhone": "Телефон",
   "securityLinkedLabel": "Привязан",
   "paymentCardsEmptyHint": "Карта сохранится при следующей онлайн-оплате, если включён переключатель выше.",
-  "homeNearbyTitle": "Рядом с вами"
+  "homeNearbyTitle": "Рядом с вами",
+  "providerOpenUntil": "Открыто до {time}",
+  "providerClosedOpensToday": "Закрыто · откроется в {time}",
+  "providerClosedOpensTomorrow": "Закрыто · откроется завтра в {time}",
+  "providerClosedOpensOn": "Закрыто · откроется {day} в {time}",
+  "providerHoursTitle": "Часы работы",
+  "providerDayClosed": "Выходной",
+  "providerCallButton": "Позвонить",
+  "providerDirectionsButton": "Маршрут",
+  "providerReadMore": "Ещё",
+  "providerReadLess": "Свернуть"
 }

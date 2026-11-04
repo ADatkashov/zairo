@@ -29,6 +29,9 @@ abstract final class ExternalLinks {
     });
   }
 
+  /// Dials [phone] in the phone app. Spaces, dashes and brackets are dropped; a leading `+` is kept.
+  static Uri call(String phone) => Uri(scheme: 'tel', path: phone.replaceAll(RegExp(r'[^\d+]'), ''));
+
   /// Turn-by-turn directions to a point, from wherever the user is. 2GIS by
   /// default (the map people in Kazakhstan actually use); Google Maps is the
   /// alternative. Both are https links that open the installed app if there

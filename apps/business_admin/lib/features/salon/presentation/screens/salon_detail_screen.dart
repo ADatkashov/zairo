@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:core_ui/core_ui.dart';
+import 'package:flutter/foundation.dart' show mapEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_cropper/image_cropper.dart';
@@ -29,6 +30,7 @@ import '../../../staff/presentation/widgets/manage_staff_services_dialog.dart';
 import '../../../reviews/presentation/screens/reviews_screen.dart';
 import '../../../city/presentation/providers/city_providers.dart';
 import '../../../billing/presentation/providers/billing_providers.dart';
+import '../widgets/working_hours_editor.dart';
 import '../../../billing/presentation/screens/billing_screen.dart';
 import '../../../storage/presentation/providers/storage_providers.dart';
 import '../../data/models/admin_booking.dart';
@@ -268,6 +270,10 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
   late final _nameController = TextEditingController(text: widget.provider.name);
   late final _latController = TextEditingController(text: widget.provider.latitude?.toString() ?? '');
   late final _lngController = TextEditingController(text: widget.provider.longitude?.toString() ?? '');
+  late final _addressController = TextEditingController(text: widget.provider.address ?? '');
+  late final _phoneController = TextEditingController(text: widget.provider.phone ?? '');
+  late final _descriptionController = TextEditingController(text: widget.provider.description ?? '');
+  late Map<String, String> _hours = Map.of(widget.provider.workingHours);
   bool _isSubmitting = false;
   String? _error;
 
@@ -287,6 +293,9 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
     _nameController.dispose();
     _latController.dispose();
     _lngController.dispose();
+    _addressController.dispose();
+    _phoneController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -295,7 +304,9 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
     final l10n = AppLocalizations.of(context)!;
     return FactoryDialog(
       title: l10n.editBusinessTooltip,
-      content: Column(
+      // Scrolls: with the profile fields and seven hour rows the form is taller than a small screen.
+      content: SingleChildScrollView(
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -303,6 +314,36 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
             controller: _nameController,
             enabled: !_isSubmitting,
             label: l10n.businessNameLabel,
+          ),
+          const SizedBox(height: FactorySpacing.space3),
+          FactoryTextField(
+            controller: _addressController,
+            enabled: !_isSubmitting,
+            label: l10n.addressLabel,
+          ),
+          const SizedBox(height: FactorySpacing.space3),
+          FactoryTextField(
+            controller: _phoneController,
+            enabled: !_isSubmitting,
+            keyboardType: TextInputType.phone,
+            label: l10n.phoneLabel,
+          ),
+          const SizedBox(height: FactorySpacing.space3),
+          FactoryTextField(
+            controller: _descriptionController,
+            enabled: !_isSubmitting,
+            keyboardType: TextInputType.multiline,
+            maxLines: 3,
+            label: l10n.descriptionLabel,
+          ),
+          const SizedBox(height: FactorySpacing.space3),
+          WorkingHoursEditor(
+            hours: _hours,
+            enabled: !_isSubmitting,
+            onChanged: (hours) => setState(() {
+              _hours = hours;
+              _error = null;
+            }),
           ),
           const SizedBox(height: FactorySpacing.space3),
           FactoryTextField(
@@ -360,6 +401,7 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
             ),
         ],
       ),
+      ),
       actions: [
         FactoryButton(
           label: l10n.cancelButton,
@@ -373,6 +415,12 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
         ),
       ],
     );
+  }
+
+  /// The text to send for a field: null when it is the same as before, otherwise the trimmed text ('' clears).
+  static String? _changed(String text, String? original) {
+    final trimmed = text.trim();
+    return trimmed == (original ?? '') ? null : trimmed;
   }
 
   Future<void> _pickPhoto() async {
@@ -411,6 +459,10 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
       setState(() => _error = l10n.validationLatLngInvalid);
       return;
     }
+    if (!workingHoursValid(_hours)) {
+      setState(() => _error = l10n.validationWorkingHoursInvalid);
+      return;
+    }
     setState(() {
       _isSubmitting = true;
       _error = null;
@@ -434,6 +486,11 @@ class _EditSalonDialogState extends ConsumerState<_EditSalonDialog> {
             longitude: lng,
             coverPhotoUrl: coverPhotoUrl,
             cityCode: _cityCode,
+            // Only what changed is sent (null = keep); a blank string clears a text field.
+            address: _changed(_addressController.text, widget.provider.address),
+            phone: _changed(_phoneController.text, widget.provider.phone),
+            description: _changed(_descriptionController.text, widget.provider.description),
+            workingHours: mapEquals(_hours, widget.provider.workingHours) ? null : _hours,
           );
       if (!mounted) return;
       Navigator.of(context).pop(updated);

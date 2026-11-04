@@ -214,6 +214,58 @@ class ProviderApiTests {
     }
 
     @Test
+    void theOwnerPublishesAddressPhoneDescriptionAndHoursAndOmittingThemKeepsThem() {
+        Registered owner = TestAuth.registerOwner(restTemplate, "salon-profile-owner-" + UUID.randomUUID()
+                + "@example.com");
+        UUID providerId = createProvider(owner, "Profile Salon");
+        String path = "/api/v1/providers/" + providerId;
+
+        var hours = java.util.Map.of("mon", "09:00-20:00", "sat", "10:00-16:00");
+        ResponseEntity<java.util.Map> saved = restTemplate.exchange(path, HttpMethod.PUT, new HttpEntity<>(
+                new UpdateProviderRequest("Profile Salon", 43.25, 76.90, null, null, "Abay 10", "+7 701 000 00 00",
+                        "Cosy place", hours), TestAuth.authHeaders(owner.accessToken())), java.util.Map.class);
+        assertThat(saved.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(saved.getBody().get("address")).isEqualTo("Abay 10");
+        assertThat(saved.getBody().get("phone")).isEqualTo("+7 701 000 00 00");
+        assertThat(saved.getBody().get("description")).isEqualTo("Cosy place");
+        assertThat((java.util.Map<?, ?>) saved.getBody().get("workingHours")).containsEntry("mon", "09:00-20:00")
+                .containsEntry("sat", "10:00-16:00").doesNotContainKey("tue");
+
+        // An edit that does not mention them (an older app) keeps them.
+        restTemplate.exchange(path, HttpMethod.PUT, new HttpEntity<>(
+                new UpdateProviderRequest("Profile Salon 2", 43.25, 76.90),
+                TestAuth.authHeaders(owner.accessToken())), java.util.Map.class);
+        var kept = restTemplate.getForEntity(path, java.util.Map.class).getBody();
+        assertThat(kept.get("address")).isEqualTo("Abay 10");
+        assertThat((java.util.Map<?, ?>) kept.get("workingHours")).hasSize(2);
+
+        // Blank clears the text fields, {} clears the hours.
+        restTemplate.exchange(path, HttpMethod.PUT, new HttpEntity<>(
+                new UpdateProviderRequest("Profile Salon 2", 43.25, 76.90, null, null, " ", "", "",
+                        java.util.Map.of()), TestAuth.authHeaders(owner.accessToken())), java.util.Map.class);
+        var cleared = restTemplate.getForEntity(path, java.util.Map.class).getBody();
+        assertThat(cleared.get("address")).isNull();
+        assertThat(cleared.get("phone")).isNull();
+        assertThat(cleared.get("description")).isNull();
+        assertThat((java.util.Map<?, ?>) cleared.get("workingHours")).isEmpty();
+    }
+
+    @Test
+    void malformedWorkingHoursAreRejected() {
+        Registered owner = TestAuth.registerOwner(restTemplate, "salon-hours-owner-" + UUID.randomUUID()
+                + "@example.com");
+        UUID providerId = createProvider(owner, "Hours Salon");
+        for (var bad : java.util.List.of(java.util.Map.of("funday", "09:00-20:00"),
+                java.util.Map.of("mon", "9-20"), java.util.Map.of("mon", "20:00-09:00"))) {
+            ResponseEntity<java.util.Map> response = restTemplate.exchange("/api/v1/providers/" + providerId,
+                    HttpMethod.PUT, new HttpEntity<>(new UpdateProviderRequest("Hours Salon", 43.25, 76.90, null,
+                            null, null, null, null, bad), TestAuth.authHeaders(owner.accessToken())),
+                    java.util.Map.class);
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @Test
     void aBusinessCreatedWithACityKeepsItAndAnUnknownCityIsRejected() {
         Registered owner = TestAuth.registerOwner(restTemplate, "salon-create-city-" + UUID.randomUUID()
                 + "@example.com");

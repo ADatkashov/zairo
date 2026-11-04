@@ -14,7 +14,7 @@ class RatingComparatorTest {
 
     private static ProviderSearchResult provider(UUID id) {
         return new ProviderSearchResult(id, "p", "beauty", null, true, null, List.of(), null, null, null, null, null,
-                null, null);
+                null, null, null, null, null, java.util.Map.of());
     }
 
     private static List<UUID> sorted(Map<UUID, ProviderRatingSummary> ratings, UUID... ids) {

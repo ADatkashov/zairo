@@ -79,6 +79,22 @@ public class Provider {
     @Column(name = "city_code")
     private String cityCode;
 
+    /** Street address as the owner wrote it (shown to customers next to the map link). Null until set. */
+    @Column(length = 255)
+    private String address;
+
+    /** Public phone number customers can tap to call. Null until set. */
+    @Column(length = 50)
+    private String phone;
+
+    /** Free-text "about us". Null until set. */
+    @Column(length = 2000)
+    private String description;
+
+    /** Opening hours in {@link WorkingHours} text form ({@code mon=09:00-20:00;tue=...}); null = not stated. */
+    @Column(name = "working_hours", length = 500)
+    private String workingHours;
+
     protected Provider() {
     }
 
@@ -165,6 +181,46 @@ public class Provider {
         if (cityCode != null && !cityCode.isBlank()) {
             this.cityCode = cityCode.trim();
         }
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    /** Opening hours by weekday key ({@code mon..sun}); empty when the owner has not stated any. */
+    public java.util.Map<String, String> getWorkingHours() {
+        return WorkingHours.parse(workingHours);
+    }
+
+    /**
+     * Sets the public profile. A null argument keeps the current value; a blank string (or, for hours, an empty
+     * map) clears it — the same "omit = keep" rule as the city.
+     */
+    void updateProfile(String address, String phone, String description, java.util.Map<String, String> hours) {
+        if (address != null) {
+            this.address = blankToNull(address);
+        }
+        if (phone != null) {
+            this.phone = blankToNull(phone);
+        }
+        if (description != null) {
+            this.description = blankToNull(description);
+        }
+        if (hours != null) {
+            this.workingHours = WorkingHours.format(hours);
+        }
+    }
+
+    private static String blankToNull(String value) {
+        return value.isBlank() ? null : value.trim();
     }
 
     /** Sets the city at creation; null/blank leaves it unset. */

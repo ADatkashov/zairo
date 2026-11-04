@@ -795,5 +795,15 @@
   "loginMethodPhone": "Телефон",
   "securityLinkedLabel": "Байланған",
   "paymentCardsEmptyHint": "Жоғарыдағы ауыстырғыш қосулы болса, карта келесі онлайн төлемде сақталады.",
-  "homeNearbyTitle": "Жақыныңызда"
+  "homeNearbyTitle": "Жақыныңызда",
+  "providerOpenUntil": "{time} дейін ашық",
+  "providerClosedOpensToday": "Жабық · {time}-де ашылады",
+  "providerClosedOpensTomorrow": "Жабық · ертең {time}-де ашылады",
+  "providerClosedOpensOn": "Жабық · {day} күні {time}-де ашылады",
+  "providerHoursTitle": "Жұмыс уақыты",
+  "providerDayClosed": "Демалыс",
+  "providerCallButton": "Қоңырау шалу",
+  "providerDirectionsButton": "Бағыт",
+  "providerReadMore": "Тағы",
+  "providerReadLess": "Жасыру"
 }

@@ -92,6 +92,10 @@ class _FakeSalonAdminApi extends SalonAdminApi {
     double? longitude,
     String? coverPhotoUrl,
     String? cityCode,
+    String? address,
+    String? phone,
+    String? description,
+    Map<String, String>? workingHours,
   }) async {
     lastUpdateProviderCall = {
       'providerId': providerId,
@@ -100,6 +104,10 @@ class _FakeSalonAdminApi extends SalonAdminApi {
       'longitude': longitude,
       'coverPhotoUrl': coverPhotoUrl,
       'cityCode': cityCode,
+      'address': ?address,
+      'phone': ?phone,
+      'description': ?description,
+      'workingHours': ?workingHours,
     };
     return AdminProvider(
       id: providerId,
@@ -752,6 +760,8 @@ void main() {
 
       await tester.tap(find.text('Pick your city so customers there find you'));
       await tester.pumpAndSettle();
+      // The dialog scrolls now that it also holds the profile fields and the hours.
+      await tester.ensureVisible(find.byType(DropdownButtonFormField<String>));
       await tester.tap(find.byType(DropdownButtonFormField<String>));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Astana').last);
@@ -761,6 +771,88 @@ void main() {
 
       expect(api.lastUpdateProviderCall?['cityCode'], 'astana');
       expect(find.text('Pick your city so customers there find you'), findsNothing);
+    });
+
+    testWidgets('the edit dialog saves address, phone, description and hours, sending only what changed', (tester) async {
+      final api = _FakeSalonAdminApi();
+      await pumpDetail(
+        tester,
+        api,
+        const AdminProvider(
+          id: 'p1',
+          ownerUserId: 'owner-1',
+          name: 'Glow Salon',
+          vertical: 'beauty',
+          status: 'ACTIVE',
+          phone: '+7 701',
+          workingHours: {'mon': '09:00-20:00'},
+        ),
+      );
+
+      await tester.tap(find.byTooltip('Edit business'));
+      await tester.pumpAndSettle();
+      // The dialog opens on the stored values.
+      expect(find.widgetWithText(TextField, '+7 701'), findsOneWidget);
+      await tester.enterText(find.widgetWithText(TextField, 'Address (optional)'), 'Abay 10');
+      await tester.enterText(find.widgetWithText(TextField, 'About the business (optional)'), 'Cosy');
+      final tuesday = find.descendant(of: find.byType(Dialog), matching: find.byType(Switch)).at(1);
+      await tester.ensureVisible(tuesday);
+      await tester.tap(tuesday);
+      await tester.pump();
+      await tester.tap(find.descendant(of: find.byType(Dialog), matching: find.widgetWithText(FilledButton, 'Save')));
+      await tester.pumpAndSettle();
+
+      final call = api.lastUpdateProviderCall!;
+      expect(call['address'], 'Abay 10');
+      expect(call['description'], 'Cosy');
+      expect(call.containsKey('phone'), isFalse, reason: 'unchanged phone is left out (= keep)');
+      expect(call['workingHours'], {'mon': '09:00-20:00', 'tue': '09:00-20:00'});
+    });
+
+    testWidgets('clearing a filled field sends a blank so the server clears it; unchanged hours are left out', (tester) async {
+      final api = _FakeSalonAdminApi();
+      await pumpDetail(
+        tester,
+        api,
+        const AdminProvider(
+          id: 'p1',
+          ownerUserId: 'owner-1',
+          name: 'Glow Salon',
+          vertical: 'beauty',
+          status: 'ACTIVE',
+          address: 'Old street',
+          workingHours: {'mon': '09:00-20:00'},
+        ),
+      );
+      await tester.tap(find.byTooltip('Edit business'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, 'Address (optional)'), '');
+      await tester.tap(find.descendant(of: find.byType(Dialog), matching: find.widgetWithText(FilledButton, 'Save')));
+      await tester.pumpAndSettle();
+      expect(api.lastUpdateProviderCall!['address'], '');
+      expect(api.lastUpdateProviderCall!.containsKey('workingHours'), isFalse);
+    });
+
+    testWidgets('closing before opening is rejected before anything is sent', (tester) async {
+      final api = _FakeSalonAdminApi();
+      await pumpDetail(
+        tester,
+        api,
+        const AdminProvider(
+          id: 'p1',
+          ownerUserId: 'owner-1',
+          name: 'Glow Salon',
+          vertical: 'beauty',
+          status: 'ACTIVE',
+          workingHours: {'mon': '20:00-09:00'},
+        ),
+      );
+      await tester.tap(find.byTooltip('Edit business'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(of: find.byType(Dialog), matching: find.widgetWithText(FilledButton, 'Save')));
+      await tester.pumpAndSettle();
+      expect(find.text('Closing time must be after opening time.'), findsOneWidget);
+      expect(api.lastUpdateProviderCall, isNull);
     });
 
     testWidgets('the edit dialog starts on the current city and resends it', (tester) async {

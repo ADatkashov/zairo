@@ -169,6 +169,7 @@ public class ProviderController {
     @PutMapping("/api/v1/providers/{id}")
     public ProviderResponse update(@Parameter(description = "The provider's id.") @PathVariable UUID id,
             @Valid @RequestBody UpdateProviderRequest request) {
+        WorkingHours.validate(request.workingHours());
         Provider provider = providerRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Provider not found: " + id));
         UUID currentUserId = CurrentUser.requireUserId();
@@ -177,6 +178,7 @@ public class ProviderController {
         }
         provider.update(request.name(), request.latitude(), request.longitude(), request.coverPhotoUrl(),
                 requireKnownCity(request.cityCode()));
+        provider.updateProfile(request.address(), request.phone(), request.description(), request.workingHours());
         return ProviderResponse.from(providerRepository.save(provider));
     }
 

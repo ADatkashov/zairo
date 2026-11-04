@@ -48,4 +48,8 @@ void main() {
     expect(twoGis.toString(), 'https://2gis.kz/geo/76.945,43.238');
     expect(google.queryParameters['query'], '43.238,76.945');
   });
+
+  test('call builds a tel: link without spaces or punctuation', () {
+    expect(ExternalLinks.call('+7 (701) 000-00-00').toString(), 'tel:+77010000000');
+  });
 }

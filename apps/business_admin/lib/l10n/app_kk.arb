@@ -1139,5 +1139,13 @@
   "backupColDuration": "Минут",
   "backupColActive": "Белсенді",
   "backupYes": "Иә",
-  "backupNo": "Жоқ"
+  "backupNo": "Жоқ",
+  "addressLabel": "Мекенжай (міндетті емес)",
+  "phoneLabel": "Клиенттерге арналған телефон (міндетті емес)",
+  "descriptionLabel": "Бизнес туралы (міндетті емес)",
+  "workingHoursLabel": "Жұмыс уақыты",
+  "workingHoursDayOff": "Демалыс",
+  "workingHoursApplyToAll": "Дүйсенбідегідей — барлық күнге",
+  "workingHoursOpensTooltip": "Жұмыс істейміз",
+  "validationWorkingHoursInvalid": "Жабылу уақыты ашылудан кейін болуы керек."
 }

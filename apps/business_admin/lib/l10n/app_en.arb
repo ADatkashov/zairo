@@ -2772,5 +2772,21 @@
   "backupYes": "Yes",
   "@backupYes": {"description": "Backup file: yes."},
   "backupNo": "No",
-  "@backupNo": {"description": "Backup file: no."}
+  "@backupNo": {"description": "Backup file: no."},
+  "addressLabel": "Address (optional)",
+  "@addressLabel": {"description": "Business profile editor: addressLabel."},
+  "phoneLabel": "Phone for customers (optional)",
+  "@phoneLabel": {"description": "Business profile editor: phoneLabel."},
+  "descriptionLabel": "About the business (optional)",
+  "@descriptionLabel": {"description": "Business profile editor: descriptionLabel."},
+  "workingHoursLabel": "Working hours",
+  "@workingHoursLabel": {"description": "Business profile editor: workingHoursLabel."},
+  "workingHoursDayOff": "Day off",
+  "@workingHoursDayOff": {"description": "Business profile editor: workingHoursDayOff."},
+  "workingHoursApplyToAll": "Apply Monday to all days",
+  "@workingHoursApplyToAll": {"description": "Business profile editor: workingHoursApplyToAll."},
+  "workingHoursOpensTooltip": "Open",
+  "@workingHoursOpensTooltip": {"description": "Business profile editor: workingHoursOpensTooltip."},
+  "validationWorkingHoursInvalid": "Closing time must be after opening time.",
+  "@validationWorkingHoursInvalid": {"description": "Business profile editor: validationWorkingHoursInvalid."}
 }
