@@ -35,7 +35,7 @@ collaborators*.
 
 ### APK on your phone without GitHub Actions
 
-`build-artifacts.yml` is disabled, so build locally in Ubuntu/WSL: once `scripts/setup-local-dev-wsl.sh`, then
+The easy way: *Actions -> Build Artifacts -> Run workflow* (or just push to `main`), then download the APK from the run page -> **Artifacts**. To build locally in Ubuntu/WSL instead: once `scripts/setup-local-dev-wsl.sh`, then
 `scripts/setup-android-sdk-wsl.sh`; after that `scripts/build-apk-local.sh [user_app|business_admin|platform_admin]` puts
 `<app>-debug-signed.apk` in `build-apk-out/` (same `--dart-define` flags as the workflow; API URL defaults to the live
 Render backend). Open the folder from Windows with `explorer.exe "$(wslpath -w build-apk-out)"`, copy the APK to the phone
@@ -124,13 +124,13 @@ inspected without re-running Gradle locally.
 
 ### `build-artifacts.yml`
 
-**Triggers:** `push` only, on `develop`, `test`, `master` — never on a
+**Triggers:** `push` to `main` and manual `workflow_dispatch` — never on a
 PR. It doesn't re-validate anything (the two workflows above already
 did that for whatever got merged); it only builds outputs.
 
 **What it does:** two independent jobs.
 
-- `android-apk` (matrix: `user_app`, `business_admin`) — `flutter build
+- `android-apk` (matrix: `user_app`, `business_admin`, `platform_admin`) — `flutter build
   apk --release`, uploads `app-release.apk` as
   `<app>-apk-debug-signed`. That name is accurate, not decorative: both
   apps' `android/app/build.gradle.kts` point the `release` build type at
@@ -192,11 +192,12 @@ config (`application.yml`, dev defaults), not per-environment configs.
 ## 7. How artifacts are generated
 
 Every artifact comes from `build-artifacts.yml`, only on a push to
-`develop`, `test`, or `master` (never on a PR — see §3). From a
+`main` or by hand (never on a PR — see §3). From a
 workflow run's summary page, the **Artifacts** section lists:
 
 - `user_app-apk-debug-signed`
 - `business_admin-apk-debug-signed`
+- `platform_admin-apk-debug-signed`
 - `platform-api-bootjar`
 
 **`TWOGIS_API_KEY` secret (optional)** — 2GIS is the preferred map for

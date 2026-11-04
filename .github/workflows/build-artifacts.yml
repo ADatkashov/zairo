@@ -1,15 +1,17 @@
 name: Build Artifacts
 
-# Runs after code has already landed on a tracked branch (develop, test,
-# or master) — i.e. after flutter-ci.yml / backend-ci.yml have already
-# validated it via the PR that got it there. This workflow doesn't
-# re-validate anything; it only assembles installable/runnable outputs
-# and attaches them to the workflow run for manual download.
+# Runs on every push to `main` (the working branch) and by hand
+# (Actions -> Build Artifacts -> Run workflow, pick any branch). It doesn't
+# re-validate anything (flutter-ci.yml / backend-ci.yml do that); it only
+# assembles installable/runnable outputs: debug-signed APKs of all three
+# apps plus the backend jar, attached to the run for download
+# (run page -> Artifacts, kept 14 days).
 #
 # Nothing here is published anywhere public, and nothing deploys.
 on:
   push:
-    branches: [develop, test, master]
+    branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: build-artifacts-${{ github.ref }}
@@ -35,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [user_app, business_admin]
+        app: [user_app, business_admin, platform_admin]
     steps:
       - name: Checkout
         uses: actions/checkout@v7
