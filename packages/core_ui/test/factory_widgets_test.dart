@@ -9,6 +9,7 @@ Widget _wrap(Widget child) => MaterialApp(
 );
 
 void main() {
+  _listSkeletonTests();
   narrowPhoneTests();
   _denseButtonTests();
   _authBrandTests();
@@ -1636,5 +1637,33 @@ void narrowPhoneTests() {
     expect(eye.right, lessThanOrEqualTo(field.right - 4), reason: 'not past its edge');
     expect(eye.top, greaterThan(field.top));
     expect(eye.bottom, lessThan(field.bottom));
+  });
+}
+
+void _listSkeletonTests() {
+  testWidgets('FactoryListSkeleton draws the asked number of card rows and no spinner', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: factoryLightTheme(),
+        home: const Scaffold(body: FactoryListSkeleton(itemCount: 3)),
+      ),
+    );
+    // 3 rows x (picture + two lines).
+    expect(find.byType(FactorySkeleton), findsNWidgets(9));
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('FactoryListSkeleton does not overflow a 320 px phone and is hidden from screen readers', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: factoryLightTheme(),
+        home: const Scaffold(body: FactoryListSkeleton()),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+    expect(find.descendant(of: find.byType(FactoryListSkeleton), matching: find.byType(ExcludeSemantics)), findsWidgets);
   });
 }

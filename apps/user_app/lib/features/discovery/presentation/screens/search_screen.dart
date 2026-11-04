@@ -349,7 +349,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       ],
                     );
                   },
-                  loading: () => const FactoryLoadingState(),
+                  loading: () => const FactoryListSkeleton(),
                   error: (error, stackTrace) => Center(
                     child: Padding(
                       padding: const EdgeInsets.all(FactorySpacing.space4),

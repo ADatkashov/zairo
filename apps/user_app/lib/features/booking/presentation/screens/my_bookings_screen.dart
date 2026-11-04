@@ -217,7 +217,7 @@ class _BookingsListState extends ConsumerState<_BookingsList> {
           ],
         );
       },
-      loading: () => const FactoryLoadingState(),
+      loading: () => const FactoryListSkeleton(),
       error: (error, stackTrace) => Center(
         child: Padding(
           padding: const EdgeInsets.all(FactorySpacing.space4),

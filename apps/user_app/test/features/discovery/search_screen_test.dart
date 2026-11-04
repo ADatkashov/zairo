@@ -245,8 +245,11 @@ void main() {
       ),
     );
 
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    // While loading the page keeps its shape: card-shaped placeholders, not a lone spinner.
+    expect(find.byType(FactoryListSkeleton), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
     await tester.pumpAndSettle();
+    expect(find.byType(FactoryListSkeleton), findsNothing);
 
     expect(find.text('Hair Studio'), findsOneWidget);
     expect(find.text('Available today'), findsOneWidget);

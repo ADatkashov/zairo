@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:core_network/core_network.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:dio/dio.dart';
@@ -196,6 +198,34 @@ void main() {
     expect(lines, contains('Service: Haircut'));
     expect(lines, contains('Business: Glow Salon'));
     expect(lines, contains('Payment no.: ABCD1234'));
+  });
+
+  testWidgets('while loading, the list shows placeholders instead of a spinner', (tester) async {
+    final gate = Completer<List<Payment>>();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          myPaymentsProvider.overrideWith((ref) => gate.future),
+          bookingApiProvider.overrideWithValue(_FakeBookingApi([_booking])),
+          authControllerProvider.overrideWith(_LoggedIn.new),
+        ],
+        child: MaterialApp(
+          theme: factoryLightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
+          home: const PaymentHistoryScreen(),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.byType(FactoryListSkeleton), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+
+    gate.complete([_payment('aaaaaaaa-1', 'b1', 'SUCCEEDED')]);
+    await tester.pumpAndSettle();
+    expect(find.byType(FactoryListSkeleton), findsNothing);
+    expect(find.text('Haircut'), findsOneWidget);
   });
 
   testWidgets('no payments yet says so', (tester) async {
