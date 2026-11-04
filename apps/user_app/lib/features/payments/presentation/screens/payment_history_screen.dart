@@ -30,7 +30,7 @@ class PaymentHistoryScreen extends ConsumerWidget {
       backgroundColor: colors.bg,
       appBar: FactoryAppBar(title: l10n.paymentHistoryTitle),
       body: paymentsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const FactoryListSkeleton(),
         error: (error, stackTrace) => Center(
           child: Padding(
             padding: const EdgeInsets.all(FactorySpacing.space4),
